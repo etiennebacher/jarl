@@ -50,7 +50,10 @@ impl LocalizedParser for SessionParserConfig {
         }
     }
 
-    fn parse_line_col(&self, _input: &str) -> LineColResult {
-        unimplemented!()
+    fn parse_line_col(&self, input: &str) -> LineColResult {
+        use Localization::*;
+        match self.locale {
+            En => LocalizedParser::parse_line_col(&en::Parser, input),
+        }
     }
 }
