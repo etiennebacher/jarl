@@ -4,15 +4,15 @@ use std::path::PathBuf;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Location {
     pub row: usize,
     pub column: usize,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum Message {
-    AnyNA {
+    TrueFalseSymbol {
         filename: PathBuf,
         location: Location,
     },
@@ -22,14 +22,14 @@ impl Message {
     /// Short ID for the message.
     pub fn code(&self) -> &'static str {
         match self {
-            Message::AnyNA { filename: _, location: _ } => "any-na",
+            Message::TrueFalseSymbol { filename: _, location: _ } => "T-F-symbols",
         }
     }
 
     /// The body text for the message.
     pub fn body(&self) -> &'static str {
         match self {
-            Message::AnyNA { filename: _, location: _ } => "Inefficient: use anyNA() instead.",
+            Message::TrueFalseSymbol { filename: _, location: _ } => "`T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.",
         }
     }
 }
@@ -37,7 +37,7 @@ impl Message {
 impl fmt::Display for Message {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Message::AnyNA { filename, location } => write!(
+            Message::TrueFalseSymbol { filename, location } => write!(
                 f,
                 "{}{}{}{}{}  {}\t{}",
                 filename.to_string_lossy().white().bold(),
