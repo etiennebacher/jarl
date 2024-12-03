@@ -30,6 +30,5 @@ rayon = "1.10.0"
 serde = "1.0.215"
 air_r_parser = { git = "https://github.com/posit-dev/air", version = "0.0.0" }
 air_r_syntax = { git = "https://github.com/posit-dev/air", version = "0.0.0" }
-biome_rowan = "0.5.7"
 clap = { version = "4.5.21", features = ["derive"] }
 walkdir = "2.5.0"
