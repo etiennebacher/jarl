@@ -1,7 +1,10 @@
 use air_r_parser::RParserOptions;
 use air_r_syntax::{RLanguage, RSyntaxKind, RSyntaxNode};
 
+use r::lints::*;
 use r::message::*;
+use r::utils::*;
+
 use rayon::prelude::*;
 use std::fs;
 use std::path::Path;
@@ -33,38 +36,21 @@ fn main() {
 
 fn check_ast(ast: &RSyntaxNode, loc_new_lines: &Vec<usize>, file: &str) -> Vec<Message> {
     let mut messages: Vec<Message> = vec![];
-    // println!("{:?}", ast.text());
-    // println!("{:?}", ast.kind());
+
+    let linters: Vec<Box<dyn LintChecker>> = vec![
+        Box::new(AnyIsNa),
+        Box::new(TrueFalseSymbol),
+        // Add more lints here as needed
+    ];
+
+    for linter in linters {
+        messages.extend(linter.check(ast, loc_new_lines, file));
+    }
+
     match ast.kind() {
         RSyntaxKind::R_EXPRESSION_LIST => {
             for child in ast.children() {
-                messages.extend(check_ast(&child, &loc_new_lines, file))
-            }
-        }
-        RSyntaxKind::R_CALL => {
-            let call = ast.first_child().unwrap().text_trimmed();
-            if call == "any" {
-                let args = get_args(ast);
-                if let Some(x) = args {
-                    let first_arg = x.first_child().unwrap().first_child().unwrap();
-                    if first_arg.text_trimmed() == "is.na"
-                        && first_arg.kind() == RSyntaxKind::R_IDENTIFIER
-                    {
-                        let (row, column) = find_row_col(ast, &loc_new_lines);
-                        messages.push(Message::AnyIsNa {
-                            filename: file.into(),
-                            location: Location { row, column },
-                        });
-                    } else if first_arg.text_trimmed() == "duplicated"
-                        && first_arg.kind() == RSyntaxKind::R_IDENTIFIER
-                    {
-                        let (row, column) = find_row_col(ast, &loc_new_lines);
-                        messages.push(Message::AnyDuplicated {
-                            filename: file.into(),
-                            location: Location { row, column },
-                        });
-                    }
-                }
+                messages.extend(check_ast(&child, loc_new_lines, file));
             }
         }
         RSyntaxKind::R_CALL_ARGUMENTS
@@ -76,13 +62,6 @@ fn check_ast(ast: &RSyntaxNode, loc_new_lines: &Vec<usize>, file: &str) -> Vec<M
             }
         }
         RSyntaxKind::R_IDENTIFIER => {
-            if ast.text_trimmed() == "T" || ast.text_trimmed() == "F" {
-                let (row, column) = find_row_col(ast, &loc_new_lines);
-                messages.push(Message::TrueFalseSymbol {
-                    filename: file.into(),
-                    location: Location { row, column },
-                });
-            }
             let fc = &ast.first_child();
             let _has_child = fc.is_some();
             let ns = ast.next_sibling();
@@ -102,36 +81,6 @@ fn check_ast(ast: &RSyntaxNode, loc_new_lines: &Vec<usize>, file: &str) -> Vec<M
             }
         },
     };
+
     messages
-}
-
-fn find_new_lines(ast: &RSyntaxNode) -> Vec<usize> {
-    ast.first_child()
-        .unwrap()
-        .text()
-        .to_string()
-        .match_indices("\n")
-        .map(|x| x.0)
-        .collect::<Vec<usize>>()
-}
-
-fn find_row_col(ast: &RSyntaxNode, loc_new_lines: &[usize]) -> (usize, usize) {
-    let start: usize = ast.text_range().start().into();
-    let new_lines_before = loc_new_lines
-        .iter()
-        .filter(|x| *x <= &start)
-        .collect::<Vec<&usize>>();
-    let n_new_lines = new_lines_before.len();
-    let last_new_line = match new_lines_before.last() {
-        Some(x) => **x,
-        None => 0_usize,
-    };
-    let col = start - last_new_line + 1;
-    let row = n_new_lines + 1;
-    (row, col)
-}
-
-fn get_args(node: &RSyntaxNode) -> Option<RSyntaxNode> {
-    node.descendants()
-        .find(|x| x.kind() == RSyntaxKind::R_ARGUMENT)
 }
