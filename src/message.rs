@@ -2,7 +2,6 @@ use std::fmt;
 use std::path::PathBuf;
 
 use crate::location::Location;
-use air_r_syntax::TextSize;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 

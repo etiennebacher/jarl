@@ -11,7 +11,6 @@ use rayon::prelude::*;
 use std::fs;
 use std::path::Path;
 use std::time::Instant;
-use walkdir::WalkDir;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]

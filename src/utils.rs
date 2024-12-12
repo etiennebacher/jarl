@@ -1,6 +1,4 @@
 use air_r_syntax::{RSyntaxKind, RSyntaxNode};
-use biome_rowan::SyntaxNode;
-use std::convert::From;
 
 pub fn find_new_lines(ast: &RSyntaxNode) -> Vec<u32> {
     ast.first_child()

@@ -3,7 +3,7 @@ use air_r_syntax::{RSyntaxKind, RSyntaxNode};
 use crate::lints::*;
 use crate::message::*;
 
-pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &Vec<u32>, file: &str) -> Vec<Message> {
+pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &[u32], file: &str) -> Vec<Message> {
     let mut messages: Vec<Message> = vec![];
 
     // println!("{:?}", ast);
