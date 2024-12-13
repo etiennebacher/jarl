@@ -30,15 +30,3 @@ pub fn get_args(node: &RSyntaxNode) -> Option<RSyntaxNode> {
     node.descendants()
         .find(|x| x.kind() == RSyntaxKind::R_ARGUMENT)
 }
-
-// pub struct MyRSyntaxNode(SyntaxNode);
-// impl From<SyntaxNode> for MyRSyntaxNode {
-//     fn from(node: SyntaxNode) -> Self {
-//         MyRSyntaxNode(node)
-//     }
-// }
-// impl MyRSyntaxNode {
-//     pub fn is_call(self) -> bool {
-//         self.0.kind() == RSyntaxKind::R_CALL
-//     }
-// }

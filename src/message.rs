@@ -8,8 +8,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Fix {
     pub content: String,
-    pub start: Location,
-    pub end: Location,
+    pub start: usize,
+    pub end: usize,
     pub applied: bool,
 }
 
