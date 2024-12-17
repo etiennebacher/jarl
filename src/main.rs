@@ -45,9 +45,9 @@ fn main() {
         .map(|file| {
             let contents = fs::read_to_string(Path::new(file)).expect("couldn't read file");
             let parsed = air_r_parser::parse(contents.as_str(), parser_options);
-            let out = &parsed.syntax();
-            let loc_new_lines = find_new_lines(out);
-            let checks = check_ast(out, &loc_new_lines, file.to_str().unwrap());
+            let syntax = &parsed.syntax();
+            let loc_new_lines = find_new_lines(syntax);
+            let checks = check_ast(syntax, &loc_new_lines, file.to_str().unwrap());
             if args.fix {
                 let out = apply_fixes(&checks, &contents);
                 let _ = fs::write(file, out);
@@ -64,4 +64,52 @@ fn main() {
     }
     let duration = start.elapsed();
     println!("Checked files in: {:?}", duration);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use flint::location::Location;
+    use tempfile::TempDir;
+
+    fn check_string(input: &str) -> anyhow::Result<Vec<Message>> {
+        let parser_options = RParserOptions::default();
+        let tempdir = TempDir::new()?;
+        let temppath = tempdir.path().join("test.R");
+        std::fs::write(&temppath, input)?;
+        let contents = fs::read_to_string(Path::new(&temppath)).expect("couldn't read file");
+        let parsed = air_r_parser::parse(contents.as_str(), parser_options);
+        let out = &parsed.syntax();
+        let loc_new_lines = find_new_lines(out);
+        let checks = check_ast(out, &loc_new_lines, temppath.to_str().unwrap());
+        Ok(checks)
+    }
+
+    #[test]
+    fn it_works() -> anyhow::Result<()> {
+        let checks = check_string(
+            r#"
+any(is.na(x))
+any(duplicated(x))
+a <- 1
+b <- T
+"#,
+        )?;
+        let location = Location::new(0, 0);
+        assert!(matches!(
+            checks.get(0).unwrap(),
+            &Message::AnyIsNa { location: _, .. } if location == Location::new(0, 0)
+        ));
+        let location = Location::new(1, 0);
+        assert!(matches!(
+            checks.get(1).unwrap(),
+            &Message::AnyDuplicated { location: _, .. } if location == Location::new(1, 0)
+        ));
+        let location = Location::new(2, 0);
+        assert!(matches!(
+            checks.get(2).unwrap(),
+            &Message::TrueFalseSymbol { location: _, .. } if location == Location::new(2, 0)
+        ));
+        Ok(())
+    }
 }
