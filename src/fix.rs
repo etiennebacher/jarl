@@ -1,14 +1,7 @@
 use crate::message::*;
 
 pub fn apply_fixes(fixes: &[Message], contents: &str) -> String {
-    let fixes = fixes
-        .iter()
-        .map(|msg| match msg {
-            Message::AnyDuplicated { fix, .. }
-            | Message::AnyIsNa { fix, .. }
-            | Message::TrueFalseSymbol { fix, .. } => fix,
-        })
-        .collect::<Vec<_>>();
+    let fixes = fixes.iter().map(|msg| msg.fix()).collect::<Vec<_>>();
     let old_content = contents;
     let mut new_content = old_content.to_string();
     let mut diff_length = 0;

@@ -29,7 +29,7 @@ impl LintChecker for AnyIsNa {
                 if fun.text_trimmed() == "is.na" && fun.kind() == RSyntaxKind::R_IDENTIFIER {
                     let (row, column) = find_row_col(ast, loc_new_lines);
                     let range = ast.text_trimmed_range();
-                    messages.push(Message::AnyIsNa {
+                    messages.push(Message::AnyIsNa(LintData {
                         filename: file.into(),
                         location: Location { row, column },
                         fix: Fix {
@@ -39,7 +39,7 @@ impl LintChecker for AnyIsNa {
                             applied: false,
                             length_change: -5,
                         },
-                    })
+                    }))
                 };
             }
         });
@@ -65,7 +65,7 @@ impl LintChecker for AnyDuplicated {
                 if fun.text_trimmed() == "duplicated" && fun.kind() == RSyntaxKind::R_IDENTIFIER {
                     let (row, column) = find_row_col(ast, loc_new_lines);
                     let range = ast.text_trimmed_range();
-                    messages.push(Message::AnyDuplicated {
+                    messages.push(Message::AnyDuplicated(LintData {
                         filename: file.into(),
                         location: Location { row, column },
                         fix: Fix {
@@ -75,7 +75,7 @@ impl LintChecker for AnyDuplicated {
                             applied: false,
                             length_change: 2,
                         },
-                    })
+                    }))
                 };
             }
         });
@@ -91,7 +91,7 @@ impl LintChecker for TrueFalseSymbol {
         {
             let (row, column) = find_row_col(ast, loc_new_lines);
             let range = ast.text_trimmed_range();
-            messages.push(Message::TrueFalseSymbol {
+            messages.push(Message::TrueFalseSymbol(LintData {
                 filename: file.into(),
                 location: Location { row, column },
                 fix: Fix {
@@ -105,8 +105,8 @@ impl LintChecker for TrueFalseSymbol {
                     applied: false,
                     length_change: if ast.text_trimmed() == "T" { 3 } else { 4 },
                 },
-            });
-        }
+            }))
+        };
         messages
     }
 }
