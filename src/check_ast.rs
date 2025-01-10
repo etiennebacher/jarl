@@ -28,6 +28,7 @@ pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<
         Box::new(AnyIsNa),
         Box::new(TrueFalseSymbol),
         Box::new(AnyDuplicated),
+        Box::new(ClassEquals),
     ];
 
     for linter in linters {
@@ -37,19 +38,28 @@ pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<
     match ast.kind() {
         RSyntaxKind::R_EXPRESSION_LIST
         | RSyntaxKind::R_FUNCTION_DEFINITION
-        | RSyntaxKind::R_FOR_STATEMENT => {
-            for child in ast.children() {
-                messages.extend(check_ast(&child, loc_new_lines, file));
-            }
-        }
-        RSyntaxKind::R_CALL_ARGUMENTS
+        | RSyntaxKind::R_CALL_ARGUMENTS
+        | RSyntaxKind::R_CALL
+        | RSyntaxKind::R_SUBSET
+        | RSyntaxKind::R_SUBSET2
+        | RSyntaxKind::R_PARAMETERS
+        | RSyntaxKind::R_PARAMETER
         | RSyntaxKind::R_ARGUMENT_LIST
         | RSyntaxKind::R_ARGUMENT
+        | RSyntaxKind::R_BRACED_EXPRESSIONS
         | RSyntaxKind::R_ROOT
+        | RSyntaxKind::R_REPEAT_STATEMENT
+        | RSyntaxKind::R_UNARY_EXPRESSION
+        | RSyntaxKind::R_BINARY_EXPRESSION
+        | RSyntaxKind::R_PARENTHESIZED_EXPRESSION
+        | RSyntaxKind::R_EXTRACT_EXPRESSION
+        | RSyntaxKind::R_NAMESPACE_EXPRESSION
+        | RSyntaxKind::R_NA_EXPRESSION
+        | RSyntaxKind::R_FOR_STATEMENT
         | RSyntaxKind::R_WHILE_STATEMENT
         | RSyntaxKind::R_IF_STATEMENT => {
-            if let Some(x) = &ast.first_child() {
-                messages.extend(check_ast(x, loc_new_lines, file))
+            for child in ast.children() {
+                messages.extend(check_ast(&child, loc_new_lines, file));
             }
         }
         RSyntaxKind::R_IDENTIFIER => {

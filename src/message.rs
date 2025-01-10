@@ -30,6 +30,11 @@ pub enum Message {
         location: Location,
         fix: Fix,
     },
+    ClassEquals {
+        filename: PathBuf,
+        location: Location,
+        fix: Fix,
+    },
 }
 
 impl Message {
@@ -38,6 +43,7 @@ impl Message {
             Message::TrueFalseSymbol { .. } => "T-F-symbols",
             Message::AnyIsNa { .. } => "any-na",
             Message::AnyDuplicated { .. } => "any-duplicated",
+            Message::ClassEquals { .. } => "class-equals",
         }
     }
     pub fn body(&self) -> &'static str {
@@ -45,6 +51,7 @@ impl Message {
             Message::TrueFalseSymbol { .. } => "`T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.",
             Message::AnyIsNa { .. } => "`any(is.na(...))` is inefficient. Use `anyNA(...)` instead.",
             Message::AnyDuplicated { .. } => "`any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.",
+            Message::ClassEquals { .. } => "Use `inherits(..., 'x')` instead of `class(...) == 'x'.`",
         }
     }
 }
@@ -54,6 +61,7 @@ impl fmt::Display for Message {
         match self {
             Message::AnyDuplicated { filename, location, .. }
             | Message::AnyIsNa { filename, location, .. }
+            | Message::ClassEquals { filename, location, .. }
             | Message::TrueFalseSymbol { filename, location, .. } => write!(
                 f,
                 "{} [{}:{}] {} {}",

@@ -9,6 +9,7 @@ pub trait LintChecker {
 
 pub struct AnyIsNa;
 pub struct AnyDuplicated;
+pub struct ClassEquals;
 pub struct TrueFalseSymbol;
 
 impl LintChecker for AnyIsNa {
@@ -104,6 +105,43 @@ impl LintChecker for TrueFalseSymbol {
                 },
             });
         }
+        messages
+    }
+}
+
+impl LintChecker for ClassEquals {
+    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Message> {
+        let mut messages = vec![];
+        if ast.kind() != RSyntaxKind::R_BINARY_EXPRESSION {
+            return messages;
+        }
+
+        let mut children = ast.children();
+        let lhs = children.next().unwrap();
+        let rhs = children.next().unwrap();
+
+        let fun = lhs.first_child().unwrap();
+        if fun.text_trimmed() != "class" {
+            return messages;
+        }
+        if rhs.kind() != RSyntaxKind::R_STRING_VALUE {
+            return messages;
+        }
+
+        let fun_content = get_args(&lhs).and_then(|x| Some(x.text_trimmed()));
+
+        let (row, column) = find_row_col(ast, loc_new_lines);
+        let range = ast.text_trimmed_range();
+        messages.push(Message::ClassEquals {
+            filename: file.into(),
+            location: Location { row, column },
+            fix: Fix {
+                content: format!("inherits({}, {})", fun_content.unwrap(), rhs.text_trimmed()),
+                start: range.start().into(),
+                end: range.end().into(),
+                applied: false,
+            },
+        });
         messages
     }
 }
