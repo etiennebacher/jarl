@@ -10,7 +10,6 @@ pub struct Fix {
     pub content: String,
     pub start: usize,
     pub end: usize,
-    pub applied: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

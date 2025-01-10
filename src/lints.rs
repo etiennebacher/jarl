@@ -37,7 +37,6 @@ impl LintChecker for AnyIsNa {
                             content: format!("anyNA({})", fun_content),
                             start: range.start().into(),
                             end: range.end().into(),
-                            applied: false,
                         },
                     })
                 };
@@ -72,7 +71,6 @@ impl LintChecker for AnyDuplicated {
                             content: format!("anyDuplicated({}) > 0", fun_content),
                             start: range.start().into(),
                             end: range.end().into(),
-                            applied: false,
                         },
                     })
                 };
@@ -101,7 +99,6 @@ impl LintChecker for TrueFalseSymbol {
                     },
                     start: range.start().into(),
                     end: range.end().into(),
-                    applied: false,
                 },
             });
         }
@@ -143,7 +140,6 @@ impl LintChecker for ClassEquals {
                 content: format!("inherits({}, {})", fun_content.unwrap(), rhs.text_trimmed()),
                 start: range.start().into(),
                 end: range.end().into(),
-                applied: false,
             },
         });
         messages
