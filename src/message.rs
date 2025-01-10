@@ -34,6 +34,11 @@ pub enum Message {
         location: Location,
         fix: Fix,
     },
+    EqualsNa {
+        filename: PathBuf,
+        location: Location,
+        fix: Fix,
+    },
 }
 
 impl Message {
@@ -43,6 +48,7 @@ impl Message {
             Message::AnyIsNa { .. } => "any-na",
             Message::AnyDuplicated { .. } => "any-duplicated",
             Message::ClassEquals { .. } => "class-equals",
+            Message::EqualsNa { .. } => "equals-na",
         }
     }
     pub fn body(&self) -> &'static str {
@@ -51,6 +57,8 @@ impl Message {
             Message::AnyIsNa { .. } => "`any(is.na(...))` is inefficient. Use `anyNA(...)` instead.",
             Message::AnyDuplicated { .. } => "`any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.",
             Message::ClassEquals { .. } => "Use `inherits(..., 'x')` instead of `class(...) == 'x'.`",
+            Message::EqualsNa { .. } => "Use `is.na()` instead of comparing to NA with ==, != or %in%.",
+
         }
     }
 }
@@ -61,6 +69,7 @@ impl fmt::Display for Message {
             Message::AnyDuplicated { filename, location, .. }
             | Message::AnyIsNa { filename, location, .. }
             | Message::ClassEquals { filename, location, .. }
+            | Message::EqualsNa { filename, location, .. }
             | Message::TrueFalseSymbol { filename, location, .. } => write!(
                 f,
                 "{} [{}:{}] {} {}",

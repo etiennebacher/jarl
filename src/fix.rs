@@ -7,6 +7,7 @@ pub fn apply_fixes(fixes: &[Message], contents: &str) -> (bool, String) {
             Message::AnyDuplicated { fix, .. }
             | Message::AnyIsNa { fix, .. }
             | Message::ClassEquals { fix, .. }
+            | Message::EqualsNa { fix, .. }
             | Message::TrueFalseSymbol { fix, .. } => fix,
         })
         .collect::<Vec<_>>();
