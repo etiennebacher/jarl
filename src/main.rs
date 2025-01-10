@@ -3,15 +3,13 @@ use air_r_parser::RParserOptions;
 use flint::check_ast::*;
 use flint::fix::*;
 use flint::message::*;
-use flint::utils::*;
-use walkdir::WalkDir;
 
-use anyhow::Error;
 use clap::{arg, Parser};
 use rayon::prelude::*;
 use std::fs;
 use std::path::Path;
 use std::time::Instant;
+use walkdir::WalkDir;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -19,7 +17,7 @@ use std::time::Instant;
 struct Args {
     #[arg(short, long, default_value = ".")]
     dir: String,
-    #[arg(short, long, default_value = "false")]
+    #[arg(short, long, default_value = "true")]
     fix: bool,
 }
 
@@ -38,7 +36,7 @@ fn main() {
         .map(|e| e.path().to_path_buf())
         .collect::<Vec<_>>();
 
-    // let r_files = vec![Path::new("demo/foo.R")];
+    // let r_files = vec![Path::new("demo/foo.R").to_path_buf()];
 
     let parser_options = RParserOptions::default();
     let messages: Vec<Message> = r_files
@@ -46,15 +44,19 @@ fn main() {
         // TODO: this only ignores files where there was an error, it doesn't
         // return the error messages
         .filter_map(|file| {
-            let contents = fs::read_to_string(Path::new(file)).ok()?;
-            let parsed = air_r_parser::parse(contents.as_str(), parser_options);
-            let syntax = &parsed.syntax();
-            let loc_new_lines = find_new_lines(syntax).ok()?;
-            let checks = check_ast(syntax, &loc_new_lines, file.to_str().unwrap());
+            let contents = fs::read_to_string(Path::new(file)).expect("Invalid file");
+            let checks = get_checks(&contents, file, parser_options).unwrap();
 
             if args.fix {
-                let out = apply_fixes(&checks, &contents);
-                let _ = fs::write(file, out);
+                let mut has_skipped_fixes = true;
+                loop {
+                    if !has_skipped_fixes {
+                        break;
+                    }
+                    let (new_has_skipped_fixes, fixed_text) = apply_fixes(&checks, &contents);
+                    has_skipped_fixes = new_has_skipped_fixes;
+                    let _ = fs::write(file, fixed_text);
+                }
             }
 
             Some(checks)
@@ -75,6 +77,7 @@ fn main() {
 mod tests {
     use super::*;
     use flint::location::Location;
+    use flint::utils::find_new_lines;
     use tempfile::TempDir;
 
     fn check_string(input: &str) -> anyhow::Result<Vec<Message>> {

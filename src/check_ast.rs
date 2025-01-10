@@ -1,7 +1,22 @@
+use air_r_parser::RParserOptions;
 use air_r_syntax::{RSyntaxKind, RSyntaxNode};
 
 use crate::lints::*;
 use crate::message::*;
+use crate::utils::*;
+use anyhow::Result;
+use std::path::PathBuf;
+
+pub fn get_checks(
+    contents: &String,
+    file: &PathBuf,
+    parser_options: RParserOptions,
+) -> Result<Vec<Message>> {
+    let parsed = air_r_parser::parse(contents.as_str(), parser_options);
+    let syntax = &parsed.syntax();
+    let loc_new_lines = find_new_lines(syntax)?;
+    Ok(check_ast(syntax, &loc_new_lines, file.to_str().unwrap()))
+}
 
 pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Message> {
     let mut messages: Vec<Message> = vec![];
