@@ -14,26 +14,45 @@ pub struct Fix {
     pub length_change: i32,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LintData {
+    pub filename: PathBuf,
+    pub location: Location,
+    pub fix: Fix,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Message {
-    TrueFalseSymbol {
-        filename: PathBuf,
-        location: Location,
-        fix: Fix,
-    },
-    AnyIsNa {
-        filename: PathBuf,
-        location: Location,
-        fix: Fix,
-    },
-    AnyDuplicated {
-        filename: PathBuf,
-        location: Location,
-        fix: Fix,
-    },
+    TrueFalseSymbol(LintData),
+    AnyIsNa(LintData),
+    AnyDuplicated(LintData),
 }
 
 impl Message {
+    pub fn filename(&self) -> &PathBuf {
+        match self {
+            Message::TrueFalseSymbol(data) => &data.filename,
+            Message::AnyIsNa(data) => &data.filename,
+            Message::AnyDuplicated(data) => &data.filename,
+        }
+    }
+
+    pub fn location(&self) -> &Location {
+        match self {
+            Message::TrueFalseSymbol(data) => &data.location,
+            Message::AnyIsNa(data) => &data.location,
+            Message::AnyDuplicated(data) => &data.location,
+        }
+    }
+
+    pub fn fix(&self) -> &Fix {
+        match self {
+            Message::TrueFalseSymbol(data) => &data.fix,
+            Message::AnyIsNa(data) => &data.fix,
+            Message::AnyDuplicated(data) => &data.fix,
+        }
+    }
+
     pub fn code(&self) -> &'static str {
         match self {
             Message::TrueFalseSymbol { .. } => "T-F-symbols",
@@ -53,17 +72,17 @@ impl Message {
 impl fmt::Display for Message {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Message::AnyDuplicated { filename, location, .. }
-            | Message::AnyIsNa { filename, location, .. }
-            | Message::TrueFalseSymbol { filename, location, .. } => write!(
-                f,
-                "{} [{}:{}] {} {}",
-                filename.to_string_lossy().white().bold(),
-                location.row,
-                location.column,
-                self.code().red().bold(),
-                self.body()
-            ),
+            Message::AnyDuplicated(_) | Message::AnyIsNa(_) | Message::TrueFalseSymbol(_) => {
+                write!(
+                    f,
+                    "{} [{}:{}] {} {}",
+                    self.filename().to_string_lossy().white().bold(),
+                    self.location().row,
+                    self.location().column,
+                    self.code().red().bold(),
+                    self.body()
+                )
+            }
         }
     }
 }
