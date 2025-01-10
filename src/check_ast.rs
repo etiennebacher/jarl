@@ -13,6 +13,7 @@ pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<
         Box::new(AnyIsNa),
         Box::new(TrueFalseSymbol),
         Box::new(AnyDuplicated),
+        Box::new(ClassEquals),
     ];
 
     for linter in linters {
@@ -22,6 +23,7 @@ pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<
     match ast.kind() {
         RSyntaxKind::R_EXPRESSION_LIST
         | RSyntaxKind::R_FUNCTION_DEFINITION
+        | RSyntaxKind::R_BINARY_EXPRESSION
         | RSyntaxKind::R_FOR_STATEMENT => {
             for child in ast.children() {
                 messages.extend(check_ast(&child, loc_new_lines, file));

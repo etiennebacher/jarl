@@ -26,6 +26,7 @@ pub enum Message {
     TrueFalseSymbol(LintData),
     AnyIsNa(LintData),
     AnyDuplicated(LintData),
+    ClassEquals(LintData),
 }
 
 impl Message {
@@ -34,6 +35,7 @@ impl Message {
             Message::TrueFalseSymbol(data) => &data.filename,
             Message::AnyIsNa(data) => &data.filename,
             Message::AnyDuplicated(data) => &data.filename,
+            Message::ClassEquals(data) => &data.filename,
         }
     }
 
@@ -42,6 +44,7 @@ impl Message {
             Message::TrueFalseSymbol(data) => &data.location,
             Message::AnyIsNa(data) => &data.location,
             Message::AnyDuplicated(data) => &data.location,
+            Message::ClassEquals(data) => &data.location,
         }
     }
 
@@ -50,6 +53,7 @@ impl Message {
             Message::TrueFalseSymbol(data) => &data.fix,
             Message::AnyIsNa(data) => &data.fix,
             Message::AnyDuplicated(data) => &data.fix,
+            Message::ClassEquals(data) => &data.fix,
         }
     }
 
@@ -58,6 +62,7 @@ impl Message {
             Message::TrueFalseSymbol { .. } => "T-F-symbols",
             Message::AnyIsNa { .. } => "any-na",
             Message::AnyDuplicated { .. } => "any-duplicated",
+            Message::ClassEquals { .. } => "ClassEquals",
         }
     }
     pub fn body(&self) -> &'static str {
@@ -65,6 +70,7 @@ impl Message {
             Message::TrueFalseSymbol { .. } => "`T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.",
             Message::AnyIsNa { .. } => "`any(is.na(...))` is inefficient. Use `anyNA(...)` instead.",
             Message::AnyDuplicated { .. } => "`any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.",
+            Message::ClassEquals { .. } => "Use <-, not =, for ClassEquals.",
         }
     }
 }
@@ -72,7 +78,10 @@ impl Message {
 impl fmt::Display for Message {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Message::AnyDuplicated(_) | Message::AnyIsNa(_) | Message::TrueFalseSymbol(_) => {
+            Message::AnyDuplicated(_)
+            | Message::AnyIsNa(_)
+            | Message::TrueFalseSymbol(_)
+            | Message::ClassEquals(_) => {
                 write!(
                     f,
                     "{} [{}:{}] {} {}",
