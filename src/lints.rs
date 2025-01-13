@@ -162,6 +162,10 @@ impl LintChecker for EqualsNa {
         let operator = operator.unwrap();
         let right = right.unwrap();
 
+        if operator.kind() != RSyntaxKind::EQUAL2 && operator.kind() != RSyntaxKind::NOT_EQUAL {
+            return messages;
+        };
+
         let na_values = vec![
             "NA",
             "NA_character_",
@@ -211,7 +215,7 @@ impl LintChecker for EqualsNa {
                     },
                 });
             }
-            _ => return messages,
+            _ => unreachable!("This case is an early return"),
         };
 
         messages
