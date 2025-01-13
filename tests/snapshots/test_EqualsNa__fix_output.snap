@@ -1,0 +1,16 @@
+---
+source: tests/test-EqualsNa.rs
+expression: fix_output
+---
+ORIGINAL:
+=========
+x == NA
+x != NA
+foo(x(y)) == NA
+
+
+NEW:
+====
+is.na(x)
+!is.na(x)
+is.na(foo(x(y)))

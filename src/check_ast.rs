@@ -1,4 +1,5 @@
 use air_r_parser::RParserOptions;
+use air_r_syntax::RBinaryExpression;
 use air_r_syntax::{RSyntaxKind, RSyntaxNode};
 
 use crate::lints::*;
@@ -23,11 +24,21 @@ pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<
 
     // println!("{:?}", ast.text());
 
-    println!("{:?}", ast.kind());
-    println!(
-        "Children: {:?}",
-        ast.children().map(|x| x.kind()).collect::<Vec<_>>()
-    );
+    // if ast.kind() == RSyntaxKind::R_BINARY_EXPRESSION {
+    //     unsafe {
+    //         println!(
+    //             "AST node: {:?}",
+    //             RBinaryExpression::new_unchecked(ast.clone())
+    //         )
+    //     }
+    // };
+
+    // println!("{:?}", ast.kind());
+    // println!("Text: {:?}", ast.text_trimmed());
+    // println!(
+    //     "Children: {:?}",
+    //     ast.children().map(|x| x.kind()).collect::<Vec<_>>()
+    // );
 
     let linters: Vec<Box<dyn LintChecker>> = vec![
         Box::new(AnyIsNa),

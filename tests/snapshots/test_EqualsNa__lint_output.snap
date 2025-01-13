@@ -1,0 +1,16 @@
+---
+source: tests/test-EqualsNa.rs
+expression: lint_output
+---
+ORIGINAL:
+=========
+x == NA
+x != NA
+foo(x(y)) == NA
+
+
+NEW:
+====
+/tmp/test-[...] [1:1] equals-na Use `is.na()` instead of comparing to NA with ==, != or %in%.
+/tmp/test-[...] [2:1] equals-na Use `is.na()` instead of comparing to NA with ==, != or %in%.
+/tmp/test-[...] [3:1] equals-na Use `is.na()` instead of comparing to NA with ==, != or %in%.

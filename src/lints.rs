@@ -1,7 +1,7 @@
 use crate::location::Location;
 use crate::message::*;
 use crate::utils::{find_row_col, get_args};
-use air_r_syntax::{RSyntaxKind, RSyntaxNode};
+use air_r_syntax::*;
 
 pub trait LintChecker {
     fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Message>;
@@ -155,26 +155,47 @@ impl LintChecker for EqualsNa {
             return messages;
         }
 
-        let mut children = ast.children();
+        let RBinaryExpressionFields { left, operator, right } =
+            unsafe { RBinaryExpression::new_unchecked(ast.clone()).as_fields() };
 
-        let lhs = children.next().unwrap();
-        let rhs = children.next().unwrap();
+        let left = left.unwrap();
+        let operator = operator.unwrap();
+        let right = right.unwrap();
 
-        if rhs.kind() != RSyntaxKind::R_NA_EXPRESSION {
+        // If NA is quoted in text, then quotation marks are escaped and this
+        // is false.
+        if right.to_string().trim() != "NA" {
             return messages;
         }
-
         let (row, column) = find_row_col(ast, loc_new_lines);
         let range = ast.text_trimmed_range();
-        messages.push(Message::EqualsNa {
-            filename: file.into(),
-            location: Location { row, column },
-            fix: Fix {
-                content: format!("is.na({})", lhs.text_trimmed()),
-                start: range.start().into(),
-                end: range.end().into(),
-            },
-        });
+
+        match operator.kind() {
+            RSyntaxKind::EQUAL2 => {
+                messages.push(Message::EqualsNa {
+                    filename: file.into(),
+                    location: Location { row, column },
+                    fix: Fix {
+                        content: format!("is.na({})", left.to_string().trim()),
+                        start: range.start().into(),
+                        end: range.end().into(),
+                    },
+                });
+            }
+            RSyntaxKind::NOT_EQUAL => {
+                messages.push(Message::EqualsNa {
+                    filename: file.into(),
+                    location: Location { row, column },
+                    fix: Fix {
+                        content: format!("!is.na({})", left.to_string().trim()),
+                        start: range.start().into(),
+                        end: range.end().into(),
+                    },
+                });
+            }
+            _ => return messages,
+        };
+
         messages
     }
 }
