@@ -5,12 +5,24 @@ expression: fix_output
 ORIGINAL:
 =========
 x == NA
+x == NA_integer_
+x == NA_real_
+x == NA_logical_
+x == NA_character_
+x == NA_complex_
 x != NA
 foo(x(y)) == NA
+NA == x
 
 
 NEW:
 ====
 is.na(x)
+is.na(x)
+is.na(x)
+is.na(x)
+is.na(x)
+is.na(x)
 !is.na(x)
 is.na(foo(x(y)))
+is.na(x)

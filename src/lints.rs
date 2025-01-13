@@ -162,13 +162,31 @@ impl LintChecker for EqualsNa {
         let operator = operator.unwrap();
         let right = right.unwrap();
 
+        let na_values = vec![
+            "NA",
+            "NA_character_",
+            "NA_integer_",
+            "NA_real_",
+            "NA_logical_",
+            "NA_complex_",
+        ];
+
+        let left_is_na = na_values.contains(&left.to_string().trim());
+        let right_is_na = na_values.contains(&right.to_string().trim());
+
         // If NA is quoted in text, then quotation marks are escaped and this
         // is false.
-        if right.to_string().trim() != "NA" {
+        if (left_is_na && right_is_na) || (!left_is_na && !right_is_na) {
             return messages;
         }
         let (row, column) = find_row_col(ast, loc_new_lines);
         let range = ast.text_trimmed_range();
+
+        let replacement = if left_is_na {
+            right.to_string().trim().to_string()
+        } else {
+            left.to_string().trim().to_string()
+        };
 
         match operator.kind() {
             RSyntaxKind::EQUAL2 => {
@@ -176,7 +194,7 @@ impl LintChecker for EqualsNa {
                     filename: file.into(),
                     location: Location { row, column },
                     fix: Fix {
-                        content: format!("is.na({})", left.to_string().trim()),
+                        content: format!("is.na({})", replacement),
                         start: range.start().into(),
                         end: range.end().into(),
                     },
@@ -187,7 +205,7 @@ impl LintChecker for EqualsNa {
                     filename: file.into(),
                     location: Location { row, column },
                     fix: Fix {
-                        content: format!("!is.na({})", left.to_string().trim()),
+                        content: format!("!is.na({})", replacement),
                         start: range.start().into(),
                         end: range.end().into(),
                     },

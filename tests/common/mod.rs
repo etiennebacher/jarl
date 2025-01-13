@@ -75,15 +75,3 @@ pub fn no_lint(text: &str) -> bool {
     let lint_text = String::from_utf8_lossy(&output.stdout).to_string();
     lint_text == ""
 }
-
-pub fn write_to_tempfile(text: &str) -> NamedTempFile {
-    let temp_file = Builder::new()
-        .prefix("test-flint")
-        .suffix(".R")
-        .tempfile()
-        .unwrap();
-
-    fs::write(&temp_file, text).expect("Failed to write initial content");
-
-    temp_file
-}
