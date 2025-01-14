@@ -1,8 +1,8 @@
 use crate::location::Location;
 use crate::message::*;
 use crate::utils::{find_row_col, get_args};
+use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
-use air_r_syntax::{map_syntax_node, RSyntaxNode};
 use biome_rowan::AstNode;
 
 pub trait LintChecker {
@@ -112,9 +112,23 @@ impl LintChecker for TrueFalseSymbol {
 impl LintChecker for ClassEquals {
     fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Message> {
         let mut messages = vec![];
-        if ast.kind() != RSyntaxKind::R_BINARY_EXPRESSION {
+        let bin_expr = RBinaryExpression::cast(ast.clone());
+        if bin_expr.is_none() {
             return messages;
         }
+
+        println!(
+            "PARENT: {:?}",
+            ast.ancestors().map(|x| x.kind()).collect::<Vec<_>>()
+        );
+
+        let RBinaryExpressionFields { left: _, operator, right: _ } = bin_expr.unwrap().as_fields();
+
+        let operator = operator.unwrap();
+
+        if operator.kind() != RSyntaxKind::EQUAL2 && operator.kind() != RSyntaxKind::NOT_EQUAL {
+            return messages;
+        };
 
         let mut children = ast.children();
         let lhs = children.next().unwrap();
