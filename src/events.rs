@@ -68,7 +68,7 @@ impl SemanticEvent {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct SemanticEventExtractor {
     /// Event queue
     stash: VecDeque<SemanticEvent>,
@@ -144,7 +144,31 @@ struct ScopeOptions {
     is_function: bool,
 }
 
+// Update Default implementation
+impl Default for SemanticEventExtractor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SemanticEventExtractor {
+    pub fn new() -> Self {
+        let mut extractor = Self {
+            stash: VecDeque::new(),
+            scopes: Vec::new(),
+            scope_count: 0,
+            bindings: FxHashMap::default(),
+        };
+
+        // Create root scope
+        extractor.push_scope(
+            TextRange::default(), // or get the full file range if available
+            ScopeOptions { is_function: false },
+        );
+
+        extractor
+    }
+
     #[inline]
     pub fn enter(&mut self, node: &RSyntaxNode) {
         match node.kind() {
@@ -307,7 +331,6 @@ impl SemanticEventExtractor {
     }
 
     fn current_scope_mut(&mut self) -> &mut Scope {
-        println!("{:?}", self);
         self.scopes.last_mut().unwrap()
     }
 }

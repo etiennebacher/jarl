@@ -62,7 +62,7 @@ fn main() {
 
     let semantic = semantic_model(root, SemanticModelOptions::default());
 
-    println!("semantic model: {:?}", semantic);
+    println!("semantic model: {:#?}", semantic);
 
     // let parser_options = RParserOptions::default();
     // let messages: Vec<Message> = r_files
