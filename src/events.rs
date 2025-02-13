@@ -180,6 +180,31 @@ impl SemanticEventExtractor {
                 );
             }
 
+            R_FOR_STATEMENT => {
+                // Create a new scope for the loop
+                self.push_scope(
+                    node.text_trimmed_range(),
+                    ScopeOptions { is_function: false },
+                );
+
+                // Find and handle the loop variable (it's the first R_IDENTIFIER)
+                if let Some(loop_var) = node.children().find(|n| n.kind() == R_IDENTIFIER) {
+                    if let Some(name_token) = loop_var.first_token() {
+                        let name = name_token.token_text_trimmed();
+                        let range = loop_var.text_trimmed_range();
+
+                        // Create a binding for the loop variable in the loop's scope
+                        let info = BindingInfo::new(range.start(), R_IDENTIFIER);
+                        self.push_binding(BindingName::Value(name.clone()), info);
+
+                        // We need to declare that this variable is written
+                        // if we want to mark a Read later.
+                        let range = node.text_trimmed_range();
+                        self.push_reference(BindingName::Value(name), Reference::Write(range));
+                    }
+                }
+            }
+
             // Handle identifiers (both references and assignments)
             R_IDENTIFIER => {
                 self.enter_identifier_usage(node);
@@ -216,9 +241,11 @@ impl SemanticEventExtractor {
                 let operator = operator.unwrap();
                 let left = left.unwrap();
                 let right = right.unwrap();
-                let is_left_assignment =
-                    operator.kind() == ASSIGN && node.text_trimmed().to_string() == left.text();
+                let is_left_assignment = operator.kind() == ASSIGN
+                    && node.kind() == R_IDENTIFIER
+                    && node.text_trimmed().to_string() == left.text();
                 let is_right_assignment = operator.kind() == ASSIGN_RIGHT
+                    && node.kind() == R_IDENTIFIER
                     && node.text_trimmed().to_string() == right.text();
                 return is_left_assignment || is_right_assignment;
             } else {
@@ -228,7 +255,6 @@ impl SemanticEventExtractor {
 
         if let Some(name_token) = node.first_token() {
             let name = name_token.token_text_trimmed();
-            println!("name: {:?}", name);
             let range = node.text_trimmed_range();
 
             let info = BindingInfo::new(range.start(), R_IDENTIFIER);
