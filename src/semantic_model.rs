@@ -56,6 +56,9 @@ pub fn semantic_model(root: &RRoot, options: SemanticModelOptions) -> SemanticMo
         }
     }
 
+    // Pop the global scope at the end to process its references
+    extractor.pop_scope(root.text_trimmed_range());
+
     while let Some(e) = extractor.pop() {
         builder.push_event(e);
     }

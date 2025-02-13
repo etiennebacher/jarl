@@ -14,11 +14,9 @@ pub struct SemanticModelBuilder {
     globals_by_name: FxHashMap<String, Option<u32>>,
     scopes: Vec<SemanticModelScopeData>,
     scope_range_by_start: FxHashMap<TextSize, BTreeSet<Interval<u32, ScopeId>>>,
-    scope_hoisted_to_by_range: FxHashMap<TextSize, ScopeId>,
     bindings: Vec<SemanticModelBindingData>,
     bindings_by_start: FxHashMap<TextSize, BindingId>,
     declared_at_by_start: FxHashMap<TextSize, BindingId>,
-    exported: FxHashSet<TextSize>,
     unresolved_references: Vec<SemanticModelUnresolvedReference>,
 }
 
@@ -32,11 +30,9 @@ impl SemanticModelBuilder {
             globals_by_name: FxHashMap::default(),
             scopes: vec![],
             scope_range_by_start: FxHashMap::default(),
-            scope_hoisted_to_by_range: FxHashMap::default(),
             bindings: vec![],
             bindings_by_start: FxHashMap::default(),
             declared_at_by_start: FxHashMap::default(),
-            exported: FxHashSet::default(),
             unresolved_references: Vec::new(),
         }
     }
@@ -129,7 +125,7 @@ impl SemanticModelBuilder {
                 let reference_id = ReferenceId::new(binding_id, binding.references.len());
                 binding.references.push(SemanticModelReference {
                     range_start: range.start(),
-                    ty: SemanticModelReferenceType::Read { hoisted: false },
+                    ty: SemanticModelReferenceType::Read {},
                 });
 
                 let scope = &mut self.scopes[scope_id.index()];
@@ -138,24 +134,58 @@ impl SemanticModelBuilder {
                 self.declared_at_by_start.insert(range.start(), binding_id);
             }
             Write { range, declaration_at, scope_id } => {
-                let binding_id = self.bindings_by_start[&declaration_at];
+                // First ensure the binding exists by creating it if necessary
+                let binding_id = match self.bindings_by_start.get(&declaration_at) {
+                    Some(id) => *id,
+                    None => {
+                        // Create a new binding
+                        let binding_id = BindingId::new(self.bindings.len());
+                        self.bindings.push(SemanticModelBindingData {
+                            range: TextRange::new(
+                                declaration_at,
+                                declaration_at + TextSize::from(1),
+                            ),
+                            references: Vec::new(),
+                            export_by_start: smallvec::SmallVec::new(),
+                        });
+                        self.bindings_by_start.insert(declaration_at, binding_id);
+
+                        // Add it to the current scope
+                        let scope = &mut self.scopes[scope_id.index()];
+                        scope.bindings.push(binding_id);
+
+                        // Add to bindings_by_name if we can get the name
+                        if let Some(node) = self.binding_node_by_start.get(&declaration_at) {
+                            if let Some(node) = RIdentifier::cast_ref(node) {
+                                if let Ok(name_token) = node.name_token() {
+                                    let name = name_token.token_text_trimmed();
+                                    scope.bindings_by_name.insert(name, binding_id);
+                                }
+                            }
+                        }
+
+                        binding_id
+                    }
+                };
+
+                // Add the write reference
                 let binding = &mut self.bindings[binding_id.index()];
                 let reference_id = ReferenceId::new(binding_id, binding.references.len());
                 binding.references.push(SemanticModelReference {
                     range_start: range.start(),
-                    ty: SemanticModelReferenceType::Write { hoisted: false },
+                    ty: SemanticModelReferenceType::Write {},
                 });
 
                 let scope = &mut self.scopes[scope_id.index()];
-                scope.read_references.push(reference_id);
+                scope.write_references.push(reference_id);
 
                 self.declared_at_by_start.insert(range.start(), binding_id);
             }
             UnresolvedReference { is_read, range } => {
                 let ty = if is_read {
-                    SemanticModelReferenceType::Read { hoisted: false }
+                    SemanticModelReferenceType::Read {}
                 } else {
-                    SemanticModelReferenceType::Write { hoisted: false }
+                    SemanticModelReferenceType::Write {}
                 };
 
                 let node = &self.binding_node_by_start[&range.start()];
@@ -205,13 +235,11 @@ impl SemanticModelBuilder {
                     .cloned()
                     .collect(),
             ),
-            scope_hoisted_to_by_range: self.scope_hoisted_to_by_range,
             binding_node_by_start: self.binding_node_by_start,
             scope_node_by_range: self.scope_node_by_range,
             bindings: self.bindings,
             bindings_by_start: self.bindings_by_start,
             declared_at_by_start: self.declared_at_by_start,
-            exported: self.exported,
             unresolved_references: self.unresolved_references,
             globals: self.globals,
         };

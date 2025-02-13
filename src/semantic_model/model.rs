@@ -51,13 +51,11 @@ pub(super) struct SemanticModelData {
     pub root: RRoot,
     pub scopes: Vec<SemanticModelScopeData>,
     pub scope_by_range: Lapper<u32, ScopeId>,
-    pub scope_hoisted_to_by_range: FxHashMap<TextSize, ScopeId>,
     pub binding_node_by_start: FxHashMap<TextSize, RSyntaxNode>,
     pub scope_node_by_range: FxHashMap<TextRange, RSyntaxNode>,
     pub bindings: Vec<SemanticModelBindingData>,
     pub bindings_by_start: FxHashMap<TextSize, BindingId>,
     pub declared_at_by_start: FxHashMap<TextSize, BindingId>,
-    pub exported: FxHashSet<TextSize>,
     pub unresolved_references: Vec<SemanticModelUnresolvedReference>,
     pub globals: Vec<SemanticModelGlobalBindingData>,
 }

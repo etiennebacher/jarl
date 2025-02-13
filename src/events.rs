@@ -202,18 +202,37 @@ impl SemanticEventExtractor {
             name_token.text_trimmed_range().start(),
             RSyntaxKind::R_PARAMETER,
         );
-        self.push_binding(None, BindingName::Value(name), info);
+        self.push_binding(BindingName::Value(name), info);
     }
 
     fn enter_identifier_usage(&mut self, node: &RSyntaxNode) {
         // Check if this identifier is part of an assignment
-        let is_assignment = node
-            .parent()
-            .map_or(false, |p| matches!(p.kind(), R_ASSIGNMENT));
+        let is_assignment = node.parent().map_or(false, |p| {
+            if p.kind() == R_BINARY_EXPRESSION {
+                let bin_expr = RBinaryExpression::cast(p.clone());
+                let RBinaryExpressionFields { left, operator, right } =
+                    bin_expr.unwrap().as_fields();
+
+                let operator = operator.unwrap();
+                let left = left.unwrap();
+                let right = right.unwrap();
+                let is_left_assignment =
+                    operator.kind() == ASSIGN && node.text_trimmed().to_string() == left.text();
+                let is_right_assignment = operator.kind() == ASSIGN_RIGHT
+                    && node.text_trimmed().to_string() == right.text();
+                return is_left_assignment || is_right_assignment;
+            } else {
+                return false;
+            }
+        });
 
         if let Some(name_token) = node.first_token() {
             let name = name_token.token_text_trimmed();
+            println!("name: {:?}", name);
             let range = node.text_trimmed_range();
+
+            let info = BindingInfo::new(range.start(), R_IDENTIFIER);
+            self.push_binding(BindingName::Value(name.clone()), info);
 
             if is_assignment {
                 self.push_reference(BindingName::Value(name), Reference::Write(range));
@@ -255,7 +274,7 @@ impl SemanticEventExtractor {
         });
     }
 
-    fn pop_scope(&mut self, scope_range: TextRange) {
+    pub fn pop_scope(&mut self, scope_range: TextRange) {
         let scope = self.scopes.pop().unwrap();
         let scope_id = scope.scope_id;
 
@@ -302,12 +321,7 @@ impl SemanticEventExtractor {
             .push_back(SemanticEvent::ScopeEnded { range: scope_range });
     }
 
-    fn push_binding(
-        &mut self,
-        _hoisted_scope_id: Option<ScopeId>,
-        binding_name: BindingName,
-        binding_info: BindingInfo,
-    ) {
+    fn push_binding(&mut self, binding_name: BindingName, binding_info: BindingInfo) {
         // First get the existing binding if any
         let existing_binding = self.bindings.get(&binding_name).cloned();
 

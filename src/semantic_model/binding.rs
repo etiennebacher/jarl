@@ -16,6 +16,6 @@ pub struct SemanticModelReference {
 
 #[derive(Debug)]
 pub enum SemanticModelReferenceType {
-    Read { hoisted: bool },
-    Write { hoisted: bool },
+    Read {},
+    Write {},
 }
