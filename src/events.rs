@@ -186,23 +186,6 @@ impl SemanticEventExtractor {
                     node.text_trimmed_range(),
                     ScopeOptions { is_function: false },
                 );
-
-                // Find and handle the loop variable (it's the first R_IDENTIFIER)
-                if let Some(loop_var) = node.children().find(|n| n.kind() == R_IDENTIFIER) {
-                    if let Some(name_token) = loop_var.first_token() {
-                        let name = name_token.token_text_trimmed();
-                        let range = loop_var.text_trimmed_range();
-
-                        // Create a binding for the loop variable in the loop's scope
-                        let info = BindingInfo::new(range.start(), R_IDENTIFIER);
-                        self.push_binding(BindingName::Value(name.clone()), info);
-
-                        // We need to declare that this variable is written
-                        // if we want to mark a Read later.
-                        let range = node.text_trimmed_range();
-                        self.push_reference(BindingName::Value(name), Reference::Write(range));
-                    }
-                }
             }
 
             // Handle identifiers (both references and assignments)
@@ -231,6 +214,40 @@ impl SemanticEventExtractor {
     }
 
     fn enter_identifier_usage(&mut self, node: &RSyntaxNode) {
+        // Check if this identifier is part of a for loop variable declaration
+        let is_for_var = node.parent().map_or(false, |p| p.kind() == R_FOR_STATEMENT);
+
+        if is_for_var {
+            // Handle for loop variable like a normal assignment but in parent scope
+            if let Some(name_token) = node.first_token() {
+                let name = name_token.token_text_trimmed();
+                let token_range = name_token.text_range();
+
+                // Create declaration in parent scope
+                let info = BindingInfo::new(token_range.start(), R_IDENTIFIER);
+                if self.scopes.len() > 1 {
+                    // Generate DeclarationFound event first
+                    self.stash.push_back(SemanticEvent::DeclarationFound {
+                        range: token_range,
+                        scope_id: ScopeId::new(self.scopes.len() - 2), // parent scope
+                    });
+
+                    // Then add to bindings and references
+                    self.bindings.insert(BindingName::Value(name.clone()), info);
+                    let parent_idx = self.scopes.len() - 2;
+                    if let Some(parent) = self.scopes.get_mut(parent_idx) {
+                        parent.bindings.push(BindingName::Value(name.clone()));
+                        parent
+                            .references
+                            .entry(BindingName::Value(name))
+                            .or_default()
+                            .push(Reference::Write(token_range));
+                    }
+                }
+            }
+            return;
+        }
+
         // Check if this identifier is part of an assignment
         let is_assignment = node.parent().map_or(false, |p| {
             if p.kind() == R_BINARY_EXPRESSION {
