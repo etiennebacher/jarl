@@ -217,6 +217,12 @@ impl SemanticEventExtractor {
         // Check if this identifier is part of a for loop variable declaration
         let is_for_var = node.parent().map_or(false, |p| p.kind() == R_FOR_STATEMENT);
 
+        // Check if we're inside a for loop body
+        let in_for_body = node.ancestors().any(|n| {
+            n.kind() == R_BRACED_EXPRESSIONS
+                && n.parent().map_or(false, |p| p.kind() == R_FOR_STATEMENT)
+        });
+
         if is_for_var {
             // Handle for loop variable like a normal assignment but in parent scope
             if let Some(name_token) = node.first_token() {
@@ -252,19 +258,11 @@ impl SemanticEventExtractor {
         let is_assignment = node.parent().map_or(false, |p| {
             if p.kind() == R_BINARY_EXPRESSION {
                 let bin_expr = RBinaryExpression::cast(p.clone());
-                let RBinaryExpressionFields { left, operator, right } =
+                let RBinaryExpressionFields { left: _, operator, right: _ } =
                     bin_expr.unwrap().as_fields();
 
                 let operator = operator.unwrap();
-                let left = left.unwrap();
-                let right = right.unwrap();
-                let is_left_assignment = operator.kind() == ASSIGN
-                    && node.kind() == R_IDENTIFIER
-                    && node.text_trimmed().to_string() == left.text();
-                let is_right_assignment = operator.kind() == ASSIGN_RIGHT
-                    && node.kind() == R_IDENTIFIER
-                    && node.text_trimmed().to_string() == right.text();
-                return is_left_assignment || is_right_assignment;
+                return operator.kind() == ASSIGN;
             } else {
                 return false;
             }
@@ -274,12 +272,35 @@ impl SemanticEventExtractor {
             let name = name_token.token_text_trimmed();
             let range = node.text_trimmed_range();
 
-            let info = BindingInfo::new(range.start(), R_IDENTIFIER);
-            self.push_binding(BindingName::Value(name.clone()), info);
-
             if is_assignment {
-                self.push_reference(BindingName::Value(name), Reference::Write(range));
-            } else {
+                // For assignments in a for loop body, use parent scope
+                let scope_index = if in_for_body && self.scopes.len() > 1 {
+                    self.scopes.len() - 2 // parent scope
+                } else {
+                    self.scopes.len() - 1 // current scope
+                };
+
+                // Create declaration
+                let info = BindingInfo::new(range.start(), R_IDENTIFIER);
+                self.bindings.insert(BindingName::Value(name.clone()), info);
+
+                // Generate DeclarationFound event
+                self.stash.push_back(SemanticEvent::DeclarationFound {
+                    range,
+                    scope_id: ScopeId::new(scope_index),
+                });
+
+                // Add to appropriate scope
+                if let Some(scope) = self.scopes.get_mut(scope_index) {
+                    scope.bindings.push(BindingName::Value(name.clone()));
+                    scope
+                        .references
+                        .entry(BindingName::Value(name))
+                        .or_default()
+                        .push(Reference::Write(range));
+                }
+            } else if let Some(info) = self.bindings.get(&BindingName::Value(name.clone())) {
+                // Handle reads as before
                 self.push_reference(BindingName::Value(name), Reference::Read(range));
             }
         }
