@@ -36,6 +36,9 @@ anyhow = "1.0.94"
 tempfile = "3.14.0"
 # MUST BE SAME AS IN `air`
 biome_rowan = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
+rustc-hash = "2.1.1"
+rust-lapper = "1.1.0"
+smallvec = "1.13.2"
 
 
 [dev-dependencies]
