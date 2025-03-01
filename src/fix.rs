@@ -3,12 +3,13 @@ use crate::message::*;
 pub fn apply_fixes(fixes: &[Message], contents: &str) -> (bool, String) {
     let fixes = fixes
         .iter()
-        .map(|msg| match msg {
+        .filter_map(|msg| match msg {
             Message::AnyDuplicated { fix, .. }
             | Message::AnyIsNa { fix, .. }
             | Message::ClassEquals { fix, .. }
             | Message::EqualsNa { fix, .. }
-            | Message::TrueFalseSymbol { fix, .. } => fix,
+            | Message::TrueFalseSymbol { fix, .. } => Some(fix),
+            _ => None,
         })
         .collect::<Vec<_>>();
     let old_content = contents;

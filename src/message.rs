@@ -39,6 +39,9 @@ pub enum Message {
         location: Location,
         fix: Fix,
     },
+    UnusedVars {
+        varname: String,
+    },
 }
 
 impl Message {
@@ -49,6 +52,7 @@ impl Message {
             Message::AnyDuplicated { .. } => "any-duplicated",
             Message::ClassEquals { .. } => "class-equals",
             Message::EqualsNa { .. } => "equals-na",
+            Message::UnusedVars { .. } => "unused-variable",
         }
     }
     pub fn body(&self) -> &'static str {
@@ -58,6 +62,7 @@ impl Message {
             Message::AnyDuplicated { .. } => "`any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.",
             Message::ClassEquals { .. } => "Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.",
             Message::EqualsNa { .. } => "Use `is.na()` instead of comparing to NA with ==, != or %in%.",
+            Message::UnusedVars { .. } => "foo"
 
         }
     }
@@ -79,6 +84,7 @@ impl fmt::Display for Message {
                 self.code().red().bold(),
                 self.body()
             ),
+            Message::UnusedVars { .. } => write!(f, "{} {}", self.code().red().bold(), self.body()),
         }
     }
 }

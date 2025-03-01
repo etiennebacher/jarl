@@ -42,7 +42,7 @@ struct Args {
 /// This is my first rust crate
 fn main() {
     // let start = Instant::now();
-    // let args = Args::parse();
+    let args = Args::parse();
 
     // let r_files = WalkDir::new(args.dir)
     //     .into_iter()
@@ -63,7 +63,7 @@ fn main() {
 
     let semantic = semantic_model(root, SemanticModelOptions::default());
 
-    check_unused_variables(&semantic);
+    let messages: Vec<Message> = check_unused_variables(&semantic);
 
     // println!("semantic model: {:#?}", semantic);
 
@@ -90,11 +90,11 @@ fn main() {
     //     .flatten()
     //     .collect();
 
-    // if !args.fix {
-    //     for message in messages {
-    //         println!("{}", message);
-    //     }
-    // }
+    if !args.fix {
+        for message in messages {
+            println!("{}", message);
+        }
+    }
     // let duration = start.elapsed();
     // println!("Checked files in: {:?}", duration);
 }
