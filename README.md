@@ -1,6 +1,6 @@
-# flint 
+# flir
 
-WIP for extending `flint` capacities.
+WIP for extending `flir` capacities.
 
 ```sh
 cargo run

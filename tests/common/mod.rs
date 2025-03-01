@@ -6,7 +6,7 @@ use tempfile::NamedTempFile;
 
 pub fn get_lint_and_fix_text(text: Vec<&str>) -> (String, String) {
     let temp_file = Builder::new()
-        .prefix("test-flint")
+        .prefix("test-flir")
         .suffix(".R")
         .tempfile()
         .unwrap();
@@ -35,7 +35,7 @@ pub fn get_lint_and_fix_text(text: Vec<&str>) -> (String, String) {
 
 pub fn get_lint_text(file: &NamedTempFile) -> String {
     let original_content = fs::read_to_string(&file).expect("Failed to read file content");
-    let output = Command::new("flint")
+    let output = Command::new("flir")
         .arg("--dir")
         .arg(file.path())
         .stdout(Stdio::piped())
@@ -56,7 +56,7 @@ pub fn get_fixed_text(file: &NamedTempFile) -> String {
     use std::process::{Command, Stdio};
     let original_content = fs::read_to_string(&file).expect("Failed to read file content");
 
-    let _ = Command::new("flint")
+    let _ = Command::new("flir")
         .arg("--dir")
         .arg(file.path())
         .arg("--fix")
@@ -74,7 +74,7 @@ pub fn get_fixed_text(file: &NamedTempFile) -> String {
 
 pub fn no_lint(text: &str) -> bool {
     let temp_file = Builder::new()
-        .prefix("test-flint")
+        .prefix("test-flir")
         .suffix(".R")
         .tempfile()
         .unwrap();
@@ -83,7 +83,7 @@ pub fn no_lint(text: &str) -> bool {
 
     fs::write(&temp_file, original_content).expect("Failed to write initial content");
 
-    let output = Command::new("flint")
+    let output = Command::new("flir")
         .arg("--dir")
         .arg(temp_file.path())
         .stdout(Stdio::piped())

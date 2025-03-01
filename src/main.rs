@@ -1,12 +1,12 @@
 use air_r_parser::RParserOptions;
 
-use flint::check_ast::*;
-use flint::fix::*;
-use flint::message::*;
+use flir::check_ast::*;
+use flir::fix::*;
+use flir::message::*;
 
 use clap::{arg, Parser};
-use flint::semantic_model;
-use flint::SemanticModelOptions;
+use flir::semantic_model;
+use flir::SemanticModelOptions;
 use rayon::prelude::*;
 use std::fs;
 use std::path::Path;
@@ -17,9 +17,9 @@ use walkdir::WalkDir;
 #[derive(Parser, Debug)]
 #[command(
     author,
-    name = "flint",
+    name = "flir",
     about = "Flint: Find and Fix Lints in R Code",
-    after_help = "For help with a specific command, see: `flint help <command>`."
+    after_help = "For help with a specific command, see: `flir help <command>`."
 )]
 struct Args {
     #[arg(
