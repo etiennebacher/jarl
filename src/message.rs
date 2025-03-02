@@ -55,15 +55,14 @@ impl Message {
             Message::UnusedVars { .. } => "unused-variable",
         }
     }
-    pub fn body(&self) -> &'static str {
+    pub fn body(&self) -> String {
         match self {
-            Message::TrueFalseSymbol { .. } => "`T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.",
-            Message::AnyIsNa { .. } => "`any(is.na(...))` is inefficient. Use `anyNA(...)` instead.",
-            Message::AnyDuplicated { .. } => "`any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.",
-            Message::ClassEquals { .. } => "Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.",
-            Message::EqualsNa { .. } => "Use `is.na()` instead of comparing to NA with ==, != or %in%.",
-            Message::UnusedVars { .. } => "placeholder text"
-
+            Message::TrueFalseSymbol { .. } => "`T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.".to_string(),
+            Message::AnyIsNa { .. } => "`any(is.na(...))` is inefficient. Use `anyNA(...)` instead.".to_string(),
+            Message::AnyDuplicated { .. } => "`any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.".to_string(),
+            Message::ClassEquals { .. } => "Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.".to_string(),
+            Message::EqualsNa { .. } => "Use `is.na()` instead of comparing to NA with ==, != or %in%.".to_string(),
+            Message::UnusedVars { varname } => format!("Unused object: \'{}\'", varname)
         }
     }
 }
