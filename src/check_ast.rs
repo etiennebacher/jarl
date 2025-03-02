@@ -1,12 +1,14 @@
 use air_r_parser::RParserOptions;
 use air_r_syntax::{RSyntaxKind, RSyntaxNode};
 
+use crate::check_unused_vars::*;
 use crate::lints::any_duplicated::AnyDuplicated;
 use crate::lints::any_is_na::AnyIsNa;
 use crate::lints::class_equals::ClassEquals;
 use crate::lints::equals_na::EqualsNa;
 use crate::lints::true_false_symbol::TrueFalseSymbol;
 use crate::message::*;
+use crate::semantic_model::*;
 use crate::trait_lint_checker::LintChecker;
 use crate::utils::*;
 use anyhow::Result;
@@ -18,9 +20,19 @@ pub fn get_checks(
     parser_options: RParserOptions,
 ) -> Result<Vec<Message>> {
     let parsed = air_r_parser::parse(contents, parser_options);
+
+    let root = &parsed.tree();
+    let semantic = semantic_model(root, SemanticModelOptions::default());
+    let mut messages_semantic: Vec<Message> = check_unused_variables(&semantic);
+
     let syntax = &parsed.syntax();
     let loc_new_lines = find_new_lines(syntax)?;
-    Ok(check_ast(syntax, &loc_new_lines, file.to_str().unwrap()))
+    let mut messages_lints: Vec<Message> =
+        check_ast(syntax, &loc_new_lines, file.to_str().unwrap());
+
+    messages_semantic.append(&mut messages_lints);
+
+    Ok(messages_semantic)
 }
 
 pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Message> {
