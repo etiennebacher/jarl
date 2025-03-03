@@ -1,3 +1,4 @@
+use crate::lints::ALL_RULES;
 use air_r_syntax::{RSyntaxKind, RSyntaxNode};
 use anyhow::{anyhow, Result};
 
@@ -44,9 +45,7 @@ pub fn node_is_in_square_brackets(ast: &RSyntaxNode) -> bool {
 
 pub fn parse_rules(rules: &String) -> Vec<&str> {
     if rules.as_str() == "" {
-        "any_is_na,any_duplicated,T-F-symbols"
-            .split(",")
-            .collect::<Vec<&str>>()
+        ALL_RULES.to_vec()
     } else {
         rules.split(",").collect::<Vec<&str>>()
     }

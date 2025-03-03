@@ -1,4 +1,4 @@
-pub(crate) mod any_duplicated;
+pub(crate) mod true_false_symbol;
 
 #[cfg(test)]
 mod tests {

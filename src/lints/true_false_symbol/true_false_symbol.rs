@@ -9,7 +9,7 @@ pub struct TrueFalseSymbol;
 
 impl Violation for TrueFalseSymbol {
     fn name(&self) -> String {
-        "T-F-symbols".to_string()
+        "true_false_symbol".to_string()
     }
     fn body(&self) -> String {
         "`T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.".to_string()

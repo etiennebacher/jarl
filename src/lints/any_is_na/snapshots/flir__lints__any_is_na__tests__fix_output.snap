@@ -1,0 +1,24 @@
+---
+source: src/lints/any_is_na/mod.rs
+expression: fix_output
+---
+  OLD:
+  ====
+any(is.na(x))
+  NEW:
+  ====
+anyNA(x)
+
+  OLD:
+  ====
+any(is.na(foo(x)))
+  NEW:
+  ====
+anyNA(foo(x))
+
+  OLD:
+  ====
+any(is.na(x), na.rm = TRUE)
+  NEW:
+  ====
+anyNA(x)

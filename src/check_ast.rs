@@ -1,11 +1,11 @@
 use air_r_parser::RParserOptions;
 use air_r_syntax::{RSyntaxKind, RSyntaxNode};
 
-use crate::lints::any_duplicated::AnyDuplicated;
-use crate::lints::any_is_na::AnyIsNa;
-use crate::lints::class_equals::ClassEquals;
-use crate::lints::equals_na::EqualsNa;
-use crate::lints::true_false_symbol::TrueFalseSymbol;
+use crate::lints::any_duplicated::any_duplicated::AnyDuplicated;
+use crate::lints::any_is_na::any_is_na::AnyIsNa;
+use crate::lints::class_equals::class_equals::ClassEquals;
+use crate::lints::equals_na::equals_na::EqualsNa;
+use crate::lints::true_false_symbol::true_false_symbol::TrueFalseSymbol;
 use crate::message::*;
 use crate::semantic_model;
 use crate::trait_lint_checker::LintChecker;
@@ -16,12 +16,12 @@ use std::path::Path;
 
 fn rule_name_to_lint_checker(rule_name: &str) -> Box<dyn LintChecker> {
     match rule_name {
-        "any_is_na" => Box::new(AnyIsNa),
-        "T-F-symbols" => Box::new(TrueFalseSymbol),
         "any_duplicated" => Box::new(AnyDuplicated),
+        "any_is_na" => Box::new(AnyIsNa),
         "class_equals" => Box::new(ClassEquals),
-        "equals-na" => Box::new(EqualsNa),
-        _ => unreachable!("unknown rule name"),
+        "equals_na" => Box::new(EqualsNa),
+        "true_false_symbol" => Box::new(TrueFalseSymbol),
+        unknown => unreachable!("unknown rule name: {unknown}"),
     }
 }
 

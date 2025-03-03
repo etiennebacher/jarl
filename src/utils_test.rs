@@ -4,7 +4,7 @@ use std::process::{Command, Stdio};
 use tempfile::Builder;
 use tempfile::NamedTempFile;
 
-pub fn get_lint_and_fix_text(text: Vec<&str>) -> (String, String) {
+pub fn get_lint_and_fix_text(text: Vec<&str>, rule: &str) -> (String, String) {
     let temp_file = Builder::new()
         .prefix("test-flir")
         .suffix(".R")
@@ -15,7 +15,7 @@ pub fn get_lint_and_fix_text(text: Vec<&str>) -> (String, String) {
         .iter()
         .map(|x| {
             fs::write(&temp_file, x).expect("Failed to write initial content");
-            get_lint_text(&temp_file)
+            get_lint_text(&temp_file, rule)
         })
         .collect::<Vec<String>>();
 
@@ -23,7 +23,7 @@ pub fn get_lint_and_fix_text(text: Vec<&str>) -> (String, String) {
         .iter()
         .map(|x| {
             fs::write(&temp_file, x).expect("Failed to write initial content");
-            get_fixed_text(&temp_file)
+            get_fixed_text(&temp_file, rule)
         })
         .collect::<Vec<String>>();
 
@@ -33,11 +33,13 @@ pub fn get_lint_and_fix_text(text: Vec<&str>) -> (String, String) {
     )
 }
 
-pub fn get_lint_text(file: &NamedTempFile) -> String {
+pub fn get_lint_text(file: &NamedTempFile, rule: &str) -> String {
     let original_content = fs::read_to_string(&file).expect("Failed to read file content");
     let output = Command::new("flir")
         .arg("--dir")
         .arg(file.path())
+        .arg("--rules")
+        .arg(rule)
         .stdout(Stdio::piped())
         .output()
         .expect("Failed to execute command");
@@ -52,13 +54,15 @@ pub fn get_lint_text(file: &NamedTempFile) -> String {
     )
 }
 
-pub fn get_fixed_text(file: &NamedTempFile) -> String {
+pub fn get_fixed_text(file: &NamedTempFile, rule: &str) -> String {
     use std::process::{Command, Stdio};
     let original_content = fs::read_to_string(&file).expect("Failed to read file content");
 
     let _ = Command::new("flir")
         .arg("--dir")
         .arg(file.path())
+        .arg("--rules")
+        .arg(rule)
         .arg("--fix")
         .stdout(Stdio::piped())
         .output()
@@ -72,7 +76,7 @@ pub fn get_fixed_text(file: &NamedTempFile) -> String {
     )
 }
 
-pub fn no_lint(text: &str) -> bool {
+pub fn no_lint(text: &str, rule: &str) -> bool {
     let temp_file = Builder::new()
         .prefix("test-flir")
         .suffix(".R")
@@ -86,6 +90,8 @@ pub fn no_lint(text: &str) -> bool {
     let output = Command::new("flir")
         .arg("--dir")
         .arg(temp_file.path())
+        .arg("--rules")
+        .arg(rule)
         .stdout(Stdio::piped())
         .output()
         .expect("Failed to execute command");

@@ -1,5 +1,5 @@
 ---
-source: tests/test-ClassEquals.rs
+source: src/lints/class_equals/mod.rs
 expression: lint_output
 ---
   OLD:
@@ -7,8 +7,6 @@ expression: lint_output
 is_regression <- class(x) == 'lm'
   NEW:
   ====
-/tmp/test-[...]
-unused-object Unused object: 'is_regression'
 /tmp/test-[...] [1:17] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
 /tmp/test-[...] [1:17] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
 
@@ -18,7 +16,6 @@ unused-object Unused object: 'is_regression'
 if (class(x) == 'character') 1
   NEW:
   ====
-/tmp/test-[...]
 /tmp/test-[...] [1:5] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
 
 
@@ -27,8 +24,6 @@ if (class(x) == 'character') 1
 is_regression <- 'lm' == class(x)
   NEW:
   ====
-/tmp/test-[...]
-unused-object Unused object: 'is_regression'
 /tmp/test-[...] [1:17] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
 /tmp/test-[...] [1:17] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
 
@@ -38,8 +33,6 @@ unused-object Unused object: 'is_regression'
 is_regression <- "lm" == class(x)
   NEW:
   ====
-/tmp/test-[...]
-unused-object Unused object: 'is_regression'
 /tmp/test-[...] [1:17] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
 /tmp/test-[...] [1:17] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
 
@@ -49,7 +42,6 @@ unused-object Unused object: 'is_regression'
 if ('character' %in% class(x)) 1
   NEW:
   ====
-/tmp/test-[...]
 /tmp/test-[...] [1:5] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
 
 
@@ -58,7 +50,6 @@ if ('character' %in% class(x)) 1
 if (class(x) %in% 'character') 1
   NEW:
   ====
-/tmp/test-[...]
 /tmp/test-[...] [1:5] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
 
 
@@ -67,7 +58,6 @@ if (class(x) %in% 'character') 1
 if (class(x) != 'character') 1
   NEW:
   ====
-/tmp/test-[...]
 /tmp/test-[...] [1:5] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
 
 
@@ -76,7 +66,6 @@ if (class(x) != 'character') 1
 x[if (class(x) == 'foo') 1 else 2]
   NEW:
   ====
-/tmp/test-[...]
 /tmp/test-[...] [1:7] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
 /tmp/test-[...] [1:7] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
 
@@ -86,5 +75,4 @@ x[if (class(x) == 'foo') 1 else 2]
 class(foo(bar(y) + 1)) == 'abc'
   NEW:
   ====
-/tmp/test-[...]
 /tmp/test-[...] [1:1] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.

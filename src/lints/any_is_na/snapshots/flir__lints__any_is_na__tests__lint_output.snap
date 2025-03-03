@@ -1,5 +1,5 @@
 ---
-source: tests/test-AnyNA.rs
+source: src/lints/any_is_na/mod.rs
 expression: lint_output
 ---
   OLD:
@@ -7,7 +7,6 @@ expression: lint_output
 any(is.na(x))
   NEW:
   ====
-/tmp/test-[...]
 /tmp/test-[...] [1:1] any-na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
 
 
@@ -16,7 +15,6 @@ any(is.na(x))
 any(is.na(foo(x)))
   NEW:
   ====
-/tmp/test-[...]
 /tmp/test-[...] [1:1] any-na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
 
 
@@ -25,5 +23,4 @@ any(is.na(foo(x)))
 any(is.na(x), na.rm = TRUE)
   NEW:
   ====
-/tmp/test-[...]
 /tmp/test-[...] [1:1] any-na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.

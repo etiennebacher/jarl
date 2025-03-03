@@ -89,7 +89,7 @@ fn main() {
             }
 
             if !args.fix && &checks.len() > &0usize {
-                println!("{}", file.to_str().unwrap().blue().bold());
+                // println!("{}", file.to_str().unwrap().blue().bold());
                 for message in &checks {
                     println!("{}", message);
                 }

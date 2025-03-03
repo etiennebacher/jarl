@@ -1,5 +1,5 @@
 ---
-source: src/lints/any_duplicated/mod.rs
+source: src/lints/true_false_symbol/mod.rs
 expression: lint_output
 ---
   OLD:

@@ -10,7 +10,7 @@ pub struct EqualsNa;
 
 impl Violation for EqualsNa {
     fn name(&self) -> String {
-        "equals-na".to_string()
+        "equals_na".to_string()
     }
     fn body(&self) -> String {
         "Use `is.na()` instead of comparing to NA with ==, != or %in%.".to_string()
