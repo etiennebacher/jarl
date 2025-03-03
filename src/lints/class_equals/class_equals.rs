@@ -10,7 +10,7 @@ pub struct ClassEquals;
 
 impl Violation for ClassEquals {
     fn name(&self) -> String {
-        "class-equals".to_string()
+        "class_equals".to_string()
     }
     fn body(&self) -> String {
         "Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`."
