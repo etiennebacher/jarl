@@ -41,3 +41,13 @@ pub fn node_is_in_square_brackets(ast: &RSyntaxNode) -> bool {
         None => false,
     }
 }
+
+pub fn parse_rules(rules: &String) -> Vec<&str> {
+    if rules.as_str() == "" {
+        "any_is_na,any_duplicated,T-F-symbols"
+            .split(",")
+            .collect::<Vec<&str>>()
+    } else {
+        rules.split(",").collect::<Vec<&str>>()
+    }
+}

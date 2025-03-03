@@ -4,6 +4,7 @@ use flir::check_ast::*;
 use flir::fix::*;
 use flir::message::*;
 use flir::semantic_analysis::check_unused_vars::*;
+use flir::utils::parse_rules;
 
 use clap::{arg, Parser};
 use flir::semantic_model;
@@ -38,6 +39,13 @@ struct Args {
         help = "Automatically fix issues detected by the linter."
     )]
     fix: bool,
+    #[arg(
+        short,
+        long,
+        default_value = "",
+        help = "Names of rules to include, separated by a comma (no spaces)"
+    )]
+    rules: String,
 }
 
 /// This is my first rust crate
@@ -56,6 +64,8 @@ fn main() {
         .map(|e| e.path().to_path_buf())
         .collect::<Vec<_>>();
 
+    let rules = parse_rules(&args.rules);
+
     // let r_files = vec![Path::new("demo/foo.R").to_path_buf()];
 
     let parser_options = RParserOptions::default();
@@ -69,7 +79,7 @@ fn main() {
             loop {
                 let contents = fs::read_to_string(Path::new(file)).expect("Invalid file");
 
-                checks = get_checks(&contents, file, parser_options).unwrap();
+                checks = get_checks(&contents, file, parser_options, rules.clone()).unwrap();
                 if !has_skipped_fixes || !args.fix {
                     break;
                 }

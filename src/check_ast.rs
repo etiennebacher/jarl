@@ -14,10 +14,22 @@ use crate::SemanticModelOptions;
 use anyhow::Result;
 use std::path::Path;
 
+fn rule_name_to_lint_checker(rule_name: &str) -> Box<dyn LintChecker> {
+    match rule_name {
+        "any_is_na" => Box::new(AnyIsNa),
+        "T-F-symbols" => Box::new(TrueFalseSymbol),
+        "any_duplicated" => Box::new(AnyDuplicated),
+        "class_equals" => Box::new(ClassEquals),
+        "equals-na" => Box::new(EqualsNa),
+        _ => unreachable!("unknown rule name"),
+    }
+}
+
 pub fn get_checks(
     contents: &str,
     file: &Path,
     parser_options: RParserOptions,
+    rules: Vec<&str>,
 ) -> Result<Vec<Diagnostic>> {
     let parsed = air_r_parser::parse(contents, parser_options);
 
@@ -29,23 +41,25 @@ pub fn get_checks(
     let syntax = &parsed.syntax();
     let loc_new_lines = find_new_lines(syntax)?;
     let mut diagnostics_lints: Vec<Diagnostic> =
-        check_ast(syntax, &loc_new_lines, file.to_str().unwrap());
+        check_ast(syntax, &loc_new_lines, file.to_str().unwrap(), &rules);
 
     diagnostics_semantic.append(&mut diagnostics_lints);
 
     Ok(diagnostics_semantic)
 }
 
-pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Diagnostic> {
+pub fn check_ast(
+    ast: &RSyntaxNode,
+    loc_new_lines: &[usize],
+    file: &str,
+    rules: &Vec<&str>,
+) -> Vec<Diagnostic> {
     let mut diagnostics: Vec<Diagnostic> = vec![];
 
-    let linters: Vec<Box<dyn LintChecker>> = vec![
-        Box::new(AnyIsNa),
-        Box::new(TrueFalseSymbol),
-        Box::new(AnyDuplicated),
-        Box::new(ClassEquals),
-        Box::new(EqualsNa),
-    ];
+    let linters: Vec<Box<dyn LintChecker>> = rules
+        .iter()
+        .map(|rule| rule_name_to_lint_checker(rule))
+        .collect();
 
     for linter in linters {
         diagnostics.extend(linter.check(ast, loc_new_lines, file));
@@ -85,7 +99,7 @@ pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<
         | RSyntaxKind::R_WHILE_STATEMENT
         | RSyntaxKind::R_IF_STATEMENT => {
             for child in ast.children() {
-                diagnostics.extend(check_ast(&child, loc_new_lines, file));
+                diagnostics.extend(check_ast(&child, loc_new_lines, file, rules));
             }
         }
         RSyntaxKind::R_IDENTIFIER => {
@@ -94,7 +108,7 @@ pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<
             let ns = ast.next_sibling();
             let has_sibling = ns.is_some();
             if has_sibling {
-                diagnostics.extend(check_ast(&ns.unwrap(), loc_new_lines, file));
+                diagnostics.extend(check_ast(&ns.unwrap(), loc_new_lines, file, rules));
             }
         }
         _ => {
@@ -102,14 +116,14 @@ pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<
             match &ast.first_child() {
                 Some(_) => {
                     for child in ast.children() {
-                        diagnostics.extend(check_ast(&child, loc_new_lines, file));
+                        diagnostics.extend(check_ast(&child, loc_new_lines, file, rules));
                     }
                 }
                 None => {
                     let ns = ast.next_sibling();
                     let has_sibling = ns.is_some();
                     if has_sibling {
-                        diagnostics.extend(check_ast(&ns.unwrap(), loc_new_lines, file));
+                        diagnostics.extend(check_ast(&ns.unwrap(), loc_new_lines, file, rules));
                     }
                 }
             }
