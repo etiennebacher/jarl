@@ -8,6 +8,7 @@ use crate::lints::duplicated_arguments::duplicated_arguments::DuplicatedArgument
 use crate::lints::empty_assignment::empty_assignment::EmptyAssignment;
 use crate::lints::equal_assignment::equal_assignment::EqualAssignment;
 use crate::lints::equals_na::equals_na::EqualsNa;
+use crate::lints::length_levels::length_levels::LengthLevels;
 use crate::lints::true_false_symbol::true_false_symbol::TrueFalseSymbol;
 use crate::message::*;
 use crate::semantic_model;
@@ -26,6 +27,7 @@ fn rule_name_to_lint_checker(rule_name: &str) -> Box<dyn LintChecker> {
         "empty_assignment" => Box::new(EmptyAssignment),
         "equal_assignment" => Box::new(EqualAssignment),
         "equals_na" => Box::new(EqualsNa),
+        "length_levels" => Box::new(LengthLevels),
         "true_false_symbol" => Box::new(TrueFalseSymbol),
         unknown => unreachable!("unknown rule name: {unknown}"),
     }
