@@ -59,12 +59,12 @@ fn main() {
     // let r_files = vec![Path::new("demo/foo.R").to_path_buf()];
 
     let parser_options = RParserOptions::default();
-    let _: Vec<Message> = r_files
+    let _: Vec<Diagnostic> = r_files
         .par_iter()
         // TODO: this only ignores files where there was an error, it doesn't
-        // return the error messages
+        // return the error diagnostics
         .filter_map(|file| {
-            let mut checks: Vec<Message>;
+            let mut checks: Vec<Diagnostic>;
             let mut has_skipped_fixes = true;
             loop {
                 let contents = fs::read_to_string(Path::new(file)).expect("Invalid file");

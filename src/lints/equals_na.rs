@@ -8,12 +8,21 @@ use biome_rowan::AstNode;
 
 pub struct EqualsNa;
 
+impl Violation for EqualsNa {
+    fn name(&self) -> String {
+        "equals-na".to_string()
+    }
+    fn body(&self) -> String {
+        "Use `is.na()` instead of comparing to NA with ==, != or %in%.".to_string()
+    }
+}
+
 impl LintChecker for EqualsNa {
-    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Message> {
-        let mut messages = vec![];
+    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Diagnostic> {
+        let mut diagnostics = vec![];
         let bin_expr = RBinaryExpression::cast(ast.clone());
         if bin_expr.is_none() {
-            return messages;
+            return diagnostics;
         }
 
         let RBinaryExpressionFields { left, operator, right } = bin_expr.unwrap().as_fields();
@@ -23,7 +32,7 @@ impl LintChecker for EqualsNa {
         let right = right.unwrap();
 
         if operator.kind() != RSyntaxKind::EQUAL2 && operator.kind() != RSyntaxKind::NOT_EQUAL {
-            return messages;
+            return diagnostics;
         };
 
         let na_values = [
@@ -41,7 +50,7 @@ impl LintChecker for EqualsNa {
         // If NA is quoted in text, then quotation marks are escaped and this
         // is false.
         if (left_is_na && right_is_na) || (!left_is_na && !right_is_na) {
-            return messages;
+            return diagnostics;
         }
         let (row, column) = find_row_col(ast, loc_new_lines);
         let range = ast.text_trimmed_range();
@@ -54,7 +63,8 @@ impl LintChecker for EqualsNa {
 
         match operator.kind() {
             RSyntaxKind::EQUAL2 => {
-                messages.push(Message::EqualsNa {
+                diagnostics.push(Diagnostic {
+                    message: EqualsNa.into(),
                     filename: file.into(),
                     location: Location { row, column },
                     fix: Fix {
@@ -65,7 +75,8 @@ impl LintChecker for EqualsNa {
                 });
             }
             RSyntaxKind::NOT_EQUAL => {
-                messages.push(Message::EqualsNa {
+                diagnostics.push(Diagnostic {
+                    message: EqualsNa.into(),
                     filename: file.into(),
                     location: Location { row, column },
                     fix: Fix {
@@ -78,6 +89,6 @@ impl LintChecker for EqualsNa {
             _ => unreachable!("This case is an early return"),
         };
 
-        messages
+        diagnostics
     }
 }

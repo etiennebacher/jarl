@@ -18,26 +18,26 @@ pub fn get_checks(
     contents: &str,
     file: &Path,
     parser_options: RParserOptions,
-) -> Result<Vec<Message>> {
+) -> Result<Vec<Diagnostic>> {
     let parsed = air_r_parser::parse(contents, parser_options);
 
     let root = &parsed.tree();
     let semantic = semantic_model(root, SemanticModelOptions::default());
-    let mut messages_semantic: Vec<Message> = vec![];
-    // let mut messages_semantic: Vec<Message> = check_unused_variables(&semantic);
+    let mut diagnostics_semantic: Vec<Diagnostic> = vec![];
+    // let mut diagnostics_semantic: Vec<Diagnostic> = check_unused_variables(&semantic);
 
     let syntax = &parsed.syntax();
     let loc_new_lines = find_new_lines(syntax)?;
-    let mut messages_lints: Vec<Message> =
+    let mut diagnostics_lints: Vec<Diagnostic> =
         check_ast(syntax, &loc_new_lines, file.to_str().unwrap());
 
-    messages_semantic.append(&mut messages_lints);
+    diagnostics_semantic.append(&mut diagnostics_lints);
 
-    Ok(messages_semantic)
+    Ok(diagnostics_semantic)
 }
 
-pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Message> {
-    let mut messages: Vec<Message> = vec![];
+pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Diagnostic> {
+    let mut diagnostics: Vec<Diagnostic> = vec![];
 
     let linters: Vec<Box<dyn LintChecker>> = vec![
         Box::new(AnyIsNa),
@@ -48,7 +48,7 @@ pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<
     ];
 
     for linter in linters {
-        messages.extend(linter.check(ast, loc_new_lines, file));
+        diagnostics.extend(linter.check(ast, loc_new_lines, file));
     }
 
     // if ast.kind() == RSyntaxKind::R_CALL || ast.kind() == RSyntaxKind::R_CALL_ARGUMENTS {
@@ -85,7 +85,7 @@ pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<
         | RSyntaxKind::R_WHILE_STATEMENT
         | RSyntaxKind::R_IF_STATEMENT => {
             for child in ast.children() {
-                messages.extend(check_ast(&child, loc_new_lines, file));
+                diagnostics.extend(check_ast(&child, loc_new_lines, file));
             }
         }
         RSyntaxKind::R_IDENTIFIER => {
@@ -94,7 +94,7 @@ pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<
             let ns = ast.next_sibling();
             let has_sibling = ns.is_some();
             if has_sibling {
-                messages.extend(check_ast(&ns.unwrap(), loc_new_lines, file));
+                diagnostics.extend(check_ast(&ns.unwrap(), loc_new_lines, file));
             }
         }
         _ => {
@@ -102,19 +102,19 @@ pub fn check_ast(ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<
             match &ast.first_child() {
                 Some(_) => {
                     for child in ast.children() {
-                        messages.extend(check_ast(&child, loc_new_lines, file));
+                        diagnostics.extend(check_ast(&child, loc_new_lines, file));
                     }
                 }
                 None => {
                     let ns = ast.next_sibling();
                     let has_sibling = ns.is_some();
                     if has_sibling {
-                        messages.extend(check_ast(&ns.unwrap(), loc_new_lines, file));
+                        diagnostics.extend(check_ast(&ns.unwrap(), loc_new_lines, file));
                     }
                 }
             }
         }
     };
 
-    messages
+    diagnostics
 }

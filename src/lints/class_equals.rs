@@ -8,13 +8,23 @@ use biome_rowan::AstNode;
 
 pub struct ClassEquals;
 
+impl Violation for ClassEquals {
+    fn name(&self) -> String {
+        "class-equals".to_string()
+    }
+    fn body(&self) -> String {
+        "Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`."
+            .to_string()
+    }
+}
+
 impl LintChecker for ClassEquals {
-    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Message> {
-        let mut messages = vec![];
+    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Diagnostic> {
+        let mut diagnostics = vec![];
         let bin_expr = RBinaryExpression::cast(ast.clone());
 
         if bin_expr.is_none() || node_is_in_square_brackets(ast) {
-            return messages;
+            return diagnostics;
         }
 
         let RBinaryExpressionFields { left: _, operator, right: _ } = bin_expr.unwrap().as_fields();
@@ -25,7 +35,7 @@ impl LintChecker for ClassEquals {
             && operator.kind() != RSyntaxKind::NOT_EQUAL
             && operator.text_trimmed() != "%in%"
         {
-            return messages;
+            return diagnostics;
         };
 
         let mut children = ast.children();
@@ -44,7 +54,7 @@ impl LintChecker for ClassEquals {
         let right_is_string = rhs.kind() == RSyntaxKind::R_STRING_VALUE;
 
         if (!left_is_class && !right_is_class) || (!left_is_string && !right_is_string) {
-            return messages;
+            return diagnostics;
         }
 
         let fun_name =
@@ -67,7 +77,8 @@ impl LintChecker for ClassEquals {
 
         let (row, column) = find_row_col(ast, loc_new_lines);
         let range = ast.text_trimmed_range();
-        messages.push(Message::ClassEquals {
+        diagnostics.push(Diagnostic {
+            message: ClassEquals.into(),
             filename: file.into(),
             location: Location { row, column },
             fix: Fix {
@@ -76,6 +87,6 @@ impl LintChecker for ClassEquals {
                 end: range.end().into(),
             },
         });
-        messages
+        diagnostics
     }
 }

@@ -12,84 +12,63 @@ pub struct Fix {
     pub end: usize,
 }
 
+pub trait Violation {
+    fn name(&self) -> String;
+    fn body(&self) -> String;
+}
+
 #[derive(Serialize, Deserialize, Debug)]
-pub enum Message {
-    TrueFalseSymbol {
-        filename: PathBuf,
-        location: Location,
-        fix: Fix,
-    },
-    AnyIsNa {
-        filename: PathBuf,
-        location: Location,
-        fix: Fix,
-    },
-    AnyDuplicated {
-        filename: PathBuf,
-        location: Location,
-        fix: Fix,
-    },
-    ClassEquals {
-        filename: PathBuf,
-        location: Location,
-        fix: Fix,
-    },
-    EqualsNa {
-        filename: PathBuf,
-        location: Location,
-        fix: Fix,
-    },
-    UnusedObjs {
-        varname: String,
-    },
-    UndefinedObjs {
-        varname: String,
-    },
+pub struct DiagnosticKind {
+    pub name: String,
+    pub body: String,
 }
 
-impl Message {
-    pub fn code(&self) -> &'static str {
-        match self {
-            Message::TrueFalseSymbol { .. } => "T-F-symbols",
-            Message::AnyIsNa { .. } => "any-na",
-            Message::AnyDuplicated { .. } => "any-duplicated",
-            Message::ClassEquals { .. } => "class-equals",
-            Message::EqualsNa { .. } => "equals-na",
-            Message::UnusedObjs { .. } => "unused-object",
-            Message::UndefinedObjs { .. } => "undefined-object",
-        }
-    }
-    pub fn body(&self) -> String {
-        match self {
-            Message::TrueFalseSymbol { .. } => "`T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.".to_string(),
-            Message::AnyIsNa { .. } => "`any(is.na(...))` is inefficient. Use `anyNA(...)` instead.".to_string(),
-            Message::AnyDuplicated { .. } => "`any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.".to_string(),
-            Message::ClassEquals { .. } => "Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.".to_string(),
-            Message::EqualsNa { .. } => "Use `is.na()` instead of comparing to NA with ==, != or %in%.".to_string(),
-            Message::UnusedObjs { varname } => format!("Unused object: \'{}\'", varname),
-            Message::UndefinedObjs { varname } => format!("Undefined object: \'{}\'", varname)
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Diagnostic {
+    pub message: DiagnosticKind,
+    pub filename: PathBuf,
+    pub location: Location,
+    pub fix: Fix,
+}
+
+impl<T> From<T> for DiagnosticKind
+where
+    T: Violation,
+{
+    fn from(value: T) -> Self {
+        Self {
+            name: Violation::name(&value),
+            body: Violation::body(&value),
         }
     }
 }
 
-impl fmt::Display for Message {
+impl Diagnostic {
+    pub fn new<T: Into<DiagnosticKind>>(
+        message: T,
+        filename: &str,
+        location: Location,
+        fix: Fix,
+    ) -> Self {
+        Self {
+            message: message.into(),
+            filename: filename.into(),
+            location,
+            fix,
+        }
+    }
+}
+
+impl fmt::Display for Diagnostic {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Message::AnyDuplicated { filename, location, .. }
-            | Message::AnyIsNa { filename, location, .. }
-            | Message::ClassEquals { filename, location, .. }
-            | Message::EqualsNa { filename, location, .. }
-            | Message::TrueFalseSymbol { filename, location, .. } => write!(
-                f,
-                "{} [{}:{}] {} {}",
-                filename.to_string_lossy().white(),
-                location.row,
-                location.column,
-                self.code().red(),
-                self.body()
-            ),
-            Message::UnusedObjs { .. } => write!(f, "{} {}", self.code().red(), self.body()),
-            Message::UndefinedObjs { .. } => write!(f, "{} {}", self.code().red(), self.body()),
-        }
+        write!(
+            f,
+            "{} [{}:{}] {} {}",
+            self.filename.to_string_lossy().white(),
+            self.location.row,
+            self.location.column,
+            self.message.name.red(),
+            self.message.body
+        )
     }
 }

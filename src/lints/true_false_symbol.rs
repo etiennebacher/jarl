@@ -7,15 +7,25 @@ use air_r_syntax::*;
 
 pub struct TrueFalseSymbol;
 
+impl Violation for TrueFalseSymbol {
+    fn name(&self) -> String {
+        "T-F-symbols".to_string()
+    }
+    fn body(&self) -> String {
+        "`T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.".to_string()
+    }
+}
+
 impl LintChecker for TrueFalseSymbol {
-    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Message> {
-        let mut messages = vec![];
+    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Diagnostic> {
+        let mut diagnostics = vec![];
         if ast.kind() == RSyntaxKind::R_IDENTIFIER
             && (ast.text_trimmed() == "T" || ast.text_trimmed() == "F")
         {
             let (row, column) = find_row_col(ast, loc_new_lines);
             let range = ast.text_trimmed_range();
-            messages.push(Message::TrueFalseSymbol {
+            diagnostics.push(Diagnostic {
+                message: TrueFalseSymbol.into(),
                 filename: file.into(),
                 location: Location { row, column },
                 fix: Fix {
@@ -29,6 +39,6 @@ impl LintChecker for TrueFalseSymbol {
                 },
             });
         }
-        messages
+        diagnostics
     }
 }

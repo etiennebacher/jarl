@@ -7,15 +7,24 @@ use air_r_syntax::*;
 
 pub struct AnyDuplicated;
 
+impl Violation for AnyDuplicated {
+    fn name(&self) -> String {
+        "any-duplicated".to_string()
+    }
+    fn body(&self) -> String {
+        "`any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.".to_string()
+    }
+}
+
 impl LintChecker for AnyDuplicated {
-    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Message> {
-        let mut messages = vec![];
+    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Diagnostic> {
+        let mut diagnostics = vec![];
         if ast.kind() != RSyntaxKind::R_CALL {
-            return messages;
+            return diagnostics;
         }
         let call = ast.first_child().unwrap().text_trimmed();
         if call != "any" {
-            return messages;
+            return diagnostics;
         }
 
         get_args(ast).and_then(|args| args.first_child()).map(|y| {
@@ -25,7 +34,8 @@ impl LintChecker for AnyDuplicated {
                 if fun.text_trimmed() == "duplicated" && fun.kind() == RSyntaxKind::R_IDENTIFIER {
                     let (row, column) = find_row_col(ast, loc_new_lines);
                     let range = ast.text_trimmed_range();
-                    messages.push(Message::AnyDuplicated {
+                    diagnostics.push(Diagnostic {
+                        message: AnyDuplicated.into(),
                         filename: file.into(),
                         location: Location { row, column },
                         fix: Fix {
@@ -37,6 +47,6 @@ impl LintChecker for AnyDuplicated {
                 };
             }
         });
-        messages
+        diagnostics
     }
 }
