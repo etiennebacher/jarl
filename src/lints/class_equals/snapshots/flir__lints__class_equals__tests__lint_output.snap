@@ -7,8 +7,8 @@ expression: lint_output
 is_regression <- class(x) == 'lm'
   NEW:
   ====
-/tmp/test-[...] [1:17] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
-/tmp/test-[...] [1:17] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
+/tmp/test-[...] [1:18] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
+/tmp/test-[...] [1:18] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
 
 
   OLD:
@@ -24,8 +24,8 @@ if (class(x) == 'character') 1
 is_regression <- 'lm' == class(x)
   NEW:
   ====
-/tmp/test-[...] [1:17] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
-/tmp/test-[...] [1:17] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
+/tmp/test-[...] [1:18] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
+/tmp/test-[...] [1:18] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
 
 
   OLD:
@@ -33,8 +33,8 @@ is_regression <- 'lm' == class(x)
 is_regression <- "lm" == class(x)
   NEW:
   ====
-/tmp/test-[...] [1:17] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
-/tmp/test-[...] [1:17] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
+/tmp/test-[...] [1:18] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
+/tmp/test-[...] [1:18] class-equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
 
 
   OLD:

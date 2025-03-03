@@ -4,23 +4,71 @@ expression: lint_output
 ---
   OLD:
   ====
-any(duplicated(x))
+T
   NEW:
   ====
-/tmp/test-[...] [1:1] any-duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+/tmp/test-[...] [1:1] true_false_symbol `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
 
 
   OLD:
   ====
-any(duplicated(foo(x)))
+F
   NEW:
   ====
-/tmp/test-[...] [1:1] any-duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+/tmp/test-[...] [1:1] true_false_symbol `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
 
 
   OLD:
   ====
-any(duplicated(x), na.rm = TRUE)
+T = 42
   NEW:
   ====
-/tmp/test-[...] [1:1] any-duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+/tmp/test-[...] [1:1] true_false_symbol `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
+
+
+  OLD:
+  ====
+F = 42
+  NEW:
+  ====
+/tmp/test-[...] [1:1] true_false_symbol `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
+
+
+  OLD:
+  ====
+for (i in 1:10) {x <- c(T, TRUE, F, FALSE)}
+  NEW:
+  ====
+/tmp/test-[...] [1:25] true_false_symbol `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
+/tmp/test-[...] [1:34] true_false_symbol `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
+/tmp/test-[...] [1:25] true_false_symbol `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
+/tmp/test-[...] [1:34] true_false_symbol `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
+/tmp/test-[...] [1:25] true_false_symbol `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
+/tmp/test-[...] [1:34] true_false_symbol `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
+/tmp/test-[...] [1:25] true_false_symbol `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
+/tmp/test-[...] [1:34] true_false_symbol `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
+
+
+  OLD:
+  ====
+DF$bool <- T
+  NEW:
+  ====
+/tmp/test-[...] [1:12] true_false_symbol `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
+
+
+  OLD:
+  ====
+S4@bool <- T
+  NEW:
+  ====
+/tmp/test-[...] [1:12] true_false_symbol `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
+
+
+  OLD:
+  ====
+sum(x, na.rm = T)
+  NEW:
+  ====
+/tmp/test-[...] [1:16] true_false_symbol `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
+/tmp/test-[...] [1:16] true_false_symbol `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
