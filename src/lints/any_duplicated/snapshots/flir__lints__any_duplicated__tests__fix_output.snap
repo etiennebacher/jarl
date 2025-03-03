@@ -1,0 +1,24 @@
+---
+source: src/lints/any_duplicated/mod.rs
+expression: fix_output
+---
+  OLD:
+  ====
+any(duplicated(x))
+  NEW:
+  ====
+anyDuplicated(x) > 0
+
+  OLD:
+  ====
+any(duplicated(foo(x)))
+  NEW:
+  ====
+anyDuplicated(foo(x)) > 0
+
+  OLD:
+  ====
+any(duplicated(x), na.rm = TRUE)
+  NEW:
+  ====
+anyDuplicated(x) > 0
