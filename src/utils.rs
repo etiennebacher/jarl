@@ -31,9 +31,19 @@ pub fn find_row_col(ast: &RSyntaxNode, loc_new_lines: &[usize]) -> (usize, usize
     (row, col)
 }
 
-pub fn get_args(node: &RSyntaxNode) -> Option<RSyntaxNode> {
+pub fn get_first_arg(node: &RSyntaxNode) -> Option<RSyntaxNode> {
     node.descendants()
         .find(|x| x.kind() == RSyntaxKind::R_ARGUMENT)
+}
+
+pub fn get_args(node: &RSyntaxNode) -> Vec<RSyntaxNode> {
+    node.descendants()
+        // Limit to first list of arguments to avoid collecting arguments from nested functions
+        .find(|x| x.kind() == RSyntaxKind::R_ARGUMENT_LIST)
+        .unwrap()
+        .descendants()
+        .filter(|x| x.kind() == RSyntaxKind::R_ARGUMENT)
+        .collect::<Vec<_>>()
 }
 
 pub fn node_is_in_square_brackets(ast: &RSyntaxNode) -> bool {

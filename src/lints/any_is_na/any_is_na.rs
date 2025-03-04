@@ -1,7 +1,7 @@
 use crate::location::Location;
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
-use crate::utils::{find_row_col, get_args};
+use crate::utils::{find_row_col, get_first_arg};
 use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
 
@@ -27,7 +27,7 @@ impl LintChecker for AnyIsNa {
             return diagnostics;
         }
 
-        get_args(ast).and_then(|args| args.first_child()).map(|y| {
+        get_first_arg(ast).and_then(|args| args.first_child()).map(|y| {
             if y.kind() == RSyntaxKind::R_CALL {
                 let fun = y.first_child().unwrap();
                 let fun_content = y.children().nth(1).unwrap().first_child().unwrap().text();

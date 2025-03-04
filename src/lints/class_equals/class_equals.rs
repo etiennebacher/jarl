@@ -1,7 +1,7 @@
 use crate::location::Location;
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
-use crate::utils::{find_row_col, get_args, node_is_in_square_brackets};
+use crate::utils::{find_row_col, get_first_arg, node_is_in_square_brackets};
 use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -68,10 +68,10 @@ impl LintChecker for ClassEquals {
         let class_name;
 
         if left_is_class {
-            fun_content = get_args(&lhs).map(|x| x.text_trimmed());
+            fun_content = get_first_arg(&lhs).map(|x| x.text_trimmed());
             class_name = rhs.text_trimmed();
         } else {
-            fun_content = get_args(&rhs).map(|x| x.text_trimmed());
+            fun_content = get_first_arg(&rhs).map(|x| x.text_trimmed());
             class_name = lhs.text_trimmed();
         };
 

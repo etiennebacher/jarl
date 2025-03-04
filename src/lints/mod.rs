@@ -7,6 +7,7 @@ pub(crate) mod equal_assignment;
 pub(crate) mod equals_na;
 pub(crate) mod length_levels;
 pub(crate) mod length_test;
+pub(crate) mod lengths;
 pub(crate) mod redundant_equals;
 pub(crate) mod true_false_symbol;
 pub(crate) mod which_grepl;
@@ -21,6 +22,7 @@ pub const ALL_RULES: &[&str] = &[
     "equals_na",
     "length_levels",
     "length_test",
+    "lengths",
     "redundant_equals",
     "true_false_symbol",
     "which_grepl",

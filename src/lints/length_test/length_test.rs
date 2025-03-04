@@ -21,9 +21,6 @@ impl Violation for LengthTest {
 impl LintChecker for LengthTest {
     fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Diagnostic> {
         let mut diagnostics = vec![];
-        if ast.kind() != RSyntaxKind::R_CALL {
-            return diagnostics;
-        }
         let call = RCall::cast(ast.clone());
         if call.is_none() {
             return diagnostics;
