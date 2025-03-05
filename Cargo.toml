@@ -7,7 +7,7 @@ edition = "2021"
 
 license-file = "LICENSE.md"
 
-repository = "https://github.com/etiennebacher/rfmt2/"
+repository = "https://github.com/etiennebacher/flir2/"
 readme = "README.md"
 
 [[bin]]
