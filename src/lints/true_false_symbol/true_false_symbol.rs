@@ -18,7 +18,12 @@ impl Violation for TrueFalseSymbol {
 }
 
 impl LintChecker for TrueFalseSymbol {
-    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Diagnostic> {
+    fn check(
+        &self,
+        ast: &RSyntaxNode,
+        loc_new_lines: &[usize],
+        file: &str,
+    ) -> Result<Vec<Diagnostic>> {
         let mut diagnostics: Vec<Diagnostic> = vec![];
         if ast.kind() == RSyntaxKind::R_IDENTIFIER
             && (ast.text_trimmed() == "T" || ast.text_trimmed() == "F")

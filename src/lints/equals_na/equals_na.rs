@@ -18,7 +18,7 @@ impl Violation for EqualsNa {
 }
 
 impl LintChecker for EqualsNa {
-    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Diagnostic> {
+    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
         let bin_expr = RBinaryExpression::cast(ast.clone());
         if bin_expr.is_none() {

@@ -17,7 +17,7 @@ impl Violation for WhichGrepl {
 }
 
 impl LintChecker for WhichGrepl {
-    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Diagnostic> {
+    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
         if ast.kind() != RSyntaxKind::R_CALL {
             return diagnostics;
