@@ -50,7 +50,7 @@ impl LintChecker for TrueFalseSymbol {
             };
 
             if is_function_name || is_element_name || is_in_formula {
-                return diagnostics;
+                return Ok(diagnostics);
             }
 
             let (row, column) = find_row_col(ast, loc_new_lines);

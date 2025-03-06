@@ -17,14 +17,19 @@ impl Violation for WhichGrepl {
 }
 
 impl LintChecker for WhichGrepl {
-    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Result<Vec<Diagnostic>> {
+    fn check(
+        &self,
+        ast: &RSyntaxNode,
+        loc_new_lines: &[usize],
+        file: &str,
+    ) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
         if ast.kind() != RSyntaxKind::R_CALL {
-            return diagnostics;
+            return Ok(diagnostics);
         }
         let call = ast.first_child().unwrap().text_trimmed();
         if call != "which" {
-            return diagnostics;
+            return Ok(diagnostics);
         }
 
         get_first_arg(ast)

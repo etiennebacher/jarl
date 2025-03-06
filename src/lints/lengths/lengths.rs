@@ -24,14 +24,14 @@ impl LintChecker for Lengths {
         let mut diagnostics = vec![];
         let call = RCall::cast(ast.clone());
         if call.is_none() {
-            return diagnostics;
+            return Ok(diagnostics);
         }
         let RCallFields { function, arguments } = call.unwrap().as_fields();
         let function = function.unwrap();
 
         let funs_to_watch = ["sapply", "vapply", "map_dbl", "map_int"];
         if !funs_to_watch.contains(&function.text().as_str()) {
-            return diagnostics;
+            return Ok(diagnostics);
         }
 
         let arguments = arguments.unwrap().items();
