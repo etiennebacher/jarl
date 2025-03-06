@@ -4,7 +4,7 @@ use crate::trait_lint_checker::LintChecker;
 use crate::utils::{find_row_col, get_first_arg, node_is_in_square_brackets};
 use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use biome_rowan::AstNode;
 
 pub struct ClassEquals;
