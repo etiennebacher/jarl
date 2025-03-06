@@ -1,19 +1,20 @@
 use air_r_parser::RParserOptions;
 use air_r_syntax::{RSyntaxKind, RSyntaxNode};
+use anyhow::Context;
 
-use crate::lints::any_duplicated::any_duplicated::AnyDuplicated;
-use crate::lints::any_is_na::any_is_na::AnyIsNa;
-use crate::lints::class_equals::class_equals::ClassEquals;
-use crate::lints::duplicated_arguments::duplicated_arguments::DuplicatedArguments;
-use crate::lints::empty_assignment::empty_assignment::EmptyAssignment;
-use crate::lints::equal_assignment::equal_assignment::EqualAssignment;
-use crate::lints::equals_na::equals_na::EqualsNa;
-use crate::lints::length_levels::length_levels::LengthLevels;
-use crate::lints::length_test::length_test::LengthTest;
-use crate::lints::lengths::lengths::Lengths;
+// use crate::lints::any_duplicated::any_duplicated::AnyDuplicated;
+// use crate::lints::any_is_na::any_is_na::AnyIsNa;
+// use crate::lints::class_equals::class_equals::ClassEquals;
+// use crate::lints::duplicated_arguments::duplicated_arguments::DuplicatedArguments;
+// use crate::lints::empty_assignment::empty_assignment::EmptyAssignment;
+// use crate::lints::equal_assignment::equal_assignment::EqualAssignment;
+// use crate::lints::equals_na::equals_na::EqualsNa;
+// use crate::lints::length_levels::length_levels::LengthLevels;
+// use crate::lints::length_test::length_test::LengthTest;
+// use crate::lints::lengths::lengths::Lengths;
 use crate::lints::redundant_equals::redundant_equals::RedundantEquals;
-use crate::lints::true_false_symbol::true_false_symbol::TrueFalseSymbol;
-use crate::lints::which_grepl::which_grepl::WhichGrepl;
+// use crate::lints::true_false_symbol::true_false_symbol::TrueFalseSymbol;
+// use crate::lints::which_grepl::which_grepl::WhichGrepl;
 use crate::message::*;
 use crate::semantic_model;
 use crate::trait_lint_checker::LintChecker;
@@ -24,19 +25,19 @@ use std::path::Path;
 
 fn rule_name_to_lint_checker(rule_name: &str) -> Box<dyn LintChecker> {
     match rule_name {
-        "any_duplicated" => Box::new(AnyDuplicated),
-        "any_is_na" => Box::new(AnyIsNa),
-        "class_equals" => Box::new(ClassEquals),
-        "duplicated_arguments" => Box::new(DuplicatedArguments),
-        "empty_assignment" => Box::new(EmptyAssignment),
-        "equal_assignment" => Box::new(EqualAssignment),
-        "equals_na" => Box::new(EqualsNa),
-        "length_levels" => Box::new(LengthLevels),
-        "length_test" => Box::new(LengthTest),
-        "lengths" => Box::new(Lengths),
+        // "any_duplicated" => Box::new(AnyDuplicated),
+        // "any_is_na" => Box::new(AnyIsNa),
+        // "class_equals" => Box::new(ClassEquals),
+        // "duplicated_arguments" => Box::new(DuplicatedArguments),
+        // "empty_assignment" => Box::new(EmptyAssignment),
+        // "equal_assignment" => Box::new(EqualAssignment),
+        // "equals_na" => Box::new(EqualsNa),
+        // "length_levels" => Box::new(LengthLevels),
+        // "length_test" => Box::new(LengthTest),
+        // "lengths" => Box::new(Lengths),
         "redundant_equals" => Box::new(RedundantEquals),
-        "true_false_symbol" => Box::new(TrueFalseSymbol),
-        "which_grepl" => Box::new(WhichGrepl),
+        // "true_false_symbol" => Box::new(TrueFalseSymbol),
+        // "which_grepl" => Box::new(WhichGrepl),
         unknown => unreachable!("unknown rule name: {unknown}"),
     }
 }
@@ -57,7 +58,7 @@ pub fn get_checks(
     let syntax = &parsed.syntax();
     let loc_new_lines = find_new_lines(syntax)?;
     let mut diagnostics_lints: Vec<Diagnostic> =
-        check_ast(syntax, &loc_new_lines, file.to_str().unwrap(), &rules);
+        check_ast(syntax, &loc_new_lines, file.to_str().unwrap(), &rules)?;
 
     diagnostics_semantic.append(&mut diagnostics_lints);
 
@@ -69,7 +70,7 @@ pub fn check_ast(
     loc_new_lines: &[usize],
     file: &str,
     rules: &Vec<&str>,
-) -> Vec<Diagnostic> {
+) -> anyhow::Result<Vec<Diagnostic>> {
     let mut diagnostics: Vec<Diagnostic> = vec![];
 
     let linters: Vec<Box<dyn LintChecker>> = rules
@@ -78,7 +79,11 @@ pub fn check_ast(
         .collect();
 
     for linter in linters {
-        diagnostics.extend(linter.check(ast, loc_new_lines, file));
+        diagnostics.extend(
+            linter
+                .check(ast, loc_new_lines, file)
+                .or_else(|x| Err(anyhow::anyhow!("None value received")))?,
+        );
     }
 
     // if ast.kind() == RSyntaxKind::R_CALL || ast.kind() == RSyntaxKind::R_CALL_ARGUMENTS {
@@ -119,18 +124,18 @@ pub fn check_ast(
         | RSyntaxKind::R_WHILE_STATEMENT
         | RSyntaxKind::R_IF_STATEMENT => {
             for child in ast.children() {
-                diagnostics.extend(check_ast(&child, loc_new_lines, file, rules));
+                diagnostics.extend(check_ast(&child, loc_new_lines, file, rules)?);
             }
         }
         // RSyntaxKind::R_IDENTIFIER => {
-        //     diagnostics.extend(check_ast(&ast, loc_new_lines, file, rules));
+        //     diagnostics.extend(check_ast(&ast, loc_new_lines, file, rules)?);
 
         //     // let fc = &ast.first_child();
         //     // let _has_child = fc.is_some();
         //     // let ns = ast.next_sibling();
         //     // let has_sibling = ns.is_some();
         //     // if has_sibling {
-        //     //     diagnostics.extend(check_ast(&ns.unwrap(), loc_new_lines, file, rules));
+        //     //     diagnostics.extend(check_ast(&ns.unwrap(), loc_new_lines, file, rules)?);
         //     // }
         // }
         _ => {
@@ -138,7 +143,7 @@ pub fn check_ast(
             match &ast.first_child() {
                 Some(_) => {
                     for child in ast.children() {
-                        diagnostics.extend(check_ast(&child, loc_new_lines, file, rules));
+                        diagnostics.extend(check_ast(&child, loc_new_lines, file, rules)?);
                     }
                 }
                 None => {
@@ -147,12 +152,12 @@ pub fn check_ast(
                     // let ns = ast.next_sibling();
                     // let has_sibling = ns.is_some();
                     // if has_sibling {
-                    //     diagnostics.extend(check_ast(&ns.unwrap(), loc_new_lines, file, rules));
+                    //     diagnostics.extend(check_ast(&ns.unwrap(), loc_new_lines, file, rules)?);
                     // }
                 }
             }
         }
     };
 
-    diagnostics
+    Ok(diagnostics)
 }
