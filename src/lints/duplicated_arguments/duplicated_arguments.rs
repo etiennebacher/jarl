@@ -41,6 +41,7 @@ impl LintChecker for DuplicatedArguments {
             AnyRExpression::RSubset2(x) => x.arguments()?.text(),
             AnyRExpression::RIdentifier(x) => x.text(),
             AnyRExpression::AnyRValue(x) => x.text(),
+            AnyRExpression::RParenthesizedExpression(x) => x.body()?.text(),
             AnyRExpression::RReturnExpression(x) => x.text(),
             _ => {
                 return Err(anyhow!(

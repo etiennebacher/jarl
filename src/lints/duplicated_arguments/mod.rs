@@ -11,6 +11,10 @@ mod tests {
         expect_no_lint("fun(`arg` = 1)", "duplicated_arguments");
         expect_no_lint("'fun'(arg = 1)", "duplicated_arguments");
         expect_no_lint("(function(x, y) x + y)(x = 1)", "duplicated_arguments");
+        expect_no_lint(
+            "fun(x = (function(x) x + 1), y = 1)",
+            "duplicated_arguments",
+        );
         expect_no_lint("dt[i = 1]", "duplicated_arguments");
     }
 
@@ -44,6 +48,11 @@ mod tests {
         );
         expect_lint(
             "foo(a = 1, a = function(x) 1)",
+            expected_message,
+            "duplicated_arguments",
+        );
+        expect_lint(
+            "foo(a = 1, a = (function(x) x + 1))",
             expected_message,
             "duplicated_arguments",
         );
