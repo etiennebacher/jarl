@@ -39,7 +39,7 @@ biome_rowan = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4af
 rustc-hash = "2.1.1"
 rust-lapper = "1.1.0"
 smallvec = "1.13.2"
-
+bincode = "1.3"
 
 [dev-dependencies]
 insta = { version = "1.42.0", features = ["yaml"] }

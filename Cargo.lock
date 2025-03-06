@@ -140,6 +140,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bincode"
+version = "1.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "biome_console"
 version = "0.5.7"
 source = "git+https://github.com/biomejs/biome?rev=2648fa4201be4afd26f44eca1a4e77aac0a67272#2648fa4201be4afd26f44eca1a4e77aac0a67272"
@@ -506,6 +515,7 @@ dependencies = [
  "air_r_parser",
  "air_r_syntax",
  "anyhow",
+ "bincode",
  "biome_rowan",
  "clap",
  "colored",

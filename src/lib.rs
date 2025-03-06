@@ -1,3 +1,4 @@
+pub mod cache;
 pub mod check_ast;
 pub mod fix;
 pub mod lints;
