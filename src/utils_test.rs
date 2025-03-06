@@ -97,3 +97,26 @@ pub fn expect_no_lint(text: &str, rule: &str) {
 pub fn expect_lint(text: &str, msg: &str, rule: &str) {
     assert!(has_lint(text, msg, rule));
 }
+
+pub fn expect_error(text: &str, msg: &str, rule: &str) {
+    let temp_file = Builder::new()
+        .prefix("test-flir")
+        .suffix(".R")
+        .tempfile()
+        .unwrap();
+
+    fs::write(&temp_file, text).expect("Failed to write initial content");
+
+    let output = Command::new("flir")
+        .arg("--dir")
+        .arg(temp_file.path())
+        .arg("--rules")
+        .arg(rule)
+        .stdout(Stdio::piped())
+        .output()
+        .unwrap()
+        .stderr;
+
+    let err_msg = std::str::from_utf8(&output).unwrap();
+    assert!(err_msg.contains(msg))
+}
