@@ -5,7 +5,7 @@ use anyhow::Context;
 // use crate::lints::any_duplicated::any_duplicated::AnyDuplicated;
 // use crate::lints::any_is_na::any_is_na::AnyIsNa;
 // use crate::lints::class_equals::class_equals::ClassEquals;
-// use crate::lints::duplicated_arguments::duplicated_arguments::DuplicatedArguments;
+use crate::lints::duplicated_arguments::duplicated_arguments::DuplicatedArguments;
 // use crate::lints::empty_assignment::empty_assignment::EmptyAssignment;
 // use crate::lints::equal_assignment::equal_assignment::EqualAssignment;
 // use crate::lints::equals_na::equals_na::EqualsNa;
@@ -28,7 +28,7 @@ fn rule_name_to_lint_checker(rule_name: &str) -> Box<dyn LintChecker> {
         // "any_duplicated" => Box::new(AnyDuplicated),
         // "any_is_na" => Box::new(AnyIsNa),
         // "class_equals" => Box::new(ClassEquals),
-        // "duplicated_arguments" => Box::new(DuplicatedArguments),
+        "duplicated_arguments" => Box::new(DuplicatedArguments),
         // "empty_assignment" => Box::new(EmptyAssignment),
         // "equal_assignment" => Box::new(EqualAssignment),
         // "equals_na" => Box::new(EqualsNa),
@@ -79,11 +79,7 @@ pub fn check_ast(
         .collect();
 
     for linter in linters {
-        diagnostics.extend(
-            linter
-                .check(ast, loc_new_lines, file)
-                .or_else(|x| Err(anyhow::anyhow!("None value received")))?,
-        );
+        diagnostics.extend(linter.check(ast, loc_new_lines, file)?);
     }
 
     // if ast.kind() == RSyntaxKind::R_CALL || ast.kind() == RSyntaxKind::R_CALL_ARGUMENTS {

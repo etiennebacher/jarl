@@ -42,6 +42,11 @@ mod tests {
             expected_message,
             "duplicated_arguments",
         );
+        expect_lint(
+            "foo(a = 1, a = function(x) 1)",
+            expected_message,
+            "duplicated_arguments",
+        );
         // TODO
         // assert!(expect_lint(
         //     "dt[i = 1, i = 2]",

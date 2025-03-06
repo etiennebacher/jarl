@@ -33,9 +33,9 @@ impl LintChecker for RedundantEquals {
 
         let RBinaryExpressionFields { left, operator, right } = bin_expr.unwrap().as_fields();
 
-        let operator = operator.unwrap();
-        let left = left.unwrap();
-        let right = right.unwrap();
+        let operator = operator?;
+        let left = left?;
+        let right = right?;
 
         let left_is_true = &left.as_r_true_expression().is_some();
         let left_is_false = &left.as_r_false_expression().is_some();
