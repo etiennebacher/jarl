@@ -1,5 +1,5 @@
 pub(crate) mod any_duplicated;
-// pub(crate) mod any_is_na;
+pub(crate) mod any_is_na;
 // pub(crate) mod class_equals;
 pub(crate) mod duplicated_arguments;
 // pub(crate) mod empty_assignment;
@@ -14,7 +14,7 @@ pub(crate) mod redundant_equals;
 
 pub const ALL_RULES: &[&str] = &[
     "any_duplicated",
-    // "any_is_na",
+    "any_is_na",
     // "class_equals",
     "duplicated_arguments",
     // "empty_assignment",
