@@ -1,6 +1,5 @@
 use air_r_parser::RParserOptions;
 use air_r_syntax::{RSyntaxKind, RSyntaxNode};
-use anyhow::Context;
 
 use crate::lints::any_duplicated::any_duplicated::AnyDuplicated;
 use crate::lints::any_is_na::any_is_na::AnyIsNa;
@@ -14,7 +13,7 @@ use crate::lints::length_test::length_test::LengthTest;
 use crate::lints::lengths::lengths::Lengths;
 use crate::lints::redundant_equals::redundant_equals::RedundantEquals;
 use crate::lints::true_false_symbol::true_false_symbol::TrueFalseSymbol;
-// use crate::lints::which_grepl::which_grepl::WhichGrepl;
+use crate::lints::which_grepl::which_grepl::WhichGrepl;
 use crate::message::*;
 use crate::semantic_model;
 use crate::trait_lint_checker::LintChecker;
@@ -37,7 +36,7 @@ fn rule_name_to_lint_checker(rule_name: &str) -> Box<dyn LintChecker> {
         "lengths" => Box::new(Lengths),
         "redundant_equals" => Box::new(RedundantEquals),
         "true_false_symbol" => Box::new(TrueFalseSymbol),
-        // "which_grepl" => Box::new(WhichGrepl),
+        "which_grepl" => Box::new(WhichGrepl),
         unknown => unreachable!("unknown rule name: {unknown}"),
     }
 }

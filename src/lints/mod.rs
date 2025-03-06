@@ -10,7 +10,7 @@ pub(crate) mod length_test;
 pub(crate) mod lengths;
 pub(crate) mod redundant_equals;
 pub(crate) mod true_false_symbol;
-// pub(crate) mod which_grepl;
+pub(crate) mod which_grepl;
 
 pub const ALL_RULES: &[&str] = &[
     "any_duplicated",
@@ -25,5 +25,5 @@ pub const ALL_RULES: &[&str] = &[
     "lengths",
     "redundant_equals",
     "true_false_symbol",
-    // "which_grepl",
+    "which_grepl",
 ];

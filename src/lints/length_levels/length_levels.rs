@@ -44,11 +44,6 @@ impl LintChecker for LengthLevels {
                     .unwrap_or(false)
         });
 
-        // any(na.rm = TRUE/FALSE) and any() are valid
-        if unnamed_arg.is_none() {
-            return Ok(diagnostics);
-        }
-
         let y = unnamed_arg
             .unwrap()
             .first_child()
