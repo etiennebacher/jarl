@@ -4,7 +4,7 @@ pub(crate) mod class_equals;
 pub(crate) mod duplicated_arguments;
 pub(crate) mod empty_assignment;
 pub(crate) mod equal_assignment;
-// pub(crate) mod equals_na;
+pub(crate) mod equals_na;
 // pub(crate) mod length_levels;
 // pub(crate) mod length_test;
 // pub(crate) mod lengths;
@@ -19,7 +19,7 @@ pub const ALL_RULES: &[&str] = &[
     "duplicated_arguments",
     "empty_assignment",
     "equal_assignment",
-    // "equals_na",
+    "equals_na",
     // "length_levels",
     // "length_test",
     // "lengths",

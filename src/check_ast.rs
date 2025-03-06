@@ -8,7 +8,7 @@ use crate::lints::class_equals::class_equals::ClassEquals;
 use crate::lints::duplicated_arguments::duplicated_arguments::DuplicatedArguments;
 use crate::lints::empty_assignment::empty_assignment::EmptyAssignment;
 use crate::lints::equal_assignment::equal_assignment::EqualAssignment;
-// use crate::lints::equals_na::equals_na::EqualsNa;
+use crate::lints::equals_na::equals_na::EqualsNa;
 // use crate::lints::length_levels::length_levels::LengthLevels;
 // use crate::lints::length_test::length_test::LengthTest;
 // use crate::lints::lengths::lengths::Lengths;
@@ -31,7 +31,7 @@ fn rule_name_to_lint_checker(rule_name: &str) -> Box<dyn LintChecker> {
         "duplicated_arguments" => Box::new(DuplicatedArguments),
         "empty_assignment" => Box::new(EmptyAssignment),
         "equal_assignment" => Box::new(EqualAssignment),
-        // "equals_na" => Box::new(EqualsNa),
+        "equals_na" => Box::new(EqualsNa),
         // "length_levels" => Box::new(LengthLevels),
         // "length_test" => Box::new(LengthTest),
         // "lengths" => Box::new(Lengths),
