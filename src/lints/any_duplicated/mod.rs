@@ -6,10 +6,12 @@ mod tests {
 
     #[test]
     fn test_no_lint_any_duplicated() {
-        expect_no_lint("y <- any(x)", "any_duplicated");
-        expect_no_lint("y <- duplicated(x)", "any_duplicated");
-        expect_no_lint("y <- any(!duplicated(x))", "any_duplicated");
-        expect_no_lint("y <- any(!duplicated(foo(x)))", "any_duplicated")
+        expect_no_lint("any(x)", "any_duplicated");
+        expect_no_lint("duplicated(x)", "any_duplicated");
+        expect_no_lint("any(!duplicated(x))", "any_duplicated");
+        expect_no_lint("any(!duplicated(foo(x)))", "any_duplicated");
+        expect_no_lint("any(na.rm = TRUE)", "any_duplicated");
+        expect_no_lint("any()", "any_duplicated");
     }
 
     #[test]
