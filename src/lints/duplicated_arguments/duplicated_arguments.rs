@@ -4,6 +4,7 @@ use crate::trait_lint_checker::LintChecker;
 use crate::utils::find_row_col;
 use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
+use anyhow::{anyhow, Result};
 use biome_rowan::AstNode;
 
 pub struct DuplicatedArguments;
@@ -18,61 +19,78 @@ impl Violation for DuplicatedArguments {
 }
 
 impl LintChecker for DuplicatedArguments {
-    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Diagnostic> {
+    fn check(
+        &self,
+        ast: &RSyntaxNode,
+        loc_new_lines: &[usize],
+        file: &str,
+    ) -> Result<Vec<Diagnostic>> {
         let mut diagnostics: Vec<Diagnostic> = vec![];
         if ast.kind() != RSyntaxKind::R_CALL {
-            return diagnostics;
+            return Ok(diagnostics);
         }
 
         let call = RCall::cast(ast.clone());
         let function = call.unwrap().function();
 
-        let fun_name = match function.unwrap() {
-            AnyRExpression::RNamespaceExpression(x) => x.right().unwrap().text(),
-            AnyRExpression::RExtractExpression(x) => x.right().unwrap().text(),
-            AnyRExpression::RSubset(x) => x.arguments().unwrap().text(),
-            AnyRExpression::RSubset2(x) => x.arguments().unwrap().text(),
+        let fun_name = match function? {
+            AnyRExpression::RNamespaceExpression(x) => x.right()?.text(),
+            AnyRExpression::RExtractExpression(x) => x.right()?.text(),
+            AnyRExpression::RCall(x) => x.function()?.text(),
+            AnyRExpression::RSubset(x) => x.arguments()?.text(),
+            AnyRExpression::RSubset2(x) => x.arguments()?.text(),
             AnyRExpression::RIdentifier(x) => x.text(),
             AnyRExpression::AnyRValue(x) => x.text(),
+            AnyRExpression::RParenthesizedExpression(x) => x.body()?.text(),
             AnyRExpression::RReturnExpression(x) => x.text(),
-            _ => unreachable!(
-                "in {}, couldn't find function name for duplicated_arguments linter.",
-                file
-            ),
+            _ => {
+                return Err(anyhow!(
+                    "in {}, couldn't find function name for duplicated_arguments linter.",
+                    file
+                ))
+            }
         };
 
         let whitelisted_funs = ["mutate", "summarize", "transmute"];
         if whitelisted_funs.contains(&fun_name.as_str()) {
-            return diagnostics;
+            return Ok(diagnostics);
         }
 
         let named_args = ast
             .descendants()
             .find(|x| x.kind() == RSyntaxKind::R_ARGUMENT_LIST)
-            .unwrap()
+            .ok_or(anyhow!("Couldn't find argument list"))?
             .children()
             .filter(|x| {
                 x.kind() == RSyntaxKind::R_ARGUMENT
-                    && x.first_child().unwrap().kind() == RSyntaxKind::R_ARGUMENT_NAME_CLAUSE
+                    && x.first_child()
+                        .map(|child| child.kind() == RSyntaxKind::R_ARGUMENT_NAME_CLAUSE)
+                        .unwrap_or(false)
             })
             .collect::<Vec<_>>();
 
         if named_args.is_empty() {
-            return diagnostics;
+            return Ok(diagnostics);
         }
 
         let arg_names = named_args
             .iter()
             .map(|arg| {
                 arg.first_child()
-                    .unwrap()
-                    .first_child()
-                    .unwrap()
-                    .text_trimmed()
-                    .to_string()
-                    .replace(&['\'', '"', '`'][..], "")
+                    .map(|child| {
+                        child
+                            .first_child()
+                            .map(|child2| {
+                                child2
+                                    .text_trimmed()
+                                    .to_string()
+                                    .replace(&['\'', '"', '`'][..], "")
+                            })
+                            .unwrap_or("".to_string())
+                    })
+                    .unwrap_or("".to_string())
             })
-            .collect::<Vec<_>>();
+            .collect::<Vec<String>>();
 
         if has_duplicates(&arg_names) {
             let (row, column) = find_row_col(ast, loc_new_lines);
@@ -83,7 +101,7 @@ impl LintChecker for DuplicatedArguments {
                 fix: Fix::empty(),
             })
         }
-        diagnostics
+        Ok(diagnostics)
     }
 }
 

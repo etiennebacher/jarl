@@ -4,6 +4,7 @@ use crate::trait_lint_checker::LintChecker;
 use crate::utils::find_row_col;
 use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
+use anyhow::Result;
 use biome_rowan::AstNode;
 
 pub struct EmptyAssignment;
@@ -18,25 +19,30 @@ impl Violation for EmptyAssignment {
 }
 
 impl LintChecker for EmptyAssignment {
-    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Diagnostic> {
+    fn check(
+        &self,
+        ast: &RSyntaxNode,
+        loc_new_lines: &[usize],
+        file: &str,
+    ) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
         let bin_expr = RBinaryExpression::cast(ast.clone());
 
         if bin_expr.is_none() {
-            return diagnostics;
+            return Ok(diagnostics);
         }
 
         let RBinaryExpressionFields { left, operator, right } = bin_expr.unwrap().as_fields();
 
-        let left = left.unwrap();
-        let right = right.unwrap();
-        let operator = operator.unwrap();
+        let left = left?;
+        let right = right?;
+        let operator = operator?;
 
         if operator.kind() != RSyntaxKind::EQUAL
             && operator.kind() != RSyntaxKind::ASSIGN
             && operator.kind() != RSyntaxKind::ASSIGN_RIGHT
         {
-            return diagnostics;
+            return Ok(diagnostics);
         };
 
         let value_is_empty = match operator.kind() {
@@ -44,14 +50,14 @@ impl LintChecker for EmptyAssignment {
                 if let Some(right) = RBracedExpressions::cast(right.into()) {
                     right.expressions().text() == ""
                 } else {
-                    return diagnostics;
+                    return Ok(diagnostics);
                 }
             }
             RSyntaxKind::ASSIGN_RIGHT => {
                 if let Some(left) = RBracedExpressions::cast(left.into()) {
                     left.expressions().text() == ""
                 } else {
-                    return diagnostics;
+                    return Ok(diagnostics);
                 }
             }
             _ => unreachable!("cannot have something else than an assignment"),
@@ -67,6 +73,6 @@ impl LintChecker for EmptyAssignment {
             });
         }
 
-        diagnostics
+        Ok(diagnostics)
     }
 }

@@ -4,6 +4,7 @@ use crate::trait_lint_checker::LintChecker;
 use crate::utils::{find_row_col, get_first_arg, node_is_in_square_brackets};
 use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
+use anyhow::Result;
 use biome_rowan::AstNode;
 
 pub struct ClassEquals;
@@ -19,15 +20,20 @@ impl Violation for ClassEquals {
 }
 
 impl LintChecker for ClassEquals {
-    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Diagnostic> {
+    fn check(
+        &self,
+        ast: &RSyntaxNode,
+        loc_new_lines: &[usize],
+        file: &str,
+    ) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
         let bin_expr = RBinaryExpression::cast(ast.clone());
 
         if bin_expr.is_none() || node_is_in_square_brackets(ast) {
-            return diagnostics;
+            return Ok(diagnostics);
         }
 
-        let RBinaryExpressionFields { left: _, operator, right: _ } = bin_expr.unwrap().as_fields();
+        let RBinaryExpressionFields { left, operator, right } = bin_expr.unwrap().as_fields();
 
         let operator = operator.unwrap();
 
@@ -35,26 +41,25 @@ impl LintChecker for ClassEquals {
             && operator.kind() != RSyntaxKind::NOT_EQUAL
             && operator.text_trimmed() != "%in%"
         {
-            return diagnostics;
+            return Ok(diagnostics);
         };
 
-        let mut children = ast.children();
-        let lhs = children.next().unwrap();
-        let rhs = children.next().unwrap();
+        let lhs = left?.into_syntax();
+        let rhs = right?.into_syntax();
 
-        let left_is_class = match lhs.first_child() {
-            Some(x) => x.text_trimmed() == "class",
-            None => false,
-        };
-        let right_is_class = match rhs.first_child() {
-            Some(x) => x.text_trimmed() == "class",
-            None => false,
-        };
+        let left_is_class = lhs
+            .first_child()
+            .map(|x| x.text_trimmed() == "class")
+            .unwrap_or(false);
+        let right_is_class = rhs
+            .first_child()
+            .map(|x| x.text_trimmed() == "class")
+            .unwrap_or(false);
         let left_is_string = lhs.kind() == RSyntaxKind::R_STRING_VALUE;
         let right_is_string = rhs.kind() == RSyntaxKind::R_STRING_VALUE;
 
         if (!left_is_class && !right_is_class) || (!left_is_string && !right_is_string) {
-            return diagnostics;
+            return Ok(diagnostics);
         }
 
         let fun_name =
@@ -87,6 +92,6 @@ impl LintChecker for ClassEquals {
                 end: range.end().into(),
             },
         });
-        diagnostics
+        Ok(diagnostics)
     }
 }

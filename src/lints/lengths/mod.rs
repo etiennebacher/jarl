@@ -41,4 +41,13 @@ mod tests {
         expect_no_lint("lapply(x, length)", "lengths");
         expect_no_lint("map(x, length)", "lengths");
     }
+
+    #[test]
+    fn test_lengths_parsing_errors() {
+        expect_error(
+            "sapply(x, FUN = )",
+            "Found named argument without any value",
+            "lengths",
+        );
+    }
 }

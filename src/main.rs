@@ -10,6 +10,7 @@ use rayon::prelude::*;
 use std::fs;
 use std::path::Path;
 // use std::time::Instant;
+use anyhow::{Context, Result};
 use walkdir::WalkDir;
 
 /// Simple program to greet a person
@@ -45,7 +46,7 @@ struct Args {
 }
 
 /// This is my first rust crate
-fn main() {
+fn main() -> Result<()> {
     // let start = Instant::now();
     let args = Args::parse();
 
@@ -65,35 +66,54 @@ fn main() {
     // let r_files = vec![Path::new("demo/foo.R").to_path_buf()];
 
     let parser_options = RParserOptions::default();
-    let _: Vec<Diagnostic> = r_files
+    let result: Result<Vec<Diagnostic>, anyhow::Error> = r_files
         .par_iter()
-        // TODO: this only ignores files where there was an error, it doesn't
-        // return the error diagnostics
-        .filter_map(|file| {
+        .map(|file| {
             let mut checks: Vec<Diagnostic>;
             let mut has_skipped_fixes = true;
             loop {
-                let contents = fs::read_to_string(Path::new(file)).expect("Invalid file");
+                // Add file context to the read error
+                let contents = fs::read_to_string(Path::new(file))
+                    .with_context(|| format!("Failed to read file: {}", file.display()))?;
 
-                checks = get_checks(&contents, file, parser_options, rules.clone()).unwrap();
+                // Add file context to the get_checks error
+                checks = get_checks(&contents, file, parser_options, rules.clone()).with_context(
+                    || format!("Failed to get checks for file: {}", file.display()),
+                )?;
+
                 if !has_skipped_fixes || !args.fix {
                     break;
                 }
+
                 let (new_has_skipped_fixes, fixed_text) = apply_fixes(&checks, &contents);
                 has_skipped_fixes = new_has_skipped_fixes;
-                let _ = fs::write(file, fixed_text);
+
+                // Add file context to the write error
+                fs::write(file, fixed_text)
+                    .with_context(|| format!("Failed to write file: {}", file.display()))?;
             }
 
             if !args.fix && !checks.is_empty() {
-                // println!("{}", file.to_str().unwrap().blue().bold());
                 for message in &checks {
                     println!("{}", message);
                 }
             }
-            Some(checks)
+            Ok(checks)
         })
-        .flatten()
+        .flat_map(|result| match result {
+            Ok(checks) => checks.into_par_iter().map(Ok).collect::<Vec<_>>(),
+            Err(e) => vec![Err(e)],
+        })
         .collect();
+
+    match result {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("{:?}", e);
+        }
+    };
+
+    Ok(())
     // let duration = start.elapsed();
     // println!("Checked files in: {:?}", duration);
 }

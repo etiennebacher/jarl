@@ -18,19 +18,24 @@ impl Violation for RedundantEquals {
 }
 
 impl LintChecker for RedundantEquals {
-    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Diagnostic> {
+    fn check(
+        &self,
+        ast: &RSyntaxNode,
+        loc_new_lines: &[usize],
+        file: &str,
+    ) -> anyhow::Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
         let bin_expr = RBinaryExpression::cast(ast.clone());
 
         if bin_expr.is_none() {
-            return diagnostics;
+            return Ok(diagnostics);
         }
 
         let RBinaryExpressionFields { left, operator, right } = bin_expr.unwrap().as_fields();
 
-        let operator = operator.unwrap();
-        let left = left.unwrap();
-        let right = right.unwrap();
+        let operator = operator?;
+        let left = left?;
+        let right = right?;
 
         let left_is_true = &left.as_r_true_expression().is_some();
         let left_is_false = &left.as_r_false_expression().is_some();
@@ -48,7 +53,7 @@ impl LintChecker for RedundantEquals {
                 } else if *right_is_false {
                     format!("!{}", left.text())
                 } else {
-                    return diagnostics;
+                    return Ok(diagnostics);
                 };
 
                 let (row, column) = find_row_col(ast, loc_new_lines);
@@ -74,7 +79,7 @@ impl LintChecker for RedundantEquals {
                 } else if *right_is_false {
                     left.text().to_string()
                 } else {
-                    return diagnostics;
+                    return Ok(diagnostics);
                 };
                 let (row, column) = find_row_col(ast, loc_new_lines);
                 let range = ast.text_trimmed_range();
@@ -89,8 +94,8 @@ impl LintChecker for RedundantEquals {
                     },
                 });
             }
-            _ => return diagnostics,
+            _ => return Ok(diagnostics),
         };
-        diagnostics
+        Ok(diagnostics)
     }
 }

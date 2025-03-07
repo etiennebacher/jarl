@@ -27,9 +27,11 @@ mod tests {
 
     #[test]
     fn test_no_lint_any_na() {
-        expect_no_lint("y <- any(x)", "any_is_na");
-        expect_no_lint("y <- is.na(x)", "any_is_na");
-        expect_no_lint("y <- any(!is.na(x))", "any_is_na");
-        expect_no_lint("y <- any(!is.na(foo(x)))", "any_is_na")
+        expect_no_lint("any(x)", "any_is_na");
+        expect_no_lint("is.na(x)", "any_is_na");
+        expect_no_lint("any(!is.na(x))", "any_is_na");
+        expect_no_lint("any(!is.na(foo(x)))", "any_is_na");
+        expect_no_lint("any()", "any_is_na");
+        expect_no_lint("any(na.rm = TRUE)", "any_is_na");
     }
 }

@@ -5,6 +5,7 @@ use crate::utils::find_row_col;
 use air_r_syntax::RSyntaxKind::*;
 use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
+use anyhow::{Context, Result};
 use biome_rowan::AstNode;
 
 pub struct LengthTest;
@@ -19,20 +20,25 @@ impl Violation for LengthTest {
 }
 
 impl LintChecker for LengthTest {
-    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Diagnostic> {
+    fn check(
+        &self,
+        ast: &RSyntaxNode,
+        loc_new_lines: &[usize],
+        file: &str,
+    ) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
         let call = RCall::cast(ast.clone());
         if call.is_none() {
-            return diagnostics;
+            return Ok(diagnostics);
         }
         let RCallFields { function, arguments } = call.unwrap().as_fields();
-        let function = function.unwrap();
+        let function = function?;
 
         if function.text() != "length" {
-            return diagnostics;
+            return Ok(diagnostics);
         }
 
-        let arguments = arguments.unwrap().items();
+        let arguments = arguments?.items();
         let mut arg_is_binary_expr = false;
         let mut operator_text: String = "".to_string();
         let mut lhs: String = "".to_string();
@@ -41,11 +47,11 @@ impl LintChecker for LengthTest {
         if let Some(first_arg) = arguments.into_iter().nth(0) {
             if let Ok(x) = first_arg {
                 let RArgumentFields { name_clause: _, value } = x.as_fields();
-                let value = value.unwrap();
+                let value = value.context("Found named argument without any value")?;
                 if let AnyRExpression::RBinaryExpression(y) = value {
                     let RBinaryExpressionFields { left, operator, right } = y.as_fields();
 
-                    let operator = operator.unwrap();
+                    let operator = operator?;
                     arg_is_binary_expr = operator.kind() == EQUAL2
                         || operator.kind() == GREATER_THAN
                         || operator.kind() == GREATER_THAN_OR_EQUAL_TO
@@ -54,12 +60,12 @@ impl LintChecker for LengthTest {
                         || operator.kind() == NOT_EQUAL;
 
                     operator_text.push_str(operator.text_trimmed());
-                    lhs.push_str(&left.unwrap().text());
-                    rhs.push_str(&right.unwrap().text());
+                    lhs.push_str(&left?.text());
+                    rhs.push_str(&right?.text());
                 }
             }
         } else {
-            return diagnostics;
+            return Ok(diagnostics);
         }
 
         if arg_is_binary_expr {
@@ -77,6 +83,6 @@ impl LintChecker for LengthTest {
             });
         }
 
-        diagnostics
+        Ok(diagnostics)
     }
 }

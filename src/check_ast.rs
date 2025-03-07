@@ -57,7 +57,7 @@ pub fn get_checks(
     let syntax = &parsed.syntax();
     let loc_new_lines = find_new_lines(syntax)?;
     let mut diagnostics_lints: Vec<Diagnostic> =
-        check_ast(syntax, &loc_new_lines, file.to_str().unwrap(), &rules);
+        check_ast(syntax, &loc_new_lines, file.to_str().unwrap(), &rules)?;
 
     diagnostics_semantic.append(&mut diagnostics_lints);
 
@@ -69,7 +69,7 @@ pub fn check_ast(
     loc_new_lines: &[usize],
     file: &str,
     rules: &Vec<&str>,
-) -> Vec<Diagnostic> {
+) -> anyhow::Result<Vec<Diagnostic>> {
     let mut diagnostics: Vec<Diagnostic> = vec![];
 
     let linters: Vec<Box<dyn LintChecker>> = rules
@@ -78,7 +78,7 @@ pub fn check_ast(
         .collect();
 
     for linter in linters {
-        diagnostics.extend(linter.check(ast, loc_new_lines, file));
+        diagnostics.extend(linter.check(ast, loc_new_lines, file)?);
     }
 
     // if ast.kind() == RSyntaxKind::R_CALL || ast.kind() == RSyntaxKind::R_CALL_ARGUMENTS {
@@ -119,18 +119,18 @@ pub fn check_ast(
         | RSyntaxKind::R_WHILE_STATEMENT
         | RSyntaxKind::R_IF_STATEMENT => {
             for child in ast.children() {
-                diagnostics.extend(check_ast(&child, loc_new_lines, file, rules));
+                diagnostics.extend(check_ast(&child, loc_new_lines, file, rules)?);
             }
         }
         // RSyntaxKind::R_IDENTIFIER => {
-        //     diagnostics.extend(check_ast(&ast, loc_new_lines, file, rules));
+        //     diagnostics.extend(check_ast(&ast, loc_new_lines, file, rules)?);
 
         //     // let fc = &ast.first_child();
         //     // let _has_child = fc.is_some();
         //     // let ns = ast.next_sibling();
         //     // let has_sibling = ns.is_some();
         //     // if has_sibling {
-        //     //     diagnostics.extend(check_ast(&ns.unwrap(), loc_new_lines, file, rules));
+        //     //     diagnostics.extend(check_ast(&ns.unwrap(), loc_new_lines, file, rules)?);
         //     // }
         // }
         _ => {
@@ -138,7 +138,7 @@ pub fn check_ast(
             match &ast.first_child() {
                 Some(_) => {
                     for child in ast.children() {
-                        diagnostics.extend(check_ast(&child, loc_new_lines, file, rules));
+                        diagnostics.extend(check_ast(&child, loc_new_lines, file, rules)?);
                     }
                 }
                 None => {
@@ -147,12 +147,12 @@ pub fn check_ast(
                     // let ns = ast.next_sibling();
                     // let has_sibling = ns.is_some();
                     // if has_sibling {
-                    //     diagnostics.extend(check_ast(&ns.unwrap(), loc_new_lines, file, rules));
+                    //     diagnostics.extend(check_ast(&ns.unwrap(), loc_new_lines, file, rules)?);
                     // }
                 }
             }
         }
     };
 
-    diagnostics
+    Ok(diagnostics)
 }

@@ -4,6 +4,7 @@ use crate::trait_lint_checker::LintChecker;
 use crate::utils::find_row_col;
 use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
+use anyhow::Result;
 use biome_rowan::AstNode;
 
 pub struct EqualAssignment;
@@ -18,36 +19,39 @@ impl Violation for EqualAssignment {
 }
 
 impl LintChecker for EqualAssignment {
-    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Diagnostic> {
+    fn check(
+        &self,
+        ast: &RSyntaxNode,
+        loc_new_lines: &[usize],
+        file: &str,
+    ) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
         let bin_expr = RBinaryExpression::cast(ast.clone());
 
         if bin_expr.is_none() {
-            return diagnostics;
+            return Ok(diagnostics);
         }
 
-        let RBinaryExpressionFields { left: _, operator, right: _ } = bin_expr.unwrap().as_fields();
+        let RBinaryExpressionFields { left, operator, right } = bin_expr.unwrap().as_fields();
 
-        let operator = operator.unwrap();
-
-        let mut children = ast.children();
-        let lhs = children.next().unwrap();
-        let rhs = children.next().unwrap();
+        let operator = operator?;
+        let lhs = left?.into_syntax();
+        let rhs = right?.into_syntax();
 
         if operator.kind() != RSyntaxKind::EQUAL && operator.kind() != RSyntaxKind::ASSIGN_RIGHT {
-            return diagnostics;
+            return Ok(diagnostics);
         };
 
         let replacement = match operator.kind() {
             RSyntaxKind::EQUAL => {
                 if lhs.kind() != RSyntaxKind::R_IDENTIFIER {
-                    return diagnostics;
+                    return Ok(diagnostics);
                 }
                 format!("{} <- {}", lhs.text_trimmed(), rhs.text_trimmed())
             }
             RSyntaxKind::ASSIGN_RIGHT => {
                 if rhs.kind() != RSyntaxKind::R_IDENTIFIER {
-                    return diagnostics;
+                    return Ok(diagnostics);
                 }
                 format!("{} <- {}", rhs.text_trimmed(), lhs.text_trimmed())
             }
@@ -67,6 +71,6 @@ impl LintChecker for EqualAssignment {
             },
         });
 
-        diagnostics
+        Ok(diagnostics)
     }
 }

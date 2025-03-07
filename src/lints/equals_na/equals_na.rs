@@ -4,6 +4,7 @@ use crate::trait_lint_checker::LintChecker;
 use crate::utils::find_row_col;
 use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
+use anyhow::Result;
 use biome_rowan::AstNode;
 
 pub struct EqualsNa;
@@ -18,21 +19,26 @@ impl Violation for EqualsNa {
 }
 
 impl LintChecker for EqualsNa {
-    fn check(&self, ast: &RSyntaxNode, loc_new_lines: &[usize], file: &str) -> Vec<Diagnostic> {
+    fn check(
+        &self,
+        ast: &RSyntaxNode,
+        loc_new_lines: &[usize],
+        file: &str,
+    ) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
         let bin_expr = RBinaryExpression::cast(ast.clone());
         if bin_expr.is_none() {
-            return diagnostics;
+            return Ok(diagnostics);
         }
 
         let RBinaryExpressionFields { left, operator, right } = bin_expr.unwrap().as_fields();
 
-        let left = left.unwrap();
-        let operator = operator.unwrap();
-        let right = right.unwrap();
+        let left = left?;
+        let operator = operator?;
+        let right = right?;
 
         if operator.kind() != RSyntaxKind::EQUAL2 && operator.kind() != RSyntaxKind::NOT_EQUAL {
-            return diagnostics;
+            return Ok(diagnostics);
         };
 
         let na_values = [
@@ -50,7 +56,7 @@ impl LintChecker for EqualsNa {
         // If NA is quoted in text, then quotation marks are escaped and this
         // is false.
         if (left_is_na && right_is_na) || (!left_is_na && !right_is_na) {
-            return diagnostics;
+            return Ok(diagnostics);
         }
         let (row, column) = find_row_col(ast, loc_new_lines);
         let range = ast.text_trimmed_range();
@@ -89,6 +95,6 @@ impl LintChecker for EqualsNa {
             _ => unreachable!("This case is an early return"),
         };
 
-        diagnostics
+        Ok(diagnostics)
     }
 }
