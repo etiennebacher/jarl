@@ -1,7 +1,7 @@
 use crate::message::Diagnostic;
+use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
-use std::collections::HashMap;
 use std::fs::{self, File};
 use std::hash::{Hash, Hasher};
 use std::io::{self, Read, Write};
@@ -9,21 +9,27 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Serialize, Deserialize)]
-struct FileCache {
+pub struct FileCache {
     last_modified: u64,      // Timestamp of the last modification
     rule_hash: u64,          // Hash of the rules
     checks: Vec<Diagnostic>, // Cached checks
 }
 
+impl FileCache {
+    pub fn new(last_modified: u64, rule_hash: u64, checks: Vec<Diagnostic>) -> Self {
+        Self { last_modified, rule_hash, checks }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LinterCache {
-    files: HashMap<PathBuf, FileCache>,
-    rule_hash: u64,
+    pub files: DashMap<PathBuf, FileCache>,
+    pub rule_hash: u64,
 }
 
 impl LinterCache {
     pub fn new() -> Self {
-        LinterCache { files: HashMap::new(), rule_hash: 0 }
+        LinterCache { files: DashMap::new(), rule_hash: 0 }
     }
 
     pub fn load_from_disk(cache_path: &Path) -> io::Result<Self> {
@@ -54,13 +60,15 @@ impl LinterCache {
         hasher.finish()
     }
 
-    pub fn update_rules<T: Hash>(&mut self, rules: &T) {
-        self.rule_hash = Self::hash_rules(rules);
-    }
+    // pub fn update_rules<T: Hash>(&mut self, rules: &T) {
+    //     self.rule_hash = Self::hash_rules(rules);
+    // }
 
     pub fn is_cache_valid(&self, path: &Path, current_rule_hash: u64) -> bool {
         if let Some(file_cache) = self.files.get(path) {
             let current_last_modified = Self::get_file_last_modified(path);
+            println!("current_last_modified: {:?}", current_last_modified);
+            println!("file_cache.last_modified: {:?}", file_cache.last_modified);
             file_cache.last_modified == current_last_modified.unwrap_or(0)
                 && file_cache.rule_hash == current_rule_hash
         } else {
@@ -68,26 +76,28 @@ impl LinterCache {
         }
     }
 
-    pub fn get_cached_checks(&self, path: &Path) -> Option<&Vec<Diagnostic>> {
-        self.files.get(path).map(|file_cache| &file_cache.checks)
+    pub fn get_cached_checks(&self, path: &Path) -> Option<Vec<Diagnostic>> {
+        self.files
+            .get(path)
+            .map(|file_cache| file_cache.checks.clone())
     }
 
-    pub fn update_cache(
-        &mut self,
-        path: PathBuf,
-        checks: &Vec<Diagnostic>,
-        current_rule_hash: u64,
-    ) {
-        let last_modified = Self::get_file_last_modified(&path).unwrap_or(0);
-        self.files.insert(
-            path,
-            FileCache {
-                last_modified,
-                rule_hash: current_rule_hash,
-                checks: checks.to_vec(),
-            },
-        );
-    }
+    // pub fn update_cache(
+    //     &mut self,
+    //     path: PathBuf,
+    //     checks: &Vec<Diagnostic>,
+    //     current_rule_hash: u64,
+    // ) {
+    //     let last_modified = Self::get_file_last_modified(&path).unwrap_or(0);
+    //     self.files.insert(
+    //         path,
+    //         FileCache {
+    //             last_modified,
+    //             rule_hash: current_rule_hash,
+    //             checks: checks.to_vec(),
+    //         },
+    //     );
+    // }
 }
 
 // fn main() -> io::Result<()> {

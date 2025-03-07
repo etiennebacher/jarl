@@ -1,6 +1,6 @@
 use air_r_parser::RParserOptions;
 
-use flir::cache::LinterCache;
+use flir::cache::{FileCache, LinterCache};
 use flir::check_ast::*;
 use flir::fix::*;
 use flir::message::*;
@@ -8,9 +8,9 @@ use flir::utils::parse_rules;
 
 use clap::{arg, Parser};
 use rayon::prelude::*;
-use std::default;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 // use std::time::Instant;
 use anyhow::{Context, Result};
 use walkdir::WalkDir;
@@ -68,11 +68,12 @@ fn main() -> Result<()> {
     let rules = parse_rules(&args.rules);
     let rules_hashed = LinterCache::hash_rules(&rules);
 
-    let mut cache = if let Some(cache_dir) = args.cache_dir {
-        LinterCache::load_from_disk(&cache_dir)?
+    let cache_dir = if args.cache_dir.is_some() {
+        args.cache_dir.unwrap()
     } else {
-        LinterCache::new()
+        ".flir_cache".into()
     };
+    let cache = LinterCache::load_from_disk(&cache_dir).unwrap_or(LinterCache::new());
 
     // let r_files = vec![Path::new("demo/foo.R").to_path_buf()];
 
@@ -112,9 +113,16 @@ fn main() -> Result<()> {
                         .with_context(|| format!("Failed to write file: {}", file.display()))?;
                 }
 
-                cache.update_cache(file.into(), &checks, rules_hashed);
+                let new_file_cache = FileCache::new(
+                    SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs(),
+                    rules_hashed,
+                    checks.clone(),
+                );
+                cache.files.insert(file.into(), new_file_cache);
             }
-            cache.save_to_disk(&file)?;
 
             if !args.fix && !checks.is_empty() {
                 for message in &checks {
@@ -129,6 +137,8 @@ fn main() -> Result<()> {
             Err(e) => vec![Err(e)],
         })
         .collect();
+
+    cache.save_to_disk(&cache_dir)?;
 
     match result {
         Ok(_) => (),
