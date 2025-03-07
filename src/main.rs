@@ -1,5 +1,6 @@
 use air_r_parser::RParserOptions;
 
+use flir::cache::LinterCache;
 use flir::check_ast::*;
 use flir::fix::*;
 use flir::message::*;
@@ -7,8 +8,9 @@ use flir::utils::parse_rules;
 
 use clap::{arg, Parser};
 use rayon::prelude::*;
+use std::default;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 // use std::time::Instant;
 use anyhow::{Context, Result};
 use walkdir::WalkDir;
@@ -43,6 +45,8 @@ struct Args {
         help = "Names of rules to include, separated by a comma (no spaces)."
     )]
     rules: String,
+    #[arg(long, env = "FLIR_CACHE_DIR", help_heading = "Miscellaneous")]
+    cache_dir: Option<PathBuf>,
 }
 
 /// This is my first rust crate
@@ -62,6 +66,13 @@ fn main() -> Result<()> {
         .collect::<Vec<_>>();
 
     let rules = parse_rules(&args.rules);
+    let rules_hashed = LinterCache::hash_rules(&rules);
+
+    let mut cache = if let Some(cache_dir) = args.cache_dir {
+        LinterCache::load_from_disk(&cache_dir)?
+    } else {
+        LinterCache::new()
+    };
 
     // let r_files = vec![Path::new("demo/foo.R").to_path_buf()];
 
@@ -70,34 +81,47 @@ fn main() -> Result<()> {
         .par_iter()
         .map(|file| {
             let mut checks: Vec<Diagnostic>;
-            let mut has_skipped_fixes = true;
-            loop {
-                // Add file context to the read error
-                let contents = fs::read_to_string(Path::new(file))
-                    .with_context(|| format!("Failed to read file: {}", file.display()))?;
+            let skip_cache = cache.is_cache_valid(file, rules_hashed);
 
-                // Add file context to the get_checks error
-                checks = get_checks(&contents, file, parser_options, rules.clone()).with_context(
-                    || format!("Failed to get checks for file: {}", file.display()),
-                )?;
+            println!("skip_cache: {}", skip_cache);
 
-                if !has_skipped_fixes || !args.fix {
-                    break;
+            if skip_cache {
+                checks = cache.get_cached_checks(file).unwrap().to_vec();
+            } else {
+                let mut has_skipped_fixes = true;
+                loop {
+                    // Add file context to the read error
+                    let contents = fs::read_to_string(Path::new(file))
+                        .with_context(|| format!("Failed to read file: {}", file.display()))?;
+
+                    // Add file context to the get_checks error
+                    checks = get_checks(&contents, file, parser_options, rules.clone())
+                        .with_context(|| {
+                            format!("Failed to get checks for file: {}", file.display())
+                        })?;
+
+                    if !has_skipped_fixes || !args.fix {
+                        break;
+                    }
+
+                    let (new_has_skipped_fixes, fixed_text) = apply_fixes(&checks, &contents);
+                    has_skipped_fixes = new_has_skipped_fixes;
+
+                    // Add file context to the write error
+                    fs::write(file, fixed_text)
+                        .with_context(|| format!("Failed to write file: {}", file.display()))?;
                 }
 
-                let (new_has_skipped_fixes, fixed_text) = apply_fixes(&checks, &contents);
-                has_skipped_fixes = new_has_skipped_fixes;
-
-                // Add file context to the write error
-                fs::write(file, fixed_text)
-                    .with_context(|| format!("Failed to write file: {}", file.display()))?;
+                cache.update_cache(file.into(), &checks, rules_hashed);
             }
+            cache.save_to_disk(&file)?;
 
             if !args.fix && !checks.is_empty() {
                 for message in &checks {
                     println!("{}", message);
                 }
             }
+
             Ok(checks)
         })
         .flat_map(|result| match result {

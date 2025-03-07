@@ -5,7 +5,7 @@ use crate::location::Location;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Fix {
     pub content: String,
     pub start: usize,
@@ -27,13 +27,13 @@ pub trait Violation {
     fn body(&self) -> String;
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct DiagnosticKind {
     pub name: String,
     pub body: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Diagnostic {
     pub message: DiagnosticKind,
     pub filename: PathBuf,
@@ -53,6 +53,12 @@ where
     }
 }
 
+impl DiagnosticKind {
+    pub fn empty() -> Self {
+        Self { name: "".to_string(), body: "".to_string() }
+    }
+}
+
 impl Diagnostic {
     pub fn new<T: Into<DiagnosticKind>>(
         message: T,
@@ -65,6 +71,15 @@ impl Diagnostic {
             filename: filename.into(),
             location,
             fix,
+        }
+    }
+
+    pub fn empty() -> Self {
+        Self {
+            message: DiagnosticKind::empty(),
+            filename: "".to_string().into(),
+            location: Location::new(0, 0),
+            fix: Fix::empty(),
         }
     }
 }

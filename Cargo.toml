@@ -30,7 +30,7 @@ rayon = "1.10.0"
 serde = "1.0.215"
 air_r_parser = { git = "https://github.com/posit-dev/air", rev = "4b66d9c9305de24fba54c1c700aba69e52c73c4b" }
 air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "4b66d9c9305de24fba54c1c700aba69e52c73c4b" }
-clap = { version = "4.5.21", features = ["derive"] }
+clap = { version = "4.5.21", features = ["derive", "env"] }
 walkdir = "2.5.0"
 anyhow = "1.0.94"
 tempfile = "3.14.0"
