@@ -22,8 +22,11 @@ impl Fix {
     }
 }
 
+/// Details on the violated rule.
 pub trait Violation {
+    /// Name of the rule.
     fn name(&self) -> String;
+    /// Explanation of the rule.
     fn body(&self) -> String;
 }
 

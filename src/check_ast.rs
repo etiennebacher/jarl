@@ -8,6 +8,7 @@ use crate::lints::duplicated_arguments::duplicated_arguments::DuplicatedArgument
 use crate::lints::empty_assignment::empty_assignment::EmptyAssignment;
 use crate::lints::equal_assignment::equal_assignment::EqualAssignment;
 use crate::lints::equals_na::equals_na::EqualsNa;
+use crate::lints::expect_length::expect_length::ExpectLength;
 use crate::lints::length_levels::length_levels::LengthLevels;
 use crate::lints::length_test::length_test::LengthTest;
 use crate::lints::lengths::lengths::Lengths;
@@ -15,10 +16,8 @@ use crate::lints::redundant_equals::redundant_equals::RedundantEquals;
 use crate::lints::true_false_symbol::true_false_symbol::TrueFalseSymbol;
 use crate::lints::which_grepl::which_grepl::WhichGrepl;
 use crate::message::*;
-use crate::semantic_model;
 use crate::trait_lint_checker::LintChecker;
 use crate::utils::*;
-use crate::SemanticModelOptions;
 use anyhow::Result;
 use std::path::Path;
 
@@ -31,6 +30,7 @@ fn rule_name_to_lint_checker(rule_name: &str) -> Box<dyn LintChecker> {
         "empty_assignment" => Box::new(EmptyAssignment),
         "equal_assignment" => Box::new(EqualAssignment),
         "equals_na" => Box::new(EqualsNa),
+        "expect_length" => Box::new(ExpectLength),
         "length_levels" => Box::new(LengthLevels),
         "length_test" => Box::new(LengthTest),
         "lengths" => Box::new(Lengths),
@@ -49,19 +49,12 @@ pub fn get_checks(
 ) -> Result<Vec<Diagnostic>> {
     let parsed = air_r_parser::parse(contents, parser_options);
 
-    let root = &parsed.tree();
-    let semantic = semantic_model(root, SemanticModelOptions::default());
-    let mut diagnostics_semantic: Vec<Diagnostic> = vec![];
-    // let mut diagnostics_semantic: Vec<Diagnostic> = check_unused_variables(&semantic);
-
     let syntax = &parsed.syntax();
     let loc_new_lines = find_new_lines(syntax)?;
-    let mut diagnostics_lints: Vec<Diagnostic> =
+    let diagnostics: Vec<Diagnostic> =
         check_ast(syntax, &loc_new_lines, file.to_str().unwrap(), &rules)?;
 
-    diagnostics_semantic.append(&mut diagnostics_lints);
-
-    Ok(diagnostics_semantic)
+    Ok(diagnostics)
 }
 
 pub fn check_ast(

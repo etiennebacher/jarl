@@ -5,6 +5,7 @@ pub(crate) mod duplicated_arguments;
 pub(crate) mod empty_assignment;
 pub(crate) mod equal_assignment;
 pub(crate) mod equals_na;
+pub(crate) mod expect_length;
 pub(crate) mod length_levels;
 pub(crate) mod length_test;
 pub(crate) mod lengths;
@@ -20,6 +21,7 @@ pub const ALL_RULES: &[&str] = &[
     "empty_assignment",
     "equal_assignment",
     "equals_na",
+    "expect_length",
     "length_levels",
     "length_test",
     "lengths",
