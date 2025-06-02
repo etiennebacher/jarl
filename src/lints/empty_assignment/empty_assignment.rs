@@ -1,7 +1,5 @@
-use crate::location::Location;
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
-use crate::utils::find_row_col;
 use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
 use anyhow::Result;
@@ -19,12 +17,7 @@ impl Violation for EmptyAssignment {
 }
 
 impl LintChecker for EmptyAssignment {
-    fn check(
-        &self,
-        ast: &RSyntaxNode,
-        loc_new_lines: &[usize],
-        file: &str,
-    ) -> Result<Vec<Diagnostic>> {
+    fn check(&self, ast: &RSyntaxNode, file: &str) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
         let bin_expr = RBinaryExpression::cast(ast.clone());
 
@@ -64,13 +57,13 @@ impl LintChecker for EmptyAssignment {
         };
 
         if value_is_empty {
-            let (row, column) = find_row_col(ast, loc_new_lines);
-            diagnostics.push(Diagnostic {
-                message: EmptyAssignment.into(),
-                filename: file.into(),
-                location: Location { row, column },
-                fix: Fix::empty(),
-            });
+            let range = ast.text_trimmed_range();
+            diagnostics.push(Diagnostic::new(
+                EmptyAssignment,
+                file.into(),
+                range,
+                Fix::empty(),
+            ));
         }
 
         Ok(diagnostics)

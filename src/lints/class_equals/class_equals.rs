@@ -1,7 +1,6 @@
-use crate::location::Location;
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
-use crate::utils::{find_row_col, get_first_arg, node_is_in_square_brackets};
+use crate::utils::{get_first_arg, node_is_in_square_brackets};
 use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
 use anyhow::Result;
@@ -20,12 +19,7 @@ impl Violation for ClassEquals {
 }
 
 impl LintChecker for ClassEquals {
-    fn check(
-        &self,
-        ast: &RSyntaxNode,
-        loc_new_lines: &[usize],
-        file: &str,
-    ) -> Result<Vec<Diagnostic>> {
+    fn check(&self, ast: &RSyntaxNode, file: &str) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
         let bin_expr = RBinaryExpression::cast(ast.clone());
 
@@ -80,18 +74,17 @@ impl LintChecker for ClassEquals {
             class_name = lhs.text_trimmed();
         };
 
-        let (row, column) = find_row_col(ast, loc_new_lines);
         let range = ast.text_trimmed_range();
-        diagnostics.push(Diagnostic {
-            message: ClassEquals.into(),
-            filename: file.into(),
-            location: Location { row, column },
-            fix: Fix {
+        diagnostics.push(Diagnostic::new(
+            ClassEquals,
+            file.into(),
+            range,
+            Fix {
                 content: format!("{}({}, {})", fun_name, fun_content.unwrap(), class_name),
                 start: range.start().into(),
                 end: range.end().into(),
             },
-        });
+        ));
         Ok(diagnostics)
     }
 }

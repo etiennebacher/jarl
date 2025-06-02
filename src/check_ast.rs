@@ -51,15 +51,15 @@ pub fn get_checks(
 
     let syntax = &parsed.syntax();
     let loc_new_lines = find_new_lines(syntax)?;
-    let diagnostics: Vec<Diagnostic> =
-        check_ast(syntax, &loc_new_lines, file.to_str().unwrap(), &rules)?;
+    let diagnostics: Vec<Diagnostic> = check_ast(syntax, file.to_str().unwrap(), &rules)?;
+
+    let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
 
     Ok(diagnostics)
 }
 
 pub fn check_ast(
     ast: &RSyntaxNode,
-    loc_new_lines: &[usize],
     file: &str,
     rules: &Vec<&str>,
 ) -> anyhow::Result<Vec<Diagnostic>> {
@@ -71,7 +71,7 @@ pub fn check_ast(
         .collect();
 
     for linter in linters {
-        diagnostics.extend(linter.check(ast, loc_new_lines, file)?);
+        diagnostics.extend(linter.check(ast, file)?);
     }
 
     // if ast.kind() == RSyntaxKind::R_CALL || ast.kind() == RSyntaxKind::R_CALL_ARGUMENTS {
@@ -112,7 +112,7 @@ pub fn check_ast(
         | RSyntaxKind::R_WHILE_STATEMENT
         | RSyntaxKind::R_IF_STATEMENT => {
             for child in ast.children() {
-                diagnostics.extend(check_ast(&child, loc_new_lines, file, rules)?);
+                diagnostics.extend(check_ast(&child, file, rules)?);
             }
         }
         // RSyntaxKind::R_IDENTIFIER => {
@@ -131,7 +131,7 @@ pub fn check_ast(
             match &ast.first_child() {
                 Some(_) => {
                     for child in ast.children() {
-                        diagnostics.extend(check_ast(&child, loc_new_lines, file, rules)?);
+                        diagnostics.extend(check_ast(&child, file, rules)?);
                     }
                 }
                 None => {

@@ -2,6 +2,7 @@ use std::fmt;
 use std::path::PathBuf;
 
 use crate::location::Location;
+use biome_rowan::TextRange;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 
@@ -40,7 +41,8 @@ pub struct DiagnosticKind {
 pub struct Diagnostic {
     pub message: DiagnosticKind,
     pub filename: PathBuf,
-    pub location: Location,
+    pub range: TextRange,
+    pub location: Option<Location>,
     pub fix: Fix,
 }
 
@@ -60,13 +62,14 @@ impl Diagnostic {
     pub fn new<T: Into<DiagnosticKind>>(
         message: T,
         filename: &str,
-        location: Location,
+        range: TextRange,
         fix: Fix,
     ) -> Self {
         Self {
             message: message.into(),
             filename: filename.into(),
-            location,
+            range,
+            location: None,
             fix,
         }
     }
@@ -74,12 +77,16 @@ impl Diagnostic {
 
 impl fmt::Display for Diagnostic {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let (row, col) = match self.location {
+            Some(loc) => (loc.row, loc.column),
+            None => (0, 0),
+        };
         write!(
             f,
             "{} [{}:{}] {} {}",
             self.filename.to_string_lossy().white(),
-            self.location.row,
-            self.location.column,
+            row,
+            col,
             self.message.name.red(),
             self.message.body
         )

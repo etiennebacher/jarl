@@ -1,7 +1,5 @@
-use crate::location::Location;
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
-use crate::utils::find_row_col;
 use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -18,12 +16,7 @@ impl Violation for RedundantEquals {
 }
 
 impl LintChecker for RedundantEquals {
-    fn check(
-        &self,
-        ast: &RSyntaxNode,
-        loc_new_lines: &[usize],
-        file: &str,
-    ) -> anyhow::Result<Vec<Diagnostic>> {
+    fn check(&self, ast: &RSyntaxNode, file: &str) -> anyhow::Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
         let bin_expr = RBinaryExpression::cast(ast.clone());
 
@@ -56,18 +49,17 @@ impl LintChecker for RedundantEquals {
                     return Ok(diagnostics);
                 };
 
-                let (row, column) = find_row_col(ast, loc_new_lines);
                 let range = ast.text_trimmed_range();
-                diagnostics.push(Diagnostic {
-                    message: RedundantEquals.into(),
-                    filename: file.into(),
-                    location: Location { row, column },
-                    fix: Fix {
+                diagnostics.push(Diagnostic::new(
+                    RedundantEquals,
+                    file.into(),
+                    range,
+                    Fix {
                         content: fix,
                         start: range.start().into(),
                         end: range.end().into(),
                     },
-                });
+                ));
             }
             RSyntaxKind::NOT_EQUAL => {
                 let fix = if *left_is_true {
@@ -81,18 +73,17 @@ impl LintChecker for RedundantEquals {
                 } else {
                     return Ok(diagnostics);
                 };
-                let (row, column) = find_row_col(ast, loc_new_lines);
                 let range = ast.text_trimmed_range();
-                diagnostics.push(Diagnostic {
-                    message: RedundantEquals.into(),
-                    filename: file.into(),
-                    location: Location { row, column },
-                    fix: Fix {
+                diagnostics.push(Diagnostic::new(
+                    RedundantEquals,
+                    file.into(),
+                    range,
+                    Fix {
                         content: fix,
                         start: range.start().into(),
                         end: range.end().into(),
                     },
-                });
+                ));
             }
             _ => return Ok(diagnostics),
         };

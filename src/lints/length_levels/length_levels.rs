@@ -1,7 +1,5 @@
-use crate::location::Location;
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
-use crate::utils::find_row_col;
 use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
 use anyhow::{Context, Result};
@@ -18,12 +16,7 @@ impl Violation for LengthLevels {
 }
 
 impl LintChecker for LengthLevels {
-    fn check(
-        &self,
-        ast: &RSyntaxNode,
-        loc_new_lines: &[usize],
-        file: &str,
-    ) -> Result<Vec<Diagnostic>> {
+    fn check(&self, ast: &RSyntaxNode, file: &str) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
         if ast.kind() != RSyntaxKind::R_CALL {
             return Ok(diagnostics);
@@ -60,18 +53,17 @@ impl LintChecker for LengthLevels {
                 .text();
 
             if fun.text_trimmed() == "levels" && fun.kind() == RSyntaxKind::R_IDENTIFIER {
-                let (row, column) = find_row_col(ast, loc_new_lines);
                 let range = ast.text_trimmed_range();
-                diagnostics.push(Diagnostic {
-                    message: LengthLevels.into(),
-                    filename: file.into(),
-                    location: Location { row, column },
-                    fix: Fix {
+                diagnostics.push(Diagnostic::new(
+                    LengthLevels,
+                    file.into(),
+                    range,
+                    Fix {
                         content: format!("nlevels({})", fun_content),
                         start: range.start().into(),
                         end: range.end().into(),
                     },
-                })
+                ))
             }
         }
         Ok(diagnostics)

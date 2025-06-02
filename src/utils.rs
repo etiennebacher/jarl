@@ -1,4 +1,5 @@
-use crate::lints::ALL_RULES;
+use crate::location::Location;
+use crate::{lints::ALL_RULES, message::Diagnostic};
 use air_r_syntax::{RSyntaxKind, RSyntaxNode};
 use anyhow::{anyhow, Result};
 
@@ -14,8 +15,7 @@ pub fn find_new_lines(ast: &RSyntaxNode) -> Result<Vec<usize>> {
     }
 }
 
-pub fn find_row_col(ast: &RSyntaxNode, loc_new_lines: &[usize]) -> (usize, usize) {
-    let start: usize = ast.text_trimmed_range().start().into();
+pub fn find_row_col(start: usize, loc_new_lines: &[usize]) -> (usize, usize) {
     let new_lines_before = loc_new_lines
         .iter()
         .filter(|x| *x <= &start)
@@ -26,9 +26,24 @@ pub fn find_row_col(ast: &RSyntaxNode, loc_new_lines: &[usize]) -> (usize, usize
         None => 0_usize,
     };
 
-    let col: usize = start - last_new_line + 1;
+    let col: usize = start - last_new_line;
     let row: usize = n_new_lines + 1;
     (row, col)
+}
+
+pub fn compute_lints_location(
+    diagnostics: Vec<Diagnostic>,
+    loc_new_lines: &[usize],
+) -> Vec<Diagnostic> {
+    diagnostics
+        .into_iter()
+        .map(|mut diagnostic| {
+            let start: usize = diagnostic.range.start().into();
+            let loc = find_row_col(start, loc_new_lines);
+            diagnostic.location = Some(Location::new(loc.0, loc.1));
+            diagnostic
+        })
+        .collect()
 }
 
 pub fn get_first_arg(node: &RSyntaxNode) -> Option<RSyntaxNode> {

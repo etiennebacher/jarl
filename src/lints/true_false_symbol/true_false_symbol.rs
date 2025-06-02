@@ -1,7 +1,5 @@
-use crate::location::Location;
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
-use crate::utils::find_row_col;
 use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
 use anyhow::Result;
@@ -19,12 +17,7 @@ impl Violation for TrueFalseSymbol {
 }
 
 impl LintChecker for TrueFalseSymbol {
-    fn check(
-        &self,
-        ast: &RSyntaxNode,
-        loc_new_lines: &[usize],
-        file: &str,
-    ) -> Result<Vec<Diagnostic>> {
+    fn check(&self, ast: &RSyntaxNode, file: &str) -> Result<Vec<Diagnostic>> {
         let mut diagnostics: Vec<Diagnostic> = vec![];
         if ast.kind() != RSyntaxKind::R_IDENTIFIER
             || (ast.text_trimmed() != "T" && ast.text_trimmed() != "F")
@@ -65,13 +58,12 @@ impl LintChecker for TrueFalseSymbol {
             return Ok(diagnostics);
         }
 
-        let (row, column) = find_row_col(ast, loc_new_lines);
         let range = ast.text_trimmed_range();
-        diagnostics.push(Diagnostic {
-            message: TrueFalseSymbol.into(),
-            filename: file.into(),
-            location: Location { row, column },
-            fix: Fix {
+        diagnostics.push(Diagnostic::new(
+            TrueFalseSymbol,
+            file.into(),
+            range,
+            Fix {
                 content: if ast.text_trimmed() == "T" {
                     "TRUE".to_string()
                 } else {
@@ -80,7 +72,7 @@ impl LintChecker for TrueFalseSymbol {
                 start: range.start().into(),
                 end: range.end().into(),
             },
-        });
+        ));
 
         Ok(diagnostics)
     }

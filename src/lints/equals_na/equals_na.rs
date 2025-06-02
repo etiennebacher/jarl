@@ -1,7 +1,5 @@
-use crate::location::Location;
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
-use crate::utils::find_row_col;
 use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
 use anyhow::Result;
@@ -19,12 +17,7 @@ impl Violation for EqualsNa {
 }
 
 impl LintChecker for EqualsNa {
-    fn check(
-        &self,
-        ast: &RSyntaxNode,
-        loc_new_lines: &[usize],
-        file: &str,
-    ) -> Result<Vec<Diagnostic>> {
+    fn check(&self, ast: &RSyntaxNode, file: &str) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
         let bin_expr = RBinaryExpression::cast(ast.clone());
         if bin_expr.is_none() {
@@ -58,7 +51,6 @@ impl LintChecker for EqualsNa {
         if (left_is_na && right_is_na) || (!left_is_na && !right_is_na) {
             return Ok(diagnostics);
         }
-        let (row, column) = find_row_col(ast, loc_new_lines);
         let range = ast.text_trimmed_range();
 
         let replacement = if left_is_na {
@@ -69,28 +61,28 @@ impl LintChecker for EqualsNa {
 
         match operator.kind() {
             RSyntaxKind::EQUAL2 => {
-                diagnostics.push(Diagnostic {
-                    message: EqualsNa.into(),
-                    filename: file.into(),
-                    location: Location { row, column },
-                    fix: Fix {
+                diagnostics.push(Diagnostic::new(
+                    EqualsNa,
+                    file.into(),
+                    range,
+                    Fix {
                         content: format!("is.na({})", replacement),
                         start: range.start().into(),
                         end: range.end().into(),
                     },
-                });
+                ));
             }
             RSyntaxKind::NOT_EQUAL => {
-                diagnostics.push(Diagnostic {
-                    message: EqualsNa.into(),
-                    filename: file.into(),
-                    location: Location { row, column },
-                    fix: Fix {
+                diagnostics.push(Diagnostic::new(
+                    EqualsNa,
+                    file.into(),
+                    range,
+                    Fix {
                         content: format!("!is.na({})", replacement),
                         start: range.start().into(),
                         end: range.end().into(),
                     },
-                });
+                ));
             }
             _ => unreachable!("This case is an early return"),
         };

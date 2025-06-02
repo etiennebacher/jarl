@@ -15,9 +15,7 @@ impl Location {
     ) -> std::fmt::Result {
         write!(f, "{} at line {} column {}", e, self.row(), self.column())
     }
-}
 
-impl Location {
     pub fn new(row: usize, column: usize) -> Self {
         Location { row, column }
     }

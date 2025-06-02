@@ -1,8 +1,6 @@
-use crate::location::Location;
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
 use crate::traits::ArgumentListExt;
-use crate::utils::find_row_col;
 use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
 use anyhow::{Context, Result};
@@ -20,12 +18,7 @@ impl Violation for ExpectLength {
 }
 
 impl LintChecker for ExpectLength {
-    fn check(
-        &self,
-        ast: &RSyntaxNode,
-        loc_new_lines: &[usize],
-        file: &str,
-    ) -> Result<Vec<Diagnostic>> {
+    fn check(&self, ast: &RSyntaxNode, file: &str) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
 
         // Check that the call is expect_equal / expect_identical ------------
@@ -75,18 +68,17 @@ impl LintChecker for ExpectLength {
             return Ok(diagnostics);
         }
 
-        let (row, column) = find_row_col(ast, loc_new_lines);
         let range = ast.text_trimmed_range();
-        diagnostics.push(Diagnostic {
-            message: ExpectLength.into(),
-            filename: file.into(),
-            location: Location { row, column },
-            fix: Fix {
+        diagnostics.push(Diagnostic::new(
+            ExpectLength,
+            file.into(),
+            range,
+            Fix {
                 content: format!("expect_length({}, {})", arg_obj.text(), arg_exp.text()),
                 start: range.start().into(),
                 end: range.end().into(),
             },
-        });
+        ));
         Ok(diagnostics)
     }
 }
