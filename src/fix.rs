@@ -3,7 +3,7 @@ use crate::message::*;
 pub fn apply_fixes(fixes: &[Diagnostic], contents: &str) -> (bool, String) {
     let fixes = fixes
         .iter()
-        .filter_map(|diagnostic| Some(&diagnostic.fix))
+        .map(|diagnostic| &diagnostic.fix)
         .collect::<Vec<_>>();
     let old_content = contents;
     let mut new_content = old_content.to_string();
