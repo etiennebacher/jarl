@@ -29,7 +29,7 @@ dependencies = [
 [[package]]
 name = "air_r_factory"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=4b66d9c9305de24fba54c1c700aba69e52c73c4b#4b66d9c9305de24fba54c1c700aba69e52c73c4b"
+source = "git+https://github.com/posit-dev/air?rev=2ef782d816678fe23378eb802d81eb79f981b1b2#2ef782d816678fe23378eb802d81eb79f981b1b2"
 dependencies = [
  "air_r_syntax",
  "biome_rowan",
@@ -38,7 +38,7 @@ dependencies = [
 [[package]]
 name = "air_r_parser"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=4b66d9c9305de24fba54c1c700aba69e52c73c4b#4b66d9c9305de24fba54c1c700aba69e52c73c4b"
+source = "git+https://github.com/posit-dev/air?rev=2ef782d816678fe23378eb802d81eb79f981b1b2#2ef782d816678fe23378eb802d81eb79f981b1b2"
 dependencies = [
  "air_r_factory",
  "air_r_syntax",
@@ -55,7 +55,7 @@ dependencies = [
 [[package]]
 name = "air_r_syntax"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=4b66d9c9305de24fba54c1c700aba69e52c73c4b#4b66d9c9305de24fba54c1c700aba69e52c73c4b"
+source = "git+https://github.com/posit-dev/air?rev=2ef782d816678fe23378eb802d81eb79f981b1b2#2ef782d816678fe23378eb802d81eb79f981b1b2"
 dependencies = [
  "biome_rowan",
  "biome_string_case",
