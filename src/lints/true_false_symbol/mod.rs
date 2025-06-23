@@ -33,7 +33,7 @@ mod tests {
     }
     #[test]
     fn test_true_false_symbol_in_formulas() {
-        let expected_message = "can be confused with variable names";
+        let _expected_message = "can be confused with variable names";
         // TODO
         // assert!(expect_lint(
         //     "lm(weight ~ var + foo(x, arg = T), data)",
