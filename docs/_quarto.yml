@@ -10,6 +10,8 @@ website:
         href: index.qmd
       - text: "Rules"
         href: rules.qmd
+      - text: "Development"
+        href: development.qmd
       - text: "About"
         href: about.qmd
 
