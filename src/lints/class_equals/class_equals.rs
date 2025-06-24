@@ -9,12 +9,15 @@ use biome_rowan::AstNode;
 pub struct ClassEquals;
 
 /// ## What it does
-/// Checks for usage of `class(...) == "some_class"` and class(...) %in% "some_class".
+///
+/// Checks for usage of `class(...) == "some_class"` and
+/// `class(...) %in% "some_class"`.
 ///
 /// ## Why is this bad?
-/// An R object can have several classes. Therefore, `class(...) == "some_class"`
-/// would return a logical vector with as many values as the object has classes,
-/// which is rarely desirable.
+///
+/// An R object can have several classes. Therefore,
+/// `class(...) == "some_class"` would return a logical vector with as many
+/// values as the object has classes, which is rarely desirable.
 ///
 /// It is better to use `inherits(..., "some_class")` instead. `inherits()`
 /// checks whether any of the object's classes match the desired class.
@@ -22,16 +25,20 @@ pub struct ClassEquals;
 /// The same rationale applies to `class(...) %in% "some_class"`.
 ///
 /// ## Example
+///
 /// ```r
-/// is_lm <- class(x) == "lm"
+/// x <- lm(drat ~ mpg, mtcars)
+/// class(x) == "lm"
 /// ```
 ///
 /// Use instead:
 /// ```r
-/// is_lm <- inherits(x, "lm")
+/// x <- lm(drat ~ mpg, mtcars)
+/// inherits(x, "lm")
 /// ```
 ///
 /// ## References
+///
 /// See `?inherits`
 impl Violation for ClassEquals {
     fn name(&self) -> String {

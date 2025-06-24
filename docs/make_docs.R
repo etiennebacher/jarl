@@ -29,6 +29,6 @@ for (i in seq_along(docs)) {
   if (length(docs[[i]]) == 0) {
     next
   }
-  to_write <- c(paste0("# ", rule_names[i]), docs[[i]])
-  writeLines(to_write, paste0("docs/", rule_names[i], ".qmd"))
+  to_write <- c(paste0("# `", rule_names[i], "`"), docs[[i]])
+  writeLines(to_write, paste0("docs/rules/", rule_names[i], ".qmd"))
 }
