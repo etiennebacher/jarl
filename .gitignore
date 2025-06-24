@@ -12,3 +12,6 @@ site/docs
 /R
 
 demo
+
+docs/_site
+docs/\.quarto
