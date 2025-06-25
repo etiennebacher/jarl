@@ -288,6 +288,33 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> file<span class="op">:</span> SourceFile<span class="op">,</span></span>
 <span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p><code>Message</code> has a lot of methods, for instance to return the message itself, the suggested fix, whether the violation has a fix or not, etc.</p>
+</section>
+<section id="fixing-files" class="level3">
+<h3 class="anchored" data-anchor-id="fixing-files">Fixing files</h3>
+<p>Important structs:</p>
+<ul>
+<li><a href="https://github.com/astral-sh/ruff/blob/c7372d218de365c8298afb37530ee26999ba91b0/crates/ruff_linter/src/fix/mod.rs"><code>FixResult</code></a> contains the output, after applying the fixes:</li>
+</ul>
+<div class="sourceCode" id="cb6"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> FixResult <span class="op">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// The resulting source code, after applying all fixes.</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span>(<span class="kw">crate</span>) code<span class="op">:</span> <span class="dt">String</span><span class="op">,</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// The number of fixes applied for each [`Rule`].</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span>(<span class="kw">crate</span>) fixes<span class="op">:</span> FixTable<span class="op">,</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// Source map for the fixed source code.</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span>(<span class="kw">crate</span>) source_map<span class="op">:</span> SourceMap<span class="op">,</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Two main functions:</p>
+<ul>
+<li><p><code>fix_file()</code> takes a list of <code>Message</code> that contain everything needed (original code, location, replacement, fix applicability, etc.), and only keeps those that have the correct fix applicability (for instance allowing or disallowing unsafe fixes). It runs <code>apply_fixes()</code> on those.</p></li>
+<li><p><code>apply_fixes()</code> is where the replacement actually happens. It goes through every pair of rule-fix but first they <a href="https://github.com/astral-sh/ruff/blob/c7372d218de365c8298afb37530ee26999ba91b0/crates/ruff_linter/src/fix/mod.rs#L73">sort them</a> (see below). There are also the concepts of “edits” and “isolation”. Importantly, fixes that concern locations that already received another fix are skipped. So basically they start from the top of the file and apply fixes in order of appearance (I suppose this is what the “sort” mentioned above is about). When they apply a fix, they modify the last position modified and the next fix to be applied cannot be applied before this last_pos.</p></li>
+</ul>
+<p>Concepts that I need to understand:</p>
+<ul>
+<li>Locator: a struct that takes the content of a file as well as the index of line start positions. This index is <code>OnceCell&lt;LineIndex&gt;</code>. <code>OnceCell</code> kinda allows to cache results so that we access LineIndex only once. LineIndex has many helpers to quickly convert an offset to a (line, col) position. It can also return the entire line that matches a certain offset (let’s say we have a linebreak at offset 10 and we ask for the entire line at offset 15, then it returns bytes 10-end of line).</li>
+<li>what is the difference between “fix” and “edit”? An Edit is a single action: replace, insert, or delete a specific content at a specific TextRange. A Fix contains all the edits necessary to fix the lint, so it may contain one or more Edits.</li>
+<li>isolation</li>
+</ul>
+<p>How do they <a href="https://github.com/astral-sh/ruff/blob/c7372d218de365c8298afb37530ee26999ba91b0/crates/ruff_linter/src/fix/mod.rs#L133">sort fixes</a>? They compare 2 rules and their fixes but actually the 2 rules are only useful in some specific cases (so unclear whether I’ll actually need that). Then they only compare the start index of each fix.</p>
 
 
 </section>
