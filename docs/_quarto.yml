@@ -27,3 +27,7 @@ website:
     - rules/equals_na.qmd
     - rules/length_levels.qmd
     - rules/length_test.qmd
+    - rules/lengths.qmd
+    - rules/redundant_equals.qmd
+    - rules/true_false_symbol.qmd
+    - rules/which_grepl.qmd
