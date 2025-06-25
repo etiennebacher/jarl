@@ -1,0 +1,26 @@
+---
+source: src/lints/any_duplicated/mod.rs
+expression: lint_output
+---
+  OLD:
+  ====
+any(duplicated(x))
+  NEW:
+  ====
+/tmp/test-[...] [1:1] any-duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+
+
+  OLD:
+  ====
+any(duplicated(foo(x)))
+  NEW:
+  ====
+/tmp/test-[...] [1:1] any-duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+
+
+  OLD:
+  ====
+any(duplicated(x), na.rm = TRUE)
+  NEW:
+  ====
+/tmp/test-[...] [1:1] any-duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.

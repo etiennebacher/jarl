@@ -1,0 +1,17 @@
+# IDE and OS files
+.vscode
+**/.DS_Store
+
+# builds
+/target
+
+# generated rustdoc output
+site/docs
+
+# local symlink to site directory for testing github deployed paths
+/R
+
+demo
+
+docs/_site
+docs/\.quarto

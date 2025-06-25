@@ -1,0 +1,66 @@
+---
+source: src/lints/class_equals/mod.rs
+expression: fix_output
+---
+  OLD:
+  ====
+is_regression <- class(x) == 'lm'
+  NEW:
+  ====
+is_regression <- inherits(x, 'lm')
+
+  OLD:
+  ====
+if (class(x) == 'character') 1
+  NEW:
+  ====
+if (inherits(x, 'character')) 1
+
+  OLD:
+  ====
+is_regression <- 'lm' == class(x)
+  NEW:
+  ====
+is_regression <- inherits(x, 'lm')
+
+  OLD:
+  ====
+is_regression <- "lm" == class(x)
+  NEW:
+  ====
+is_regression <- inherits(x, "lm")
+
+  OLD:
+  ====
+if ('character' %in% class(x)) 1
+  NEW:
+  ====
+if (inherits(x, 'character')) 1
+
+  OLD:
+  ====
+if (class(x) %in% 'character') 1
+  NEW:
+  ====
+if (inherits(x, 'character')) 1
+
+  OLD:
+  ====
+if (class(x) != 'character') 1
+  NEW:
+  ====
+if (!inherits(x, 'character')) 1
+
+  OLD:
+  ====
+x[if (class(x) == 'foo') 1 else 2]
+  NEW:
+  ====
+x[if (inherits(x, 'foo')) 1 else 2]
+
+  OLD:
+  ====
+class(foo(bar(y) + 1)) == 'abc'
+  NEW:
+  ====
+inherits(foo(bar(y) + 1), 'abc')

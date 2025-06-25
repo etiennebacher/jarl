@@ -1,0 +1,66 @@
+---
+source: src/lints/redundant_equals/mod.rs
+expression: "get_fixed_text(vec![\"a == TRUE\", \"TRUE == a\", \"a == FALSE\", \"FALSE == a\",\n\"a != TRUE\", \"TRUE != a\", \"a != FALSE\", \"FALSE != a\",\n\"foo(a(b = 1)) == TRUE\"], \"redundant_equals\")"
+---
+  OLD:
+  ====
+a == TRUE
+  NEW:
+  ====
+a
+
+  OLD:
+  ====
+TRUE == a
+  NEW:
+  ====
+a
+
+  OLD:
+  ====
+a == FALSE
+  NEW:
+  ====
+!a
+
+  OLD:
+  ====
+FALSE == a
+  NEW:
+  ====
+!a
+
+  OLD:
+  ====
+a != TRUE
+  NEW:
+  ====
+!a
+
+  OLD:
+  ====
+TRUE != a
+  NEW:
+  ====
+!a
+
+  OLD:
+  ====
+a != FALSE
+  NEW:
+  ====
+a
+
+  OLD:
+  ====
+FALSE != a
+  NEW:
+  ====
+a
+
+  OLD:
+  ====
+foo(a(b = 1)) == TRUE
+  NEW:
+  ====
+foo(a(b = 1))

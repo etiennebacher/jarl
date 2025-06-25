@@ -1,0 +1,66 @@
+---
+source: src/lints/equals_na/mod.rs
+expression: fix_output
+---
+  OLD:
+  ====
+x == NA
+  NEW:
+  ====
+is.na(x)
+
+  OLD:
+  ====
+x == NA_integer_
+  NEW:
+  ====
+is.na(x)
+
+  OLD:
+  ====
+x == NA_real_
+  NEW:
+  ====
+is.na(x)
+
+  OLD:
+  ====
+x == NA_logical_
+  NEW:
+  ====
+is.na(x)
+
+  OLD:
+  ====
+x == NA_character_
+  NEW:
+  ====
+is.na(x)
+
+  OLD:
+  ====
+x == NA_complex_
+  NEW:
+  ====
+is.na(x)
+
+  OLD:
+  ====
+x != NA
+  NEW:
+  ====
+!is.na(x)
+
+  OLD:
+  ====
+foo(x(y)) == NA
+  NEW:
+  ====
+is.na(foo(x(y)))
+
+  OLD:
+  ====
+NA == x
+  NEW:
+  ====
+is.na(x)

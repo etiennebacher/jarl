@@ -1,0 +1,74 @@
+---
+source: src/lints/equals_na/mod.rs
+expression: lint_output
+---
+  OLD:
+  ====
+x == NA
+  NEW:
+  ====
+/tmp/test-[...] [1:1] equals_na Use `is.na()` instead of comparing to NA with ==, != or %in%.
+
+
+  OLD:
+  ====
+x == NA_integer_
+  NEW:
+  ====
+/tmp/test-[...] [1:1] equals_na Use `is.na()` instead of comparing to NA with ==, != or %in%.
+
+
+  OLD:
+  ====
+x == NA_real_
+  NEW:
+  ====
+/tmp/test-[...] [1:1] equals_na Use `is.na()` instead of comparing to NA with ==, != or %in%.
+
+
+  OLD:
+  ====
+x == NA_logical_
+  NEW:
+  ====
+/tmp/test-[...] [1:1] equals_na Use `is.na()` instead of comparing to NA with ==, != or %in%.
+
+
+  OLD:
+  ====
+x == NA_character_
+  NEW:
+  ====
+/tmp/test-[...] [1:1] equals_na Use `is.na()` instead of comparing to NA with ==, != or %in%.
+
+
+  OLD:
+  ====
+x == NA_complex_
+  NEW:
+  ====
+/tmp/test-[...] [1:1] equals_na Use `is.na()` instead of comparing to NA with ==, != or %in%.
+
+
+  OLD:
+  ====
+x != NA
+  NEW:
+  ====
+/tmp/test-[...] [1:1] equals_na Use `is.na()` instead of comparing to NA with ==, != or %in%.
+
+
+  OLD:
+  ====
+foo(x(y)) == NA
+  NEW:
+  ====
+/tmp/test-[...] [1:1] equals_na Use `is.na()` instead of comparing to NA with ==, != or %in%.
+
+
+  OLD:
+  ====
+NA == x
+  NEW:
+  ====
+/tmp/test-[...] [1:1] equals_na Use `is.na()` instead of comparing to NA with ==, != or %in%.

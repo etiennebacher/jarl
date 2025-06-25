@@ -1,0 +1,43 @@
+---
+source: src/lints/equal_assignment/mod.rs
+expression: lint_output
+---
+  OLD:
+  ====
+blah=1
+  NEW:
+  ====
+/tmp/test-[...] [1:1] equal_assignment Use <- for assignment.
+
+
+  OLD:
+  ====
+blah = 1
+  NEW:
+  ====
+/tmp/test-[...] [1:1] equal_assignment Use <- for assignment.
+
+
+  OLD:
+  ====
+blah = fun(1)
+  NEW:
+  ====
+/tmp/test-[...] [1:1] equal_assignment Use <- for assignment.
+
+
+  OLD:
+  ====
+fun((blah = fun(1)))
+  NEW:
+  ====
+/tmp/test-[...] [1:6] equal_assignment Use <- for assignment.
+/tmp/test-[...] [1:6] equal_assignment Use <- for assignment.
+
+
+  OLD:
+  ====
+1 -> fun
+  NEW:
+  ====
+/tmp/test-[...] [1:1] equal_assignment Use <- for assignment.

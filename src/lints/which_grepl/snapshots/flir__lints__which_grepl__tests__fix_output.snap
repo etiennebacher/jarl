@@ -1,0 +1,17 @@
+---
+source: src/lints/which_grepl/mod.rs
+expression: "get_fixed_text(vec![\"which(grepl('^a', x))\",\n\"which(grepl('^a', x, perl = TRUE, fixed = TRUE))\",], \"which_grepl\")"
+---
+  OLD:
+  ====
+which(grepl('^a', x))
+  NEW:
+  ====
+grep('^a', x)
+
+  OLD:
+  ====
+which(grepl('^a', x, perl = TRUE, fixed = TRUE))
+  NEW:
+  ====
+grep('^a', x, perl = TRUE, fixed = TRUE)

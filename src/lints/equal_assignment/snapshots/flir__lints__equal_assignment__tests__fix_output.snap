@@ -1,0 +1,38 @@
+---
+source: src/lints/equal_assignment/mod.rs
+expression: fix_output
+---
+  OLD:
+  ====
+blah=1
+  NEW:
+  ====
+blah <- 1
+
+  OLD:
+  ====
+blah = 1
+  NEW:
+  ====
+blah <- 1
+
+  OLD:
+  ====
+blah = fun(1)
+  NEW:
+  ====
+blah <- fun(1)
+
+  OLD:
+  ====
+fun((blah = fun(1)))
+  NEW:
+  ====
+fun((blah <- fun(1)))
+
+  OLD:
+  ====
+1 -> fun
+  NEW:
+  ====
+fun <- 1

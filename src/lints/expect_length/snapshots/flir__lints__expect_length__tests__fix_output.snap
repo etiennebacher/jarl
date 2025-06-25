@@ -1,0 +1,31 @@
+---
+source: src/lints/expect_length/mod.rs
+expression: "get_fixed_text(vec![\"expect_equal(length(x), 2)\",\n\"expect_equal(length(x), 2L)\", \"expect_identical(length(x), 2)\",\n\"expect_equal(2, length(x))\",], \"expect_length\")"
+---
+  OLD:
+  ====
+expect_equal(length(x), 2)
+  NEW:
+  ====
+expect_length(x, 2)
+
+  OLD:
+  ====
+expect_equal(length(x), 2L)
+  NEW:
+  ====
+expect_length(x, 2L)
+
+  OLD:
+  ====
+expect_identical(length(x), 2)
+  NEW:
+  ====
+expect_length(x, 2)
+
+  OLD:
+  ====
+expect_equal(2, length(x))
+  NEW:
+  ====
+expect_equal(2, length(x))
