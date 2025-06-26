@@ -160,15 +160,40 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="how-does-ruff-work" class="level2">
 <h2 class="anchored" data-anchor-id="how-does-ruff-work">How does Ruff work?</h2>
 <p>This file is for my own understand of Ruff so I can try to mimick it as best as possible. Ruff is a massive project and it’s hard to see how it actually works. I’m writing this because I learn something better when I have to explain it.</p>
-<section id="parsing-config-file" class="level3">
-<h3 class="anchored" data-anchor-id="parsing-config-file">Parsing config file</h3>
-<p>TODO</p>
+<section id="getting-settings" class="level3">
+<h3 class="anchored" data-anchor-id="getting-settings">Getting settings</h3>
+<p>There are several kinds of settings:</p>
+<ol type="1">
+<li>which rules should be applied?</li>
+<li>which files to parse?</li>
+<li>is caching enabled?</li>
+<li>should fixes be applied?</li>
+</ol>
+<p>There is a struct <a href="https://github.com/astral-sh/ruff/blob/main/crates/ruff_linter/src/settings/rule_table.rs"><code>RuleTable</code></a> that contains two RuleSets (which are basically lists): one to know if a specific rule is enabled, and one to know if a specific rule has an associated fix.</p>
+<p>Caching is mostly handled in <code>ruff_cache</code> but there’s also an enum <a href="https://github.com/astral-sh/ruff/blob/170ccd80b439f22c7e08af8ed7506540687aa265/crates/ruff_linter/src/settings/flags.rs#L27">Cache</a>.</p>
 </section>
 <section id="parsing-files" class="level3">
 <h3 class="anchored" data-anchor-id="parsing-files">Parsing files</h3>
+<p>TODO</p>
+<p>I have a hard time explaining how this works, there are <a href="https://github.com/astral-sh/ruff/blob/main/crates/ruff_linter/src/settings/types.rs">multiple Structs related to paths and file patterns</a>.</p>
 </section>
 <section id="checking-files" class="level3">
 <h3 class="anchored" data-anchor-id="checking-files">Checking files</h3>
+<p>There are two important functions for this:</p>
+<ul>
+<li><a href="https://github.com/astral-sh/ruff/blob/c7372d218de365c8298afb37530ee26999ba91b0/crates/ruff/src/commands/check.rs"><code>check()</code></a> takes the list of paths, config args, cache, etc. It resolves the paths, does more checks, runs <code>lint_path()</code> in parallel, aggregates the output and reports it.</li>
+<li><code>lint_path()</code> is where we get the cached output if the file didn’t change, and then run the lint functions. Depending on whether we lint only or fix the file as well, this calls <a href="https://github.com/astral-sh/ruff/blob/2362263d5e4db815d18e80e599a09f367e53fb92/crates/ruff_linter/src/linter.rs#L462"><code>lint_only()</code></a> or <code>lint_fix()</code>. Both of those functions call <code>check_path()</code> to generate the diagnostics (and lint_fix() then parses those diagnostics and loops through fixes until stability).</li>
+</ul>
+<p><code>check_path()</code> creates a <code>context</code> that accumulates all the diagnostics. Again, it dispatches checks between several functions:</p>
+<ul>
+<li><code>check_tokens()</code>: for cases like empty comment, invalid character, useless semicolon, etc.</li>
+<li><code>check_filepath()</code>: for cases such as checking module imports, this kind of thing. I think I can ignore it.</li>
+<li><code>check_logical_lines()</code>: whitespace after bracket, etc.</li>
+<li><code>check_ast()</code> =&gt; the one I’m interested in.</li>
+</ul>
+</section>
+<section id="checking-the-ast" class="level3">
+<h3 class="anchored" data-anchor-id="checking-the-ast">Checking the AST</h3>
 <p>Taken from <a href="https://github.com/astral-sh/ruff/blob/c7372d21/crates/ruff_linter/src/checkers/ast/mod.rs#L1-L13">this file</a>:</p>
 <blockquote class="blockquote">
 <p>[<code>Checker</code>] for AST-based lint rules.</p>
