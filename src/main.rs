@@ -2,11 +2,7 @@ use air_r_parser::RParserOptions;
 use air_workspace::discovery::discover_r_file_paths;
 use air_workspace::discovery::discover_settings;
 use air_workspace::discovery::DiscoveredSettings;
-use air_workspace::format::format_file;
-use air_workspace::format::FormatFileError;
-use air_workspace::format::FormattedFile;
 use air_workspace::resolve::PathResolver;
-use air_workspace::settings::FormatSettings;
 use air_workspace::settings::Settings;
 
 use flir::check_ast::*;
@@ -20,7 +16,6 @@ use std::fs;
 use std::path::Path;
 // use std::time::Instant;
 use anyhow::{Context, Result};
-use walkdir::WalkDir;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -63,6 +58,7 @@ fn main() -> Result<()> {
     for DiscoveredSettings { directory, settings } in discover_settings(&[args.dir.clone()])? {
         resolver.add(&directory, settings);
     }
+
     let paths = discover_r_file_paths(&[args.dir.clone()], &resolver, true)
         .into_iter()
         .filter_map(Result::ok)
