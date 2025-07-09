@@ -72,7 +72,7 @@ pub fn node_is_in_square_brackets(ast: &RSyntaxNode) -> bool {
 }
 
 pub fn parse_rules_cli(rules: &str) -> Vec<&str> {
-    if rules == "" {
+    let rules = if rules == "" {
         ALL_RULES.to_vec()
     } else {
         rules.split(",").collect::<Vec<&str>>()

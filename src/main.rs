@@ -38,6 +38,14 @@ pub struct Args {
     #[arg(
         short,
         long,
+        default_value = "false",
+        help = "Include fixes that may not retain the original intent of the
+          code."
+    )]
+    unsafe_fixes: bool,
+    #[arg(
+        short,
+        long,
         default_value = "",
         help = "Names of rules to include, separated by a comma (no spaces)."
     )]
@@ -73,22 +81,15 @@ fn main() -> Result<()> {
     // let paths = vec![Path::new("demos/foo.R").to_path_buf()];
 
     let parser_options = RParserOptions::default();
-    let config = build_config(&args.rules, args.fix, parser_options);
+    let config = build_config(&args.rules, args.fix, args.unsafe_fixes, parser_options);
 
-    let diagnostics = check(paths, config);
+    let diagnostics = check(paths, config)?;
 
-    match diagnostics {
-        Ok(diags) => {
-            if !args.fix && !diags.is_empty() {
-                for message in &diags {
-                    println!("{}", message);
-                }
-            }
+    if !args.fix && !diagnostics.is_empty() {
+        for message in &diagnostics {
+            println!("{}", message);
         }
-        Err(e) => {
-            eprintln!("{:?}", e);
-        }
-    };
+    }
 
     if let Some(start) = start {
         let duration = start.elapsed();
