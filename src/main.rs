@@ -39,8 +39,7 @@ pub struct Args {
         short,
         long,
         default_value = "false",
-        help = "Include fixes that may not retain the original intent of the
-          code."
+        help = "Include fixes that may not retain the original intent of the  code."
     )]
     unsafe_fixes: bool,
     #[arg(
