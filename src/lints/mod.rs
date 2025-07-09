@@ -15,6 +15,7 @@ pub(crate) mod redundant_equals;
 pub(crate) mod true_false_symbol;
 pub(crate) mod which_grepl;
 
+/// List of supported rules and whether they have a safe fix.
 pub fn all_rules_and_safety() -> HashMap<&'static str, bool> {
     HashMap::from([
         ("any_duplicated", true),
@@ -24,7 +25,7 @@ pub fn all_rules_and_safety() -> HashMap<&'static str, bool> {
         ("empty_assignment", true),
         ("equal_assignment", true),
         ("equals_na", true),
-        ("expect_length", true),
+        ("expect_length", false),
         ("length_levels", true),
         ("length_test", true),
         ("lengths", true),

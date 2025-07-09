@@ -5,6 +5,7 @@ use air_r_parser::RParserOptions;
 
 #[derive(Clone)]
 pub struct Config<'a> {
+    /// List of rules to use and whether they have an associated safe fix
     pub rules: HashMap<&'a str, bool>,
     pub should_fix: bool,
     pub unsafe_fixes: bool,
