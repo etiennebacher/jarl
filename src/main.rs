@@ -61,8 +61,7 @@ pub struct Args {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    let show_timing = cfg!(debug_assertions) || args.with_timing;
-    let start = if show_timing {
+    let start = if args.with_timing {
         Some(Instant::now())
     } else {
         None

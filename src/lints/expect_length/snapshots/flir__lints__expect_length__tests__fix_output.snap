@@ -7,21 +7,21 @@ expression: "get_fixed_text(vec![\"expect_equal(length(x), 2)\",\n\"expect_equal
 expect_equal(length(x), 2)
   NEW:
   ====
-expect_length(x, 2)
+expect_equal(length(x), 2)
 
   OLD:
   ====
 expect_equal(length(x), 2L)
   NEW:
   ====
-expect_length(x, 2L)
+expect_equal(length(x), 2L)
 
   OLD:
   ====
 expect_identical(length(x), 2)
   NEW:
   ====
-expect_length(x, 2)
+expect_identical(length(x), 2)
 
   OLD:
   ====

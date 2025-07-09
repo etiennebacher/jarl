@@ -5,21 +5,43 @@ use air_r_parser::RParserOptions;
 
 #[derive(Clone)]
 pub struct Config<'a> {
-    /// List of rules to use and whether they have an associated safe fix
+    /// List of rules and whether they have an associated safe fix, passed by
+    /// the user and/or recovered from the config file. Those will
+    /// not necessarily all be used, for instance if we disable unsafe fixes.
     pub rules: HashMap<&'a str, bool>,
+    /// List of rules to use. If we lint only, then this is equivalent to the
+    /// field `rules`. If we apply fixes too, then this might be different from
+    /// `rules` because it may filter out rules that have unsafe fixes.
+    pub rules_to_apply: Vec<&'a str>,
     pub should_fix: bool,
-    pub unsafe_fixes: bool,
+    pub allow_unsafe_fixes: bool,
     pub parser_options: RParserOptions,
 }
 
 pub fn build_config(
     rules_cli: &str,
     should_fix: bool,
-    unsafe_fixes: bool,
+    allow_unsafe_fixes: bool,
     parser_options: RParserOptions,
 ) -> Config {
     let rules = parse_rules_cli(rules_cli);
-    Config { rules, should_fix, unsafe_fixes, parser_options }
+    let rules_to_apply: Vec<&str> = if should_fix && !allow_unsafe_fixes {
+        rules
+            .iter()
+            .filter(|(_, v)| **v)
+            .map(|(k, _)| *k)
+            .collect::<Vec<&str>>()
+    } else {
+        rules.iter().map(|(k, _)| *k).collect()
+    };
+
+    Config {
+        rules,
+        rules_to_apply,
+        should_fix,
+        allow_unsafe_fixes,
+        parser_options,
+    }
 }
 
 pub fn parse_rules_cli(rules: &str) -> HashMap<&'static str, bool> {

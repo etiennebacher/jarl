@@ -46,26 +46,21 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
 
     let syntax = &parsed.syntax();
     let loc_new_lines = find_new_lines(syntax)?;
-    let diagnostics: Vec<Diagnostic> = check_ast(syntax, file.to_str().unwrap(), config)?;
+    let diagnostics: Vec<Diagnostic> = check_ast(syntax, file.to_str().unwrap(), &config)?;
 
     let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
 
     Ok(diagnostics)
 }
 
-pub fn check_ast(ast: &RSyntaxNode, file: &str, config: Config) -> anyhow::Result<Vec<Diagnostic>> {
+pub fn check_ast(
+    ast: &RSyntaxNode,
+    file: &str,
+    config: &Config,
+) -> anyhow::Result<Vec<Diagnostic>> {
     let mut diagnostics: Vec<Diagnostic> = vec![];
 
-    let rules: Vec<String> = if config.unsafe_fixes {
-        config.rules.iter().map(|(k, _)| k.to_string()).collect()
-    } else {
-        config
-            .rules
-            .iter()
-            .filter(|(_, v)| **v)
-            .map(|(k, _)| k.to_string())
-            .collect::<Vec<String>>()
-    };
+    let rules: &Vec<&str> = &config.rules_to_apply;
 
     let linters: Vec<Box<dyn LintChecker>> = rules
         .iter()
@@ -114,7 +109,7 @@ pub fn check_ast(ast: &RSyntaxNode, file: &str, config: Config) -> anyhow::Resul
         | RSyntaxKind::R_WHILE_STATEMENT
         | RSyntaxKind::R_IF_STATEMENT => {
             for child in ast.children() {
-                diagnostics.extend(check_ast(&child, file, config.clone())?);
+                diagnostics.extend(check_ast(&child, file, &config.clone())?);
             }
         }
         // RSyntaxKind::R_IDENTIFIER => {
@@ -133,7 +128,7 @@ pub fn check_ast(ast: &RSyntaxNode, file: &str, config: Config) -> anyhow::Resul
             match &ast.first_child() {
                 Some(_) => {
                     for child in ast.children() {
-                        diagnostics.extend(check_ast(&child, file, config.clone())?);
+                        diagnostics.extend(check_ast(&child, file, &config.clone())?);
                     }
                 }
                 None => {

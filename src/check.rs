@@ -46,11 +46,9 @@ pub fn lint_fix(path: &PathBuf, config: Config) -> Result<Vec<Diagnostic>, anyho
     let mut checks: Vec<Diagnostic>;
 
     loop {
-        // Add file context to the read error
         let contents = fs::read_to_string(Path::new(path))
             .with_context(|| format!("Failed to read file: {}", path.display()))?;
 
-        // Add file context to the get_checks error
         checks = get_checks(&contents, path, config.clone())
             .with_context(|| format!("Failed to get checks for file: {}", path.display()))?;
 
@@ -61,7 +59,6 @@ pub fn lint_fix(path: &PathBuf, config: Config) -> Result<Vec<Diagnostic>, anyho
         let (new_has_skipped_fixes, fixed_text) = apply_fixes(&checks, &contents);
         has_skipped_fixes = new_has_skipped_fixes;
 
-        // Add file context to the write error
         fs::write(path, fixed_text)
             .with_context(|| format!("Failed to write file: {}", path.display()))?;
     }
