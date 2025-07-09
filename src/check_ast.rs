@@ -56,7 +56,16 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
 pub fn check_ast(ast: &RSyntaxNode, file: &str, config: Config) -> anyhow::Result<Vec<Diagnostic>> {
     let mut diagnostics: Vec<Diagnostic> = vec![];
 
-    let rules = config.rules.clone();
+    let rules: Vec<String> = if config.unsafe_fixes {
+        config.rules.iter().map(|(k, _)| k.to_string()).collect()
+    } else {
+        config
+            .rules
+            .iter()
+            .filter(|(_, v)| **v)
+            .map(|(k, _)| k.to_string())
+            .collect::<Vec<String>>()
+    };
 
     let linters: Vec<Box<dyn LintChecker>> = rules
         .iter()

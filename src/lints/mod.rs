@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 pub(crate) mod any_duplicated;
 pub(crate) mod any_is_na;
 pub(crate) mod class_equals;
@@ -13,19 +15,21 @@ pub(crate) mod redundant_equals;
 pub(crate) mod true_false_symbol;
 pub(crate) mod which_grepl;
 
-pub const ALL_RULES: &[&str] = &[
-    "any_duplicated",
-    "any_is_na",
-    "class_equals",
-    "duplicated_arguments",
-    "empty_assignment",
-    "equal_assignment",
-    "equals_na",
-    "expect_length",
-    "length_levels",
-    "length_test",
-    "lengths",
-    "redundant_equals",
-    "true_false_symbol",
-    "which_grepl",
-];
+pub fn all_rules_and_safety() -> HashMap<&'static str, bool> {
+    HashMap::from([
+        ("any_duplicated", true),
+        ("any_is_na", true),
+        ("class_equals", true),
+        ("duplicated_arguments", true),
+        ("empty_assignment", true),
+        ("equal_assignment", true),
+        ("equals_na", true),
+        ("expect_length", true),
+        ("length_levels", true),
+        ("length_test", true),
+        ("lengths", true),
+        ("redundant_equals", true),
+        ("true_false_symbol", false),
+        ("which_grepl", true),
+    ])
+}

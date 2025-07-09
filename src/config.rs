@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::utils::parse_rules_cli;
+use crate::lints::all_rules_and_safety;
 use air_r_parser::RParserOptions;
 
 #[derive(Clone)]
@@ -19,4 +19,17 @@ pub fn build_config(
 ) -> Config {
     let rules = parse_rules_cli(rules_cli);
     Config { rules, should_fix, unsafe_fixes, parser_options }
+}
+
+pub fn parse_rules_cli(rules: &str) -> HashMap<&'static str, bool> {
+    if rules == "" {
+        all_rules_and_safety()
+    } else {
+        let passed_by_user = rules.split(",").collect::<Vec<&str>>();
+        all_rules_and_safety()
+            .iter()
+            .filter(|(k, _)| passed_by_user.contains(*k))
+            .map(|(k, v)| (*k, *v))
+            .collect::<HashMap<&'static str, bool>>()
+    }
 }

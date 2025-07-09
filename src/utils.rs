@@ -1,5 +1,5 @@
 use crate::location::Location;
-use crate::{lints::ALL_RULES, message::Diagnostic};
+use crate::message::Diagnostic;
 use air_r_syntax::{RSyntaxKind, RSyntaxNode};
 use anyhow::{anyhow, Result};
 
@@ -68,14 +68,6 @@ pub fn node_is_in_square_brackets(ast: &RSyntaxNode) -> bool {
     match great_grandparent {
         Some(x) => x.kind() == RSyntaxKind::R_SUBSET_ARGUMENTS,
         None => false,
-    }
-}
-
-pub fn parse_rules_cli(rules: &str) -> Vec<&str> {
-    let rules = if rules == "" {
-        ALL_RULES.to_vec()
-    } else {
-        rules.split(",").collect::<Vec<&str>>()
     }
 }
 
