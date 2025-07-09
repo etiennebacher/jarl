@@ -32,7 +32,7 @@ pub fn build_config(
             .map(|(k, _)| *k)
             .collect::<Vec<&str>>()
     } else {
-        rules.iter().map(|(k, _)| *k).collect()
+        rules.keys().map(|k| *k).collect()
     };
 
     Config {
@@ -45,7 +45,7 @@ pub fn build_config(
 }
 
 pub fn parse_rules_cli(rules: &str) -> HashMap<&'static str, bool> {
-    if rules == "" {
+    if rules.is_empty() {
         all_rules_and_safety()
     } else {
         let passed_by_user = rules.split(",").collect::<Vec<&str>>();

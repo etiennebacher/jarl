@@ -23,13 +23,11 @@ pub fn check(paths: Vec<PathBuf>, config: Config) -> Result<Vec<Diagnostic>, any
 }
 
 pub fn check_path(path: &PathBuf, config: Config) -> Result<Vec<Diagnostic>, anyhow::Error> {
-    let diagnostics = if config.should_fix {
+    if config.should_fix {
         lint_fix(path, config)
     } else {
         lint_only(path, config)
-    };
-
-    diagnostics
+    }
 }
 
 pub fn lint_only(path: &PathBuf, config: Config) -> Result<Vec<Diagnostic>, anyhow::Error> {
