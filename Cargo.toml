@@ -41,6 +41,7 @@ biome_rowan = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4af
 rustc-hash = "2.1.1"
 rust-lapper = "1.1.0"
 smallvec = "1.13.2"
+assert_cmd = "2.0.17"
 
 
 [dev-dependencies]

@@ -1,3 +1,4 @@
+use assert_cmd::cargo::CommandCargoExt;
 use regex::Regex;
 use std::fs;
 use std::process::{Command, Stdio};
@@ -12,7 +13,8 @@ pub fn has_lint(text: &str, msg: &str, rule: &str) -> bool {
 
     fs::write(&temp_file, text).expect("Failed to write initial content");
 
-    let output = Command::new("flir")
+    let output = Command::cargo_bin("flir")
+        .unwrap()
         .arg("--dir")
         .arg(temp_file.path())
         .arg("--rules")
@@ -43,7 +45,8 @@ pub fn get_fixed_text(text: Vec<&str>, rule: &str) -> String {
 
         fs::write(&temp_file, original_content).expect("Failed to write initial content");
 
-        let _ = Command::new("flir")
+        let _ = Command::cargo_bin("flir")
+            .unwrap()
             .arg("--dir")
             .arg(temp_file.path())
             .arg("--rules")
@@ -77,7 +80,17 @@ pub fn no_lint(text: &str, rule: &str) -> bool {
 
     fs::write(&temp_file, original_content).expect("Failed to write initial content");
 
-    let output = Command::new("flir")
+    let _ = Command::cargo_bin("flir")
+        .unwrap()
+        .arg("--dir")
+        .arg(temp_file.path())
+        .arg("--rules")
+        .arg(rule)
+        .stdout(Stdio::piped())
+        .output();
+
+    let output = Command::cargo_bin("flir")
+        .unwrap()
         .arg("--dir")
         .arg(temp_file.path())
         .arg("--rules")
@@ -107,7 +120,8 @@ pub fn expect_error(text: &str, msg: &str, rule: &str) {
 
     fs::write(&temp_file, text).expect("Failed to write initial content");
 
-    let output = Command::new("flir")
+    let output = Command::cargo_bin("flir")
+        .unwrap()
         .arg("--dir")
         .arg(temp_file.path())
         .arg("--rules")
