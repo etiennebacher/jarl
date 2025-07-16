@@ -16,6 +16,7 @@ pub struct LinterSettings {
     pub exclude: Option<ExcludePatterns>,
     pub default_exclude: Option<DefaultExcludePatterns>,
     pub default_include: Option<DefaultIncludePatterns>,
+    pub rules: Option<Vec<String>>,
 }
 
 impl Default for LinterSettings {
@@ -28,6 +29,7 @@ impl Default for LinterSettings {
             exclude: Default::default(),
             default_exclude: Some(Default::default()),
             default_include: Some(Default::default()),
+            rules: Some(Default::default()),
         }
     }
 }
@@ -37,8 +39,9 @@ impl LinterSettings {
         exclude: Option<ExcludePatterns>,
         default_exclude: Option<DefaultExcludePatterns>,
         default_include: Option<DefaultIncludePatterns>,
+        rules: Option<Vec<String>>,
     ) -> Self {
-        LinterSettings { exclude, default_exclude, default_include }
+        LinterSettings { exclude, default_exclude, default_include, rules }
     }
 }
 
@@ -48,6 +51,7 @@ impl From<FormatSettings> for LinterSettings {
             settings.exclude,
             settings.default_exclude,
             settings.default_include,
+            Some(vec!["".to_string()]),
         )
     }
 }

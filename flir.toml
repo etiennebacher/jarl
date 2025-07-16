@@ -1,0 +1,2 @@
+[linter]
+rules = ["any_is_na"]

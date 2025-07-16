@@ -10,6 +10,8 @@ use flir::config::build_config;
 
 use anyhow::Result;
 use clap::Parser;
+use flir::toml::parse_flir_toml;
+use std::path::PathBuf;
 use std::time::Instant;
 
 fn main() -> Result<()> {
