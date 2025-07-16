@@ -21,7 +21,6 @@ pub struct Config<'a> {
 
 pub fn build_config(args: &CliArgs, paths: Vec<PathBuf>) -> Config {
     let toml = parse_flir_toml(&PathBuf::from(&args.dir));
-    println!("toml: {:?}", toml);
     let rules_toml = match toml {
         Ok(toml_options) => toml_options.linter.unwrap().rules.unwrap(),
         Err(_) => vec![],
