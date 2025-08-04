@@ -48,7 +48,6 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
 
     let syntax = &parsed.syntax();
     let expressions = &parsed.tree().expressions();
-    println!("expressions: {:#?}", expressions);
     let expressions_vec: Vec<_> = expressions.into_iter().collect();
 
     let loc_new_lines = find_new_lines(syntax)?;
