@@ -2,7 +2,7 @@ use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
 use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use biome_rowan::AstNode;
 
 pub struct DuplicatedArguments;
@@ -59,7 +59,7 @@ impl LintChecker for DuplicatedArguments {
                 return Err(anyhow!(
                     "in {}, couldn't find function name for duplicated_arguments linter.",
                     file
-                ))
+                ));
             }
         };
 

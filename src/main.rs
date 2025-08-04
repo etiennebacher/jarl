@@ -1,6 +1,6 @@
+use air_workspace::discovery::DiscoveredSettings;
 use air_workspace::discovery::discover_r_file_paths;
 use air_workspace::discovery::discover_settings;
-use air_workspace::discovery::DiscoveredSettings;
 use air_workspace::resolve::PathResolver;
 use air_workspace::settings::Settings;
 

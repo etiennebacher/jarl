@@ -59,29 +59,32 @@ impl LintChecker for LengthTest {
         let mut lhs: String = "".to_string();
         let mut rhs: String = "".to_string();
 
-        match arguments.into_iter().nth(0) { Some(first_arg) => {
-            if let Ok(x) = first_arg {
-                let RArgumentFields { name_clause: _, value } = x.as_fields();
-                let value = value.context("Found named argument without any value")?;
-                if let AnyRExpression::RBinaryExpression(y) = value {
-                    let RBinaryExpressionFields { left, operator, right } = y.as_fields();
+        match arguments.into_iter().nth(0) {
+            Some(first_arg) => {
+                if let Ok(x) = first_arg {
+                    let RArgumentFields { name_clause: _, value } = x.as_fields();
+                    let value = value.context("Found named argument without any value")?;
+                    if let AnyRExpression::RBinaryExpression(y) = value {
+                        let RBinaryExpressionFields { left, operator, right } = y.as_fields();
 
-                    let operator = operator?;
-                    arg_is_binary_expr = operator.kind() == EQUAL2
-                        || operator.kind() == GREATER_THAN
-                        || operator.kind() == GREATER_THAN_OR_EQUAL_TO
-                        || operator.kind() == LESS_THAN
-                        || operator.kind() == LESS_THAN_OR_EQUAL_TO
-                        || operator.kind() == NOT_EQUAL;
+                        let operator = operator?;
+                        arg_is_binary_expr = operator.kind() == EQUAL2
+                            || operator.kind() == GREATER_THAN
+                            || operator.kind() == GREATER_THAN_OR_EQUAL_TO
+                            || operator.kind() == LESS_THAN
+                            || operator.kind() == LESS_THAN_OR_EQUAL_TO
+                            || operator.kind() == NOT_EQUAL;
 
-                    operator_text.push_str(operator.text_trimmed());
-                    lhs.push_str(&left?.text());
-                    rhs.push_str(&right?.text());
+                        operator_text.push_str(operator.text_trimmed());
+                        lhs.push_str(&left?.text());
+                        rhs.push_str(&right?.text());
+                    }
                 }
             }
-        } _ => {
-            return Ok(diagnostics);
-        }}
+            _ => {
+                return Ok(diagnostics);
+            }
+        }
 
         if arg_is_binary_expr {
             let range = ast.text_trimmed_range();

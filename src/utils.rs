@@ -1,7 +1,7 @@
 use crate::location::Location;
 use crate::message::Diagnostic;
 use air_r_syntax::{RSyntaxKind, RSyntaxNode};
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 
 pub fn find_new_lines(ast: &RSyntaxNode) -> Result<Vec<usize>> {
     match ast.first_child() {

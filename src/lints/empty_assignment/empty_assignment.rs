@@ -40,30 +40,25 @@ impl LintChecker for EmptyAssignment {
 
         let value_is_empty = match operator.kind() {
             RSyntaxKind::EQUAL | RSyntaxKind::ASSIGN => {
-                match RBracedExpressions::cast(right.into()) { Some(right) => {
-                    right.expressions().text() == ""
-                } _ => {
-                    return Ok(diagnostics);
-                }}
+                match RBracedExpressions::cast(right.into()) {
+                    Some(right) => right.expressions().text() == "",
+                    _ => {
+                        return Ok(diagnostics);
+                    }
+                }
             }
-            RSyntaxKind::ASSIGN_RIGHT => {
-                match RBracedExpressions::cast(left.into()) { Some(left) => {
-                    left.expressions().text() == ""
-                } _ => {
+            RSyntaxKind::ASSIGN_RIGHT => match RBracedExpressions::cast(left.into()) {
+                Some(left) => left.expressions().text() == "",
+                _ => {
                     return Ok(diagnostics);
-                }}
-            }
+                }
+            },
             _ => unreachable!("cannot have something else than an assignment"),
         };
 
         if value_is_empty {
             let range = ast.text_trimmed_range();
-            diagnostics.push(Diagnostic::new(
-                EmptyAssignment,
-                file,
-                range,
-                Fix::empty(),
-            ));
+            diagnostics.push(Diagnostic::new(EmptyAssignment, file, range, Fix::empty()));
         }
 
         Ok(diagnostics)
