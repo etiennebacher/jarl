@@ -13,11 +13,11 @@ impl ArgumentListExt for RArgumentList {
             .find(|x| {
                 let name_clause = x.clone().unwrap().name_clause();
                 if let Some(name_clause) = name_clause {
-                    if let Ok(name_clause) = name_clause.name() {
+                    match name_clause.name() { Ok(name_clause) => {
                         name_clause.to_string().trim() == name
-                    } else {
+                    } _ => {
                         false
-                    }
+                    }}
                 } else {
                     false
                 }
@@ -30,10 +30,10 @@ impl ArgumentListExt for RArgumentList {
     }
 
     fn get_arg_by_name_then_position(&self, name: &str, pos: usize) -> Option<RArgument> {
-        if let Some(by_name) = self.get_arg_by_name(name) {
+        match self.get_arg_by_name(name) { Some(by_name) => {
             Some(by_name)
-        } else {
+        } _ => {
             self.get_arg_by_position(pos)
-        }
+        }}
     }
 }
