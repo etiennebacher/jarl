@@ -4,6 +4,7 @@ use crate::{args::CliArgs, lints::all_rules_and_safety, toml::parse_flir_toml};
 
 #[derive(Clone)]
 pub struct Config<'a> {
+    /// Paths to files to lint.
     pub paths: Vec<PathBuf>,
     /// List of rules and whether they have an associated safe fix, passed by
     /// the user and/or recovered from the config file. Those will
