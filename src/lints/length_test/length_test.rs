@@ -59,7 +59,7 @@ impl LintChecker for LengthTest {
         let mut lhs: String = "".to_string();
         let mut rhs: String = "".to_string();
 
-        if let Some(first_arg) = arguments.into_iter().nth(0) {
+        match arguments.into_iter().nth(0) { Some(first_arg) => {
             if let Ok(x) = first_arg {
                 let RArgumentFields { name_clause: _, value } = x.as_fields();
                 let value = value.context("Found named argument without any value")?;
@@ -79,9 +79,9 @@ impl LintChecker for LengthTest {
                     rhs.push_str(&right?.text());
                 }
             }
-        } else {
+        } _ => {
             return Ok(diagnostics);
-        }
+        }}
 
         if arg_is_binary_expr {
             let range = ast.text_trimmed_range();

@@ -40,18 +40,18 @@ impl LintChecker for EmptyAssignment {
 
         let value_is_empty = match operator.kind() {
             RSyntaxKind::EQUAL | RSyntaxKind::ASSIGN => {
-                if let Some(right) = RBracedExpressions::cast(right.into()) {
+                match RBracedExpressions::cast(right.into()) { Some(right) => {
                     right.expressions().text() == ""
-                } else {
+                } _ => {
                     return Ok(diagnostics);
-                }
+                }}
             }
             RSyntaxKind::ASSIGN_RIGHT => {
-                if let Some(left) = RBracedExpressions::cast(left.into()) {
+                match RBracedExpressions::cast(left.into()) { Some(left) => {
                     left.expressions().text() == ""
-                } else {
+                } _ => {
                     return Ok(diagnostics);
-                }
+                }}
             }
             _ => unreachable!("cannot have something else than an assignment"),
         };
