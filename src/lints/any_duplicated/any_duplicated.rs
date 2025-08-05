@@ -1,8 +1,8 @@
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
-use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
-use anyhow::{Context, Result};
+use anyhow::Result;
+use biome_rowan::AstNode;
 
 pub struct AnyDuplicated;
 
@@ -47,9 +47,13 @@ impl Violation for AnyDuplicated {
 }
 
 impl LintChecker for AnyDuplicated {
-    fn check(&self, ast: &RCall, file: &str) -> Result<Vec<Diagnostic>> {
+    fn check(&self, ast: &AnyRExpression, file: &str) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
-
+        let ast = if let Some(ast) = ast.as_r_call() {
+            ast
+        } else {
+            return Ok(diagnostics);
+        };
         let RCallFields { function, arguments } = ast.as_fields();
 
         let outer_fn_name = function?
@@ -90,7 +94,6 @@ impl LintChecker for AnyDuplicated {
                 return Ok(diagnostics);
             }
 
-            use biome_rowan::AstNode;
             let inner_content = arguments?.items().into_syntax().text();
             let range = ast.clone().into_syntax().text_trimmed_range();
             diagnostics.push(Diagnostic::new(

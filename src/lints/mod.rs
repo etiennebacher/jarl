@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 pub(crate) mod any_duplicated;
-// pub(crate) mod any_is_na;
+pub(crate) mod any_is_na;
 // pub(crate) mod class_equals;
 // pub(crate) mod duplicated_arguments;
 // pub(crate) mod empty_assignment;
@@ -19,7 +19,7 @@ pub(crate) mod any_duplicated;
 pub fn all_rules_and_safety() -> HashMap<&'static str, bool> {
     HashMap::from([
         ("any_duplicated", true),
-        // ("any_is_na", true),
+        ("any_is_na", true),
         // ("class_equals", true),
         // ("duplicated_arguments", true),
         // ("empty_assignment", true),
