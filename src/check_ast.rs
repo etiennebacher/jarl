@@ -1,17 +1,17 @@
 use air_r_parser::RParserOptions;
 use air_r_syntax::{
-    RBinaryExpressionFields, RCallFields, RExpressionList, RIfStatementFields, RSyntaxKind,
-    RSyntaxNode, RWhileStatementFields,
+    AnyRExpression, RArgumentList, RBinaryExpressionFields, RCallArgumentsFields, RCallFields,
+    RExpressionList, RIfStatementFields, RParenthesizedExpressionFields, RSyntaxKind, RSyntaxNode,
+    RWhileStatementFields,
 };
 
 use crate::config::Config;
 use crate::lints::any_duplicated::any_duplicated::AnyDuplicated;
 use crate::lints::any_is_na::any_is_na::AnyIsNa;
 use crate::lints::class_equals::class_equals::ClassEquals;
-// use crate::lints::class_equals::class_equals::ClassEquals;
 // use crate::lints::duplicated_arguments::duplicated_arguments::DuplicatedArguments;
 // use crate::lints::empty_assignment::empty_assignment::EmptyAssignment;
-// use crate::lints::equal_assignment::equal_assignment::EqualAssignment;
+use crate::lints::equal_assignment::equal_assignment::EqualAssignment;
 // use crate::lints::equals_na::equals_na::EqualsNa;
 // use crate::lints::expect_length::expect_length::ExpectLength;
 // use crate::lints::length_levels::length_levels::LengthLevels;
@@ -33,7 +33,7 @@ fn rule_name_to_lint_checker(rule_name: &str) -> Box<dyn LintChecker> {
         "class_equals" => Box::new(ClassEquals),
         // "duplicated_arguments" => Box::new(DuplicatedArguments),
         // "empty_assignment" => Box::new(EmptyAssignment),
-        // "equal_assignment" => Box::new(EqualAssignment),
+        "equal_assignment" => Box::new(EqualAssignment),
         // "equals_na" => Box::new(EqualsNa),
         // "expect_length" => Box::new(ExpectLength),
         // "length_levels" => Box::new(LengthLevels),
@@ -106,6 +106,16 @@ pub fn check_ast(
         air_r_syntax::AnyRExpression::RCall(children) => {
             diagnostics.extend(AnyDuplicated.check(&children.clone().into(), file)?);
             diagnostics.extend(AnyIsNa.check(&children.clone().into(), file)?);
+            let RCallFields { arguments, .. } = children.as_fields();
+            let RCallArgumentsFields { items, .. } = arguments?.as_fields();
+            let arg_exprs: Vec<AnyRExpression> = items
+                .into_iter()
+                .map(|x| x.unwrap().as_fields().value.unwrap())
+                .collect();
+
+            for expr in arg_exprs {
+                diagnostics.extend(check_ast(&expr, file, config)?);
+            }
         }
         // // | air_r_syntax::RArgumentList
         // | air_r_syntax::AnyRExpression::RSubset(children)
@@ -120,11 +130,15 @@ pub fn check_ast(
         // | air_r_syntax::AnyRExpression::RUnaryExpression(children)
         air_r_syntax::AnyRExpression::RBinaryExpression(children) => {
             diagnostics.extend(ClassEquals.check(&children.clone().into(), file)?);
+            diagnostics.extend(EqualAssignment.check(&children.clone().into(), file)?);
             let RBinaryExpressionFields { left, right, .. } = children.as_fields();
             diagnostics.extend(check_ast(&left?, file, config)?);
             diagnostics.extend(check_ast(&right?, file, config)?);
         }
-        // | air_r_syntax::AnyRExpression::RParenthesizedExpression(children)
+        air_r_syntax::AnyRExpression::RParenthesizedExpression(children) => {
+            let RParenthesizedExpressionFields { body, .. } = children.as_fields();
+            diagnostics.extend(check_ast(&body?, file, config)?);
+        }
         // | air_r_syntax::AnyRExpression::RExtractExpression(children)
         // | air_r_syntax::AnyRExpression::RNamespaceExpression(children)
         // | air_r_syntax::AnyRExpression::RNaExpression(children)
