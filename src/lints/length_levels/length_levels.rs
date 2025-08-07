@@ -1,9 +1,8 @@
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
-use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
-use anyhow::{Context, Result};
-
+use anyhow::Result;
+use biome_rowan::AstNode;
 pub struct LengthLevels;
 
 /// ## What it does
@@ -39,55 +38,60 @@ impl Violation for LengthLevels {
 }
 
 impl LintChecker for LengthLevels {
-    fn check(&self, ast: &RSyntaxNode, file: &str) -> Result<Vec<Diagnostic>> {
+    fn check(&self, ast: &AnyRExpression, file: &str) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
-        if ast.kind() != RSyntaxKind::R_CALL {
+        let ast = if let Some(ast) = ast.as_r_call() {
+            ast
+        } else {
+            return Ok(diagnostics);
+        };
+        let RCallFields { function, arguments } = ast.as_fields();
+
+        let outer_fn_name = function?
+            .as_r_identifier()
+            .expect("In RCall, the function name must exist")
+            .name_token()?
+            .token_text_trimmed();
+
+        if outer_fn_name.text() != "length" {
             return Ok(diagnostics);
         }
-        let call = ast
-            .first_child()
-            .context("Couldn't find function name")?
-            .text_trimmed();
 
-        if call != "length" {
-            return Ok(diagnostics);
-        }
+        let items = arguments?.items();
 
-        let unnamed_arg = ast.descendants().find(|x| {
-            x.kind() == RSyntaxKind::R_ARGUMENT
-                && x.first_child()
-                    .map(|child| child.kind() != RSyntaxKind::R_ARGUMENT_NAME_CLAUSE)
-                    .unwrap_or(false)
-        });
+        let unnamed_arg = items
+            .into_iter()
+            .find(|x| x.clone().unwrap().name_clause().is_none());
 
-        let y = unnamed_arg
-            .unwrap()
-            .first_child()
-            .context("No first child found")?;
+        let value = unnamed_arg.unwrap()?.value();
 
-        if y.kind() == RSyntaxKind::R_CALL {
-            let fun = y.first_child().context("No function found")?;
-            let fun_content = y
-                .children()
-                .nth(1)
-                .context("Internal error")?
-                .first_child()
-                .context("Internal error")?
-                .text();
+        if let Some(inner) = value
+            && let Some(inner2) = inner.as_r_call()
+        {
+            let RCallFields { function, arguments } = inner2.as_fields();
 
-            if fun.text_trimmed() == "levels" && fun.kind() == RSyntaxKind::R_IDENTIFIER {
-                let range = ast.text_trimmed_range();
-                diagnostics.push(Diagnostic::new(
-                    LengthLevels,
-                    file,
-                    range,
-                    Fix {
-                        content: format!("nlevels({})", fun_content),
-                        start: range.start().into(),
-                        end: range.end().into(),
-                    },
-                ))
+            let inner_fn_name = function?
+                .as_r_identifier()
+                .expect("In RCall, the function name must exist")
+                .name_token()?
+                .token_text_trimmed();
+
+            if inner_fn_name.text() != "levels" {
+                return Ok(diagnostics);
             }
+
+            let inner_content = arguments?.items().into_syntax().text();
+            let range = ast.clone().into_syntax().text_trimmed_range();
+            diagnostics.push(Diagnostic::new(
+                LengthLevels,
+                file,
+                range,
+                Fix {
+                    content: format!("nlevels({})", inner_content),
+                    start: range.start().into(),
+                    end: range.end().into(),
+                },
+            ))
         }
         Ok(diagnostics)
     }

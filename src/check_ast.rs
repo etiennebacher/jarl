@@ -14,7 +14,7 @@ use crate::lints::class_equals::class_equals::ClassEquals;
 use crate::lints::equal_assignment::equal_assignment::EqualAssignment;
 use crate::lints::equals_na::equals_na::EqualsNa;
 // use crate::lints::expect_length::expect_length::ExpectLength;
-// use crate::lints::length_levels::length_levels::LengthLevels;
+use crate::lints::length_levels::length_levels::LengthLevels;
 // use crate::lints::length_test::length_test::LengthTest;
 // use crate::lints::lengths::lengths::Lengths;
 // use crate::lints::redundant_equals::redundant_equals::RedundantEquals;
@@ -36,7 +36,7 @@ fn rule_name_to_lint_checker(rule_name: &str) -> Box<dyn LintChecker> {
         "equal_assignment" => Box::new(EqualAssignment),
         "equals_na" => Box::new(EqualsNa),
         // "expect_length" => Box::new(ExpectLength),
-        // "length_levels" => Box::new(LengthLevels),
+        "length_levels" => Box::new(LengthLevels),
         // "length_test" => Box::new(LengthTest),
         // "lengths" => Box::new(Lengths),
         // "redundant_equals" => Box::new(RedundantEquals),
@@ -106,6 +106,7 @@ pub fn check_ast(
         air_r_syntax::AnyRExpression::RCall(children) => {
             diagnostics.extend(AnyDuplicated.check(&children.clone().into(), file)?);
             diagnostics.extend(AnyIsNa.check(&children.clone().into(), file)?);
+            diagnostics.extend(LengthLevels.check(&children.clone().into(), file)?);
             let RCallFields { arguments, .. } = children.as_fields();
             let RCallArgumentsFields { items, .. } = arguments?.as_fields();
             let arg_exprs: Vec<AnyRExpression> = items
