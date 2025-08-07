@@ -85,13 +85,7 @@ pub fn check_ast(
     config: &Config,
 ) -> anyhow::Result<Vec<Diagnostic>> {
     let mut diagnostics: Vec<Diagnostic> = vec![];
-    let rules: &Vec<&str> = &config.rules_to_apply;
-    let linters: Vec<Box<dyn LintChecker>> = rules
-        .iter()
-        .map(|rule| rule_name_to_lint_checker(rule))
-        .collect();
 
-    // println!("expr: {}", expr);
     match expression {
         // air_r_syntax::RExpressionList
         // air_r_syntax::AnyRExpression::RFunctionDefinition(children) => {
@@ -104,13 +98,15 @@ pub fn check_ast(
         //     )?);
         // }
         air_r_syntax::AnyRExpression::RCall(children) => {
-            diagnostics.extend(AnyDuplicated.check(&children.clone().into(), file)?);
-            diagnostics.extend(AnyIsNa.check(&children.clone().into(), file)?);
-            diagnostics.extend(DuplicatedArguments.check(&children.clone().into(), file)?);
-            diagnostics.extend(LengthLevels.check(&children.clone().into(), file)?);
-            diagnostics.extend(LengthTest.check(&children.clone().into(), file)?);
-            diagnostics.extend(Lengths.check(&children.clone().into(), file)?);
-            diagnostics.extend(WhichGrepl.check(&children.clone().into(), file)?);
+            let any_r_exp: &AnyRExpression = &children.clone().into();
+            diagnostics.extend(AnyDuplicated.check(any_r_exp, file)?);
+            diagnostics.extend(AnyIsNa.check(any_r_exp, file)?);
+            diagnostics.extend(DuplicatedArguments.check(any_r_exp, file)?);
+            diagnostics.extend(LengthLevels.check(any_r_exp, file)?);
+            diagnostics.extend(LengthTest.check(any_r_exp, file)?);
+            diagnostics.extend(Lengths.check(any_r_exp, file)?);
+            diagnostics.extend(WhichGrepl.check(any_r_exp, file)?);
+
             let RCallFields { arguments, .. } = children.as_fields();
             let RCallArgumentsFields { items, .. } = arguments?.as_fields();
             let arg_exprs: Vec<AnyRExpression> = items
@@ -133,10 +129,11 @@ pub fn check_ast(
         // | air_r_syntax::AnyRExpression::RRepeatStatement(children)
         // | air_r_syntax::AnyRExpression::RUnaryExpression(children)
         air_r_syntax::AnyRExpression::RBinaryExpression(children) => {
-            diagnostics.extend(ClassEquals.check(&children.clone().into(), file)?);
-            diagnostics.extend(EqualAssignment.check(&children.clone().into(), file)?);
-            diagnostics.extend(EqualsNa.check(&children.clone().into(), file)?);
-            diagnostics.extend(RedundantEquals.check(&children.clone().into(), file)?);
+            let any_r_exp: &AnyRExpression = &children.clone().into();
+            diagnostics.extend(ClassEquals.check(any_r_exp, file)?);
+            diagnostics.extend(EqualAssignment.check(any_r_exp, file)?);
+            diagnostics.extend(EqualsNa.check(any_r_exp, file)?);
+            diagnostics.extend(RedundantEquals.check(any_r_exp, file)?);
             let RBinaryExpressionFields { left, right, .. } = children.as_fields();
             diagnostics.extend(check_ast(&left?, file, config)?);
             diagnostics.extend(check_ast(&right?, file, config)?);
