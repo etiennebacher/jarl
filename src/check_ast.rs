@@ -51,8 +51,7 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
     let expressions_vec: Vec<_> = expressions.into_iter().collect();
 
     let loc_new_lines = find_new_lines(syntax)?;
-    let diagnostics: Vec<Diagnostic> =
-        unsafe { check_ast(expressions, file.to_str().unwrap(), &config)? };
+    let diagnostics: Vec<Diagnostic> = check_ast(expressions, file.to_str().unwrap(), &config)?;
 
     let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
 
@@ -72,7 +71,7 @@ impl Checker {
     // }
 }
 
-pub unsafe fn check_ast(
+pub fn check_ast(
     expressions: &air_r_syntax::RExpressionList,
     file: &str,
     config: &Config,
