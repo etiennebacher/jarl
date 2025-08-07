@@ -19,7 +19,7 @@ use crate::lints::length_test::length_test::LengthTest;
 use crate::lints::lengths::lengths::Lengths;
 use crate::lints::redundant_equals::redundant_equals::RedundantEquals;
 // use crate::lints::true_false_symbol::true_false_symbol::TrueFalseSymbol;
-// use crate::lints::which_grepl::which_grepl::WhichGrepl;
+use crate::lints::which_grepl::which_grepl::WhichGrepl;
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
 use crate::utils::*;
@@ -41,7 +41,7 @@ fn rule_name_to_lint_checker(rule_name: &str) -> Box<dyn LintChecker> {
         "lengths" => Box::new(Lengths),
         "redundant_equals" => Box::new(RedundantEquals),
         // "true_false_symbol" => Box::new(TrueFalseSymbol),
-        // "which_grepl" => Box::new(WhichGrepl),
+        "which_grepl" => Box::new(WhichGrepl),
         unknown => unreachable!("unknown rule name: {unknown}"),
     }
 }
@@ -109,6 +109,7 @@ pub fn check_ast(
             diagnostics.extend(LengthLevels.check(&children.clone().into(), file)?);
             diagnostics.extend(LengthTest.check(&children.clone().into(), file)?);
             diagnostics.extend(Lengths.check(&children.clone().into(), file)?);
+            diagnostics.extend(WhichGrepl.check(&children.clone().into(), file)?);
             let RCallFields { arguments, .. } = children.as_fields();
             let RCallArgumentsFields { items, .. } = arguments?.as_fields();
             let arg_exprs: Vec<AnyRExpression> = items
