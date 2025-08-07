@@ -1,6 +1,5 @@
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
-use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
 use anyhow::{Result, anyhow};
 use biome_rowan::AstNode;
@@ -36,14 +35,14 @@ impl Violation for DuplicatedArguments {
 }
 
 impl LintChecker for DuplicatedArguments {
-    fn check(&self, ast: &RSyntaxNode, file: &str) -> Result<Vec<Diagnostic>> {
-        let mut diagnostics: Vec<Diagnostic> = vec![];
-        if ast.kind() != RSyntaxKind::R_CALL {
+    fn check(&self, ast: &AnyRExpression, file: &str) -> Result<Vec<Diagnostic>> {
+        let mut diagnostics = vec![];
+        let ast = if let Some(ast) = ast.as_r_call() {
+            ast
+        } else {
             return Ok(diagnostics);
-        }
-
-        let call = RCall::cast(ast.clone());
-        let function = call.unwrap().function();
+        };
+        let RCallFields { function, arguments } = ast.as_fields();
 
         let fun_name = match function? {
             AnyRExpression::RNamespaceExpression(x) => x.right()?.text(),
@@ -63,49 +62,33 @@ impl LintChecker for DuplicatedArguments {
             }
         };
 
-        let whitelisted_funs = ["mutate", "summarize", "transmute"];
+        let whitelisted_funs = ["mutate", "summarize", "transmute", "c"];
         if whitelisted_funs.contains(&fun_name.as_str()) {
             return Ok(diagnostics);
         }
 
-        let named_args = ast
-            .descendants()
-            .find(|x| x.kind() == RSyntaxKind::R_ARGUMENT_LIST)
-            .ok_or(anyhow!("Couldn't find argument list"))?
-            .children()
-            .filter(|x| {
-                x.kind() == RSyntaxKind::R_ARGUMENT
-                    && x.first_child()
-                        .map(|child| child.kind() == RSyntaxKind::R_ARGUMENT_NAME_CLAUSE)
-                        .unwrap_or(false)
+        let arg_names: Vec<String> = arguments?
+            .items()
+            .into_iter()
+            .filter_map(Result::ok) // skip any Err values
+            .filter_map(|item| {
+                let fields = item.as_fields();
+                if let Some(name_clause) = &fields.name_clause
+                    && let Ok(name) = name_clause.name()
+                {
+                    Some(name.text().to_string().replace(&['\'', '"', '`'][..], ""))
+                } else {
+                    None
+                }
             })
-            .collect::<Vec<_>>();
+            .collect();
 
-        if named_args.is_empty() {
+        if arg_names.is_empty() {
             return Ok(diagnostics);
         }
 
-        let arg_names = named_args
-            .iter()
-            .map(|arg| {
-                arg.first_child()
-                    .map(|child| {
-                        child
-                            .first_child()
-                            .map(|child2| {
-                                child2
-                                    .text_trimmed()
-                                    .to_string()
-                                    .replace(&['\'', '"', '`'][..], "")
-                            })
-                            .unwrap_or("".to_string())
-                    })
-                    .unwrap_or("".to_string())
-            })
-            .collect::<Vec<String>>();
-
         if has_duplicates(&arg_names) {
-            let range = ast.text_trimmed_range();
+            let range = ast.clone().into_syntax().text_trimmed_range();
             diagnostics.push(Diagnostic::new(
                 DuplicatedArguments,
                 file,

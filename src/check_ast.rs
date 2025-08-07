@@ -9,7 +9,7 @@ use crate::config::Config;
 use crate::lints::any_duplicated::any_duplicated::AnyDuplicated;
 use crate::lints::any_is_na::any_is_na::AnyIsNa;
 use crate::lints::class_equals::class_equals::ClassEquals;
-// use crate::lints::duplicated_arguments::duplicated_arguments::DuplicatedArguments;
+use crate::lints::duplicated_arguments::duplicated_arguments::DuplicatedArguments;
 // use crate::lints::empty_assignment::empty_assignment::EmptyAssignment;
 use crate::lints::equal_assignment::equal_assignment::EqualAssignment;
 use crate::lints::equals_na::equals_na::EqualsNa;
@@ -31,7 +31,7 @@ fn rule_name_to_lint_checker(rule_name: &str) -> Box<dyn LintChecker> {
         "any_duplicated" => Box::new(AnyDuplicated),
         "any_is_na" => Box::new(AnyIsNa),
         "class_equals" => Box::new(ClassEquals),
-        // "duplicated_arguments" => Box::new(DuplicatedArguments),
+        "duplicated_arguments" => Box::new(DuplicatedArguments),
         // "empty_assignment" => Box::new(EmptyAssignment),
         "equal_assignment" => Box::new(EqualAssignment),
         "equals_na" => Box::new(EqualsNa),
@@ -106,6 +106,7 @@ pub fn check_ast(
         air_r_syntax::AnyRExpression::RCall(children) => {
             diagnostics.extend(AnyDuplicated.check(&children.clone().into(), file)?);
             diagnostics.extend(AnyIsNa.check(&children.clone().into(), file)?);
+            diagnostics.extend(DuplicatedArguments.check(&children.clone().into(), file)?);
             diagnostics.extend(LengthLevels.check(&children.clone().into(), file)?);
             diagnostics.extend(LengthTest.check(&children.clone().into(), file)?);
             diagnostics.extend(Lengths.check(&children.clone().into(), file)?);
@@ -121,7 +122,6 @@ pub fn check_ast(
                 diagnostics.extend(check_ast(&expr, file, config)?);
             }
         }
-        // // | air_r_syntax::RArgumentList
         // | air_r_syntax::AnyRExpression::RSubset(children)
         // | air_r_syntax::AnyRExpression::RSubset2(children)
         // // | air_r_syntax::RParameterList
@@ -158,7 +158,7 @@ pub fn check_ast(
             diagnostics.extend(check_ast(&condition?, file, config)?);
         }
         _ => {
-            println!("Not implemented");
+            // println!("Not implemented");
         }
     }
 
