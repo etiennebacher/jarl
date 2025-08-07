@@ -1,7 +1,6 @@
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
-use crate::utils::{get_first_arg, node_is_in_square_brackets};
-use air_r_syntax::RSyntaxNode;
+use crate::utils::get_first_arg;
 use air_r_syntax::*;
 use anyhow::Result;
 use biome_rowan::AstNode;
@@ -55,17 +54,22 @@ impl Violation for ClassEquals {
 }
 
 impl LintChecker for ClassEquals {
-    fn check(&self, ast: &RSyntaxNode, file: &str) -> Result<Vec<Diagnostic>> {
+    fn check(&self, ast: &AnyRExpression, file: &str) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
-        let bin_expr = RBinaryExpression::cast(ast.clone());
-
-        if bin_expr.is_none() || node_is_in_square_brackets(ast) {
+        let ast = if let Some(ast) = ast.as_r_binary_expression() {
+            ast
+        } else {
             return Ok(diagnostics);
-        }
+        };
+        // let bin_expr = RBinaryExpression::cast(ast.clone());
 
-        let RBinaryExpressionFields { left, operator, right } = bin_expr.unwrap().as_fields();
+        // if bin_expr.is_none() || node_is_in_square_brackets(ast) {
+        //     return Ok(diagnostics);
+        // }
 
-        let operator = operator.unwrap();
+        let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
+
+        let operator = operator?;
 
         if operator.kind() != RSyntaxKind::EQUAL2
             && operator.kind() != RSyntaxKind::NOT_EQUAL
@@ -110,7 +114,7 @@ impl LintChecker for ClassEquals {
             class_name = lhs.text_trimmed();
         };
 
-        let range = ast.text_trimmed_range();
+        let range = ast.clone().into_syntax().text_trimmed_range();
         diagnostics.push(Diagnostic::new(
             ClassEquals,
             file,

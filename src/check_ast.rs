@@ -1,9 +1,13 @@
 use air_r_parser::RParserOptions;
-use air_r_syntax::{RExpressionList, RSyntaxKind, RSyntaxNode};
+use air_r_syntax::{
+    RBinaryExpressionFields, RCallFields, RExpressionList, RIfStatementFields, RSyntaxKind,
+    RSyntaxNode, RWhileStatementFields,
+};
 
 use crate::config::Config;
 use crate::lints::any_duplicated::any_duplicated::AnyDuplicated;
 use crate::lints::any_is_na::any_is_na::AnyIsNa;
+use crate::lints::class_equals::class_equals::ClassEquals;
 // use crate::lints::class_equals::class_equals::ClassEquals;
 // use crate::lints::duplicated_arguments::duplicated_arguments::DuplicatedArguments;
 // use crate::lints::empty_assignment::empty_assignment::EmptyAssignment;
@@ -26,7 +30,7 @@ fn rule_name_to_lint_checker(rule_name: &str) -> Box<dyn LintChecker> {
     match rule_name {
         "any_duplicated" => Box::new(AnyDuplicated),
         "any_is_na" => Box::new(AnyIsNa),
-        // "class_equals" => Box::new(ClassEquals),
+        "class_equals" => Box::new(ClassEquals),
         // "duplicated_arguments" => Box::new(DuplicatedArguments),
         // "empty_assignment" => Box::new(EmptyAssignment),
         // "equal_assignment" => Box::new(EqualAssignment),
@@ -51,7 +55,11 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
     let expressions_vec: Vec<_> = expressions.into_iter().collect();
 
     let loc_new_lines = find_new_lines(syntax)?;
-    let diagnostics: Vec<Diagnostic> = check_ast(expressions, file.to_str().unwrap(), &config)?;
+    let diagnostics: Vec<Diagnostic> = expressions_vec
+        .iter()
+        .map(|expression| check_ast(expression, file.to_str().unwrap(), &config).unwrap())
+        .flatten()
+        .collect();
 
     let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
 
@@ -72,7 +80,7 @@ impl Checker {
 }
 
 pub fn check_ast(
-    expressions: &air_r_syntax::RExpressionList,
+    expression: &air_r_syntax::AnyRExpression,
     file: &str,
     config: &Config,
 ) -> anyhow::Result<Vec<Diagnostic>> {
@@ -83,97 +91,55 @@ pub fn check_ast(
         .map(|rule| rule_name_to_lint_checker(rule))
         .collect();
 
-    // for linter in linters {
-    //     diagnostics.extend(linter.check(&expressions, file)?);
-    // }
-
-    // if ast.kind() == RSyntaxKind::R_CALL || ast.kind() == RSyntaxKind::R_CALL_ARGUMENTS {
-    //     println!("{:?}", ast.kind());
-    //     println!("Text: {:?}", ast.text_trimmed());
-    //     println!(
-    //         "Children: {:?}",
-    //         ast.children().map(|x| x.kind()).collect::<Vec<_>>()
-    //     );
-    // }
-
-    // println!("ast kind: {:?}", ast.kind());
-    // println!("ast text: {:?}", ast.text_trimmed());
-    // println!("diagnostics: {:?}", diagnostics);
-
-    let expressions_vec: Vec<_> = expressions.into_iter().collect();
-
-    for expr in expressions_vec {
-        // println!("expr: {}", expr);
-        match expr {
-            // air_r_syntax::RExpressionList
-            // air_r_syntax::AnyRExpression::RFunctionDefinition(children) => {
-            //     use biome_rowan::AstNode;
-            //     let params = children.parameters()?;
-            //     diagnostics.extend(check_ast(
-            //         &RExpressionList::new_unchecked(params.syntax().clone()),
-            //         file,
-            //         &config.clone(),
-            //     )?);
-            // }
-            air_r_syntax::AnyRExpression::RCall(children) => {
-                diagnostics.extend(AnyDuplicated.check(&children.clone().into(), file)?);
-                diagnostics.extend(AnyIsNa.check(&children.clone().into(), file)?);
-            }
-            // // | air_r_syntax::RArgumentList
-            // | air_r_syntax::AnyRExpression::RSubset(children)
-            // | air_r_syntax::AnyRExpression::RSubset2(children)
-            // // | air_r_syntax::RParameterList
-            // // | air_r_syntax::RParameters
-            // // | air_r_syntax::RParameter
-            // // | air_r_syntax::RArgument
-            // | air_r_syntax::AnyRExpression::RBracedExpressions(children)
-            // | air_r_syntax::RRoot
-            // | air_r_syntax::AnyRExpression::RRepeatStatement(children)
-            // | air_r_syntax::AnyRExpression::RUnaryExpression(children)
-            // | air_r_syntax::AnyRExpression::RBinaryExpression(children)
-            // | air_r_syntax::AnyRExpression::RParenthesizedExpression(children)
-            // | air_r_syntax::AnyRExpression::RExtractExpression(children)
-            // | air_r_syntax::AnyRExpression::RNamespaceExpression(children)
-            // | air_r_syntax::AnyRExpression::RNaExpression(children)
-            // | air_r_syntax::AnyRExpression::RForStatement(children)
-            // | air_r_syntax::AnyRExpression::RWhileStatement(children)
-            // | air_r_syntax::AnyRExpression::RIfStatement(children) => {
-            //     for child in ast.children() {
-            //         diagnostics.extend(check_ast(&child, file, &config.clone())?);
-            //     }
-            // }
-            // RSyntaxKind::R_IDENTIFIER => {
-            //     diagnostics.extend(check_ast(&ast, loc_new_lines, file, rules)?);
-
-            //     // let fc = &ast.first_child();
-            //     // let _has_child = fc.is_some();
-            //     // let ns = ast.next_sibling();
-            //     // let has_sibling = ns.is_some();
-            //     // if has_sibling {
-            //     //     diagnostics.extend(check_ast(&ns.unwrap(), loc_new_lines, file, rules)?);
-            //     // }
-            // }
-            _ => {
-                println!("Not implemented");
-                // println!("Unknown kind: {:?}", ast.kind());
-                // match &ast.first_child() {
-                //     Some(_) => {
-                //         for child in ast.children() {
-                //             diagnostics.extend(check_ast(&child, file, &config.clone())?);
-                //         }
-                //     }
-                //     None => {
-                //         // COMMENTED OUT SO THAT x <- c(T, F) doesn't give 10 diagnostics
-
-                //         // let ns = ast.next_sibling();
-                //         // let has_sibling = ns.is_some();
-                //         // if has_sibling {
-                //         //     diagnostics.extend(check_ast(&ns.unwrap(), loc_new_lines, file, rules)?);
-                //         // }
-                //     }
-                // }
-            }
-        };
+    // println!("expr: {}", expr);
+    match expression {
+        // air_r_syntax::RExpressionList
+        // air_r_syntax::AnyRExpression::RFunctionDefinition(children) => {
+        //     use biome_rowan::AstNode;
+        //     let params = children.parameters()?;
+        //     diagnostics.extend(check_ast(
+        //         &RExpressionList::new_unchecked(params.syntax().clone()),
+        //         file,
+        //         &config.clone(),
+        //     )?);
+        // }
+        air_r_syntax::AnyRExpression::RCall(children) => {
+            diagnostics.extend(AnyDuplicated.check(&children.clone().into(), file)?);
+            diagnostics.extend(AnyIsNa.check(&children.clone().into(), file)?);
+        }
+        // // | air_r_syntax::RArgumentList
+        // | air_r_syntax::AnyRExpression::RSubset(children)
+        // | air_r_syntax::AnyRExpression::RSubset2(children)
+        // // | air_r_syntax::RParameterList
+        // // | air_r_syntax::RParameters
+        // // | air_r_syntax::RParameter
+        // // | air_r_syntax::RArgument
+        // | air_r_syntax::AnyRExpression::RBracedExpressions(children)
+        // | air_r_syntax::RRoot
+        // | air_r_syntax::AnyRExpression::RRepeatStatement(children)
+        // | air_r_syntax::AnyRExpression::RUnaryExpression(children)
+        air_r_syntax::AnyRExpression::RBinaryExpression(children) => {
+            diagnostics.extend(ClassEquals.check(&children.clone().into(), file)?);
+            let RBinaryExpressionFields { left, right, .. } = children.as_fields();
+            diagnostics.extend(check_ast(&left?, file, config)?);
+            diagnostics.extend(check_ast(&right?, file, config)?);
+        }
+        // | air_r_syntax::AnyRExpression::RParenthesizedExpression(children)
+        // | air_r_syntax::AnyRExpression::RExtractExpression(children)
+        // | air_r_syntax::AnyRExpression::RNamespaceExpression(children)
+        // | air_r_syntax::AnyRExpression::RNaExpression(children)
+        // | air_r_syntax::AnyRExpression::RForStatement(children)
+        air_r_syntax::AnyRExpression::RWhileStatement(children) => {
+            let RWhileStatementFields { condition, .. } = children.as_fields();
+            diagnostics.extend(check_ast(&condition?, file, config)?);
+        }
+        air_r_syntax::AnyRExpression::RIfStatement(children) => {
+            let RIfStatementFields { condition, .. } = children.as_fields();
+            diagnostics.extend(check_ast(&condition?, file, config)?);
+        }
+        _ => {
+            println!("Not implemented");
+        }
     }
 
     Ok(diagnostics)
