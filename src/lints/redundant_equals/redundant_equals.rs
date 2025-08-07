@@ -47,15 +47,15 @@ impl Violation for RedundantEquals {
 }
 
 impl LintChecker for RedundantEquals {
-    fn check(&self, ast: &RSyntaxNode, file: &str) -> anyhow::Result<Vec<Diagnostic>> {
+    fn check(&self, ast: &AnyRExpression, file: &str) -> anyhow::Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
-        let bin_expr = RBinaryExpression::cast(ast.clone());
-
-        if bin_expr.is_none() {
+        let ast = if let Some(ast) = ast.as_r_binary_expression() {
+            ast
+        } else {
             return Ok(diagnostics);
-        }
+        };
 
-        let RBinaryExpressionFields { left, operator, right } = bin_expr.unwrap().as_fields();
+        let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
         let operator = operator?;
         let left = left?;
@@ -80,7 +80,7 @@ impl LintChecker for RedundantEquals {
                     return Ok(diagnostics);
                 };
 
-                let range = ast.text_trimmed_range();
+                let range = ast.clone().into_syntax().text_trimmed_range();
                 diagnostics.push(Diagnostic::new(
                     RedundantEquals,
                     file,
@@ -104,7 +104,7 @@ impl LintChecker for RedundantEquals {
                 } else {
                     return Ok(diagnostics);
                 };
-                let range = ast.text_trimmed_range();
+                let range = ast.clone().into_syntax().text_trimmed_range();
                 diagnostics.push(Diagnostic::new(
                     RedundantEquals,
                     file,
