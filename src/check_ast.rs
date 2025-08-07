@@ -16,7 +16,7 @@ use crate::lints::equals_na::equals_na::EqualsNa;
 // use crate::lints::expect_length::expect_length::ExpectLength;
 use crate::lints::length_levels::length_levels::LengthLevels;
 use crate::lints::length_test::length_test::LengthTest;
-// use crate::lints::lengths::lengths::Lengths;
+use crate::lints::lengths::lengths::Lengths;
 // use crate::lints::redundant_equals::redundant_equals::RedundantEquals;
 // use crate::lints::true_false_symbol::true_false_symbol::TrueFalseSymbol;
 // use crate::lints::which_grepl::which_grepl::WhichGrepl;
@@ -38,7 +38,7 @@ fn rule_name_to_lint_checker(rule_name: &str) -> Box<dyn LintChecker> {
         // "expect_length" => Box::new(ExpectLength),
         "length_levels" => Box::new(LengthLevels),
         "length_test" => Box::new(LengthTest),
-        // "lengths" => Box::new(Lengths),
+        "lengths" => Box::new(Lengths),
         // "redundant_equals" => Box::new(RedundantEquals),
         // "true_false_symbol" => Box::new(TrueFalseSymbol),
         // "which_grepl" => Box::new(WhichGrepl),
@@ -108,6 +108,7 @@ pub fn check_ast(
             diagnostics.extend(AnyIsNa.check(&children.clone().into(), file)?);
             diagnostics.extend(LengthLevels.check(&children.clone().into(), file)?);
             diagnostics.extend(LengthTest.check(&children.clone().into(), file)?);
+            diagnostics.extend(Lengths.check(&children.clone().into(), file)?);
             let RCallFields { arguments, .. } = children.as_fields();
             let RCallArgumentsFields { items, .. } = arguments?.as_fields();
             let arg_exprs: Vec<AnyRExpression> = items

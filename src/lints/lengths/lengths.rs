@@ -45,13 +45,14 @@ impl Violation for Lengths {
 }
 
 impl LintChecker for Lengths {
-    fn check(&self, ast: &RSyntaxNode, file: &str) -> Result<Vec<Diagnostic>> {
+    fn check(&self, ast: &AnyRExpression, file: &str) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
-        let call = RCall::cast(ast.clone());
-        if call.is_none() {
+        let ast = if let Some(ast) = ast.as_r_call() {
+            ast
+        } else {
             return Ok(diagnostics);
-        }
-        let RCallFields { function, arguments } = call.unwrap().as_fields();
+        };
+        let RCallFields { function, arguments } = ast.as_fields();
         let function = function?;
 
         let funs_to_watch = ["sapply", "vapply", "map_dbl", "map_int"];
@@ -70,7 +71,7 @@ impl LintChecker for Lengths {
                 .text()
                 == "length"
             {
-                let range = ast.text_trimmed_range();
+                let range = ast.clone().into_syntax().text_trimmed_range();
                 diagnostics.push(Diagnostic::new(
                     Lengths,
                     file,
