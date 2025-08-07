@@ -1,7 +1,8 @@
 use air_r_parser::RParserOptions;
 use air_r_syntax::{
-    AnyRExpression, RArgumentList, RBinaryExpressionFields, RCallArgumentsFields, RCallFields,
-    RExpressionList, RIfStatementFields, RParenthesizedExpressionFields, RSyntaxKind, RSyntaxNode,
+    AnyRExpression, RArgumentList, RBinaryExpressionFields, RBracedExpressionsFields,
+    RCallArgumentsFields, RCallFields, RExpressionList, RFunctionDefinitionFields,
+    RIfStatementFields, RParenthesizedExpressionFields, RSyntaxKind, RSyntaxNode,
     RWhileStatementFields,
 };
 
@@ -88,15 +89,6 @@ pub fn check_ast(
 
     match expression {
         // air_r_syntax::RExpressionList
-        // air_r_syntax::AnyRExpression::RFunctionDefinition(children) => {
-        //     use biome_rowan::AstNode;
-        //     let params = children.parameters()?;
-        //     diagnostics.extend(check_ast(
-        //         &RExpressionList::new_unchecked(params.syntax().clone()),
-        //         file,
-        //         &config.clone(),
-        //     )?);
-        // }
         air_r_syntax::AnyRExpression::RCall(children) => {
             let any_r_exp: &AnyRExpression = &children.clone().into();
             diagnostics.extend(AnyDuplicated.check(any_r_exp, file)?);
@@ -140,6 +132,18 @@ pub fn check_ast(
         }
         air_r_syntax::AnyRExpression::RParenthesizedExpression(children) => {
             let RParenthesizedExpressionFields { body, .. } = children.as_fields();
+            diagnostics.extend(check_ast(&body?, file, config)?);
+        }
+        air_r_syntax::AnyRExpression::RBracedExpressions(children) => {
+            let RBracedExpressionsFields { expressions, .. } = children.as_fields();
+            let expressions_vec: Vec<_> = expressions.into_iter().collect();
+
+            for expr in expressions_vec {
+                diagnostics.extend(check_ast(&expr, file, config)?);
+            }
+        }
+        air_r_syntax::AnyRExpression::RFunctionDefinition(children) => {
+            let RFunctionDefinitionFields { body, .. } = children.as_fields();
             diagnostics.extend(check_ast(&body?, file, config)?);
         }
         // | air_r_syntax::AnyRExpression::RExtractExpression(children)
