@@ -1,7 +1,6 @@
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
 use air_r_syntax::RSyntaxKind::*;
-use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
 use anyhow::{Context, Result};
 use biome_rowan::AstNode;
@@ -40,16 +39,22 @@ impl Violation for LengthTest {
 }
 
 impl LintChecker for LengthTest {
-    fn check(&self, ast: &RSyntaxNode, file: &str) -> Result<Vec<Diagnostic>> {
+    fn check(&self, ast: &AnyRExpression, file: &str) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
-        let call = RCall::cast(ast.clone());
-        if call.is_none() {
+        let ast = if let Some(ast) = ast.as_r_call() {
+            ast
+        } else {
             return Ok(diagnostics);
-        }
-        let RCallFields { function, arguments } = call.unwrap().as_fields();
-        let function = function?;
+        };
+        let RCallFields { function, arguments } = ast.as_fields();
 
-        if function.text() != "length" {
+        let outer_fn_name = function?
+            .as_r_identifier()
+            .expect("In RCall, the function name must exist")
+            .name_token()?
+            .token_text_trimmed();
+
+        if outer_fn_name.text() != "length" {
             return Ok(diagnostics);
         }
 
@@ -87,7 +92,7 @@ impl LintChecker for LengthTest {
         }
 
         if arg_is_binary_expr {
-            let range = ast.text_trimmed_range();
+            let range = ast.clone().into_syntax().text_trimmed_range();
             diagnostics.push(Diagnostic::new(
                 LengthTest,
                 file,
