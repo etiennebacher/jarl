@@ -11,7 +11,7 @@ use crate::lints::any_duplicated::any_duplicated::AnyDuplicated;
 use crate::lints::any_is_na::any_is_na::AnyIsNa;
 use crate::lints::class_equals::class_equals::ClassEquals;
 use crate::lints::duplicated_arguments::duplicated_arguments::DuplicatedArguments;
-// use crate::lints::empty_assignment::empty_assignment::EmptyAssignment;
+use crate::lints::empty_assignment::empty_assignment::EmptyAssignment;
 use crate::lints::equal_assignment::equal_assignment::EqualAssignment;
 use crate::lints::equals_na::equals_na::EqualsNa;
 // use crate::lints::expect_length::expect_length::ExpectLength;
@@ -33,7 +33,7 @@ fn rule_name_to_lint_checker(rule_name: &str) -> Box<dyn LintChecker> {
         "any_is_na" => Box::new(AnyIsNa),
         "class_equals" => Box::new(ClassEquals),
         "duplicated_arguments" => Box::new(DuplicatedArguments),
-        // "empty_assignment" => Box::new(EmptyAssignment),
+        "empty_assignment" => Box::new(EmptyAssignment),
         "equal_assignment" => Box::new(EqualAssignment),
         "equals_na" => Box::new(EqualsNa),
         // "expect_length" => Box::new(ExpectLength),
@@ -123,6 +123,7 @@ pub fn check_ast(
         air_r_syntax::AnyRExpression::RBinaryExpression(children) => {
             let any_r_exp: &AnyRExpression = &children.clone().into();
             diagnostics.extend(ClassEquals.check(any_r_exp, file)?);
+            diagnostics.extend(EmptyAssignment.check(any_r_exp, file)?);
             diagnostics.extend(EqualAssignment.check(any_r_exp, file)?);
             diagnostics.extend(EqualsNa.check(any_r_exp, file)?);
             diagnostics.extend(RedundantEquals.check(any_r_exp, file)?);

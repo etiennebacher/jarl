@@ -1,7 +1,6 @@
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
 use crate::traits::ArgumentListExt;
-use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
 use anyhow::{Context, Result};
 use biome_rowan::AstNode;

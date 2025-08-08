@@ -12,20 +12,20 @@ impl Violation for EmptyAssignment {
         "empty_assignment".to_string()
     }
     fn body(&self) -> String {
-        "Assign NULL explicitly or, whenever possible, allocate the empty object`.".to_string()
+        "Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size.".to_string()
     }
 }
 
 impl LintChecker for EmptyAssignment {
-    fn check(&self, ast: &RSyntaxNode, file: &str) -> Result<Vec<Diagnostic>> {
+    fn check(&self, ast: &AnyRExpression, file: &str) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = vec![];
-        let bin_expr = RBinaryExpression::cast(ast.clone());
-
-        if bin_expr.is_none() {
+        let ast = if let Some(ast) = ast.as_r_binary_expression() {
+            ast
+        } else {
             return Ok(diagnostics);
-        }
+        };
 
-        let RBinaryExpressionFields { left, operator, right } = bin_expr.unwrap().as_fields();
+        let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
         let left = left?;
         let right = right?;
@@ -57,7 +57,7 @@ impl LintChecker for EmptyAssignment {
         };
 
         if value_is_empty {
-            let range = ast.text_trimmed_range();
+            let range = ast.clone().into_syntax().text_trimmed_range();
             diagnostics.push(Diagnostic::new(EmptyAssignment, file, range, Fix::empty()));
         }
 

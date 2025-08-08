@@ -61,12 +61,6 @@ impl LintChecker for ClassEquals {
         } else {
             return Ok(diagnostics);
         };
-        // let bin_expr = RBinaryExpression::cast(ast.clone());
-
-        // if bin_expr.is_none() || node_is_in_square_brackets(ast) {
-        //     return Ok(diagnostics);
-        // }
-
         let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
         let operator = operator?;
