@@ -19,7 +19,7 @@ use crate::lints::length_levels::length_levels::LengthLevels;
 use crate::lints::length_test::length_test::LengthTest;
 use crate::lints::lengths::lengths::Lengths;
 use crate::lints::redundant_equals::redundant_equals::RedundantEquals;
-// use crate::lints::true_false_symbol::true_false_symbol::TrueFalseSymbol;
+use crate::lints::true_false_symbol::true_false_symbol::TrueFalseSymbol;
 use crate::lints::which_grepl::which_grepl::WhichGrepl;
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
@@ -68,7 +68,10 @@ pub fn check_ast(
     let mut diagnostics: Vec<Diagnostic> = vec![];
 
     match expression {
-        // air_r_syntax::RExpressionList
+        air_r_syntax::AnyRExpression::RIdentifier(x) => {
+            diagnostics.extend(TrueFalseSymbol.check(&x.clone().into(), file)?);
+        }
+
         air_r_syntax::AnyRExpression::RCall(children) => {
             let any_r_exp: &AnyRExpression = &children.clone().into();
             diagnostics.extend(AnyDuplicated.check(any_r_exp, file)?);

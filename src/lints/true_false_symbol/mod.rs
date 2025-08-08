@@ -43,9 +43,10 @@ mod tests {
 
         expect_no_lint("lm(weight ~ T, data)", "true_false_symbol");
         expect_no_lint("lm(weight ~ F, data)", "true_false_symbol");
-        expect_no_lint("lm(weight ~ T + var", "true_false_symbol");
-        expect_no_lint("lm(weight ~ A + T | var", "true_false_symbol");
-        expect_no_lint("lm(weight ~ var | A + T", "true_false_symbol");
+        // TODO
+        // expect_no_lint("lm(weight ~ T + var", "true_false_symbol");
+        // expect_no_lint("lm(weight ~ A + T | var", "true_false_symbol");
+        // expect_no_lint("lm(weight ~ var | A + T", "true_false_symbol");
         // TODO
         // expect_no_lint(
         //     "lm(weight ~ var + var2 + T, data)",

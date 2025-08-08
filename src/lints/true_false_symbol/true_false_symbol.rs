@@ -1,6 +1,5 @@
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
-use air_r_syntax::RSyntaxNode;
 use air_r_syntax::*;
 use anyhow::Result;
 use biome_rowan::AstNode;
@@ -45,40 +44,31 @@ impl Violation for TrueFalseSymbol {
 }
 
 impl LintChecker for TrueFalseSymbol {
-    fn check(&self, ast: &RSyntaxNode, file: &str) -> Result<Vec<Diagnostic>> {
+    fn check(&self, ast: &AnyRExpression, file: &str) -> Result<Vec<Diagnostic>> {
         let mut diagnostics: Vec<Diagnostic> = vec![];
-        if ast.kind() != RSyntaxKind::R_IDENTIFIER
-            || (ast.text_trimmed() != "T" && ast.text_trimmed() != "F")
-        {
+        let ast = if let Some(ast) = ast.as_r_identifier() {
+            ast
+        } else {
+            return Ok(diagnostics);
+        };
+        let token = ast.name_token().unwrap();
+        let name = token.text_trimmed();
+        if name != "T" && name != "F" {
             return Ok(diagnostics);
         }
 
         // Allow T(), F()
-        let is_function_name = ast
-            .parent()
-            .map(|x| x.kind() == RSyntaxKind::R_CALL)
-            .unwrap_or(false);
+        let is_function_name = ast.parent::<RCall>().is_some();
 
         // Allow df$T, df$F
-        let is_element_name = ast
-            .parent()
-            .map(|x| x.kind() == RSyntaxKind::R_EXTRACT_EXPRESSION)
-            .unwrap_or(false);
+        let is_element_name = ast.parent::<RExtractExpression>().is_some();
 
         // Allow A ~ T
         let is_in_formula = ast
-            .parent()
+            .parent::<RBinaryExpression>()
             .map(|x| {
-                let bin_expr = RBinaryExpression::cast(x.clone());
-                if bin_expr.is_some() {
-                    let RBinaryExpressionFields { left: _, operator, right: _ } =
-                        bin_expr.unwrap().as_fields();
-
-                    let operator = operator.unwrap();
-                    operator.kind() == RSyntaxKind::TILDE
-                } else {
-                    false
-                }
+                let operator = x.operator().unwrap();
+                operator.kind() == RSyntaxKind::TILDE
             })
             .unwrap_or(false);
 
@@ -86,13 +76,13 @@ impl LintChecker for TrueFalseSymbol {
             return Ok(diagnostics);
         }
 
-        let range = ast.text_trimmed_range();
+        let range = ast.clone().into_syntax().text_trimmed_range();
         diagnostics.push(Diagnostic::new(
             TrueFalseSymbol,
             file,
             range,
             Fix {
-                content: if ast.text_trimmed() == "T" {
+                content: if ast.clone().into_syntax().text_trimmed() == "T" {
                     "TRUE".to_string()
                 } else {
                     "FALSE".to_string()
