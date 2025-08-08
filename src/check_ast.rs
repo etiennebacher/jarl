@@ -27,26 +27,6 @@ use crate::utils::*;
 use anyhow::Result;
 use std::path::Path;
 
-fn rule_name_to_lint_checker(rule_name: &str) -> Box<dyn LintChecker> {
-    match rule_name {
-        "any_duplicated" => Box::new(AnyDuplicated),
-        "any_is_na" => Box::new(AnyIsNa),
-        "class_equals" => Box::new(ClassEquals),
-        "duplicated_arguments" => Box::new(DuplicatedArguments),
-        "empty_assignment" => Box::new(EmptyAssignment),
-        "equal_assignment" => Box::new(EqualAssignment),
-        "equals_na" => Box::new(EqualsNa),
-        // "expect_length" => Box::new(ExpectLength),
-        "length_levels" => Box::new(LengthLevels),
-        "length_test" => Box::new(LengthTest),
-        "lengths" => Box::new(Lengths),
-        "redundant_equals" => Box::new(RedundantEquals),
-        // "true_false_symbol" => Box::new(TrueFalseSymbol),
-        "which_grepl" => Box::new(WhichGrepl),
-        unknown => unreachable!("unknown rule name: {unknown}"),
-    }
-}
-
 pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Diagnostic>> {
     let parser_options = RParserOptions::default();
     let parsed = air_r_parser::parse(contents, parser_options);
