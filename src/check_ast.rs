@@ -2,8 +2,8 @@ use air_r_parser::RParserOptions;
 use air_r_syntax::{
     AnyRExpression, RArgumentList, RBinaryExpressionFields, RBracedExpressionsFields,
     RCallArgumentsFields, RCallFields, RExpressionList, RFunctionDefinitionFields,
-    RIfStatementFields, RParenthesizedExpressionFields, RSyntaxKind, RSyntaxNode,
-    RWhileStatementFields,
+    RIfStatementFields, RParenthesizedExpressionFields, RSubset, RSubsetFields, RSyntaxKind,
+    RSyntaxNode, RWhileStatementFields,
 };
 
 use crate::config::Config;
@@ -139,6 +139,17 @@ pub fn check_ast(
             let RIfStatementFields { condition, consequence, .. } = children.as_fields();
             diagnostics.extend(check_ast(&condition?, file, config)?);
             diagnostics.extend(check_ast(&consequence?, file, config)?);
+        }
+        air_r_syntax::AnyRExpression::RSubset(children) => {
+            let RSubsetFields { arguments, .. } = children.as_fields();
+            let arguments = arguments?.items();
+            let expressions_vec: Vec<_> = arguments.into_iter().collect();
+
+            for expr in expressions_vec {
+                if let Some(expr) = expr?.value() {
+                    diagnostics.extend(check_ast(&expr, file, config)?);
+                }
+            }
         }
         _ => {
             // println!("Not implemented");
