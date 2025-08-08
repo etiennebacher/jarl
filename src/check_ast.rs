@@ -155,8 +155,9 @@ pub fn check_ast(
             diagnostics.extend(check_ast(&condition?, file, config)?);
         }
         air_r_syntax::AnyRExpression::RIfStatement(children) => {
-            let RIfStatementFields { condition, .. } = children.as_fields();
+            let RIfStatementFields { condition, consequence, .. } = children.as_fields();
             diagnostics.extend(check_ast(&condition?, file, config)?);
+            diagnostics.extend(check_ast(&consequence?, file, config)?);
         }
         _ => {
             // println!("Not implemented");
