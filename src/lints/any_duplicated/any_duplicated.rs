@@ -56,13 +56,40 @@ impl LintChecker for AnyDuplicated {
         };
         let RCallFields { function, arguments } = ast.as_fields();
 
-        let outer_fn_name = function?
-            .as_r_identifier()
-            .expect("In RCall, the function name must exist")
-            .name_token()?
-            .token_text_trimmed();
+        let function = function?;
 
-        if outer_fn_name.text() != "any" {
+        let outer_fn_name = if let Some(ns_expr) = function.as_r_namespace_expression() {
+            if let Ok(expr) = ns_expr.right() {
+                if let Some(id) = expr.as_r_identifier() {
+                    if let Ok(token) = id.name_token() {
+                        let trimmed = token.token_text_trimmed();
+                        Some(trimmed.text().to_string())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else if let Some(_) = function.as_r_return_expression() {
+            Some("return".to_string())
+        } else if let Some(id) = function.as_r_identifier() {
+            if let Ok(token) = id.name_token() {
+                let trimmed = token.token_text_trimmed();
+                Some(trimmed.text().to_string())
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        // Use expect or return an error here
+        let outer_fn_name = outer_fn_name.expect("In RCall, the function name must exist");
+
+        if outer_fn_name != "any" {
             return Ok(diagnostics);
         }
 
