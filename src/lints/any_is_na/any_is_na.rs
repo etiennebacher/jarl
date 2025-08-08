@@ -79,13 +79,10 @@ impl LintChecker for AnyIsNa {
         {
             let RCallFields { function, arguments } = inner2.as_fields();
 
-            let inner_fn_name = function?
-                .as_r_identifier()
-                .expect("In RCall, the function name must exist")
-                .name_token()?
-                .token_text_trimmed();
+            let function = function?;
+            let inner_fn_name = get_function_name(function);
 
-            if inner_fn_name.text() != "is.na" {
+            if inner_fn_name != "is.na" {
                 return Ok(diagnostics);
             }
 
