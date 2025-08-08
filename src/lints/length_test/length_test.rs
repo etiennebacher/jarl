@@ -1,5 +1,5 @@
-use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
+use crate::{message::*, utils::get_function_name};
 use air_r_syntax::RSyntaxKind::*;
 use air_r_syntax::*;
 use anyhow::{Context, Result};
@@ -48,13 +48,10 @@ impl LintChecker for LengthTest {
         };
         let RCallFields { function, arguments } = ast.as_fields();
 
-        let outer_fn_name = function?
-            .as_r_identifier()
-            .expect("In RCall, the function name must exist")
-            .name_token()?
-            .token_text_trimmed();
+        let function = function?;
+        let outer_fn_name = get_function_name(function);
 
-        if outer_fn_name.text() != "length" {
+        if outer_fn_name != "length" {
             return Ok(diagnostics);
         }
 

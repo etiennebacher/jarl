@@ -1,6 +1,6 @@
 use crate::location::Location;
 use crate::message::Diagnostic;
-use air_r_syntax::{RSyntaxKind, RSyntaxNode};
+use air_r_syntax::{AnyRExpression, RSyntaxKind, RSyntaxNode};
 use anyhow::{Result, anyhow};
 
 pub fn find_new_lines(ast: &RSyntaxNode) -> Result<Vec<usize>> {
@@ -69,6 +69,38 @@ pub fn node_is_in_square_brackets(ast: &RSyntaxNode) -> bool {
         Some(x) => x.kind() == RSyntaxKind::R_SUBSET_ARGUMENTS,
         None => false,
     }
+}
+
+pub fn get_function_name(function: AnyRExpression) -> String {
+    let fn_name = if let Some(ns_expr) = function.as_r_namespace_expression() {
+        if let Ok(expr) = ns_expr.right() {
+            if let Some(id) = expr.as_r_identifier() {
+                if let Ok(token) = id.name_token() {
+                    let trimmed = token.token_text_trimmed();
+                    Some(trimmed.text().to_string())
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else if let Some(_) = function.as_r_return_expression() {
+        Some("return".to_string())
+    } else if let Some(id) = function.as_r_identifier() {
+        if let Ok(token) = id.name_token() {
+            let trimmed = token.token_text_trimmed();
+            Some(trimmed.text().to_string())
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    fn_name.expect("In RCall, the function name must exist")
 }
 
 // #[cfg(test)]

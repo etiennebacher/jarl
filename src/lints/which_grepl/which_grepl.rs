@@ -1,5 +1,6 @@
 use crate::message::*;
 use crate::trait_lint_checker::LintChecker;
+use crate::utils::get_function_name;
 use air_r_syntax::*;
 use anyhow::Result;
 use biome_rowan::AstNode;
@@ -52,13 +53,10 @@ impl LintChecker for WhichGrepl {
         };
         let RCallFields { function, arguments } = ast.as_fields();
 
-        let outer_fn_name = function?
-            .as_r_identifier()
-            .expect("In RCall, the function name must exist")
-            .name_token()?
-            .token_text_trimmed();
+        let function = function?;
+        let outer_fn_name = get_function_name(function);
 
-        if outer_fn_name.text() != "which" {
+        if outer_fn_name != "which" {
             return Ok(diagnostics);
         }
 
