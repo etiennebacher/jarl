@@ -1,6 +1,6 @@
 use crate::location::Location;
 use crate::message::Diagnostic;
-use air_r_syntax::{AnyRExpression, RSyntaxKind, RSyntaxNode};
+use air_r_syntax::{AnyRExpression, RExtractExpressionFields, RSyntaxKind, RSyntaxNode};
 use anyhow::{Result, anyhow};
 
 pub fn find_new_lines(ast: &RSyntaxNode) -> Result<Vec<usize>> {
@@ -87,6 +87,38 @@ pub fn get_function_name(function: AnyRExpression) -> String {
         } else {
             None
         }
+    } else if let Some(extract_expr) = function.as_r_extract_expression() {
+        let RExtractExpressionFields { left, right, operator } = extract_expr.as_fields();
+
+        if let Ok(left) = left
+            && let Ok(right) = right
+            && let Ok(operator) = operator
+        {
+            if let Some(left_id) = left.as_r_identifier()
+                && let Some(right_id) = right.as_r_identifier()
+            {
+                if let Ok(left_token) = left_id.name_token()
+                    && let Ok(right_token) = right_id.name_token()
+                {
+                    let left_trimmed = left_token.token_text_trimmed();
+                    let right_trimmed = right_token.token_text_trimmed();
+                    Some(
+                        [
+                            left_trimmed.text().to_string(),
+                            operator.text_trimmed().to_string(),
+                            right_trimmed.text().to_string(),
+                        ]
+                        .join(""),
+                    )
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     } else if let Some(_) = function.as_r_return_expression() {
         Some("return".to_string())
     } else if let Some(id) = function.as_r_identifier() {
@@ -100,7 +132,11 @@ pub fn get_function_name(function: AnyRExpression) -> String {
         None
     };
 
-    fn_name.expect("In RCall, the function name must exist")
+    // TODO: self$foo() is handled but not in a recursive way so self$bar$foo()
+    // errors for instance.
+    // Those function names shouldn't trigger lint rules so fixing this is not
+    // urgent.
+    fn_name.unwrap_or("".to_string())
 }
 
 // #[cfg(test)]
