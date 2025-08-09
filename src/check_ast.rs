@@ -117,6 +117,10 @@ pub fn check_ast(
             let body = children.body();
             check_ast(&body?, checker)?;
         }
+        air_r_syntax::AnyRExpression::RRepeatStatement(children) => {
+            let body = children.body();
+            check_ast(&body?, checker)?;
+        }
         air_r_syntax::AnyRExpression::RSubset(children) => {
             let arguments: Vec<_> = children.arguments()?.items().into_iter().collect();
 
@@ -137,16 +141,12 @@ pub fn check_ast(
         // | air_r_syntax::RParameters
         // | air_r_syntax::RParameter
         // | air_r_syntax::RArgument
-        // | air_r_syntax::AnyRExpression::RBracedExpressions(children)
         // | air_r_syntax::RRoot
-        // | air_r_syntax::AnyRExpression::RRepeatStatement(children)
         // | air_r_syntax::AnyRExpression::RUnaryExpression(children)
         // | air_r_syntax::AnyRExpression::RExtractExpression(children)
         // | air_r_syntax::AnyRExpression::RNamespaceExpression(children)
         // | air_r_syntax::AnyRExpression::RNaExpression(children)
-        _ => {
-            // println!("Not implemented");
-        }
+        _ => {}
     }
 
     Ok(())
