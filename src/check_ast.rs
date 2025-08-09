@@ -75,7 +75,8 @@ pub fn check_ast(
             let RCallArgumentsFields { items, .. } = arguments?.as_fields();
             let arg_exprs: Vec<AnyRExpression> = items
                 .into_iter()
-                .map(|x| x.unwrap().as_fields().value.unwrap())
+                .map(|x| x.unwrap().as_fields().value)
+                .filter_map(|x| x)
                 .collect();
 
             for expr in arg_exprs {
