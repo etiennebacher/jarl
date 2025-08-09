@@ -29,7 +29,7 @@ impl<'a> Checker<'a> {
         self.diagnostics.push(diagnostic);
     }
 
-    pub(crate) fn is_enabled(&mut self, rule: &str) -> bool {
+    pub(crate) fn is_rule_enabled(&mut self, rule: &str) -> bool {
         self.rules.contains(&rule)
     }
 }

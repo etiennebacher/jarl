@@ -10,25 +10,25 @@ use crate::lints::lengths::lengths::lengths;
 use crate::lints::which_grepl::which_grepl::which_grepl;
 
 pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
-    if checker.is_enabled("any_duplicated") {
+    if checker.is_rule_enabled("any_duplicated") {
         checker.report_diagnostic(any_duplicated(r_expr)?);
     }
-    if checker.is_enabled("any_is_na") {
+    if checker.is_rule_enabled("any_is_na") {
         checker.report_diagnostic(any_is_na(r_expr)?);
     }
-    if checker.is_enabled("duplicated_arguments") {
+    if checker.is_rule_enabled("duplicated_arguments") {
         checker.report_diagnostic(duplicated_arguments(r_expr)?);
     }
-    if checker.is_enabled("length_levels") {
+    if checker.is_rule_enabled("length_levels") {
         checker.report_diagnostic(length_levels(r_expr)?);
     }
-    if checker.is_enabled("length_test") {
+    if checker.is_rule_enabled("length_test") {
         checker.report_diagnostic(length_test(r_expr)?);
     }
-    if checker.is_enabled("lengths") {
+    if checker.is_rule_enabled("lengths") {
         checker.report_diagnostic(lengths(r_expr)?);
     }
-    if checker.is_enabled("which_grepl") {
+    if checker.is_rule_enabled("which_grepl") {
         checker.report_diagnostic(which_grepl(r_expr)?);
     }
     Ok(())
