@@ -64,11 +64,11 @@ pub fn check_ast(
 ) -> anyhow::Result<()> {
     match expression {
         air_r_syntax::AnyRExpression::RIdentifier(x) => {
-            let _ = analyze::identifier::identifier(x, checker);
+            analyze::identifier::identifier(x, checker)?;
         }
 
         air_r_syntax::AnyRExpression::RCall(children) => {
-            let _ = analyze::call::call(children, checker);
+            analyze::call::call(children, checker)?;
 
             let RCallFields { arguments, .. } = children.as_fields();
             let RCallArgumentsFields { items, .. } = arguments?.as_fields();
@@ -93,7 +93,7 @@ pub fn check_ast(
         // | air_r_syntax::AnyRExpression::RRepeatStatement(children)
         // | air_r_syntax::AnyRExpression::RUnaryExpression(children)
         air_r_syntax::AnyRExpression::RBinaryExpression(children) => {
-            let _ = analyze::binary_expression::binary_expression(children, checker);
+            analyze::binary_expression::binary_expression(children, checker)?;
             let RBinaryExpressionFields { left, right, .. } = children.as_fields();
             check_ast(&left?, config, checker)?;
             check_ast(&right?, config, checker)?;
