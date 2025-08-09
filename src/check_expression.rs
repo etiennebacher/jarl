@@ -14,6 +14,7 @@ use anyhow::Result;
 use std::path::Path;
 
 #[derive(Debug)]
+// The object that will collect diagnostics in check_expressions().
 pub struct Checker<'a> {
     diagnostics: Vec<Diagnostic>,
     rules: Vec<&'a str>,
