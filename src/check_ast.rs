@@ -75,14 +75,14 @@ pub fn check_ast(
         air_r_syntax::AnyRExpression::RCall(children) => {
             analyze::call::call(children, checker)?;
 
-            let RCallFields { arguments, .. } = children.as_fields();
-            let RCallArgumentsFields { items, .. } = arguments?.as_fields();
-            let arg_exprs: Vec<AnyRExpression> = items
+            let arguments: Vec<AnyRExpression> = children
+                .arguments()?
+                .items()
                 .into_iter()
                 .filter_map(|x| x.unwrap().as_fields().value)
                 .collect();
 
-            for expr in arg_exprs {
+            for expr in arguments {
                 check_ast(&expr, checker)?;
             }
         }
@@ -103,19 +103,18 @@ pub fn check_ast(
             check_ast(&right?, checker)?;
         }
         air_r_syntax::AnyRExpression::RParenthesizedExpression(children) => {
-            let RParenthesizedExpressionFields { body, .. } = children.as_fields();
+            let body = children.body();
             check_ast(&body?, checker)?;
         }
         air_r_syntax::AnyRExpression::RBracedExpressions(children) => {
-            let RBracedExpressionsFields { expressions, .. } = children.as_fields();
-            let expressions_vec: Vec<_> = expressions.into_iter().collect();
+            let expressions: Vec<_> = children.expressions().into_iter().collect();
 
-            for expr in expressions_vec {
+            for expr in expressions {
                 check_ast(&expr, checker)?;
             }
         }
         air_r_syntax::AnyRExpression::RFunctionDefinition(children) => {
-            let RFunctionDefinitionFields { body, .. } = children.as_fields();
+            let body = children.body();
             check_ast(&body?, checker)?;
         }
         // | air_r_syntax::AnyRExpression::RExtractExpression(children)
@@ -138,11 +137,9 @@ pub fn check_ast(
             check_ast(&consequence?, checker)?;
         }
         air_r_syntax::AnyRExpression::RSubset(children) => {
-            let RSubsetFields { arguments, .. } = children.as_fields();
-            let arguments = arguments?.items();
-            let expressions_vec: Vec<_> = arguments.into_iter().collect();
+            let arguments: Vec<_> = children.arguments()?.items().into_iter().collect();
 
-            for expr in expressions_vec {
+            for expr in arguments {
                 if let Some(expr) = expr?.value() {
                     check_ast(&expr, checker)?;
                 }
