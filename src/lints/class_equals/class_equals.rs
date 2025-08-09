@@ -54,12 +54,12 @@ impl Violation for ClassEquals {
 }
 
 impl LintChecker for ClassEquals {
-    fn check(&self, ast: &AnyRExpression, file: &str) -> Result<Vec<Diagnostic>> {
-        let mut diagnostics = vec![];
+    fn check(&self, ast: &AnyRExpression) -> Result<Diagnostic> {
+        let mut diagnostic = Diagnostic::empty();
         let ast = if let Some(ast) = ast.as_r_binary_expression() {
             ast
         } else {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         };
         let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
@@ -69,7 +69,7 @@ impl LintChecker for ClassEquals {
             && operator.kind() != RSyntaxKind::NOT_EQUAL
             && operator.text_trimmed() != "%in%"
         {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         };
 
         let lhs = left?.into_syntax();
@@ -87,7 +87,7 @@ impl LintChecker for ClassEquals {
         let right_is_string = rhs.kind() == RSyntaxKind::R_STRING_VALUE;
 
         if (!left_is_class && !right_is_class) || (!left_is_string && !right_is_string) {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         }
 
         let fun_name =
@@ -109,16 +109,15 @@ impl LintChecker for ClassEquals {
         };
 
         let range = ast.clone().into_syntax().text_trimmed_range();
-        diagnostics.push(Diagnostic::new(
+        diagnostic = Diagnostic::new(
             ClassEquals,
-            file,
             range,
             Fix {
                 content: format!("{}({}, {})", fun_name, fun_content.unwrap(), class_name),
                 start: range.start().into(),
                 end: range.end().into(),
             },
-        ));
-        Ok(diagnostics)
+        );
+        Ok(diagnostic)
     }
 }

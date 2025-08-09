@@ -48,12 +48,12 @@ impl Violation for AnyDuplicated {
 }
 
 impl LintChecker for AnyDuplicated {
-    fn check(&self, ast: &AnyRExpression, file: &str) -> Result<Vec<Diagnostic>> {
-        let mut diagnostics = vec![];
+    fn check(&self, ast: &AnyRExpression) -> Result<Diagnostic> {
+        let mut diagnostic = Diagnostic::empty();
         let ast = if let Some(ast) = ast.as_r_call() {
             ast
         } else {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         };
         let RCallFields { function, arguments } = ast.as_fields();
 
@@ -61,7 +61,7 @@ impl LintChecker for AnyDuplicated {
         let outer_fn_name = get_function_name(function);
 
         if outer_fn_name != "any" {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         }
 
         let items = arguments?.items();
@@ -72,7 +72,7 @@ impl LintChecker for AnyDuplicated {
 
         // any(na.rm = TRUE/FALSE) and any() are valid
         if unnamed_arg.is_none() {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         }
 
         let value = unnamed_arg.unwrap()?.value();
@@ -86,22 +86,21 @@ impl LintChecker for AnyDuplicated {
             let inner_fn_name = get_function_name(function);
 
             if inner_fn_name != "duplicated" {
-                return Ok(diagnostics);
+                return Ok(diagnostic);
             }
 
             let inner_content = arguments?.items().into_syntax().text();
             let range = ast.clone().into_syntax().text_trimmed_range();
-            diagnostics.push(Diagnostic::new(
+            diagnostic = Diagnostic::new(
                 AnyDuplicated,
-                file,
                 range,
                 Fix {
                     content: format!("anyDuplicated({}) > 0", inner_content),
                     start: range.start().into(),
                     end: range.end().into(),
                 },
-            ))
+            )
         }
-        Ok(diagnostics)
+        Ok(diagnostic)
     }
 }

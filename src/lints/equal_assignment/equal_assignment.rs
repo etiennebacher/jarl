@@ -44,12 +44,12 @@ impl Violation for EqualAssignment {
 }
 
 impl LintChecker for EqualAssignment {
-    fn check(&self, ast: &AnyRExpression, file: &str) -> Result<Vec<Diagnostic>> {
-        let mut diagnostics = vec![];
+    fn check(&self, ast: &AnyRExpression) -> Result<Diagnostic> {
+        let mut diagnostic = Diagnostic::empty();
         let ast = if let Some(ast) = ast.as_r_binary_expression() {
             ast
         } else {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         };
 
         let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
@@ -59,19 +59,19 @@ impl LintChecker for EqualAssignment {
         let rhs = right?.into_syntax();
 
         if operator.kind() != RSyntaxKind::EQUAL && operator.kind() != RSyntaxKind::ASSIGN_RIGHT {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         };
 
         let replacement = match operator.kind() {
             RSyntaxKind::EQUAL => {
                 if lhs.kind() != RSyntaxKind::R_IDENTIFIER {
-                    return Ok(diagnostics);
+                    return Ok(diagnostic);
                 }
                 format!("{} <- {}", lhs.text_trimmed(), rhs.text_trimmed())
             }
             RSyntaxKind::ASSIGN_RIGHT => {
                 if rhs.kind() != RSyntaxKind::R_IDENTIFIER {
-                    return Ok(diagnostics);
+                    return Ok(diagnostic);
                 }
                 format!("{} <- {}", rhs.text_trimmed(), lhs.text_trimmed())
             }
@@ -79,17 +79,16 @@ impl LintChecker for EqualAssignment {
         };
 
         let range = ast.clone().into_syntax().text_trimmed_range();
-        diagnostics.push(Diagnostic::new(
+        diagnostic = Diagnostic::new(
             EqualAssignment,
-            file,
             range,
             Fix {
                 content: replacement,
                 start: range.start().into(),
                 end: range.end().into(),
             },
-        ));
+        );
 
-        Ok(diagnostics)
+        Ok(diagnostic)
     }
 }

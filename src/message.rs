@@ -58,19 +58,29 @@ where
     }
 }
 
+impl DiagnosticKind {
+    pub fn empty() -> Self {
+        Self { name: "".to_string(), body: "".to_string() }
+    }
+}
+
 impl Diagnostic {
-    pub fn new<T: Into<DiagnosticKind>>(
-        message: T,
-        filename: &str,
-        range: TextRange,
-        fix: Fix,
-    ) -> Self {
+    pub fn new<T: Into<DiagnosticKind>>(message: T, range: TextRange, fix: Fix) -> Self {
         Self {
             message: message.into(),
-            filename: filename.into(),
             range,
             location: None,
             fix,
+            filename: "".into(),
+        }
+    }
+    pub fn empty() -> Self {
+        Self {
+            message: DiagnosticKind::empty(),
+            range: TextRange::empty(0.into()),
+            location: None,
+            fix: Fix::empty(),
+            filename: "".into(),
         }
     }
 }

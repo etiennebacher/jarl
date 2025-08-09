@@ -42,12 +42,12 @@ impl Violation for EqualsNa {
 }
 
 impl LintChecker for EqualsNa {
-    fn check(&self, ast: &AnyRExpression, file: &str) -> Result<Vec<Diagnostic>> {
-        let mut diagnostics = vec![];
+    fn check(&self, ast: &AnyRExpression) -> Result<Diagnostic> {
+        let mut diagnostic = Diagnostic::empty();
         let ast = if let Some(ast) = ast.as_r_binary_expression() {
             ast
         } else {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         };
 
         let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
@@ -57,7 +57,7 @@ impl LintChecker for EqualsNa {
         let right = right?;
 
         if operator.kind() != RSyntaxKind::EQUAL2 && operator.kind() != RSyntaxKind::NOT_EQUAL {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         };
 
         let na_values = [
@@ -75,7 +75,7 @@ impl LintChecker for EqualsNa {
         // If NA is quoted in text, then quotation marks are escaped and this
         // is false.
         if (left_is_na && right_is_na) || (!left_is_na && !right_is_na) {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         }
         let range = ast.clone().into_syntax().text_trimmed_range();
 
@@ -87,32 +87,30 @@ impl LintChecker for EqualsNa {
 
         match operator.kind() {
             RSyntaxKind::EQUAL2 => {
-                diagnostics.push(Diagnostic::new(
+                diagnostic = Diagnostic::new(
                     EqualsNa,
-                    file,
                     range,
                     Fix {
                         content: format!("is.na({})", replacement),
                         start: range.start().into(),
                         end: range.end().into(),
                     },
-                ));
+                );
             }
             RSyntaxKind::NOT_EQUAL => {
-                diagnostics.push(Diagnostic::new(
+                diagnostic = Diagnostic::new(
                     EqualsNa,
-                    file,
                     range,
                     Fix {
                         content: format!("!is.na({})", replacement),
                         start: range.start().into(),
                         end: range.end().into(),
                     },
-                ));
+                );
             }
             _ => unreachable!("This case is an early return"),
         };
 
-        Ok(diagnostics)
+        Ok(diagnostic)
     }
 }

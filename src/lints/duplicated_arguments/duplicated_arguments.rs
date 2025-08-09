@@ -35,12 +35,12 @@ impl Violation for DuplicatedArguments {
 }
 
 impl LintChecker for DuplicatedArguments {
-    fn check(&self, ast: &AnyRExpression, file: &str) -> Result<Vec<Diagnostic>> {
-        let mut diagnostics = vec![];
+    fn check(&self, ast: &AnyRExpression) -> Result<Diagnostic> {
+        let mut diagnostic = Diagnostic::empty();
         let ast = if let Some(ast) = ast.as_r_call() {
             ast
         } else {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         };
         let RCallFields { function, arguments } = ast.as_fields();
 
@@ -56,15 +56,14 @@ impl LintChecker for DuplicatedArguments {
             AnyRExpression::RReturnExpression(x) => x.text(),
             _ => {
                 return Err(anyhow!(
-                    "in {}, couldn't find function name for duplicated_arguments linter.",
-                    file
+                    "couldn't find function name for duplicated_arguments linter.",
                 ));
             }
         };
 
-        let whitelisted_funs = ["mutate", "summarize", "transmute", "c"];
+        let whitelisted_funs = ["c", "mutate", "summarize", "transmute"];
         if whitelisted_funs.contains(&fun_name.as_str()) {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         }
 
         let arg_names: Vec<String> = arguments?
@@ -84,19 +83,14 @@ impl LintChecker for DuplicatedArguments {
             .collect();
 
         if arg_names.is_empty() {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         }
 
         if has_duplicates(&arg_names) {
             let range = ast.clone().into_syntax().text_trimmed_range();
-            diagnostics.push(Diagnostic::new(
-                DuplicatedArguments,
-                file,
-                range,
-                Fix::empty(),
-            ))
+            diagnostic = Diagnostic::new(DuplicatedArguments, range, Fix::empty())
         }
-        Ok(diagnostics)
+        Ok(diagnostic)
     }
 }
 

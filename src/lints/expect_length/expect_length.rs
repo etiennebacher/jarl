@@ -19,7 +19,7 @@ impl Violation for ExpectLength {
 
 impl LintChecker for ExpectLength {
     fn check(&self, ast: &RSyntaxNode, file: &str) -> Result<Vec<Diagnostic>> {
-        let mut diagnostics = vec![];
+        let mut diagnostic = Diagnostic::empty();
 
         // Check that the call is expect_equal / expect_identical ------------
 

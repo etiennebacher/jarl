@@ -6,6 +6,7 @@ use air_r_syntax::{
     RSyntaxNode, RWhileStatementFields,
 };
 
+// use crate::analyze::rcall;
 use crate::config::Config;
 use crate::lints::any_duplicated::any_duplicated::AnyDuplicated;
 use crate::lints::any_is_na::any_is_na::AnyIsNa;
@@ -35,52 +36,67 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
     let expressions = &parsed.tree().expressions();
     let expressions_vec: Vec<_> = expressions.into_iter().collect();
 
-    let loc_new_lines = find_new_lines(syntax)?;
+    let mut checker = Checker::new();
     let diagnostics: Vec<Diagnostic> = expressions_vec
         .iter()
-        .map(|expression| check_ast(expression, file.to_str().unwrap(), &config).unwrap())
+        .map(|expression| {
+            check_ast(expression, file.to_str().unwrap(), &config, &mut checker).unwrap()
+        })
         .flatten()
+        .filter(|x| !x.message.name.is_empty())
+        .map(|mut x| {
+            x.filename = file.to_path_buf();
+            x
+        })
         .collect();
 
+    let loc_new_lines = find_new_lines(syntax)?;
     let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
 
     Ok(diagnostics)
 }
 
-pub(crate) struct Checker {
+#[derive(Debug)]
+pub struct Checker {
     diagnostics: Vec<Diagnostic>,
 }
 
 impl Checker {
-    // fn visit_body(&mut self, body: &air_r_syntax::RExpressionList) {
-    //     let expressions_vec: Vec<_> = body.into_iter().collect();
-    //     for stmt in expressions_vec {
-    //         self.visit_stmt(stmt);
-    //     }
-    // }
+    fn new() -> Self {
+        Self { diagnostics: vec![] }
+    }
+
+    pub(crate) fn report_diagnostic(&mut self, diagnostic: Diagnostic) {
+        self.diagnostics.push(diagnostic);
+    }
 }
 
 pub fn check_ast(
     expression: &air_r_syntax::AnyRExpression,
     file: &str,
     config: &Config,
+    checker: &mut Checker,
 ) -> anyhow::Result<Vec<Diagnostic>> {
     let mut diagnostics: Vec<Diagnostic> = vec![];
 
     match expression {
         air_r_syntax::AnyRExpression::RIdentifier(x) => {
-            diagnostics.extend(TrueFalseSymbol.check(&x.clone().into(), file)?);
+            diagnostics.push(TrueFalseSymbol.check(&x.clone().into())?);
         }
 
         air_r_syntax::AnyRExpression::RCall(children) => {
+            // rcall::rcall(children, checker);
+
+            // println!("Checker: {:?}", checker);
+
             let any_r_exp: &AnyRExpression = &children.clone().into();
-            diagnostics.extend(AnyDuplicated.check(any_r_exp, file)?);
-            diagnostics.extend(AnyIsNa.check(any_r_exp, file)?);
-            diagnostics.extend(DuplicatedArguments.check(any_r_exp, file)?);
-            diagnostics.extend(LengthLevels.check(any_r_exp, file)?);
-            diagnostics.extend(LengthTest.check(any_r_exp, file)?);
-            diagnostics.extend(Lengths.check(any_r_exp, file)?);
-            diagnostics.extend(WhichGrepl.check(any_r_exp, file)?);
+            diagnostics.push(AnyDuplicated.check(any_r_exp)?);
+            diagnostics.push(AnyIsNa.check(any_r_exp)?);
+            diagnostics.push(DuplicatedArguments.check(any_r_exp)?);
+            diagnostics.push(LengthLevels.check(any_r_exp)?);
+            diagnostics.push(LengthTest.check(any_r_exp)?);
+            diagnostics.push(Lengths.check(any_r_exp)?);
+            diagnostics.push(WhichGrepl.check(any_r_exp)?);
 
             let RCallFields { arguments, .. } = children.as_fields();
             let RCallArgumentsFields { items, .. } = arguments?.as_fields();
@@ -90,7 +106,7 @@ pub fn check_ast(
                 .collect();
 
             for expr in arg_exprs {
-                diagnostics.extend(check_ast(&expr, file, config)?);
+                diagnostics.extend(check_ast(&expr, file, config, checker)?);
             }
         }
         // | air_r_syntax::AnyRExpression::RSubset(children)
@@ -105,30 +121,30 @@ pub fn check_ast(
         // | air_r_syntax::AnyRExpression::RUnaryExpression(children)
         air_r_syntax::AnyRExpression::RBinaryExpression(children) => {
             let any_r_exp: &AnyRExpression = &children.clone().into();
-            diagnostics.extend(ClassEquals.check(any_r_exp, file)?);
-            diagnostics.extend(EmptyAssignment.check(any_r_exp, file)?);
-            diagnostics.extend(EqualAssignment.check(any_r_exp, file)?);
-            diagnostics.extend(EqualsNa.check(any_r_exp, file)?);
-            diagnostics.extend(RedundantEquals.check(any_r_exp, file)?);
+            diagnostics.push(ClassEquals.check(any_r_exp)?);
+            diagnostics.push(EmptyAssignment.check(any_r_exp)?);
+            diagnostics.push(EqualAssignment.check(any_r_exp)?);
+            diagnostics.push(EqualsNa.check(any_r_exp)?);
+            diagnostics.push(RedundantEquals.check(any_r_exp)?);
             let RBinaryExpressionFields { left, right, .. } = children.as_fields();
-            diagnostics.extend(check_ast(&left?, file, config)?);
-            diagnostics.extend(check_ast(&right?, file, config)?);
+            diagnostics.extend(check_ast(&left?, file, config, checker)?);
+            diagnostics.extend(check_ast(&right?, file, config, checker)?);
         }
         air_r_syntax::AnyRExpression::RParenthesizedExpression(children) => {
             let RParenthesizedExpressionFields { body, .. } = children.as_fields();
-            diagnostics.extend(check_ast(&body?, file, config)?);
+            diagnostics.extend(check_ast(&body?, file, config, checker)?);
         }
         air_r_syntax::AnyRExpression::RBracedExpressions(children) => {
             let RBracedExpressionsFields { expressions, .. } = children.as_fields();
             let expressions_vec: Vec<_> = expressions.into_iter().collect();
 
             for expr in expressions_vec {
-                diagnostics.extend(check_ast(&expr, file, config)?);
+                diagnostics.extend(check_ast(&expr, file, config, checker)?);
             }
         }
         air_r_syntax::AnyRExpression::RFunctionDefinition(children) => {
             let RFunctionDefinitionFields { body, .. } = children.as_fields();
-            diagnostics.extend(check_ast(&body?, file, config)?);
+            diagnostics.extend(check_ast(&body?, file, config, checker)?);
         }
         // | air_r_syntax::AnyRExpression::RExtractExpression(children)
         // | air_r_syntax::AnyRExpression::RNamespaceExpression(children)
@@ -136,12 +152,12 @@ pub fn check_ast(
         // | air_r_syntax::AnyRExpression::RForStatement(children)
         air_r_syntax::AnyRExpression::RWhileStatement(children) => {
             let RWhileStatementFields { condition, .. } = children.as_fields();
-            diagnostics.extend(check_ast(&condition?, file, config)?);
+            diagnostics.extend(check_ast(&condition?, file, config, checker)?);
         }
         air_r_syntax::AnyRExpression::RIfStatement(children) => {
             let RIfStatementFields { condition, consequence, .. } = children.as_fields();
-            diagnostics.extend(check_ast(&condition?, file, config)?);
-            diagnostics.extend(check_ast(&consequence?, file, config)?);
+            diagnostics.extend(check_ast(&condition?, file, config, checker)?);
+            diagnostics.extend(check_ast(&consequence?, file, config, checker)?);
         }
         air_r_syntax::AnyRExpression::RSubset(children) => {
             let RSubsetFields { arguments, .. } = children.as_fields();
@@ -150,7 +166,7 @@ pub fn check_ast(
 
             for expr in expressions_vec {
                 if let Some(expr) = expr?.value() {
-                    diagnostics.extend(check_ast(&expr, file, config)?);
+                    diagnostics.extend(check_ast(&expr, file, config, checker)?);
                 }
             }
         }

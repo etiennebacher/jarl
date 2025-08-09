@@ -45,12 +45,12 @@ impl Violation for AnyIsNa {
 }
 
 impl LintChecker for AnyIsNa {
-    fn check(&self, ast: &AnyRExpression, file: &str) -> Result<Vec<Diagnostic>> {
-        let mut diagnostics = vec![];
+    fn check(&self, ast: &AnyRExpression) -> Result<Diagnostic> {
+        let mut diagnostic = Diagnostic::empty();
         let ast = if let Some(ast) = ast.as_r_call() {
             ast
         } else {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         };
         let RCallFields { function, arguments } = ast.as_fields();
 
@@ -58,7 +58,7 @@ impl LintChecker for AnyIsNa {
         let outer_fn_name = get_function_name(function);
 
         if outer_fn_name != "any" {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         }
 
         let items = arguments?.items();
@@ -69,7 +69,7 @@ impl LintChecker for AnyIsNa {
 
         // any(na.rm = TRUE/FALSE) and any() are valid
         if unnamed_arg.is_none() {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         }
 
         let value = unnamed_arg.unwrap()?.value();
@@ -83,23 +83,22 @@ impl LintChecker for AnyIsNa {
             let inner_fn_name = get_function_name(function);
 
             if inner_fn_name != "is.na" {
-                return Ok(diagnostics);
+                return Ok(diagnostic);
             }
 
             let inner_content = arguments?.items().into_syntax().text();
             let range = ast.clone().into_syntax().text_trimmed_range();
-            diagnostics.push(Diagnostic::new(
+            diagnostic = Diagnostic::new(
                 AnyIsNa,
-                file,
                 range,
                 Fix {
                     content: format!("anyNA({})", inner_content),
                     start: range.start().into(),
                     end: range.end().into(),
                 },
-            ))
+            )
         }
 
-        Ok(diagnostics)
+        Ok(diagnostic)
     }
 }

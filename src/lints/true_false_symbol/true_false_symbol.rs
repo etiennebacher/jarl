@@ -44,17 +44,17 @@ impl Violation for TrueFalseSymbol {
 }
 
 impl LintChecker for TrueFalseSymbol {
-    fn check(&self, ast: &AnyRExpression, file: &str) -> Result<Vec<Diagnostic>> {
-        let mut diagnostics: Vec<Diagnostic> = vec![];
+    fn check(&self, ast: &AnyRExpression) -> Result<Diagnostic> {
+        let mut diagnostic = Diagnostic::empty();
         let ast = if let Some(ast) = ast.as_r_identifier() {
             ast
         } else {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         };
         let token = ast.name_token().unwrap();
         let name = token.text_trimmed();
         if name != "T" && name != "F" {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         }
 
         // Allow T(), F()
@@ -73,13 +73,12 @@ impl LintChecker for TrueFalseSymbol {
             .unwrap_or(false);
 
         if is_function_name || is_element_name || is_in_formula {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         }
 
         let range = ast.clone().into_syntax().text_trimmed_range();
-        diagnostics.push(Diagnostic::new(
+        diagnostic = Diagnostic::new(
             TrueFalseSymbol,
-            file,
             range,
             Fix {
                 content: if ast.clone().into_syntax().text_trimmed() == "T" {
@@ -90,8 +89,8 @@ impl LintChecker for TrueFalseSymbol {
                 start: range.start().into(),
                 end: range.end().into(),
             },
-        ));
+        );
 
-        Ok(diagnostics)
+        Ok(diagnostic)
     }
 }

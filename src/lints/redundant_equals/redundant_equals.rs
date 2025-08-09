@@ -46,12 +46,12 @@ impl Violation for RedundantEquals {
 }
 
 impl LintChecker for RedundantEquals {
-    fn check(&self, ast: &AnyRExpression, file: &str) -> anyhow::Result<Vec<Diagnostic>> {
-        let mut diagnostics = vec![];
+    fn check(&self, ast: &AnyRExpression) -> anyhow::Result<Diagnostic> {
+        let mut diagnostic = Diagnostic::empty();
         let ast = if let Some(ast) = ast.as_r_binary_expression() {
             ast
         } else {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         };
 
         let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
@@ -76,20 +76,19 @@ impl LintChecker for RedundantEquals {
                 } else if *right_is_false {
                     format!("!{}", left.text())
                 } else {
-                    return Ok(diagnostics);
+                    return Ok(diagnostic);
                 };
 
                 let range = ast.clone().into_syntax().text_trimmed_range();
-                diagnostics.push(Diagnostic::new(
+                diagnostic = Diagnostic::new(
                     RedundantEquals,
-                    file,
                     range,
                     Fix {
                         content: fix,
                         start: range.start().into(),
                         end: range.end().into(),
                     },
-                ));
+                );
             }
             RSyntaxKind::NOT_EQUAL => {
                 let fix = if *left_is_true {
@@ -101,22 +100,21 @@ impl LintChecker for RedundantEquals {
                 } else if *right_is_false {
                     left.text().to_string()
                 } else {
-                    return Ok(diagnostics);
+                    return Ok(diagnostic);
                 };
                 let range = ast.clone().into_syntax().text_trimmed_range();
-                diagnostics.push(Diagnostic::new(
+                diagnostic = Diagnostic::new(
                     RedundantEquals,
-                    file,
                     range,
                     Fix {
                         content: fix,
                         start: range.start().into(),
                         end: range.end().into(),
                     },
-                ));
+                );
             }
-            _ => return Ok(diagnostics),
+            _ => return Ok(diagnostic),
         };
-        Ok(diagnostics)
+        Ok(diagnostic)
     }
 }

@@ -44,19 +44,19 @@ impl Violation for Lengths {
 }
 
 impl LintChecker for Lengths {
-    fn check(&self, ast: &AnyRExpression, file: &str) -> Result<Vec<Diagnostic>> {
-        let mut diagnostics = vec![];
+    fn check(&self, ast: &AnyRExpression) -> Result<Diagnostic> {
+        let mut diagnostic = Diagnostic::empty();
         let ast = if let Some(ast) = ast.as_r_call() {
             ast
         } else {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         };
         let RCallFields { function, arguments } = ast.as_fields();
         let function = function?;
 
         let funs_to_watch = ["sapply", "vapply", "map_dbl", "map_int"];
         if !funs_to_watch.contains(&function.text().as_str()) {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         }
 
         let arguments = arguments?.items();
@@ -71,19 +71,18 @@ impl LintChecker for Lengths {
                 == "length"
             {
                 let range = ast.clone().into_syntax().text_trimmed_range();
-                diagnostics.push(Diagnostic::new(
+                diagnostic = Diagnostic::new(
                     Lengths,
-                    file,
                     range,
                     Fix {
                         content: format!("lengths({})", arg_x.unwrap().text()),
                         start: range.start().into(),
                         end: range.end().into(),
                     },
-                ))
+                )
             }
         };
 
-        Ok(diagnostics)
+        Ok(diagnostic)
     }
 }

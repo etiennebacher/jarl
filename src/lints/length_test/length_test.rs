@@ -39,12 +39,12 @@ impl Violation for LengthTest {
 }
 
 impl LintChecker for LengthTest {
-    fn check(&self, ast: &AnyRExpression, file: &str) -> Result<Vec<Diagnostic>> {
-        let mut diagnostics = vec![];
+    fn check(&self, ast: &AnyRExpression) -> Result<Diagnostic> {
+        let mut diagnostic = Diagnostic::empty();
         let ast = if let Some(ast) = ast.as_r_call() {
             ast
         } else {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         };
         let RCallFields { function, arguments } = ast.as_fields();
 
@@ -52,7 +52,7 @@ impl LintChecker for LengthTest {
         let outer_fn_name = get_function_name(function);
 
         if outer_fn_name != "length" {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         }
 
         let arguments = arguments?.items();
@@ -84,24 +84,23 @@ impl LintChecker for LengthTest {
                 }
             }
             _ => {
-                return Ok(diagnostics);
+                return Ok(diagnostic);
             }
         }
 
         if arg_is_binary_expr {
             let range = ast.clone().into_syntax().text_trimmed_range();
-            diagnostics.push(Diagnostic::new(
+            diagnostic = Diagnostic::new(
                 LengthTest,
-                file,
                 range,
                 Fix {
                     content: format!("length({}) {} {}", lhs, operator_text, rhs),
                     start: range.start().into(),
                     end: range.end().into(),
                 },
-            ));
+            );
         }
 
-        Ok(diagnostics)
+        Ok(diagnostic)
     }
 }

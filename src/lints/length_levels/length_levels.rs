@@ -39,12 +39,12 @@ impl Violation for LengthLevels {
 }
 
 impl LintChecker for LengthLevels {
-    fn check(&self, ast: &AnyRExpression, file: &str) -> Result<Vec<Diagnostic>> {
-        let mut diagnostics = vec![];
+    fn check(&self, ast: &AnyRExpression) -> Result<Diagnostic> {
+        let mut diagnostic = Diagnostic::empty();
         let ast = if let Some(ast) = ast.as_r_call() {
             ast
         } else {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         };
         let RCallFields { function, arguments } = ast.as_fields();
 
@@ -52,7 +52,7 @@ impl LintChecker for LengthLevels {
         let outer_fn_name = get_function_name(function);
 
         if outer_fn_name != "length" {
-            return Ok(diagnostics);
+            return Ok(diagnostic);
         }
 
         let items = arguments?.items();
@@ -72,22 +72,21 @@ impl LintChecker for LengthLevels {
             let inner_fn_name = get_function_name(function);
 
             if inner_fn_name != "levels" {
-                return Ok(diagnostics);
+                return Ok(diagnostic);
             }
 
             let inner_content = arguments?.items().into_syntax().text();
             let range = ast.clone().into_syntax().text_trimmed_range();
-            diagnostics.push(Diagnostic::new(
+            diagnostic = Diagnostic::new(
                 LengthLevels,
-                file,
                 range,
                 Fix {
                     content: format!("nlevels({})", inner_content),
                     start: range.start().into(),
                     end: range.end().into(),
                 },
-            ))
+            )
         }
-        Ok(diagnostics)
+        Ok(diagnostic)
     }
 }
