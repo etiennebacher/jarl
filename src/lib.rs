@@ -1,4 +1,4 @@
-// pub mod analyze;
+pub mod analyze;
 pub mod args;
 pub mod check;
 pub mod check_ast;
