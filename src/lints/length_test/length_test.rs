@@ -1,4 +1,3 @@
-use crate::trait_lint_checker::LintChecker;
 use crate::{message::*, utils::get_function_name};
 use air_r_syntax::RSyntaxKind::*;
 use air_r_syntax::*;
@@ -38,69 +37,62 @@ impl Violation for LengthTest {
     }
 }
 
-impl LintChecker for LengthTest {
-    fn check(&self, ast: &AnyRExpression) -> Result<Diagnostic> {
-        let mut diagnostic = Diagnostic::empty();
-        let ast = if let Some(ast) = ast.as_r_call() {
-            ast
-        } else {
-            return Ok(diagnostic);
-        };
-        let RCallFields { function, arguments } = ast.as_fields();
+pub fn length_test(ast: &RCall) -> Result<Diagnostic> {
+    let mut diagnostic = Diagnostic::empty();
+    let RCallFields { function, arguments } = ast.as_fields();
 
-        let function = function?;
-        let outer_fn_name = get_function_name(function);
+    let function = function?;
+    let outer_fn_name = get_function_name(function);
 
-        if outer_fn_name != "length" {
-            return Ok(diagnostic);
-        }
+    if outer_fn_name != "length" {
+        return Ok(diagnostic);
+    }
 
-        let arguments = arguments?.items();
-        let mut arg_is_binary_expr = false;
-        let mut operator_text: String = "".to_string();
-        let mut lhs: String = "".to_string();
-        let mut rhs: String = "".to_string();
+    let arguments = arguments?.items();
+    let mut arg_is_binary_expr = false;
+    let mut operator_text: String = "".to_string();
+    let mut lhs: String = "".to_string();
+    let mut rhs: String = "".to_string();
 
-        match arguments.into_iter().nth(0) {
-            Some(first_arg) => {
-                if let Ok(x) = first_arg {
-                    let RArgumentFields { name_clause: _, value } = x.as_fields();
-                    let value = value.context("Found named argument without any value")?;
-                    if let AnyRExpression::RBinaryExpression(y) = value {
-                        let RBinaryExpressionFields { left, operator, right } = y.as_fields();
+    match arguments.into_iter().nth(0) {
+        Some(first_arg) => {
+            if let Ok(x) = first_arg {
+                let RArgumentFields { name_clause: _, value } = x.as_fields();
+                let value = value.context("Found named argument without any value")?;
+                if let AnyRExpression::RBinaryExpression(y) = value {
+                    let RBinaryExpressionFields { left, operator, right } = y.as_fields();
 
-                        let operator = operator?;
-                        arg_is_binary_expr = operator.kind() == EQUAL2
-                            || operator.kind() == GREATER_THAN
-                            || operator.kind() == GREATER_THAN_OR_EQUAL_TO
-                            || operator.kind() == LESS_THAN
-                            || operator.kind() == LESS_THAN_OR_EQUAL_TO
-                            || operator.kind() == NOT_EQUAL;
+                    let operator = operator?;
+                    arg_is_binary_expr = operator.kind() == EQUAL2
+                        || operator.kind() == GREATER_THAN
+                        || operator.kind() == GREATER_THAN_OR_EQUAL_TO
+                        || operator.kind() == LESS_THAN
+                        || operator.kind() == LESS_THAN_OR_EQUAL_TO
+                        || operator.kind() == NOT_EQUAL;
 
-                        operator_text.push_str(operator.text_trimmed());
-                        lhs.push_str(&left?.text());
-                        rhs.push_str(&right?.text());
-                    }
+                    operator_text.push_str(operator.text_trimmed());
+                    lhs.push_str(&left?.text());
+                    rhs.push_str(&right?.text());
                 }
             }
-            _ => {
-                return Ok(diagnostic);
-            }
         }
-
-        if arg_is_binary_expr {
-            let range = ast.clone().into_syntax().text_trimmed_range();
-            diagnostic = Diagnostic::new(
-                LengthTest,
-                range,
-                Fix {
-                    content: format!("length({lhs}) {operator_text} {rhs}"),
-                    start: range.start().into(),
-                    end: range.end().into(),
-                },
-            );
+        _ => {
+            return Ok(diagnostic);
         }
-
-        Ok(diagnostic)
     }
+
+    if arg_is_binary_expr {
+        let range = ast.clone().into_syntax().text_trimmed_range();
+        diagnostic = Diagnostic::new(
+            LengthTest,
+            range,
+            Fix {
+                content: format!("length({lhs}) {operator_text} {rhs}"),
+                start: range.start().into(),
+                end: range.end().into(),
+            },
+        );
+    }
+
+    Ok(diagnostic)
 }

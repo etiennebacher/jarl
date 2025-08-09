@@ -1,5 +1,4 @@
 use crate::message::*;
-use crate::trait_lint_checker::LintChecker;
 use crate::utils::get_function_name;
 use air_r_syntax::*;
 use anyhow::Result;
@@ -43,55 +42,48 @@ impl Violation for WhichGrepl {
     }
 }
 
-impl LintChecker for WhichGrepl {
-    fn check(&self, ast: &AnyRExpression) -> Result<Diagnostic> {
-        let mut diagnostic = Diagnostic::empty();
-        let ast = if let Some(ast) = ast.as_r_call() {
-            ast
-        } else {
-            return Ok(diagnostic);
-        };
-        let RCallFields { function, arguments } = ast.as_fields();
+pub fn which_grepl(ast: &RCall) -> Result<Diagnostic> {
+    let mut diagnostic = Diagnostic::empty();
+    let RCallFields { function, arguments } = ast.as_fields();
+
+    let function = function?;
+    let outer_fn_name = get_function_name(function);
+
+    if outer_fn_name != "which" {
+        return Ok(diagnostic);
+    }
+
+    let items = arguments?.items();
+
+    let unnamed_arg = items
+        .into_iter()
+        .find(|x| x.clone().unwrap().name_clause().is_none());
+
+    let value = unnamed_arg.unwrap()?.value();
+
+    if let Some(inner) = value
+        && let Some(inner2) = inner.as_r_call()
+    {
+        let RCallFields { function, arguments } = inner2.as_fields();
 
         let function = function?;
-        let outer_fn_name = get_function_name(function);
+        let inner_fn_name = get_function_name(function);
 
-        if outer_fn_name != "which" {
+        if inner_fn_name != "grepl" {
             return Ok(diagnostic);
         }
 
-        let items = arguments?.items();
-
-        let unnamed_arg = items
-            .into_iter()
-            .find(|x| x.clone().unwrap().name_clause().is_none());
-
-        let value = unnamed_arg.unwrap()?.value();
-
-        if let Some(inner) = value
-            && let Some(inner2) = inner.as_r_call()
-        {
-            let RCallFields { function, arguments } = inner2.as_fields();
-
-            let function = function?;
-            let inner_fn_name = get_function_name(function);
-
-            if inner_fn_name != "grepl" {
-                return Ok(diagnostic);
-            }
-
-            let inner_content = arguments?.items().into_syntax().text();
-            let range = ast.clone().into_syntax().text_trimmed_range();
-            diagnostic = Diagnostic::new(
-                WhichGrepl,
-                range,
-                Fix {
-                    content: format!("grep({inner_content})"),
-                    start: range.start().into(),
-                    end: range.end().into(),
-                },
-            )
-        }
-        Ok(diagnostic)
+        let inner_content = arguments?.items().into_syntax().text();
+        let range = ast.clone().into_syntax().text_trimmed_range();
+        diagnostic = Diagnostic::new(
+            WhichGrepl,
+            range,
+            Fix {
+                content: format!("grep({inner_content})"),
+                start: range.start().into(),
+                end: range.end().into(),
+            },
+        )
     }
+    Ok(diagnostic)
 }

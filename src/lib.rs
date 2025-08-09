@@ -9,7 +9,6 @@ pub mod location;
 pub mod message;
 pub mod rule_table;
 pub mod settings;
-pub mod trait_lint_checker;
 pub mod traits;
 pub mod utils;
 pub mod utils_test;

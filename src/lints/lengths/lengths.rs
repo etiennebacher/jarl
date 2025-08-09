@@ -1,5 +1,4 @@
 use crate::message::*;
-use crate::trait_lint_checker::LintChecker;
 use crate::traits::ArgumentListExt;
 use air_r_syntax::*;
 use anyhow::{Context, Result};
@@ -43,46 +42,39 @@ impl Violation for Lengths {
     }
 }
 
-impl LintChecker for Lengths {
-    fn check(&self, ast: &AnyRExpression) -> Result<Diagnostic> {
-        let mut diagnostic = Diagnostic::empty();
-        let ast = if let Some(ast) = ast.as_r_call() {
-            ast
-        } else {
-            return Ok(diagnostic);
-        };
-        let RCallFields { function, arguments } = ast.as_fields();
-        let function = function?;
+pub fn lengths(ast: &RCall) -> Result<Diagnostic> {
+    let mut diagnostic = Diagnostic::empty();
+    let RCallFields { function, arguments } = ast.as_fields();
+    let function = function?;
 
-        let funs_to_watch = ["sapply", "vapply", "map_dbl", "map_int"];
-        if !funs_to_watch.contains(&function.text().as_str()) {
-            return Ok(diagnostic);
-        }
-
-        let arguments = arguments?.items();
-        let arg_x = arguments.get_arg_by_name_then_position("x", 0);
-        let arg_fun = arguments.get_arg_by_name_then_position("FUN", 1);
-
-        if let Some(arg_fun) = arg_fun {
-            if arg_fun
-                .value()
-                .context("Found named argument without any value")?
-                .text()
-                == "length"
-            {
-                let range = ast.clone().into_syntax().text_trimmed_range();
-                diagnostic = Diagnostic::new(
-                    Lengths,
-                    range,
-                    Fix {
-                        content: format!("lengths({})", arg_x.unwrap().text()),
-                        start: range.start().into(),
-                        end: range.end().into(),
-                    },
-                )
-            }
-        };
-
-        Ok(diagnostic)
+    let funs_to_watch = ["sapply", "vapply", "map_dbl", "map_int"];
+    if !funs_to_watch.contains(&function.text().as_str()) {
+        return Ok(diagnostic);
     }
+
+    let arguments = arguments?.items();
+    let arg_x = arguments.get_arg_by_name_then_position("x", 0);
+    let arg_fun = arguments.get_arg_by_name_then_position("FUN", 1);
+
+    if let Some(arg_fun) = arg_fun {
+        if arg_fun
+            .value()
+            .context("Found named argument without any value")?
+            .text()
+            == "length"
+        {
+            let range = ast.clone().into_syntax().text_trimmed_range();
+            diagnostic = Diagnostic::new(
+                Lengths,
+                range,
+                Fix {
+                    content: format!("lengths({})", arg_x.unwrap().text()),
+                    start: range.start().into(),
+                    end: range.end().into(),
+                },
+            )
+        }
+    };
+
+    Ok(diagnostic)
 }

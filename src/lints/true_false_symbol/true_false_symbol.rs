@@ -1,5 +1,4 @@
 use crate::message::*;
-use crate::trait_lint_checker::LintChecker;
 use air_r_syntax::*;
 use anyhow::Result;
 use biome_rowan::AstNode;
@@ -43,54 +42,47 @@ impl Violation for TrueFalseSymbol {
     }
 }
 
-impl LintChecker for TrueFalseSymbol {
-    fn check(&self, ast: &AnyRExpression) -> Result<Diagnostic> {
-        let mut diagnostic = Diagnostic::empty();
-        let ast = if let Some(ast) = ast.as_r_identifier() {
-            ast
-        } else {
-            return Ok(diagnostic);
-        };
-        let token = ast.name_token().unwrap();
-        let name = token.text_trimmed();
-        if name != "T" && name != "F" {
-            return Ok(diagnostic);
-        }
-
-        // Allow T(), F()
-        let is_function_name = ast.parent::<RCall>().is_some();
-
-        // Allow df$T, df$F
-        let is_element_name = ast.parent::<RExtractExpression>().is_some();
-
-        // Allow A ~ T
-        let is_in_formula = ast
-            .parent::<RBinaryExpression>()
-            .map(|x| {
-                let operator = x.operator().unwrap();
-                operator.kind() == RSyntaxKind::TILDE
-            })
-            .unwrap_or(false);
-
-        if is_function_name || is_element_name || is_in_formula {
-            return Ok(diagnostic);
-        }
-
-        let range = ast.clone().into_syntax().text_trimmed_range();
-        diagnostic = Diagnostic::new(
-            TrueFalseSymbol,
-            range,
-            Fix {
-                content: if ast.clone().into_syntax().text_trimmed() == "T" {
-                    "TRUE".to_string()
-                } else {
-                    "FALSE".to_string()
-                },
-                start: range.start().into(),
-                end: range.end().into(),
-            },
-        );
-
-        Ok(diagnostic)
+pub fn true_false_symbol(ast: &RIdentifier) -> Result<Diagnostic> {
+    let mut diagnostic = Diagnostic::empty();
+    let token = ast.name_token().unwrap();
+    let name = token.text_trimmed();
+    if name != "T" && name != "F" {
+        return Ok(diagnostic);
     }
+
+    // Allow T(), F()
+    let is_function_name = ast.parent::<RCall>().is_some();
+
+    // Allow df$T, df$F
+    let is_element_name = ast.parent::<RExtractExpression>().is_some();
+
+    // Allow A ~ T
+    let is_in_formula = ast
+        .parent::<RBinaryExpression>()
+        .map(|x| {
+            let operator = x.operator().unwrap();
+            operator.kind() == RSyntaxKind::TILDE
+        })
+        .unwrap_or(false);
+
+    if is_function_name || is_element_name || is_in_formula {
+        return Ok(diagnostic);
+    }
+
+    let range = ast.clone().into_syntax().text_trimmed_range();
+    diagnostic = Diagnostic::new(
+        TrueFalseSymbol,
+        range,
+        Fix {
+            content: if ast.clone().into_syntax().text_trimmed() == "T" {
+                "TRUE".to_string()
+            } else {
+                "FALSE".to_string()
+            },
+            start: range.start().into(),
+            end: range.end().into(),
+        },
+    );
+
+    Ok(diagnostic)
 }

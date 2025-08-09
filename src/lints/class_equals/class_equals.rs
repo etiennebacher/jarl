@@ -1,5 +1,4 @@
 use crate::message::*;
-use crate::trait_lint_checker::LintChecker;
 use crate::utils::get_first_arg;
 use air_r_syntax::*;
 use anyhow::Result;
@@ -53,71 +52,63 @@ impl Violation for ClassEquals {
     }
 }
 
-impl LintChecker for ClassEquals {
-    fn check(&self, ast: &AnyRExpression) -> Result<Diagnostic> {
-        let mut diagnostic = Diagnostic::empty();
-        let ast = if let Some(ast) = ast.as_r_binary_expression() {
-            ast
-        } else {
-            return Ok(diagnostic);
-        };
-        let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
+pub fn class_equals(ast: &RBinaryExpression) -> Result<Diagnostic> {
+    let mut diagnostic = Diagnostic::empty();
+    let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
-        let operator = operator?;
+    let operator = operator?;
 
-        if operator.kind() != RSyntaxKind::EQUAL2
-            && operator.kind() != RSyntaxKind::NOT_EQUAL
-            && operator.text_trimmed() != "%in%"
-        {
-            return Ok(diagnostic);
-        };
+    if operator.kind() != RSyntaxKind::EQUAL2
+        && operator.kind() != RSyntaxKind::NOT_EQUAL
+        && operator.text_trimmed() != "%in%"
+    {
+        return Ok(diagnostic);
+    };
 
-        let lhs = left?.into_syntax();
-        let rhs = right?.into_syntax();
+    let lhs = left?.into_syntax();
+    let rhs = right?.into_syntax();
 
-        let left_is_class = lhs
-            .first_child()
-            .map(|x| x.text_trimmed() == "class")
-            .unwrap_or(false);
-        let right_is_class = rhs
-            .first_child()
-            .map(|x| x.text_trimmed() == "class")
-            .unwrap_or(false);
-        let left_is_string = lhs.kind() == RSyntaxKind::R_STRING_VALUE;
-        let right_is_string = rhs.kind() == RSyntaxKind::R_STRING_VALUE;
+    let left_is_class = lhs
+        .first_child()
+        .map(|x| x.text_trimmed() == "class")
+        .unwrap_or(false);
+    let right_is_class = rhs
+        .first_child()
+        .map(|x| x.text_trimmed() == "class")
+        .unwrap_or(false);
+    let left_is_string = lhs.kind() == RSyntaxKind::R_STRING_VALUE;
+    let right_is_string = rhs.kind() == RSyntaxKind::R_STRING_VALUE;
 
-        if (!left_is_class && !right_is_class) || (!left_is_string && !right_is_string) {
-            return Ok(diagnostic);
-        }
-
-        let fun_name =
-            if operator.kind() == RSyntaxKind::EQUAL2 || operator.text_trimmed() == "%in%" {
-                "inherits"
-            } else {
-                "!inherits"
-            };
-
-        let fun_content;
-        let class_name;
-
-        if left_is_class {
-            fun_content = get_first_arg(&lhs).map(|x| x.text_trimmed());
-            class_name = rhs.text_trimmed();
-        } else {
-            fun_content = get_first_arg(&rhs).map(|x| x.text_trimmed());
-            class_name = lhs.text_trimmed();
-        };
-
-        let range = ast.clone().into_syntax().text_trimmed_range();
-        diagnostic = Diagnostic::new(
-            ClassEquals,
-            range,
-            Fix {
-                content: format!("{}({}, {})", fun_name, fun_content.unwrap(), class_name),
-                start: range.start().into(),
-                end: range.end().into(),
-            },
-        );
-        Ok(diagnostic)
+    if (!left_is_class && !right_is_class) || (!left_is_string && !right_is_string) {
+        return Ok(diagnostic);
     }
+
+    let fun_name = if operator.kind() == RSyntaxKind::EQUAL2 || operator.text_trimmed() == "%in%" {
+        "inherits"
+    } else {
+        "!inherits"
+    };
+
+    let fun_content;
+    let class_name;
+
+    if left_is_class {
+        fun_content = get_first_arg(&lhs).map(|x| x.text_trimmed());
+        class_name = rhs.text_trimmed();
+    } else {
+        fun_content = get_first_arg(&rhs).map(|x| x.text_trimmed());
+        class_name = lhs.text_trimmed();
+    };
+
+    let range = ast.clone().into_syntax().text_trimmed_range();
+    diagnostic = Diagnostic::new(
+        ClassEquals,
+        range,
+        Fix {
+            content: format!("{}({}, {})", fun_name, fun_content.unwrap(), class_name),
+            start: range.start().into(),
+            end: range.end().into(),
+        },
+    );
+    Ok(diagnostic)
 }

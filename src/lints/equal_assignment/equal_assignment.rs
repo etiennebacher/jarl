@@ -1,5 +1,4 @@
 use crate::message::*;
-use crate::trait_lint_checker::LintChecker;
 use air_r_syntax::*;
 use anyhow::Result;
 use biome_rowan::AstNode;
@@ -43,52 +42,44 @@ impl Violation for EqualAssignment {
     }
 }
 
-impl LintChecker for EqualAssignment {
-    fn check(&self, ast: &AnyRExpression) -> Result<Diagnostic> {
-        let mut diagnostic = Diagnostic::empty();
-        let ast = if let Some(ast) = ast.as_r_binary_expression() {
-            ast
-        } else {
-            return Ok(diagnostic);
-        };
+pub fn equal_assignment(ast: &RBinaryExpression) -> Result<Diagnostic> {
+    let mut diagnostic = Diagnostic::empty();
+    let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
-        let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
+    let operator = operator?;
+    let lhs = left?.into_syntax();
+    let rhs = right?.into_syntax();
 
-        let operator = operator?;
-        let lhs = left?.into_syntax();
-        let rhs = right?.into_syntax();
+    if operator.kind() != RSyntaxKind::EQUAL && operator.kind() != RSyntaxKind::ASSIGN_RIGHT {
+        return Ok(diagnostic);
+    };
 
-        if operator.kind() != RSyntaxKind::EQUAL && operator.kind() != RSyntaxKind::ASSIGN_RIGHT {
-            return Ok(diagnostic);
-        };
-
-        let replacement = match operator.kind() {
-            RSyntaxKind::EQUAL => {
-                if lhs.kind() != RSyntaxKind::R_IDENTIFIER {
-                    return Ok(diagnostic);
-                }
-                format!("{} <- {}", lhs.text_trimmed(), rhs.text_trimmed())
+    let replacement = match operator.kind() {
+        RSyntaxKind::EQUAL => {
+            if lhs.kind() != RSyntaxKind::R_IDENTIFIER {
+                return Ok(diagnostic);
             }
-            RSyntaxKind::ASSIGN_RIGHT => {
-                if rhs.kind() != RSyntaxKind::R_IDENTIFIER {
-                    return Ok(diagnostic);
-                }
-                format!("{} <- {}", rhs.text_trimmed(), lhs.text_trimmed())
+            format!("{} <- {}", lhs.text_trimmed(), rhs.text_trimmed())
+        }
+        RSyntaxKind::ASSIGN_RIGHT => {
+            if rhs.kind() != RSyntaxKind::R_IDENTIFIER {
+                return Ok(diagnostic);
             }
-            _ => unreachable!(),
-        };
+            format!("{} <- {}", rhs.text_trimmed(), lhs.text_trimmed())
+        }
+        _ => unreachable!(),
+    };
 
-        let range = ast.clone().into_syntax().text_trimmed_range();
-        diagnostic = Diagnostic::new(
-            EqualAssignment,
-            range,
-            Fix {
-                content: replacement,
-                start: range.start().into(),
-                end: range.end().into(),
-            },
-        );
+    let range = ast.clone().into_syntax().text_trimmed_range();
+    diagnostic = Diagnostic::new(
+        EqualAssignment,
+        range,
+        Fix {
+            content: replacement,
+            start: range.start().into(),
+            end: range.end().into(),
+        },
+    );
 
-        Ok(diagnostic)
-    }
+    Ok(diagnostic)
 }
