@@ -1,8 +1,9 @@
 use air_r_parser::RParserOptions;
+use air_r_syntax::RForStatementFields;
 use air_r_syntax::{
-    AnyRExpression, RBinaryExpressionFields, RBracedExpressionsFields,
-    RCallArgumentsFields, RCallFields, RFunctionDefinitionFields,
-    RIfStatementFields, RParenthesizedExpressionFields, RSubsetFields, RWhileStatementFields,
+    AnyRExpression, RBinaryExpressionFields, RBracedExpressionsFields, RCallArgumentsFields,
+    RCallFields, RFunctionDefinitionFields, RIfStatementFields, RParenthesizedExpressionFields,
+    RSubsetFields, RWhileStatementFields,
 };
 
 use crate::analyze;
@@ -115,10 +116,16 @@ pub fn check_ast(
         // | air_r_syntax::AnyRExpression::RExtractExpression(children)
         // | air_r_syntax::AnyRExpression::RNamespaceExpression(children)
         // | air_r_syntax::AnyRExpression::RNaExpression(children)
-        // | air_r_syntax::AnyRExpression::RForStatement(children)
+        air_r_syntax::AnyRExpression::RForStatement(children) => {
+            let RForStatementFields { body, variable, .. } = children.as_fields();
+            analyze::identifier::identifier(&variable?, checker)?;
+
+            check_ast(&body?, config, checker)?;
+        }
         air_r_syntax::AnyRExpression::RWhileStatement(children) => {
-            let RWhileStatementFields { condition, .. } = children.as_fields();
+            let RWhileStatementFields { condition, body, .. } = children.as_fields();
             check_ast(&condition?, config, checker)?;
+            check_ast(&body?, config, checker)?;
         }
         air_r_syntax::AnyRExpression::RIfStatement(children) => {
             let RIfStatementFields { condition, consequence, .. } = children.as_fields();
