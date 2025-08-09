@@ -63,6 +63,16 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
     Ok(diagnostics)
 }
 
+// This function does two things:
+// - dispatch an expression to its appropriate set of rules, e.g. binary
+//   expressions are sent to the rules stored in
+//   analyze::binary_expression::binary_expression.
+// - apply the function recursively to the expression's children (if any, which
+//   is not guaranteed, e.g. for RIdentifier).
+//
+// Some expression types do both (e.g. RBinaryExpression), some do only the
+// dispatch to rules (e.g. RIdentifier), some do only the recursive call (e.g.
+// RFunctionDefinition).
 pub fn check_expression(
     expression: &air_r_syntax::AnyRExpression,
     checker: &mut Checker,
