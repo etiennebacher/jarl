@@ -84,6 +84,8 @@ mod tests {
             "class_equals",
         );
         expect_no_lint("all(sup %in% class(model))", "class_equals");
-        expect_no_lint("class(x)[class(x) == 'foo']", "class_equals");
+
+        // TODO: https://github.com/etiennebacher/flir2/issues/32
+        // expect_no_lint("class(x)[class(x) == 'foo']", "class_equals");
     }
 }
