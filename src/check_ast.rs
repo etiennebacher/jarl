@@ -68,10 +68,19 @@ pub fn check_ast(
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
     match expression {
-        air_r_syntax::AnyRExpression::RIdentifier(x) => {
-            analyze::identifier::identifier(x, checker)?;
+        air_r_syntax::AnyRExpression::RBinaryExpression(children) => {
+            analyze::binary_expression::binary_expression(children, checker)?;
+            let RBinaryExpressionFields { left, right, .. } = children.as_fields();
+            check_ast(&left?, checker)?;
+            check_ast(&right?, checker)?;
         }
+        air_r_syntax::AnyRExpression::RBracedExpressions(children) => {
+            let expressions: Vec<_> = children.expressions().into_iter().collect();
 
+            for expr in expressions {
+                check_ast(&expr, checker)?;
+            }
+        }
         air_r_syntax::AnyRExpression::RCall(children) => {
             analyze::call::call(children, checker)?;
 
@@ -86,42 +95,27 @@ pub fn check_ast(
                 check_ast(&expr, checker)?;
             }
         }
-        air_r_syntax::AnyRExpression::RBinaryExpression(children) => {
-            analyze::binary_expression::binary_expression(children, checker)?;
-            let RBinaryExpressionFields { left, right, .. } = children.as_fields();
-            check_ast(&left?, checker)?;
-            check_ast(&right?, checker)?;
-        }
-        air_r_syntax::AnyRExpression::RParenthesizedExpression(children) => {
-            let body = children.body();
-            check_ast(&body?, checker)?;
-        }
-        air_r_syntax::AnyRExpression::RBracedExpressions(children) => {
-            let expressions: Vec<_> = children.expressions().into_iter().collect();
-
-            for expr in expressions {
-                check_ast(&expr, checker)?;
-            }
-        }
-        air_r_syntax::AnyRExpression::RFunctionDefinition(children) => {
-            let body = children.body();
-            check_ast(&body?, checker)?;
-        }
         air_r_syntax::AnyRExpression::RForStatement(children) => {
             let RForStatementFields { body, variable, .. } = children.as_fields();
             analyze::identifier::identifier(&variable?, checker)?;
 
             check_ast(&body?, checker)?;
         }
-        air_r_syntax::AnyRExpression::RWhileStatement(children) => {
-            let RWhileStatementFields { condition, body, .. } = children.as_fields();
-            check_ast(&condition?, checker)?;
+        air_r_syntax::AnyRExpression::RFunctionDefinition(children) => {
+            let body = children.body();
             check_ast(&body?, checker)?;
+        }
+        air_r_syntax::AnyRExpression::RIdentifier(x) => {
+            analyze::identifier::identifier(x, checker)?;
         }
         air_r_syntax::AnyRExpression::RIfStatement(children) => {
             let RIfStatementFields { condition, consequence, .. } = children.as_fields();
             check_ast(&condition?, checker)?;
             check_ast(&consequence?, checker)?;
+        }
+        air_r_syntax::AnyRExpression::RParenthesizedExpression(children) => {
+            let body = children.body();
+            check_ast(&body?, checker)?;
         }
         air_r_syntax::AnyRExpression::RSubset(children) => {
             let arguments: Vec<_> = children.arguments()?.items().into_iter().collect();
@@ -131,6 +125,11 @@ pub fn check_ast(
                     check_ast(&expr, checker)?;
                 }
             }
+        }
+        air_r_syntax::AnyRExpression::RWhileStatement(children) => {
+            let RWhileStatementFields { condition, body, .. } = children.as_fields();
+            check_ast(&condition?, checker)?;
+            check_ast(&body?, checker)?;
         }
         // | air_r_syntax::AnyRExpression::RSubset(children)
         // | air_r_syntax::AnyRExpression::RSubset2(children)
