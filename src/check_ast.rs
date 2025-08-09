@@ -86,16 +86,6 @@ pub fn check_ast(
                 check_ast(&expr, checker)?;
             }
         }
-        // | air_r_syntax::AnyRExpression::RSubset(children)
-        // | air_r_syntax::AnyRExpression::RSubset2(children)
-        // // | air_r_syntax::RParameterList
-        // // | air_r_syntax::RParameters
-        // // | air_r_syntax::RParameter
-        // // | air_r_syntax::RArgument
-        // | air_r_syntax::AnyRExpression::RBracedExpressions(children)
-        // | air_r_syntax::RRoot
-        // | air_r_syntax::AnyRExpression::RRepeatStatement(children)
-        // | air_r_syntax::AnyRExpression::RUnaryExpression(children)
         air_r_syntax::AnyRExpression::RBinaryExpression(children) => {
             analyze::binary_expression::binary_expression(children, checker)?;
             let RBinaryExpressionFields { left, right, .. } = children.as_fields();
@@ -117,9 +107,6 @@ pub fn check_ast(
             let body = children.body();
             check_ast(&body?, checker)?;
         }
-        // | air_r_syntax::AnyRExpression::RExtractExpression(children)
-        // | air_r_syntax::AnyRExpression::RNamespaceExpression(children)
-        // | air_r_syntax::AnyRExpression::RNaExpression(children)
         air_r_syntax::AnyRExpression::RForStatement(children) => {
             let RForStatementFields { body, variable, .. } = children.as_fields();
             analyze::identifier::identifier(&variable?, checker)?;
@@ -145,6 +132,19 @@ pub fn check_ast(
                 }
             }
         }
+        // | air_r_syntax::AnyRExpression::RSubset(children)
+        // | air_r_syntax::AnyRExpression::RSubset2(children)
+        // | air_r_syntax::RParameterList
+        // | air_r_syntax::RParameters
+        // | air_r_syntax::RParameter
+        // | air_r_syntax::RArgument
+        // | air_r_syntax::AnyRExpression::RBracedExpressions(children)
+        // | air_r_syntax::RRoot
+        // | air_r_syntax::AnyRExpression::RRepeatStatement(children)
+        // | air_r_syntax::AnyRExpression::RUnaryExpression(children)
+        // | air_r_syntax::AnyRExpression::RExtractExpression(children)
+        // | air_r_syntax::AnyRExpression::RNamespaceExpression(children)
+        // | air_r_syntax::AnyRExpression::RNaExpression(children)
         _ => {
             // println!("Not implemented");
         }
