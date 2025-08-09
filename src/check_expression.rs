@@ -1,10 +1,8 @@
 use air_r_parser::RParserOptions;
+use air_r_syntax::RForStatementFields;
 use air_r_syntax::{
-    AnyRExpression, RBinaryExpressionFields, RBracedExpressionsFields, RCallArgumentsFields,
-    RCallFields, RFunctionDefinitionFields, RIfStatementFields, RParenthesizedExpressionFields,
-    RSubsetFields, RWhileStatementFields,
+    AnyRExpression, RBinaryExpressionFields, RIfStatementFields, RWhileStatementFields,
 };
-use air_r_syntax::{RForStatementFields, RUnaryExpressionFields};
 
 use crate::analyze;
 use crate::config::Config;
@@ -51,6 +49,8 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
     let diagnostics: Vec<Diagnostic> = checker
         .diagnostics
         .into_iter()
+        // TODO: this shouldn't be necessary. `checker` shouldn't be full of
+        // empty diagnostic. Need to fix this in each rule function.
         .filter(|x| !x.message.name.is_empty())
         .map(|mut x| {
             x.filename = file.to_path_buf();
