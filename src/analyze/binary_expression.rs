@@ -1,4 +1,4 @@
-use crate::check_ast::Checker;
+use crate::check_expression::Checker;
 use air_r_syntax::RBinaryExpression;
 
 use crate::lints::class_equals::class_equals::class_equals;

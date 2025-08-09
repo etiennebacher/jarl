@@ -1,4 +1,4 @@
-use crate::check_ast::*;
+use crate::check_expression::*;
 use crate::config::Config;
 use crate::fix::*;
 use crate::message::*;

@@ -1,4 +1,4 @@
-use crate::check_ast::Checker;
+use crate::check_expression::Checker;
 use air_r_syntax::RIdentifier;
 
 use crate::lints::true_false_symbol::true_false_symbol::true_false_symbol;

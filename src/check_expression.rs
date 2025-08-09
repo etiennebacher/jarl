@@ -1,10 +1,10 @@
 use air_r_parser::RParserOptions;
-use air_r_syntax::RForStatementFields;
 use air_r_syntax::{
     AnyRExpression, RBinaryExpressionFields, RBracedExpressionsFields, RCallArgumentsFields,
     RCallFields, RFunctionDefinitionFields, RIfStatementFields, RParenthesizedExpressionFields,
     RSubsetFields, RWhileStatementFields,
 };
+use air_r_syntax::{RForStatementFields, RUnaryExpressionFields};
 
 use crate::analyze;
 use crate::config::Config;
@@ -44,7 +44,7 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
     let mut checker = Checker::new();
     checker.rules = config.rules_to_apply;
     for expr in expressions_vec {
-        check_ast(&expr, &mut checker)?;
+        check_expression(&expr, &mut checker)?;
     }
 
     let diagnostics: Vec<Diagnostic> = checker
@@ -63,7 +63,7 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
     Ok(diagnostics)
 }
 
-pub fn check_ast(
+pub fn check_expression(
     expression: &air_r_syntax::AnyRExpression,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
@@ -71,14 +71,14 @@ pub fn check_ast(
         air_r_syntax::AnyRExpression::RBinaryExpression(children) => {
             analyze::binary_expression::binary_expression(children, checker)?;
             let RBinaryExpressionFields { left, right, .. } = children.as_fields();
-            check_ast(&left?, checker)?;
-            check_ast(&right?, checker)?;
+            check_expression(&left?, checker)?;
+            check_expression(&right?, checker)?;
         }
         air_r_syntax::AnyRExpression::RBracedExpressions(children) => {
             let expressions: Vec<_> = children.expressions().into_iter().collect();
 
             for expr in expressions {
-                check_ast(&expr, checker)?;
+                check_expression(&expr, checker)?;
             }
         }
         air_r_syntax::AnyRExpression::RCall(children) => {
@@ -92,60 +92,60 @@ pub fn check_ast(
                 .collect();
 
             for expr in arguments {
-                check_ast(&expr, checker)?;
+                check_expression(&expr, checker)?;
             }
         }
         air_r_syntax::AnyRExpression::RForStatement(children) => {
             let RForStatementFields { body, variable, .. } = children.as_fields();
             analyze::identifier::identifier(&variable?, checker)?;
 
-            check_ast(&body?, checker)?;
+            check_expression(&body?, checker)?;
         }
         air_r_syntax::AnyRExpression::RFunctionDefinition(children) => {
             let body = children.body();
-            check_ast(&body?, checker)?;
+            check_expression(&body?, checker)?;
         }
         air_r_syntax::AnyRExpression::RIdentifier(x) => {
             analyze::identifier::identifier(x, checker)?;
         }
         air_r_syntax::AnyRExpression::RIfStatement(children) => {
             let RIfStatementFields { condition, consequence, .. } = children.as_fields();
-            check_ast(&condition?, checker)?;
-            check_ast(&consequence?, checker)?;
+            check_expression(&condition?, checker)?;
+            check_expression(&consequence?, checker)?;
         }
         air_r_syntax::AnyRExpression::RParenthesizedExpression(children) => {
             let body = children.body();
-            check_ast(&body?, checker)?;
+            check_expression(&body?, checker)?;
         }
         air_r_syntax::AnyRExpression::RRepeatStatement(children) => {
             let body = children.body();
-            check_ast(&body?, checker)?;
+            check_expression(&body?, checker)?;
         }
         air_r_syntax::AnyRExpression::RSubset(children) => {
             let arguments: Vec<_> = children.arguments()?.items().into_iter().collect();
 
             for expr in arguments {
                 if let Some(expr) = expr?.value() {
-                    check_ast(&expr, checker)?;
+                    check_expression(&expr, checker)?;
                 }
             }
         }
+        air_r_syntax::AnyRExpression::RUnaryExpression(children) => {
+            let argument = children.argument();
+            check_expression(&argument?, checker)?;
+        }
         air_r_syntax::AnyRExpression::RWhileStatement(children) => {
             let RWhileStatementFields { condition, body, .. } = children.as_fields();
-            check_ast(&condition?, checker)?;
-            check_ast(&body?, checker)?;
+            check_expression(&condition?, checker)?;
+            check_expression(&body?, checker)?;
         }
-        // | air_r_syntax::AnyRExpression::RSubset(children)
-        // | air_r_syntax::AnyRExpression::RSubset2(children)
-        // | air_r_syntax::RParameterList
-        // | air_r_syntax::RParameters
-        // | air_r_syntax::RParameter
-        // | air_r_syntax::RArgument
-        // | air_r_syntax::RRoot
-        // | air_r_syntax::AnyRExpression::RUnaryExpression(children)
-        // | air_r_syntax::AnyRExpression::RExtractExpression(children)
-        // | air_r_syntax::AnyRExpression::RNamespaceExpression(children)
-        // | air_r_syntax::AnyRExpression::RNaExpression(children)
+        // Not all patterns are covered but they don't necessarily have to be.
+        // For instance, there are currently no rule for RNaExpression and
+        // it doesn't have any children expression on which we need to call
+        // check_expression().
+        //
+        // If a rule needs to be applied on RNaExpression in the future, then
+        // we can add the corresponding match arm at this moment.
         _ => {}
     }
 
