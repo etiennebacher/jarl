@@ -91,7 +91,7 @@ impl LintChecker for EqualsNa {
                     EqualsNa,
                     range,
                     Fix {
-                        content: format!("is.na({})", replacement),
+                        content: format!("is.na({replacement})"),
                         start: range.start().into(),
                         end: range.end().into(),
                     },
@@ -102,7 +102,7 @@ impl LintChecker for EqualsNa {
                     EqualsNa,
                     range,
                     Fix {
-                        content: format!("!is.na({})", replacement),
+                        content: format!("!is.na({replacement})"),
                         start: range.start().into(),
                         end: range.end().into(),
                     },

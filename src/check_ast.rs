@@ -1,9 +1,8 @@
 use air_r_parser::RParserOptions;
 use air_r_syntax::{
-    AnyRExpression, RArgumentList, RBinaryExpressionFields, RBracedExpressionsFields,
-    RCallArgumentsFields, RCallFields, RExpressionList, RFunctionDefinitionFields,
-    RIfStatementFields, RParenthesizedExpressionFields, RSubset, RSubsetFields, RSyntaxKind,
-    RSyntaxNode, RWhileStatementFields,
+    AnyRExpression, RBinaryExpressionFields, RBracedExpressionsFields,
+    RCallArgumentsFields, RCallFields, RFunctionDefinitionFields,
+    RIfStatementFields, RParenthesizedExpressionFields, RSubsetFields, RWhileStatementFields,
 };
 
 use crate::analyze;
@@ -74,8 +73,7 @@ pub fn check_ast(
             let RCallArgumentsFields { items, .. } = arguments?.as_fields();
             let arg_exprs: Vec<AnyRExpression> = items
                 .into_iter()
-                .map(|x| x.unwrap().as_fields().value)
-                .filter_map(|x| x)
+                .filter_map(|x| x.unwrap().as_fields().value)
                 .collect();
 
             for expr in arg_exprs {

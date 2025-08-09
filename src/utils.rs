@@ -119,7 +119,7 @@ pub fn get_function_name(function: AnyRExpression) -> String {
         } else {
             None
         }
-    } else if let Some(_) = function.as_r_return_expression() {
+    } else if function.as_r_return_expression().is_some() {
         Some("return".to_string())
     } else if let Some(id) = function.as_r_identifier() {
         if let Ok(token) = id.name_token() {

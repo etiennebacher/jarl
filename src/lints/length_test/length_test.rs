@@ -94,7 +94,7 @@ impl LintChecker for LengthTest {
                 LengthTest,
                 range,
                 Fix {
-                    content: format!("length({}) {} {}", lhs, operator_text, rhs),
+                    content: format!("length({lhs}) {operator_text} {rhs}"),
                     start: range.start().into(),
                     end: range.end().into(),
                 },

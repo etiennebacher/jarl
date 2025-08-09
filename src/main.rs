@@ -40,13 +40,13 @@ fn main() -> Result<()> {
 
     if !args.fix && !diagnostics.is_empty() {
         for message in &diagnostics {
-            println!("{}", message);
+            println!("{message}");
         }
     }
 
     if let Some(start) = start {
         let duration = start.elapsed();
-        println!("\nChecked files in: {:?}", duration);
+        println!("\nChecked files in: {duration:?}");
     }
 
     Ok(())

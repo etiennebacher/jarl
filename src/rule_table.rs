@@ -78,21 +78,21 @@ mod tests {
     #[test]
     fn it_works() {
         let mut rt = RuleTable::empty();
-        assert_eq!(rt.enabled("foo"), false);
+        assert!(!rt.enabled("foo"));
 
         rt.enable("foo", true);
-        assert_eq!(rt.enabled("foo"), true);
-        assert_eq!(rt.should_fix("foo"), true);
+        assert!(rt.enabled("foo"));
+        assert!(rt.should_fix("foo"));
 
         rt.enable("bar", false);
-        assert_eq!(rt.enabled("bar"), true);
-        assert_eq!(rt.should_fix("bar"), false);
+        assert!(rt.enabled("bar"));
+        assert!(!rt.should_fix("bar"));
 
-        assert_eq!(rt.any_enabled(["bar", "baz"].to_vec()), true);
-        assert_eq!(rt.any_enabled(["baz", "baz2"].to_vec()), false);
+        assert!(rt.any_enabled(["bar", "baz"].to_vec()));
+        assert!(!rt.any_enabled(["baz", "baz2"].to_vec()));
 
         rt.disable("bar");
-        assert_eq!(rt.enabled("bar"), false);
-        assert_eq!(rt.should_fix("bar"), false);
+        assert!(!rt.enabled("bar"));
+        assert!(!rt.should_fix("bar"));
     }
 }

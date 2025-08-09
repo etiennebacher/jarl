@@ -95,7 +95,7 @@ impl LintChecker for AnyDuplicated {
                 AnyDuplicated,
                 range,
                 Fix {
-                    content: format!("anyDuplicated({}) > 0", inner_content),
+                    content: format!("anyDuplicated({inner_content}) > 0"),
                     start: range.start().into(),
                     end: range.end().into(),
                 },

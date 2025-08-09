@@ -92,7 +92,7 @@ impl LintChecker for AnyIsNa {
                 AnyIsNa,
                 range,
                 Fix {
-                    content: format!("anyNA({})", inner_content),
+                    content: format!("anyNA({inner_content})"),
                     start: range.start().into(),
                     end: range.end().into(),
                 },

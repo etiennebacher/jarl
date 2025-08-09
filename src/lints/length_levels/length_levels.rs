@@ -81,7 +81,7 @@ impl LintChecker for LengthLevels {
                 LengthLevels,
                 range,
                 Fix {
-                    content: format!("nlevels({})", inner_content),
+                    content: format!("nlevels({inner_content})"),
                     start: range.start().into(),
                     end: range.end().into(),
                 },

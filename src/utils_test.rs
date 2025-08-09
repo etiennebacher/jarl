@@ -60,8 +60,7 @@ pub fn get_fixed_text(text: Vec<&str>, rule: &str) -> String {
 
         output.push_str(
             format!(
-                "\n\n  OLD:\n  ====\n{}\n  NEW:\n  ====\n{}",
-                original_content, modified_content
+                "\n\n  OLD:\n  ====\n{original_content}\n  NEW:\n  ====\n{modified_content}"
             )
             .as_str(),
         );

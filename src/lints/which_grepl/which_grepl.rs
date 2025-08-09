@@ -86,7 +86,7 @@ impl LintChecker for WhichGrepl {
                 WhichGrepl,
                 range,
                 Fix {
-                    content: format!("grep({})", inner_content),
+                    content: format!("grep({inner_content})"),
                     start: range.start().into(),
                     end: range.end().into(),
                 },
