@@ -13,6 +13,26 @@ use crate::utils::*;
 use anyhow::Result;
 use std::path::Path;
 
+#[derive(Debug)]
+pub struct Checker<'a> {
+    diagnostics: Vec<Diagnostic>,
+    rules: Vec<&'a str>,
+}
+
+impl<'a> Checker<'a> {
+    fn new() -> Self {
+        Self { diagnostics: vec![], rules: vec![] }
+    }
+
+    pub(crate) fn report_diagnostic(&mut self, diagnostic: Diagnostic) {
+        self.diagnostics.push(diagnostic);
+    }
+
+    pub(crate) fn is_enabled(&mut self, rule: &str) -> bool {
+        self.rules.contains(&rule)
+    }
+}
+
 pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Diagnostic>> {
     let parser_options = RParserOptions::default();
     let parsed = air_r_parser::parse(contents, parser_options);
@@ -22,8 +42,9 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
     let expressions_vec: Vec<_> = expressions.into_iter().collect();
 
     let mut checker = Checker::new();
+    checker.rules = config.rules_to_apply;
     for expr in expressions_vec {
-        check_ast(&expr, &config, &mut checker)?;
+        check_ast(&expr, &mut checker)?;
     }
 
     let diagnostics: Vec<Diagnostic> = checker
@@ -42,24 +63,8 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
     Ok(diagnostics)
 }
 
-#[derive(Debug)]
-pub struct Checker {
-    diagnostics: Vec<Diagnostic>,
-}
-
-impl Checker {
-    fn new() -> Self {
-        Self { diagnostics: vec![] }
-    }
-
-    pub(crate) fn report_diagnostic(&mut self, diagnostic: Diagnostic) {
-        self.diagnostics.push(diagnostic);
-    }
-}
-
 pub fn check_ast(
     expression: &air_r_syntax::AnyRExpression,
-    config: &Config,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
     match expression {
@@ -78,7 +83,7 @@ pub fn check_ast(
                 .collect();
 
             for expr in arg_exprs {
-                check_ast(&expr, config, checker)?;
+                check_ast(&expr, checker)?;
             }
         }
         // | air_r_syntax::AnyRExpression::RSubset(children)
@@ -94,24 +99,24 @@ pub fn check_ast(
         air_r_syntax::AnyRExpression::RBinaryExpression(children) => {
             analyze::binary_expression::binary_expression(children, checker)?;
             let RBinaryExpressionFields { left, right, .. } = children.as_fields();
-            check_ast(&left?, config, checker)?;
-            check_ast(&right?, config, checker)?;
+            check_ast(&left?, checker)?;
+            check_ast(&right?, checker)?;
         }
         air_r_syntax::AnyRExpression::RParenthesizedExpression(children) => {
             let RParenthesizedExpressionFields { body, .. } = children.as_fields();
-            check_ast(&body?, config, checker)?;
+            check_ast(&body?, checker)?;
         }
         air_r_syntax::AnyRExpression::RBracedExpressions(children) => {
             let RBracedExpressionsFields { expressions, .. } = children.as_fields();
             let expressions_vec: Vec<_> = expressions.into_iter().collect();
 
             for expr in expressions_vec {
-                check_ast(&expr, config, checker)?;
+                check_ast(&expr, checker)?;
             }
         }
         air_r_syntax::AnyRExpression::RFunctionDefinition(children) => {
             let RFunctionDefinitionFields { body, .. } = children.as_fields();
-            check_ast(&body?, config, checker)?;
+            check_ast(&body?, checker)?;
         }
         // | air_r_syntax::AnyRExpression::RExtractExpression(children)
         // | air_r_syntax::AnyRExpression::RNamespaceExpression(children)
@@ -120,17 +125,17 @@ pub fn check_ast(
             let RForStatementFields { body, variable, .. } = children.as_fields();
             analyze::identifier::identifier(&variable?, checker)?;
 
-            check_ast(&body?, config, checker)?;
+            check_ast(&body?, checker)?;
         }
         air_r_syntax::AnyRExpression::RWhileStatement(children) => {
             let RWhileStatementFields { condition, body, .. } = children.as_fields();
-            check_ast(&condition?, config, checker)?;
-            check_ast(&body?, config, checker)?;
+            check_ast(&condition?, checker)?;
+            check_ast(&body?, checker)?;
         }
         air_r_syntax::AnyRExpression::RIfStatement(children) => {
             let RIfStatementFields { condition, consequence, .. } = children.as_fields();
-            check_ast(&condition?, config, checker)?;
-            check_ast(&consequence?, config, checker)?;
+            check_ast(&condition?, checker)?;
+            check_ast(&consequence?, checker)?;
         }
         air_r_syntax::AnyRExpression::RSubset(children) => {
             let RSubsetFields { arguments, .. } = children.as_fields();
@@ -139,7 +144,7 @@ pub fn check_ast(
 
             for expr in expressions_vec {
                 if let Some(expr) = expr?.value() {
-                    check_ast(&expr, config, checker)?;
+                    check_ast(&expr, checker)?;
                 }
             }
         }
