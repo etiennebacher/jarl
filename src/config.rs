@@ -1,19 +1,19 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::path::PathBuf;
 
-use crate::{args::CliArgs, lints::all_rules_and_safety};
+use crate::{args::CliArgs, lints::all_rules_and_safety, rule_table::RuleTable};
 
 #[derive(Clone)]
-pub struct Config<'a> {
+pub struct Config {
     /// Paths to files to lint.
     pub paths: Vec<PathBuf>,
     /// List of rules and whether they have an associated safe fix, passed by
     /// the user and/or recovered from the config file. Those will
     /// not necessarily all be used, for instance if we disable unsafe fixes.
-    pub rules: HashMap<&'a str, bool>,
+    pub rules: RuleTable,
     /// List of rules to use. If we lint only, then this is equivalent to the
     /// field `rules`. If we apply fixes too, then this might be different from
     /// `rules` because it may filter out rules that have unsafe fixes.
-    pub rules_to_apply: Vec<&'a str>,
+    pub rules_to_apply: RuleTable,
     /// Did the user pass the --fix flag?
     pub should_fix: bool,
     /// Did the user pass the --unsafe-fixes flag?
@@ -22,14 +22,14 @@ pub struct Config<'a> {
 
 pub fn build_config(args: &CliArgs, paths: Vec<PathBuf>) -> Config {
     let rules = parse_rules_cli(&args.rules);
-    let rules_to_apply: Vec<&str> = if args.fix && !args.unsafe_fixes {
+    let rules_to_apply: RuleTable = if args.fix && !args.unsafe_fixes {
         rules
             .iter()
-            .filter(|(_, v)| **v)
-            .map(|(k, _)| *k)
-            .collect::<Vec<&str>>()
+            .filter(|r| r.should_fix)
+            .cloned()
+            .collect::<RuleTable>()
     } else {
-        rules.keys().copied().collect()
+        rules.clone()
     };
 
     Config {
@@ -41,15 +41,15 @@ pub fn build_config(args: &CliArgs, paths: Vec<PathBuf>) -> Config {
     }
 }
 
-pub fn parse_rules_cli(rules: &str) -> HashMap<&'static str, bool> {
+pub fn parse_rules_cli(rules: &str) -> RuleTable {
     if rules.is_empty() {
         all_rules_and_safety()
     } else {
         let passed_by_user = rules.split(",").collect::<Vec<&str>>();
         all_rules_and_safety()
             .iter()
-            .filter(|(k, _)| passed_by_user.contains(*k))
-            .map(|(k, v)| (*k, *v))
-            .collect::<HashMap<&'static str, bool>>()
+            .filter(|r| passed_by_user.contains(&r.name.as_str()))
+            .cloned()
+            .collect::<RuleTable>()
     }
 }

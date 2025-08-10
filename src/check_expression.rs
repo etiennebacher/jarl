@@ -7,20 +7,26 @@ use air_r_syntax::{
 use crate::analyze;
 use crate::config::Config;
 use crate::message::*;
+use crate::rule_table::RuleTable;
 use crate::utils::*;
 use anyhow::Result;
 use std::path::Path;
 
 #[derive(Debug)]
 // The object that will collect diagnostics in check_expressions().
-pub struct Checker<'a> {
-    diagnostics: Vec<Diagnostic>,
-    rules: Vec<&'a str>,
+pub struct Checker {
+    pub diagnostics: Vec<Diagnostic>,
+    pub rules: RuleTable,
+    pub minimum_r_version: Option<(u32, u32)>,
 }
 
-impl<'a> Checker<'a> {
+impl Checker {
     fn new() -> Self {
-        Self { diagnostics: vec![], rules: vec![] }
+        Self {
+            diagnostics: vec![],
+            rules: RuleTable::empty(),
+            minimum_r_version: None,
+        }
     }
 
     pub(crate) fn report_diagnostic(&mut self, diagnostic: Option<Diagnostic>) {
@@ -29,8 +35,18 @@ impl<'a> Checker<'a> {
         }
     }
 
-    pub(crate) fn is_rule_enabled(&mut self, rule: &str) -> bool {
-        self.rules.contains(&rule)
+    pub(crate) fn is_rule_enabled(
+        &mut self,
+        rule: &str,
+        minimum_r_version: Option<(u32, u32)>,
+    ) -> bool {
+        self.rules.enabled.iter().any(|r| {
+            r.name == rule
+                && r.should_fix
+                && (minimum_r_version.is_none()
+                    || (minimum_r_version.is_some()
+                        && r.minimum_r_version.unwrap() == minimum_r_version.unwrap()))
+        })
     }
 }
 

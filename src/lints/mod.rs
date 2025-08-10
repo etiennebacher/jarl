@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use crate::rule_table::RuleTable;
 
 pub(crate) mod any_duplicated;
 pub(crate) mod any_is_na;
@@ -16,21 +16,20 @@ pub(crate) mod true_false_symbol;
 pub(crate) mod which_grepl;
 
 /// List of supported rules and whether they have a safe fix.
-pub fn all_rules_and_safety() -> HashMap<&'static str, bool> {
-    HashMap::from([
-        ("any_duplicated", true),
-        ("any_is_na", true),
-        ("class_equals", true),
-        ("duplicated_arguments", true),
-        ("empty_assignment", true),
-        ("equal_assignment", true),
-        ("equals_na", true),
-        // ("expect_length", false),
-        ("length_levels", true),
-        ("length_test", true),
-        ("lengths", true),
-        ("redundant_equals", true),
-        ("true_false_symbol", false),
-        ("which_grepl", true),
-    ])
+pub fn all_rules_and_safety() -> RuleTable {
+    let mut rule_table = RuleTable::empty();
+    rule_table.enable("any_duplicated", true, None);
+    rule_table.enable("any_is_na", true, None);
+    rule_table.enable("class_equals", true, None);
+    rule_table.enable("duplicated_arguments", true, None);
+    rule_table.enable("empty_assignment", true, None);
+    rule_table.enable("equal_assignment", true, None);
+    rule_table.enable("equals_na", true, None);
+    rule_table.enable("length_levels", true, None);
+    rule_table.enable("length_test", true, None);
+    rule_table.enable("lengths", true, None);
+    rule_table.enable("redundant_equals", true, None);
+    rule_table.enable("true_false_symbol", false, None);
+    rule_table.enable("which_grepl", true, None);
+    rule_table
 }

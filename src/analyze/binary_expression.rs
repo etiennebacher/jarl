@@ -8,19 +8,19 @@ use crate::lints::equals_na::equals_na::equals_na;
 use crate::lints::redundant_equals::redundant_equals::redundant_equals;
 
 pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> anyhow::Result<()> {
-    if checker.is_rule_enabled("class_equals") {
+    if checker.is_rule_enabled("class_equals", checker.minimum_r_version) {
         checker.report_diagnostic(class_equals(r_expr)?);
     }
-    if checker.is_rule_enabled("empty_assignment") {
+    if checker.is_rule_enabled("empty_assignment", checker.minimum_r_version) {
         checker.report_diagnostic(empty_assignment(r_expr)?);
     }
-    if checker.is_rule_enabled("equal_assignment") {
+    if checker.is_rule_enabled("equal_assignment", checker.minimum_r_version) {
         checker.report_diagnostic(equal_assignment(r_expr)?);
     }
-    if checker.is_rule_enabled("equals_na") {
+    if checker.is_rule_enabled("equals_na", checker.minimum_r_version) {
         checker.report_diagnostic(equals_na(r_expr)?);
     }
-    if checker.is_rule_enabled("redundant_equals") {
+    if checker.is_rule_enabled("redundant_equals", checker.minimum_r_version) {
         checker.report_diagnostic(redundant_equals(r_expr)?);
     }
     Ok(())
