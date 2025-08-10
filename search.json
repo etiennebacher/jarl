@@ -245,6 +245,95 @@
     ]
   },
   {
+    "objectID": "rules/grepv.html",
+    "href": "rules/grepv.html",
+    "title": "grepv",
+    "section": "",
+    "text": "Checks for usage of grep(..., value = TRUE).\n\n\n\nStarting from R 4.5, there is a function grepv() that is identical to grep() except that it uses value = TRUE by default.\nUsing grepv(...) is therefore more readable than grep(...).\n\n\n\n\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrep(\"i\", x, value = TRUE)\n\n[1] \"hi\"     \"howdie\"\n\n\nUse instead:\n\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrepv(\"i\", x)\n\n[1] \"hi\"     \"howdie\"\n\n\n\n\n\nSee ?grepv",
+    "crumbs": [
+      "Rules",
+      "`grepv`"
+    ]
+  },
+  {
+    "objectID": "rules/grepv.html#what-it-does",
+    "href": "rules/grepv.html#what-it-does",
+    "title": "grepv",
+    "section": "",
+    "text": "Checks for usage of grep(..., value = TRUE).",
+    "crumbs": [
+      "Rules",
+      "`grepv`"
+    ]
+  },
+  {
+    "objectID": "rules/grepv.html#why-is-this-bad",
+    "href": "rules/grepv.html#why-is-this-bad",
+    "title": "grepv",
+    "section": "",
+    "text": "Starting from R 4.5, there is a function grepv() that is identical to grep() except that it uses value = TRUE by default.\nUsing grepv(...) is therefore more readable than grep(...).",
+    "crumbs": [
+      "Rules",
+      "`grepv`"
+    ]
+  },
+  {
+    "objectID": "rules/grepv.html#example",
+    "href": "rules/grepv.html#example",
+    "title": "grepv",
+    "section": "",
+    "text": "x &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrep(\"i\", x, value = TRUE)\n\n[1] \"hi\"     \"howdie\"\n\n\nUse instead:\n\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrepv(\"i\", x)\n\n[1] \"hi\"     \"howdie\"",
+    "crumbs": [
+      "Rules",
+      "`grepv`"
+    ]
+  },
+  {
+    "objectID": "rules/grepv.html#references",
+    "href": "rules/grepv.html#references",
+    "title": "grepv",
+    "section": "",
+    "text": "See ?grepv",
+    "crumbs": [
+      "Rules",
+      "`grepv`"
+    ]
+  },
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "About this site"
+  },
+  {
+    "objectID": "rules.html",
+    "href": "rules.html",
+    "title": "flir",
+    "section": "",
+    "text": "Rules to use.",
+    "crumbs": [
+      "Rules"
+    ]
+  },
+  {
+    "objectID": "rules.html#rules",
+    "href": "rules.html#rules",
+    "title": "flir",
+    "section": "",
+    "text": "Rules to use.",
+    "crumbs": [
+      "Rules"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "web",
+    "section": "",
+    "text": "This is a Quarto website.\nTo learn more about Quarto websites visit https://quarto.org/docs/websites."
+  },
+  {
     "objectID": "rules/true_false_symbol.html",
     "href": "rules/true_false_symbol.html",
     "title": "true_false_symbol",
@@ -287,40 +376,6 @@
       "Rules",
       "`true_false_symbol`"
     ]
-  },
-  {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "web",
-    "section": "",
-    "text": "This is a Quarto website.\nTo learn more about Quarto websites visit https://quarto.org/docs/websites."
-  },
-  {
-    "objectID": "rules.html",
-    "href": "rules.html",
-    "title": "flir",
-    "section": "",
-    "text": "Rules to use.",
-    "crumbs": [
-      "Rules"
-    ]
-  },
-  {
-    "objectID": "rules.html#rules",
-    "href": "rules.html#rules",
-    "title": "flir",
-    "section": "",
-    "text": "Rules to use.",
-    "crumbs": [
-      "Rules"
-    ]
-  },
-  {
-    "objectID": "about.html",
-    "href": "about.html",
-    "title": "About",
-    "section": "",
-    "text": "About this site"
   },
   {
     "objectID": "rules/length_levels.html",
