@@ -1,7 +1,10 @@
 use crate::location::Location;
 use crate::message::Diagnostic;
-use air_r_syntax::{AnyRExpression, RExtractExpressionFields, RSyntaxKind, RSyntaxNode};
+use air_r_syntax::{
+    AnyRExpression, RArgumentList, RExtractExpressionFields, RSyntaxKind, RSyntaxNode,
+};
 use anyhow::{Result, anyhow};
+use biome_rowan::AstSeparatedList;
 
 pub fn find_new_lines(ast: &RSyntaxNode) -> Result<Vec<usize>> {
     match ast.first_child() {
@@ -46,6 +49,44 @@ pub fn compute_lints_location(
             diagnostic
         })
         .collect()
+}
+
+pub fn is_argument_present(args: &RArgumentList, my_name: &str, position: usize) -> bool {
+    let named_args = args
+        .iter()
+        .filter(|x| {
+            // Start with owned x (clone if necessary)
+            let x = match x.as_ref() {
+                Ok(x) => x,
+                Err(_) => return false,
+            };
+
+            // Process each step with proper ownership
+            let name_clause = match x.name_clause() {
+                Some(nc) => nc,
+                None => return false,
+            };
+
+            let name = match name_clause.name() {
+                Ok(n) => n,
+                Err(_) => return false,
+            };
+
+            let identifier = match name.as_r_identifier() {
+                Some(id) => id,
+                None => return false,
+            };
+
+            let name_token = match identifier.name_token() {
+                Ok(tok) => tok,
+                Err(_) => return false,
+            };
+
+            name_token.text_trimmed().to_string() == my_name.to_string()
+        })
+        .count();
+
+    named_args > 0 || args.iter().count() >= position
 }
 
 pub fn get_first_arg(node: &RSyntaxNode) -> Option<RSyntaxNode> {
