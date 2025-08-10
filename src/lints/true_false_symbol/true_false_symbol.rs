@@ -42,12 +42,11 @@ impl Violation for TrueFalseSymbol {
     }
 }
 
-pub fn true_false_symbol(ast: &RIdentifier) -> Result<Diagnostic> {
-    let mut diagnostic = Diagnostic::empty();
+pub fn true_false_symbol(ast: &RIdentifier) -> Result<Option<Diagnostic>> {
     let token = ast.name_token().unwrap();
     let name = token.text_trimmed();
     if name != "T" && name != "F" {
-        return Ok(diagnostic);
+        return Ok(None);
     }
 
     // Allow T(), F()
@@ -66,11 +65,11 @@ pub fn true_false_symbol(ast: &RIdentifier) -> Result<Diagnostic> {
         .unwrap_or(false);
 
     if is_function_name || is_element_name || is_in_formula {
-        return Ok(diagnostic);
+        return Ok(None);
     }
 
     let range = ast.clone().into_syntax().text_trimmed_range();
-    diagnostic = Diagnostic::new(
+    let diagnostic = Diagnostic::new(
         TrueFalseSymbol,
         range,
         Fix {
@@ -84,5 +83,5 @@ pub fn true_false_symbol(ast: &RIdentifier) -> Result<Diagnostic> {
         },
     );
 
-    Ok(diagnostic)
+    Ok(Some(diagnostic))
 }

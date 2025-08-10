@@ -42,8 +42,7 @@ impl Violation for EqualAssignment {
     }
 }
 
-pub fn equal_assignment(ast: &RBinaryExpression) -> Result<Diagnostic> {
-    let mut diagnostic = Diagnostic::empty();
+pub fn equal_assignment(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
     let operator = operator?;
@@ -51,19 +50,19 @@ pub fn equal_assignment(ast: &RBinaryExpression) -> Result<Diagnostic> {
     let rhs = right?.into_syntax();
 
     if operator.kind() != RSyntaxKind::EQUAL && operator.kind() != RSyntaxKind::ASSIGN_RIGHT {
-        return Ok(diagnostic);
+        return Ok(None);
     };
 
     let replacement = match operator.kind() {
         RSyntaxKind::EQUAL => {
             if lhs.kind() != RSyntaxKind::R_IDENTIFIER {
-                return Ok(diagnostic);
+                return Ok(None);
             }
             format!("{} <- {}", lhs.text_trimmed(), rhs.text_trimmed())
         }
         RSyntaxKind::ASSIGN_RIGHT => {
             if rhs.kind() != RSyntaxKind::R_IDENTIFIER {
-                return Ok(diagnostic);
+                return Ok(None);
             }
             format!("{} <- {}", rhs.text_trimmed(), lhs.text_trimmed())
         }
@@ -71,7 +70,7 @@ pub fn equal_assignment(ast: &RBinaryExpression) -> Result<Diagnostic> {
     };
 
     let range = ast.clone().into_syntax().text_trimmed_range();
-    diagnostic = Diagnostic::new(
+    let diagnostic = Diagnostic::new(
         EqualAssignment,
         range,
         Fix {
@@ -81,5 +80,5 @@ pub fn equal_assignment(ast: &RBinaryExpression) -> Result<Diagnostic> {
         },
     );
 
-    Ok(diagnostic)
+    Ok(Some(diagnostic))
 }

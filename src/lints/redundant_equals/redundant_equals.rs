@@ -1,5 +1,6 @@
 use crate::message::*;
 use air_r_syntax::*;
+use anyhow::Result;
 use biome_rowan::AstNode;
 
 pub struct RedundantEquals;
@@ -44,8 +45,7 @@ impl Violation for RedundantEquals {
     }
 }
 
-pub fn redundant_equals(ast: &RBinaryExpression) -> anyhow::Result<Diagnostic> {
-    let mut diagnostic = Diagnostic::empty();
+pub fn redundant_equals(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
     let operator = operator?;
@@ -57,7 +57,7 @@ pub fn redundant_equals(ast: &RBinaryExpression) -> anyhow::Result<Diagnostic> {
     let right_is_true = &right.as_r_true_expression().is_some();
     let right_is_false = &right.as_r_false_expression().is_some();
 
-    match operator.kind() {
+    let diagnostic = match operator.kind() {
         RSyntaxKind::EQUAL2 => {
             let fix = if *left_is_true {
                 right.text().to_string()
@@ -68,11 +68,11 @@ pub fn redundant_equals(ast: &RBinaryExpression) -> anyhow::Result<Diagnostic> {
             } else if *right_is_false {
                 format!("!{}", left.text())
             } else {
-                return Ok(diagnostic);
+                return Ok(None);
             };
 
             let range = ast.clone().into_syntax().text_trimmed_range();
-            diagnostic = Diagnostic::new(
+            Diagnostic::new(
                 RedundantEquals,
                 range,
                 Fix {
@@ -80,7 +80,7 @@ pub fn redundant_equals(ast: &RBinaryExpression) -> anyhow::Result<Diagnostic> {
                     start: range.start().into(),
                     end: range.end().into(),
                 },
-            );
+            )
         }
         RSyntaxKind::NOT_EQUAL => {
             let fix = if *left_is_true {
@@ -92,10 +92,10 @@ pub fn redundant_equals(ast: &RBinaryExpression) -> anyhow::Result<Diagnostic> {
             } else if *right_is_false {
                 left.text().to_string()
             } else {
-                return Ok(diagnostic);
+                return Ok(None);
             };
             let range = ast.clone().into_syntax().text_trimmed_range();
-            diagnostic = Diagnostic::new(
+            Diagnostic::new(
                 RedundantEquals,
                 range,
                 Fix {
@@ -103,9 +103,9 @@ pub fn redundant_equals(ast: &RBinaryExpression) -> anyhow::Result<Diagnostic> {
                     start: range.start().into(),
                     end: range.end().into(),
                 },
-            );
+            )
         }
-        _ => return Ok(diagnostic),
+        _ => return Ok(None),
     };
-    Ok(diagnostic)
+    Ok(Some(diagnostic))
 }

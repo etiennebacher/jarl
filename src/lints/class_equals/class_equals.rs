@@ -52,8 +52,7 @@ impl Violation for ClassEquals {
     }
 }
 
-pub fn class_equals(ast: &RBinaryExpression) -> Result<Diagnostic> {
-    let mut diagnostic = Diagnostic::empty();
+pub fn class_equals(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
     let operator = operator?;
@@ -62,7 +61,7 @@ pub fn class_equals(ast: &RBinaryExpression) -> Result<Diagnostic> {
         && operator.kind() != RSyntaxKind::NOT_EQUAL
         && operator.text_trimmed() != "%in%"
     {
-        return Ok(diagnostic);
+        return Ok(None);
     };
 
     let lhs = left?.into_syntax();
@@ -80,7 +79,7 @@ pub fn class_equals(ast: &RBinaryExpression) -> Result<Diagnostic> {
     let right_is_string = rhs.kind() == RSyntaxKind::R_STRING_VALUE;
 
     if (!left_is_class && !right_is_class) || (!left_is_string && !right_is_string) {
-        return Ok(diagnostic);
+        return Ok(None);
     }
 
     let fun_name = if operator.kind() == RSyntaxKind::EQUAL2 || operator.text_trimmed() == "%in%" {
@@ -101,7 +100,7 @@ pub fn class_equals(ast: &RBinaryExpression) -> Result<Diagnostic> {
     };
 
     let range = ast.clone().into_syntax().text_trimmed_range();
-    diagnostic = Diagnostic::new(
+    let diagnostic = Diagnostic::new(
         ClassEquals,
         range,
         Fix {
@@ -110,5 +109,5 @@ pub fn class_equals(ast: &RBinaryExpression) -> Result<Diagnostic> {
             end: range.end().into(),
         },
     );
-    Ok(diagnostic)
+    Ok(Some(diagnostic))
 }

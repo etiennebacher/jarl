@@ -42,14 +42,13 @@ impl Violation for Lengths {
     }
 }
 
-pub fn lengths(ast: &RCall) -> Result<Diagnostic> {
-    let mut diagnostic = Diagnostic::empty();
+pub fn lengths(ast: &RCall) -> Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
     let function = function?;
 
     let funs_to_watch = ["sapply", "vapply", "map_dbl", "map_int"];
     if !funs_to_watch.contains(&function.text().as_str()) {
-        return Ok(diagnostic);
+        return Ok(None);
     }
 
     let arguments = arguments?.items();
@@ -64,7 +63,7 @@ pub fn lengths(ast: &RCall) -> Result<Diagnostic> {
             == "length"
         {
             let range = ast.clone().into_syntax().text_trimmed_range();
-            diagnostic = Diagnostic::new(
+            let diagnostic = Diagnostic::new(
                 Lengths,
                 range,
                 Fix {
@@ -72,9 +71,10 @@ pub fn lengths(ast: &RCall) -> Result<Diagnostic> {
                     start: range.start().into(),
                     end: range.end().into(),
                 },
-            )
+            );
+            return Ok(Some(diagnostic));
         }
     };
 
-    Ok(diagnostic)
+    Ok(None)
 }

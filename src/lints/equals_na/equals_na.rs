@@ -40,8 +40,7 @@ impl Violation for EqualsNa {
     }
 }
 
-pub fn equals_na(ast: &RBinaryExpression) -> Result<Diagnostic> {
-    let mut diagnostic = Diagnostic::empty();
+pub fn equals_na(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
     let left = left?;
@@ -49,7 +48,7 @@ pub fn equals_na(ast: &RBinaryExpression) -> Result<Diagnostic> {
     let right = right?;
 
     if operator.kind() != RSyntaxKind::EQUAL2 && operator.kind() != RSyntaxKind::NOT_EQUAL {
-        return Ok(diagnostic);
+        return Ok(None);
     };
 
     let na_values = [
@@ -67,7 +66,7 @@ pub fn equals_na(ast: &RBinaryExpression) -> Result<Diagnostic> {
     // If NA is quoted in text, then quotation marks are escaped and this
     // is false.
     if (left_is_na && right_is_na) || (!left_is_na && !right_is_na) {
-        return Ok(diagnostic);
+        return Ok(None);
     }
     let range = ast.clone().into_syntax().text_trimmed_range();
 
@@ -77,31 +76,27 @@ pub fn equals_na(ast: &RBinaryExpression) -> Result<Diagnostic> {
         left.to_string().trim().to_string()
     };
 
-    match operator.kind() {
-        RSyntaxKind::EQUAL2 => {
-            diagnostic = Diagnostic::new(
-                EqualsNa,
-                range,
-                Fix {
-                    content: format!("is.na({replacement})"),
-                    start: range.start().into(),
-                    end: range.end().into(),
-                },
-            );
-        }
-        RSyntaxKind::NOT_EQUAL => {
-            diagnostic = Diagnostic::new(
-                EqualsNa,
-                range,
-                Fix {
-                    content: format!("!is.na({replacement})"),
-                    start: range.start().into(),
-                    end: range.end().into(),
-                },
-            );
-        }
+    let diagnostic = match operator.kind() {
+        RSyntaxKind::EQUAL2 => Diagnostic::new(
+            EqualsNa,
+            range,
+            Fix {
+                content: format!("is.na({replacement})"),
+                start: range.start().into(),
+                end: range.end().into(),
+            },
+        ),
+        RSyntaxKind::NOT_EQUAL => Diagnostic::new(
+            EqualsNa,
+            range,
+            Fix {
+                content: format!("!is.na({replacement})"),
+                start: range.start().into(),
+                end: range.end().into(),
+            },
+        ),
         _ => unreachable!("This case is an early return"),
     };
 
-    Ok(diagnostic)
+    Ok(Some(diagnostic))
 }

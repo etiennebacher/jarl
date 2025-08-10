@@ -33,8 +33,7 @@ impl Violation for DuplicatedArguments {
     }
 }
 
-pub fn duplicated_arguments(ast: &RCall) -> Result<Diagnostic> {
-    let mut diagnostic = Diagnostic::empty();
+pub fn duplicated_arguments(ast: &RCall) -> Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
 
     let fun_name = match function? {
@@ -56,7 +55,7 @@ pub fn duplicated_arguments(ast: &RCall) -> Result<Diagnostic> {
 
     let whitelisted_funs = ["c", "mutate", "summarize", "transmute"];
     if whitelisted_funs.contains(&fun_name.as_str()) {
-        return Ok(diagnostic);
+        return Ok(None);
     }
 
     let arg_names: Vec<String> = arguments?
@@ -76,14 +75,16 @@ pub fn duplicated_arguments(ast: &RCall) -> Result<Diagnostic> {
         .collect();
 
     if arg_names.is_empty() {
-        return Ok(diagnostic);
+        return Ok(None);
     }
 
     if has_duplicates(&arg_names) {
         let range = ast.clone().into_syntax().text_trimmed_range();
-        diagnostic = Diagnostic::new(DuplicatedArguments, range, Fix::empty())
+        let diagnostic = Diagnostic::new(DuplicatedArguments, range, Fix::empty());
+        return Ok(Some(diagnostic));
     }
-    Ok(diagnostic)
+
+    Ok(None)
 }
 
 fn has_duplicates(v: &[String]) -> bool {

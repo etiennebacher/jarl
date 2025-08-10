@@ -23,8 +23,10 @@ impl<'a> Checker<'a> {
         Self { diagnostics: vec![], rules: vec![] }
     }
 
-    pub(crate) fn report_diagnostic(&mut self, diagnostic: Diagnostic) {
-        self.diagnostics.push(diagnostic);
+    pub(crate) fn report_diagnostic(&mut self, diagnostic: Option<Diagnostic>) {
+        if let Some(diagnostic) = diagnostic {
+            self.diagnostics.push(diagnostic);
+        }
     }
 
     pub(crate) fn is_rule_enabled(&mut self, rule: &str) -> bool {
@@ -49,9 +51,6 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
     let diagnostics: Vec<Diagnostic> = checker
         .diagnostics
         .into_iter()
-        // TODO: this shouldn't be necessary. `checker` shouldn't be full of
-        // empty diagnostic. Need to fix this in each rule function.
-        .filter(|x| !x.message.name.is_empty())
         .map(|mut x| {
             x.filename = file.to_path_buf();
             x

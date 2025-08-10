@@ -37,15 +37,14 @@ impl Violation for LengthLevels {
     }
 }
 
-pub fn length_levels(ast: &RCall) -> Result<Diagnostic> {
-    let mut diagnostic = Diagnostic::empty();
+pub fn length_levels(ast: &RCall) -> Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
 
     let function = function?;
     let outer_fn_name = get_function_name(function);
 
     if outer_fn_name != "length" {
-        return Ok(diagnostic);
+        return Ok(None);
     }
 
     let items = arguments?.items();
@@ -65,12 +64,12 @@ pub fn length_levels(ast: &RCall) -> Result<Diagnostic> {
         let inner_fn_name = get_function_name(function);
 
         if inner_fn_name != "levels" {
-            return Ok(diagnostic);
+            return Ok(None);
         }
 
         let inner_content = arguments?.items().into_syntax().text();
         let range = ast.clone().into_syntax().text_trimmed_range();
-        diagnostic = Diagnostic::new(
+        let diagnostic = Diagnostic::new(
             LengthLevels,
             range,
             Fix {
@@ -78,7 +77,8 @@ pub fn length_levels(ast: &RCall) -> Result<Diagnostic> {
                 start: range.start().into(),
                 end: range.end().into(),
             },
-        )
+        );
+        return Ok(Some(diagnostic));
     }
-    Ok(diagnostic)
+    Ok(None)
 }

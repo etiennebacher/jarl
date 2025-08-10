@@ -14,8 +14,7 @@ impl Violation for EmptyAssignment {
     }
 }
 
-pub fn empty_assignment(ast: &RBinaryExpression) -> Result<Diagnostic> {
-    let mut diagnostic = Diagnostic::empty();
+pub fn empty_assignment(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
     let left = left?;
@@ -26,20 +25,20 @@ pub fn empty_assignment(ast: &RBinaryExpression) -> Result<Diagnostic> {
         && operator.kind() != RSyntaxKind::ASSIGN
         && operator.kind() != RSyntaxKind::ASSIGN_RIGHT
     {
-        return Ok(diagnostic);
+        return Ok(None);
     };
 
     let value_is_empty = match operator.kind() {
         RSyntaxKind::EQUAL | RSyntaxKind::ASSIGN => match RBracedExpressions::cast(right.into()) {
             Some(right) => right.expressions().text() == "",
             _ => {
-                return Ok(diagnostic);
+                return Ok(None);
             }
         },
         RSyntaxKind::ASSIGN_RIGHT => match RBracedExpressions::cast(left.into()) {
             Some(left) => left.expressions().text() == "",
             _ => {
-                return Ok(diagnostic);
+                return Ok(None);
             }
         },
         _ => unreachable!("cannot have something else than an assignment"),
@@ -47,8 +46,9 @@ pub fn empty_assignment(ast: &RBinaryExpression) -> Result<Diagnostic> {
 
     if value_is_empty {
         let range = ast.clone().into_syntax().text_trimmed_range();
-        diagnostic = Diagnostic::new(EmptyAssignment, range, Fix::empty());
+        let diagnostic = Diagnostic::new(EmptyAssignment, range, Fix::empty());
+        return Ok(Some(diagnostic));
     }
 
-    Ok(diagnostic)
+    Ok(None)
 }
