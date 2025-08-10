@@ -1,6 +1,6 @@
 ---
 source: src/lints/any_duplicated/mod.rs
-expression: fix_output
+expression: "get_fixed_text(vec![\"any(duplicated(x))\", \"any(duplicated(foo(x)))\",\n\"any(duplicated(x), na.rm = TRUE)\",], \"any_duplicated\",)"
 ---
   OLD:
   ====
