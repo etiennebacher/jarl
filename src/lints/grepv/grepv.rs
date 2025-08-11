@@ -9,7 +9,8 @@ pub struct Grepv;
 
 /// ## What it does
 ///
-/// Checks for usage of `grep(..., value = TRUE)`.
+/// Checks for usage of `grep(..., value = TRUE)` and recommends using
+/// `grepv()` instead (only if the R version used in the project is >= 4.5).
 ///
 /// ## Why is this bad?
 ///
