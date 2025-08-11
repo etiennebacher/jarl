@@ -5,50 +5,37 @@ mod tests {
     use crate::utils_test::*;
 
     #[test]
-    fn test_no_lint_any_duplicated() {
-        expect_no_lint("any(x)", "any_duplicated");
-        expect_no_lint("duplicated(x)", "any_duplicated");
-        expect_no_lint("any(!duplicated(x))", "any_duplicated");
-        expect_no_lint("any(!duplicated(foo(x)))", "any_duplicated");
-        expect_no_lint("any(na.rm = TRUE)", "any_duplicated");
-        expect_no_lint("any()", "any_duplicated");
+    fn test_no_lint_grepv() {
+        expect_no_lint("grep('i', x)", "grepv");
+        expect_no_lint("grep(pattern = 'i', x)", "grepv");
+        expect_no_lint("grep('i', x, TRUE, TRUE)", "grepv");
     }
 
     #[test]
-    fn test_lint_any_duplicated() {
+    fn test_lint_grepv() {
         use insta::assert_snapshot;
 
-        let expected_message = "`any(duplicated(...))` is inefficient";
-        expect_lint("any(duplicated(x))", expected_message, "any_duplicated");
+        let expected_message = "Use `grepv(...)`";
+        expect_lint("grep('i', x, value = TRUE)", expected_message, "grepv");
+        expect_lint("grep('i', x, TRUE, TRUE, TRUE)", expected_message, "grepv");
         expect_lint(
-            "any(duplicated(foo(x)))",
+            "grep('i', x, TRUE, TRUE, TRUE, value = TRUE)",
             expected_message,
-            "any_duplicated",
-        );
-        expect_lint(
-            "any(duplicated(x), na.rm = TRUE)",
-            expected_message,
-            "any_duplicated",
-        );
-        expect_lint(
-            "any(na.rm = TRUE, duplicated(x))",
-            expected_message,
-            "any_duplicated",
-        );
-        expect_lint(
-            "any(duplicated(x)); 1 + 1; any(duplicated(y))",
-            expected_message,
-            "any_duplicated",
+            "grepv",
         );
         assert_snapshot!(
             "fix_output",
             get_fixed_text(
                 vec![
-                    "any(duplicated(x))",
-                    "any(duplicated(foo(x)))",
-                    "any(duplicated(x), na.rm = TRUE)",
+                    "grep('i', x, value = TRUE)",
+                    "grep('i', x, TRUE, TRUE, TRUE)",
+                    "grep('i', x, TRUE, TRUE, TRUE, value = TRUE)",
+                    // Keep the name of other args
+                    "grep(pattern = 'i', x, value = TRUE)",
+                    // Wrong code but no panic
+                    "grep(value = TRUE)",
                 ],
-                "any_duplicated",
+                "grepv",
             )
         );
     }

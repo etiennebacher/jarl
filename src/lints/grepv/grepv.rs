@@ -1,11 +1,11 @@
 use crate::message::*;
+use crate::utils::drop_arg_by_name_or_position;
 use crate::utils::get_function_name;
 use crate::utils::is_argument_present;
 use air_r_syntax::*;
 use anyhow::Result;
 use biome_rowan::AstNode;
-use biome_rowan::AstSeparatedList;
-pub struct AnyDuplicated;
+pub struct Grepv;
 
 /// ## What it does
 ///
@@ -34,12 +34,12 @@ pub struct AnyDuplicated;
 /// ## References
 ///
 /// See `?grepv`
-impl Violation for AnyDuplicated {
+impl Violation for Grepv {
     fn name(&self) -> String {
-        "any-duplicated".to_string()
+        "grepv".to_string()
     }
     fn body(&self) -> String {
-        "`any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.".to_string()
+        "Use `grepv(...)` instead of `grep(..., value = TRUE)`.".to_string()
     }
 }
 
@@ -57,53 +57,27 @@ pub fn grepv(ast: &RCall) -> Result<Option<Diagnostic>> {
 
     let arg_value_is_present = is_argument_present(&items, "value", 5);
 
-    println!("arg_value_is_present: {}", arg_value_is_present);
+    if !arg_value_is_present {
+        return Ok(None);
+    }
 
-    return Ok(None);
+    let other_args = drop_arg_by_name_or_position(&items, "value", 5);
 
-    // let named_args = items
-    //     .iter()
-    //     .filter(|x| x.clone().unwrap().name_clause().is_some())
-    //     .collect::<Vec<_>>();
+    let inner_content = match other_args {
+        Some(x) => x.iter().map(|x| x.text()).collect::<Vec<_>>().join(", "),
+        None => "".to_string(),
+    };
 
-    // if !named_args.is_empty() {}
+    let range = ast.clone().into_syntax().text_trimmed_range();
+    let diagnostic = Diagnostic::new(
+        Grepv,
+        range,
+        Fix {
+            content: format!("grepv({inner_content})"),
+            start: range.start().into(),
+            end: range.end().into(),
+        },
+    );
 
-    // let unnamed_arg = &items
-    //     .iter()
-    //     .find(|x| x.clone().unwrap().name_clause().is_none());
-
-    // // any(na.rm = TRUE/FALSE) and any() are valid
-    // if unnamed_arg.is_none() {
-    //     return Ok(None);
-    // }
-
-    // let value = unnamed_arg.unwrap()?.value();
-
-    // if let Some(inner) = value
-    //     && let Some(inner2) = inner.as_r_call()
-    // {
-    //     let RCallFields { function, arguments } = inner2.as_fields();
-
-    //     let function = function?;
-    //     let inner_fn_name = get_function_name(function);
-
-    //     if inner_fn_name != "duplicated" {
-    //         return Ok(None);
-    //     }
-
-    //     let inner_content = arguments?.items().into_syntax().text();
-    //     let range = ast.clone().into_syntax().text_trimmed_range();
-    //     let diagnostic = Diagnostic::new(
-    //         AnyDuplicated,
-    //         range,
-    //         Fix {
-    //             content: format!("anyDuplicated({inner_content}) > 0"),
-    //             start: range.start().into(),
-    //             end: range.end().into(),
-    //         },
-    //     );
-
-    //     return Ok(Some(diagnostic));
-    // }
-    // return Ok(None);
+    return Ok(Some(diagnostic));
 }
