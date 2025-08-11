@@ -1,7 +1,7 @@
 use crate::location::Location;
 use crate::message::Diagnostic;
 use air_r_syntax::{
-    AnyRExpression, RArgumentList, RExtractExpressionFields, RSyntaxKind, RSyntaxNode,
+    AnyRExpression, RArgument, RArgumentList, RExtractExpressionFields, RSyntaxKind, RSyntaxNode,
 };
 use anyhow::{Result, anyhow};
 use biome_rowan::AstSeparatedList;
@@ -51,42 +51,39 @@ pub fn compute_lints_location(
         .collect()
 }
 
-pub fn is_argument_present(args: &RArgumentList, my_name: &str, position: usize) -> bool {
-    let named_args = args
-        .iter()
-        .filter(|x| {
-            // Start with owned x (clone if necessary)
-            let x = match x.as_ref() {
-                Ok(x) => x,
-                Err(_) => return false,
-            };
-
-            // Process each step with proper ownership
-            let name_clause = match x.name_clause() {
-                Some(nc) => nc,
-                None => return false,
-            };
-
-            let name = match name_clause.name() {
-                Ok(n) => n,
-                Err(_) => return false,
-            };
-
-            let identifier = match name.as_r_identifier() {
-                Some(id) => id,
-                None => return false,
-            };
-
-            let name_token = match identifier.name_token() {
-                Ok(tok) => tok,
-                Err(_) => return false,
-            };
-
-            name_token.text_trimmed().to_string() == my_name.to_string()
+pub fn get_arg_by_name(args: &RArgumentList, name: &str) -> Option<RArgument> {
+    args.into_iter()
+        .find(|x| {
+            let name_clause = x.clone().unwrap().name_clause();
+            if let Some(name_clause) = name_clause {
+                match name_clause.name() {
+                    Ok(name_clause) => name_clause.to_string().trim() == name,
+                    _ => false,
+                }
+            } else {
+                false
+            }
         })
-        .count();
+        .map(|x| x.unwrap())
+}
 
-    named_args > 0 || args.iter().count() >= position
+pub fn get_arg_by_position(args: &RArgumentList, pos: usize) -> Option<RArgument> {
+    args.iter().nth(pos - 1).map(|x| x.unwrap())
+}
+
+pub fn get_arg_by_name_then_position(
+    args: &RArgumentList,
+    name: &str,
+    pos: usize,
+) -> Option<RArgument> {
+    match get_arg_by_name(args, name) {
+        Some(by_name) => Some(by_name),
+        _ => get_arg_by_position(args, pos),
+    }
+}
+
+pub fn is_argument_present(args: &RArgumentList, name: &str, position: usize) -> bool {
+    get_arg_by_name_then_position(args, name, position).is_some()
 }
 
 pub fn get_first_arg(node: &RSyntaxNode) -> Option<RSyntaxNode> {
