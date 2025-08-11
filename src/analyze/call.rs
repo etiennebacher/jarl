@@ -4,6 +4,7 @@ use air_r_syntax::RCall;
 use crate::lints::any_duplicated::any_duplicated::any_duplicated;
 use crate::lints::any_is_na::any_is_na::any_is_na;
 use crate::lints::duplicated_arguments::duplicated_arguments::duplicated_arguments;
+use crate::lints::grepv::grepv::grepv;
 use crate::lints::length_levels::length_levels::length_levels;
 use crate::lints::length_test::length_test::length_test;
 use crate::lints::lengths::lengths::lengths;
@@ -18,6 +19,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled("duplicated_arguments") {
         checker.report_diagnostic(duplicated_arguments(r_expr)?);
+    }
+    if checker.is_rule_enabled("grepv") {
+        checker.report_diagnostic(grepv(r_expr)?);
     }
     if checker.is_rule_enabled("length_levels") {
         checker.report_diagnostic(length_levels(r_expr)?);

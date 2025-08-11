@@ -7,7 +7,7 @@ pub(crate) mod duplicated_arguments;
 pub(crate) mod empty_assignment;
 pub(crate) mod equal_assignment;
 pub(crate) mod equals_na;
-// pub(crate) mod expect_length;
+pub(crate) mod grepv;
 pub(crate) mod length_levels;
 pub(crate) mod length_test;
 pub(crate) mod lengths;
@@ -25,6 +25,7 @@ pub fn all_rules_and_safety() -> RuleTable {
     rule_table.enable("empty_assignment", true, None);
     rule_table.enable("equal_assignment", true, None);
     rule_table.enable("equals_na", true, None);
+    rule_table.enable("grepv", true, Some((4, 5)));
     rule_table.enable("length_levels", true, None);
     rule_table.enable("length_test", true, None);
     rule_table.enable("lengths", true, None);
