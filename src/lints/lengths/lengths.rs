@@ -51,8 +51,8 @@ pub fn lengths(ast: &RCall) -> Result<Option<Diagnostic>> {
     }
 
     let arguments = arguments?.items();
-    let arg_x = get_arg_by_name_then_position(&arguments, "x", 0);
-    let arg_fun = get_arg_by_name_then_position(&arguments, "FUN", 1);
+    let arg_x = get_arg_by_name_then_position(&arguments, "x", 1);
+    let arg_fun = get_arg_by_name_then_position(&arguments, "FUN", 2);
 
     if let Some(arg_fun) = arg_fun {
         if arg_fun

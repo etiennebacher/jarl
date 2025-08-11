@@ -87,35 +87,44 @@ pub fn drop_arg_by_name_or_position(
     name: &str,
     pos: usize,
 ) -> Option<Vec<RArgument>> {
-    let mut changed = false;
+    let mut dropped_by_name = false;
 
-    let out: Vec<RArgument> = args
+    let by_name: Vec<RArgument> = args
         .iter()
-        .enumerate()
-        .filter_map(|(i, arg)| {
+        .filter_map(|arg| {
             let arg = arg.clone().unwrap();
-
-            // Check if name matches
             if let Some(name_clause) = arg.name_clause() {
                 if let Ok(n) = name_clause.name() {
                     if n.to_string().trim() == name {
-                        changed = true;
+                        dropped_by_name = true;
                         return None;
                     }
                 }
             }
-
-            // Check if index matches
-            if i == pos - 1 {
-                changed = true;
-                return None;
-            }
-
             Some(arg)
         })
         .collect();
 
-    if changed { Some(out) } else { None }
+    if dropped_by_name {
+        return Some(by_name);
+    }
+
+    let by_pos: Vec<RArgument> = args
+        .iter()
+        .enumerate()
+        .filter_map(|(i, arg)| {
+            if i == pos - 1 {
+                return None;
+            }
+            Some(arg.clone().unwrap())
+        })
+        .collect();
+
+    if by_pos.len() != args.len() {
+        Some(by_pos)
+    } else {
+        None
+    }
 }
 
 pub fn is_argument_present(args: &RArgumentList, name: &str, position: usize) -> bool {

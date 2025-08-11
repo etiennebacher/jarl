@@ -21,7 +21,7 @@ grepv('i', x, TRUE, TRUE)
 grep('i', x, TRUE, TRUE, TRUE, value = TRUE)
   NEW:
   ====
-grepv('i', x, TRUE, TRUE)
+grepv('i', x, TRUE, TRUE, TRUE)
 
   OLD:
   ====
