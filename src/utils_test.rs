@@ -93,7 +93,7 @@ pub fn no_lint(text: &str, rule: &str) -> bool {
         .expect("Failed to execute command");
 
     let lint_text = String::from_utf8_lossy(&output.stdout).to_string();
-    lint_text.is_empty()
+    lint_text == "All checks passed!\n"
 }
 
 pub fn expect_no_lint(text: &str, rule: &str) {

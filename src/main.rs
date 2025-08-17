@@ -39,9 +39,27 @@ fn main() -> Result<()> {
     let diagnostics = check(config)?;
 
     if !args.fix && !diagnostics.is_empty() {
+        let mut n_diagnostic_with_fixes = 0usize;
         for message in &diagnostics {
+            if message.has_fix() {
+                n_diagnostic_with_fixes += 1;
+            }
             println!("{message}");
         }
+
+        if diagnostics.len() > 1 {
+            println!("\nFound {} errors.", diagnostics.len())
+        } else {
+            println!("\nFound 1 error.")
+        }
+        if n_diagnostic_with_fixes > 0 {
+            println!(
+                "{} fixable with the `--fix` option.",
+                n_diagnostic_with_fixes
+            )
+        }
+    } else {
+        println!("All checks passed!")
     }
 
     if let Some(start) = start {

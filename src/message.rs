@@ -76,6 +76,7 @@ impl Diagnostic {
             filename: "".into(),
         }
     }
+
     pub fn empty() -> Self {
         Self {
             message: ViolationData::empty(),
@@ -84,6 +85,10 @@ impl Diagnostic {
             fix: Fix::empty(),
             filename: "".into(),
         }
+    }
+
+    pub fn has_fix(&self) -> bool {
+        !self.fix.content.is_empty()
     }
 }
 
