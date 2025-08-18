@@ -20,16 +20,6 @@ pub struct Output {
 }
 
 impl Output {
-    /// Normalize path separator for cross OS snapshot stability
-    pub fn normalize_os_path_separator(self) -> Self {
-        Self {
-            status: self.status,
-            stdout: self.stdout.replace('\\', "/"),
-            stderr: self.stderr.replace('\\', "/"),
-            arguments: self.arguments.replace('\\', "/"),
-        }
-    }
-
     /// Normalize executable name for cross OS snapshot stability
     pub fn normalize_os_executable_name(self) -> Self {
         Self {
@@ -57,12 +47,7 @@ impl CommandExt for Command {
 
         let arguments = arguments.join(" ");
 
-        Output {
-            status: output.status,
-            stdout,
-            stderr,
-            arguments,
-        }
+        Output { status: output.status, stdout, stderr, arguments }
     }
 }
 
