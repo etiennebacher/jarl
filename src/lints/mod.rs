@@ -1,4 +1,4 @@
-use crate::rule_table::RuleTable;
+use crate::rule_table::{FixStatus, RuleTable};
 
 pub(crate) mod any_duplicated;
 pub(crate) mod any_is_na;
@@ -25,19 +25,19 @@ pub(crate) mod which_grepl;
 ///         easier to read.
 pub fn all_rules_and_safety() -> RuleTable {
     let mut rule_table = RuleTable::empty();
-    rule_table.enable("any_duplicated", "PERF", true, None);
-    rule_table.enable("any_is_na", "PERF", true, None);
-    rule_table.enable("class_equals", "SUSP", true, None);
-    rule_table.enable("duplicated_arguments", "SUSP", true, None);
-    rule_table.enable("empty_assignment", "READ", true, None);
-    rule_table.enable("equal_assignment", "READ", true, None);
-    rule_table.enable("equals_na", "CORR", true, None);
-    rule_table.enable("grepv", "READ", true, Some((4, 5)));
-    rule_table.enable("length_levels", "PERF,READ", true, None);
-    rule_table.enable("length_test", "CORR", true, None);
-    rule_table.enable("lengths", "PERF,READ", true, None);
-    rule_table.enable("redundant_equals", "READ", true, None);
-    rule_table.enable("true_false_symbol", "READ", false, None);
-    rule_table.enable("which_grepl", "PERF,READ", true, None);
+    rule_table.enable("any_duplicated", "PERF", FixStatus::Safe, None);
+    rule_table.enable("any_is_na", "PERF", FixStatus::Safe, None);
+    rule_table.enable("class_equals", "SUSP", FixStatus::Safe, None);
+    rule_table.enable("duplicated_arguments", "SUSP", FixStatus::Safe, None);
+    rule_table.enable("empty_assignment", "READ", FixStatus::Safe, None);
+    rule_table.enable("equal_assignment", "READ", FixStatus::Safe, None);
+    rule_table.enable("equals_na", "CORR", FixStatus::Safe, None);
+    rule_table.enable("grepv", "READ", FixStatus::Safe, Some((4, 5)));
+    rule_table.enable("length_levels", "PERF,READ", FixStatus::Safe, None);
+    rule_table.enable("length_test", "CORR", FixStatus::Safe, None);
+    rule_table.enable("lengths", "PERF,READ", FixStatus::Safe, None);
+    rule_table.enable("redundant_equals", "READ", FixStatus::Safe, None);
+    rule_table.enable("true_false_symbol", "READ", FixStatus::None, None);
+    rule_table.enable("which_grepl", "PERF,READ", FixStatus::Safe, None);
     rule_table
 }

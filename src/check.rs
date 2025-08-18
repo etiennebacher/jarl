@@ -109,7 +109,6 @@ impl Checker {
     pub(crate) fn is_rule_enabled(&mut self, rule: &str) -> bool {
         self.rules.enabled.iter().any(|r| {
             r.name == rule
-                && r.has_fix // TODO: this shouldn't affect lint reporting
                 && (self.minimum_r_version.is_none()
                     || (self.minimum_r_version.is_some()
                         && r.minimum_r_version.unwrap() >= self.minimum_r_version.unwrap()))

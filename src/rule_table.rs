@@ -2,8 +2,33 @@
 pub struct Rule {
     pub name: String,
     pub categories: Vec<String>,
-    pub has_fix: bool,
+    pub fix_status: FixStatus,
     pub minimum_r_version: Option<(u32, u32)>,
+}
+
+impl Rule {
+    pub fn has_safe_fix(&self) -> bool {
+        self.fix_status == FixStatus::Safe
+    }
+    pub fn has_unsafe_fix(&self) -> bool {
+        self.fix_status == FixStatus::Unsafe
+    }
+    pub fn has_no_fix(&self) -> bool {
+        self.fix_status == FixStatus::None
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FixStatus {
+    None,
+    Safe,
+    Unsafe,
+}
+
+impl Default for FixStatus {
+    fn default() -> Self {
+        FixStatus::None
+    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -22,13 +47,13 @@ impl RuleTable {
         &mut self,
         rule: &str,
         categories: &str,
-        has_fix: bool,
+        fix_status: FixStatus,
         minimum_r_version: Option<(u32, u32)>,
     ) {
         self.enabled.push(Rule {
             name: rule.to_string(),
             categories: categories.split(',').map(|s| s.to_string()).collect(),
-            has_fix,
+            fix_status,
             minimum_r_version,
         });
     }

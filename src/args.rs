@@ -28,6 +28,12 @@ pub struct CliArgs {
     )]
     pub unsafe_fixes: bool,
     #[arg(
+        long,
+        default_value = "false",
+        help = "Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`."
+    )]
+    pub fix_only: bool,
+    #[arg(
         short,
         long,
         default_value = "",

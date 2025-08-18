@@ -28,14 +28,19 @@ pub struct Config {
 
 pub fn build_config(args: &CliArgs, paths: Vec<PathBuf>) -> Result<Config> {
     let rules = parse_rules_cli(&args.rules);
-    let rules_to_apply: RuleTable = if args.fix && !args.unsafe_fixes {
-        rules
+
+    let rules_to_apply = match (args.fix, args.fix_only) {
+        (false, false) => rules.clone(),
+        (true, false) => rules
             .iter()
-            .filter(|r| r.has_fix)
+            .filter(|r| r.has_safe_fix())
             .cloned()
-            .collect::<RuleTable>()
-    } else {
-        rules.clone()
+            .collect::<RuleTable>(),
+        (_, true) => rules
+            .iter()
+            .filter(|r| r.has_safe_fix() || r.has_unsafe_fix())
+            .cloned()
+            .collect::<RuleTable>(),
     };
 
     let minimum_r_version = parse_r_version(&args.min_r_version)?;
