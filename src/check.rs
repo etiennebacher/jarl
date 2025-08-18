@@ -32,7 +32,7 @@ pub fn check(config: Config) -> Result<Vec<Diagnostic>, anyhow::Error> {
 }
 
 pub fn check_path(path: &PathBuf, config: Config) -> Result<Vec<Diagnostic>, anyhow::Error> {
-    if config.should_fix {
+    if config.apply_fixes || config.apply_unsafe_fixes {
         lint_fix(path, config)
     } else {
         lint_only(path, config)
@@ -109,7 +109,7 @@ impl Checker {
     pub(crate) fn is_rule_enabled(&mut self, rule: &str) -> bool {
         self.rules.enabled.iter().any(|r| {
             r.name == rule
-                && r.should_fix // TODO: this shouldn't affect lint reporting
+                && r.has_fix // TODO: this shouldn't affect lint reporting
                 && (self.minimum_r_version.is_none()
                     || (self.minimum_r_version.is_some()
                         && r.minimum_r_version.unwrap() >= self.minimum_r_version.unwrap()))

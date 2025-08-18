@@ -15,9 +15,9 @@ pub struct Config {
     /// `rules` because it may filter out rules that have unsafe fixes.
     pub rules_to_apply: RuleTable,
     /// Did the user pass the --fix flag?
-    pub should_fix: bool,
+    pub apply_fixes: bool,
     /// Did the user pass the --unsafe-fixes flag?
-    pub unsafe_fixes: bool,
+    pub apply_unsafe_fixes: bool,
     /// The minimum R version used in the project. Used to disable some rules
     /// that require functions that are not available in all R versions, e.g.
     /// grepv() introduced in R 4.5.0.
@@ -31,7 +31,7 @@ pub fn build_config(args: &CliArgs, paths: Vec<PathBuf>) -> Result<Config> {
     let rules_to_apply: RuleTable = if args.fix && !args.unsafe_fixes {
         rules
             .iter()
-            .filter(|r| r.should_fix)
+            .filter(|r| r.has_fix)
             .cloned()
             .collect::<RuleTable>()
     } else {
@@ -44,8 +44,8 @@ pub fn build_config(args: &CliArgs, paths: Vec<PathBuf>) -> Result<Config> {
         paths,
         rules,
         rules_to_apply,
-        should_fix: args.fix,
-        unsafe_fixes: args.unsafe_fixes,
+        apply_fixes: args.fix,
+        apply_unsafe_fixes: args.unsafe_fixes,
         minimum_r_version,
     })
 }
@@ -67,9 +67,9 @@ pub fn parse_r_version(min_r_version: &Option<String>) -> Result<Option<(u32, u3
     if let Some(min_r_version) = min_r_version {
         // Check if the version contains exactly one dot and two parts
         if !min_r_version.contains('.') || min_r_version.split('.').count() != 2 {
-            return Err(
-                anyhow::anyhow!("Invalid version format. Expected 'x.y', e.g., '4.3'"),
-            );
+            return Err(anyhow::anyhow!(
+                "Invalid version format. Expected 'x.y', e.g., '4.3'"
+            ));
         }
 
         // Split by dot and try to parse each part as an integer

@@ -2,7 +2,7 @@
 pub struct Rule {
     pub name: String,
     pub categories: Vec<String>,
-    pub should_fix: bool,
+    pub has_fix: bool,
     pub minimum_r_version: Option<(u32, u32)>,
 }
 
@@ -22,13 +22,13 @@ impl RuleTable {
         &mut self,
         rule: &str,
         categories: &str,
-        should_fix: bool,
+        has_fix: bool,
         minimum_r_version: Option<(u32, u32)>,
     ) {
         self.enabled.push(Rule {
             name: rule.to_string(),
             categories: categories.split(',').map(|s| s.to_string()).collect(),
-            should_fix,
+            has_fix,
             minimum_r_version,
         });
     }
