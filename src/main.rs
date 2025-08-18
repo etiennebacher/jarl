@@ -46,10 +46,11 @@ fn main() -> Result<()> {
 
     let config = build_config(&args, paths)?;
 
-    let diagnostics = check(config)?;
+    let mut diagnostics = check(config)?;
 
     if !args.fix && !diagnostics.is_empty() {
         let mut n_diagnostic_with_fixes = 0usize;
+        diagnostics.sort();
         for message in &diagnostics {
             if message.has_fix() {
                 n_diagnostic_with_fixes += 1;

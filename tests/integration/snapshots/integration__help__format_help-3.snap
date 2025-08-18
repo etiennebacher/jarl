@@ -1,0 +1,28 @@
+---
+source: tests/integration/help.rs
+expression: "Command::new(binary_path()).arg(\"format\").arg(\"-h\").run().normalize_os_executable_name()"
+---
+success: true
+exit_code: 0
+----- stdout -----
+flir: Find and Fix Lints in R Code
+
+Usage: flir [OPTIONS] [DIR]
+
+Arguments:
+  [DIR]  The directory in which to check or fix lints. [default: .]
+
+Options:
+  -f, --fix                            Automatically fix issues detected by the linter.
+  -u, --unsafe-fixes                   Include fixes that may not retain the original intent of the  code.
+  -r, --rules <RULES>                  Names of rules to include, separated by a comma (no spaces). [default: ]
+  -w, --with-timing                    Show the time taken by the function.
+  -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
+  -h, --help                           Print help
+
+For help with a specific command, see: `flir help <command>`.
+
+----- stderr -----
+
+----- args -----
+format -h

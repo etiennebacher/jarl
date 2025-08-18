@@ -1,12 +1,14 @@
+use air_fs::relativize_path;
 use biome_rowan::TextRange;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use std::fmt;
 use std::path::PathBuf;
 
 use crate::location::Location;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 // The fix to apply to the violation.
 pub struct Fix {
     pub content: String,
@@ -32,13 +34,13 @@ pub trait Violation {
     fn body(&self) -> String;
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct ViolationData {
     pub name: String,
     pub body: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 // The object that is eventually reported and printed in the console.
 pub struct Diagnostic {
     // The name and description of the violated rule.
@@ -101,11 +103,27 @@ impl fmt::Display for Diagnostic {
         write!(
             f,
             "{} [{}:{}] {} {}",
-            self.filename.to_string_lossy().white(),
+            relativize_path(self.filename.clone()).white(),
             row,
             col,
             self.message.name.red(),
             self.message.body
         )
+    }
+}
+
+impl Ord for Diagnostic {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Compare first by filename, then by range
+        match self.filename.cmp(&other.filename) {
+            Ordering::Equal => self.range.cmp(&other.range),
+            other => other,
+        }
+    }
+}
+
+impl PartialOrd for Diagnostic {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }

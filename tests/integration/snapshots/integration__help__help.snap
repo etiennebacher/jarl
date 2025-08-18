@@ -1,0 +1,13 @@
+---
+source: tests/integration/help.rs
+expression: "Command::new(binary_path()).arg(\"help\").run().normalize_os_executable_name()"
+---
+success: true
+exit_code: 0
+----- stdout -----
+Warning: No R files found under the given path(s).
+
+----- stderr -----
+
+----- args -----
+help

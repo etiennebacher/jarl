@@ -1,5 +1,0 @@
----
-source: tests/test_success.rs
-expression: stdout
----
-Warning: No R files found under the given path(s).
