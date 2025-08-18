@@ -135,3 +135,32 @@ fn test_not_all_fixable_lints() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_minimum_r_version() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    // grepv() rule only exists for R >= 4.5.0
+    let test_contents = "grep('a', x, value = TRUE)";
+    std::fs::write(directory.join(test_path), test_contents)?;
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("--min-r-version")
+            .arg("4.4")
+            .run()
+            .normalize_os_executable_name()
+    );
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("--min-r-version")
+            .arg("4.6")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
