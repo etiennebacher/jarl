@@ -36,7 +36,7 @@ pub struct AnyIsNa;
 /// See `?anyNA`
 impl Violation for AnyIsNa {
     fn name(&self) -> String {
-        "any-na".to_string()
+        "any_is_na".to_string()
     }
     fn body(&self) -> String {
         "`any(is.na(...))` is inefficient. Use `anyNA(...)` instead.".to_string()

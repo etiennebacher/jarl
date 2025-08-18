@@ -39,7 +39,7 @@ pub struct AnyDuplicated;
 /// See `?anyDuplicated`
 impl Violation for AnyDuplicated {
     fn name(&self) -> String {
-        "any-duplicated".to_string()
+        "any_duplicated".to_string()
     }
     fn body(&self) -> String {
         "`any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.".to_string()

@@ -28,7 +28,7 @@ pub fn all_rules_and_safety() -> RuleTable {
     rule_table.enable("any_duplicated", "PERF", FixStatus::Safe, None);
     rule_table.enable("any_is_na", "PERF", FixStatus::Safe, None);
     rule_table.enable("class_equals", "SUSP", FixStatus::Safe, None);
-    rule_table.enable("duplicated_arguments", "SUSP", FixStatus::Safe, None);
+    rule_table.enable("duplicated_arguments", "SUSP", FixStatus::None, None);
     rule_table.enable("empty_assignment", "READ", FixStatus::Safe, None);
     rule_table.enable("equal_assignment", "READ", FixStatus::Safe, None);
     rule_table.enable("equals_na", "CORR", FixStatus::Safe, None);
@@ -40,4 +40,28 @@ pub fn all_rules_and_safety() -> RuleTable {
     rule_table.enable("true_false_symbol", "READ", FixStatus::None, None);
     rule_table.enable("which_grepl", "PERF,READ", FixStatus::Safe, None);
     rule_table
+}
+
+pub fn all_safe_rules() -> Vec<String> {
+    all_rules_and_safety()
+        .iter()
+        .filter(|x| x.has_safe_fix())
+        .map(|x| x.name.clone())
+        .collect::<Vec<String>>()
+}
+
+pub fn all_unsafe_rules() -> Vec<String> {
+    all_rules_and_safety()
+        .iter()
+        .filter(|x| x.has_unsafe_fix())
+        .map(|x| x.name.clone())
+        .collect::<Vec<String>>()
+}
+
+pub fn all_no_rules() -> Vec<String> {
+    all_rules_and_safety()
+        .iter()
+        .filter(|x| x.has_no_fix())
+        .map(|x| x.name.clone())
+        .collect::<Vec<String>>()
 }

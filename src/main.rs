@@ -50,10 +50,14 @@ fn main() -> Result<()> {
 
     if !args.fix && !diagnostics.is_empty() {
         let mut n_diagnostic_with_fixes = 0usize;
+        let mut n_diagnostic_with_unsafe_fixes = 0usize;
         diagnostics.sort();
         for message in &diagnostics {
-            if message.has_fix() {
+            if message.has_safe_fix() {
                 n_diagnostic_with_fixes += 1;
+            }
+            if message.has_unsafe_fix() {
+                n_diagnostic_with_unsafe_fixes += 1;
             }
             println!("{message}");
         }
@@ -63,10 +67,28 @@ fn main() -> Result<()> {
         } else {
             println!("\nFound 1 error.")
         }
+
         if n_diagnostic_with_fixes > 0 {
-            println!(
-                "{n_diagnostic_with_fixes} fixable with the `--fix` option."
-            )
+            let msg = if n_diagnostic_with_unsafe_fixes == 0 {
+                format!("{n_diagnostic_with_fixes} fixable with the `--fix` option.")
+            } else {
+                let unsafe_label = if n_diagnostic_with_unsafe_fixes == 1 {
+                    "1 hidden fix".to_string()
+                } else {
+                    format!("{n_diagnostic_with_unsafe_fixes} hidden fixes")
+                };
+                format!(
+                    "{n_diagnostic_with_fixes} fixable with the `--fix` option ({unsafe_label} can be enabled with the `--unsafe-fixes` option)."
+                )
+            };
+            println!("{msg}");
+        } else if n_diagnostic_with_unsafe_fixes > 0 {
+            let label = if n_diagnostic_with_unsafe_fixes == 1 {
+                "1 fix is".to_string()
+            } else {
+                format!("{} fixes are", n_diagnostic_with_unsafe_fixes)
+            };
+            println!("{label} available with the `--fix --unsafe-fixes` option.");
         }
     } else {
         println!("All checks passed!")

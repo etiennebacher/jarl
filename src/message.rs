@@ -6,6 +6,7 @@ use std::cmp::Ordering;
 use std::fmt;
 use std::path::PathBuf;
 
+use crate::lints::{all_no_rules, all_safe_rules, all_unsafe_rules};
 use crate::location::Location;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -89,8 +90,16 @@ impl Diagnostic {
         }
     }
 
-    pub fn has_fix(&self) -> bool {
-        !self.fix.content.is_empty()
+    pub fn has_safe_fix(&self) -> bool {
+        all_safe_rules().contains(&self.message.name)
+    }
+
+    pub fn has_unsafe_fix(&self) -> bool {
+        all_unsafe_rules().contains(&self.message.name)
+    }
+
+    pub fn has_no_fix(&self) -> bool {
+        all_no_rules().contains(&self.message.name)
     }
 }
 
