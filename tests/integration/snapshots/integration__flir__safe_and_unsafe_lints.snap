@@ -1,0 +1,16 @@
+---
+source: tests/integration/flir.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).run().normalize_os_executable_name()"
+---
+success: true
+exit_code: 0
+----- stdout -----
+test.R [1:0] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
+test2.R [1:0] class_equals Use `inherits(x, 'class')` instead of comparing `class(x)` with `==` or `%in%`.
+
+Found 2 errors.
+1 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).
+
+----- stderr -----
+
+----- args -----

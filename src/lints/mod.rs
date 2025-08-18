@@ -27,7 +27,7 @@ pub fn all_rules_and_safety() -> RuleTable {
     let mut rule_table = RuleTable::empty();
     rule_table.enable("any_duplicated", "PERF", FixStatus::Safe, None);
     rule_table.enable("any_is_na", "PERF", FixStatus::Safe, None);
-    rule_table.enable("class_equals", "SUSP", FixStatus::Safe, None);
+    rule_table.enable("class_equals", "SUSP", FixStatus::Unsafe, None);
     rule_table.enable("duplicated_arguments", "SUSP", FixStatus::None, None);
     rule_table.enable("empty_assignment", "READ", FixStatus::Safe, None);
     rule_table.enable("equal_assignment", "READ", FixStatus::Safe, None);
