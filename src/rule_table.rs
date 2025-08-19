@@ -19,17 +19,14 @@ impl Rule {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default)]
 pub enum FixStatus {
+    #[default]
     None,
     Safe,
     Unsafe,
 }
 
-impl Default for FixStatus {
-    fn default() -> Self {
-        FixStatus::None
-    }
-}
 
 #[derive(Debug, Clone, Default)]
 pub struct RuleTable {
