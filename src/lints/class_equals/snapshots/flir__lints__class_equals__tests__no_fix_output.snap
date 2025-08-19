@@ -1,0 +1,10 @@
+---
+source: src/lints/class_equals/mod.rs
+expression: "get_fixed_text(vec![\"is_regression <- class(x) == 'lm'\",], \"class_equals\")"
+---
+  OLD:
+  ====
+is_regression <- class(x) == 'lm'
+  NEW:
+  ====
+is_regression <- class(x) == 'lm'

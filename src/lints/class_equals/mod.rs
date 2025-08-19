@@ -58,7 +58,7 @@ mod tests {
 
         // No fixes because it is unsafe
         assert_snapshot!(
-            "fix_output",
+            "no_fix_output",
             get_fixed_text(vec!["is_regression <- class(x) == 'lm'",], "class_equals")
         );
 
