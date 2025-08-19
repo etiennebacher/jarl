@@ -248,7 +248,7 @@ pub fn get_nested_functions_content(
         .find(|x| x.clone().unwrap().name_clause().is_none());
 
     // any(na.rm = TRUE/FALSE) and any() are valid
-    if outer_fn_name == "any" && unnamed_arg.is_none() {
+    if unnamed_arg.is_none() {
         return Ok(None);
     }
 

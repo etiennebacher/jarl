@@ -29,18 +29,35 @@ pub struct Config {
 pub fn build_config(args: &CliArgs, paths: Vec<PathBuf>) -> Result<Config> {
     let rules = parse_rules_cli(&args.rules);
 
-    let rules_to_apply = match (args.fix, args.fix_only) {
+    // Resolve the interaction between --fix and --unsafe-fixes first. Using
+    // --unsafe-fixes implies using --fix, but the opposite is not true.
+    let rules_to_apply = match (args.fix, args.unsafe_fixes) {
         (false, false) => rules.clone(),
+
         (true, false) => rules
             .iter()
-            .filter(|r| r.has_safe_fix())
+            .filter(|r| r.has_no_fix() || r.has_safe_fix())
             .cloned()
             .collect::<RuleTable>(),
+
         (_, true) => rules
             .iter()
-            .filter(|r| r.has_safe_fix() || r.has_unsafe_fix())
+            .filter(|r| r.has_no_fix() || r.has_safe_fix() || r.has_unsafe_fix())
             .cloned()
             .collect::<RuleTable>(),
+    };
+
+    // We can now drop rules that don't have any fix if the user passed
+    // --fix-only. This could maybe be done above but dealing with the three
+    // args at the same time makes it much more complex.
+    let rules_to_apply = if args.fix_only {
+        rules
+            .iter()
+            .filter(|r| !r.has_no_fix())
+            .cloned()
+            .collect::<RuleTable>()
+    } else {
+        rules_to_apply
     };
 
     let minimum_r_version = parse_r_version(&args.min_r_version)?;

@@ -58,7 +58,7 @@ pub fn all_unsafe_rules() -> Vec<String> {
         .collect::<Vec<String>>()
 }
 
-pub fn all_no_rules() -> Vec<String> {
+pub fn all_nofix_rules() -> Vec<String> {
     all_rules_and_safety()
         .iter()
         .filter(|x| x.has_no_fix())

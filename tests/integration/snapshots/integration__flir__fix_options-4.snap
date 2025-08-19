@@ -1,0 +1,13 @@
+---
+source: tests/integration/flir.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"--fix\").arg(\"--fix-only\").run().normalize_os_executable_name()"
+---
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+
+----- args -----
+--fix --fix-only

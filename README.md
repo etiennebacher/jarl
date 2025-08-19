@@ -25,7 +25,7 @@ cargo install --git https://github.com/etiennebacher/flir2
 
 ## Acknowledgements
 
-* Davis Vaughan and Lionel Henry, both from their work on Air and for their advices and answers to my questions during the development of `flir`.
+* Davis Vaughan and Lionel Henry, both for their work on Air and for their advices and answers to my questions during the development of `flir`.
 * R Consortium for funding part of the development of `flir`.
 
 

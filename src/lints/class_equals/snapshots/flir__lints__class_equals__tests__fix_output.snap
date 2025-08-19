@@ -7,60 +7,60 @@ expression: "get_unsafe_fixed_text(vec![\"is_regression <- class(x) == 'lm'\",\n
 is_regression <- class(x) == 'lm'
   NEW:
   ====
-is_regression <- class(x) == 'lm'
+is_regression <- inherits(x, 'lm')
 
   OLD:
   ====
 if (class(x) == 'character') 1
   NEW:
   ====
-if (class(x) == 'character') 1
+if (inherits(x, 'character')) 1
 
   OLD:
   ====
 is_regression <- 'lm' == class(x)
   NEW:
   ====
-is_regression <- 'lm' == class(x)
+is_regression <- inherits(x, 'lm')
 
   OLD:
   ====
 is_regression <- "lm" == class(x)
   NEW:
   ====
-is_regression <- "lm" == class(x)
+is_regression <- inherits(x, "lm")
 
   OLD:
   ====
 if ('character' %in% class(x)) 1
   NEW:
   ====
-if ('character' %in% class(x)) 1
+if (inherits(x, 'character')) 1
 
   OLD:
   ====
 if (class(x) %in% 'character') 1
   NEW:
   ====
-if (class(x) %in% 'character') 1
+if (inherits(x, 'character')) 1
 
   OLD:
   ====
 if (class(x) != 'character') 1
   NEW:
   ====
-if (class(x) != 'character') 1
+if (!inherits(x, 'character')) 1
 
   OLD:
   ====
 x[if (class(x) == 'foo') 1 else 2]
   NEW:
   ====
-x[if (class(x) == 'foo') 1 else 2]
+x[if (inherits(x, 'foo')) 1 else 2]
 
   OLD:
   ====
 class(foo(bar(y) + 1)) == 'abc'
   NEW:
   ====
-class(foo(bar(y) + 1)) == 'abc'
+inherits(foo(bar(y) + 1), 'abc')
