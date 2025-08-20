@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use crate::message::*;
 use air_r_syntax::*;
 use anyhow::{Result, anyhow};
@@ -78,24 +80,44 @@ pub fn duplicated_arguments(ast: &RCall) -> Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    if has_duplicates(&arg_names) {
+    let duplicated_arg_names = get_duplicates(&arg_names);
+
+    if duplicated_arg_names.len() > 0 {
         let range = ast.clone().into_syntax().text_trimmed_range();
-        let diagnostic = Diagnostic::new(DuplicatedArguments, range, Fix::empty());
+        let diagnostic = Diagnostic::new(
+            ViolationData::new(
+                "duplicated_arguments".to_string(),
+                [
+                    "Avoid duplicate arguments in function calls. Duplicated arguments: ",
+                    &duplicated_arg_names
+                        .iter()
+                        .map(|s| format!("\"{}\"", s))
+                        .collect::<Vec<String>>()
+                        .join(", "),
+                ]
+                .join("")
+                .to_string(),
+            ),
+            range,
+            Fix::empty(),
+        );
         return Ok(Some(diagnostic));
     }
 
     Ok(None)
 }
 
-fn has_duplicates(v: &[String]) -> bool {
-    use std::collections::HashSet;
-    let mut seen = HashSet::new();
-
-    for item in v {
-        if !seen.insert(item) {
-            return true;
-        }
+fn get_duplicates(values: &[String]) -> Vec<String> {
+    let mut counts = HashMap::new();
+    for item in values {
+        *counts.entry(item).or_insert(0) += 1;
     }
+    let duplicates: HashSet<String> = counts
+        .into_iter()
+        .filter(|(_, count)| *count > 1)
+        .map(|(item, _)| item.clone())
+        .collect();
 
-    false
+    let duplicates_vec: Vec<String> = duplicates.into_iter().collect();
+    duplicates_vec
 }

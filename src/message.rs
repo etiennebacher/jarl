@@ -64,6 +64,9 @@ impl<T: Violation> From<T> for ViolationData {
 }
 
 impl ViolationData {
+    pub fn new(name: String, body: String) -> Self {
+        Self { name, body }
+    }
     pub fn empty() -> Self {
         Self { name: "".to_string(), body: "".to_string() }
     }
