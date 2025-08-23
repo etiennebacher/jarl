@@ -53,8 +53,7 @@ pub fn sample_int(ast: &RCall) -> Result<Option<Diagnostic>> {
 
     // Is the `n` argument of the form `1:x`? If so, keep the `x` part so it
     // be reused in the fix.
-    let mut right_value = "".to_string();
-    if let Some(n) = n {
+    let right_value = if let Some(n) = n {
         let n_value = n.value().unwrap();
         if let Some(n_value) = n_value.as_r_binary_expression() {
             let RBinaryExpressionFields { left, operator, right } = n_value.as_fields();
@@ -65,13 +64,13 @@ pub fn sample_int(ast: &RCall) -> Result<Option<Diagnostic>> {
             if operator?.kind() != RSyntaxKind::COLON {
                 return Ok(None);
             }
-            right_value = right?.to_trimmed_text().to_string();
+            right?.to_trimmed_text().to_string()
         } else {
             return Ok(None);
         }
     } else {
         return Ok(None);
-    }
+    };
 
     let other_args = drop_arg_by_name_or_position(&args, "n", 1);
     let inner_content = match other_args {
