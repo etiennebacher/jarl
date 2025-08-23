@@ -8,6 +8,7 @@ use crate::lints::grepv::grepv::grepv;
 use crate::lints::length_levels::length_levels::length_levels;
 use crate::lints::length_test::length_test::length_test;
 use crate::lints::lengths::lengths::lengths;
+use crate::lints::sample_int::sample_int::sample_int;
 use crate::lints::which_grepl::which_grepl::which_grepl;
 
 pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
@@ -31,6 +32,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled("lengths") {
         checker.report_diagnostic(lengths(r_expr)?);
+    }
+    if checker.is_rule_enabled("sample_int") {
+        checker.report_diagnostic(sample_int(r_expr)?);
     }
     if checker.is_rule_enabled("which_grepl") {
         checker.report_diagnostic(which_grepl(r_expr)?);
