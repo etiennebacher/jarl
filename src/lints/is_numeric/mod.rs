@@ -5,61 +5,102 @@ mod tests {
     use crate::utils_test::*;
 
     #[test]
-    fn test_no_lint_any_duplicated() {
-        expect_no_lint("any(x)", "any_duplicated", None);
-        expect_no_lint("duplicated(x)", "any_duplicated", None);
-        expect_no_lint("any(!duplicated(x))", "any_duplicated", None);
-        expect_no_lint("any(!duplicated(foo(x)))", "any_duplicated", None);
-        expect_no_lint("any(na.rm = TRUE)", "any_duplicated", None);
-        expect_no_lint("any()", "any_duplicated", None);
+    fn test_no_lint_is_numeric() {
+        expect_no_lint("is.numeric(x) || is.integer(y)", "is_numeric", None);
+        expect_no_lint("is.numeric(x) || is.integer(foo(x))", "is_numeric", None);
+        expect_no_lint("is.numeric(x) || is.integer(x[[1]])", "is_numeric", None);
+        expect_no_lint("class(x) %in% 1:10", "is_numeric", None);
+        expect_no_lint("class(x) %in% 'numeric'", "is_numeric", None);
+        expect_no_lint(
+            "class(x) %in% c('numeric', 'integer', 'factor')",
+            "is_numeric",
+            None,
+        );
+        expect_no_lint(
+            "class(x) %in% c('numeric', 'integer', y)",
+            "is_numeric",
+            None,
+        );
     }
 
     #[test]
-    fn test_lint_any_duplicated() {
+    fn test_lint_is_numeric() {
         use insta::assert_snapshot;
 
-        let expected_message = "`any(duplicated(...))` is inefficient";
+        let expected_message = "Use `is.numeric(x)` instead of";
         expect_lint(
-            "any(duplicated(x))",
+            "is.numeric(x) || is.integer(x)",
             expected_message,
-            "any_duplicated",
+            "is_numeric",
             None,
         );
+
+        // order doesn't matter
         expect_lint(
-            "any(duplicated(foo(x)))",
+            "is.integer(x) || is.numeric(x)",
             expected_message,
-            "any_duplicated",
+            "is_numeric",
             None,
         );
+
+        // identical expressions match too
         expect_lint(
-            "any(duplicated(x), na.rm = TRUE)",
+            "is.integer(DT$x) || is.numeric(DT$x)",
             expected_message,
-            "any_duplicated",
+            "is_numeric",
             None,
         );
+
+        // line breaks don't matter
         expect_lint(
-            "any(na.rm = TRUE, duplicated(x))",
+            "
+            if (
+              is.integer(x)
+              || is.numeric(x)
+            ) TRUE
+          ",
             expected_message,
-            "any_duplicated",
+            "is_numeric",
             None,
         );
+
+        // caught when nesting
         expect_lint(
-            "any(duplicated(x)); 1 + 1; any(duplicated(y))",
+            "all(y > 5) && (is.integer(x) || is.numeric(x))",
             expected_message,
-            "any_duplicated",
+            "is_numeric",
+            None,
+        );
+
+        // implicit nesting
+        expect_lint(
+            "is.integer(x) || is.numeric(x) || is.logical(x)",
+            expected_message,
+            "is_numeric",
             None,
         );
         assert_snapshot!(
             "fix_output",
             get_fixed_text(
                 vec![
-                    "any(duplicated(x))",
-                    "any(duplicated(foo(x)))",
-                    "any(duplicated(x), na.rm = TRUE)",
+                    "is.numeric(x) || is.integer(x)",
+                    // order doesn't matter
+                    "is.integer(x) || is.numeric(x)",
+                    // identical expressions match too
+                    "is.integer(DT$x) || is.numeric(DT$x)",
+                    // line breaks don't matter
+                    "if (
+  is.integer(x)
+  || is.numeric(x)
+) TRUE",
+                    // caught when nesting
+                    "all(y > 5) && (is.integer(x) || is.numeric(x))",
+                    // implicit nesting
+                    "is.integer(x) || is.numeric(x) || is.logical(x)",
                 ],
-                "any_duplicated",
+                "is_numeric",
                 None
             )
-        );
+        )
     }
 }
