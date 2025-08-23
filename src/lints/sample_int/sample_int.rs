@@ -52,7 +52,7 @@ pub fn sample_int(ast: &RCall) -> Result<Option<Diagnostic>> {
     let n = get_arg_by_name_then_position(&args, "n", 1);
 
     // Is the `n` argument of the form `1:x`? If so, keep the `x` part so it
-    // be reused in the fix.
+    // can be reused in the fix.
     let right_value = if let Some(n) = n {
         let n_value = n.value().unwrap();
         if let Some(n_value) = n_value.as_r_binary_expression() {
