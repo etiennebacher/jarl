@@ -1,6 +1,6 @@
 ---
 source: src/lints/sample_int/mod.rs
-expression: "get_fixed_text(vec![\"sample(1:10, 2)\", \"sample(1L:10L, 2)\",\n\"sample(n = 1:10, 2)\", \"sample(2, n = 1:10)\",\n\"sample(replace = TRUE, letters)\",], \"sample_int\", None)"
+expression: "get_fixed_text(vec![\"sample(1:10, 2)\", \"sample(1L:10L, 2)\",\n\"sample(n = 1:10, 2)\", \"sample(2, n = 1:10)\", \"sample(size = 2, n = 1:10)\",\n\"sample(replace = TRUE, letters)\",], \"sample_int\", None)"
 ---
   OLD:
   ====
@@ -29,6 +29,13 @@ sample(2, n = 1:10)
   NEW:
   ====
 sample.int(10, 2)
+
+  OLD:
+  ====
+sample(size = 2, n = 1:10)
+  NEW:
+  ====
+sample.int(10, size = 2)
 
   OLD:
   ====

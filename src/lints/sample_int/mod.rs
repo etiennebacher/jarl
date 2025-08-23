@@ -46,6 +46,7 @@ mod tests {
                     "sample(1L:10L, 2)",
                     "sample(n = 1:10, 2)",
                     "sample(2, n = 1:10)",
+                    "sample(size = 2, n = 1:10)",
                     "sample(replace = TRUE, letters)",
                 ],
                 "sample_int",
