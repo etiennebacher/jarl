@@ -60,7 +60,6 @@ pub fn lengths(ast: &RCall) -> Result<Option<Diagnostic>> {
             .context("Found named argument without any value")?
             .into_syntax()
             .text_trimmed()
-            .to_string()
             == "length"
         {
             let range = ast.clone().into_syntax().text_trimmed_range();
@@ -70,7 +69,7 @@ pub fn lengths(ast: &RCall) -> Result<Option<Diagnostic>> {
                 Fix {
                     content: format!(
                         "lengths({})",
-                        arg_x.unwrap().into_syntax().text_trimmed().to_string()
+                        arg_x.unwrap().into_syntax().text_trimmed()
                     ),
                     start: range.start().into(),
                     end: range.end().into(),
