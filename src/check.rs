@@ -1,3 +1,4 @@
+use crate::error::ParseError;
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
 use air_r_syntax::RForStatementFields;
@@ -17,18 +18,15 @@ use crate::message::*;
 use crate::rule_table::RuleTable;
 use crate::utils::*;
 
-pub fn check(config: Config) -> Result<Vec<Diagnostic>, anyhow::Error> {
-    let result: Result<Vec<Diagnostic>, anyhow::Error> = config
+pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
+    config
         .paths
         .par_iter()
-        .map(|file| check_path(file, config.clone()))
-        .flat_map(|result| match result {
-            Ok(checks) => checks.into_par_iter().map(Ok).collect::<Vec<_>>(),
-            Err(e) => vec![Err(e)],
+        .map(|file| {
+            let res = check_path(file, config.clone());
+            (relativize_path(file), res)
         })
-        .collect();
-
-    result
+        .collect()
 }
 
 pub fn check_path(path: &PathBuf, config: Config) -> Result<Vec<Diagnostic>, anyhow::Error> {
@@ -49,16 +47,18 @@ pub fn lint_only(path: &PathBuf, config: Config) -> Result<Vec<Diagnostic>, anyh
 
     Ok(checks)
 }
+
 pub fn lint_fix(path: &PathBuf, config: Config) -> Result<Vec<Diagnostic>, anyhow::Error> {
+    let path = relativize_path(path);
     let mut has_skipped_fixes = true;
     let mut checks: Vec<Diagnostic>;
 
     loop {
-        let contents = fs::read_to_string(Path::new(path))
-            .with_context(|| format!("Failed to read file: {}", path.display()))?;
+        let contents = fs::read_to_string(Path::new(&path))
+            .with_context(|| format!("Failed to read file: {path}",))?;
 
-        checks = get_checks(&contents, path, config.clone())
-            .with_context(|| format!("Failed to get checks for file: {}", path.display()))?;
+        checks = get_checks(&contents, &PathBuf::from(&path), config.clone())
+            .with_context(|| format!("Failed to get checks for file: {path}",))?;
 
         if !has_skipped_fixes {
             break;
@@ -67,8 +67,7 @@ pub fn lint_fix(path: &PathBuf, config: Config) -> Result<Vec<Diagnostic>, anyho
         let (new_has_skipped_fixes, fixed_text) = apply_fixes(&checks, &contents);
         has_skipped_fixes = new_has_skipped_fixes;
 
-        fs::write(path, fixed_text)
-            .with_context(|| format!("Failed to write file: {}", path.display()))?;
+        fs::write(&path, fixed_text).with_context(|| format!("Failed to write file: {path}",))?;
     }
 
     Ok(checks)
@@ -127,7 +126,7 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
     let parsed = air_r_parser::parse(contents, parser_options);
 
     if parsed.has_error() {
-        return Err(anyhow::anyhow!("Couldn't parse {}", file.to_string_lossy()));
+        return Err(ParseError { filename: file.to_path_buf() }.into());
     }
 
     let syntax = &parsed.syntax();

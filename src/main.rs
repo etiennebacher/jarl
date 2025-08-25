@@ -8,6 +8,8 @@ use colored::Colorize;
 use flir::args::CliArgs;
 use flir::check::check;
 use flir::config::build_config;
+use flir::error::ParseError;
+use flir::message::Diagnostic;
 
 use anyhow::Result;
 use clap::Parser;
@@ -57,31 +59,65 @@ fn run() -> Result<ExitCode> {
 
     let config = build_config(&args, paths)?;
 
-    let mut diagnostics = check(config)?;
+    let file_results = check(config);
 
-    if diagnostics.is_empty() {
-        println!("All checks passed!");
-        return Ok(ExitCode::from(0));
+    let mut all_errors = Vec::new();
+    let mut all_diagnostics = Vec::new();
+
+    for (path, result) in file_results {
+        match result {
+            Ok(diagnostics) => {
+                if !diagnostics.is_empty() {
+                    all_diagnostics.push((path, diagnostics));
+                }
+            }
+            Err(e) => {
+                all_errors.push((path, e));
+            }
+        }
     }
 
-    if !args.fix {
-        let mut n_diagnostic_with_fixes = 0usize;
-        let mut n_diagnostic_with_unsafe_fixes = 0usize;
-        diagnostics.sort();
-        for message in &diagnostics {
-            if message.has_safe_fix() {
-                n_diagnostic_with_fixes += 1;
+    // First, print all parsing errors
+    if !all_errors.is_empty() {
+        for (_path, err) in &all_errors {
+            let root_cause = err.chain().last().unwrap();
+            if root_cause.is::<ParseError>() {
+                eprintln!("{}: {}", "Error".red().bold(), root_cause);
+            } else {
+                eprintln!("{}: {}", "Error".red().bold(), err);
             }
-            if message.has_unsafe_fix() {
-                n_diagnostic_with_unsafe_fixes += 1;
-            }
-            println!("{message}");
         }
+    }
 
-        if diagnostics.len() > 1 {
-            println!("\nFound {} errors.", diagnostics.len())
+    // Then, print all diagnostics
+    let mut total_diagnostics = 0;
+    let mut n_diagnostic_with_fixes = 0usize;
+    let mut n_diagnostic_with_unsafe_fixes = 0usize;
+
+    // Flatten all diagnostics into a single vector and sort globally
+    let mut all_diagnostics_flat: Vec<&Diagnostic> = all_diagnostics
+        .iter()
+        .flat_map(|(_path, diagnostics)| diagnostics.iter())
+        .collect();
+
+    all_diagnostics_flat.sort();
+
+    for message in &all_diagnostics_flat {
+        if message.has_safe_fix() {
+            n_diagnostic_with_fixes += 1;
+        }
+        if message.has_unsafe_fix() {
+            n_diagnostic_with_unsafe_fixes += 1;
+        }
+        println!("{message}");
+        total_diagnostics += 1;
+    }
+
+    if total_diagnostics > 0 {
+        if total_diagnostics > 1 {
+            println!("\nFound {} errors.", total_diagnostics);
         } else {
-            println!("\nFound 1 error.")
+            println!("\nFound 1 error.");
         }
 
         if n_diagnostic_with_fixes > 0 {
@@ -106,8 +142,16 @@ fn run() -> Result<ExitCode> {
             };
             println!("{label} available with the `--fix --unsafe-fixes` option.");
         }
-    } else {
-        println!("All checks passed!")
+    } else if all_errors.is_empty() {
+        println!("All checks passed!");
+    }
+
+    if !all_errors.is_empty() {
+        return Ok(ExitCode::from(1));
+    }
+
+    if all_diagnostics.is_empty() {
+        return Ok(ExitCode::from(0));
     }
 
     if let Some(start) = start {

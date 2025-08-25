@@ -37,6 +37,27 @@ fn test_parsing_error() -> anyhow::Result<()> {
 }
 
 #[test]
+fn test_parsing_error_for_some_files() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let path = "test.R";
+    std::fs::write(directory.join(path), "f <-")?;
+
+    let path = "test2.R";
+    std::fs::write(directory.join(path), "any(is.na(x))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
 fn test_parsing_weird_raw_strings() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();
