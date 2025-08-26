@@ -237,6 +237,7 @@ pub fn check_expression(
             check_expression(&body?, checker)?;
         }
         AnyRExpression::RSubset(children) => {
+            analyze::subset::subset(children, checker)?;
             let arguments: Vec<_> = children.arguments()?.items().into_iter().collect();
 
             for expr in arguments {
