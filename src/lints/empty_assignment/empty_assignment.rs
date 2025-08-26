@@ -45,7 +45,7 @@ pub fn empty_assignment(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
     };
 
     if value_is_empty {
-        let range = ast.clone().into_syntax().text_trimmed_range();
+        let range = ast.syntax().text_trimmed_range();
         let diagnostic = Diagnostic::new(EmptyAssignment, range, Fix::empty());
         return Ok(Some(diagnostic));
     }

@@ -77,7 +77,7 @@ pub fn sample_int(ast: &RCall) -> Result<Option<Diagnostic>> {
         Some(x) => {
             let out = x
                 .iter()
-                .map(|x| x.clone().into_syntax().text_trimmed().to_string())
+                .map(|x| x.syntax().text_trimmed().to_string())
                 .collect::<Vec<_>>()
                 .join(", ");
 
@@ -85,7 +85,7 @@ pub fn sample_int(ast: &RCall) -> Result<Option<Diagnostic>> {
         }
         None => right_value,
     };
-    let range = ast.clone().into_syntax().text_trimmed_range();
+    let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         SampleInt,
         range,

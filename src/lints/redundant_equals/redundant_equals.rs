@@ -71,7 +71,7 @@ pub fn redundant_equals(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
                 return Ok(None);
             };
 
-            let range = ast.clone().into_syntax().text_trimmed_range();
+            let range = ast.syntax().text_trimmed_range();
             Diagnostic::new(
                 RedundantEquals,
                 range,
@@ -94,7 +94,7 @@ pub fn redundant_equals(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
             } else {
                 return Ok(None);
             };
-            let range = ast.clone().into_syntax().text_trimmed_range();
+            let range = ast.syntax().text_trimmed_range();
             Diagnostic::new(
                 RedundantEquals,
                 range,

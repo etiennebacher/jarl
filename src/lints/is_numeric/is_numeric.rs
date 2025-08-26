@@ -83,7 +83,7 @@ pub fn is_numeric(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
         return Ok(None);
     };
 
-    let range = ast.clone().into_syntax().text_trimmed_range();
+    let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         IsNumeric,
         range,

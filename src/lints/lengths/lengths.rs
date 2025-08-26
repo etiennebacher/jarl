@@ -62,15 +62,12 @@ pub fn lengths(ast: &RCall) -> Result<Option<Diagnostic>> {
             .text_trimmed()
             == "length"
         {
-            let range = ast.clone().into_syntax().text_trimmed_range();
+            let range = ast.syntax().text_trimmed_range();
             let diagnostic = Diagnostic::new(
                 Lengths,
                 range,
                 Fix {
-                    content: format!(
-                        "lengths({})",
-                        arg_x.unwrap().into_syntax().text_trimmed()
-                    ),
+                    content: format!("lengths({})", arg_x.unwrap().into_syntax().text_trimmed()),
                     start: range.start().into(),
                     end: range.end().into(),
                 },

@@ -47,7 +47,7 @@ pub fn any_is_na(ast: &RCall) -> Result<Option<Diagnostic>> {
     let inner_content = get_nested_functions_content(ast, "any", "is.na")?;
 
     if let Some(inner_content) = inner_content {
-        let range = ast.clone().into_syntax().text_trimmed_range();
+        let range = ast.syntax().text_trimmed_range();
         let diagnostic = Diagnostic::new(
             AnyIsNa,
             range,

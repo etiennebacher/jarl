@@ -126,7 +126,7 @@ pub fn class_equals(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
         class_name = left.to_trimmed_text();
     };
 
-    let range = ast.clone().into_syntax().text_trimmed_range();
+    let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ClassEquals,
         range,

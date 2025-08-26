@@ -81,7 +81,7 @@ pub fn length_test(ast: &RCall) -> Result<Option<Diagnostic>> {
     }
 
     if arg_is_binary_expr {
-        let range = ast.clone().into_syntax().text_trimmed_range();
+        let range = ast.syntax().text_trimmed_range();
         let diagnostic = Diagnostic::new(
             LengthTest,
             range,

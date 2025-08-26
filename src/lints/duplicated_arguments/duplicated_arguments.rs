@@ -96,7 +96,7 @@ pub fn duplicated_arguments(ast: &RCall) -> Result<Option<Diagnostic>> {
     }
 
     if has_duplicates(&arg_names) {
-        let range = ast.clone().into_syntax().text_trimmed_range();
+        let range = ast.syntax().text_trimmed_range();
         let diagnostic = Diagnostic::new(DuplicatedArguments, range, Fix::empty());
         return Ok(Some(diagnostic));
     }
