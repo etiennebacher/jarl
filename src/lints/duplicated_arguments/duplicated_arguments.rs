@@ -105,12 +105,13 @@ pub fn duplicated_arguments(ast: &RCall) -> Result<Option<Diagnostic>> {
             ViolationData::new(
                 "duplicated_arguments".to_string(),
                 [
-                    "Avoid duplicate arguments in function calls. Duplicated arguments: ",
+                    "Avoid duplicate arguments in function calls. Duplicated argument(s): ",
                     &duplicated_arg_names
                         .iter()
                         .map(|s| format!("\"{}\"", s))
                         .collect::<Vec<String>>()
                         .join(", "),
+                    ".",
                 ]
                 .join("")
                 .to_string(),
