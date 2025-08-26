@@ -5,8 +5,6 @@ use air_r_syntax::*;
 use anyhow::{Result, anyhow};
 use biome_rowan::AstNode;
 
-pub struct DuplicatedArguments;
-
 /// ## What it does
 ///
 /// Checks for duplicated arguments in function calls.
@@ -26,15 +24,6 @@ pub struct DuplicatedArguments;
 /// ```r
 /// list(x = 1, x = 2)
 /// ```
-impl Violation for DuplicatedArguments {
-    fn name(&self) -> String {
-        "duplicated_arguments".to_string()
-    }
-    fn body(&self) -> String {
-        "Avoid duplicate arguments in function calls.".to_string()
-    }
-}
-
 pub fn duplicated_arguments(ast: &RCall) -> Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
 
