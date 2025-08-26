@@ -1,5 +1,5 @@
 use crate::message::*;
-use crate::utils::get_first_arg;
+use crate::utils::get_arg_by_position;
 use air_r_syntax::*;
 use anyhow::Result;
 use biome_rowan::AstNode;
@@ -56,6 +56,8 @@ pub fn class_equals(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
     let operator = operator?;
+    let left = left?;
+    let right = right?;
 
     if operator.kind() != RSyntaxKind::EQUAL2
         && operator.kind() != RSyntaxKind::NOT_EQUAL
@@ -64,21 +66,44 @@ pub fn class_equals(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
         return Ok(None);
     };
 
-    let lhs = left?.into_syntax();
-    let rhs = right?.into_syntax();
+    let mut left_is_class = false;
+    let mut right_is_class = false;
 
-    let left_is_class = lhs
-        .first_child()
-        .map(|x| x.text_trimmed() == "class")
-        .unwrap_or(false);
-    let right_is_class = rhs
-        .first_child()
-        .map(|x| x.text_trimmed() == "class")
-        .unwrap_or(false);
-    let left_is_string = lhs.kind() == RSyntaxKind::R_STRING_VALUE;
-    let right_is_string = rhs.kind() == RSyntaxKind::R_STRING_VALUE;
+    // Return early if left is neither a function call nor a string.
+    if let Some(left) = left.as_r_call() {
+        if left.function()?.to_trimmed_text() != "class" {
+            return Ok(None);
+        }
+        left_is_class = true;
+    } else if let Some(left) = left.as_any_r_value() {
+        if let Some(_left) = left.as_r_string_value() {
+        } else {
+            return Ok(None);
+        }
+    } else {
+        return Ok(None);
+    }
 
-    if (!left_is_class && !right_is_class) || (!left_is_string && !right_is_string) {
+    // Return early if right is neither a function call nor a string.
+    if let Some(right) = right.as_r_call() {
+        if right.function()?.to_trimmed_text() != "class" {
+            return Ok(None);
+        }
+        right_is_class = true;
+    } else if let Some(right) = right.as_any_r_value() {
+        if let Some(_right) = right.as_r_string_value() {
+        } else {
+            return Ok(None);
+        }
+    } else {
+        return Ok(None);
+    }
+
+    // At this point, we know they're either string or class().
+    let left_is_string = !left_is_class;
+    let right_is_string = !right_is_class;
+
+    if !(left_is_class && right_is_string) & !(left_is_string && right_is_class) {
         return Ok(None);
     }
 
@@ -92,14 +117,16 @@ pub fn class_equals(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
     let class_name;
 
     if left_is_class {
-        fun_content = get_first_arg(&lhs).map(|x| x.text_trimmed());
-        class_name = rhs.text_trimmed();
+        let args = left.as_r_call().unwrap().arguments()?.items();
+        fun_content = get_arg_by_position(&args, 1).map(|x| x.to_trimmed_text());
+        class_name = right.to_trimmed_text();
     } else {
-        fun_content = get_first_arg(&rhs).map(|x| x.text_trimmed());
-        class_name = lhs.text_trimmed();
+        let args = right.as_r_call().unwrap().arguments()?.items();
+        fun_content = get_arg_by_position(&args, 1).map(|x| x.to_trimmed_text());
+        class_name = left.to_trimmed_text();
     };
 
-    let range = ast.clone().into_syntax().text_trimmed_range();
+    let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ClassEquals,
         range,

@@ -33,19 +33,15 @@ lto = "thin"
 colored = "2.1.0"
 rayon = "1.10.0"
 serde = "1.0.215"
-air_r_parser = { git = "https://github.com/posit-dev/air", rev = "2ef782d816678fe23378eb802d81eb79f981b1b2" }
-air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "2ef782d816678fe23378eb802d81eb79f981b1b2" }
-air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air", rev = "2ef782d816678fe23378eb802d81eb79f981b1b2" }
-air_fs = { package = "fs", git = "https://github.com/posit-dev/air", rev = "2ef782d816678fe23378eb802d81eb79f981b1b2" }
+air_r_parser = { git = "https://github.com/posit-dev/air", rev = "82751bec9d7b0297282c8e24b813e71bc4d461f6" }
+air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "82751bec9d7b0297282c8e24b813e71bc4d461f6" }
+air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air", rev = "82751bec9d7b0297282c8e24b813e71bc4d461f6" }
+air_fs = { package = "fs", git = "https://github.com/posit-dev/air", rev = "82751bec9d7b0297282c8e24b813e71bc4d461f6" }
 clap = { version = "4.5.21", features = ["derive"] }
-walkdir = "2.5.0"
 anyhow = "1.0.94"
 tempfile = "3.14.0"
 # MUST BE SAME AS IN `air`
-biome_rowan = { git = "https://github.com/biomejs/biome", rev = "2648fa4201be4afd26f44eca1a4e77aac0a67272" }
-rustc-hash = "2.1.1"
-rust-lapper = "1.1.0"
-smallvec = "1.13.2"
+biome_rowan = { git = "https://github.com/biomejs/biome", rev = "c13fc60726883781e4530a4437724273b560c8e0" }
 assert_cmd = "2.0.17"
 
 

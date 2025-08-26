@@ -1,0 +1,50 @@
+---
+source: src/lints/is_numeric/mod.rs
+expression: "get_fixed_text(vec![\"is.numeric(x) || is.integer(x)\",\n\"is.integer(x) || is.numeric(x)\", \"is.integer(DT$x) || is.numeric(DT$x)\",\n\"if (\n  is.integer(x)\n  || is.numeric(x)\n) TRUE\",\n\"all(y > 5) && (is.integer(x) || is.numeric(x))\",\n\"is.integer(x) || is.numeric(x) || is.logical(x)\",], \"is_numeric\", None)"
+---
+  OLD:
+  ====
+is.numeric(x) || is.integer(x)
+  NEW:
+  ====
+is.numeric(x)
+
+  OLD:
+  ====
+is.integer(x) || is.numeric(x)
+  NEW:
+  ====
+is.numeric(x)
+
+  OLD:
+  ====
+is.integer(DT$x) || is.numeric(DT$x)
+  NEW:
+  ====
+is.numeric(DT$x)
+
+  OLD:
+  ====
+if (
+  is.integer(x)
+  || is.numeric(x)
+) TRUE
+  NEW:
+  ====
+if (
+  is.numeric(x)
+) TRUE
+
+  OLD:
+  ====
+all(y > 5) && (is.integer(x) || is.numeric(x))
+  NEW:
+  ====
+all(y > 5) && (is.numeric(x))
+
+  OLD:
+  ====
+is.integer(x) || is.numeric(x) || is.logical(x)
+  NEW:
+  ====
+is.numeric(x) || is.logical(x)

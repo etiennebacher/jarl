@@ -65,11 +65,15 @@ pub fn grepv(ast: &RCall) -> Result<Option<Diagnostic>> {
     let other_args = drop_arg_by_name_or_position(&items, "value", 5);
 
     let inner_content = match other_args {
-        Some(x) => x.iter().map(|x| x.text()).collect::<Vec<_>>().join(", "),
+        Some(x) => x
+            .iter()
+            .map(|x| x.syntax().text_trimmed().to_string())
+            .collect::<Vec<_>>()
+            .join(", "),
         None => "".to_string(),
     };
 
-    let range = ast.clone().into_syntax().text_trimmed_range();
+    let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         Grepv,
         range,

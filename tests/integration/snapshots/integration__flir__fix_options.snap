@@ -5,7 +5,9 @@ expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"--fi
 success: false
 exit_code: 1
 ----- stdout -----
-All checks passed!
+test.R [3:1] duplicated_arguments Avoid duplicate arguments in function calls.
+
+Found 1 error.
 
 ----- stderr -----
 

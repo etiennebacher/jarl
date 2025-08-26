@@ -70,8 +70,8 @@ pub fn length_test(ast: &RCall) -> Result<Option<Diagnostic>> {
                         || operator.kind() == NOT_EQUAL;
 
                     operator_text.push_str(operator.text_trimmed());
-                    lhs.push_str(&left?.text());
-                    rhs.push_str(&right?.text());
+                    lhs.push_str(&left?.into_syntax().text_trimmed().to_string());
+                    rhs.push_str(&right?.into_syntax().text_trimmed().to_string());
                 }
             }
         }
@@ -81,7 +81,7 @@ pub fn length_test(ast: &RCall) -> Result<Option<Diagnostic>> {
     }
 
     if arg_is_binary_expr {
-        let range = ast.clone().into_syntax().text_trimmed_range();
+        let range = ast.syntax().text_trimmed_range();
         let diagnostic = Diagnostic::new(
             LengthTest,
             range,

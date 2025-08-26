@@ -2,16 +2,16 @@ use crate::location::Location;
 use crate::message::Diagnostic;
 use air_r_syntax::{
     AnyRExpression, RArgument, RArgumentList, RCall, RCallFields, RExtractExpressionFields,
-    RSyntaxKind, RSyntaxNode,
+    RSyntaxNode,
 };
 use anyhow::{Result, anyhow};
 use biome_rowan::AstNode;
 use biome_rowan::AstSeparatedList;
 
+/// Find the positions of the new line characters in the given AST.
 pub fn find_new_lines(ast: &RSyntaxNode) -> Result<Vec<usize>> {
     match ast.first_child() {
         Some(rootnode) => Ok(rootnode
-            .text()
             .to_string()
             .match_indices("\n")
             .map(|x| x.0)
@@ -22,6 +22,21 @@ pub fn find_new_lines(ast: &RSyntaxNode) -> Result<Vec<usize>> {
     }
 }
 
+/// Takes the start of the range of a Diagnostic and the indices for the new
+/// lines. Returns the (row, col) position of the Diagnostic in the file.
+///
+/// The row position is the 1 + the number of new line characters before the
+/// start of the range.
+/// "1 + 1\nany(is.na(x))"
+/// -> there is one \n so this diagnostic appears on line 2.
+///
+/// The col position is the number of characters between the start of the range
+/// and the last new line character before the start of the range.
+/// "1 + 1\nany(is.na(x))"
+/// -> the range of the diagnostic starts immediately following \n so it's in
+///    column 0
+///
+/// Note that the row position is 1-indexed but the column position is 0-indexed.
 pub fn find_row_col(start: usize, loc_new_lines: &[usize]) -> (usize, usize) {
     let new_lines_before = loc_new_lines
         .iter()
@@ -38,6 +53,8 @@ pub fn find_row_col(start: usize, loc_new_lines: &[usize]) -> (usize, usize) {
     (row, col)
 }
 
+/// Takes a vector of `Diagnostic`s, all of which come with a range, and convert
+/// this range into actual (row, col) location using the position of new lines.
 pub fn compute_lints_location(
     diagnostics: Vec<Diagnostic>,
     loc_new_lines: &[usize],
@@ -53,6 +70,7 @@ pub fn compute_lints_location(
         .collect()
 }
 
+/// Takes a list of arguments and tries to extract the one named `name`.
 pub fn get_arg_by_name(args: &RArgumentList, name: &str) -> Option<RArgument> {
     args.into_iter()
         .find(|x| {
@@ -69,10 +87,16 @@ pub fn get_arg_by_name(args: &RArgumentList, name: &str) -> Option<RArgument> {
         .map(|x| x.unwrap())
 }
 
+/// Takes a list of arguments and tries to extract the one in position `pos`.
+/// Argument `pos` is 1-indexed.
 pub fn get_arg_by_position(args: &RArgumentList, pos: usize) -> Option<RArgument> {
     args.iter().nth(pos - 1).map(|x| x.unwrap())
 }
 
+/// Takes a list of arguments and first tries to extract the one named `name`.
+/// If it doesn't find any argument with this name, it tries to get the
+/// argument in position `pos`.
+/// Returns None if this second attempt also fails.
 pub fn get_arg_by_name_then_position(
     args: &RArgumentList,
     name: &str,
@@ -84,6 +108,14 @@ pub fn get_arg_by_name_then_position(
     }
 }
 
+/// Checks whether an argument named `name` or in position `pos` exist in the
+/// argument list passed as input.
+pub fn is_argument_present(args: &RArgumentList, name: &str, position: usize) -> bool {
+    get_arg_by_name_then_position(args, name, position).is_some()
+}
+
+/// Takes a list of arguments and removes the one that is named `name` or the
+/// one in position `pos` if no argument was found in the first step.
 pub fn drop_arg_by_name_or_position(
     args: &RArgumentList,
     name: &str,
@@ -129,33 +161,12 @@ pub fn drop_arg_by_name_or_position(
     }
 }
 
-pub fn is_argument_present(args: &RArgumentList, name: &str, position: usize) -> bool {
-    get_arg_by_name_then_position(args, name, position).is_some()
-}
-
-pub fn get_first_arg(node: &RSyntaxNode) -> Option<RSyntaxNode> {
-    node.descendants()
-        .find(|x| x.kind() == RSyntaxKind::R_ARGUMENT)
-}
-
-pub fn get_args(node: &RSyntaxNode) -> Vec<RSyntaxNode> {
-    node.descendants()
-        // Limit to first list of arguments to avoid collecting arguments from nested functions
-        .find(|x| x.kind() == RSyntaxKind::R_ARGUMENT_LIST)
-        .unwrap()
-        .descendants()
-        .filter(|x| x.kind() == RSyntaxKind::R_ARGUMENT)
-        .collect::<Vec<_>>()
-}
-
-pub fn node_is_in_square_brackets(ast: &RSyntaxNode) -> bool {
-    let great_grandparent = ast.ancestors().nth(3);
-    match great_grandparent {
-        Some(x) => x.kind() == RSyntaxKind::R_SUBSET_ARGUMENTS,
-        None => false,
-    }
-}
-
+/// Return the function name of an expression. This takes AnyRExpression because
+/// multiple cases are possible:
+/// - fun() -> "fun"
+/// - foo::fun() -> "fun"
+/// - self$fun() -> "fun"
+/// - return() -> "return"
 pub fn get_function_name(function: AnyRExpression) -> String {
     let fn_name = if let Some(ns_expr) = function.as_r_namespace_expression() {
         if let Ok(expr) = ns_expr.right() {
@@ -224,9 +235,8 @@ pub fn get_function_name(function: AnyRExpression) -> String {
     fn_name.unwrap_or("".to_string())
 }
 
-// Takes an RCall.
-// If this RCall corresponds to a nested function of the form
-// `outer_fn(inner_fn(content))`, then it returns `content`, otherwise None.
+// Checks if an Rcall corresponds to a nested function of the form
+// `outer_fn(inner_fn(content))`. If so, it returns `content`, otherwise None.
 pub fn get_nested_functions_content(
     call: &RCall,
     outer_fn: &str,
@@ -266,39 +276,10 @@ pub fn get_nested_functions_content(
             return Ok(None);
         }
 
-        let inner_content = arguments?.items().into_syntax().text().to_string();
+        let inner_content = arguments?.items().into_syntax().to_string();
 
         Ok(Some(inner_content))
     } else {
         Ok(None)
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-
-//     use std::fs;
-//     use std::process::{Command, Stdio};
-//     use tempfile::Builder;
-
-//     #[test]
-//     fn parsing_error_doesnt_panic() {
-//         let temp_file = Builder::new()
-//             .prefix("test-flir")
-//             .suffix(".R")
-//             .tempfile()
-//             .unwrap();
-
-//         fs::write(&temp_file, "blah = fun(1) {").expect("Failed to write initial content");
-
-//         let output = Command::new("flir")
-//             .arg(temp_file.path())
-//             .stdout(Stdio::piped())
-//             .output()
-//             .expect("Failed to execute command");
-
-//         let err_message = String::from_utf8_lossy(&output.stderr).to_string();
-//         println!("{err_message}");
-//         assert!(err_message.contains("Maybe the document contains a parsing error"))
-//     }
-// }

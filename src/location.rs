@@ -29,22 +29,4 @@ impl Location {
     pub fn column(&self) -> usize {
         self.column
     }
-
-    pub fn reset(&mut self) {
-        self.row = 1;
-        self.column = 1;
-    }
-
-    pub fn go_right(&mut self) {
-        self.column += 1;
-    }
-
-    pub fn go_left(&mut self) {
-        self.column -= 1;
-    }
-
-    pub fn newline(&mut self) {
-        self.row += 1;
-        self.column = 1;
-    }
 }

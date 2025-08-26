@@ -68,7 +68,7 @@ pub fn equals_na(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
     if (left_is_na && right_is_na) || (!left_is_na && !right_is_na) {
         return Ok(None);
     }
-    let range = ast.clone().into_syntax().text_trimmed_range();
+    let range = ast.syntax().text_trimmed_range();
 
     let replacement = if left_is_na {
         right.to_string().trim().to_string()

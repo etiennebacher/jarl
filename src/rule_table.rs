@@ -18,15 +18,13 @@ impl Rule {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum FixStatus {
     #[default]
     None,
     Safe,
     Unsafe,
 }
-
 
 #[derive(Debug, Clone, Default)]
 pub struct RuleTable {

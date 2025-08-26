@@ -39,15 +39,27 @@ pub fn duplicated_arguments(ast: &RCall) -> Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
 
     let fun_name = match function? {
-        AnyRExpression::RNamespaceExpression(x) => x.right()?.text(),
-        AnyRExpression::RExtractExpression(x) => x.right()?.text(),
-        AnyRExpression::RCall(x) => x.function()?.text(),
-        AnyRExpression::RSubset(x) => x.arguments()?.text(),
-        AnyRExpression::RSubset2(x) => x.arguments()?.text(),
-        AnyRExpression::RIdentifier(x) => x.text(),
-        AnyRExpression::AnyRValue(x) => x.text(),
-        AnyRExpression::RParenthesizedExpression(x) => x.body()?.text(),
-        AnyRExpression::RReturnExpression(x) => x.text(),
+        AnyRExpression::RNamespaceExpression(x) => {
+            x.right()?.into_syntax().text_trimmed().to_string()
+        }
+        AnyRExpression::RBracedExpressions(x) => x
+            .expressions()
+            .into_iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>()
+            .join(""),
+        AnyRExpression::RExtractExpression(x) => {
+            x.right()?.into_syntax().text_trimmed().to_string()
+        }
+        AnyRExpression::RCall(x) => x.function()?.into_syntax().text_trimmed().to_string(),
+        AnyRExpression::RSubset(x) => x.arguments()?.into_syntax().text_trimmed().to_string(),
+        AnyRExpression::RSubset2(x) => x.arguments()?.into_syntax().text_trimmed().to_string(),
+        AnyRExpression::RIdentifier(x) => x.into_syntax().text_trimmed().to_string(),
+        AnyRExpression::AnyRValue(x) => x.into_syntax().text_trimmed().to_string(),
+        AnyRExpression::RParenthesizedExpression(x) => {
+            x.body()?.into_syntax().text_trimmed().to_string()
+        }
+        AnyRExpression::RReturnExpression(x) => x.into_syntax().text_trimmed().to_string(),
         _ => {
             return Err(anyhow!(
                 "couldn't find function name for duplicated_arguments linter.",
@@ -69,7 +81,12 @@ pub fn duplicated_arguments(ast: &RCall) -> Result<Option<Diagnostic>> {
             if let Some(name_clause) = &fields.name_clause
                 && let Ok(name) = name_clause.name()
             {
-                Some(name.text().to_string().replace(&['\'', '"', '`'][..], ""))
+                Some(
+                    name.into_syntax()
+                        .text_trimmed()
+                        .to_string()
+                        .replace(&['\'', '"', '`'][..], ""),
+                )
             } else {
                 None
             }
@@ -83,7 +100,7 @@ pub fn duplicated_arguments(ast: &RCall) -> Result<Option<Diagnostic>> {
     let duplicated_arg_names = get_duplicates(&arg_names);
 
     if duplicated_arg_names.len() > 0 {
-        let range = ast.clone().into_syntax().text_trimmed_range();
+        let range = ast.syntax().text_trimmed_range();
         let diagnostic = Diagnostic::new(
             ViolationData::new(
                 "duplicated_arguments".to_string(),

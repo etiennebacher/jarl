@@ -69,7 +69,7 @@ pub fn equal_assignment(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
         _ => unreachable!(),
     };
 
-    let range = ast.clone().into_syntax().text_trimmed_range();
+    let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         EqualAssignment,
         range,

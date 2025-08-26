@@ -50,7 +50,7 @@ pub fn any_duplicated(ast: &RCall) -> Result<Option<Diagnostic>> {
     let inner_content = get_nested_functions_content(ast, "any", "duplicated")?;
 
     if let Some(inner_content) = inner_content {
-        let range = ast.clone().into_syntax().text_trimmed_range();
+        let range = ast.syntax().text_trimmed_range();
         let diagnostic = Diagnostic::new(
             AnyDuplicated,
             range,

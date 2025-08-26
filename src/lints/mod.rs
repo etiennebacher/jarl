@@ -8,10 +8,12 @@ pub(crate) mod empty_assignment;
 pub(crate) mod equal_assignment;
 pub(crate) mod equals_na;
 pub(crate) mod grepv;
+pub(crate) mod is_numeric;
 pub(crate) mod length_levels;
 pub(crate) mod length_test;
 pub(crate) mod lengths;
 pub(crate) mod redundant_equals;
+pub(crate) mod sample_int;
 pub(crate) mod true_false_symbol;
 pub(crate) mod which_grepl;
 
@@ -33,10 +35,12 @@ pub fn all_rules_and_safety() -> RuleTable {
     rule_table.enable("equal_assignment", "READ", FixStatus::Safe, None);
     rule_table.enable("equals_na", "CORR", FixStatus::Safe, None);
     rule_table.enable("grepv", "READ", FixStatus::Safe, Some((4, 5)));
+    rule_table.enable("is_numeric", "READ", FixStatus::Safe, None);
     rule_table.enable("length_levels", "PERF,READ", FixStatus::Safe, None);
     rule_table.enable("length_test", "CORR", FixStatus::Safe, None);
     rule_table.enable("lengths", "PERF,READ", FixStatus::Safe, None);
     rule_table.enable("redundant_equals", "READ", FixStatus::Safe, None);
+    rule_table.enable("sample_int", "READ", FixStatus::Safe, None);
     rule_table.enable("true_false_symbol", "READ", FixStatus::None, None);
     rule_table.enable("which_grepl", "PERF,READ", FixStatus::Safe, None);
     rule_table

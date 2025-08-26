@@ -1,6 +1,5 @@
 use crate::message::*;
 use air_r_syntax::*;
-use anyhow::Result;
 use biome_rowan::AstNode;
 
 pub struct TrueFalseSymbol;
@@ -42,18 +41,22 @@ impl Violation for TrueFalseSymbol {
     }
 }
 
-pub fn true_false_symbol(ast: &RIdentifier) -> Result<Option<Diagnostic>> {
-    let token = ast.name_token().unwrap();
+pub fn true_false_symbol(ast: &RIdentifier) -> anyhow::Result<Option<Diagnostic>> {
+    let token = ast.name_token()?;
     let name = token.text_trimmed();
     if name != "T" && name != "F" {
         return Ok(None);
     }
 
     // Allow T(), F()
-    let is_function_name = ast.parent::<RCall>().is_some();
+    if ast.parent::<RCall>().is_some() {
+        return Ok(None);
+    }
 
     // Allow df$T, df$F
-    let is_element_name = ast.parent::<RExtractExpression>().is_some();
+    if ast.parent::<RExtractExpression>().is_some() {
+        return Ok(None);
+    }
 
     // Allow A ~ T
     let is_in_formula = ast
@@ -64,16 +67,16 @@ pub fn true_false_symbol(ast: &RIdentifier) -> Result<Option<Diagnostic>> {
         })
         .unwrap_or(false);
 
-    if is_function_name || is_element_name || is_in_formula {
+    if is_in_formula {
         return Ok(None);
     }
 
-    let range = ast.clone().into_syntax().text_trimmed_range();
+    let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         TrueFalseSymbol,
         range,
         Fix {
-            content: if ast.clone().into_syntax().text_trimmed() == "T" {
+            content: if ast.syntax().text_trimmed() == "T" {
                 "TRUE".to_string()
             } else {
                 "FALSE".to_string()
