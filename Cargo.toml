@@ -43,6 +43,7 @@ tempfile = "3.14.0"
 # MUST BE SAME AS IN `air`
 biome_rowan = { git = "https://github.com/biomejs/biome", rev = "c13fc60726883781e4530a4437724273b560c8e0" }
 assert_cmd = "2.0.17"
+serde_json = "1.0.143"
 
 
 [dev-dependencies]

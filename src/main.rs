@@ -8,11 +8,13 @@ use colored::Colorize;
 use flir::args::CliArgs;
 use flir::check::check;
 use flir::config::build_config;
+use flir::emitter::*;
 use flir::error::ParseError;
 use flir::message::Diagnostic;
 
 use anyhow::Result;
 use clap::Parser;
+use flir::output_format::OutputFormat;
 use std::process::ExitCode;
 use std::time::Instant;
 
@@ -77,6 +79,27 @@ fn run() -> Result<ExitCode> {
         }
     }
 
+    let mut total_diagnostics = 0;
+    let mut n_diagnostic_with_fixes = 0usize;
+    let mut n_diagnostic_with_unsafe_fixes = 0usize;
+
+    // Flatten all diagnostics into a single vector and sort globally
+    let mut all_diagnostics_flat: Vec<&Diagnostic> = all_diagnostics
+        .iter()
+        .flat_map(|(_path, diagnostics)| diagnostics.iter())
+        .collect();
+
+    all_diagnostics_flat.sort();
+
+    let mut stdout = std::io::stdout();
+    match args.output_format {
+        OutputFormat::Json => {
+            JsonEmitter.emit(&mut stdout, &all_diagnostics_flat)?;
+            return Ok(ExitCode::from(1));
+        }
+        _ => {}
+    }
+
     // First, print all parsing errors
     if !all_errors.is_empty() {
         for (_path, err) in &all_errors {
@@ -90,18 +113,6 @@ fn run() -> Result<ExitCode> {
     }
 
     // Then, print all diagnostics
-    let mut total_diagnostics = 0;
-    let mut n_diagnostic_with_fixes = 0usize;
-    let mut n_diagnostic_with_unsafe_fixes = 0usize;
-
-    // Flatten all diagnostics into a single vector and sort globally
-    let mut all_diagnostics_flat: Vec<&Diagnostic> = all_diagnostics
-        .iter()
-        .flat_map(|(_path, diagnostics)| diagnostics.iter())
-        .collect();
-
-    all_diagnostics_flat.sort();
-
     for message in &all_diagnostics_flat {
         if message.has_safe_fix() {
             n_diagnostic_with_fixes += 1;
