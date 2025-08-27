@@ -7,35 +7,33 @@ pub struct Sort;
 
 /// ## What it does
 ///
-/// Checks for usage of `any(duplicated(...))`.
+/// Checks for usage of `x[order(x, ...)]`.
 ///
 /// ## Why is this bad?
 ///
-/// `any(duplicated(...))` is valid code but requires the evaluation of
-/// `duplicated()` on the entire input first.
-///
-/// There is a more efficient function in base R called `anyDuplicated()` that
-/// is more efficient, both in speed and memory used. `anyDuplicated()` returns
-/// the index of the first duplicated value, or 0 if there is none.
-///
-/// Therefore, we can replace `any(duplicated(...))` by `anyDuplicated(...) > 0`.
+/// It is better to use `sort(x, ...)`, which is more readable than
+/// `x[order(x, ...)]` and more efficient.
 ///
 /// ## Example
 ///
 /// ```r
-/// x <- c(1:10000, 1, NA)
-/// any(duplicated(x))
+/// x <- c(3, 2, 5, 1, 5, 6)
+/// x[order(x)]
+/// x[order(x, na.last = TRUE)]
+/// x[order(x, decreasing = TRUE)]
 /// ```
 ///
 /// Use instead:
 /// ```r
-/// x <- c(1:10000, 1, NA)
-/// anyDuplicated(x) > 0
+/// x <- c(3, 2, 5, 1, 5, 6)
+/// sort(x)
+/// sort(x, na.last = TRUE)
+/// sort(x, decreasing = TRUE)
 /// ```
 ///
 /// ## References
 ///
-/// See `?anyDuplicated`
+/// See `?sort`
 impl Violation for Sort {
     fn name(&self) -> String {
         "sort".to_string()
