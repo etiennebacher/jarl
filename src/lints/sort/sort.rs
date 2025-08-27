@@ -50,15 +50,15 @@ pub fn sort(ast: &RSubset) -> anyhow::Result<Option<Diagnostic>> {
     let function_outer = function?;
     let arguments = arguments?;
 
-    let items: Vec<_> = arguments.items().into_iter().collect();
+    let inside_brackets: Vec<_> = arguments.items().into_iter().collect();
 
     // No lint for x[order(x), "bar"] or x[, order(x)].
-    if items.len() != 1 {
+    if inside_brackets.len() != 1 {
         return Ok(None);
     }
 
-    // Safety: we know that `items` contains a single element.
-    let arg = items.get(0).unwrap().clone()?;
+    // Safety: we know that `inside_brackets` contains a single element.
+    let arg = inside_brackets.get(0).unwrap().clone()?;
 
     // No lint for x[foo = order(x)].
     if arg.name_clause().is_some() {
@@ -69,23 +69,22 @@ pub fn sort(ast: &RSubset) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     };
 
+    // Ensure we have something like `x[order(...)]`.
     let Some(arg_value) = arg_value.as_r_call() else {
         return Ok(None);
     };
-
     let function = arg_value.function()?;
     let arg_inner = arg_value.arguments()?;
-
     if function.to_trimmed_text() != "order" {
         return Ok(None);
     }
 
+    // Get the main argument of `order()`.
     let args = arg_inner.items();
     let values = get_unnamed_args(&args);
     if values.len() != 1 {
         return Ok(None);
     }
-
     // Safety: we know that `values` contains a single element.
     let values = values.get(0).unwrap();
     if values.to_trimmed_text() != function_outer.to_trimmed_text() {
@@ -97,6 +96,7 @@ pub fn sort(ast: &RSubset) -> anyhow::Result<Option<Diagnostic>> {
     let decreasing = get_arg_by_name(&args, "decreasing");
     let method = get_arg_by_name(&args, "method");
 
+    // Prepare text of other args to include in the fix.
     let mut additional_args = vec![];
     if let Some(na_last) = na_last {
         additional_args.push(na_last.to_trimmed_text());
@@ -109,14 +109,14 @@ pub fn sort(ast: &RSubset) -> anyhow::Result<Option<Diagnostic>> {
     }
 
     let additional_args = additional_args.join(", ");
-    let fix = if additional_args.len() > 0 {
+    let fix = if additional_args.is_empty() {
+        format!("sort({})", function_outer.to_trimmed_text())
+    } else {
         format!(
             "sort({}, {})",
             function_outer.to_trimmed_text(),
             additional_args
         )
-    } else {
-        format!("sort({})", function_outer.to_trimmed_text())
     };
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
