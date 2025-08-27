@@ -70,6 +70,16 @@ pub fn compute_lints_location(
         .collect()
 }
 
+/// Takes a list of arguments and returns all the unnamed ones (mostly used when a function has `...`).
+pub fn get_unnamed_args(args: &RArgumentList) -> Vec<RArgument> {
+    args.into_iter()
+        .filter_map(|x| {
+            let arg = x.clone().unwrap();
+            (arg.name_clause().is_none()).then_some(arg)
+        })
+        .collect()
+}
+
 /// Takes a list of arguments and tries to extract the one named `name`.
 pub fn get_arg_by_name(args: &RArgumentList, name: &str) -> Option<RArgument> {
     args.into_iter()

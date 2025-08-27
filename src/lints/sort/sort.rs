@@ -1,7 +1,6 @@
 use crate::message::*;
-use crate::utils::get_nested_functions_content;
+use crate::utils::{get_arg_by_name, get_unnamed_args};
 use air_r_syntax::*;
-use anyhow::Result;
 use biome_rowan::AstNode;
 
 pub struct Sort;
@@ -46,15 +45,12 @@ impl Violation for Sort {
     }
 }
 
-pub fn sort(ast: &RSubset) -> Result<Option<Diagnostic>> {
+pub fn sort(ast: &RSubset) -> anyhow::Result<Option<Diagnostic>> {
     let RSubsetFields { function, arguments } = ast.as_fields();
     let function_outer = function?;
     let arguments = arguments?;
 
     let items: Vec<_> = arguments.items().into_iter().collect();
-
-    println!("function_outer: {}", function_outer);
-    println!("arguments: {}", arguments);
 
     // No lint for x[order(x), "bar"] or x[, order(x)].
     if items.len() != 1 {
@@ -77,28 +73,61 @@ pub fn sort(ast: &RSubset) -> Result<Option<Diagnostic>> {
         return Ok(None);
     };
 
-    let RCallFields { function, arguments } = arg_value.as_fields();
-    let function = function?;
-    let arg_inner = arguments?;
+    let function = arg_value.function()?;
+    let arg_inner = arg_value.arguments()?;
 
     if function.to_trimmed_text() != "order" {
         return Ok(None);
     }
 
-    // if let Some(inner_content) = inner_content {
-    //     let range = ast.syntax().text_trimmed_range();
-    //     let diagnostic = Diagnostic::new(
-    //         Sort,
-    //         range,
-    //         Fix {
-    //             content: format!("anyDuplicated({inner_content}) > 0"),
-    //             start: range.start().into(),
-    //             end: range.end().into(),
-    //         },
-    //     );
+    let args = arg_inner.items();
+    let values = get_unnamed_args(&args);
+    if values.len() != 1 {
+        return Ok(None);
+    }
 
-    //     return Ok(Some(diagnostic));
-    // }
+    // Safety: we know that `values` contains a single element.
+    let values = values.get(0).unwrap();
+    if values.to_trimmed_text() != function_outer.to_trimmed_text() {
+        return Ok(None);
+    }
 
-    Ok(None)
+    // order() takes `...` so other args must be named.
+    let na_last = get_arg_by_name(&args, "na.last");
+    let decreasing = get_arg_by_name(&args, "decreasing");
+    let method = get_arg_by_name(&args, "method");
+
+    let mut additional_args = vec![];
+    if let Some(na_last) = na_last {
+        additional_args.push(na_last.to_trimmed_text());
+    }
+    if let Some(decreasing) = decreasing {
+        additional_args.push(decreasing.to_trimmed_text());
+    }
+    if let Some(method) = method {
+        additional_args.push(method.to_trimmed_text());
+    }
+
+    let additional_args = additional_args.join(", ");
+    let fix = if additional_args.len() > 0 {
+        format!(
+            "sort({}, {})",
+            function_outer.to_trimmed_text(),
+            additional_args
+        )
+    } else {
+        format!("sort({})", function_outer.to_trimmed_text())
+    };
+    let range = ast.syntax().text_trimmed_range();
+    let diagnostic = Diagnostic::new(
+        Sort,
+        range,
+        Fix {
+            content: fix,
+            start: range.start().into(),
+            end: range.end().into(),
+        },
+    );
+
+    Ok(Some(diagnostic))
 }
