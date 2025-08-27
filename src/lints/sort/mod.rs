@@ -6,35 +6,50 @@ mod tests {
 
     #[test]
     fn test_no_lint_sort() {
-        expect_no_lint("any(x)", "sort", None);
-        expect_no_lint("duplicated(x)", "sort", None);
-        expect_no_lint("any(!duplicated(x))", "sort", None);
-        expect_no_lint("any(!duplicated(foo(x)))", "sort", None);
-        expect_no_lint("any(na.rm = TRUE)", "sort", None);
-        expect_no_lint("any()", "sort", None);
+        expect_no_lint("x[]", "sort", None);
+        expect_no_lint("x[,]", "sort", None);
+        expect_no_lint("x[,order(x)]", "sort", None);
+        expect_no_lint("x[order(x),]", "sort", None);
+        expect_no_lint("x[order(x), 'foo']", "sort", None);
+        expect_no_lint("order(x)", "sort", None);
+        expect_no_lint("x[order()]", "sort", None);
+        expect_no_lint("x[order(y)]", "sort", None);
+        expect_no_lint("x[order(x, y)]", "sort", None);
+        expect_no_lint("x[c(order(x))]", "sort", None);
     }
 
     #[test]
     fn test_lint_sort() {
         use insta::assert_snapshot;
 
-        let expected_message = "`any(duplicated(...))` is inefficient";
-        expect_lint("any(duplicated(x))", expected_message, "sort", None);
-        expect_lint("any(duplicated(foo(x)))", expected_message, "sort", None);
+        let expected_message = "Use `sort(x)` instead";
+        expect_lint("x[order(x)]", expected_message, "sort", None);
         expect_lint(
-            "any(duplicated(x), na.rm = TRUE)",
+            "x[order(x, decreasing = TRUE)]",
             expected_message,
             "sort",
             None,
         );
         expect_lint(
-            "any(na.rm = TRUE, duplicated(x))",
+            "x[order(x, na.last = TRUE)]",
             expected_message,
             "sort",
             None,
         );
         expect_lint(
-            "any(duplicated(x)); 1 + 1; any(duplicated(y))",
+            "x[order(x, method = \"radix\")]",
+            expected_message,
+            "sort",
+            None,
+        );
+        expect_lint(
+            "x[order(x, method = \"radix\", na.last = TRUE)]",
+            expected_message,
+            "sort",
+            None,
+        );
+        expect_lint(
+            "x[order(method = \"radix\", na.last = TRUE, x)]",
             expected_message,
             "sort",
             None,
@@ -43,9 +58,12 @@ mod tests {
             "fix_output",
             get_fixed_text(
                 vec![
-                    "any(duplicated(x))",
-                    "any(duplicated(foo(x)))",
-                    "any(duplicated(x), na.rm = TRUE)",
+                    "x[order(x)]",
+                    "x[order(x, decreasing = TRUE)]",
+                    "x[order(x, na.last = TRUE)]",
+                    "x[order(x, method = \"radix\")]",
+                    "x[order(x, method = \"radix\", na.last = TRUE)]",
+                    "x[order(method = \"radix\", na.last = TRUE, x)]",
                 ],
                 "sort",
                 None
