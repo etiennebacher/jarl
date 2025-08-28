@@ -3,7 +3,6 @@ use clap::ValueEnum;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::fmt::{self, Display};
 use std::io::Write;
 
 use crate::message::Diagnostic;
@@ -15,15 +14,6 @@ pub enum OutputFormat {
     Concise,
     /// Print diagnostics as JSON
     Json,
-}
-
-impl Display for OutputFormat {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Concise => write!(f, "concise"),
-            Self::Json => write!(f, "json"),
-        }
-    }
 }
 
 pub trait Emitter {
