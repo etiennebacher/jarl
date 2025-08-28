@@ -8,9 +8,8 @@ use colored::Colorize;
 use flir::args::CliArgs;
 use flir::check::check;
 use flir::config::build_config;
+use flir::diagnostic::Diagnostic;
 use flir::emitter::*;
-use flir::error::ParseError;
-use flir::message::Diagnostic;
 
 use anyhow::Result;
 use clap::Parser;
@@ -79,10 +78,6 @@ fn run() -> Result<ExitCode> {
         }
     }
 
-    let mut total_diagnostics = 0;
-    let mut n_diagnostic_with_fixes = 0usize;
-    let mut n_diagnostic_with_unsafe_fixes = 0usize;
-
     // Flatten all diagnostics into a single vector and sort globally
     let mut all_diagnostics_flat: Vec<&Diagnostic> = all_diagnostics
         .iter()
@@ -92,69 +87,14 @@ fn run() -> Result<ExitCode> {
     all_diagnostics_flat.sort();
 
     let mut stdout = std::io::stdout();
+
     match args.output_format {
         OutputFormat::Json => {
-            JsonEmitter.emit(&mut stdout, &all_diagnostics_flat)?;
-            return Ok(ExitCode::from(1));
+            JsonEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
         }
-        _ => {}
-    }
-
-    // First, print all parsing errors
-    if !all_errors.is_empty() {
-        for (_path, err) in &all_errors {
-            let root_cause = err.chain().last().unwrap();
-            if root_cause.is::<ParseError>() {
-                eprintln!("{}: {}", "Error".red().bold(), root_cause);
-            } else {
-                eprintln!("{}: {}", "Error".red().bold(), err);
-            }
+        OutputFormat::Concise => {
+            ConciseEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
         }
-    }
-
-    // Then, print all diagnostics
-    for message in &all_diagnostics_flat {
-        if message.has_safe_fix() {
-            n_diagnostic_with_fixes += 1;
-        }
-        if message.has_unsafe_fix() {
-            n_diagnostic_with_unsafe_fixes += 1;
-        }
-        println!("{message}");
-        total_diagnostics += 1;
-    }
-
-    if total_diagnostics > 0 {
-        if total_diagnostics > 1 {
-            println!("\nFound {} errors.", total_diagnostics);
-        } else {
-            println!("\nFound 1 error.");
-        }
-
-        if n_diagnostic_with_fixes > 0 {
-            let msg = if n_diagnostic_with_unsafe_fixes == 0 {
-                format!("{n_diagnostic_with_fixes} fixable with the `--fix` option.")
-            } else {
-                let unsafe_label = if n_diagnostic_with_unsafe_fixes == 1 {
-                    "1 hidden fix".to_string()
-                } else {
-                    format!("{n_diagnostic_with_unsafe_fixes} hidden fixes")
-                };
-                format!(
-                    "{n_diagnostic_with_fixes} fixable with the `--fix` option ({unsafe_label} can be enabled with the `--unsafe-fixes` option)."
-                )
-            };
-            println!("{msg}");
-        } else if n_diagnostic_with_unsafe_fixes > 0 {
-            let label = if n_diagnostic_with_unsafe_fixes == 1 {
-                "1 fix is".to_string()
-            } else {
-                format!("{n_diagnostic_with_unsafe_fixes} fixes are")
-            };
-            println!("{label} available with the `--fix --unsafe-fixes` option.");
-        }
-    } else if all_errors.is_empty() {
-        println!("All checks passed!");
     }
 
     if !all_errors.is_empty() {
