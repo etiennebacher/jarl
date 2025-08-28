@@ -9,3 +9,4 @@
 mod flir;
 mod help;
 mod helpers;
+mod output_format;

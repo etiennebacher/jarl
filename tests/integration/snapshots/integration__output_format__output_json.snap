@@ -1,0 +1,53 @@
+---
+source: tests/integration/output_format.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"--output-format\").arg(\"json\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 1
+----- stdout -----
+[
+  {
+    "message": {
+      "name": "any_is_na",
+      "body": "`any(is.na(...))` is inefficient. Use `anyNA(...)` instead."
+    },
+    "filename": "test.R",
+    "range": [
+      0,
+      13
+    ],
+    "location": {
+      "row": 1,
+      "column": 0
+    },
+    "fix": {
+      "content": "anyNA(x)",
+      "start": 0,
+      "end": 13
+    }
+  },
+  {
+    "message": {
+      "name": "any_duplicated",
+      "body": "`any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead."
+    },
+    "filename": "test2.R",
+    "range": [
+      0,
+      18
+    ],
+    "location": {
+      "row": 1,
+      "column": 0
+    },
+    "fix": {
+      "content": "anyDuplicated(x) > 0",
+      "start": 0,
+      "end": 18
+    }
+  }
+]
+----- stderr -----
+
+----- args -----
+--output-format json

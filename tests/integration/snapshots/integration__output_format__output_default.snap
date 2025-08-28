@@ -1,0 +1,16 @@
+---
+source: tests/integration/output_format.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 1
+----- stdout -----
+test.R [1:0] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
+test2.R [1:0] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+
+----- args -----
