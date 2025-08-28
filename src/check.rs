@@ -13,8 +13,8 @@ use std::path::PathBuf;
 
 use crate::analyze;
 use crate::config::Config;
+use crate::diagnostic::*;
 use crate::fix::*;
-use crate::message::*;
 use crate::rule_table::RuleTable;
 use crate::utils::*;
 

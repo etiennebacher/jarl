@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::message::*;
+use crate::diagnostic::*;
 use air_r_syntax::*;
 use anyhow::{Result, anyhow};
 use biome_rowan::AstNode;

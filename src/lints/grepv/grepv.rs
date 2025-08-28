@@ -1,4 +1,4 @@
-use crate::message::*;
+use crate::diagnostic::*;
 use crate::utils::drop_arg_by_name_or_position;
 use crate::utils::get_function_name;
 use crate::utils::is_argument_present;

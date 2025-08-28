@@ -1,4 +1,4 @@
-use crate::message::*;
+use crate::diagnostic::*;
 
 pub fn apply_fixes(fixes: &[Diagnostic], contents: &str) -> (bool, String) {
     let fixes = fixes

@@ -1,4 +1,4 @@
-use crate::message::*;
+use crate::diagnostic::*;
 use crate::utils::get_arg_by_position;
 use air_r_syntax::*;
 use anyhow::Result;

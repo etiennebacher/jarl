@@ -1,5 +1,5 @@
+use crate::diagnostic::Diagnostic;
 use crate::location::Location;
-use crate::message::Diagnostic;
 use air_r_syntax::{
     AnyRExpression, RArgument, RArgumentList, RCall, RCallFields, RExtractExpressionFields,
     RSyntaxNode,

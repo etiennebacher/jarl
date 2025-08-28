@@ -1,9 +1,6 @@
-use air_fs::relativize_path;
 use biome_rowan::TextRange;
-use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-use std::fmt;
 use std::path::PathBuf;
 
 use crate::lints::{all_nofix_rules, all_safe_rules, all_unsafe_rules};
@@ -103,24 +100,6 @@ impl Diagnostic {
 
     pub fn has_no_fix(&self) -> bool {
         all_nofix_rules().contains(&self.message.name)
-    }
-}
-
-impl fmt::Display for Diagnostic {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let (row, col) = match self.location {
-            Some(loc) => (loc.row, loc.column),
-            None => unreachable!("Row/col locations must have been parsed successfully before."),
-        };
-        write!(
-            f,
-            "{} [{}:{}] {} {}",
-            relativize_path(self.filename.clone()).white(),
-            row,
-            col,
-            self.message.name.red(),
-            self.message.body
-        )
     }
 }
 

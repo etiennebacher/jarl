@@ -1,4 +1,4 @@
-use crate::message::*;
+use crate::diagnostic::*;
 use crate::utils::get_nested_functions_content;
 use air_r_syntax::*;
 use anyhow::Result;
