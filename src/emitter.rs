@@ -48,7 +48,7 @@ impl Emitter for ConciseEmitter {
             };
             write!(
                 writer,
-                "{} [{}:{}] {} {}",
+                "{} [{}:{}] {} {}\n",
                 relativize_path(diagnostic.filename.clone()).white(),
                 row,
                 col,
