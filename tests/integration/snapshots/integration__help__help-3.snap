@@ -19,7 +19,8 @@ Options:
   -r, --rules <RULES>                  Names of rules to include, separated by a comma (no spaces). [default: ]
   -w, --with-timing                    Show the time taken by the function.
   -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
-  -h, --help                           Print help
+      --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: concise] [possible values: concise, json]
+  -h, --help                           Print help (see more with '--help')
 
 For help with a specific command, see: `flir help <command>`.
 

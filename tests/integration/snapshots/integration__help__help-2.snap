@@ -10,16 +10,43 @@ flir: Find and Fix Lints in R Code
 Usage: flir [OPTIONS] [DIR]
 
 Arguments:
-  [DIR]  The directory in which to check or fix lints. [default: .]
+  [DIR]
+          The directory in which to check or fix lints.
+          
+          [default: .]
 
 Options:
-  -f, --fix                            Automatically fix issues detected by the linter.
-  -u, --unsafe-fixes                   Include fixes that may not retain the original intent of the  code.
-      --fix-only                       Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
-  -r, --rules <RULES>                  Names of rules to include, separated by a comma (no spaces). [default: ]
-  -w, --with-timing                    Show the time taken by the function.
-  -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
-  -h, --help                           Print help
+  -f, --fix
+          Automatically fix issues detected by the linter.
+
+  -u, --unsafe-fixes
+          Include fixes that may not retain the original intent of the  code.
+
+      --fix-only
+          Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
+
+  -r, --rules <RULES>
+          Names of rules to include, separated by a comma (no spaces).
+          
+          [default: ]
+
+  -w, --with-timing
+          Show the time taken by the function.
+
+  -m, --min-r-version <MIN_R_VERSION>
+          The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
+
+      --output-format <OUTPUT_FORMAT>
+          Output serialization format for violations.
+
+          Possible values:
+          - concise: Print diagnostics in a concise format, one per line
+          - json:    Print diagnostics as JSON
+          
+          [default: concise]
+
+  -h, --help
+          Print help (see a summary with '-h')
 
 For help with a specific command, see: `flir help <command>`.
 
