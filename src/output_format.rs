@@ -16,6 +16,9 @@ pub enum OutputFormat {
     Json,
 }
 
+/// Takes the diagnostics and parsing errors in each file and then displays
+/// them in different ways depending on the `--output-format` provided by the
+/// user.
 pub trait Emitter {
     fn emit<W: Write>(
         &self,
@@ -50,6 +53,7 @@ impl Emitter for ConciseEmitter {
             }
         }
 
+        // Then, print the diagnostics.
         for diagnostic in diagnostics {
             let (row, col) = match diagnostic.location {
                 Some(loc) => (loc.row, loc.column),
@@ -76,6 +80,8 @@ impl Emitter for ConciseEmitter {
             total_diagnostics += 1;
         }
 
+        // Finally, print the info about the number of errors found and how
+        // many can be fixed.
         if total_diagnostics > 0 {
             if total_diagnostics > 1 {
                 println!("\nFound {} errors.", total_diagnostics);
