@@ -1,4 +1,4 @@
-use crate::diagnostic::*;
+use crate::message::*;
 use crate::utils::{drop_arg_by_name_or_position, get_arg_by_name_then_position};
 use air_r_syntax::*;
 use biome_rowan::AstNode;

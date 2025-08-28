@@ -1,4 +1,4 @@
-use crate::diagnostic::*;
+use crate::message::*;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 

@@ -1,4 +1,4 @@
-use crate::{diagnostic::*, utils::get_function_name};
+use crate::{message::*, utils::get_function_name};
 use air_r_syntax::RSyntaxKind::*;
 use air_r_syntax::*;
 use anyhow::Context;

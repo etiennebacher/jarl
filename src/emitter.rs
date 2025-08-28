@@ -3,7 +3,7 @@ use colored::Colorize;
 use serde_json;
 use std::io::Write;
 
-use crate::diagnostic::Diagnostic;
+use crate::message::Diagnostic;
 
 pub trait Emitter {
     fn emit<W: Write>(
