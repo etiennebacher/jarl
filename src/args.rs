@@ -55,6 +55,11 @@ pub struct CliArgs {
         help = "The mimimum R version to be used by the linter. Some rules only work starting from a specific version."
     )]
     pub min_r_version: Option<String>,
-    #[arg(long, value_enum, default_value_t = OutputFormat::default())]
+    #[arg(
+        long,
+        value_enum,
+        default_value_t = OutputFormat::default(),
+        help="Output serialization format for violations."
+    )]
     pub output_format: OutputFormat,
 }
