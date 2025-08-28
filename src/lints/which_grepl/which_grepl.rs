@@ -1,7 +1,6 @@
 use crate::diagnostic::*;
 use crate::utils::get_nested_functions_content;
 use air_r_syntax::*;
-use anyhow::Result;
 use biome_rowan::AstNode;
 
 pub struct WhichGrepl;
@@ -42,7 +41,7 @@ impl Violation for WhichGrepl {
     }
 }
 
-pub fn which_grepl(ast: &RCall) -> Result<Option<Diagnostic>> {
+pub fn which_grepl(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let inner_content = get_nested_functions_content(ast, "which", "grepl")?;
 
     if let Some(inner_content) = inner_content {

@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::diagnostic::*;
 use air_r_syntax::*;
-use anyhow::{Result, anyhow};
+use anyhow::anyhow;
 use biome_rowan::AstNode;
 
 /// ## What it does
@@ -24,7 +24,7 @@ use biome_rowan::AstNode;
 /// ```r
 /// list(x = 1, x = 2)
 /// ```
-pub fn duplicated_arguments(ast: &RCall) -> Result<Option<Diagnostic>> {
+pub fn duplicated_arguments(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
 
     let fun_name = match function? {

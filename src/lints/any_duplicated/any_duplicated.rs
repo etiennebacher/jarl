@@ -1,7 +1,6 @@
 use crate::diagnostic::*;
 use crate::utils::get_nested_functions_content;
 use air_r_syntax::*;
-use anyhow::Result;
 use biome_rowan::AstNode;
 
 pub struct AnyDuplicated;
@@ -46,7 +45,7 @@ impl Violation for AnyDuplicated {
     }
 }
 
-pub fn any_duplicated(ast: &RCall) -> Result<Option<Diagnostic>> {
+pub fn any_duplicated(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let inner_content = get_nested_functions_content(ast, "any", "duplicated")?;
 
     if let Some(inner_content) = inner_content {

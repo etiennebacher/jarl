@@ -1,7 +1,6 @@
 use crate::diagnostic::*;
 use crate::utils::get_arg_by_position;
 use air_r_syntax::*;
-use anyhow::Result;
 use biome_rowan::AstNode;
 
 pub struct ClassEquals;
@@ -52,7 +51,7 @@ impl Violation for ClassEquals {
     }
 }
 
-pub fn class_equals(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
+pub fn class_equals(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
     let operator = operator?;

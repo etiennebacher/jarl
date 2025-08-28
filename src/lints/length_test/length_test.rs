@@ -1,7 +1,7 @@
 use crate::{diagnostic::*, utils::get_function_name};
 use air_r_syntax::RSyntaxKind::*;
 use air_r_syntax::*;
-use anyhow::{Context, Result};
+use anyhow::Context;
 use biome_rowan::AstNode;
 
 pub struct LengthTest;
@@ -37,7 +37,7 @@ impl Violation for LengthTest {
     }
 }
 
-pub fn length_test(ast: &RCall) -> Result<Option<Diagnostic>> {
+pub fn length_test(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
 
     let function = function?;

@@ -1,7 +1,6 @@
 use crate::diagnostic::*;
 use crate::utils::get_nested_functions_content;
 use air_r_syntax::*;
-use anyhow::Result;
 use biome_rowan::AstNode;
 
 pub struct AnyIsNa;
@@ -43,7 +42,7 @@ impl Violation for AnyIsNa {
     }
 }
 
-pub fn any_is_na(ast: &RCall) -> Result<Option<Diagnostic>> {
+pub fn any_is_na(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let inner_content = get_nested_functions_content(ast, "any", "is.na")?;
 
     if let Some(inner_content) = inner_content {

@@ -1,6 +1,5 @@
 use crate::diagnostic::*;
 use air_r_syntax::*;
-use anyhow::Result;
 use biome_rowan::AstNode;
 
 pub struct RedundantEquals;
@@ -45,7 +44,7 @@ impl Violation for RedundantEquals {
     }
 }
 
-pub fn redundant_equals(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
+pub fn redundant_equals(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
     let operator = operator?;

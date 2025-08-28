@@ -1,6 +1,5 @@
 use crate::diagnostic::*;
 use air_r_syntax::*;
-use anyhow::Result;
 use biome_rowan::AstNode;
 
 pub struct IsNumeric;
@@ -39,7 +38,7 @@ impl Violation for IsNumeric {
     }
 }
 
-pub fn is_numeric(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
+pub fn is_numeric(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
     let operator = operator?;

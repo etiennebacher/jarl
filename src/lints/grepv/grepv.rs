@@ -3,7 +3,6 @@ use crate::utils::drop_arg_by_name_or_position;
 use crate::utils::get_function_name;
 use crate::utils::is_argument_present;
 use air_r_syntax::*;
-use anyhow::Result;
 use biome_rowan::AstNode;
 pub struct Grepv;
 
@@ -44,7 +43,7 @@ impl Violation for Grepv {
     }
 }
 
-pub fn grepv(ast: &RCall) -> Result<Option<Diagnostic>> {
+pub fn grepv(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
 
     let function = function?;

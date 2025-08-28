@@ -1,6 +1,5 @@
 use crate::diagnostic::*;
 use air_r_syntax::*;
-use anyhow::Result;
 use biome_rowan::AstNode;
 
 pub struct EqualAssignment;
@@ -42,7 +41,7 @@ impl Violation for EqualAssignment {
     }
 }
 
-pub fn assignment(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
+pub fn assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
     let operator = operator?;

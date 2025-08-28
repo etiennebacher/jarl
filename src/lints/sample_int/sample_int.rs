@@ -1,7 +1,6 @@
 use crate::diagnostic::*;
 use crate::utils::{drop_arg_by_name_or_position, get_arg_by_name_then_position};
 use air_r_syntax::*;
-use anyhow::Result;
 use biome_rowan::AstNode;
 
 pub struct SampleInt;
@@ -39,7 +38,7 @@ impl Violation for SampleInt {
     }
 }
 
-pub fn sample_int(ast: &RCall) -> Result<Option<Diagnostic>> {
+pub fn sample_int(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
 
     let function = function?;

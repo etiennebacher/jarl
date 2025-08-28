@@ -1,6 +1,5 @@
 use crate::diagnostic::*;
 use air_r_syntax::*;
-use anyhow::Result;
 use biome_rowan::AstNode;
 
 pub struct EmptyAssignment;
@@ -14,7 +13,7 @@ impl Violation for EmptyAssignment {
     }
 }
 
-pub fn empty_assignment(ast: &RBinaryExpression) -> Result<Option<Diagnostic>> {
+pub fn empty_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
     let left = left?;
