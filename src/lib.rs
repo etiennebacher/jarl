@@ -2,7 +2,6 @@ pub mod analyze;
 pub mod args;
 pub mod check;
 pub mod config;
-pub mod emitter;
 pub mod error;
 pub mod fix;
 pub mod lints;

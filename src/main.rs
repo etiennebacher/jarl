@@ -8,8 +8,8 @@ use colored::Colorize;
 use flir::args::CliArgs;
 use flir::check::check;
 use flir::config::build_config;
-use flir::emitter::*;
 use flir::message::Diagnostic;
+use flir::output_format::*;
 
 use anyhow::Result;
 use clap::Parser;
