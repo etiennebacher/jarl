@@ -45,9 +45,6 @@ jobs:
           git checkout origin/main
           cargo build --release
         working-directory: ./
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
 
       - name: Save main binary path
         run: echo "MAIN_FLIR=$(pwd)/target/release/flir" >> $GITHUB_ENV
