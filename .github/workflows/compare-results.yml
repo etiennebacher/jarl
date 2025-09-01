@@ -24,7 +24,7 @@ jobs:
       - name: Checkout current PR branch
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          ssh-key: ${{ secrets.FLIR_DEPLOY_KEY }}
 
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
