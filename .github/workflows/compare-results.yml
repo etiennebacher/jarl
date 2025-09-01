@@ -21,55 +21,46 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout PR branch
+      - name: Checkout current PR branch
         uses: actions/checkout@v4
-        with:
-          path: pr-branch
 
-      - name: Checkout main branch
-        uses: actions/checkout@v4
+      - name: Set up Rust
+        uses: actions/setup-rust@v1
         with:
-          ref: main
-          path: main-branch
+          rust-version: stable
 
-      - name: Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
+      - name: Build flir binary from PR
+        run: cargo build --release
+        working-directory: ./
 
-      - name: Setup R to process lint results
-        uses: r-lib/actions/setup-r@v2
-        with:
-          use-public-rspm: true
+      - name: Save PR binary path
+        run: echo "PR_FLIR=$(pwd)/target/release/flir" >> $GITHUB_ENV
 
-      - name: Install R dependencies
+      - name: Clone test repo
+        run: git clone ${{ env.TEST_REPO_URL }} --depth 1
+
+      - name: Download flir binary from main branch
         run: |
-          R -e "install.packages(c('data.table', 'jsonlite', 'poorman'), repos = 'https://cloud.r-project.org')"
-
-      - name: Clone test repository
-        run: |
-          git clone -b freeze-for-flir-CI ${{ env.TEST_REPO_URL }} test-repo --depth 1
-
-      - name: Build flir from main branch
-        run: |
-          cd main-branch
+          git fetch origin main
+          git checkout origin/main
           cargo build --release
-          cp target/release/flir ../flir-main
+        working-directory: ./
 
-      - name: Run flir on main branch
+      - name: Save main binary path
+        run: echo "MAIN_FLIR=$(pwd)/target/release/flir" >> $GITHUB_ENV
+
+      - name: Run tests with main branch binary
         run: |
-          ./flir-main test-repo --output-format json > results_main.json
+          echo "=== Running test with main branch flir ==="
+          $MAIN_FLIR test-repo --output-format json > results_pr.json
+        working-directory: test-repo
         continue-on-error: true
 
-      - name: Build flir from PR branch
+      - name: Run tests with PR branch binary
         run: |
-          cd pr-branch
-          cargo build --release
-          cp target/release/flir ../flir-pr
-
-      - name: Run flir on PR branch
-        run: |
-          ./flir-pr test-repo --output-format json > results_pr.json
+          echo "=== Running test with PR branch flir ==="
+          $PR_FLIR test-repo --output-format json > results_pr.json
+        working-directory: test-repo
         continue-on-error: true
 
       - name: Upload main branch results
@@ -83,6 +74,15 @@ jobs:
         with:
           name: results-pr
           path: results_pr.json
+
+      - name: Setup R to process lint results
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Install R dependencies
+        run: |
+          R -e "install.packages(c('data.table', 'jsonlite', 'poorman'), repos = 'https://cloud.r-project.org')"
 
       - name: Process lint results
         run: |
