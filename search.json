@@ -124,488 +124,102 @@
     ]
   },
   {
-    "objectID": "rules/sample_int.html",
-    "href": "rules/sample_int.html",
-    "title": "sample_int",
+    "objectID": "rules/which_grepl.html",
+    "href": "rules/which_grepl.html",
+    "title": "which_grepl",
     "section": "",
-    "text": "Checks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.\n\n\n\nsample() calls sample.int() internally so they have the same performance, but the latter is more readable.\n\n\n\n\nsample(1:10, 2)\n\n[1] 1 6\n\n\nUse instead:\n\nsample.int(10, 2)\n\n[1] 2 5\n\n\n\n\n\nSee ?sample",
+    "text": "Checks for usage of which(grepl(...)) and replaces it with grep(...).\n\n\n\nwhich(grepl(...)) is harder to read and is less efficient than grep() since it requires two passes on the vector.\n\n\n\n\nx &lt;- c(\"hello\", \"there\")\nwhich(grepl(\"hell\", x))\n\n[1] 1\n\nwhich(grepl(\"foo\", x))\n\ninteger(0)\n\n\nUse instead:\n\nx &lt;- c(\"hello\", \"there\")\ngrep(\"hell\", x)\n\n[1] 1\n\ngrep(\"foo\", x)\n\ninteger(0)\n\n\n\n\n\nSee ?grep",
     "crumbs": [
       "Rules",
-      "`sample_int`"
+      "`which_grepl`"
     ]
   },
   {
-    "objectID": "rules/sample_int.html#what-it-does",
-    "href": "rules/sample_int.html#what-it-does",
-    "title": "sample_int",
+    "objectID": "rules/which_grepl.html#what-it-does",
+    "href": "rules/which_grepl.html#what-it-does",
+    "title": "which_grepl",
     "section": "",
-    "text": "Checks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.",
+    "text": "Checks for usage of which(grepl(...)) and replaces it with grep(...).",
     "crumbs": [
       "Rules",
-      "`sample_int`"
+      "`which_grepl`"
     ]
   },
   {
-    "objectID": "rules/sample_int.html#why-is-this-bad",
-    "href": "rules/sample_int.html#why-is-this-bad",
-    "title": "sample_int",
+    "objectID": "rules/which_grepl.html#why-is-this-bad",
+    "href": "rules/which_grepl.html#why-is-this-bad",
+    "title": "which_grepl",
     "section": "",
-    "text": "sample() calls sample.int() internally so they have the same performance, but the latter is more readable.",
+    "text": "which(grepl(...)) is harder to read and is less efficient than grep() since it requires two passes on the vector.",
     "crumbs": [
       "Rules",
-      "`sample_int`"
+      "`which_grepl`"
     ]
   },
   {
-    "objectID": "rules/sample_int.html#example",
-    "href": "rules/sample_int.html#example",
-    "title": "sample_int",
+    "objectID": "rules/which_grepl.html#example",
+    "href": "rules/which_grepl.html#example",
+    "title": "which_grepl",
     "section": "",
-    "text": "sample(1:10, 2)\n\n[1] 1 6\n\n\nUse instead:\n\nsample.int(10, 2)\n\n[1] 2 5",
+    "text": "x &lt;- c(\"hello\", \"there\")\nwhich(grepl(\"hell\", x))\n\n[1] 1\n\nwhich(grepl(\"foo\", x))\n\ninteger(0)\n\n\nUse instead:\n\nx &lt;- c(\"hello\", \"there\")\ngrep(\"hell\", x)\n\n[1] 1\n\ngrep(\"foo\", x)\n\ninteger(0)",
     "crumbs": [
       "Rules",
-      "`sample_int`"
+      "`which_grepl`"
     ]
   },
   {
-    "objectID": "rules/sample_int.html#references",
-    "href": "rules/sample_int.html#references",
-    "title": "sample_int",
+    "objectID": "rules/which_grepl.html#references",
+    "href": "rules/which_grepl.html#references",
+    "title": "which_grepl",
     "section": "",
-    "text": "See ?sample",
+    "text": "See ?grep",
     "crumbs": [
       "Rules",
-      "`sample_int`"
+      "`which_grepl`"
     ]
   },
   {
-    "objectID": "rules/class_equals.html",
-    "href": "rules/class_equals.html",
-    "title": "class_equals",
+    "objectID": "rules/equals_na.html",
+    "href": "rules/equals_na.html",
+    "title": "equals_na",
     "section": "",
-    "text": "Checks for usage of class(...) == \"some_class\" and class(...) %in% \"some_class\".\n\n\n\nAn R object can have several classes. Therefore, class(...) == \"some_class\" would return a logical vector with as many values as the object has classes, which is rarely desirable.\nIt is better to use inherits(..., \"some_class\") instead. inherits() checks whether any of the object’s classes match the desired class.\nThe same rationale applies to class(...) %in% \"some_class\".\n\n\n\n\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nclass(x) == \"lm\"\n\n[1] FALSE  TRUE\n\n\nUse instead:\n\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\ninherits(x, \"lm\")\n\n[1] TRUE\n\n\n\n\n\nSee ?inherits",
+    "text": "Check for x == NA, x != NA and x %in% NA, and replaces those by is.na() calls.\n\n\n\nComparing a value to NA using == returns NA in many cases:\n\nx &lt;- c(1, 2, 3, NA)\nx == NA\n\n[1] NA NA NA NA\n\n\nwhich is very likely not the expected output.\n\n\n\n\nx &lt;- c(1, 2, 3, NA)\nx == NA\n\n[1] NA NA NA NA\n\n\nUse instead:\n\nx &lt;- c(1, 2, 3, NA)\nis.na(x)\n\n[1] FALSE FALSE FALSE  TRUE",
     "crumbs": [
       "Rules",
-      "`class_equals`"
+      "`equals_na`"
     ]
   },
   {
-    "objectID": "rules/class_equals.html#what-it-does",
-    "href": "rules/class_equals.html#what-it-does",
-    "title": "class_equals",
+    "objectID": "rules/equals_na.html#what-it-does",
+    "href": "rules/equals_na.html#what-it-does",
+    "title": "equals_na",
     "section": "",
-    "text": "Checks for usage of class(...) == \"some_class\" and class(...) %in% \"some_class\".",
+    "text": "Check for x == NA, x != NA and x %in% NA, and replaces those by is.na() calls.",
     "crumbs": [
       "Rules",
-      "`class_equals`"
+      "`equals_na`"
     ]
   },
   {
-    "objectID": "rules/class_equals.html#why-is-this-bad",
-    "href": "rules/class_equals.html#why-is-this-bad",
-    "title": "class_equals",
+    "objectID": "rules/equals_na.html#why-is-this-bad",
+    "href": "rules/equals_na.html#why-is-this-bad",
+    "title": "equals_na",
     "section": "",
-    "text": "An R object can have several classes. Therefore, class(...) == \"some_class\" would return a logical vector with as many values as the object has classes, which is rarely desirable.\nIt is better to use inherits(..., \"some_class\") instead. inherits() checks whether any of the object’s classes match the desired class.\nThe same rationale applies to class(...) %in% \"some_class\".",
+    "text": "Comparing a value to NA using == returns NA in many cases:\n\nx &lt;- c(1, 2, 3, NA)\nx == NA\n\n[1] NA NA NA NA\n\n\nwhich is very likely not the expected output.",
     "crumbs": [
       "Rules",
-      "`class_equals`"
+      "`equals_na`"
     ]
   },
   {
-    "objectID": "rules/class_equals.html#example",
-    "href": "rules/class_equals.html#example",
-    "title": "class_equals",
+    "objectID": "rules/equals_na.html#example",
+    "href": "rules/equals_na.html#example",
+    "title": "equals_na",
     "section": "",
-    "text": "x &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nclass(x) == \"lm\"\n\n[1] FALSE  TRUE\n\n\nUse instead:\n\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\ninherits(x, \"lm\")\n\n[1] TRUE",
+    "text": "x &lt;- c(1, 2, 3, NA)\nx == NA\n\n[1] NA NA NA NA\n\n\nUse instead:\n\nx &lt;- c(1, 2, 3, NA)\nis.na(x)\n\n[1] FALSE FALSE FALSE  TRUE",
     "crumbs": [
       "Rules",
-      "`class_equals`"
-    ]
-  },
-  {
-    "objectID": "rules/class_equals.html#references",
-    "href": "rules/class_equals.html#references",
-    "title": "class_equals",
-    "section": "",
-    "text": "See ?inherits",
-    "crumbs": [
-      "Rules",
-      "`class_equals`"
-    ]
-  },
-  {
-    "objectID": "rules/is_numeric.html",
-    "href": "rules/is_numeric.html",
-    "title": "is_numeric",
-    "section": "",
-    "text": "Checks for usage of is.numeric(x) || is.integer(x).\n\n\n\nis.numeric(x) returns TRUE when x is double or integer. Therefore, testing is.numeric(x) || is.integer(x) is redundant and can be simplified.\n\n\n\n\nx &lt;- 1:3\nis.numeric(x) || is.integer(x)\n\n[1] TRUE\n\n\nUse instead:\n\nx &lt;- 1:3\nis.numeric(x)\n\n[1] TRUE\n\n\n\n\n\nSee ?is.numeric",
-    "crumbs": [
-      "Rules",
-      "`is_numeric`"
-    ]
-  },
-  {
-    "objectID": "rules/is_numeric.html#what-it-does",
-    "href": "rules/is_numeric.html#what-it-does",
-    "title": "is_numeric",
-    "section": "",
-    "text": "Checks for usage of is.numeric(x) || is.integer(x).",
-    "crumbs": [
-      "Rules",
-      "`is_numeric`"
-    ]
-  },
-  {
-    "objectID": "rules/is_numeric.html#why-is-this-bad",
-    "href": "rules/is_numeric.html#why-is-this-bad",
-    "title": "is_numeric",
-    "section": "",
-    "text": "is.numeric(x) returns TRUE when x is double or integer. Therefore, testing is.numeric(x) || is.integer(x) is redundant and can be simplified.",
-    "crumbs": [
-      "Rules",
-      "`is_numeric`"
-    ]
-  },
-  {
-    "objectID": "rules/is_numeric.html#example",
-    "href": "rules/is_numeric.html#example",
-    "title": "is_numeric",
-    "section": "",
-    "text": "x &lt;- 1:3\nis.numeric(x) || is.integer(x)\n\n[1] TRUE\n\n\nUse instead:\n\nx &lt;- 1:3\nis.numeric(x)\n\n[1] TRUE",
-    "crumbs": [
-      "Rules",
-      "`is_numeric`"
-    ]
-  },
-  {
-    "objectID": "rules/is_numeric.html#references",
-    "href": "rules/is_numeric.html#references",
-    "title": "is_numeric",
-    "section": "",
-    "text": "See ?is.numeric",
-    "crumbs": [
-      "Rules",
-      "`is_numeric`"
-    ]
-  },
-  {
-    "objectID": "rules/any_is_na.html",
-    "href": "rules/any_is_na.html",
-    "title": "any_is_na",
-    "section": "",
-    "text": "Checks for usage of any(is.na(...)).\n\n\n\nany(is.na(...)) is valid code but requires the evaluation of is.na() on the entire input first.\nThere is a more efficient function in base R called anyNA() that is more efficient, both in speed and memory used.\n\n\n\n\nx &lt;- c(1:10000, NA)\nany(is.na(x))\n\n[1] TRUE\n\n\nUse instead:\n\nx &lt;- c(1:10000, NA)\nanyNA(x)\n\n[1] TRUE\n\n\n\n\n\nSee ?anyNA",
-    "crumbs": [
-      "Rules",
-      "`any_is_na`"
-    ]
-  },
-  {
-    "objectID": "rules/any_is_na.html#what-it-does",
-    "href": "rules/any_is_na.html#what-it-does",
-    "title": "any_is_na",
-    "section": "",
-    "text": "Checks for usage of any(is.na(...)).",
-    "crumbs": [
-      "Rules",
-      "`any_is_na`"
-    ]
-  },
-  {
-    "objectID": "rules/any_is_na.html#why-is-this-bad",
-    "href": "rules/any_is_na.html#why-is-this-bad",
-    "title": "any_is_na",
-    "section": "",
-    "text": "any(is.na(...)) is valid code but requires the evaluation of is.na() on the entire input first.\nThere is a more efficient function in base R called anyNA() that is more efficient, both in speed and memory used.",
-    "crumbs": [
-      "Rules",
-      "`any_is_na`"
-    ]
-  },
-  {
-    "objectID": "rules/any_is_na.html#example",
-    "href": "rules/any_is_na.html#example",
-    "title": "any_is_na",
-    "section": "",
-    "text": "x &lt;- c(1:10000, NA)\nany(is.na(x))\n\n[1] TRUE\n\n\nUse instead:\n\nx &lt;- c(1:10000, NA)\nanyNA(x)\n\n[1] TRUE",
-    "crumbs": [
-      "Rules",
-      "`any_is_na`"
-    ]
-  },
-  {
-    "objectID": "rules/any_is_na.html#references",
-    "href": "rules/any_is_na.html#references",
-    "title": "any_is_na",
-    "section": "",
-    "text": "See ?anyNA",
-    "crumbs": [
-      "Rules",
-      "`any_is_na`"
-    ]
-  },
-  {
-    "objectID": "rules/length_levels.html",
-    "href": "rules/length_levels.html",
-    "title": "length_levels",
-    "section": "",
-    "text": "Check for length(levels(...)) and replace it with nlevels(...).\n\n\n\nlength(levels(...)) is harder to read nlevels(...).\nInternally, nlevels() calls length(levels(...)) so there are no performance gains.\n\n\n\n\nx &lt;- factor(1:3)\nlength(levels(x))\n\n[1] 3\n\n\nUse instead:\n\nx &lt;- factor(1:3)\nnlevels(x)\n\n[1] 3",
-    "crumbs": [
-      "Rules",
-      "`length_levels`"
-    ]
-  },
-  {
-    "objectID": "rules/length_levels.html#what-it-does",
-    "href": "rules/length_levels.html#what-it-does",
-    "title": "length_levels",
-    "section": "",
-    "text": "Check for length(levels(...)) and replace it with nlevels(...).",
-    "crumbs": [
-      "Rules",
-      "`length_levels`"
-    ]
-  },
-  {
-    "objectID": "rules/length_levels.html#why-is-this-bad",
-    "href": "rules/length_levels.html#why-is-this-bad",
-    "title": "length_levels",
-    "section": "",
-    "text": "length(levels(...)) is harder to read nlevels(...).\nInternally, nlevels() calls length(levels(...)) so there are no performance gains.",
-    "crumbs": [
-      "Rules",
-      "`length_levels`"
-    ]
-  },
-  {
-    "objectID": "rules/length_levels.html#example",
-    "href": "rules/length_levels.html#example",
-    "title": "length_levels",
-    "section": "",
-    "text": "x &lt;- factor(1:3)\nlength(levels(x))\n\n[1] 3\n\n\nUse instead:\n\nx &lt;- factor(1:3)\nnlevels(x)\n\n[1] 3",
-    "crumbs": [
-      "Rules",
-      "`length_levels`"
-    ]
-  },
-  {
-    "objectID": "rules/true_false_symbol.html",
-    "href": "rules/true_false_symbol.html",
-    "title": "true_false_symbol",
-    "section": "",
-    "text": "Checks for usage of T and F symbols. If they correspond to the TRUE and FALSE values, then replace them by that. If they correspond to something else, such as an object or a variable name, then no automatic fixes are applied.\n\n\n\nT and F are not reserved symbols (like break) and therefore can be used as variable names. Therefore, it is better for readability to replace them by TRUE and FALSE.\nIt is also recommended to rename objects or parameters named F and T to avoid confusion.\n\n\n\n\nx &lt;- T\ny &lt;- F\n\nUse instead:\n\nx &lt;- TRUE\ny &lt;- FALSE",
-    "crumbs": [
-      "Rules",
-      "`true_false_symbol`"
-    ]
-  },
-  {
-    "objectID": "rules/true_false_symbol.html#what-it-does",
-    "href": "rules/true_false_symbol.html#what-it-does",
-    "title": "true_false_symbol",
-    "section": "",
-    "text": "Checks for usage of T and F symbols. If they correspond to the TRUE and FALSE values, then replace them by that. If they correspond to something else, such as an object or a variable name, then no automatic fixes are applied.",
-    "crumbs": [
-      "Rules",
-      "`true_false_symbol`"
-    ]
-  },
-  {
-    "objectID": "rules/true_false_symbol.html#why-is-this-bad",
-    "href": "rules/true_false_symbol.html#why-is-this-bad",
-    "title": "true_false_symbol",
-    "section": "",
-    "text": "T and F are not reserved symbols (like break) and therefore can be used as variable names. Therefore, it is better for readability to replace them by TRUE and FALSE.\nIt is also recommended to rename objects or parameters named F and T to avoid confusion.",
-    "crumbs": [
-      "Rules",
-      "`true_false_symbol`"
-    ]
-  },
-  {
-    "objectID": "rules/true_false_symbol.html#example",
-    "href": "rules/true_false_symbol.html#example",
-    "title": "true_false_symbol",
-    "section": "",
-    "text": "x &lt;- T\ny &lt;- F\n\nUse instead:\n\nx &lt;- TRUE\ny &lt;- FALSE",
-    "crumbs": [
-      "Rules",
-      "`true_false_symbol`"
-    ]
-  },
-  {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "web",
-    "section": "",
-    "text": "This is a Quarto website.\nTo learn more about Quarto websites visit https://quarto.org/docs/websites."
-  },
-  {
-    "objectID": "rules.html",
-    "href": "rules.html",
-    "title": "flir",
-    "section": "",
-    "text": "Rules to use.",
-    "crumbs": [
-      "Rules"
-    ]
-  },
-  {
-    "objectID": "rules.html#rules",
-    "href": "rules.html#rules",
-    "title": "flir",
-    "section": "",
-    "text": "Rules to use.",
-    "crumbs": [
-      "Rules"
-    ]
-  },
-  {
-    "objectID": "about.html",
-    "href": "about.html",
-    "title": "About",
-    "section": "",
-    "text": "About this site"
-  },
-  {
-    "objectID": "rules/grepv.html",
-    "href": "rules/grepv.html",
-    "title": "grepv",
-    "section": "",
-    "text": "Checks for usage of grep(..., value = TRUE) and recommends using grepv() instead (only if the R version used in the project is &gt;= 4.5).\n\n\n\nStarting from R 4.5, there is a function grepv() that is identical to grep() except that it uses value = TRUE by default.\nUsing grepv(...) is therefore more readable than grep(...).\n\n\n\n\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrep(\"i\", x, value = TRUE)\n\n[1] \"hi\"     \"howdie\"\n\n\nUse instead:\n\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrepv(\"i\", x)\n\n[1] \"hi\"     \"howdie\"\n\n\n\n\n\nSee ?grepv",
-    "crumbs": [
-      "Rules",
-      "`grepv`"
-    ]
-  },
-  {
-    "objectID": "rules/grepv.html#what-it-does",
-    "href": "rules/grepv.html#what-it-does",
-    "title": "grepv",
-    "section": "",
-    "text": "Checks for usage of grep(..., value = TRUE) and recommends using grepv() instead (only if the R version used in the project is &gt;= 4.5).",
-    "crumbs": [
-      "Rules",
-      "`grepv`"
-    ]
-  },
-  {
-    "objectID": "rules/grepv.html#why-is-this-bad",
-    "href": "rules/grepv.html#why-is-this-bad",
-    "title": "grepv",
-    "section": "",
-    "text": "Starting from R 4.5, there is a function grepv() that is identical to grep() except that it uses value = TRUE by default.\nUsing grepv(...) is therefore more readable than grep(...).",
-    "crumbs": [
-      "Rules",
-      "`grepv`"
-    ]
-  },
-  {
-    "objectID": "rules/grepv.html#example",
-    "href": "rules/grepv.html#example",
-    "title": "grepv",
-    "section": "",
-    "text": "x &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrep(\"i\", x, value = TRUE)\n\n[1] \"hi\"     \"howdie\"\n\n\nUse instead:\n\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrepv(\"i\", x)\n\n[1] \"hi\"     \"howdie\"",
-    "crumbs": [
-      "Rules",
-      "`grepv`"
-    ]
-  },
-  {
-    "objectID": "rules/grepv.html#references",
-    "href": "rules/grepv.html#references",
-    "title": "grepv",
-    "section": "",
-    "text": "See ?grepv",
-    "crumbs": [
-      "Rules",
-      "`grepv`"
-    ]
-  },
-  {
-    "objectID": "rules/redundant_equals.html",
-    "href": "rules/redundant_equals.html",
-    "title": "redundant_equals",
-    "section": "",
-    "text": "Checks for usage of == and != where one of the sides of the operation is TRUE or FALSE.\n\n\n\nTesting x == TRUE is redundant if x is a logical vector. Wherever this is used to improve readability, the solution should instead be to improve the naming of the object to better indicate that its contents are logical. This can be done using prefixes (is, has, can, etc.). For example, is_child, has_parent_supervision, can_watch_horror_movie clarify their logical nature, while child, parent_supervision, watch_horror_movie don’t.\n\n\n\n\nx &lt;- c(TRUE, FALSE)\nif (any(x == TRUE)) {\n  print(\"hi\")\n}\n\n[1] \"hi\"\n\n\nUse instead:\n\nx &lt;- c(TRUE, FALSE)\nif (any(x)) {\n  print(\"hi\")\n}\n\n[1] \"hi\"",
-    "crumbs": [
-      "Rules",
-      "`redundant_equals`"
-    ]
-  },
-  {
-    "objectID": "rules/redundant_equals.html#what-it-does",
-    "href": "rules/redundant_equals.html#what-it-does",
-    "title": "redundant_equals",
-    "section": "",
-    "text": "Checks for usage of == and != where one of the sides of the operation is TRUE or FALSE.",
-    "crumbs": [
-      "Rules",
-      "`redundant_equals`"
-    ]
-  },
-  {
-    "objectID": "rules/redundant_equals.html#why-is-this-bad",
-    "href": "rules/redundant_equals.html#why-is-this-bad",
-    "title": "redundant_equals",
-    "section": "",
-    "text": "Testing x == TRUE is redundant if x is a logical vector. Wherever this is used to improve readability, the solution should instead be to improve the naming of the object to better indicate that its contents are logical. This can be done using prefixes (is, has, can, etc.). For example, is_child, has_parent_supervision, can_watch_horror_movie clarify their logical nature, while child, parent_supervision, watch_horror_movie don’t.",
-    "crumbs": [
-      "Rules",
-      "`redundant_equals`"
-    ]
-  },
-  {
-    "objectID": "rules/redundant_equals.html#example",
-    "href": "rules/redundant_equals.html#example",
-    "title": "redundant_equals",
-    "section": "",
-    "text": "x &lt;- c(TRUE, FALSE)\nif (any(x == TRUE)) {\n  print(\"hi\")\n}\n\n[1] \"hi\"\n\n\nUse instead:\n\nx &lt;- c(TRUE, FALSE)\nif (any(x)) {\n  print(\"hi\")\n}\n\n[1] \"hi\"",
-    "crumbs": [
-      "Rules",
-      "`redundant_equals`"
-    ]
-  },
-  {
-    "objectID": "rules/duplicated_arguments.html",
-    "href": "rules/duplicated_arguments.html",
-    "title": "duplicated_arguments",
-    "section": "",
-    "text": "Checks for duplicated arguments in function calls.\n\n\n\nWhile some cases of duplicated arguments generate run-time errors (e.g. mean(x = 1:5, x = 2:3)), this is not always the case (e.g. c(a = 1, a = 2)).\nThis linter is used to discourage explicitly providing duplicate names to objects. Duplicate-named objects are hard to work with programmatically and should typically be avoided.\n\n\n\n\nlist(x = 1, x = 2)\n\n$x\n[1] 1\n\n$x\n[1] 2",
-    "crumbs": [
-      "Rules",
-      "`duplicated_arguments`"
-    ]
-  },
-  {
-    "objectID": "rules/duplicated_arguments.html#what-it-does",
-    "href": "rules/duplicated_arguments.html#what-it-does",
-    "title": "duplicated_arguments",
-    "section": "",
-    "text": "Checks for duplicated arguments in function calls.",
-    "crumbs": [
-      "Rules",
-      "`duplicated_arguments`"
-    ]
-  },
-  {
-    "objectID": "rules/duplicated_arguments.html#why-is-this-bad",
-    "href": "rules/duplicated_arguments.html#why-is-this-bad",
-    "title": "duplicated_arguments",
-    "section": "",
-    "text": "While some cases of duplicated arguments generate run-time errors (e.g. mean(x = 1:5, x = 2:3)), this is not always the case (e.g. c(a = 1, a = 2)).\nThis linter is used to discourage explicitly providing duplicate names to objects. Duplicate-named objects are hard to work with programmatically and should typically be avoided.",
-    "crumbs": [
-      "Rules",
-      "`duplicated_arguments`"
-    ]
-  },
-  {
-    "objectID": "rules/duplicated_arguments.html#example",
-    "href": "rules/duplicated_arguments.html#example",
-    "title": "duplicated_arguments",
-    "section": "",
-    "text": "list(x = 1, x = 2)\n\n$x\n[1] 1\n\n$x\n[1] 2",
-    "crumbs": [
-      "Rules",
-      "`duplicated_arguments`"
+      "`equals_na`"
     ]
   },
   {
@@ -664,102 +278,532 @@
     ]
   },
   {
-    "objectID": "rules/equals_na.html",
-    "href": "rules/equals_na.html",
-    "title": "equals_na",
+    "objectID": "rules/duplicated_arguments.html",
+    "href": "rules/duplicated_arguments.html",
+    "title": "duplicated_arguments",
     "section": "",
-    "text": "Check for x == NA, x != NA and x %in% NA, and replaces those by is.na() calls.\n\n\n\nComparing a value to NA using == returns NA in many cases:\n\nx &lt;- c(1, 2, 3, NA)\nx == NA\n\n[1] NA NA NA NA\n\n\nwhich is very likely not the expected output.\n\n\n\n\nx &lt;- c(1, 2, 3, NA)\nx == NA\n\n[1] NA NA NA NA\n\n\nUse instead:\n\nx &lt;- c(1, 2, 3, NA)\nis.na(x)\n\n[1] FALSE FALSE FALSE  TRUE",
+    "text": "Checks for duplicated arguments in function calls.\n\n\n\nWhile some cases of duplicated arguments generate run-time errors (e.g. mean(x = 1:5, x = 2:3)), this is not always the case (e.g. c(a = 1, a = 2)).\nThis linter is used to discourage explicitly providing duplicate names to objects. Duplicate-named objects are hard to work with programmatically and should typically be avoided.\n\n\n\n\nlist(x = 1, x = 2)\n\n$x\n[1] 1\n\n$x\n[1] 2",
     "crumbs": [
       "Rules",
-      "`equals_na`"
+      "`duplicated_arguments`"
     ]
   },
   {
-    "objectID": "rules/equals_na.html#what-it-does",
-    "href": "rules/equals_na.html#what-it-does",
-    "title": "equals_na",
+    "objectID": "rules/duplicated_arguments.html#what-it-does",
+    "href": "rules/duplicated_arguments.html#what-it-does",
+    "title": "duplicated_arguments",
     "section": "",
-    "text": "Check for x == NA, x != NA and x %in% NA, and replaces those by is.na() calls.",
+    "text": "Checks for duplicated arguments in function calls.",
     "crumbs": [
       "Rules",
-      "`equals_na`"
+      "`duplicated_arguments`"
     ]
   },
   {
-    "objectID": "rules/equals_na.html#why-is-this-bad",
-    "href": "rules/equals_na.html#why-is-this-bad",
-    "title": "equals_na",
+    "objectID": "rules/duplicated_arguments.html#why-is-this-bad",
+    "href": "rules/duplicated_arguments.html#why-is-this-bad",
+    "title": "duplicated_arguments",
     "section": "",
-    "text": "Comparing a value to NA using == returns NA in many cases:\n\nx &lt;- c(1, 2, 3, NA)\nx == NA\n\n[1] NA NA NA NA\n\n\nwhich is very likely not the expected output.",
+    "text": "While some cases of duplicated arguments generate run-time errors (e.g. mean(x = 1:5, x = 2:3)), this is not always the case (e.g. c(a = 1, a = 2)).\nThis linter is used to discourage explicitly providing duplicate names to objects. Duplicate-named objects are hard to work with programmatically and should typically be avoided.",
     "crumbs": [
       "Rules",
-      "`equals_na`"
+      "`duplicated_arguments`"
     ]
   },
   {
-    "objectID": "rules/equals_na.html#example",
-    "href": "rules/equals_na.html#example",
-    "title": "equals_na",
+    "objectID": "rules/duplicated_arguments.html#example",
+    "href": "rules/duplicated_arguments.html#example",
+    "title": "duplicated_arguments",
     "section": "",
-    "text": "x &lt;- c(1, 2, 3, NA)\nx == NA\n\n[1] NA NA NA NA\n\n\nUse instead:\n\nx &lt;- c(1, 2, 3, NA)\nis.na(x)\n\n[1] FALSE FALSE FALSE  TRUE",
+    "text": "list(x = 1, x = 2)\n\n$x\n[1] 1\n\n$x\n[1] 2",
     "crumbs": [
       "Rules",
-      "`equals_na`"
+      "`duplicated_arguments`"
     ]
   },
   {
-    "objectID": "rules/which_grepl.html",
-    "href": "rules/which_grepl.html",
-    "title": "which_grepl",
+    "objectID": "rules/redundant_equals.html",
+    "href": "rules/redundant_equals.html",
+    "title": "redundant_equals",
     "section": "",
-    "text": "Checks for usage of which(grepl(...)) and replaces it with grep(...).\n\n\n\nwhich(grepl(...)) is harder to read and is less efficient than grep() since it requires two passes on the vector.\n\n\n\n\nx &lt;- c(\"hello\", \"there\")\nwhich(grepl(\"hell\", x))\n\n[1] 1\n\nwhich(grepl(\"foo\", x))\n\ninteger(0)\n\n\nUse instead:\n\nx &lt;- c(\"hello\", \"there\")\ngrep(\"hell\", x)\n\n[1] 1\n\ngrep(\"foo\", x)\n\ninteger(0)\n\n\n\n\n\nSee ?grep",
+    "text": "Checks for usage of == and != where one of the sides of the operation is TRUE or FALSE.\n\n\n\nTesting x == TRUE is redundant if x is a logical vector. Wherever this is used to improve readability, the solution should instead be to improve the naming of the object to better indicate that its contents are logical. This can be done using prefixes (is, has, can, etc.). For example, is_child, has_parent_supervision, can_watch_horror_movie clarify their logical nature, while child, parent_supervision, watch_horror_movie don’t.\n\n\n\n\nx &lt;- c(TRUE, FALSE)\nif (any(x == TRUE)) {\n  print(\"hi\")\n}\n\n[1] \"hi\"\n\n\nUse instead:\n\nx &lt;- c(TRUE, FALSE)\nif (any(x)) {\n  print(\"hi\")\n}\n\n[1] \"hi\"",
     "crumbs": [
       "Rules",
-      "`which_grepl`"
+      "`redundant_equals`"
     ]
   },
   {
-    "objectID": "rules/which_grepl.html#what-it-does",
-    "href": "rules/which_grepl.html#what-it-does",
-    "title": "which_grepl",
+    "objectID": "rules/redundant_equals.html#what-it-does",
+    "href": "rules/redundant_equals.html#what-it-does",
+    "title": "redundant_equals",
     "section": "",
-    "text": "Checks for usage of which(grepl(...)) and replaces it with grep(...).",
+    "text": "Checks for usage of == and != where one of the sides of the operation is TRUE or FALSE.",
     "crumbs": [
       "Rules",
-      "`which_grepl`"
+      "`redundant_equals`"
     ]
   },
   {
-    "objectID": "rules/which_grepl.html#why-is-this-bad",
-    "href": "rules/which_grepl.html#why-is-this-bad",
-    "title": "which_grepl",
+    "objectID": "rules/redundant_equals.html#why-is-this-bad",
+    "href": "rules/redundant_equals.html#why-is-this-bad",
+    "title": "redundant_equals",
     "section": "",
-    "text": "which(grepl(...)) is harder to read and is less efficient than grep() since it requires two passes on the vector.",
+    "text": "Testing x == TRUE is redundant if x is a logical vector. Wherever this is used to improve readability, the solution should instead be to improve the naming of the object to better indicate that its contents are logical. This can be done using prefixes (is, has, can, etc.). For example, is_child, has_parent_supervision, can_watch_horror_movie clarify their logical nature, while child, parent_supervision, watch_horror_movie don’t.",
     "crumbs": [
       "Rules",
-      "`which_grepl`"
+      "`redundant_equals`"
     ]
   },
   {
-    "objectID": "rules/which_grepl.html#example",
-    "href": "rules/which_grepl.html#example",
-    "title": "which_grepl",
+    "objectID": "rules/redundant_equals.html#example",
+    "href": "rules/redundant_equals.html#example",
+    "title": "redundant_equals",
     "section": "",
-    "text": "x &lt;- c(\"hello\", \"there\")\nwhich(grepl(\"hell\", x))\n\n[1] 1\n\nwhich(grepl(\"foo\", x))\n\ninteger(0)\n\n\nUse instead:\n\nx &lt;- c(\"hello\", \"there\")\ngrep(\"hell\", x)\n\n[1] 1\n\ngrep(\"foo\", x)\n\ninteger(0)",
+    "text": "x &lt;- c(TRUE, FALSE)\nif (any(x == TRUE)) {\n  print(\"hi\")\n}\n\n[1] \"hi\"\n\n\nUse instead:\n\nx &lt;- c(TRUE, FALSE)\nif (any(x)) {\n  print(\"hi\")\n}\n\n[1] \"hi\"",
     "crumbs": [
       "Rules",
-      "`which_grepl`"
+      "`redundant_equals`"
     ]
   },
   {
-    "objectID": "rules/which_grepl.html#references",
-    "href": "rules/which_grepl.html#references",
-    "title": "which_grepl",
+    "objectID": "rules/grepv.html",
+    "href": "rules/grepv.html",
+    "title": "grepv",
     "section": "",
-    "text": "See ?grep",
+    "text": "Checks for usage of grep(..., value = TRUE) and recommends using grepv() instead (only if the R version used in the project is &gt;= 4.5).\n\n\n\nStarting from R 4.5, there is a function grepv() that is identical to grep() except that it uses value = TRUE by default.\nUsing grepv(...) is therefore more readable than grep(...).\n\n\n\n\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrep(\"i\", x, value = TRUE)\n\n[1] \"hi\"     \"howdie\"\n\n\nUse instead:\n\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrepv(\"i\", x)\n\n[1] \"hi\"     \"howdie\"\n\n\n\n\n\nSee ?grepv",
     "crumbs": [
       "Rules",
-      "`which_grepl`"
+      "`grepv`"
+    ]
+  },
+  {
+    "objectID": "rules/grepv.html#what-it-does",
+    "href": "rules/grepv.html#what-it-does",
+    "title": "grepv",
+    "section": "",
+    "text": "Checks for usage of grep(..., value = TRUE) and recommends using grepv() instead (only if the R version used in the project is &gt;= 4.5).",
+    "crumbs": [
+      "Rules",
+      "`grepv`"
+    ]
+  },
+  {
+    "objectID": "rules/grepv.html#why-is-this-bad",
+    "href": "rules/grepv.html#why-is-this-bad",
+    "title": "grepv",
+    "section": "",
+    "text": "Starting from R 4.5, there is a function grepv() that is identical to grep() except that it uses value = TRUE by default.\nUsing grepv(...) is therefore more readable than grep(...).",
+    "crumbs": [
+      "Rules",
+      "`grepv`"
+    ]
+  },
+  {
+    "objectID": "rules/grepv.html#example",
+    "href": "rules/grepv.html#example",
+    "title": "grepv",
+    "section": "",
+    "text": "x &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrep(\"i\", x, value = TRUE)\n\n[1] \"hi\"     \"howdie\"\n\n\nUse instead:\n\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrepv(\"i\", x)\n\n[1] \"hi\"     \"howdie\"",
+    "crumbs": [
+      "Rules",
+      "`grepv`"
+    ]
+  },
+  {
+    "objectID": "rules/grepv.html#references",
+    "href": "rules/grepv.html#references",
+    "title": "grepv",
+    "section": "",
+    "text": "See ?grepv",
+    "crumbs": [
+      "Rules",
+      "`grepv`"
+    ]
+  },
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "About this site"
+  },
+  {
+    "objectID": "rules.html",
+    "href": "rules.html",
+    "title": "flir",
+    "section": "",
+    "text": "Rules to use.",
+    "crumbs": [
+      "Rules"
+    ]
+  },
+  {
+    "objectID": "rules.html#rules",
+    "href": "rules.html#rules",
+    "title": "flir",
+    "section": "",
+    "text": "Rules to use.",
+    "crumbs": [
+      "Rules"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "web",
+    "section": "",
+    "text": "This is a Quarto website.\nTo learn more about Quarto websites visit https://quarto.org/docs/websites."
+  },
+  {
+    "objectID": "rules/true_false_symbol.html",
+    "href": "rules/true_false_symbol.html",
+    "title": "true_false_symbol",
+    "section": "",
+    "text": "Checks for usage of T and F symbols. If they correspond to the TRUE and FALSE values, then replace them by that. If they correspond to something else, such as an object or a variable name, then no automatic fixes are applied.\n\n\n\nT and F are not reserved symbols (like break) and therefore can be used as variable names. Therefore, it is better for readability to replace them by TRUE and FALSE.\nIt is also recommended to rename objects or parameters named F and T to avoid confusion.\n\n\n\n\nx &lt;- T\ny &lt;- F\n\nUse instead:\n\nx &lt;- TRUE\ny &lt;- FALSE",
+    "crumbs": [
+      "Rules",
+      "`true_false_symbol`"
+    ]
+  },
+  {
+    "objectID": "rules/true_false_symbol.html#what-it-does",
+    "href": "rules/true_false_symbol.html#what-it-does",
+    "title": "true_false_symbol",
+    "section": "",
+    "text": "Checks for usage of T and F symbols. If they correspond to the TRUE and FALSE values, then replace them by that. If they correspond to something else, such as an object or a variable name, then no automatic fixes are applied.",
+    "crumbs": [
+      "Rules",
+      "`true_false_symbol`"
+    ]
+  },
+  {
+    "objectID": "rules/true_false_symbol.html#why-is-this-bad",
+    "href": "rules/true_false_symbol.html#why-is-this-bad",
+    "title": "true_false_symbol",
+    "section": "",
+    "text": "T and F are not reserved symbols (like break) and therefore can be used as variable names. Therefore, it is better for readability to replace them by TRUE and FALSE.\nIt is also recommended to rename objects or parameters named F and T to avoid confusion.",
+    "crumbs": [
+      "Rules",
+      "`true_false_symbol`"
+    ]
+  },
+  {
+    "objectID": "rules/true_false_symbol.html#example",
+    "href": "rules/true_false_symbol.html#example",
+    "title": "true_false_symbol",
+    "section": "",
+    "text": "x &lt;- T\ny &lt;- F\n\nUse instead:\n\nx &lt;- TRUE\ny &lt;- FALSE",
+    "crumbs": [
+      "Rules",
+      "`true_false_symbol`"
+    ]
+  },
+  {
+    "objectID": "rules/length_levels.html",
+    "href": "rules/length_levels.html",
+    "title": "length_levels",
+    "section": "",
+    "text": "Check for length(levels(...)) and replace it with nlevels(...).\n\n\n\nlength(levels(...)) is harder to read nlevels(...).\nInternally, nlevels() calls length(levels(...)) so there are no performance gains.\n\n\n\n\nx &lt;- factor(1:3)\nlength(levels(x))\n\n[1] 3\n\n\nUse instead:\n\nx &lt;- factor(1:3)\nnlevels(x)\n\n[1] 3",
+    "crumbs": [
+      "Rules",
+      "`length_levels`"
+    ]
+  },
+  {
+    "objectID": "rules/length_levels.html#what-it-does",
+    "href": "rules/length_levels.html#what-it-does",
+    "title": "length_levels",
+    "section": "",
+    "text": "Check for length(levels(...)) and replace it with nlevels(...).",
+    "crumbs": [
+      "Rules",
+      "`length_levels`"
+    ]
+  },
+  {
+    "objectID": "rules/length_levels.html#why-is-this-bad",
+    "href": "rules/length_levels.html#why-is-this-bad",
+    "title": "length_levels",
+    "section": "",
+    "text": "length(levels(...)) is harder to read nlevels(...).\nInternally, nlevels() calls length(levels(...)) so there are no performance gains.",
+    "crumbs": [
+      "Rules",
+      "`length_levels`"
+    ]
+  },
+  {
+    "objectID": "rules/length_levels.html#example",
+    "href": "rules/length_levels.html#example",
+    "title": "length_levels",
+    "section": "",
+    "text": "x &lt;- factor(1:3)\nlength(levels(x))\n\n[1] 3\n\n\nUse instead:\n\nx &lt;- factor(1:3)\nnlevels(x)\n\n[1] 3",
+    "crumbs": [
+      "Rules",
+      "`length_levels`"
+    ]
+  },
+  {
+    "objectID": "rules/any_is_na.html",
+    "href": "rules/any_is_na.html",
+    "title": "any_is_na",
+    "section": "",
+    "text": "Checks for usage of any(is.na(...)).\n\n\n\nany(is.na(...)) is valid code but requires the evaluation of is.na() on the entire input first.\nThere is a more efficient function in base R called anyNA() that is more efficient, both in speed and memory used.\n\n\n\n\nx &lt;- c(1:10000, NA)\nany(is.na(x))\n\n[1] TRUE\n\n\nUse instead:\n\nx &lt;- c(1:10000, NA)\nanyNA(x)\n\n[1] TRUE\n\n\n\n\n\nSee ?anyNA",
+    "crumbs": [
+      "Rules",
+      "`any_is_na`"
+    ]
+  },
+  {
+    "objectID": "rules/any_is_na.html#what-it-does",
+    "href": "rules/any_is_na.html#what-it-does",
+    "title": "any_is_na",
+    "section": "",
+    "text": "Checks for usage of any(is.na(...)).",
+    "crumbs": [
+      "Rules",
+      "`any_is_na`"
+    ]
+  },
+  {
+    "objectID": "rules/any_is_na.html#why-is-this-bad",
+    "href": "rules/any_is_na.html#why-is-this-bad",
+    "title": "any_is_na",
+    "section": "",
+    "text": "any(is.na(...)) is valid code but requires the evaluation of is.na() on the entire input first.\nThere is a more efficient function in base R called anyNA() that is more efficient, both in speed and memory used.",
+    "crumbs": [
+      "Rules",
+      "`any_is_na`"
+    ]
+  },
+  {
+    "objectID": "rules/any_is_na.html#example",
+    "href": "rules/any_is_na.html#example",
+    "title": "any_is_na",
+    "section": "",
+    "text": "x &lt;- c(1:10000, NA)\nany(is.na(x))\n\n[1] TRUE\n\n\nUse instead:\n\nx &lt;- c(1:10000, NA)\nanyNA(x)\n\n[1] TRUE",
+    "crumbs": [
+      "Rules",
+      "`any_is_na`"
+    ]
+  },
+  {
+    "objectID": "rules/any_is_na.html#references",
+    "href": "rules/any_is_na.html#references",
+    "title": "any_is_na",
+    "section": "",
+    "text": "See ?anyNA",
+    "crumbs": [
+      "Rules",
+      "`any_is_na`"
+    ]
+  },
+  {
+    "objectID": "rules/is_numeric.html",
+    "href": "rules/is_numeric.html",
+    "title": "is_numeric",
+    "section": "",
+    "text": "Checks for usage of is.numeric(x) || is.integer(x).\n\n\n\nis.numeric(x) returns TRUE when x is double or integer. Therefore, testing is.numeric(x) || is.integer(x) is redundant and can be simplified.\n\n\n\n\nx &lt;- 1:3\nis.numeric(x) || is.integer(x)\n\n[1] TRUE\n\n\nUse instead:\n\nx &lt;- 1:3\nis.numeric(x)\n\n[1] TRUE\n\n\n\n\n\nSee ?is.numeric",
+    "crumbs": [
+      "Rules",
+      "`is_numeric`"
+    ]
+  },
+  {
+    "objectID": "rules/is_numeric.html#what-it-does",
+    "href": "rules/is_numeric.html#what-it-does",
+    "title": "is_numeric",
+    "section": "",
+    "text": "Checks for usage of is.numeric(x) || is.integer(x).",
+    "crumbs": [
+      "Rules",
+      "`is_numeric`"
+    ]
+  },
+  {
+    "objectID": "rules/is_numeric.html#why-is-this-bad",
+    "href": "rules/is_numeric.html#why-is-this-bad",
+    "title": "is_numeric",
+    "section": "",
+    "text": "is.numeric(x) returns TRUE when x is double or integer. Therefore, testing is.numeric(x) || is.integer(x) is redundant and can be simplified.",
+    "crumbs": [
+      "Rules",
+      "`is_numeric`"
+    ]
+  },
+  {
+    "objectID": "rules/is_numeric.html#example",
+    "href": "rules/is_numeric.html#example",
+    "title": "is_numeric",
+    "section": "",
+    "text": "x &lt;- 1:3\nis.numeric(x) || is.integer(x)\n\n[1] TRUE\n\n\nUse instead:\n\nx &lt;- 1:3\nis.numeric(x)\n\n[1] TRUE",
+    "crumbs": [
+      "Rules",
+      "`is_numeric`"
+    ]
+  },
+  {
+    "objectID": "rules/is_numeric.html#references",
+    "href": "rules/is_numeric.html#references",
+    "title": "is_numeric",
+    "section": "",
+    "text": "See ?is.numeric",
+    "crumbs": [
+      "Rules",
+      "`is_numeric`"
+    ]
+  },
+  {
+    "objectID": "rules/class_equals.html",
+    "href": "rules/class_equals.html",
+    "title": "class_equals",
+    "section": "",
+    "text": "Checks for usage of class(...) == \"some_class\" and class(...) %in% \"some_class\".\n\n\n\nAn R object can have several classes. Therefore, class(...) == \"some_class\" would return a logical vector with as many values as the object has classes, which is rarely desirable.\nIt is better to use inherits(..., \"some_class\") instead. inherits() checks whether any of the object’s classes match the desired class.\nThe same rationale applies to class(...) %in% \"some_class\".\n\n\n\n\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nclass(x) == \"lm\"\n\n[1] FALSE  TRUE\n\n\nUse instead:\n\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\ninherits(x, \"lm\")\n\n[1] TRUE\n\n\n\n\n\nSee ?inherits",
+    "crumbs": [
+      "Rules",
+      "`class_equals`"
+    ]
+  },
+  {
+    "objectID": "rules/class_equals.html#what-it-does",
+    "href": "rules/class_equals.html#what-it-does",
+    "title": "class_equals",
+    "section": "",
+    "text": "Checks for usage of class(...) == \"some_class\" and class(...) %in% \"some_class\".",
+    "crumbs": [
+      "Rules",
+      "`class_equals`"
+    ]
+  },
+  {
+    "objectID": "rules/class_equals.html#why-is-this-bad",
+    "href": "rules/class_equals.html#why-is-this-bad",
+    "title": "class_equals",
+    "section": "",
+    "text": "An R object can have several classes. Therefore, class(...) == \"some_class\" would return a logical vector with as many values as the object has classes, which is rarely desirable.\nIt is better to use inherits(..., \"some_class\") instead. inherits() checks whether any of the object’s classes match the desired class.\nThe same rationale applies to class(...) %in% \"some_class\".",
+    "crumbs": [
+      "Rules",
+      "`class_equals`"
+    ]
+  },
+  {
+    "objectID": "rules/class_equals.html#example",
+    "href": "rules/class_equals.html#example",
+    "title": "class_equals",
+    "section": "",
+    "text": "x &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nclass(x) == \"lm\"\n\n[1] FALSE  TRUE\n\n\nUse instead:\n\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\ninherits(x, \"lm\")\n\n[1] TRUE",
+    "crumbs": [
+      "Rules",
+      "`class_equals`"
+    ]
+  },
+  {
+    "objectID": "rules/class_equals.html#references",
+    "href": "rules/class_equals.html#references",
+    "title": "class_equals",
+    "section": "",
+    "text": "See ?inherits",
+    "crumbs": [
+      "Rules",
+      "`class_equals`"
+    ]
+  },
+  {
+    "objectID": "rules/sample_int.html",
+    "href": "rules/sample_int.html",
+    "title": "sample_int",
+    "section": "",
+    "text": "Checks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.\n\n\n\nsample() calls sample.int() internally so they have the same performance, but the latter is more readable.\n\n\n\n\nsample(1:10, 2)\n\n[1] 3 7\n\n\nUse instead:\n\nsample.int(10, 2)\n\n[1] 9 8\n\n\n\n\n\nSee ?sample",
+    "crumbs": [
+      "Rules",
+      "`sample_int`"
+    ]
+  },
+  {
+    "objectID": "rules/sample_int.html#what-it-does",
+    "href": "rules/sample_int.html#what-it-does",
+    "title": "sample_int",
+    "section": "",
+    "text": "Checks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.",
+    "crumbs": [
+      "Rules",
+      "`sample_int`"
+    ]
+  },
+  {
+    "objectID": "rules/sample_int.html#why-is-this-bad",
+    "href": "rules/sample_int.html#why-is-this-bad",
+    "title": "sample_int",
+    "section": "",
+    "text": "sample() calls sample.int() internally so they have the same performance, but the latter is more readable.",
+    "crumbs": [
+      "Rules",
+      "`sample_int`"
+    ]
+  },
+  {
+    "objectID": "rules/sample_int.html#example",
+    "href": "rules/sample_int.html#example",
+    "title": "sample_int",
+    "section": "",
+    "text": "sample(1:10, 2)\n\n[1] 3 7\n\n\nUse instead:\n\nsample.int(10, 2)\n\n[1] 9 8",
+    "crumbs": [
+      "Rules",
+      "`sample_int`"
+    ]
+  },
+  {
+    "objectID": "rules/sample_int.html#references",
+    "href": "rules/sample_int.html#references",
+    "title": "sample_int",
+    "section": "",
+    "text": "See ?sample",
+    "crumbs": [
+      "Rules",
+      "`sample_int`"
+    ]
+  },
+  {
+    "objectID": "rules/for_loop_index.html",
+    "href": "rules/for_loop_index.html",
+    "title": "for_loop_index",
+    "section": "",
+    "text": "Checks whether the index symbol in a for loop is already used anywhere in the sequence of the same for loop.\n\n\n\nfor (x in x) or for (x in foo(x)) are confusing to read and can lead to errors.\n\n\n\n\nx &lt;- c(1, 2, 3)\nfor (x in x) {\n  x + 1\n}\n\nUse instead:\n\nx &lt;- c(1, 2, 3)\nfor (xi in x) {\n  xi + 1\n}",
+    "crumbs": [
+      "Rules",
+      "`for_loop_index`"
+    ]
+  },
+  {
+    "objectID": "rules/for_loop_index.html#what-it-does",
+    "href": "rules/for_loop_index.html#what-it-does",
+    "title": "for_loop_index",
+    "section": "",
+    "text": "Checks whether the index symbol in a for loop is already used anywhere in the sequence of the same for loop.",
+    "crumbs": [
+      "Rules",
+      "`for_loop_index`"
+    ]
+  },
+  {
+    "objectID": "rules/for_loop_index.html#why-is-this-bad",
+    "href": "rules/for_loop_index.html#why-is-this-bad",
+    "title": "for_loop_index",
+    "section": "",
+    "text": "for (x in x) or for (x in foo(x)) are confusing to read and can lead to errors.",
+    "crumbs": [
+      "Rules",
+      "`for_loop_index`"
+    ]
+  },
+  {
+    "objectID": "rules/for_loop_index.html#example",
+    "href": "rules/for_loop_index.html#example",
+    "title": "for_loop_index",
+    "section": "",
+    "text": "x &lt;- c(1, 2, 3)\nfor (x in x) {\n  x + 1\n}\n\nUse instead:\n\nx &lt;- c(1, 2, 3)\nfor (xi in x) {\n  xi + 1\n}",
+    "crumbs": [
+      "Rules",
+      "`for_loop_index`"
     ]
   },
   {
