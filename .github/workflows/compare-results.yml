@@ -52,6 +52,7 @@ jobs:
       - name: Run tests with main branch binary
         run: |
           echo "=== Running test with main branch flir ==="
+          $MAIN_FLIR test-repo
           $MAIN_FLIR test-repo --output-format json > results_pr.json
         working-directory: test-repo
         continue-on-error: true
@@ -59,6 +60,7 @@ jobs:
       - name: Run tests with PR branch binary
         run: |
           echo "=== Running test with PR branch flir ==="
+          $PR_FLIR test-repo
           $PR_FLIR test-repo --output-format json > results_pr.json
         working-directory: test-repo
         continue-on-error: true
