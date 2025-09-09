@@ -23,8 +23,6 @@ jobs:
     steps:
       - name: Checkout current PR branch
         uses: actions/checkout@v4
-        with:
-          ref: main
 
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
