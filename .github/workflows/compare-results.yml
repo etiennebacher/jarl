@@ -3,17 +3,17 @@ name: Compare flir results
 on:
   pull_request:
 
-# concurrency:
-#   group: ${{ github.workflow }}-${{ github.ref }}
-#   cancel-in-progress: true
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
-permissions:
-  pull-requests: write
+# permissions:
+#   pull-requests: write
 
 env:
   CARGO_TERM_COLOR: always
-  # TEST_REPO: etiennebacher/dplyr
-  # TEST_REPO_URL: https://github.com/etiennebacher/dplyr.git
+  TEST_REPO: etiennebacher/dplyr
+  TEST_REPO_URL: https://github.com/etiennebacher/dplyr.git
 
 jobs:
   compare-results:
