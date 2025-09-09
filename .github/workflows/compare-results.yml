@@ -1,107 +1,21 @@
 name: Compare flir results
 
 on:
+  push:
   pull_request:
-    branches: [main]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-permissions:
-  pull-requests: write
 
 env:
   CARGO_TERM_COLOR: always
-  TEST_REPO: etiennebacher/dplyr
-  TEST_REPO_URL: https://github.com/etiennebacher/dplyr.git
 
 jobs:
-  compare-results:
+  build_and_test:
+    name: Rust project - latest
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+          # - beta
+          # - nightly
     steps:
-      - name: Checkout current PR branch
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ github.repository }}
-          ref: ${{ github.head_ref }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-
-      - name: Build flir binary from PR
-        run: cargo build --release
-        working-directory: ./
-
-      - name: Save PR binary path
-        run: echo "PR_FLIR=$(pwd)/target/release/flir" >> $GITHUB_ENV
-
-      - name: Clone test repo
-        run: git clone ${{ env.TEST_REPO_URL }} --depth 1
-
-      - name: Download flir binary from main branch
-        run: |
-          git fetch origin main
-          git checkout origin/main
-          cargo build --release
-        working-directory: ./
-
-      - name: Save main binary path
-        run: echo "MAIN_FLIR=$(pwd)/target/release/flir" >> $GITHUB_ENV
-
-      - name: Run tests with main branch binary
-        run: |
-          echo "=== Running test with main branch flir ==="
-          $MAIN_FLIR test-repo --output-format json > results_pr.json
-        working-directory: test-repo
-        continue-on-error: true
-
-      - name: Run tests with PR branch binary
-        run: |
-          echo "=== Running test with PR branch flir ==="
-          $PR_FLIR test-repo --output-format json > results_pr.json
-        working-directory: test-repo
-        continue-on-error: true
-
-      - name: Upload main branch results
-        uses: actions/upload-artifact@v4
-        with:
-          name: results-main
-          path: results_main.json
-
-      - name: Upload PR branch results
-        uses: actions/upload-artifact@v4
-        with:
-          name: results-pr
-          path: results_pr.json
-
-      - name: Setup R to process lint results
-        uses: r-lib/actions/setup-r@v2
-        with:
-          use-public-rspm: true
-
-      - name: Install R dependencies
-        run: |
-          R -e "install.packages(c('data.table', 'jsonlite', 'poorman'), repos = 'https://cloud.r-project.org')"
-
-      - name: Process lint results
-        run: |
-          source(".github/scripts/process_lint_ci.R", echo = TRUE)
-        shell: Rscript {0}
-
-      - name: Upload results
-        id: artifact-upload-step
-        uses: actions/upload-artifact@v4
-        with:
-          name: lint-results
-          path: .github/scripts/
-
-      - name: Push generated plot as a GH-bot comment
-        run: |
-          # Comment contents:
-          echo -e "\nGenerated via commit ${{ github.event.pull_request.head.sha }}" >> report.md
-          echo -e "\nDownload link for the artifact containing the test results: [↓ lint-results.zip](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }})" >> lint_comparison.md
-          cml comment update lint_comparison.md.md
-        shell: bash
+      - uses: actions/checkout@v4
