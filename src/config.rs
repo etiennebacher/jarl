@@ -1,6 +1,6 @@
 use crate::{args::CliArgs, lints::all_rules_and_safety, rule_table::RuleTable};
 use anyhow::Result;
-use std::path::PathBuf;
+use std::{collections::HashSet, path::PathBuf};
 
 #[derive(Clone)]
 pub struct Config {
@@ -27,7 +27,7 @@ pub struct Config {
 }
 
 pub fn build_config(args: &CliArgs, paths: Vec<PathBuf>) -> Result<Config> {
-    let rules = parse_rules_cli(&args.rules);
+    let rules = parse_rules_cli(&args.rules)?;
 
     // If we don't know the minimum R version used, we deactivate all rules
     // that only exists starting from a specific version.
@@ -84,16 +84,25 @@ pub fn build_config(args: &CliArgs, paths: Vec<PathBuf>) -> Result<Config> {
     })
 }
 
-pub fn parse_rules_cli(rules: &str) -> RuleTable {
+pub fn parse_rules_cli(rules: &str) -> Result<RuleTable> {
+    let all_rules = all_rules_and_safety();
     if rules.is_empty() {
-        all_rules_and_safety()
+        Ok(all_rules)
     } else {
         let passed_by_user = rules.split(",").collect::<Vec<&str>>();
-        all_rules_and_safety()
+        let invalid_rules = get_invalid_rules(&all_rules, &passed_by_user);
+        if let Some(invalid_rules) = invalid_rules {
+            return Err(anyhow::anyhow!(
+                "Unknown rules: {}",
+                invalid_rules.join(", ")
+            ));
+        }
+
+        Ok(all_rules
             .iter()
             .filter(|r| passed_by_user.contains(&r.name.as_str()))
             .cloned()
-            .collect::<RuleTable>()
+            .collect::<RuleTable>())
     }
 }
 
@@ -118,5 +127,24 @@ pub fn parse_r_version(min_r_version: &Option<String>) -> Result<Option<(u32, u3
         }
     } else {
         Ok(None)
+    }
+}
+
+fn get_invalid_rules(
+    all_rule_names: &RuleTable,
+    rules_passed_by_user: &Vec<&str>,
+) -> Option<Vec<String>> {
+    let all_rules_set: HashSet<_> = all_rule_names.iter().map(|x| x.name.clone()).collect();
+
+    let invalid_rules: Vec<String> = rules_passed_by_user
+        .into_iter()
+        .filter(|rule| !all_rules_set.contains(&rule.to_string()))
+        .map(|x| x.to_string())
+        .collect();
+
+    if invalid_rules.is_empty() {
+        None
+    } else {
+        Some(invalid_rules)
     }
 }

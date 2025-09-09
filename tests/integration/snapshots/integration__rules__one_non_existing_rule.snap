@@ -1,0 +1,13 @@
+---
+source: tests/integration/rules.rs
+expression: "&mut\nCommand::new(binary_path()).arg(\"--rules\").arg(\"foo\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 2
+----- stdout -----
+
+----- stderr -----
+error: Unknown rules: foo
+
+----- args -----
+--rules foo

@@ -21,13 +21,17 @@ website:
     - rules.qmd
     - rules/any_duplicated.qmd
     - rules/any_is_na.qmd
+    - rules/assignment.qmd
     - rules/class_equals.qmd
     - rules/duplicated_arguments.qmd
-    - rules/equal_assignment.qmd
     - rules/equals_na.qmd
+    - rules/grepv.qmd
+    - rules/is_numeric.qmd
     - rules/length_levels.qmd
     - rules/length_test.qmd
     - rules/lengths.qmd
     - rules/redundant_equals.qmd
+    - rules/sample_int.qmd
+    - rules/sort.qmd
     - rules/true_false_symbol.qmd
     - rules/which_grepl.qmd

@@ -1,0 +1,29 @@
+# `grepv`
+## What it does
+
+Checks for usage of `grep(..., value = TRUE)` and recommends using
+`grepv()` instead (only if the R version used in the project is >= 4.5).
+
+## Why is this bad?
+
+Starting from R 4.5, there is a function `grepv()` that is identical to
+`grep()` except that it uses `value = TRUE` by default.
+
+Using `grepv(...)` is therefore more readable than `grep(...)`.
+
+## Example
+
+```{r}
+x <- c("hello", "hi", "howdie")
+grep("i", x, value = TRUE)
+```
+
+Use instead:
+```{r}
+x <- c("hello", "hi", "howdie")
+grepv("i", x)
+```
+
+## References
+
+See `?grepv`

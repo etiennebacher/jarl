@@ -20,7 +20,8 @@ docs <- lapply(rule_files, \(x) {
   }
 
   start <- grep("## What it does", content)
-  end <- grep("impl Violation for", content) - 1
+  end <- grep("(impl Violation for)|(pub fn)", content) - 1
+  end <- end[1] # could be several "pub fn"
 
   doc <- content[start:end]
   doc <- gsub("^///(| )", "", doc)

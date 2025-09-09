@@ -1,0 +1,10 @@
+---
+source: src/lints/for_loop_index/mod.rs
+expression: "get_fixed_text(vec![\"for (x in x) {}\",], \"for_loop_index\", None)"
+---
+  OLD:
+  ====
+for (x in x) {}
+  NEW:
+  ====
+for (x in x) {}
