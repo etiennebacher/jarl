@@ -23,6 +23,9 @@ jobs:
       - name: Checkout current PR branch
         uses: actions/checkout@v4
 
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
