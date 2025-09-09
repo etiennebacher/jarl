@@ -4,8 +4,8 @@ suppressPackageStartupMessages({
   library(poorman)
 })
 
-main_results_json <- jsonlite::read_json("results_main.json")
-branch_results_json <- jsonlite::read_json("results_pr.json")
+main_results_json <- jsonlite::read_json(".github/scripts/results_main.json")
+branch_results_json <- jsonlite::read_json(".github/scripts/results_pr.json")
 
 main_results <- lapply(main_results_json, \(x) {
   data.frame(
