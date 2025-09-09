@@ -49,9 +49,6 @@ jobs:
       - name: Clone test repo
         run: git clone ${{ env.TEST_REPO_URL }} --depth 1 test-repo
 
-      - name: Foo
-        run: ls test-repo
-
       - name: Run tests with main branch binary
         run: |
           echo "=== Running test with main branch flir ==="
@@ -78,10 +75,16 @@ jobs:
           name: results-pr
           path: results_pr.json
 
-      - name: Setup R to process lint results
-        uses: r-lib/actions/setup-r@v2
-        with:
-          use-public-rspm: true
+      - name: Foo
+        run: ls
+
+      - name: Foo 2
+        run: ls test-repo
+
+      # - name: Setup R to process lint results
+      #   uses: r-lib/actions/setup-r@v2
+      #   with:
+      #     use-public-rspm: true
 
       # - name: Install R dependencies
       #   uses: r-lib/actions/setup-r-dependencies@v2
