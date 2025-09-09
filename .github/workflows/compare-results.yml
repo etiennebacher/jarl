@@ -36,10 +36,7 @@ jobs:
       - name: Save PR binary path
         run: echo "PR_FLIR=$(pwd)/target/release/flir" >> $GITHUB_ENV
 
-      - name: Clone test repo
-        run: git clone ${{ env.TEST_REPO_URL }} --depth 1 test-repo
-
-      - name: Download flir binary from main branch
+      - name: Build flir binary from main branch
         run: |
           git fetch origin main
           git checkout origin/main
@@ -49,12 +46,17 @@ jobs:
       - name: Save main binary path
         run: echo "MAIN_FLIR=$(pwd)/target/release/flir" >> $GITHUB_ENV
 
+      - name: Clone test repo
+        run: git clone ${{ env.TEST_REPO_URL }} --depth 1 test-repo
+
+      - name: Foo
+        run: ls test-repo
+
       - name: Run tests with main branch binary
         run: |
           echo "=== Running test with main branch flir ==="
           $MAIN_FLIR test-repo
           $MAIN_FLIR test-repo --output-format json > results_pr.json
-        working-directory: test-repo
         continue-on-error: true
 
       - name: Run tests with PR branch binary
@@ -62,7 +64,6 @@ jobs:
           echo "=== Running test with PR branch flir ==="
           $PR_FLIR test-repo
           $PR_FLIR test-repo --output-format json > results_pr.json
-        working-directory: test-repo
         continue-on-error: true
 
       - name: Upload main branch results
@@ -82,30 +83,30 @@ jobs:
         with:
           use-public-rspm: true
 
-      - name: Install R dependencies
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          packages: |
-            data.table
-            jsonlite
-            poorman
+      # - name: Install R dependencies
+      #   uses: r-lib/actions/setup-r-dependencies@v2
+      #   with:
+      #     packages: |
+      #       data.table
+      #       jsonlite
+      #       poorman
 
-      - name: Process lint results
-        run: |
-          source(".github/scripts/process_lint_ci.R", echo = TRUE)
-        shell: Rscript {0}
+      # - name: Process lint results
+      #   run: |
+      #     source(".github/scripts/process_lint_ci.R", echo = TRUE)
+      #   shell: Rscript {0}
 
-      - name: Upload results
-        id: artifact-upload-step
-        uses: actions/upload-artifact@v4
-        with:
-          name: lint-results
-          path: .github/scripts/
+      # - name: Upload results
+      #   id: artifact-upload-step
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: lint-results
+      #     path: .github/scripts/
 
-      - name: Push generated plot as a GH-bot comment
-        run: |
-          # Comment contents:
-          echo -e "\nGenerated via commit ${{ github.event.pull_request.head.sha }}" >> report.md
-          echo -e "\nDownload link for the artifact containing the test results: [↓ lint-results.zip](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }})" >> lint_comparison.md
-          cml comment update lint_comparison.md.md
-        shell: bash
+      # - name: Push generated plot as a GH-bot comment
+      #   run: |
+      #     # Comment contents:
+      #     echo -e "\nGenerated via commit ${{ github.event.pull_request.head.sha }}" >> report.md
+      #     echo -e "\nDownload link for the artifact containing the test results: [↓ lint-results.zip](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }})" >> lint_comparison.md
+      #     cml comment update lint_comparison.md.md
+      #   shell: bash
