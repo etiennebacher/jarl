@@ -24,8 +24,7 @@ jobs:
       - name: Checkout current PR branch
         uses: actions/checkout@v4
         with:
-          repository: etiennebacher/flir2
-          token: ${{ secrets.FLIR_GITHUB_TOKEN }}
+          ref: main
 
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
