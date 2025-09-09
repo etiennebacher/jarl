@@ -81,8 +81,12 @@ jobs:
           use-public-rspm: true
 
       - name: Install R dependencies
-        run: |
-          R -e "install.packages(c('data.table', 'jsonlite', 'poorman'), repos = 'https://cloud.r-project.org')"
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: |
+            data.table
+            jsonlite
+            poorman
 
       - name: Process lint results
         run: |
