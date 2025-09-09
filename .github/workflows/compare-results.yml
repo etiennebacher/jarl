@@ -52,7 +52,7 @@ jobs:
       - name: Run tests with main branch binary
         run: |
           echo "=== Running test with main branch flir ==="
-          $MAIN_FLIR test-repo --output-format json > "$GITHUB_WORKSPACE/results_pr.json"
+          $MAIN_FLIR test-repo --output-format json > "$GITHUB_WORKSPACE/results_main.json"
         continue-on-error: true
 
       - name: Run tests with PR branch binary
@@ -79,30 +79,30 @@ jobs:
       - name: Foo 2
         run: ls test-repo
 
-      # - name: Setup R to process lint results
-      #   uses: r-lib/actions/setup-r@v2
-      #   with:
-      #     use-public-rspm: true
+      - name: Setup R to process lint results
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
 
-      # - name: Install R dependencies
-      #   uses: r-lib/actions/setup-r-dependencies@v2
-      #   with:
-      #     packages: |
-      #       data.table
-      #       jsonlite
-      #       poorman
+      - name: Install R dependencies
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: |
+            data.table
+            jsonlite
+            poorman
 
-      # - name: Process lint results
-      #   run: |
-      #     source(".github/scripts/process_lint_ci.R", echo = TRUE)
-      #   shell: Rscript {0}
+      - name: Process lint results
+        run: |
+          source(".github/scripts/process_lint_ci.R", echo = TRUE)
+        shell: Rscript {0}
 
-      # - name: Upload results
-      #   id: artifact-upload-step
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: lint-results
-      #     path: .github/scripts/
+      - name: Upload results
+        id: artifact-upload-step
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-results
+          path: .github/scripts/
 
       # - name: Push generated plot as a GH-bot comment
       #   run: |
