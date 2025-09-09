@@ -37,7 +37,7 @@ jobs:
         run: echo "PR_FLIR=$(pwd)/target/release/flir" >> $GITHUB_ENV
 
       - name: Clone test repo
-        run: git clone ${{ env.TEST_REPO_URL }} --depth 1
+        run: git clone ${{ env.TEST_REPO_URL }} --depth 1 test-repo
 
       - name: Download flir binary from main branch
         run: |
