@@ -13,8 +13,9 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
-  TEST_REPO: etiennebacher/dplyr
-  TEST_REPO_URL: https://github.com/etiennebacher/dplyr.git
+  TEST_REPOS: |
+    etiennebacher/dplyr
+    etiennebacher/ggplot2
 
 jobs:
   compare-results:
@@ -47,32 +48,35 @@ jobs:
       - name: Save main binary path
         run: echo "MAIN_FLIR=$(pwd)/target/release/flir" >> $GITHUB_ENV
 
-      - name: Clone test repo
-        run: git clone ${{ env.TEST_REPO_URL }} --depth 1 test-repo
-
-      - name: Run tests with main branch binary
+      - name: Clone all test repos
         run: |
-          echo "=== Running test with main branch flir ==="
-          $MAIN_FLIR test-repo --output-format json > "$GITHUB_WORKSPACE/results_main.json"
-        continue-on-error: true
+          mkdir -p test-repos
+          cd test-repos
+          for repo in $TEST_REPOS; do
+            echo "Cloning $repo"
+            git clone --depth 1 https://github.com/$repo.git $(echo $repo | tr '/' '_')
+          done
 
-      - name: Run tests with PR branch binary
+      - name: Run CLI on all repos
         run: |
-          echo "=== Running test with PR branch flir ==="
-          $PR_FLIR test-repo --output-format json > "$GITHUB_WORKSPACE/results_pr.json"
-        continue-on-error: true
-
-      - name: Upload main branch results
+          mkdir -p results
+          cd test-repos
+          for repo in $TEST_REPOS; do
+            repo_dir=$(echo $repo | tr '/' '_')
+            echo "Running CLI on $repo_dir"
+      
+            # Run main
+            $MAIN_FLIR "$repo_dir" --output-format json > "../results/${repo_dir}_main.json" || true
+      
+            # Run PR
+            $PR_FLIR "$repo_dir" --output-format json > "../results/${repo_dir}_pr.json" || true
+          done
+          
+      - name: Upload all result JSONs
         uses: actions/upload-artifact@v4
         with:
-          name: results-main
-          path: results_main.json
-
-      - name: Upload PR branch results
-        uses: actions/upload-artifact@v4
-        with:
-          name: results-pr
-          path: results_pr.json
+          name: flir-json-results
+          path: results/
 
       - name: Setup R to process lint results
         uses: r-lib/actions/setup-r@v2
