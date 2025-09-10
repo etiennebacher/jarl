@@ -53,7 +53,6 @@ jobs:
           mkdir -p test-repos
           cd test-repos
           for repo in $TEST_REPOS; do
-            echo "Cloning $repo"
             git clone --depth 1 https://github.com/$repo.git $(echo $repo | tr '/' '_')
           done
 
@@ -63,7 +62,7 @@ jobs:
           cd test-repos
           for repo in $TEST_REPOS; do
             repo_dir=$(echo $repo | tr '/' '_')
-            echo "Running CLI on $repo_dir"
+            echo "Running flir on $repo_dir"
       
             # Run main
             $MAIN_FLIR "$repo_dir" --output-format json > "../results/${repo_dir}_main.json" || true
@@ -77,6 +76,14 @@ jobs:
         with:
           name: flir-json-results
           path: results/
+
+      - name: Foo
+        run: |
+          ls
+
+      - name: Foo2
+        run: |
+          ls results
 
       - name: Setup R to process lint results
         uses: r-lib/actions/setup-r@v2
