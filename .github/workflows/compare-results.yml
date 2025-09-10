@@ -1,4 +1,4 @@
-name: Compare flir results
+name: Ecosystem check
 
 on:
   pull_request:
