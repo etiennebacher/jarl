@@ -14,8 +14,8 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   TEST_REPOS: |
-    etiennebacher/dplyr
-    etiennebacher/ggplot2
+    tidyverse/dplyr@384ff2c4af79a9bd9142d8bdab23efbcd52f275b # 2025-07-25
+    tidyverse/ggplot2@bed8e32d45c7dc98afb783b409edac98854d41a7 # 2025-07-21
 
 jobs:
   compare-results:
@@ -53,7 +53,8 @@ jobs:
           mkdir -p test-repos
           cd test-repos
           for repo in $TEST_REPOS; do
-            git clone --depth 1 https://github.com/$repo.git $(echo $repo | tr '/' '_')
+            commit_sha=$(echo "$repo" | cut -d'@' -f2)
+            git clone --revision=$commit_sha --depth 1 https://github.com/$repo.git $(echo $repo | tr '/' '_')
           done
 
       - name: Run CLI on all repos
@@ -63,14 +64,14 @@ jobs:
           for repo in $TEST_REPOS; do
             repo_dir=$(echo $repo | tr '/' '_')
             echo "Running flir on $repo_dir"
-      
+
             # Run main
             $MAIN_FLIR "$repo_dir" --output-format json > "../results/${repo_dir}_main.json" || true
-      
+
             # Run PR
             $PR_FLIR "$repo_dir" --output-format json > "../results/${repo_dir}_pr.json" || true
           done
-          
+
       - name: Upload all result JSONs
         uses: actions/upload-artifact@v4
         with:
