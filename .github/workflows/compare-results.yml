@@ -95,18 +95,6 @@ jobs:
           name: lint-results
           path: .github/scripts/
 
-      - name: Foo
-        run: |
-          ls
-
-      - name: Foo2
-        run: |
-          ls .github
-
-      - name: Foo3
-        run: |
-          ls .github/scripts
-
       - name: Post comment on PR
         run: |
           COMMENT_FILE=lint_comparison.md
