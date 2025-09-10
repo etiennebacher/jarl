@@ -96,11 +96,7 @@ jobs:
           path: .github/scripts/
 
       - name: Post comment on PR
-        run: |
-          COMMENT_FILE=lint_comparison.md
-          echo -e "\nGenerated via commit ${{ github.event.pull_request.head.sha }}" >> "$COMMENT_FILE"
-          echo -e "\nDownload link for the artifact containing the test results: [↓ lint-results.zip](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts)" >> "$COMMENT_FILE"
-          
-          gh pr comment ${{ github.event.pull_request.number }} --body-file "$COMMENT_FILE"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          file-path: lint_comparison.md
+          comment-tag: execution
