@@ -94,7 +94,7 @@ jobs:
 
       - name: Install R dependencies
         run: |
-          R -e "install.packages(c('data.table', 'jsonlite', 'poorman'))"
+          R -e "install.packages(c('data.table', 'jsonlite'))"
 
       - name: Process lint results
         run: |

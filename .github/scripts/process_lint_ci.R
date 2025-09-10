@@ -1,7 +1,6 @@
 suppressPackageStartupMessages({
   library(data.table)
   library(jsonlite)
-  library(poorman)
 })
 
 all_files <- list.files("results", pattern = "\\.json$", full.names = TRUE)
@@ -44,17 +43,11 @@ for (repos in all_repos) {
   }) |>
     rbindlist()
 
-  new_lints <- anti_join(
-    pr_results,
-    main_results,
-    by = c("name", "filename", "row", "column")
-  )
-
-  deleted_lints <- anti_join(
-    main_results,
-    pr_results,
-    by = c("name", "filename", "row", "column")
-  )
+  new_lints <- pr_results[!main_results, on = .(name, filename, row, column)]
+  deleted_lints <- main_results[
+    !pr_results,
+    on = .(name, filename, row, column)
+  ]
 
   paste0(
     "<details><summary><a href=\"https://github.com/",
