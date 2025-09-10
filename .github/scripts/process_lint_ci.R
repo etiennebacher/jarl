@@ -41,5 +41,5 @@ deleted_lints <- anti_join(
 ) |>
   nrow()
 
-paste("**dplyr**:", new_lints, deleted_lints, "violations") |>
+paste0("**dplyr**: +", new_lints, " -", deleted_lints, " violations") |>
   writeLines("lint_comparison.md")
