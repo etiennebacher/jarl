@@ -95,10 +95,24 @@ jobs:
           name: lint-results
           path: .github/scripts/
 
-      - name: Push generated plot as a GH-bot comment
+      - name: Foo
         run: |
-          # Comment contents:
-          echo -e "\nGenerated via commit ${{ github.event.pull_request.head.sha }}" >> report.md
-          echo -e "\nDownload link for the artifact containing the test results: [↓ lint-results.zip](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }})" >> lint_comparison.md
-          cml comment update lint_comparison.md.md
-        shell: bash
+          ls
+
+      - name: Foo2
+        run: |
+          ls .github
+
+      - name: Foo3
+        run: |
+          ls .github/scripts
+
+      - name: Post comment on PR
+        run: |
+          COMMENT_FILE=lint_comparison.md
+          echo -e "\nGenerated via commit ${{ github.event.pull_request.head.sha }}" >> "$COMMENT_FILE"
+          echo -e "\nDownload link for the artifact containing the test results: [↓ lint-results.zip](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts)" >> "$COMMENT_FILE"
+          
+          gh pr comment ${{ github.event.pull_request.number }} --body-file "$COMMENT_FILE"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
