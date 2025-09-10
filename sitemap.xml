@@ -2,86 +2,86 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://etiennebacher.github.io/flir2/development.html</loc>
-    <lastmod>2025-09-10T20:38:48.084Z</lastmod>
+    <lastmod>2025-09-10T20:49:42.865Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/any_duplicated.html</loc>
-    <lastmod>2025-09-10T20:40:07.687Z</lastmod>
+    <lastmod>2025-09-10T20:51:25.182Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/lengths.html</loc>
-    <lastmod>2025-09-10T20:40:07.688Z</lastmod>
+    <lastmod>2025-09-10T20:51:25.232Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/which_grepl.html</loc>
-    <lastmod>2025-09-10T20:40:07.689Z</lastmod>
+    <lastmod>2025-09-10T20:51:25.233Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/equals_na.html</loc>
-    <lastmod>2025-09-10T20:40:07.688Z</lastmod>
+    <lastmod>2025-09-10T20:51:25.231Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/assignment.html</loc>
-    <lastmod>2025-09-10T20:40:07.687Z</lastmod>
+    <lastmod>2025-09-10T20:51:25.209Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/duplicated_arguments.html</loc>
-    <lastmod>2025-09-10T20:40:07.687Z</lastmod>
+    <lastmod>2025-09-10T20:51:25.230Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/redundant_equals.html</loc>
-    <lastmod>2025-09-10T20:40:07.688Z</lastmod>
+    <lastmod>2025-09-10T20:51:25.233Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/grepv.html</loc>
-    <lastmod>2025-09-10T20:40:07.688Z</lastmod>
+    <lastmod>2025-09-10T20:51:25.231Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/about.html</loc>
-    <lastmod>2025-09-10T20:38:48.083Z</lastmod>
+    <lastmod>2025-09-10T20:49:42.865Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules.html</loc>
-    <lastmod>2025-09-10T20:38:48.084Z</lastmod>
+    <lastmod>2025-09-10T20:49:42.865Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/index.html</loc>
-    <lastmod>2025-09-10T20:38:48.084Z</lastmod>
+    <lastmod>2025-09-10T20:49:42.865Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/true_false_symbol.html</loc>
-    <lastmod>2025-09-10T20:40:07.688Z</lastmod>
+    <lastmod>2025-09-10T20:51:25.233Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/length_levels.html</loc>
-    <lastmod>2025-09-10T20:40:07.688Z</lastmod>
+    <lastmod>2025-09-10T20:51:25.232Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/any_is_na.html</loc>
-    <lastmod>2025-09-10T20:40:07.687Z</lastmod>
+    <lastmod>2025-09-10T20:51:25.198Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/is_numeric.html</loc>
-    <lastmod>2025-09-10T20:40:07.688Z</lastmod>
+    <lastmod>2025-09-10T20:51:25.231Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/class_equals.html</loc>
-    <lastmod>2025-09-10T20:40:07.687Z</lastmod>
+    <lastmod>2025-09-10T20:51:25.230Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/sample_int.html</loc>
-    <lastmod>2025-09-10T20:40:07.688Z</lastmod>
+    <lastmod>2025-09-10T20:51:25.233Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/for_loop_index.html</loc>
-    <lastmod>2025-09-10T20:40:07.688Z</lastmod>
+    <lastmod>2025-09-10T20:51:25.231Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/length_test.html</loc>
-    <lastmod>2025-09-10T20:40:07.688Z</lastmod>
+    <lastmod>2025-09-10T20:51:25.232Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/sort.html</loc>
-    <lastmod>2025-09-10T20:40:07.688Z</lastmod>
+    <lastmod>2025-09-10T20:51:25.233Z</lastmod>
   </url>
 </urlset>
