@@ -62,8 +62,9 @@ jobs:
           mkdir -p results
           cd test-repos
           for repo in $TEST_REPOS; do
-            repo_dir=$(echo $repo | tr '/' '_')
-            echo "Running flir on $repo_dir"
+            repo_name=$(echo "$repo_spec" | cut -d'@' -f1)
+            commit_sha=$(echo "$repo_spec" | cut -d'@' -f2)
+            repo_dir=$(echo "$repo_name" | tr '/' '_')
 
             # Run main
             $MAIN_FLIR "$repo_dir" --output-format json > "../results/${repo_dir}_main.json" || true
