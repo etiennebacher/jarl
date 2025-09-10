@@ -7,8 +7,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# permissions:
-#   pull-requests: write
+permissions:
+  contents: read
+  pull-requests: write
 
 env:
   CARGO_TERM_COLOR: always
@@ -94,10 +95,10 @@ jobs:
           name: lint-results
           path: .github/scripts/
 
-      # - name: Push generated plot as a GH-bot comment
-      #   run: |
-      #     # Comment contents:
-      #     echo -e "\nGenerated via commit ${{ github.event.pull_request.head.sha }}" >> report.md
-      #     echo -e "\nDownload link for the artifact containing the test results: [↓ lint-results.zip](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }})" >> lint_comparison.md
-      #     cml comment update lint_comparison.md.md
-      #   shell: bash
+      - name: Push generated plot as a GH-bot comment
+        run: |
+          # Comment contents:
+          echo -e "\nGenerated via commit ${{ github.event.pull_request.head.sha }}" >> report.md
+          echo -e "\nDownload link for the artifact containing the test results: [↓ lint-results.zip](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.artifact-upload-step.outputs.artifact-id }})" >> lint_comparison.md
+          cml comment update lint_comparison.md.md
+        shell: bash
