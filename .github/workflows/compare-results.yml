@@ -14,8 +14,8 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   TEST_REPOS: |
-    tidyverse/dplyr@384ff2c4af79a9bd9142d8bdab23efbcd52f275b # 2025-07-25
-    tidyverse/ggplot2@bed8e32d45c7dc98afb783b409edac98854d41a7 # 2025-07-21
+    tidyverse/dplyr@384ff2c4af79a9bd9142d8bdab23efbcd52f275b
+    tidyverse/ggplot2@bed8e32d45c7dc98afb783b409edac98854d41a7
 
 jobs:
   compare-results:
@@ -56,6 +56,7 @@ jobs:
             repo_name=$(echo "$repo" | cut -d'@' -f1)
             commit_sha=$(echo "$repo" | cut -d'@' -f2)
             repo_dir=$(echo "$repo_name" | tr '/' '_')
+
             git clone --revision=$commit_sha --depth 1 https://github.com/$repo_name.git $(echo $repo_dir | tr '/' '_')
           done
 
@@ -65,7 +66,6 @@ jobs:
           cd test-repos
           for repo in $TEST_REPOS; do
             repo_name=$(echo "$repo" | cut -d'@' -f1)
-            commit_sha=$(echo "$repo" | cut -d'@' -f2)
             repo_dir=$(echo "$repo_name" | tr '/' '_')
 
             # Run main
