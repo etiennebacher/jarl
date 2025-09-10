@@ -65,19 +65,25 @@ for (repos in all_repos) {
     nrow(new_lints),
     " -",
     nrow(deleted_lints),
-    " violations</summary>\n\nNew violations:<pre>\n",
-    paste0(
-      new_lints$filename,
-      "[",
-      new_lints$row,
-      ":",
-      new_lints$column,
-      "]: ",
-      new_lints$name,
-      " -- ",
-      new_lints$body,
-      "\n"
-    ),
+    " violations</summary>\n\n",
+
+    if (nrow(new_lints) > 0) {
+      c(
+        "\n\nNew violations:<pre>\n",
+        paste0(
+          new_lints$filename,
+          "[",
+          new_lints$row,
+          ":",
+          new_lints$column,
+          "]: ",
+          new_lints$name,
+          " -- ",
+          new_lints$body,
+          "\n"
+        )
+      )
+    },
     if (nrow(deleted_lints) > 0) {
       c(
         "\n\nViolations removed:<pre>\n",
