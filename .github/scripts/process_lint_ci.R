@@ -10,6 +10,7 @@ all_repos <- sub("^([^_]+)_([^_]+)_.*\\.json$", "\\1/\\2", all_files_name) |>
   unique()
 
 for (repos in all_repos) {
+  message("Processing results of ", repos)
   main_results_json <- jsonlite::read_json(paste0(
     "results/",
     gsub("/", "_", repos),
@@ -22,7 +23,7 @@ for (repos in all_repos) {
   ))
 
   main_results <- lapply(main_results_json, \(x) {
-    data.frame(
+    data.table(
       name = x$message$name,
       body = x$message$body,
       filename = x$filename,
@@ -33,7 +34,7 @@ for (repos in all_repos) {
     rbindlist()
 
   pr_results <- lapply(pr_results_json, \(x) {
-    data.frame(
+    data.table(
       name = x$message$name,
       body = x$message$body,
       filename = x$filename,
@@ -42,6 +43,26 @@ for (repos in all_repos) {
     )
   }) |>
     rbindlist()
+
+  if (identical(dim(main_results), c(0L, 0L))) {
+    main_results <- data.table(
+      name = character(0),
+      body = character(0),
+      filename = character(0),
+      row = integer(0),
+      column = integer(0)
+    )
+  }
+
+  if (identical(dim(pr_results), c(0L, 0L))) {
+    pr_results <- data.table(
+      name = character(0),
+      body = character(0),
+      filename = character(0),
+      row = integer(0),
+      column = integer(0)
+    )
+  }
 
   new_lints <- pr_results[!main_results, on = .(name, filename, row, column)]
   deleted_lints <- main_results[
