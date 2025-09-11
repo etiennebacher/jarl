@@ -103,7 +103,6 @@ for (repos in all_repos) {
           new_lints$name,
           " -- ",
           new_lints$body,
-          "\n",
           collapse = "\n"
         )
       ),
@@ -126,7 +125,6 @@ for (repos in all_repos) {
           deleted_lints$name,
           " -- ",
           deleted_lints$body,
-          "\n",
           collapse = "\n"
         )
       ),
