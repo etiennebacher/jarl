@@ -70,52 +70,55 @@ for (repos in all_repos) {
     on = .(name, filename, row, column)
   ]
 
-  paste0(
-    "### Ecosystem checks\n\n<details><summary><a href=\"https://github.com/",
-    repos,
-    "\">",
-    repos,
-    "</a>: +",
-    nrow(new_lints),
-    " -",
-    nrow(deleted_lints),
-    " violations</summary>\n\n",
-
-    if (nrow(new_lints) > 0) {
-      c(
-        "\n\nNew violations:<pre>\n",
-        paste0(
-          new_lints$filename,
-          "[",
-          new_lints$row,
-          ":",
-          new_lints$column,
-          "]: ",
-          new_lints$name,
-          " -- ",
-          new_lints$body,
-          "\n"
+  c(
+    "### Ecosystem checks\n\n",
+    paste0(
+      "<details><summary><a href=\"https://github.com/",
+      repos,
+      "\">",
+      repos,
+      "</a>: +",
+      nrow(new_lints),
+      " -",
+      nrow(deleted_lints),
+      " violations</summary>\n\n",
+  
+      if (nrow(new_lints) > 0) {
+        c(
+          "\n\nNew violations:<pre>\n",
+          paste0(
+            new_lints$filename,
+            "[",
+            new_lints$row,
+            ":",
+            new_lints$column,
+            "]: ",
+            new_lints$name,
+            " -- ",
+            new_lints$body,
+            "\n"
+          )
         )
-      )
-    },
-    if (nrow(deleted_lints) > 0) {
-      c(
-        "\n\nViolations removed:<pre>\n",
-        paste0(
-          deleted_lints$filename,
-          "[",
-          deleted_lints$row,
-          ":",
-          deleted_lints$column,
-          "]: ",
-          deleted_lints$name,
-          " -- ",
-          deleted_lints$body,
-          "\n"
+      },
+      if (nrow(deleted_lints) > 0) {
+        c(
+          "\n\nViolations removed:<pre>\n",
+          paste0(
+            deleted_lints$filename,
+            "[",
+            deleted_lints$row,
+            ":",
+            deleted_lints$column,
+            "]: ",
+            deleted_lints$name,
+            " -- ",
+            deleted_lints$body,
+            "\n"
+          )
         )
-      )
-    },
-    "</pre></details>\n\n"
+      },
+      "</pre></details>\n\n"
+    )
   ) |>
     cat(file = "lint_comparison.md", append = TRUE)
 }
