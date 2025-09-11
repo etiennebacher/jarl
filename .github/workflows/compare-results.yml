@@ -42,14 +42,15 @@ jobs:
         working-directory: ./
 
       - name: Save PR binary path
-        run: echo "PR_FLIR=$(pwd)/target/release/flir" >> $GITHUB_ENV
+        run: |
+          cp target/release/flir target/release/flir-pr
+          echo "PR_FLIR=$(pwd)/target/release/flir-pr" >> $GITHUB_ENV
 
       - name: Build flir binary from main branch
         run: |
           git fetch origin main
           git checkout origin/main
           cargo build --release
-        working-directory: ./
 
       - name: Save main binary path
         run: echo "MAIN_FLIR=$(pwd)/target/release/flir" >> $GITHUB_ENV
@@ -75,10 +76,10 @@ jobs:
             repo_dir=$(echo "$repo_name" | tr '/' '_')
 
             # Run main
-            $MAIN_FLIR "$repo_dir" --output-format json > "../results/${repo_dir}_main.json" || true
+            (cd "$repo_dir" && $MAIN_FLIR --output-format json) > "../results/${repo_dir}_main.json" || true
 
             # Run PR
-            $PR_FLIR "$repo_dir" --output-format json > "../results/${repo_dir}_pr.json" || true
+            (cd "$repo_dir" && $PR_FLIR --output-format json) > "../results/${repo_dir}_pr.json" || true
           done
 
       - name: Upload all result JSONs
