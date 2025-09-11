@@ -42,14 +42,15 @@ jobs:
         working-directory: ./
 
       - name: Save PR binary path
-        run: echo "PR_FLIR=$(pwd)/target/release/flir" >> $GITHUB_ENV
+        run: |
+          cp target/release/flir target/release/flir-pr
+          echo "PR_FLIR=$(pwd)/target/release/flir-pr" >> $GITHUB_ENV
 
       - name: Build flir binary from main branch
         run: |
           git fetch origin main
           git checkout origin/main
           cargo build --release
-        working-directory: ./
 
       - name: Save main binary path
         run: echo "MAIN_FLIR=$(pwd)/target/release/flir" >> $GITHUB_ENV
