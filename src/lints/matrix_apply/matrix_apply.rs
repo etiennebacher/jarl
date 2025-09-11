@@ -73,12 +73,12 @@ pub fn matrix_apply(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    let x = match x {
-        Some(x_inner) => x_inner.value().unwrap().to_trimmed_string(),
+    let x = match x.and_then(|arg| arg.value()) {
+        Some(x_inner) => x_inner.to_trimmed_string(),
         None => return Ok(None),
     };
-    let fun = match fun {
-        Some(x) => x.value().unwrap().to_trimmed_string(),
+    let fun = match fun.and_then(|arg| arg.value()) {
+        Some(x) => x.to_trimmed_string(),
         None => return Ok(None),
     };
 
@@ -87,9 +87,9 @@ pub fn matrix_apply(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     }
 
     // MARGIN could be c(1, 2), in which case we don't know what to do.
-    let margin = match margin {
+    let margin = match margin.and_then(|arg| arg.value()) {
         Some(x) => {
-            let x = x.value().unwrap().to_trimmed_string();
+            let x = x.to_trimmed_string();
             if x == "1" || x == "1L" {
                 "1"
             } else if x == "2" || x == "2L" {

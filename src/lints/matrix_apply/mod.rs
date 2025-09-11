@@ -18,6 +18,9 @@ mod tests {
         expect_no_lint("apply(x, c(2, 4), sum)", "matrix_apply", None);
         expect_no_lint("apply(x, m, sum)", "matrix_apply", None);
         expect_no_lint("apply(x, 1 + 2:4, sum)", "matrix_apply", None);
+
+        // Do not panic (no arg value for `X`)
+        expect_no_lint("apply(X=, 1, sum)", "matrix_apply", None);
     }
 
     #[test]
