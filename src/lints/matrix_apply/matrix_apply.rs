@@ -17,31 +17,33 @@ use biome_rowan::AstSeparatedList;
 /// This rule provides an automated fix, except when extra arguments (outside
 /// of `na.rm`) are provided. In other words, this would be marked as lint and
 /// could be automatically replaced:
-/// ```r
+/// ```
 /// apply(x, 1, mean, na.rm = TRUE)
 /// ```
 /// but this wouldn't:
-/// ```r
+/// ```
 /// apply(x, 1, mean, trim = 0.2)
 /// ```
 ///
 /// ## Example
 ///
 /// ```r
-/// apply(x, 1, sum)
-/// apply(x, 2, sum)
-/// apply(x, 1, mean)
-/// apply(x, 2, mean)
-/// apply(x, 2, mean, na.rm = TRUE)
+/// dat <- data.frame(x = 1:3, y = 4:6)
+/// apply(dat, 1, sum)
+/// apply(dat, 2, sum)
+/// apply(dat, 1, mean)
+/// apply(dat, 2, mean)
+/// apply(dat, 2, mean, na.rm = TRUE)
 /// ```
 ///
 /// Use instead:
 /// ```r
-/// rowSums(x)
-/// colSums(x)
-/// rowMeans(x)
-/// colMeans(x)
-/// colMeans(x, na.rm = TRUE)
+/// dat <- data.frame(x = 1:3, y = 4:6)
+/// rowSums(dat)
+/// colSums(dat)
+/// rowMeans(dat)
+/// colMeans(dat)
+/// colMeans(dat, na.rm = TRUE)
 /// ```
 ///
 /// ## References
