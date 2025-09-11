@@ -2,90 +2,90 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://etiennebacher.github.io/flir2/development.html</loc>
-    <lastmod>2025-09-11T20:54:38.622Z</lastmod>
+    <lastmod>2025-09-11T21:13:57.864Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/any_duplicated.html</loc>
-    <lastmod>2025-09-11T20:55:55.694Z</lastmod>
+    <lastmod>2025-09-11T21:15:46.060Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/lengths.html</loc>
-    <lastmod>2025-09-11T20:55:55.695Z</lastmod>
+    <lastmod>2025-09-11T21:15:46.064Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/matrix_apply.html</loc>
-    <lastmod>2025-09-11T20:55:55.695Z</lastmod>
+    <lastmod>2025-09-11T21:15:46.064Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/sample_int.html</loc>
-    <lastmod>2025-09-11T20:55:55.695Z</lastmod>
+    <lastmod>2025-09-11T21:15:46.065Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/class_equals.html</loc>
-    <lastmod>2025-09-11T20:55:55.694Z</lastmod>
+    <lastmod>2025-09-11T21:15:46.061Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/is_numeric.html</loc>
-    <lastmod>2025-09-11T20:55:55.695Z</lastmod>
+    <lastmod>2025-09-11T21:15:46.062Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/any_is_na.html</loc>
-    <lastmod>2025-09-11T20:55:55.694Z</lastmod>
+    <lastmod>2025-09-11T21:15:46.060Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/length_levels.html</loc>
-    <lastmod>2025-09-11T20:55:55.695Z</lastmod>
+    <lastmod>2025-09-11T21:15:46.063Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/true_false_symbol.html</loc>
-    <lastmod>2025-09-11T20:55:55.696Z</lastmod>
+    <lastmod>2025-09-11T21:15:46.065Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/index.html</loc>
-    <lastmod>2025-09-11T20:54:38.622Z</lastmod>
+    <lastmod>2025-09-11T21:13:57.864Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules.html</loc>
-    <lastmod>2025-09-11T20:54:38.622Z</lastmod>
+    <lastmod>2025-09-11T21:13:57.864Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/about.html</loc>
-    <lastmod>2025-09-11T20:54:38.622Z</lastmod>
+    <lastmod>2025-09-11T21:13:57.864Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/grepv.html</loc>
-    <lastmod>2025-09-11T20:55:55.695Z</lastmod>
+    <lastmod>2025-09-11T21:15:46.062Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/redundant_equals.html</loc>
-    <lastmod>2025-09-11T20:55:55.695Z</lastmod>
+    <lastmod>2025-09-11T21:15:46.064Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/duplicated_arguments.html</loc>
-    <lastmod>2025-09-11T20:55:55.695Z</lastmod>
+    <lastmod>2025-09-11T21:15:46.061Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/assignment.html</loc>
-    <lastmod>2025-09-11T20:55:55.694Z</lastmod>
+    <lastmod>2025-09-11T21:15:46.061Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/equals_na.html</loc>
-    <lastmod>2025-09-11T20:55:55.695Z</lastmod>
+    <lastmod>2025-09-11T21:15:46.061Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/which_grepl.html</loc>
-    <lastmod>2025-09-11T20:55:55.696Z</lastmod>
+    <lastmod>2025-09-11T21:15:46.066Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/for_loop_index.html</loc>
-    <lastmod>2025-09-11T20:55:55.695Z</lastmod>
+    <lastmod>2025-09-11T21:15:46.061Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/length_test.html</loc>
-    <lastmod>2025-09-11T20:55:55.695Z</lastmod>
+    <lastmod>2025-09-11T21:15:46.064Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/flir2/rules/sort.html</loc>
-    <lastmod>2025-09-11T20:55:55.695Z</lastmod>
+    <lastmod>2025-09-11T21:15:46.065Z</lastmod>
   </url>
 </urlset>

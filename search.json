@@ -128,7 +128,7 @@
     "href": "rules/matrix_apply.html",
     "title": "matrix_apply",
     "section": "",
-    "text": "Checks for usage of apply(x, 1/2, mean/sum).\n\n\n\napply() with FUN = sum or FUN = mean are inefficient when MARGIN is 1 or 2. colSums(), rowSums(), colMeans(), rowMeans() are both easier to read and much more efficient.\nThis rule provides an automated fix, except when extra arguments (outside of na.rm) are provided. In other words, this would be marked as lint and could be automatically replaced:\napply(x, 1, mean, na.rm = TRUE)\nbut this wouldn’t:\napply(x, 1, mean, trim = 0.2)\n\n\n\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, sum)\n\n[1] 5 7 9\n\napply(dat, 2, sum)\n\n x  y \n 6 15 \n\napply(dat, 1, mean)\n\n[1] 2.5 3.5 4.5\n\napply(dat, 2, mean)\n\nx y \n2 5 \n\napply(dat, 2, mean, na.rm = TRUE)\n\nx y \n2 5 \n\n\nUse instead:\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\nrowSums(dat)\n\n[1] 5 7 9\n\ncolSums(dat)\n\n x  y \n 6 15 \n\nrowMeans(dat)\n\n[1] 2.5 3.5 4.5\n\ncolMeans(dat)\n\nx y \n2 5 \n\ncolMeans(dat, na.rm = TRUE)\n\nx y \n2 5 \n\n\n\n\n\nSee ?colSums",
+    "text": "Checks for usage of apply(x, 1/2, mean/sum).\n\n\n\napply() with FUN = sum or FUN = mean are inefficient when MARGIN is 1 or 2. colSums(), rowSums(), colMeans(), rowMeans() are both easier to read and much more efficient.\nThis rule provides an automated fix, except when extra arguments (outside of na.rm) are provided. In other words, this would be marked as lint and could be automatically replaced:\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, na.rm = TRUE)\n\n[1] 2.5 3.5 4.5\n\n\nbut this wouldn’t:\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, trim = 0.2)\n\n[1] 2.5 3.5 4.5\n\n\n\n\n\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, sum)\n\n[1] 5 7 9\n\napply(dat, 2, sum)\n\n x  y \n 6 15 \n\napply(dat, 1, mean)\n\n[1] 2.5 3.5 4.5\n\napply(dat, 2, mean)\n\nx y \n2 5 \n\napply(dat, 2, mean, na.rm = TRUE)\n\nx y \n2 5 \n\n\nUse instead:\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\nrowSums(dat)\n\n[1] 5 7 9\n\ncolSums(dat)\n\n x  y \n 6 15 \n\nrowMeans(dat)\n\n[1] 2.5 3.5 4.5\n\ncolMeans(dat)\n\nx y \n2 5 \n\ncolMeans(dat, na.rm = TRUE)\n\nx y \n2 5 \n\n\n\n\n\nSee ?colSums",
     "crumbs": [
       "Rules",
       "`matrix_apply`"
@@ -150,7 +150,7 @@
     "href": "rules/matrix_apply.html#why-is-this-bad",
     "title": "matrix_apply",
     "section": "",
-    "text": "apply() with FUN = sum or FUN = mean are inefficient when MARGIN is 1 or 2. colSums(), rowSums(), colMeans(), rowMeans() are both easier to read and much more efficient.\nThis rule provides an automated fix, except when extra arguments (outside of na.rm) are provided. In other words, this would be marked as lint and could be automatically replaced:\napply(x, 1, mean, na.rm = TRUE)\nbut this wouldn’t:\napply(x, 1, mean, trim = 0.2)",
+    "text": "apply() with FUN = sum or FUN = mean are inefficient when MARGIN is 1 or 2. colSums(), rowSums(), colMeans(), rowMeans() are both easier to read and much more efficient.\nThis rule provides an automated fix, except when extra arguments (outside of na.rm) are provided. In other words, this would be marked as lint and could be automatically replaced:\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, na.rm = TRUE)\n\n[1] 2.5 3.5 4.5\n\n\nbut this wouldn’t:\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, trim = 0.2)\n\n[1] 2.5 3.5 4.5",
     "crumbs": [
       "Rules",
       "`matrix_apply`"
@@ -183,7 +183,7 @@
     "href": "rules/sample_int.html",
     "title": "sample_int",
     "section": "",
-    "text": "Checks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.\n\n\n\nsample() calls sample.int() internally so they have the same performance, but the latter is more readable.\n\n\n\n\nsample(1:10, 2)\n\n[1] 5 4\n\n\nUse instead:\n\nsample.int(10, 2)\n\n[1] 4 2\n\n\n\n\n\nSee ?sample",
+    "text": "Checks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.\n\n\n\nsample() calls sample.int() internally so they have the same performance, but the latter is more readable.\n\n\n\n\nsample(1:10, 2)\n\n[1] 3 8\n\n\nUse instead:\n\nsample.int(10, 2)\n\n[1] 10  3\n\n\n\n\n\nSee ?sample",
     "crumbs": [
       "Rules",
       "`sample_int`"
@@ -216,7 +216,7 @@
     "href": "rules/sample_int.html#example",
     "title": "sample_int",
     "section": "",
-    "text": "sample(1:10, 2)\n\n[1] 5 4\n\n\nUse instead:\n\nsample.int(10, 2)\n\n[1] 4 2",
+    "text": "sample(1:10, 2)\n\n[1] 3 8\n\n\nUse instead:\n\nsample.int(10, 2)\n\n[1] 10  3",
     "crumbs": [
       "Rules",
       "`sample_int`"
