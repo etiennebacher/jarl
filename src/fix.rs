@@ -13,7 +13,8 @@ use crate::diagnostic::*;
 /// TODO: it should still be possible since we know the length of the fix so we
 /// should be able to update the range of the subsequent fixes. After all this
 /// is what I do to update the range of following non-overlapping fixes. The
-/// approach below looks quite expensive.
+/// approach below looks quite expensive. This is also how Ruff does it though:
+/// https://github.com/astral-sh/ruff/blob/main/crates/ruff_linter/src/linter.rs#L559
 ///
 /// Therefore, the current approach is to signal to the caller function that
 /// some fixes were skipped. This caller function then takes care of removing
