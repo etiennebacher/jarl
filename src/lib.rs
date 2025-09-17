@@ -2,6 +2,7 @@ pub mod analyze;
 pub mod args;
 pub mod check;
 pub mod config;
+pub mod description;
 pub mod diagnostic;
 pub mod error;
 pub mod fix;
