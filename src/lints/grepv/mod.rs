@@ -6,9 +6,9 @@ mod tests {
 
     #[test]
     fn test_no_lint_grepv() {
-        expect_no_lint("grep('i', x)", "grepv", Some("4.5.0"));
-        expect_no_lint("grep(pattern = 'i', x)", "grepv", Some("4.5.0"));
-        expect_no_lint("grep('i', x, TRUE, TRUE)", "grepv", Some("4.5.0"));
+        expect_no_lint("grep('i', x)", "grepv", Some("4.5"));
+        expect_no_lint("grep(pattern = 'i', x)", "grepv", Some("4.5"));
+        expect_no_lint("grep('i', x, TRUE, TRUE)", "grepv", Some("4.5"));
     }
 
     #[test]
@@ -20,19 +20,19 @@ mod tests {
             "grep('i', x, value = TRUE)",
             expected_message,
             "grepv",
-            Some("4.5.0"),
+            Some("4.5"),
         );
         has_lint(
             "grep('i', x, TRUE, TRUE, TRUE)",
             expected_message,
             "grepv",
-            Some("4.5.0"),
+            Some("4.5"),
         );
         has_lint(
             "grep('i', x, TRUE, TRUE, TRUE, value = TRUE)",
             expected_message,
             "grepv",
-            Some("4.5.0"),
+            Some("4.5"),
         );
         assert_snapshot!(
             "fix_output",
@@ -47,7 +47,7 @@ mod tests {
                     "grep(value = TRUE)",
                 ],
                 "grepv",
-                Some("4.5.0")
+                Some("4.5")
             )
         );
     }
