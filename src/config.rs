@@ -1,5 +1,6 @@
 use crate::{
     args::CliArgs, description::Description, lints::all_rules_and_safety, rule_table::RuleTable,
+    toml::parse_flir_toml,
 };
 use anyhow::Result;
 use std::{collections::HashSet, fs, path::PathBuf};

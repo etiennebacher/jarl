@@ -10,5 +10,7 @@ pub mod lints;
 pub mod location;
 pub mod output_format;
 pub mod rule_table;
+pub mod settings;
+pub mod toml;
 pub mod utils;
 pub mod utils_test;
