@@ -2,11 +2,7 @@ use crate::{
     args::CliArgs, description::Description, lints::all_rules_and_safety, rule_table::RuleTable,
 };
 use anyhow::Result;
-use std::{
-    collections::HashSet,
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashSet, fs, path::PathBuf};
 
 #[derive(Clone)]
 pub struct Config {
@@ -27,8 +23,6 @@ pub struct Config {
     /// The minimum R version used in the project. Used to disable some rules
     /// that require functions that are not available in all R versions, e.g.
     /// grepv() introduced in R 4.5.0.
-    /// Since it's unlikely those functions are introduced in patch versions,
-    /// this field takes only two numeric values.
     pub minimum_r_version: Option<(u32, u32, u32)>,
 }
 
@@ -36,37 +30,11 @@ pub fn build_config(args: &CliArgs, paths: Vec<PathBuf>) -> Result<Config> {
     // Determining the minimum R version has to come first since if it is
     // unknown then only rules that don't have a version restriction are
     // selected.
-    let minimum_r_version = if args.min_r_version.is_none() {
-        if Path::new("DESCRIPTION").exists() {
-            let desc = fs::read_to_string("DESCRIPTION")?;
-            let parsed_r_version = Description::get_depend_r_version(&desc);
-            if parsed_r_version.is_ok() {
-                Some(parse_r_version(
-                    parsed_r_version.unwrap().first().unwrap().to_string(),
-                )?)
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    } else {
-        Some(parse_r_version(args.min_r_version.clone().unwrap())?)
-    };
+    let minimum_r_version = determine_minimum_r_version(args, &paths)?;
 
     let rules = parse_rules_cli(&args.select_rules, &args.ignore_rules)?;
 
-    // If we don't know the minimum R version used, we deactivate all rules
-    // that only exists starting from a specific version.
-    let rules = if minimum_r_version.is_none() {
-        rules
-            .iter()
-            .filter(|x| x.minimum_r_version.is_none())
-            .cloned()
-            .collect::<RuleTable>()
-    } else {
-        rules
-    };
+    let rules = filter_rules_by_version(&rules, minimum_r_version);
 
     // Resolve the interaction between --fix and --unsafe-fixes first. Using
     // --unsafe-fixes implies using --fix, but the opposite is not true.
@@ -173,28 +141,107 @@ pub fn parse_rules_cli(select_rules: &str, ignore_rules: &str) -> Result<RuleTab
     Ok(final_rules)
 }
 
+/// Determine the minimum R version from CLI args or DESCRIPTION file
+fn determine_minimum_r_version(
+    args: &CliArgs,
+    paths: &[PathBuf],
+) -> Result<Option<(u32, u32, u32)>> {
+    if let Some(version_str) = &args.min_r_version {
+        return Ok(Some(parse_r_version(version_str.clone())?));
+    }
+
+    // Look for DESCRIPTION file in any of the project paths
+    for path in paths {
+        let desc_path = if path.is_dir() {
+            path.join("DESCRIPTION")
+        } else if let Some(parent) = path.parent() {
+            parent.join("DESCRIPTION")
+        } else {
+            continue;
+        };
+
+        if desc_path.exists() {
+            let desc = fs::read_to_string(&desc_path)?;
+            if let Ok(versions) = Description::get_depend_r_version(&desc) {
+                if let Some(version_str) = versions.first() {
+                    return Ok(Some(parse_r_version(version_str.to_string())?));
+                }
+            }
+        }
+    }
+
+    Ok(None)
+}
+
+/// Parse R version string in format "x.y" or "x.y.z" and return (major, minor, patch)
 pub fn parse_r_version(min_r_version: String) -> Result<(u32, u32, u32)> {
-    // Check if the version contains exactly one dot and two parts
-    if !min_r_version.contains('.') || min_r_version.split('.').count() != 3 {
+    let parts: Vec<&str> = min_r_version.split('.').collect();
+
+    if parts.len() < 2 || parts.len() > 3 {
         return Err(anyhow::anyhow!(
-            "Invalid version format. Expected 'x.y.z', e.g., '4.3.0'"
+            "Invalid version format. Expected 'x.y' or 'x.y.z', e.g., '4.3' or '4.3.0'"
         ));
     }
 
-    // Split by dot and try to parse each part as an integer
-    let parts: Vec<&str> = min_r_version.split('.').collect();
-    if let (Some(major), Some(minor), Some(patch)) = (parts.first(), parts.get(1), parts.get(2)) {
-        match (
-            major.parse::<u32>(),
-            minor.parse::<u32>(),
-            patch.parse::<u32>(),
-        ) {
-            (Ok(major), Ok(minor), Ok(patch)) => Ok((major, minor, patch)),
-            _ => Err(anyhow::anyhow!("Version parts should be valid integers.")),
-        }
+    let major = parts[0]
+        .parse::<u32>()
+        .map_err(|_| anyhow::anyhow!("Major version should be a valid integer"))?;
+    let minor = parts[1]
+        .parse::<u32>()
+        .map_err(|_| anyhow::anyhow!("Minor version should be a valid integer"))?;
+    let patch = if parts.len() == 3 {
+        parts[2]
+            .parse::<u32>()
+            .map_err(|_| anyhow::anyhow!("Patch version should be a valid integer"))?
     } else {
-        Err(anyhow::anyhow!("Unexpected error in version parsing."))
+        0
+    };
+
+    Ok((major, minor, patch))
+}
+
+/// Filter rules based on minimum R version compatibility
+fn filter_rules_by_version(
+    rules: &RuleTable,
+    minimum_r_version: Option<(u32, u32, u32)>,
+) -> RuleTable {
+    match minimum_r_version {
+        None => {
+            // If we don't know the minimum R version, only include rules without version requirements
+            rules
+                .iter()
+                .filter(|rule| rule.minimum_r_version.is_none())
+                .cloned()
+                .collect::<RuleTable>()
+        }
+        Some(min_version) => {
+            // Include rules that are compatible with the minimum version
+            rules
+                .iter()
+                .filter(|rule| {
+                    match rule.minimum_r_version {
+                        None => true, // Rule has no version requirement
+                        Some(rule_min_version) => {
+                            // Check if the project's minimum version meets the rule's requirement
+                            version_satisfies(min_version, rule_min_version)
+                        }
+                    }
+                })
+                .cloned()
+                .collect::<RuleTable>()
+        }
     }
+}
+
+/// Check if the given version satisfies the minimum requirement
+fn version_satisfies(version: (u32, u32, u32), requirement: (u32, u32, u32)) -> bool {
+    if version.0 != requirement.0 {
+        return version.0 > requirement.0;
+    }
+    if version.1 != requirement.1 {
+        return version.1 > requirement.1;
+    }
+    version.2 >= requirement.2
 }
 
 fn get_invalid_rules(
