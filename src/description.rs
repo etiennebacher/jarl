@@ -21,7 +21,7 @@ impl Description {
                 deps.split(',')
                     .map(|s| s.trim())
                     .filter(|s| !s.is_empty() && s.starts_with("R "))
-                    .filter_map(|s| extract_version_from_dependency(s))
+                    .filter_map(extract_version_from_dependency)
                     .collect::<Vec<String>>()
             })
             .unwrap_or_default();
