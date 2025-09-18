@@ -85,7 +85,7 @@ pub struct Checker {
     pub rules: RuleTable,
     // The R version that is manually passed by the user in the CLI. Any rule
     // that has a minimum R version higher than this value will be deactivated.
-    pub minimum_r_version: Option<(u32, u32)>,
+    pub minimum_r_version: Option<(u32, u32, u32)>,
 }
 
 impl Checker {

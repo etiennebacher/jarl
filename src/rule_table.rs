@@ -3,7 +3,7 @@ pub struct Rule {
     pub name: String,
     pub categories: Vec<String>,
     pub fix_status: FixStatus,
-    pub minimum_r_version: Option<(u32, u32)>,
+    pub minimum_r_version: Option<(u32, u32, u32)>,
 }
 
 impl Rule {
@@ -43,7 +43,7 @@ impl RuleTable {
         rule: &str,
         categories: &str,
         fix_status: FixStatus,
-        minimum_r_version: Option<(u32, u32)>,
+        minimum_r_version: Option<(u32, u32, u32)>,
     ) {
         self.enabled.push(Rule {
             name: rule.to_string(),

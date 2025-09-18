@@ -38,7 +38,7 @@ pub fn all_rules_and_safety() -> RuleTable {
     rule_table.enable("empty_assignment", "READ", FixStatus::Safe, None);
     rule_table.enable("equals_na", "CORR", FixStatus::Safe, None);
     rule_table.enable("for_loop_index", "READ", FixStatus::None, None);
-    rule_table.enable("grepv", "READ", FixStatus::Safe, Some((4, 5)));
+    rule_table.enable("grepv", "READ", FixStatus::Safe, Some((4, 5, 0)));
     rule_table.enable("is_numeric", "READ", FixStatus::Safe, None);
     rule_table.enable("length_levels", "PERF,READ", FixStatus::Safe, None);
     rule_table.enable("length_test", "CORR", FixStatus::Safe, None);

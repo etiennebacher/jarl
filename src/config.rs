@@ -29,15 +29,36 @@ pub struct Config {
     /// grepv() introduced in R 4.5.0.
     /// Since it's unlikely those functions are introduced in patch versions,
     /// this field takes only two numeric values.
-    pub minimum_r_version: Option<(u32, u32)>,
+    pub minimum_r_version: Option<(u32, u32, u32)>,
 }
 
 pub fn build_config(args: &CliArgs, paths: Vec<PathBuf>) -> Result<Config> {
+    // Determining the minimum R version has to come first since if it is
+    // unknown then only rules that don't have a version restriction are
+    // selected.
+    let minimum_r_version = if args.min_r_version.is_none() {
+        if Path::new("DESCRIPTION").exists() {
+            let desc = fs::read_to_string("DESCRIPTION")?;
+            let parsed_r_version = Description::get_depend_r_version(&desc);
+            if parsed_r_version.is_ok() {
+                Some(parse_r_version(
+                    parsed_r_version.unwrap().first().unwrap().to_string(),
+                )?)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        Some(parse_r_version(args.min_r_version.clone().unwrap())?)
+    };
+
     let rules = parse_rules_cli(&args.select_rules, &args.ignore_rules)?;
 
     // If we don't know the minimum R version used, we deactivate all rules
     // that only exists starting from a specific version.
-    let rules = if args.min_r_version.is_none() {
+    let rules = if minimum_r_version.is_none() {
         rules
             .iter()
             .filter(|x| x.minimum_r_version.is_none())
@@ -76,24 +97,6 @@ pub fn build_config(args: &CliArgs, paths: Vec<PathBuf>) -> Result<Config> {
             .collect::<RuleTable>()
     } else {
         rules_to_apply
-    };
-
-    let minimum_r_version = if args.min_r_version.is_none() {
-        if Path::new("DESCRIPTION").exists() {
-            let desc = fs::read_to_string("DESCRIPTION")?;
-            let parsed_r_version = Description::get_depend_r_version(&desc);
-            if parsed_r_version.is_ok() {
-                Some(parse_r_version(
-                    parsed_r_version.unwrap().first().unwrap().to_string(),
-                )?)
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    } else {
-        Some(parse_r_version(args.min_r_version.clone().unwrap())?)
     };
 
     Ok(Config {
@@ -170,7 +173,7 @@ pub fn parse_rules_cli(select_rules: &str, ignore_rules: &str) -> Result<RuleTab
     Ok(final_rules)
 }
 
-pub fn parse_r_version(min_r_version: String) -> Result<(u32, u32)> {
+pub fn parse_r_version(min_r_version: String) -> Result<(u32, u32, u32)> {
     // Check if the version contains exactly one dot and two parts
     if !min_r_version.contains('.') || min_r_version.split('.').count() != 3 {
         return Err(anyhow::anyhow!(
@@ -180,9 +183,13 @@ pub fn parse_r_version(min_r_version: String) -> Result<(u32, u32)> {
 
     // Split by dot and try to parse each part as an integer
     let parts: Vec<&str> = min_r_version.split('.').collect();
-    if let (Some(major), Some(minor)) = (parts.first(), parts.get(1)) {
-        match (major.parse::<u32>(), minor.parse::<u32>()) {
-            (Ok(major), Ok(minor)) => Ok((major, minor)),
+    if let (Some(major), Some(minor), Some(patch)) = (parts.first(), parts.get(1), parts.get(2)) {
+        match (
+            major.parse::<u32>(),
+            minor.parse::<u32>(),
+            patch.parse::<u32>(),
+        ) {
+            (Ok(major), Ok(minor), Ok(patch)) => Ok((major, minor, patch)),
             _ => Err(anyhow::anyhow!("Version parts should be valid integers.")),
         }
     } else {
