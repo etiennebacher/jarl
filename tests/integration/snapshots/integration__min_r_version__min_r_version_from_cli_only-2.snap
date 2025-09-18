@@ -1,0 +1,13 @@
+---
+source: tests/integration/min_r_version.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\".\").arg(\"--min-r-version\").arg(\"4.4.0\").run().normalize_os_executable_name()"
+---
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+
+----- args -----
+. --min-r-version 4.4.0

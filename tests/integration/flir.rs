@@ -219,47 +219,6 @@ fn test_not_all_fixable_lints() -> anyhow::Result<()> {
 }
 
 #[test]
-fn test_minimum_r_version() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "grep('a', x, value = TRUE)";
-    std::fs::write(directory.join(test_path), test_contents)?;
-
-    // By default, if we don't know the min R version, we disable rules that
-    // only exist starting from a specific version.
-    insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
-    // grepv() rule only exists for R >= 4.5.0
-    insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg(".")
-            .arg("--min-r-version")
-            .arg("4.4.0")
-            .run()
-            .normalize_os_executable_name()
-    );
-    insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg(".")
-            .arg("--min-r-version")
-            .arg("4.6.0")
-            .run()
-            .normalize_os_executable_name()
-    );
-
-    Ok(())
-}
-
-#[test]
 fn test_corner_case() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();

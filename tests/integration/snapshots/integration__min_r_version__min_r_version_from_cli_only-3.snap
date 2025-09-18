@@ -1,0 +1,16 @@
+---
+source: tests/integration/min_r_version.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\".\").arg(\"--min-r-version\").arg(\"4.6.0\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 1
+----- stdout -----
+test.R [1:0] grepv Use `grepv(...)` instead of `grep(..., value = TRUE)`.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+
+----- args -----
+. --min-r-version 4.6.0
