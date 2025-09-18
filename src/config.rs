@@ -172,9 +172,9 @@ pub fn parse_rules_cli(select_rules: &str, ignore_rules: &str) -> Result<RuleTab
 
 pub fn parse_r_version(min_r_version: String) -> Result<(u32, u32)> {
     // Check if the version contains exactly one dot and two parts
-    if !min_r_version.contains('.') || min_r_version.split('.').count() != 2 {
+    if !min_r_version.contains('.') || min_r_version.split('.').count() != 3 {
         return Err(anyhow::anyhow!(
-            "Invalid version format. Expected 'x.y', e.g., '4.3'"
+            "Invalid version format. Expected 'x.y.z', e.g., '4.3.0'"
         ));
     }
 

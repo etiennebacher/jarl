@@ -242,7 +242,7 @@ fn test_minimum_r_version() -> anyhow::Result<()> {
             .current_dir(directory)
             .arg(".")
             .arg("--min-r-version")
-            .arg("4.4")
+            .arg("4.4.0")
             .run()
             .normalize_os_executable_name()
     );
@@ -251,7 +251,7 @@ fn test_minimum_r_version() -> anyhow::Result<()> {
             .current_dir(directory)
             .arg(".")
             .arg("--min-r-version")
-            .arg("4.6")
+            .arg("4.6.0")
             .run()
             .normalize_os_executable_name()
     );
