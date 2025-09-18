@@ -225,7 +225,7 @@ fn filter_rules_by_version(
                         None => true, // Rule has no version requirement
                         Some(rule_min_version) => {
                             // Check if the project's minimum version meets the rule's requirement
-                            version_satisfies(min_version, rule_min_version)
+                            rule_min_version <= min_version
                         }
                     }
                 })
@@ -233,17 +233,6 @@ fn filter_rules_by_version(
                 .collect::<RuleTable>()
         }
     }
-}
-
-/// Check if the given version satisfies the minimum requirement
-fn version_satisfies(version: (u32, u32, u32), requirement: (u32, u32, u32)) -> bool {
-    if version.0 != requirement.0 {
-        return version.0 > requirement.0;
-    }
-    if version.1 != requirement.1 {
-        return version.1 > requirement.1;
-    }
-    version.2 >= requirement.2
 }
 
 fn get_invalid_rules(
