@@ -151,6 +151,8 @@ fn determine_minimum_r_version(
     }
 
     // Look for DESCRIPTION file in any of the project paths
+    // TODO: this seems wasteful but I don't have a good infrastructure for now
+    // for getting the common root of the paths.
     for path in paths {
         let desc_path = if path.is_dir() {
             path.join("DESCRIPTION")
