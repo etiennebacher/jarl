@@ -216,7 +216,7 @@ fn filter_rules_by_version(
                 .cloned()
                 .collect::<RuleTable>()
         }
-        Some(min_version) => {
+        Some(project_min_version) => {
             // Include rules that are compatible with the minimum version
             rules
                 .iter()
@@ -224,8 +224,10 @@ fn filter_rules_by_version(
                     match rule.minimum_r_version {
                         None => true, // Rule has no version requirement
                         Some(rule_min_version) => {
-                            // Check if the project's minimum version meets the rule's requirement
-                            rule_min_version <= min_version
+                            // For instance, grepv() exists only for R >= 4.5.0,
+                            // so we enable it only if the project version is
+                            // guaranteed to be above this rule version.
+                            rule_min_version <= project_min_version
                         }
                     }
                 })
