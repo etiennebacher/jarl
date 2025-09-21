@@ -1,6 +1,6 @@
 use crate::{
-    args::CliArgs, description::Description, discovery::discover_r_file_paths,
-    lints::all_rules_and_safety, rule_table::RuleTable, settings::Settings,
+    args::CliArgs, description::Description, lints::all_rules_and_safety, rule_table::RuleTable,
+    settings::Settings,
 };
 use air_workspace::resolve::PathResolver;
 use anyhow::Result;
@@ -28,12 +28,11 @@ pub struct Config {
     pub minimum_r_version: Option<(u32, u32, u32)>,
 }
 
-pub fn build_config(args: &CliArgs, resolver: &PathResolver<Settings>) -> Result<Config> {
-    let paths = discover_r_file_paths(&args.files, resolver, true)
-        .into_iter()
-        .filter_map(Result::ok)
-        .collect::<Vec<_>>();
-
+pub fn build_config(
+    args: &CliArgs,
+    resolver: &PathResolver<Settings>,
+    paths: Vec<PathBuf>,
+) -> Result<Config> {
     let root_path = resolver
         .items()
         .iter()
