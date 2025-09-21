@@ -12,3 +12,4 @@ mod helpers;
 mod min_r_version;
 mod output_format;
 mod rules;
+mod toml;

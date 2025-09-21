@@ -24,9 +24,30 @@ impl Output {
     pub fn normalize_os_executable_name(self) -> Self {
         Self {
             status: self.status,
-            stdout: self.stdout.replace("air.exe", "air"),
-            stderr: self.stderr.replace("air.exe", "air"),
-            arguments: self.arguments.replace("air.exe", "air"),
+            stdout: self.stdout.replace("flir.exe", "flir"),
+            stderr: self.stderr.replace("flir.exe", "flir"),
+            arguments: self.arguments.replace("flir.exe", "flir"),
+        }
+    }
+
+    /// Normalize temporary file paths for snapshot stability
+    pub fn normalize_temp_paths(self) -> Self {
+        use regex::Regex;
+
+        // Match temporary directory paths like /tmp/.tmpXXXXXX/ or C:\Users\...\AppData\Local\Temp\...
+        let temp_path_regex =
+            Regex::new(r"/tmp/\.tmp[A-Za-z0-9]+|C:\\Users\\[^\\]+\\AppData\\Local\\Temp\\[^\\]+")
+                .unwrap();
+
+        Self {
+            status: self.status,
+            stdout: temp_path_regex
+                .replace_all(&self.stdout, "[TEMP_DIR]")
+                .to_string(),
+            stderr: temp_path_regex
+                .replace_all(&self.stderr, "[TEMP_DIR]")
+                .to_string(),
+            arguments: self.arguments,
         }
     }
 }

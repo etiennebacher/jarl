@@ -1,11 +1,11 @@
 ---
 source: tests/integration/rules.rs
-expression: "&mut\nCommand::new(binary_path()).arg(\".\").arg(\"--select-rules\").arg(\"any_is_na\").arg(\"--ignore-rules\").arg(\"any_duplicated\").run().normalize_os_executable_name()"
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\".\").arg(\"--select-rules\").arg(\"any_is_na\").arg(\"--ignore-rules\").arg(\"any_duplicated\").run().normalize_os_executable_name()"
 ---
 success: false
 exit_code: 1
 ----- stdout -----
-demos/foo2.R [1:0] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
+test.R [1:0] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
 
 Found 1 error.
 1 fixable with the `--fix` option.

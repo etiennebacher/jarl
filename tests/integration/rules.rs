@@ -72,6 +72,7 @@ fn test_selected_and_ignored() -> anyhow::Result<()> {
 
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
+            .current_dir(directory)
             .arg(".")
             .arg("--select-rules")
             .arg("any_is_na")
@@ -99,6 +100,7 @@ fn test_correct_rule_selection_and_exclusion() -> anyhow::Result<()> {
 
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
+            .current_dir(directory)
             .arg(".")
             .arg("--select-rules")
             .arg("any_is_na")

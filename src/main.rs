@@ -1,8 +1,7 @@
-use air_workspace::discovery::DiscoveredSettings;
-use air_workspace::discovery::discover_r_file_paths;
-use air_workspace::discovery::discover_settings;
 use air_workspace::resolve::PathResolver;
-use air_workspace::settings::Settings;
+use flir::discovery::DiscoveredSettings;
+use flir::discovery::discover_r_file_paths;
+use flir::discovery::discover_settings;
 
 use colored::Colorize;
 use flir::args::CliArgs;
@@ -36,7 +35,7 @@ fn run() -> Result<ExitCode> {
         None
     };
 
-    let mut resolver = PathResolver::new(Settings::default());
+    let mut resolver = PathResolver::new(flir::settings::Settings::default());
     for DiscoveredSettings { directory, settings } in discover_settings(&args.files)? {
         resolver.add(&directory, settings);
     }
@@ -58,7 +57,7 @@ fn run() -> Result<ExitCode> {
     // use std::path::Path;
     // let paths = vec![Path::new("demos/foo.R").to_path_buf()];
 
-    let config = build_config(&args, paths)?;
+    let config = build_config(&args, &resolver, paths)?;
 
     let file_results = check(config);
 

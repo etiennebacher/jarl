@@ -1,0 +1,13 @@
+---
+source: tests/integration/toml.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\".\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 2
+----- stdout -----
+
+----- stderr -----
+error: Unknown rules in field `select` in 'flir.toml': "" (empty or whitespace-only not allowed)
+
+----- args -----
+.
