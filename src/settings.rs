@@ -1,4 +1,8 @@
-// Adapted from https://github.com/posit-dev/air/blob/main/crates/workspace/src/settings.rs#L30
+//
+// Adapted from Ark
+// https://github.com/posit-dev/air/blob/main/crates/workspace/src/settings.rs
+//
+// MIT License - Posit PBC
 
 /// Resolved configuration settings used within flir
 #[derive(Debug, Default)]

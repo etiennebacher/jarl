@@ -1,9 +1,8 @@
 //
-// discovery.rs
+// Adapted from Ark
+// https://github.com/posit-dev/air/blob/affa92cd514525c4bab6c8c2ca251ea19414b89f/crates/workspace/src/discovery.rs
 //
-// Copyright (C) 2025 Posit Software, PBC. All rights reserved.
-//
-//
+// MIT License - Posit PBC
 
 use ignore::DirEntry;
 use rustc_hash::FxHashSet;

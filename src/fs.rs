@@ -1,3 +1,9 @@
+//
+// Taken from Ark
+// https://github.com/posit-dev/air/blob/affa92cd514525c4bab6c8c2ca251ea19414b89f/crates/fs/src/lib.rs
+//
+// MIT License - Posit PBC
+
 use path_absolutize::Absolutize;
 use std::ffi::OsStr;
 use std::path::Path;

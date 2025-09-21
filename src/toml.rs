@@ -1,3 +1,11 @@
+//
+// Adapted from Ark
+// https://github.com/posit-dev/air/blob/affa92cd514525c4bab6c8c2ca251ea19414b89f/crates/workspace/src/toml.rs
+// and
+// https://github.com/posit-dev/air/blob/affa92cd514525c4bab6c8c2ca251ea19414b89f/crates/workspace/src/toml_options.rs
+//
+// MIT License - Posit PBC
+
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::fs;
