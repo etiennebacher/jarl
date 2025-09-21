@@ -28,6 +28,7 @@ fn test_empty_toml_uses_all_rules() -> anyhow::Result<()> {
             .arg(".")
             .run()
             .normalize_os_executable_name()
+            .normalize_temp_paths()
     );
 
     Ok(())
@@ -57,6 +58,7 @@ select = []
             .arg(".")
             .run()
             .normalize_os_executable_name()
+            .normalize_temp_paths()
     );
 
     std::fs::write(
@@ -77,6 +79,7 @@ select = [""]
             .arg(".")
             .run()
             .normalize_os_executable_name()
+            .normalize_temp_paths()
     );
 
     Ok(())
@@ -106,6 +109,7 @@ ignore = []
             .arg(".")
             .run()
             .normalize_os_executable_name()
+            .normalize_temp_paths()
     );
 
     std::fs::write(
@@ -184,6 +188,7 @@ ignore = ["any_duplicated"]
             .arg(".")
             .run()
             .normalize_os_executable_name()
+            .normalize_temp_paths()
     );
 
     Ok(())
@@ -216,6 +221,7 @@ length(levels(x))"#;
             .arg(".")
             .run()
             .normalize_os_executable_name()
+            .normalize_temp_paths()
     );
 
     Ok(())
@@ -253,6 +259,7 @@ length(levels(x))"#;
             .arg("any_duplicated,length_levels")
             .run()
             .normalize_os_executable_name()
+            .normalize_temp_paths()
     );
 
     Ok(())
@@ -288,6 +295,7 @@ length(levels(x))"#;
             .arg("any_is_na")
             .run()
             .normalize_os_executable_name()
+            .normalize_temp_paths()
     );
 
     Ok(())
@@ -325,6 +333,7 @@ length(levels(x))"#;
             .arg("length_levels")
             .run()
             .normalize_os_executable_name()
+            .normalize_temp_paths()
     );
 
     Ok(())
@@ -354,6 +363,7 @@ select = ["any_is_na", "foo"]
             .arg(".")
             .run()
             .normalize_os_executable_name()
+            .normalize_temp_paths()
     );
 
     Ok(())
@@ -383,6 +393,7 @@ ignore = ["foo", "bar"]
             .arg(".")
             .run()
             .normalize_os_executable_name()
+            .normalize_temp_paths()
     );
 
     Ok(())
@@ -412,6 +423,7 @@ select = ["any_is_na"
             .arg(".")
             .run()
             .normalize_os_executable_name()
+            .normalize_temp_paths()
     );
 
     Ok(())
@@ -442,6 +454,7 @@ unknown_field = ["value"]
             .arg(".")
             .run()
             .normalize_os_executable_name()
+            .normalize_temp_paths()
     );
 
     Ok(())
@@ -499,6 +512,7 @@ ignore = ["any_duplicated", "", "any_is_na"]
             .arg(".")
             .run()
             .normalize_os_executable_name()
+            .normalize_temp_paths()
     );
 
     Ok(())
@@ -528,6 +542,7 @@ select = ["any_is_na", "   ", "any_duplicated"]
             .arg(".")
             .run()
             .normalize_os_executable_name()
+            .normalize_temp_paths()
     );
 
     Ok(())
