@@ -11,6 +11,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use crate::fs;
+use crate::fs::has_r_extension;
 use crate::settings::Settings;
 use crate::toml::find_flir_toml_in_directory;
 use crate::toml::parse_flir_toml;
@@ -222,12 +223,10 @@ impl ignore::ParallelVisitor for FilesVisitor<'_> {
 
         // Check if this is an R file (has .R extension)
         if !is_directory {
-            if let Some(extension) = path.extension() {
-                if extension == "R" {
-                    tracing::trace!("Included R file {path}", path = path.display());
-                    self.files.push(Ok(entry.into_path()));
-                    return ignore::WalkState::Continue;
-                }
+            if has_r_extension(path) {
+                tracing::trace!("Included R file {path}", path = path.display());
+                self.files.push(Ok(entry.into_path()));
+                return ignore::WalkState::Continue;
             }
         }
 
