@@ -80,8 +80,8 @@ type DiscoveredFiles = Vec<Result<PathBuf, ignore::Error>>;
 /// consistently applied to [discover_settings()].
 pub fn discover_r_file_paths<P: AsRef<Path>>(
     paths: &[P],
-    resolver: &PathResolver<Settings>,
-    use_linter_settings: bool,
+    _resolver: &PathResolver<Settings>,
+    _use_linter_settings: bool,
 ) -> DiscoveredFiles {
     let paths: Vec<PathBuf> = paths.iter().map(fs::normalize_path).collect();
 
@@ -119,7 +119,7 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
     let walker = builder.build_parallel();
 
     // Run the `WalkParallel` to collect all R files.
-    let state = FilesState::new(resolver, use_linter_settings);
+    let state = FilesState::new();
     let mut visitor_builder = FilesVisitorBuilder::new(&state);
     walker.visit(&mut visitor_builder);
 
@@ -127,19 +127,13 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
 }
 
 /// Shared state across the threads of the walker
-struct FilesState<'resolver> {
+struct FilesState {
     files: std::sync::Mutex<DiscoveredFiles>,
-    resolver: &'resolver PathResolver<Settings>,
-    use_linter_settings: bool,
 }
 
-impl<'resolver> FilesState<'resolver> {
-    fn new(resolver: &'resolver PathResolver<Settings>, use_linter_settings: bool) -> Self {
-        Self {
-            files: std::sync::Mutex::new(Vec::new()),
-            resolver,
-            use_linter_settings,
-        }
+impl FilesState {
+    fn new() -> Self {
+        Self { files: std::sync::Mutex::new(Vec::new()) }
     }
 
     fn finish(self) -> DiscoveredFiles {
@@ -151,17 +145,17 @@ impl<'resolver> FilesState<'resolver> {
 ///
 /// Implements the `build()` method of [ignore::ParallelVisitorBuilder], which
 /// [ignore::WalkParallel] utilizes to create one [FilesVisitor] per thread.
-struct FilesVisitorBuilder<'state, 'resolver> {
-    state: &'state FilesState<'resolver>,
+struct FilesVisitorBuilder<'state> {
+    state: &'state FilesState,
 }
 
-impl<'state, 'resolver> FilesVisitorBuilder<'state, 'resolver> {
-    fn new(state: &'state FilesState<'resolver>) -> Self {
+impl<'state> FilesVisitorBuilder<'state> {
+    fn new(state: &'state FilesState) -> Self {
         Self { state }
     }
 }
 
-impl<'state> ignore::ParallelVisitorBuilder<'state> for FilesVisitorBuilder<'state, '_> {
+impl<'state> ignore::ParallelVisitorBuilder<'state> for FilesVisitorBuilder<'state> {
     /// Constructs the per-thread [FilesVisitor], called for us by `ignore`
     fn build(&mut self) -> Box<dyn ignore::ParallelVisitor + 'state> {
         Box::new(FilesVisitor { files: vec![], state: self.state })
@@ -173,12 +167,12 @@ impl<'state> ignore::ParallelVisitorBuilder<'state> for FilesVisitorBuilder<'sta
 /// A files visitor has its `visit()` method repeatedly called. It modifies its own
 /// synchronous state by pushing to its thread specific `files` while visiting. On `Drop`,
 /// the collected `files` are appended to the global set of `state.files`.
-struct FilesVisitor<'state, 'resolver> {
+struct FilesVisitor<'state> {
     files: DiscoveredFiles,
-    state: &'state FilesState<'resolver>,
+    state: &'state FilesState,
 }
 
-impl ignore::ParallelVisitor for FilesVisitor<'_, '_> {
+impl ignore::ParallelVisitor for FilesVisitor<'_> {
     /// Visit a file in the tree
     ///
     /// Visiting a file requires two actions:
@@ -235,7 +229,7 @@ impl ignore::ParallelVisitor for FilesVisitor<'_, '_> {
     }
 }
 
-impl Drop for FilesVisitor<'_, '_> {
+impl Drop for FilesVisitor<'_> {
     fn drop(&mut self) {
         // Lock the global shared set of `files`
         // Unwrap: If we can't lock the mutex then something is very wrong
