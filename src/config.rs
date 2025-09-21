@@ -57,7 +57,7 @@ pub fn build_config(args: &CliArgs, resolver: &PathResolver<Settings>) -> Result
 
     let rules_cli = parse_rules_cli(&args.select_rules, &args.ignore_rules)?;
     let rules_toml = parse_rules_toml(toml_settings)?;
-    let rules = reconcile_rules(rules_cli, rules_toml, args)?;
+    let rules = reconcile_rules(rules_cli, rules_toml)?;
 
     let rules = filter_rules_by_version(&rules, minimum_r_version);
 
@@ -102,20 +102,18 @@ pub fn build_config(args: &CliArgs, resolver: &PathResolver<Settings>) -> Result
     })
 }
 
-/// Resolve the rules to use, based on the CLI arguments only.
+/// Parse CLI rule arguments and return (selected_rules, ignored_rules).
 ///
-/// If `--select-rules` is not passed by the user, then we use all existing
-/// rules.
-/// If `--ignore-rules` is not passed by the user, then we don't exclude any
-/// rules.
-///
-/// `--ignore-rules` always has the last word: if a rule is in both
-/// `--select-rules` and `--ignore-rules`, then it is ignored.
-pub fn parse_rules_cli(select_rules: &str, ignore_rules: &str) -> Result<RuleTable> {
+/// Returns None for selected_rules if no --select-rules was specified.
+/// Returns empty set for ignored_rules if no --ignore-rules was specified.
+pub fn parse_rules_cli(
+    select_rules: &str,
+    ignore_rules: &str,
+) -> Result<(Option<HashSet<String>>, HashSet<String>)> {
     let all_rules = all_rules_and_safety();
 
-    let selected_rules: HashSet<String> = if select_rules.is_empty() {
-        HashSet::from_iter(all_rules.iter().map(|x| x.name.clone()))
+    let selected_rules: Option<HashSet<String>> = if select_rules.is_empty() {
+        None
     } else {
         let passed_by_user = select_rules.split(",").collect::<Vec<&str>>();
         let invalid_rules = get_invalid_rules(&all_rules, &passed_by_user);
@@ -126,12 +124,12 @@ pub fn parse_rules_cli(select_rules: &str, ignore_rules: &str) -> Result<RuleTab
             ));
         }
 
-        HashSet::from_iter(
+        Some(HashSet::from_iter(
             all_rules
                 .iter()
                 .filter(|r| passed_by_user.contains(&r.name.as_str()))
                 .map(|x| x.name.clone()),
-        )
+        ))
     };
 
     let ignored_rules: HashSet<String> = if ignore_rules.is_empty() {
@@ -154,49 +152,42 @@ pub fn parse_rules_cli(select_rules: &str, ignore_rules: &str) -> Result<RuleTab
         )
     };
 
-    let final_rule_names: HashSet<String> =
-        selected_rules.difference(&ignored_rules).cloned().collect();
-
-    let final_rules: RuleTable = all_rules
-        .iter()
-        .filter(|r| final_rule_names.contains(&r.name))
-        .cloned()
-        .collect();
-
-    Ok(final_rules)
+    Ok((selected_rules, ignored_rules))
 }
 
-/// Resolve the rules to use, based on TOML configuration settings.
+/// Parse TOML configuration and return (selected_rules, ignored_rules).
 ///
-/// Similar to `parse_rules_cli()` but reads from TOML configuration.
-/// If no TOML settings are provided, returns all rules enabled.
-pub fn parse_rules_toml(toml_settings: Option<&Settings>) -> Result<RuleTable> {
+/// Returns None for selected_rules if no TOML select was specified (meaning use all rules).
+/// Returns empty set for ignored_rules if no TOML ignore was specified.
+pub fn parse_rules_toml(
+    toml_settings: Option<&Settings>,
+) -> Result<(Option<HashSet<String>>, HashSet<String>)> {
     let all_rules = all_rules_and_safety();
 
     let Some(settings) = toml_settings else {
-        // No TOML configuration found, return all rules
-        return Ok(all_rules);
+        // No TOML configuration found
+        return Ok((None, HashSet::new()));
     };
 
     let linter_settings = &settings.linter;
 
     // Handle select rules from TOML
-    let selected_rules: HashSet<String> = if let Some(select_rules) = &linter_settings.select {
-        let invalid_rules = get_invalid_rules(
-            &all_rules,
-            &select_rules.iter().map(|s| s.as_str()).collect(),
-        );
-        if let Some(invalid_rules) = invalid_rules {
-            return Err(anyhow::anyhow!(
-                "Unknown rules in configuration file select: {}",
-                invalid_rules.join(", ")
-            ));
-        }
-        HashSet::from_iter(select_rules.iter().cloned())
-    } else {
-        // No select rules specified, start with all rules
-        HashSet::from_iter(all_rules.iter().map(|x| x.name.clone()))
-    };
+    let selected_rules: Option<HashSet<String>> =
+        if let Some(select_rules) = &linter_settings.select {
+            let invalid_rules = get_invalid_rules(
+                &all_rules,
+                &select_rules.iter().map(|s| s.as_str()).collect(),
+            );
+            if let Some(invalid_rules) = invalid_rules {
+                return Err(anyhow::anyhow!(
+                    "Unknown rules in configuration file select: {}",
+                    invalid_rules.join(", ")
+                ));
+            }
+            Some(HashSet::from_iter(select_rules.iter().cloned()))
+        } else {
+            None
+        };
 
     // Handle ignore rules from TOML
     let ignored_rules: HashSet<String> = if let Some(ignore_rules) = &linter_settings.ignore {
@@ -215,9 +206,41 @@ pub fn parse_rules_toml(toml_settings: Option<&Settings>) -> Result<RuleTable> {
         HashSet::new()
     };
 
-    // Apply ignore rules to selected rules
+    Ok((selected_rules, ignored_rules))
+}
+
+/// Reconcile rules from CLI and TOML configuration.
+///
+/// Strategy:
+/// - CLI select takes precedence over TOML select
+/// - CLI ignore and TOML ignore are combined (both applied)
+/// - If neither CLI nor TOML specify select, start with all rules
+fn reconcile_rules(
+    rules_cli: (Option<HashSet<String>>, HashSet<String>),
+    rules_toml: (Option<HashSet<String>>, HashSet<String>),
+) -> Result<RuleTable> {
+    let all_rules = all_rules_and_safety();
+    let (cli_selected, cli_ignored) = rules_cli;
+    let (toml_selected, toml_ignored) = rules_toml;
+
+    // Step 1: Determine base selection (CLI select takes precedence over TOML select)
+    let base_selected: HashSet<String> = if let Some(cli_selected) = cli_selected {
+        // CLI select specified, use it
+        cli_selected
+    } else if let Some(toml_selected) = toml_selected {
+        // No CLI select, but TOML select exists, use TOML
+        toml_selected
+    } else {
+        // Neither CLI nor TOML specified select rules, start with all rules
+        HashSet::from_iter(all_rules.iter().map(|x| x.name.clone()))
+    };
+
+    // Step 2: Combine all ignore rules (TOML + CLI)
+    let all_ignored: HashSet<String> = cli_ignored.union(&toml_ignored).cloned().collect();
+
+    // Step 3: Apply ignore rules to base selection
     let final_rule_names: HashSet<String> =
-        selected_rules.difference(&ignored_rules).cloned().collect();
+        base_selected.difference(&all_ignored).cloned().collect();
 
     let final_rules: RuleTable = all_rules
         .iter()
@@ -226,54 +249,6 @@ pub fn parse_rules_toml(toml_settings: Option<&Settings>) -> Result<RuleTable> {
         .collect();
 
     Ok(final_rules)
-}
-
-/// Reconcile rules from CLI and TOML configuration.
-///
-/// More granular reconciliation strategy:
-/// - If CLI select-rules is specified, start with CLI selection, otherwise use TOML selection
-/// - CLI ignore-rules are always additive to the base selection (regardless of source)
-fn reconcile_rules(
-    rules_cli: RuleTable,
-    rules_toml: RuleTable,
-    args: &CliArgs,
-) -> Result<RuleTable> {
-    // Step 1: Determine base selection (CLI select takes precedence over TOML select)
-    let base_selected: HashSet<String> = if !args.select_rules.is_empty() {
-        // CLI select-rules specified, use CLI result (which only contains selected rules)
-        HashSet::from_iter(rules_cli.iter().map(|r| r.name.clone()))
-    } else {
-        // No CLI select, use TOML result (which contains TOML select minus TOML ignore)
-        HashSet::from_iter(rules_toml.iter().map(|r| r.name.clone()))
-    };
-
-    // Step 2: Apply CLI ignore rules additively
-    if !args.ignore_rules.is_empty() {
-        let cli_ignored: HashSet<String> = args
-            .ignore_rules
-            .split(",")
-            .map(|s| s.trim().to_string())
-            .collect();
-
-        let final_rule_names: HashSet<String> =
-            base_selected.difference(&cli_ignored).cloned().collect();
-
-        let all_rules = all_rules_and_safety();
-        let final_rules: RuleTable = all_rules
-            .iter()
-            .filter(|r| final_rule_names.contains(&r.name))
-            .cloned()
-            .collect();
-
-        Ok(final_rules)
-    } else {
-        // No CLI ignore rules, use base selection as-is
-        if !args.select_rules.is_empty() {
-            Ok(rules_cli)
-        } else {
-            Ok(rules_toml)
-        }
-    }
 }
 
 /// Determine the minimum R version from CLI args or DESCRIPTION file
