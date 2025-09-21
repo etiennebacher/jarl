@@ -1,9 +1,6 @@
 // Adapted from https://github.com/posit-dev/air/blob/main/crates/workspace/src/settings.rs#L30
 
-use air_workspace::settings::DefaultExcludePatterns;
-use air_workspace::settings::DefaultIncludePatterns;
-use air_workspace::settings::ExcludePatterns;
-use air_workspace::settings::FormatSettings;
+// use air_workspace::settings::FormatSettings;
 
 /// Resolved configuration settings used within air
 #[derive(Debug, Default)]
@@ -13,10 +10,9 @@ pub struct Settings {
 
 #[derive(Debug)]
 pub struct LinterSettings {
-    pub exclude: Option<ExcludePatterns>,
-    pub default_exclude: Option<DefaultExcludePatterns>,
-    pub default_include: Option<DefaultIncludePatterns>,
-    pub rules: Option<Vec<String>>,
+    pub select: Option<Vec<String>>,
+    pub ignore: Option<Vec<String>>,
+    // pub exclude: Option<ExcludePatterns>,
 }
 
 impl Default for LinterSettings {
@@ -26,44 +22,33 @@ impl Default for LinterSettings {
     /// - `default_exclude` and `default_include` are `Some(<default>)` rather than `None`
     fn default() -> Self {
         Self {
-            exclude: Default::default(),
-            default_exclude: Some(Default::default()),
-            default_include: Some(Default::default()),
-            rules: Some(Default::default()),
+            select: Some(Default::default()),
+            ignore: Some(Default::default()),
+            // exclude: Default::default(),
         }
     }
 }
 
-impl LinterSettings {
-    fn new(
-        exclude: Option<ExcludePatterns>,
-        default_exclude: Option<DefaultExcludePatterns>,
-        default_include: Option<DefaultIncludePatterns>,
-        rules: Option<Vec<String>>,
-    ) -> Self {
-        LinterSettings { exclude, default_exclude, default_include, rules }
-    }
-}
+// impl LinterSettings {
+//     fn new(select: Option<Vec<String>>, ignore: Option<Vec<String>>) -> Self {
+//         LinterSettings { select, ignore }
+//     }
+// }
 
-impl From<FormatSettings> for LinterSettings {
-    fn from(settings: FormatSettings) -> LinterSettings {
-        LinterSettings::new(
-            settings.exclude,
-            settings.default_exclude,
-            settings.default_include,
-            Some(vec!["".to_string()]),
-        )
-    }
-}
+// impl From<FormatSettings> for LinterSettings {
+//     fn from(settings: FormatSettings) -> LinterSettings {
+//         LinterSettings::new(Some(vec!["".to_string()]), Some(vec!["".to_string()]))
+//     }
+// }
 
-impl Settings {
-    fn new(settings: LinterSettings) -> Self {
-        Settings { linter: settings }
-    }
-}
+// impl Settings {
+//     fn new(settings: LinterSettings) -> Self {
+//         Settings { linter: settings }
+//     }
+// }
 
-impl From<air_workspace::settings::Settings> for Settings {
-    fn from(settings: air_workspace::settings::Settings) -> Settings {
-        Settings::new(LinterSettings::from(settings.format))
-    }
-}
+// impl From<air_workspace::settings::Settings> for Settings {
+//     fn from(settings: air_workspace::settings::Settings) -> Settings {
+//         Settings::new(LinterSettings::from(settings.format))
+//     }
+// }

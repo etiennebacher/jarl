@@ -1,7 +1,8 @@
 use crate::{
     args::CliArgs, description::Description, lints::all_rules_and_safety, rule_table::RuleTable,
-    toml::parse_flir_toml,
+    settings::LinterSettings,
 };
+use air_workspace::resolve::PathResolver;
 use anyhow::Result;
 use std::{collections::HashSet, fs, path::PathBuf};
 
@@ -27,14 +28,13 @@ pub struct Config {
     pub minimum_r_version: Option<(u32, u32, u32)>,
 }
 
-pub fn build_config(args: &CliArgs, paths: Vec<PathBuf>) -> Result<Config> {
+pub fn build_config(args: &CliArgs, resolver: &PathResolver<LinterSettings>) -> Result<Config> {
     // Determining the minimum R version has to come first since if it is
     // unknown then only rules that don't have a version restriction are
     // selected.
     let minimum_r_version = determine_minimum_r_version(args, &paths)?;
 
     let rules = parse_rules_cli(&args.select_rules, &args.ignore_rules)?;
-
     let rules = filter_rules_by_version(&rules, minimum_r_version);
 
     // Resolve the interaction between --fix and --unsafe-fixes first. Using
