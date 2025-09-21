@@ -180,7 +180,7 @@ pub fn parse_rules_toml(
             );
             if let Some(invalid_rules) = invalid_rules {
                 return Err(anyhow::anyhow!(
-                    "Unknown rules in configuration file select: {}",
+                    "Unknown rules in field `select` in 'flir.toml': {}",
                     invalid_rules.join(", ")
                 ));
             }
@@ -197,7 +197,7 @@ pub fn parse_rules_toml(
         );
         if let Some(invalid_rules) = invalid_rules {
             return Err(anyhow::anyhow!(
-                "Unknown rules in configuration file ignore: {}",
+                "Unknown rules in field `ignore` in 'flir.toml': {}",
                 invalid_rules.join(", ")
             ));
         }
@@ -355,8 +355,19 @@ fn get_invalid_rules(
 
     let invalid_rules: Vec<String> = rules_passed_by_user
         .iter()
-        .filter(|rule| !all_rules_set.contains(&rule.to_string()))
-        .map(|x| x.to_string())
+        .filter(|rule| {
+            let trimmed = rule.trim();
+            // Rule is invalid if it's empty/whitespace-only or doesn't exist in valid rules
+            trimmed.is_empty() || !all_rules_set.contains(trimmed)
+        })
+        .map(|x| {
+            let trimmed = x.trim();
+            if trimmed.is_empty() {
+                format!("\"{}\" (empty or whitespace-only not allowed)", x)
+            } else {
+                x.to_string()
+            }
+        })
         .collect();
 
     if invalid_rules.is_empty() {

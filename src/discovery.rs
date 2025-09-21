@@ -220,6 +220,17 @@ impl ignore::ParallelVisitor for FilesVisitor<'_> {
             return ignore::WalkState::Continue;
         }
 
+        // Check if this is an R file (has .R extension)
+        if !is_directory {
+            if let Some(extension) = path.extension() {
+                if extension == "R" {
+                    tracing::trace!("Included R file {path}", path = path.display());
+                    self.files.push(Ok(entry.into_path()));
+                    return ignore::WalkState::Continue;
+                }
+            }
+        }
+
         // Didn't accept this file, just keep going
         tracing::trace!(
             "Excluded file due to fallthrough {path}",
