@@ -169,10 +169,7 @@ impl TomlOptions {
     pub fn into_settings(self, _root: &Path) -> anyhow::Result<Settings> {
         let linter = self.linter.unwrap_or_default();
 
-        let linter = LinterSettings {
-            select: Some(linter.select.unwrap_or_default()),
-            ignore: Some(linter.ignore.unwrap_or_default()),
-        };
+        let linter = LinterSettings { select: linter.select, ignore: linter.ignore };
 
         Ok(Settings { linter })
     }

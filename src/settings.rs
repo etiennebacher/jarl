@@ -18,12 +18,11 @@ pub struct LinterSettings {
 impl Default for LinterSettings {
     /// [Default] handler for [LinterSettings]
     ///
-    /// Notably:
-    /// - `default_exclude` and `default_include` are `Some(<default>)` rather than `None`
+    /// Uses `None` to indicate no rules specified, rather than empty vectors.
     fn default() -> Self {
         Self {
-            select: Some(Default::default()),
-            ignore: Some(Default::default()),
+            select: None,
+            ignore: None,
             // exclude: Default::default(),
         }
     }
