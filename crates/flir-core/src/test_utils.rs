@@ -207,11 +207,6 @@ pub fn expect_lint(text: &str, msg: &str, rule: &str, min_r_version: Option<&str
     assert!(has_lint(text, msg, rule, min_r_version));
 }
 
-/// Convenience function for no_lint (alias for has_no_lint)
-pub fn no_lint(text: &str, rule: &str, min_r_version: Option<&str>) -> bool {
-    has_no_lint(text, rule, min_r_version)
-}
-
 /// Get fixed text for a series of code snippets
 pub fn get_fixed_text(text: Vec<&str>, rule: &str, min_r_version: Option<&str>) -> String {
     let mut output: String = String::new();
