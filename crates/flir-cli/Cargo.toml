@@ -1,0 +1,43 @@
+[package]
+name = "flir-cli"
+description = "Command-line interface for the flir R linter"
+version = "0.0.16"
+authors.workspace = true
+edition.workspace = true
+license-file.workspace = true
+repository.workspace = true
+readme.workspace = true
+
+[[bin]]
+name = "flir"
+path = "src/main.rs"
+
+[dependencies]
+# Core flir functionality
+flir-core.workspace = true
+
+# CLI specific dependencies
+clap.workspace = true
+colored.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+# Workspace and file system
+air_workspace.workspace = true
+
+# Utilities
+tracing.workspace = true
+
+# File system operations
+air_fs.workspace = true
+
+# Additional utilities
+regex.workspace = true
+tempfile.workspace = true
+
+[dev-dependencies]
+assert_cmd.workspace = true
+tempfile.workspace = true
+insta.workspace = true
+regex.workspace = true

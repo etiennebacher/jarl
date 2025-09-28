@@ -1,0 +1,25 @@
+pub(crate) mod empty_assignment;
+
+#[cfg(test)]
+mod tests {
+    use crate::test_utils::*;
+
+    #[test]
+    fn test_lint_empty_assignment() {
+        let expected_message = "Assign NULL explicitly or";
+
+        expect_lint("x <- {}", expected_message, "empty_assignment", None);
+        expect_lint("x = { }", expected_message, "empty_assignment", None);
+        expect_lint("{ } -> x", expected_message, "empty_assignment", None);
+        expect_lint("x <- {\n}", expected_message, "empty_assignment", None);
+        expect_lint("env$obj <- {}", expected_message, "empty_assignment", None);
+    }
+
+    #[test]
+    fn test_no_lint_empty_assignment() {
+        expect_no_lint("x <- { 3 + 4 }", "empty_assignment", None);
+        expect_no_lint("x = if (x > 1) { 3 + 4 }", "empty_assignment", None);
+        expect_no_lint("{ 3 + 4 } -> x", "empty_assignment", None);
+        expect_no_lint("x <- function() { }", "empty_assignment", None);
+    }
+}
