@@ -22,8 +22,8 @@ pub trait Emitter {
     fn emit<W: Write>(
         &self,
         writer: &mut W,
-        diagnostics: &Vec<&Diagnostic>,
-        errors: &Vec<(String, anyhow::Error)>,
+        diagnostics: &[&Diagnostic],
+        errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()>;
 }
 
@@ -33,8 +33,8 @@ impl Emitter for ConciseEmitter {
     fn emit<W: Write>(
         &self,
         writer: &mut W,
-        diagnostics: &Vec<&Diagnostic>,
-        errors: &Vec<(String, anyhow::Error)>,
+        diagnostics: &[&Diagnostic],
+        errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
         let mut total_diagnostics = 0;
         let mut n_diagnostic_with_fixes = 0usize;
@@ -124,8 +124,8 @@ impl Emitter for JsonEmitter {
     fn emit<W: Write>(
         &self,
         writer: &mut W,
-        diagnostics: &Vec<&Diagnostic>,
-        _errors: &Vec<(String, anyhow::Error)>,
+        diagnostics: &[&Diagnostic],
+        _errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
         serde_json::to_writer_pretty(writer, diagnostics)?;
         Ok(())
