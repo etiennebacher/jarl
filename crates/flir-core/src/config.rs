@@ -7,13 +7,23 @@ use anyhow::Result;
 use std::{collections::HashSet, fs, path::PathBuf};
 
 #[derive(Clone, Debug)]
+/// Arguments provided in the CLI.
 pub struct ArgsConfig {
+    /// Paths to files to lint.
     pub files: Vec<PathBuf>,
+    /// Did the user pass the --fix flag?
     pub fix: bool,
+    /// Did the user pass the --unsafe-fixes flag?
     pub unsafe_fixes: bool,
+    /// Did the user pass the --fix-only flag?
     pub fix_only: bool,
+    /// Names of rules to use. A single string with commas between rule names.
     pub select_rules: String,
+    /// Names of rules to ignore. A single string with commas between rule names.
     pub ignore_rules: String,
+    /// The minimum R version used in the project. Used to disable some rules
+    /// that require functions that are not available in all R versions, e.g.
+    /// grepv() introduced in R 4.5.0.
     pub min_r_version: Option<String>,
 }
 
