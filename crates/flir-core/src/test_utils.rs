@@ -1,4 +1,4 @@
-use crate::{check, config::FlirConfig, discovery::discover_settings};
+use crate::{check, config::ArgsConfig, discovery::discover_settings};
 use air_workspace::resolve::PathResolver;
 use std::fs;
 use tempfile::Builder;
@@ -13,7 +13,7 @@ pub fn has_lint(text: &str, msg: &str, rule: &str, min_r_version: Option<&str>) 
 
     fs::write(&temp_file, text).expect("Failed to write initial content");
 
-    let check_config = FlirConfig {
+    let check_config = ArgsConfig {
         files: vec![temp_file.path().to_path_buf()],
         fix: false,
         unsafe_fixes: false,
@@ -64,7 +64,7 @@ pub fn has_no_lint(text: &str, rule: &str, min_r_version: Option<&str>) -> bool 
 
     fs::write(&temp_file, text).expect("Failed to write initial content");
 
-    let check_config = FlirConfig {
+    let check_config = ArgsConfig {
         files: vec![temp_file.path().to_path_buf()],
         fix: false,
         unsafe_fixes: false,
@@ -118,7 +118,7 @@ pub fn apply_fixes(
 
     fs::write(&temp_file, text).expect("Failed to write initial content");
 
-    let check_config = FlirConfig {
+    let check_config = ArgsConfig {
         files: vec![temp_file.path().to_path_buf()],
         fix: true,
         unsafe_fixes,
@@ -160,7 +160,7 @@ pub fn check_code(text: &str, rule: &str, min_r_version: Option<&str>) -> Vec<cr
 
     fs::write(&temp_file, text).expect("Failed to write initial content");
 
-    let check_config = FlirConfig {
+    let check_config = ArgsConfig {
         files: vec![temp_file.path().to_path_buf()],
         fix: false,
         unsafe_fixes: false,
