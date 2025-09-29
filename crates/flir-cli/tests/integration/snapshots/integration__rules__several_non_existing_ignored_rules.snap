@@ -1,0 +1,13 @@
+---
+source: crates/flir-cli/tests/integration/rules.rs
+expression: "&mut\nCommand::new(binary_path()).arg(\".\").arg(\"--ignore-rules\").arg(\"foo,any_is_na,barbaz\").run().normalize_os_executable_name()"
+---
+success: true
+exit_code: 0
+----- stdout -----
+Warning: No R files found under the given path(s).
+
+----- stderr -----
+
+----- args -----
+. --ignore-rules foo,any_is_na,barbaz

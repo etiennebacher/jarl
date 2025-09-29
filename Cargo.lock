@@ -575,16 +575,32 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
 
 [[package]]
-name = "flir"
+name = "flir-cli"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "clap",
+ "colored",
+ "flir-core",
+ "fs",
+ "insta",
+ "regex",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tracing",
+ "workspace",
+]
+
+[[package]]
+name = "flir-core"
 version = "0.0.16"
 dependencies = [
  "air_r_parser",
  "air_r_syntax",
  "anyhow",
- "assert_cmd",
  "biome_rowan",
- "clap",
- "colored",
  "fs",
  "ignore",
  "insta",

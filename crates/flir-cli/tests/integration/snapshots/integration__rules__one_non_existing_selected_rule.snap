@@ -1,0 +1,13 @@
+---
+source: crates/flir-cli/tests/integration/rules.rs
+expression: "&mut\nCommand::new(binary_path()).arg(\".\").arg(\"--select-rules\").arg(\"foo\").run().normalize_os_executable_name()"
+---
+success: true
+exit_code: 0
+----- stdout -----
+Warning: No R files found under the given path(s).
+
+----- stderr -----
+
+----- args -----
+. --select-rules foo
