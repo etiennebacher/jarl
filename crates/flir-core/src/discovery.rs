@@ -221,13 +221,12 @@ impl ignore::ParallelVisitor for FilesVisitor<'_> {
         }
 
         // Check if this is an R file (has .R extension)
-        if !is_directory {
-            if has_r_extension(path) {
+        if !is_directory
+            && has_r_extension(path) {
                 tracing::trace!("Included R file {path}", path = path.display());
                 self.files.push(Ok(entry.into_path()));
                 return ignore::WalkState::Continue;
             }
-        }
 
         // Didn't accept this file, just keep going
         tracing::trace!(

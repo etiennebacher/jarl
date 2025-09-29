@@ -2,7 +2,6 @@ use air_fs::relativize_path;
 use clap::ValueEnum;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
-use serde_json;
 use std::io::Write;
 
 use flir_core::diagnostic::Diagnostic;

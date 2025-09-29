@@ -383,7 +383,7 @@ fn get_invalid_rules(
         .map(|x| {
             let trimmed = x.trim();
             if trimmed.is_empty() {
-                format!("\"{}\" (empty or whitespace-only not allowed)", x)
+                format!("\"{x}\" (empty or whitespace-only not allowed)")
             } else {
                 x.to_string()
             }
