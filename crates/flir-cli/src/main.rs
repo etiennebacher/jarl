@@ -1,6 +1,9 @@
 use air_workspace::resolve::PathResolver;
 use flir_core::discovery::{DiscoveredSettings, discover_r_file_paths, discover_settings};
-use flir_core::{ArgsConfig, Diagnostic, Settings, build_config, check};
+use flir_core::{
+    check::check, config::ArgsConfig, config::build_config, diagnostic::Diagnostic,
+    settings::Settings,
+};
 
 use anyhow::Result;
 use clap::Parser;

@@ -1,4 +1,7 @@
-use crate::{check, config::ArgsConfig, discovery::discover_settings};
+use crate::check::check;
+use crate::diagnostic::Diagnostic;
+use crate::settings::Settings;
+use crate::{config::ArgsConfig, discovery::discover_settings};
 use air_workspace::resolve::PathResolver;
 use std::fs;
 use tempfile::Builder;
@@ -23,7 +26,7 @@ pub fn has_lint(text: &str, msg: &str, rule: &str, min_r_version: Option<&str>) 
         min_r_version: min_r_version.map(|s| s.to_string()),
     };
 
-    let mut resolver = PathResolver::new(crate::Settings::default());
+    let mut resolver = PathResolver::new(Settings::default());
 
     // Add discovered settings if any
     if let Ok(discovered) = discover_settings(&[temp_file.path().to_string_lossy().to_string()]) {
@@ -74,7 +77,7 @@ pub fn has_no_lint(text: &str, rule: &str, min_r_version: Option<&str>) -> bool 
         min_r_version: min_r_version.map(|s| s.to_string()),
     };
 
-    let mut resolver = PathResolver::new(crate::Settings::default());
+    let mut resolver = PathResolver::new(Settings::default());
 
     // Add discovered settings if any
     if let Ok(discovered) = discover_settings(&[temp_file.path().to_string_lossy().to_string()]) {
@@ -128,7 +131,7 @@ pub fn apply_fixes(
         min_r_version: min_r_version.map(|s| s.to_string()),
     };
 
-    let mut resolver = PathResolver::new(crate::Settings::default());
+    let mut resolver = PathResolver::new(Settings::default());
 
     // Add discovered settings if any
     if let Ok(discovered) = discover_settings(&[temp_file.path().to_string_lossy().to_string()]) {
@@ -151,7 +154,7 @@ pub fn apply_fixes(
 }
 
 /// Check if code has any diagnostics for the given rule
-pub fn check_code(text: &str, rule: &str, min_r_version: Option<&str>) -> Vec<crate::Diagnostic> {
+pub fn check_code(text: &str, rule: &str, min_r_version: Option<&str>) -> Vec<Diagnostic> {
     let temp_file = Builder::new()
         .prefix("test-flir")
         .suffix(".R")
@@ -170,7 +173,7 @@ pub fn check_code(text: &str, rule: &str, min_r_version: Option<&str>) -> Vec<cr
         min_r_version: min_r_version.map(|s| s.to_string()),
     };
 
-    let mut resolver = PathResolver::new(crate::Settings::default());
+    let mut resolver = PathResolver::new(Settings::default());
 
     // Add discovered settings if any
     if let Ok(discovered) = discover_settings(&[temp_file.path().to_string_lossy().to_string()]) {
