@@ -2,7 +2,7 @@ pub(crate) mod any_duplicated;
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::*;
+    use crate::utils_test::*;
 
     #[test]
     fn test_no_lint_any_duplicated() {

@@ -2,7 +2,7 @@ pub(crate) mod redundant_equals;
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::*;
+    use crate::utils_test::*;
 
     #[test]
     fn test_lint_redundant_equals() {

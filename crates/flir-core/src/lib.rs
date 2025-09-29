@@ -23,4 +23,4 @@ pub mod toml;
 pub mod utils;
 
 #[cfg(test)]
-pub mod test_utils;
+pub mod utils_test;

@@ -2,7 +2,7 @@ pub(crate) mod true_false_symbol;
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::*;
+    use crate::utils_test::*;
 
     // TODO: I guess this should only be linted if --unsafe-fixes is passed?
     // #[test]
