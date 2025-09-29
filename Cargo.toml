@@ -3,7 +3,6 @@ members = [
     "crates/flir-cli",
     "crates/flir-core",
 ]
-resolver = "2"
 
 [workspace.package]
 authors = ["Etienne Bacher"]
