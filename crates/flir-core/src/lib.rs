@@ -27,7 +27,7 @@ pub mod test_utils;
 
 // Re-export commonly used types for convenience
 pub use check::check;
-pub use config::{CheckConfig, Config, build_config};
+pub use config::{Config, FlirConfig, build_config};
 pub use diagnostic::Diagnostic;
 pub use discovery::{DiscoveredSettings, discover_r_file_paths, discover_settings};
 pub use location::Location;

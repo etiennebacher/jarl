@@ -7,7 +7,7 @@ use anyhow::Result;
 use std::{collections::HashSet, fs, path::PathBuf};
 
 #[derive(Clone, Debug)]
-pub struct CheckConfig {
+pub struct FlirConfig {
     pub files: Vec<PathBuf>,
     pub fix: bool,
     pub unsafe_fixes: bool,
@@ -40,7 +40,7 @@ pub struct Config {
 }
 
 pub fn build_config(
-    check_config: &CheckConfig,
+    check_config: &FlirConfig,
     resolver: &PathResolver<Settings>,
     paths: Vec<PathBuf>,
 ) -> Result<Config> {
@@ -263,7 +263,7 @@ fn reconcile_rules(
 
 /// Determine the minimum R version from CLI args or DESCRIPTION file
 fn determine_minimum_r_version(
-    check_config: &CheckConfig,
+    check_config: &FlirConfig,
     paths: &[PathBuf],
 ) -> Result<Option<(u32, u32, u32)>> {
     if let Some(version_string) = &check_config.min_r_version {

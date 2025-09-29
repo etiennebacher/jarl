@@ -1,6 +1,6 @@
 use air_workspace::resolve::PathResolver;
 use flir_core::discovery::{DiscoveredSettings, discover_r_file_paths, discover_settings};
-use flir_core::{CheckConfig, Diagnostic, Settings, build_config, check};
+use flir_core::{Diagnostic, FlirConfig, Settings, build_config, check};
 
 use anyhow::Result;
 use clap::Parser;
@@ -55,7 +55,7 @@ fn run() -> Result<ExitCode> {
     // use std::path::Path;
     // let paths = vec![Path::new("demos/foo.R").to_path_buf()];
 
-    let check_config = CheckConfig {
+    let check_config = FlirConfig {
         files: args.files.iter().map(|s| s.into()).collect(),
         fix: args.fix,
         unsafe_fixes: args.unsafe_fixes,
