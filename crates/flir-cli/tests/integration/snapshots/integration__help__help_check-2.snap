@@ -10,7 +10,7 @@ Check a set of files or directories
 Usage: flir check [OPTIONS] <FILES>...
 
 Arguments:
-  <FILES>...  List of files or directories to check or fix lints, for example `flir .`.
+  <FILES>...  List of files or directories to check or fix lints, for example `flir check .`.
 
 Options:
   -f, --fix                            Automatically fix issues detected by the linter.

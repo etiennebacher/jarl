@@ -31,7 +31,7 @@ pub(crate) enum Command {
 pub struct CheckCommand {
     #[arg(
         required = true,
-        help = "List of files or directories to check or fix lints, for example `flir .`."
+        help = "List of files or directories to check or fix lints, for example `flir check .`."
     )]
     pub files: Vec<String>,
     #[arg(

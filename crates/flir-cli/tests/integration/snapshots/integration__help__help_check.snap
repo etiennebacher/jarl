@@ -11,7 +11,7 @@ Usage: flir check [OPTIONS] <FILES>...
 
 Arguments:
   <FILES>...
-          List of files or directories to check or fix lints, for example `flir .`.
+          List of files or directories to check or fix lints, for example `flir check .`.
 
 Options:
   -f, --fix
