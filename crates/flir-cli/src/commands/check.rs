@@ -7,7 +7,6 @@ use flir_core::{
 use anyhow::Result;
 use clap::Parser;
 use colored::Colorize;
-use std::process::ExitCode;
 use std::time::Instant;
 
 use crate::args::CheckCommand;

@@ -1,11 +1,12 @@
 use clap::Parser;
 use flir_cli::args::Args;
+use flir_cli::logging;
+use flir_cli::output_format;
 use flir_cli::run;
 use flir_cli::status::ExitStatus;
 use std::process::ExitCode;
 
 mod args;
-mod output_format;
 
 fn main() -> ExitCode {
     let args = Args::parse();

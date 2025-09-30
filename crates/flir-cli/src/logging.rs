@@ -11,10 +11,10 @@ pub(crate) fn init_logging(log_level: LogLevel, no_color: bool) {
     // Apply the log level to each air crate.
     // We don't report any logs from non-air crates in the CLI.
     let mut filter = filter::Targets::new();
-    // TODO-flir:
-    // for target in crates::AIR_CRATE_NAMES {
-    //     filter = filter.with_target(*target, log_level);
-    // }
+    // TODO-flir: air has an AIR_CRATE_NAMES const
+    for target in &["flir-cli", "flir-core"] {
+        filter = filter.with_target(*target, log_level);
+    }
 
     let mut layer = tracing_subscriber::fmt::layer();
 
@@ -60,7 +60,7 @@ fn turn_off_colors(
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum LogLevel {
+pub enum LogLevel {
     Error,
     #[default]
     Warn,

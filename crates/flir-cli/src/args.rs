@@ -1,7 +1,7 @@
+use crate::logging::LogLevel;
+use crate::output_format::OutputFormat;
 use clap::{Parser, Subcommand, arg};
 
-// use crate::logging;
-use crate::output_format::OutputFormat;
 #[derive(Parser)]
 #[command(
     author,
@@ -13,8 +13,8 @@ use crate::output_format::OutputFormat;
 pub struct Args {
     #[command(subcommand)]
     pub(crate) command: Command,
-    // #[clap(flatten)]
-    // pub(crate) global_options: GlobalOptions,
+    #[clap(flatten)]
+    pub(crate) global_options: GlobalOptions,
 }
 
 #[derive(Subcommand)]
@@ -93,17 +93,17 @@ pub struct CheckCommand {
 #[derive(Clone, Debug, Parser)]
 pub(crate) struct ServerCommand {}
 
-// /// All configuration options that can be passed "globally"
-// #[derive(Debug, Default, clap::Args)]
-// #[command(next_help_heading = "Global options")]
-// pub(crate) struct GlobalOptions {
-//     /// The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults
-//     /// to `warn`.
-//     #[arg(long, global = true)]
-//     pub(crate) log_level: Option<logging::LogLevel>,
+/// All configuration options that can be passed "globally"
+#[derive(Debug, Default, clap::Args)]
+#[command(next_help_heading = "Global options")]
+pub(crate) struct GlobalOptions {
+    /// The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults
+    /// to `warn`.
+    #[arg(long, global = true)]
+    pub(crate) log_level: Option<LogLevel>,
 
-//     /// Disable colored output. To turn colored output off, either set this option or set
-//     /// the environment variable `NO_COLOR` to any non-zero value.
-//     #[arg(long, global = true)]
-//     pub(crate) no_color: bool,
-// }
+    /// Disable colored output. To turn colored output off, either set this option or set
+    /// the environment variable `NO_COLOR` to any non-zero value.
+    #[arg(long, global = true)]
+    pub(crate) no_color: bool,
+}

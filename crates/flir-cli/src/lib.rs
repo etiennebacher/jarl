@@ -14,14 +14,14 @@ pub use output_format::{ConciseEmitter, JsonEmitter, OutputFormat};
 pub fn run(args: Args) -> anyhow::Result<ExitStatus> {
     if !matches!(args.command, Command::Server(_)) {
         // The language server sets up its own logging
-        // logging::init_logging(
-        //     args.global_options.log_level.unwrap_or_default(),
-        //     args.global_options.no_color,
-        // );
+        logging::init_logging(
+            args.global_options.log_level.unwrap_or_default(),
+            args.global_options.no_color,
+        );
     }
 
     match args.command {
-        Command::Check(command) => commands::check::check(),
+        Command::Check(_command) => commands::check::check(),
         Command::Server(command) => commands::server::server(command),
     }
 }
