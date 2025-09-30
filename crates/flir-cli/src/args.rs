@@ -1,18 +1,37 @@
-use clap::{Parser, arg};
-
+use crate::logging::LogLevel;
 use crate::output_format::OutputFormat;
+use clap::{Parser, Subcommand, arg};
 
-#[derive(Parser, Debug)]
+#[derive(Parser)]
 #[command(
     author,
     name = "flir",
     about = "flir: Find and Fix Lints in R Code",
     after_help = "For help with a specific command, see: `flir help <command>`."
 )]
-pub struct CliArgs {
+#[command(version)]
+pub struct Args {
+    #[command(subcommand)]
+    pub(crate) command: Command,
+    #[clap(flatten)]
+    pub(crate) global_options: GlobalOptions,
+}
+
+#[derive(Subcommand)]
+pub(crate) enum Command {
+    /// Check a set of files or directories
+    Check(CheckCommand),
+
+    /// Start a language server
+    Server(ServerCommand),
+}
+
+#[derive(Clone, Debug, Parser)]
+#[command(arg_required_else_help(true))]
+pub struct CheckCommand {
     #[arg(
         required = true,
-        help = "List of files or directories to check or fix lints, for example `flir .`."
+        help = "List of files or directories to check or fix lints, for example `flir check .`."
     )]
     pub files: Vec<String>,
     #[arg(
@@ -69,4 +88,22 @@ pub struct CliArgs {
         help="Output serialization format for violations."
     )]
     pub output_format: OutputFormat,
+}
+
+#[derive(Clone, Debug, Parser)]
+pub(crate) struct ServerCommand {}
+
+/// All configuration options that can be passed "globally"
+#[derive(Debug, Default, clap::Args)]
+#[command(next_help_heading = "Global options")]
+pub(crate) struct GlobalOptions {
+    /// The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults
+    /// to `warn`.
+    #[arg(long, global = true)]
+    pub(crate) log_level: Option<LogLevel>,
+
+    /// Disable colored output. To turn colored output off, either set this option or set
+    /// the environment variable `NO_COLOR` to any non-zero value.
+    #[arg(long, global = true)]
+    pub(crate) no_color: bool,
 }

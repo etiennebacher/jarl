@@ -20,8 +20,9 @@ fn test_output_default() -> anyhow::Result<()> {
 
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
-            .arg(".")
             .current_dir(directory)
+            .arg("check")
+            .arg(".")
             .run()
             .normalize_os_executable_name()
     );
@@ -45,6 +46,7 @@ fn test_output_concise() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .arg("--output-format")
             .arg("concise")
@@ -71,6 +73,7 @@ fn test_output_json() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .arg("--output-format")
             .arg("json")

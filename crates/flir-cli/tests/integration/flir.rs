@@ -12,6 +12,7 @@ fn test_must_pass_path() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .run()
             .normalize_os_executable_name()
     );
@@ -26,6 +27,7 @@ fn test_no_r_files() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -44,6 +46,7 @@ fn test_parsing_error() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -66,6 +69,7 @@ fn test_parsing_error_for_some_files() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -87,6 +91,7 @@ fn test_parsing_weird_raw_strings() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -105,6 +110,7 @@ fn test_parsing_braced_anonymous_function() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -123,6 +129,7 @@ fn test_no_lints() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -142,6 +149,7 @@ fn test_one_lint() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -162,6 +170,7 @@ fn test_several_lints_one_file() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -186,6 +195,7 @@ fn test_several_lints_several_files() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -210,6 +220,7 @@ fn test_not_all_fixable_lints() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -229,6 +240,7 @@ fn test_corner_case() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -253,6 +265,7 @@ fn test_fix_options() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .arg("--fix")
             .run()
@@ -263,6 +276,7 @@ fn test_fix_options() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .arg("--fix")
             .arg("--unsafe-fixes")
@@ -274,6 +288,7 @@ fn test_fix_options() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .arg("--fix")
             .arg("--unsafe-fixes")
@@ -286,6 +301,7 @@ fn test_fix_options() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .arg("--fix")
             .arg("--fix-only")
@@ -297,6 +313,7 @@ fn test_fix_options() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .arg("--unsafe-fixes")
             .arg("--fix-only")
@@ -323,6 +340,7 @@ fn test_safe_and_unsafe_lints() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -343,6 +361,7 @@ fn test_newline_character_in_string() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()

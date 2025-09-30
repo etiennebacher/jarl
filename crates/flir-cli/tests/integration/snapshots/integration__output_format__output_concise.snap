@@ -1,6 +1,6 @@
 ---
 source: crates/flir-cli/tests/integration/output_format.rs
-expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\".\").arg(\"--output-format\").arg(\"concise\").run().normalize_os_executable_name()"
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--output-format\").arg(\"concise\").run().normalize_os_executable_name()"
 ---
 success: false
 exit_code: 1
@@ -14,4 +14,4 @@ Found 2 errors.
 ----- stderr -----
 
 ----- args -----
-. --output-format concise
+check . --output-format concise

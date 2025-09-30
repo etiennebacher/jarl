@@ -1,6 +1,6 @@
 ---
 source: crates/flir-cli/tests/integration/min_r_version.rs
-expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\".\").arg(\"--min-r-version\").arg(\"4.6.0\").run().normalize_os_executable_name()"
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--min-r-version\").arg(\"4.6.0\").run().normalize_os_executable_name()"
 ---
 success: false
 exit_code: 1
@@ -13,4 +13,4 @@ Found 1 error.
 ----- stderr -----
 
 ----- args -----
-. --min-r-version 4.6.0
+check . --min-r-version 4.6.0

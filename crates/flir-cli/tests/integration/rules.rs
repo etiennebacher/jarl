@@ -16,6 +16,7 @@ fn test_one_non_existing_selected_rule() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .arg("--select-rules")
             .arg("foo")
@@ -37,6 +38,7 @@ fn test_several_non_existing_selected_rules() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .arg("--select-rules")
             .arg("foo,any_is_na,barbaz")
@@ -58,6 +60,7 @@ fn test_one_non_existing_ignored_rule() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .arg("--ignore-rules")
             .arg("foo")
@@ -79,6 +82,7 @@ fn test_several_non_existing_ignored_rules() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .arg("--ignore-rules")
             .arg("foo,any_is_na,barbaz")
@@ -101,6 +105,7 @@ fn test_selected_and_ignored() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .arg("--select-rules")
             .arg("any_is_na")
@@ -129,6 +134,7 @@ fn test_correct_rule_selection_and_exclusion() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .arg("--select-rules")
             .arg("any_is_na")

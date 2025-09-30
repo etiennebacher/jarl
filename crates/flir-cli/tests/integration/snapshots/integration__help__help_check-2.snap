@@ -1,12 +1,10 @@
 ---
-source: crates/flir-cli/tests/integration/flir.rs
-expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").run().normalize_os_executable_name()"
+source: crates/flir-cli/tests/integration/help.rs
+expression: "Command::new(binary_path()).arg(\"check\").arg(\"-h\").run().normalize_os_executable_name()"
 ---
-success: false
-exit_code: 2
+success: true
+exit_code: 0
 ----- stdout -----
-
------ stderr -----
 Check a set of files or directories
 
 Usage: flir check [OPTIONS] <FILES>...
@@ -29,5 +27,7 @@ Global options:
       --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
       --no-color               Disable colored output. To turn colored output off, either set this option or set the environment variable `NO_COLOR` to any non-zero value
 
+----- stderr -----
+
 ----- args -----
-check
+check -h

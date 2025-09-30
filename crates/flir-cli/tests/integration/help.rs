@@ -24,3 +24,21 @@ fn test_help() {
             .normalize_os_executable_name()
     );
 }
+
+#[test]
+fn test_help_check() {
+    insta::assert_snapshot!(
+        Command::new(binary_path())
+            .arg("check")
+            .arg("--help")
+            .run()
+            .normalize_os_executable_name()
+    );
+    insta::assert_snapshot!(
+        Command::new(binary_path())
+            .arg("check")
+            .arg("-h")
+            .run()
+            .normalize_os_executable_name()
+    );
+}

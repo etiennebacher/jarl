@@ -20,6 +20,7 @@ fn test_min_r_version_from_cli_only() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -30,6 +31,7 @@ fn test_min_r_version_from_cli_only() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .arg("--min-r-version")
             .arg("4.4.0")
@@ -40,6 +42,7 @@ fn test_min_r_version_from_cli_only() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .arg("--min-r-version")
             .arg("4.6.0")
@@ -72,6 +75,7 @@ Depends: R (>= 4.4.0), utils, stats"#,
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -87,6 +91,7 @@ Depends: R (>= 4.6.0), utils, stats"#,
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
