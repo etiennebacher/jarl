@@ -1,13 +1,14 @@
 ---
 source: crates/flir-cli/tests/integration/rules.rs
-expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\".\").arg(\"--ignore-rules\").arg(\"foo\").run().normalize_os_executable_name()"
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--ignore-rules\").arg(\"foo\").run().normalize_os_executable_name()"
 ---
 success: false
-exit_code: 2
+exit_code: 255
 ----- stdout -----
 
 ----- stderr -----
-error: Unknown rules in `--ignore-rules`: foo
+flir failed
+  Cause: Unknown rules in `--ignore-rules`: foo
 
 ----- args -----
-. --ignore-rules foo
+check . --ignore-rules foo

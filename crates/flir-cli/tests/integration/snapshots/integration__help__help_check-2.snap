@@ -1,12 +1,10 @@
 ---
-source: crates/flir-cli/tests/integration/flir.rs
-expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").run().normalize_os_executable_name()"
+source: crates/flir-cli/tests/integration/help.rs
+expression: "Command::new(binary_path()).arg(\"check\").arg(\"-h\").run().normalize_os_executable_name()"
 ---
-success: false
-exit_code: 2
+success: true
+exit_code: 0
 ----- stdout -----
-
------ stderr -----
 Check a set of files or directories
 
 Usage: flir check [OPTIONS] <FILES>...
@@ -25,5 +23,7 @@ Options:
       --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: concise] [possible values: concise, json]
   -h, --help                           Print help (see more with '--help')
 
+----- stderr -----
+
 ----- args -----
-check
+check -h

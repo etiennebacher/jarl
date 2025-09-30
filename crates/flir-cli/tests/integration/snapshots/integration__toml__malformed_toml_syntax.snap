@@ -1,13 +1,14 @@
 ---
 source: crates/flir-cli/tests/integration/toml.rs
-expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\".\").run().normalize_os_executable_name().normalize_temp_paths()"
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name().normalize_temp_paths()"
 ---
 success: false
-exit_code: 2
+exit_code: 255
 ----- stdout -----
 
 ----- stderr -----
-error: Failed to parse [TEMP_DIR]/flir.toml:
+flir failed
+  Cause: Failed to parse [TEMP_DIR]/flir.toml:
 TOML parse error at line 2, column 8
   |
 2 | [linter
@@ -16,4 +17,4 @@ unclosed table, expected `]`
 
 
 ----- args -----
-.
+check .

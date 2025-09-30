@@ -25,6 +25,7 @@ fn test_empty_toml_uses_all_rules() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -55,6 +56,7 @@ select = []
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -76,6 +78,7 @@ select = [""]
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -106,6 +109,7 @@ ignore = []
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -127,6 +131,7 @@ ignore = [""]
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -156,6 +161,7 @@ select = ["any_is_na"]
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -185,6 +191,7 @@ ignore = ["any_duplicated"]
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -218,6 +225,7 @@ length(levels(x))"#;
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -254,6 +262,7 @@ length(levels(x))"#;
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .arg("--select-rules")
             .arg("any_duplicated,length_levels")
@@ -290,6 +299,7 @@ length(levels(x))"#;
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .arg("--ignore-rules")
             .arg("any_is_na")
@@ -326,6 +336,7 @@ length(levels(x))"#;
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .arg("--select-rules")
             .arg("length_levels,any_duplicated")
@@ -360,6 +371,7 @@ select = ["any_is_na", "foo"]
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -390,6 +402,7 @@ ignore = ["foo", "bar"]
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -420,6 +433,7 @@ select = ["any_is_na"
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -451,6 +465,7 @@ unknown_field = ["value"]
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -480,6 +495,7 @@ fn test_toml_without_linter_section() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -509,6 +525,7 @@ ignore = ["any_duplicated", "", "any_is_na"]
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -539,6 +556,7 @@ select = ["any_is_na", "   ", "any_duplicated"]
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
@@ -561,6 +579,7 @@ fn test_no_toml_file_uses_all_rules() -> anyhow::Result<()> {
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
+            .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()

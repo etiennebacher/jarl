@@ -1,6 +1,6 @@
 ---
 source: crates/flir-cli/tests/integration/rules.rs
-expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\".\").arg(\"--select-rules\").arg(\"any_is_na\").arg(\"--ignore-rules\").arg(\"any_duplicated\").run().normalize_os_executable_name()"
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--select-rules\").arg(\"any_is_na\").arg(\"--ignore-rules\").arg(\"any_duplicated\").run().normalize_os_executable_name()"
 ---
 success: false
 exit_code: 1
@@ -13,4 +13,4 @@ Found 1 error.
 ----- stderr -----
 
 ----- args -----
-. --select-rules any_is_na --ignore-rules any_duplicated
+check . --select-rules any_is_na --ignore-rules any_duplicated
