@@ -13,8 +13,9 @@ name = "flir-lsp"
 path = "src/bin/flir-lsp.rs"
 
 [dependencies]
-# Your flir crates (these won't exist yet, but show the structure)
 flir-core = { path = "../flir-core" }
+
+air_workspace.workspace = true
 
 # LSP dependencies
 lsp-server = "0.7"

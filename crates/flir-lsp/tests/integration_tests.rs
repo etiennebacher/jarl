@@ -4,7 +4,7 @@
 //! by testing the linting integration and diagnostic conversion.
 
 use anyhow::Result;
-use flir_lsp::{PositionEncoding, lint};
+use flir_lsp::{lint, PositionEncoding};
 use lsp_types::{DiagnosticSeverity, Position, Range, Url};
 use std::path::Path;
 
@@ -155,7 +155,7 @@ fn test_diagnostic_conversion() -> Result<()> {
 
 #[test]
 fn test_severity_conversion() {
-    use lint::{MockFlirSeverity, convert_flir_severity};
+    use lint::{convert_flir_severity, MockFlirSeverity};
 
     assert_eq!(
         convert_flir_severity(MockFlirSeverity::Error),
