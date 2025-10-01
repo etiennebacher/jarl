@@ -1,0 +1,45 @@
+[package]
+name = "flir-lsp"
+version = "0.1.0"
+edition = "2021"
+description = "Language Server Protocol implementation for Flir linter"
+authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
+
+[lib]
+
+[[bin]]
+name = "flir-lsp"
+path = "src/bin/flir-lsp.rs"
+
+[dependencies]
+# Your flir crates (these won't exist yet, but show the structure)
+flir-core = { path = "../flir-core" }
+
+# LSP dependencies
+lsp-server = "0.7"
+lsp-types = "0.95"
+
+# Async and concurrency
+crossbeam = "0.8"
+
+# Error handling and utilities
+anyhow = "1.0"
+thiserror = "2.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Collections and utilities
+rustc-hash = "2.0"
+indexmap = "2.0"
+
+# CLI for binary
+clap = { version = "4.0", features = ["derive"] }
+
+[dev-dependencies]
+insta = "1.35"
+tempfile = "3.0"
