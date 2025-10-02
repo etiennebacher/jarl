@@ -1,0 +1,162 @@
+{
+	"name": "flir-vscode",
+	"displayName": "Flir - R Linter",
+	"description": "R linter with language server support",
+	"version": "0.1.2",
+	"publisher": "etiennebacher",
+	"license": "MIT",
+	"homepage": "https://github.com/etiennebacher/flir2",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/etiennebacher/flir2.git"
+	},
+	"bugs": {
+		"url": "https://github.com/etiennebacher/flir2/issues"
+	},
+	"keywords": [
+		"r",
+		"linter",
+		"diagnostics"
+	],
+	"engines": {
+		"vscode": "^1.90.0"
+	},
+	"categories": [
+		"Linters",
+		"Programming Languages"
+	],
+	"icon": "flir.png",
+	"activationEvents": [
+		"onLanguage:r",
+		"workspaceContains:*.r",
+		"workspaceContains:*.R",
+		"workspaceContains:flir.toml",
+		"workspaceContains:.flir.toml",
+		"workspaceContains:pyproject.toml",
+		"workspaceContains:DESCRIPTION",
+		"workspaceContains:*.Rproj"
+	],
+	"main": "./dist/extension.js",
+	"contributes": {
+		"languages": [
+			{
+				"id": "r",
+				"extensions": [
+					".R",
+					".r",
+					".Rprofile",
+					".rprofile"
+				],
+				"aliases": [
+					"R",
+					"r"
+				],
+				"filenames": [
+					"NAMESPACE"
+				]
+			}
+		],
+		"configuration": {
+			"properties": {
+				"flir.logLevel": {
+					"default": null,
+					"markdownDescription": "Controls the log level of the language server.",
+					"enum": [
+						"error",
+						"warning",
+						"info",
+						"debug",
+						"trace"
+					],
+					"scope": "application",
+					"type": "string"
+				},
+				"flir.dependencyLogLevels": {
+					"default": null,
+					"markdownDescription": "Controls the log level of the Rust crates that the language server depends on.",
+					"scope": "application",
+					"type": "string"
+				},
+				"flir.syncFileSettingsWithClient": {
+					"default": true,
+					"markdownDescription": "Whether settings from flir.toml files should be propagated to the client (the IDE).",
+					"scope": "application",
+					"type": "boolean"
+				},
+				"flir.executableStrategy": {
+					"default": "bundled",
+					"markdownDescription": "Strategy used to locate the `flir` executable to start the language server with.",
+					"enum": [
+						"bundled",
+						"environment",
+						"path"
+					],
+					"enumDescriptions": [
+						"Always use the bundled `flir` executable.",
+						"Look for a `flir` executable using the `PATH` environment variable, falling back to the bundled version.",
+						"Look for a `flir` executable at the fixed path provided by `flir.executablePath`."
+					],
+					"scope": "window",
+					"type": "string"
+				},
+				"flir.executablePath": {
+					"default": null,
+					"markdownDescription": "The path to a `flir` executable. Only utilized when `flir.executableStrategy` is set to \"path\".",
+					"scope": "window",
+					"type": "string"
+				}
+			}
+		},
+		"configurationDefaults": {
+			"[r]": {
+				"editor.defaultFormatter": "etiennebacher.flir-vscode"
+			}
+		},
+		"commands": [
+			{
+				"title": "Restart Server",
+				"category": "Flir",
+				"command": "flir.restart"
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run package",
+		"compile": "webpack",
+		"watch": "webpack --watch",
+		"package": "webpack --mode production --devtool hidden-source-map",
+		"vsce:package": "vsce package",
+		"compile-tests": "tsc -p . --outDir out",
+		"watch-tests": "tsc -p . -w --outDir out",
+		"pretest": "npm run compile-tests && npm run compile && npm run lint",
+		"lint": "eslint src",
+		"test": "vscode-test"
+	},
+	"dependencies": {
+		"@types/p-queue": "^3.1.0",
+		"adm-zip": "^0.5.16",
+		"fs-extra": "^11.1.1",
+		"p-queue": "npm:@esm2cjs/p-queue@^7.3.0",
+		"vscode-languageclient": "^9.0.1",
+		"which": "^4.0.0"
+	},
+	"devDependencies": {
+		"@types/adm-zip": "^0.5.6",
+		"@types/fs-extra": "^11.0.4",
+		"@types/mocha": "^10.0.9",
+		"@types/node": "20.x",
+		"@types/vscode": "^1.90.0",
+		"@types/which": "^3.0.4",
+		"@typescript-eslint/eslint-plugin": "^8.10.0",
+		"@typescript-eslint/parser": "^8.7.0",
+		"@vscode/test-cli": "^0.0.10",
+		"@vscode/test-electron": "^2.4.1",
+		"@vscode/vsce": "^3.6.2",
+		"eslint": "^9.13.0",
+		"prettier": "^3.4.2",
+		"ts-loader": "^9.5.1",
+		"typescript": "^5.6.3",
+		"webpack": "^5.95.0",
+		"webpack-cli": "^5.1.4"
+	}
+}

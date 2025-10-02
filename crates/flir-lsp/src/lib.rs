@@ -14,7 +14,7 @@ pub use session::{DocumentSnapshot, Session};
 
 mod client;
 mod document;
-pub mod lint;
+mod lint;
 mod server;
 mod session;
 
@@ -30,14 +30,7 @@ pub(crate) type LspResult<T> = anyhow::Result<T>;
 /// This function sets up a minimal LSP server that provides real-time
 /// lint diagnostics as you type in your editor.
 pub fn run() -> Result<()> {
-    // Initialize logging
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::from_default_env()
-                .add_directive("flir_lsp=info".parse().unwrap()),
-        )
-        .init();
-
+    eprintln!("FLIR LSP: run() function called, setting up server");
     tracing::info!("Starting Flir Language Server v{}", version());
 
     // Set up worker threads for background linting
@@ -46,34 +39,54 @@ pub fn run() -> Result<()> {
         .min(NonZeroUsize::new(4).unwrap());
 
     tracing::info!("Using {} worker threads for linting", worker_threads);
+    eprintln!("FLIR LSP: Creating stdio connection");
 
     // Create LSP connection over stdio
     let (connection, io_threads) = lsp_server::Connection::stdio();
+    eprintln!("FLIR LSP: stdio connection created successfully");
 
     // Start the server
+    eprintln!("FLIR LSP: Creating server instance");
     let server =
         Server::new(worker_threads, connection).context("Failed to create Flir LSP server")?;
 
+    eprintln!("FLIR LSP: Starting server.run()");
     let server_result = server.run();
+    eprintln!(
+        "FLIR LSP: server.run() completed with result: {:?}",
+        server_result.is_ok()
+    );
 
     // Wait for IO threads to complete
+    eprintln!("FLIR LSP: Waiting for IO threads to complete");
     let io_result = io_threads.join();
+    eprintln!(
+        "FLIR LSP: IO threads completed with result: {:?}",
+        io_result.is_ok()
+    );
 
     // Handle results
     match (server_result, io_result) {
         (Ok(()), Ok(())) => {
+            eprintln!("FLIR LSP: Server shut down successfully");
             tracing::info!("Flir LSP server shut down successfully");
             Ok(())
         }
         (Err(server_err), Err(io_err)) => {
+            eprintln!(
+                "FLIR LSP: Server error: {}, IO error: {}",
+                server_err, io_err
+            );
             tracing::error!("Server error: {}, IO error: {}", server_err, io_err);
             Err(server_err).context(format!("IO thread error: {io_err}"))
         }
         (Err(server_err), _) => {
+            eprintln!("FLIR LSP: Server error: {}", server_err);
             tracing::error!("Server error: {}", server_err);
             Err(server_err)
         }
         (_, Err(io_err)) => {
+            eprintln!("FLIR LSP: IO error: {}", io_err);
             tracing::error!("IO error: {}", io_err);
             Err(io_err).context("IO thread error")
         }

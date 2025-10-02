@@ -5,7 +5,6 @@
 //! No code actions, fixes, or other advanced features - just highlighting issues.
 
 use anyhow::{anyhow, Result};
-use flir_core::location::Location;
 use lsp_types::{Diagnostic, DiagnosticSeverity, Position, Range};
 
 use std::path::Path;
@@ -47,8 +46,25 @@ pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<Vec<Diagnostic>> {
 }
 
 /// Run the Flir linting engine on the given content
-pub fn run_flir_linting(_content: &str, file_path: Option<&Path>) -> Result<Vec<FlirDiagnostic>> {
-    let path: Vec<String> = vec![file_path.unwrap().to_str().unwrap().to_string()];
+fn run_flir_linting(_content: &str, file_path: Option<&Path>) -> Result<Vec<FlirDiagnostic>> {
+    let file_path = match file_path {
+        Some(path) => path,
+        None => {
+            tracing::warn!("No file path provided for linting");
+            return Ok(Vec::new());
+        }
+    };
+
+    let path_str = match file_path.to_str() {
+        Some(s) => s.to_string(),
+        None => {
+            tracing::warn!("File path contains invalid UTF-8: {:?}", file_path);
+            return Ok(Vec::new());
+        }
+    };
+
+    tracing::debug!("Linting file: {}", path_str);
+    let path: Vec<String> = vec![path_str];
 
     let mut resolver = PathResolver::new(Settings::default());
     for DiscoveredSettings { directory, settings } in discover_settings(&path)? {
@@ -75,8 +91,19 @@ pub fn run_flir_linting(_content: &str, file_path: Option<&Path>) -> Result<Vec<
     let diagnostics = flir_core::check::check(config);
     let all_diagnostics: Vec<FlirDiagnostic> = diagnostics
         .into_iter()
-        .flat_map(|(_, result)| result.unwrap_or_default())
+        .flat_map(|(_, result)| match result {
+            Ok(diags) => {
+                tracing::debug!("Found {} diagnostics for file", diags.len());
+                diags
+            }
+            Err(e) => {
+                tracing::error!("Error checking file: {}", e);
+                Vec::new()
+            }
+        })
         .collect();
+
+    tracing::debug!("Total diagnostics: {}", all_diagnostics.len());
 
     tracing::debug!(
         "Flir linting completed for {:?}: {} diagnostics found",
@@ -93,25 +120,13 @@ fn convert_to_lsp_diagnostic(
     content: &str,
     encoding: PositionEncoding,
 ) -> Result<Diagnostic> {
-    let start_pos = line_col_to_lsp_position(
-        flir_diag
-            .location
-            .unwrap_or(Location::new(0, 0))
-            .row()
-            .try_into()
-            .unwrap(),
-        flir_diag
-            .location
-            .unwrap_or(Location::new(0, 0))
-            .column()
-            .try_into()
-            .unwrap(),
-        content,
-        encoding,
-    )?;
-    // TODO-etienne: need the infrastructure for that
-    // let end_pos = line_col_to_lsp_position(flir_diag.end_line, flir_diag.end_column, content, encoding)?;
-    let end_pos = Position::new(start_pos.line + 5, start_pos.character + 5);
+    // Use the TextRange from the diagnostic for accurate positioning
+    let text_range = flir_diag.range;
+    let start_offset = text_range.start().into();
+    let end_offset = text_range.end().into();
+
+    let start_pos = byte_offset_to_lsp_position(start_offset, content, encoding)?;
+    let end_pos = byte_offset_to_lsp_position(end_offset, content, encoding)?;
 
     let range = Range::new(start_pos, end_pos);
 
@@ -135,51 +150,57 @@ fn convert_to_lsp_diagnostic(
     Ok(diagnostic)
 }
 
-/// Convert line/column coordinates to LSP Position
-fn line_col_to_lsp_position(
-    line: u32,
-    column: u32,
+/// Convert byte offset to LSP Position
+fn byte_offset_to_lsp_position(
+    byte_offset: usize,
     content: &str,
     encoding: PositionEncoding,
 ) -> Result<Position> {
-    let line_index = line as usize;
-    let lines: Vec<&str> = content.lines().collect();
-
-    if line_index >= lines.len() {
+    if byte_offset > content.len() {
         return Err(anyhow!(
-            "Line {} is out of bounds (max {})",
-            line,
-            lines.len()
+            "Byte offset {} is out of bounds (max {})",
+            byte_offset,
+            content.len()
         ));
     }
 
-    let line_content = lines[line_index];
-    let column_byte = column as usize;
+    // Find the line number and column by counting from the start
+    let mut current_offset = 0;
+    let mut line = 0;
 
-    if column_byte > line_content.len() {
-        return Err(anyhow!(
-            "Column {} is out of bounds for line {} (max {})",
-            column,
-            line,
-            line_content.len()
-        ));
+    for line_content in content.lines() {
+        let line_start = current_offset;
+        let line_end = current_offset + line_content.len();
+
+        if byte_offset <= line_end {
+            // Found the line containing this offset
+            let column_byte_offset = byte_offset - line_start;
+
+            // Convert byte offset within the line to the appropriate character offset
+            let lsp_character = match encoding {
+                PositionEncoding::UTF8 => column_byte_offset as u32,
+                PositionEncoding::UTF16 => {
+                    // Convert from byte offset to UTF-16 code unit offset
+                    let prefix = &line_content[..column_byte_offset.min(line_content.len())];
+                    prefix.chars().map(|c| c.len_utf16()).sum::<usize>() as u32
+                }
+                PositionEncoding::UTF32 => {
+                    // Convert from byte offset to Unicode scalar value offset
+                    let prefix = &line_content[..column_byte_offset.min(line_content.len())];
+                    prefix.chars().count() as u32
+                }
+            };
+
+            return Ok(Position::new(line as u32, lsp_character));
+        }
+
+        // Move to the next line (add 1 for the newline character)
+        current_offset = line_end + 1;
+        line += 1;
     }
 
-    let lsp_character = match encoding {
-        PositionEncoding::UTF8 => column,
-        PositionEncoding::UTF16 => {
-            // Convert from byte offset to UTF-16 code unit offset
-            let prefix = &line_content[..column_byte.min(line_content.len())];
-            prefix.chars().map(|c| c.len_utf16()).sum::<usize>() as u32
-        }
-        PositionEncoding::UTF32 => {
-            // Convert from byte offset to Unicode scalar value offset
-            let prefix = &line_content[..column_byte.min(line_content.len())];
-            prefix.chars().count() as u32
-        }
-    };
-
-    Ok(Position::new(line, lsp_character))
+    // If we get here, the offset was at the very end of the file
+    Ok(Position::new(line as u32, 0))
 }
 
 // /// Convert Flir severity to LSP diagnostic severity
@@ -220,17 +241,94 @@ mod tests {
     }
 
     #[test]
+    fn test_long_line_detection() {
+        let long_line = "a".repeat(150); // 150 characters, over the 100 limit
+        let snapshot = create_test_snapshot(&long_line);
+        let diagnostics = lint_document(&snapshot).unwrap();
+
+        assert_eq!(diagnostics.len(), 1);
+        let diag = &diagnostics[0];
+        assert!(diag.message.contains("Line too long"));
+        assert_eq!(diag.severity, Some(DiagnosticSeverity::WARNING));
+        assert_eq!(diag.range.start.line, 0);
+        assert_eq!(diag.range.start.character, 0);
+    }
+
+    #[test]
+    fn test_todo_comment_detection() {
+        let content = "# TODO: implement this\nprint('hello')";
+        let snapshot = create_test_snapshot(content);
+        let diagnostics = lint_document(&snapshot).unwrap();
+
+        assert_eq!(diagnostics.len(), 1);
+        let diag = &diagnostics[0];
+        assert!(diag.message.contains("TODO comment"));
+        assert_eq!(diag.severity, Some(DiagnosticSeverity::INFORMATION));
+        assert_eq!(diag.range.start.line, 0);
+        assert_eq!(diag.range.start.character, 2); // Position of "todo" in "# TODO"
+    }
+
+    #[test]
+    fn test_trailing_whitespace_detection() {
+        let content = "print('hello')   \nprint('world')";
+        let snapshot = create_test_snapshot(content);
+        let diagnostics = lint_document(&snapshot).unwrap();
+
+        assert_eq!(diagnostics.len(), 1);
+        let diag = &diagnostics[0];
+        assert!(diag.message.contains("Trailing whitespace"));
+        assert_eq!(diag.severity, Some(DiagnosticSeverity::INFORMATION));
+        assert_eq!(diag.range.start.line, 0);
+        assert_eq!(diag.range.start.character, 14); // After "print('hello')"
+    }
+
+    #[test]
+    fn test_multiple_issues() {
+        let content = r#"# TODO: fix this line that is way too long and exceeds the maximum allowed length of 100 characters which should trigger multiple diagnostics
+print('hello world')
+"#;
+        let snapshot = create_test_snapshot(content);
+        let diagnostics = lint_document(&snapshot).unwrap();
+
+        // Should have: long line + TODO + trailing whitespace = 3 diagnostics
+        assert_eq!(diagnostics.len(), 3);
+
+        let codes: Vec<_> = diagnostics
+            .iter()
+            .filter_map(|d| d.code.as_ref())
+            .filter_map(|c| match c {
+                lsp_types::NumberOrString::String(s) => Some(s.as_str()),
+                _ => None,
+            })
+            .collect();
+
+        assert!(codes.contains(&"FLIR001")); // long line
+        assert!(codes.contains(&"FLIR002")); // TODO
+        assert!(codes.contains(&"FLIR003")); // trailing whitespace
+    }
+
+    #[test]
     fn test_position_conversion() {
         let content = "hello\nworld\ntest";
 
-        // Test basic position conversion
-        let pos = line_col_to_lsp_position(1, 2, content, PositionEncoding::UTF8).unwrap();
+        // Test basic position conversion using byte offsets
+        let pos = byte_offset_to_lsp_position(7, content, PositionEncoding::UTF8).unwrap(); // "w" in "world"
         assert_eq!(pos.line, 1);
-        assert_eq!(pos.character, 2);
+        assert_eq!(pos.character, 1);
+
+        // Test start of file
+        let pos = byte_offset_to_lsp_position(0, content, PositionEncoding::UTF8).unwrap();
+        assert_eq!(pos.line, 0);
+        assert_eq!(pos.character, 0);
+
+        // Test end of file
+        let pos =
+            byte_offset_to_lsp_position(content.len(), content, PositionEncoding::UTF8).unwrap();
+        assert_eq!(pos.line, 2);
+        assert_eq!(pos.character, 4); // After "test"
 
         // Test out of bounds
-        assert!(line_col_to_lsp_position(10, 0, content, PositionEncoding::UTF8).is_err());
-        assert!(line_col_to_lsp_position(0, 100, content, PositionEncoding::UTF8).is_err());
+        assert!(byte_offset_to_lsp_position(1000, content, PositionEncoding::UTF8).is_err());
     }
 
     #[test]
@@ -238,15 +336,19 @@ mod tests {
         let content = "hello 🌍 world";
 
         // Test UTF-16 encoding with emoji
-        let pos = line_col_to_lsp_position(0, 6, content, PositionEncoding::UTF16).unwrap();
+        // The emoji 🌍 starts at byte offset 6
+        let pos = byte_offset_to_lsp_position(6, content, PositionEncoding::UTF16).unwrap();
         assert_eq!(pos.line, 0);
-        // The emoji 🌍 takes 2 UTF-16 code units, but we're asking for byte position 6
-        // which should be converted appropriately
-        assert_eq!(pos.character, 6);
+        assert_eq!(pos.character, 6); // 6 UTF-16 code units: "hello "
 
         // Test UTF-8 encoding
-        let pos_utf8 = line_col_to_lsp_position(0, 6, content, PositionEncoding::UTF8).unwrap();
+        let pos_utf8 = byte_offset_to_lsp_position(6, content, PositionEncoding::UTF8).unwrap();
         assert_eq!(pos_utf8.line, 0);
-        assert_eq!(pos_utf8.character, 6);
+        assert_eq!(pos_utf8.character, 6); // 6 bytes: "hello "
+
+        // Test UTF-32 encoding
+        let pos_utf32 = byte_offset_to_lsp_position(6, content, PositionEncoding::UTF32).unwrap();
+        assert_eq!(pos_utf32.line, 0);
+        assert_eq!(pos_utf32.character, 6); // 6 Unicode scalar values: "hello "
     }
 }

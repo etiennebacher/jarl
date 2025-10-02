@@ -4,7 +4,7 @@
 //! focused purely on diagnostic (linting) capabilities. No code actions,
 //! formatting, or other advanced features.
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use crossbeam::channel;
 use lsp_server::{Connection, Message, Notification, Request, RequestId, Response};
 use lsp_types::{self as types, notification::Notification as _, request::Request as _};
@@ -60,22 +60,44 @@ impl Server {
 
     /// Run the main server loop
     pub fn run(self) -> Result<()> {
+        eprintln!("FLIR LSP: Starting server (this should appear in VS Code logs)");
+        eprintln!("FLIR LSP: Server.run() method called");
+        tracing::info!("Starting LSP handshake");
+
         // Perform LSP handshake
-        let (id, init_params) = self.connection.initialize_start()?;
+        eprintln!("FLIR LSP: About to call initialize_start()");
+        let (id, init_params) = self
+            .connection
+            .initialize_start()
+            .context("Failed to start LSP initialization")?;
+        eprintln!("FLIR LSP: initialize_start() completed successfully");
+        eprintln!("FLIR LSP: Received initialize request with id: {:?}", id);
+        tracing::debug!("Received initialize request with id: {:?}", id);
 
         // Parse initialize params
-        let init_params: lsp_types::InitializeParams = serde_json::from_value(init_params)?;
+        eprintln!("FLIR LSP: About to parse initialize params");
+        let init_params: lsp_types::InitializeParams = serde_json::from_value(init_params)
+            .context("Failed to parse initialization parameters")?;
+        eprintln!("FLIR LSP: Parsed initialize params successfully");
+        tracing::debug!("Parsed initialize params successfully");
 
         // Negotiate capabilities
+        eprintln!("FLIR LSP: About to negotiate capabilities");
         let client_capabilities = init_params.capabilities.clone();
         let position_encoding = negotiate_position_encoding(&client_capabilities);
 
         tracing::info!("Negotiated position encoding: {:?}", position_encoding);
+        eprintln!(
+            "FLIR LSP: Position encoding negotiated: {:?}",
+            position_encoding
+        );
 
         // Create client for communication
+        eprintln!("FLIR LSP: Creating client");
         let client = Client::new(self.connection.sender.clone());
 
         // Create session
+        eprintln!("FLIR LSP: Creating session");
         let mut session = Session::new(
             client_capabilities,
             position_encoding,
@@ -83,21 +105,44 @@ impl Server {
             client.clone(),
         );
 
-        // Initialize session and get server capabilities
-        let server_capabilities = session.initialize(init_params)?;
+        // Initialize session and get initialize result
+        eprintln!("FLIR LSP: About to initialize session");
+        let initialize_result = session
+            .initialize(init_params)
+            .context("Failed to initialize session")?;
+        eprintln!("FLIR LSP: Session initialized successfully");
 
         // Complete handshake
-        let server_capabilities_json = serde_json::to_value(server_capabilities)?;
-        self.connection
-            .initialize_finish(id, server_capabilities_json)?;
+        eprintln!("FLIR LSP: About to serialize initialize result");
+        eprintln!("FLIR LSP: Raw initialize result: {:?}", initialize_result);
+        let initialize_result_json = serde_json::to_value(initialize_result)
+            .context("Failed to serialize initialize result")?;
+        eprintln!(
+            "FLIR LSP: Serialized initialize result JSON: {}",
+            serde_json::to_string_pretty(&initialize_result_json)
+                .unwrap_or_else(|_| "Failed to pretty print".to_string())
+        );
+        tracing::debug!("Initialize result: {:?}", initialize_result_json);
 
+        eprintln!("FLIR LSP: About to call initialize_finish()");
+        self.connection
+            .initialize_finish(id, initialize_result_json)
+            .context("Failed to finish LSP initialization")?;
+        eprintln!("FLIR LSP: initialize_finish() completed successfully");
+
+        eprintln!("FLIR LSP: Server initialized successfully");
         tracing::info!("LSP server initialized successfully");
 
         // Create worker thread pool
+        eprintln!("FLIR LSP: Creating worker thread channels");
         let (task_sender, task_receiver) = channel::bounded::<Task>(100);
         let (event_sender, event_receiver) = channel::bounded::<Event>(100);
 
         // Spawn worker threads
+        eprintln!(
+            "FLIR LSP: Spawning {} worker threads",
+            self.worker_threads.get()
+        );
         let _worker_handles: Vec<_> = (0..self.worker_threads.get())
             .map(|i| {
                 let task_receiver = task_receiver.clone();
@@ -111,7 +156,13 @@ impl Server {
             .collect();
 
         // Run main loop
-        self.main_loop(session, task_sender, event_receiver)
+        eprintln!("FLIR LSP: About to start main loop");
+        let result = self.main_loop(session, task_sender, event_receiver);
+        eprintln!(
+            "FLIR LSP: Main loop finished with result: {:?}",
+            result.is_ok()
+        );
+        result
     }
 
     /// Main event processing loop
@@ -129,16 +180,19 @@ impl Server {
                 recv(self.connection.receiver) -> msg => {
                     match msg {
                         Ok(msg) => {
+                            tracing::debug!("Received LSP message: {:?}", msg);
                             if let Err(e) = self.handle_message(msg, &mut session, &task_sender) {
+                                eprintln!("FLIR LSP: Error handling message: {}", e);
                                 tracing::error!("Error handling message: {}", e);
                             }
                         }
-                        Err(_) => {
-                            tracing::info!("Client disconnected");
+                        Err(e) => {
+                            eprintln!("FLIR LSP: Error receiving message: {}", e);
+                            tracing::error!("Error receiving message: {}", e);
                             break;
                         }
                     }
-                },
+                }
                 // Handle internal events
                 recv(event_receiver) -> event => {
                     match event {
@@ -183,7 +237,7 @@ impl Server {
         match message {
             Message::Request(request) => self.handle_request(request, session, task_sender),
             Message::Notification(notification) => {
-                self.handle_notification(notification, session, task_sender)
+                Self::handle_notification(notification, session, task_sender)
             }
             Message::Response(response) => {
                 session.client().handle_response(response);
@@ -242,11 +296,11 @@ impl Server {
 
     /// Handle a notification from the client
     fn handle_notification(
-        &self,
         notification: Notification,
         session: &mut Session,
         task_sender: &channel::Sender<Task>,
     ) -> LspResult<()> {
+        tracing::debug!("Handling notification: {}", notification.method);
         match notification.method.as_str() {
             types::notification::Exit::METHOD => {
                 if session.is_shutdown_requested() {
@@ -259,6 +313,9 @@ impl Server {
             types::notification::DidOpenTextDocument::METHOD => {
                 let params: types::DidOpenTextDocumentParams =
                     serde_json::from_value(notification.params)?;
+
+                eprintln!("FLIR LSP: Opening document: {}", params.text_document.uri);
+                tracing::info!("Opening document: {}", params.text_document.uri);
 
                 let document =
                     TextDocument::new(params.text_document.text, params.text_document.version)
@@ -280,6 +337,8 @@ impl Server {
             types::notification::DidChangeTextDocument::METHOD => {
                 let params: types::DidChangeTextDocumentParams =
                     serde_json::from_value(notification.params)?;
+
+                tracing::debug!("Document changed: {}", params.text_document.uri);
 
                 session.update_document(
                     params.text_document.uri.clone(),

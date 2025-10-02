@@ -1,54 +1,58 @@
 //! Integration tests for flir_lsp
 //!
 //! These tests verify the core functionality of the LSP server
-//! by testing the linting integration and diagnostic conversion.
 
-use anyhow::Result;
-use flir_lsp::lint;
-use lsp_types::Url;
-use std::path::Path;
+use std::process::{Command, Stdio};
+use std::time::Duration;
 
-/// Mock document query for testing
-/// In a real test, you'd use the actual ruff_server types
-struct MockDocumentQuery {
-    _content: String,
-    _uri: Url,
-    file_path: Option<std::path::PathBuf>,
-}
+#[test]
+fn test_server_binary_exists_and_runs() {
+    // Test if we can at least run the binary with --help
+    let output = Command::new(env!("CARGO_BIN_EXE_flir-lsp"))
+        .arg("--help")
+        .output();
 
-impl MockDocumentQuery {
-    fn new(content: &str, file_name: &str) -> Self {
-        let uri = Url::from_file_path(
-            std::env::current_dir()
-                .unwrap()
-                .join("test_files")
-                .join(file_name),
-        )
-        .unwrap();
-
-        Self {
-            _content: content.to_string(),
-            _uri: uri.clone(),
-            file_path: Some(Path::new(file_name).to_path_buf()),
+    match output {
+        Ok(output) => {
+            assert!(output.status.success(), "Binary should run with --help");
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            assert!(
+                stdout.contains("Flir Language Server"),
+                "Help should mention Flir Language Server"
+            );
+        }
+        Err(e) => {
+            panic!("Failed to run binary: {}", e);
         }
     }
 }
 
-// Note: This is a simplified mock. In reality, you'd implement the actual
-// DocumentQuery trait from ruff_server or create a proper test harness.
-
 #[test]
-fn test_empty_document() -> Result<()> {
-    let content = "";
-    let query = MockDocumentQuery::new(content, "empty.py");
+fn test_server_startup_basic() {
+    // Test if the server can start without immediate crash
+    let mut child = Command::new(env!("CARGO_BIN_EXE_flir-lsp"))
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("Failed to start server process");
 
-    // In a real test, you'd call: lint::check_document(&query, PositionEncoding::UTF8)
-    // For now, we test the mock linting function directly
-    let diagnostics = lint::run_flir_linting(content, query.file_path.as_deref())?;
+    // Give it a moment to start
+    std::thread::sleep(Duration::from_millis(100));
+
+    // Check if it's still running (not crashed immediately)
+    let still_running = match child.try_wait() {
+        Ok(Some(_)) => false, // Process exited
+        Ok(None) => true,     // Still running
+        Err(_) => false,      // Error checking status
+    };
+
+    // Clean up
+    let _ = child.kill();
+    let _ = child.wait();
 
     assert!(
-        diagnostics.is_empty(),
-        "Empty document should have no diagnostics"
+        still_running,
+        "Server should start and stay running briefly"
     );
-    Ok(())
 }

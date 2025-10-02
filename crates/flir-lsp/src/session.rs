@@ -6,8 +6,8 @@
 use anyhow::{anyhow, Result};
 use lsp_types::{
     ClientCapabilities, DiagnosticOptions, DiagnosticServerCapabilities, InitializeParams,
-    ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
-    Url, WorkDoneProgressOptions,
+    InitializeResult, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
+    TextDocumentSyncKind, TextDocumentSyncOptions, Url, WorkDoneProgressOptions,
 };
 use rustc_hash::FxHashMap;
 
@@ -64,12 +64,8 @@ impl Session {
     }
 
     /// Initialize the session with client parameters
-    //
-    // params.root_uri and params.root_path are deprecated but we allow them
-    // here since they're just fallbacks if params.workspace_folders is not
-    // found.
     #[allow(deprecated)]
-    pub fn initialize(&mut self, params: InitializeParams) -> LspResult<ServerCapabilities> {
+    pub fn initialize(&mut self, params: InitializeParams) -> LspResult<InitializeResult> {
         // Update workspace roots if provided
         if let Some(workspace_folders) = params.workspace_folders {
             self.workspace_roots.clear();
@@ -91,7 +87,13 @@ impl Session {
             self.workspace_roots.len()
         );
 
-        Ok(self.server_capabilities())
+        Ok(InitializeResult {
+            capabilities: self.server_capabilities(),
+            server_info: Some(ServerInfo {
+                name: "Flir Language Server".to_string(),
+                version: Some(env!("CARGO_PKG_VERSION").to_string()),
+            }),
+        })
     }
 
     /// Get the server capabilities that we support
