@@ -14,10 +14,11 @@ pub use session::{DocumentSnapshot, Session};
 
 mod client;
 mod document;
-mod lint;
+pub mod lint;
 mod server;
 mod session;
 
+#[allow(dead_code)]
 pub(crate) const SERVER_NAME: &str = "flir";
 pub(crate) const DIAGNOSTIC_SOURCE: &str = "Flir";
 

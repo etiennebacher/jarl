@@ -3,19 +3,19 @@
 //! This module handles the overall state of the LSP session, including
 //! document management, client capabilities, and workspace configuration.
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use lsp_types::{
     ClientCapabilities, DiagnosticOptions, DiagnosticServerCapabilities, InitializeParams,
     ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions,
     Url, WorkDoneProgressOptions,
 };
 use rustc_hash::FxHashMap;
-use std::collections::HashMap;
+
 use std::path::PathBuf;
 
 use crate::client::Client;
 use crate::document::{DocumentKey, DocumentVersion, PositionEncoding, TextDocument};
-use crate::{DIAGNOSTIC_SOURCE, LspResult};
+use crate::{LspResult, DIAGNOSTIC_SOURCE};
 
 /// Main session state for the LSP server
 pub struct Session {
@@ -64,6 +64,11 @@ impl Session {
     }
 
     /// Initialize the session with client parameters
+    //
+    // params.root_uri and params.root_path are deprecated but we allow them
+    // here since they're just fallbacks if params.workspace_folders is not
+    // found.
+    #[allow(deprecated)]
     pub fn initialize(&mut self, params: InitializeParams) -> LspResult<ServerCapabilities> {
         // Update workspace roots if provided
         if let Some(workspace_folders) = params.workspace_folders {
@@ -341,12 +346,12 @@ pub fn negotiate_position_encoding(client_capabilities: &ClientCapabilities) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lsp_server::Connection;
+    use crossbeam;
     use lsp_types::{ClientCapabilities, GeneralClientCapabilities, PositionEncodingKind};
 
     fn create_test_session() -> Session {
-        let (connection, _io_threads) = Connection::memory();
-        let client = Client::new(connection);
+        let (sender, _receiver) = crossbeam::channel::unbounded();
+        let client = Client::new(sender);
         Session::new(
             ClientCapabilities::default(),
             PositionEncoding::UTF16,

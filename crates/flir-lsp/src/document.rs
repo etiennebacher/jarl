@@ -2,11 +2,9 @@
 //!
 //! This module handles document lifecycle, content tracking, and position encoding.
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent, Url};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 /// Position encoding supported by the LSP server
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -39,11 +37,14 @@ impl TryFrom<&lsp_types::PositionEncodingKind> for PositionEncoding {
     type Error = anyhow::Error;
 
     fn try_from(kind: &lsp_types::PositionEncodingKind) -> Result<Self> {
-        match kind {
-            lsp_types::PositionEncodingKind::UTF8 => Ok(PositionEncoding::UTF8),
-            lsp_types::PositionEncodingKind::UTF16 => Ok(PositionEncoding::UTF16),
-            lsp_types::PositionEncodingKind::UTF32 => Ok(PositionEncoding::UTF32),
-            _ => Err(anyhow!("Unsupported position encoding: {:?}", kind)),
+        if kind == &lsp_types::PositionEncodingKind::UTF8 {
+            Ok(PositionEncoding::UTF8)
+        } else if kind == &lsp_types::PositionEncodingKind::UTF16 {
+            Ok(PositionEncoding::UTF16)
+        } else if kind == &lsp_types::PositionEncodingKind::UTF32 {
+            Ok(PositionEncoding::UTF32)
+        } else {
+            Err(anyhow!("Unsupported position encoding: {:?}", kind))
         }
     }
 }
@@ -100,12 +101,7 @@ impl TextDocument {
     /// Create a new text document
     pub fn new(content: String, version: DocumentVersion) -> Self {
         let line_starts = Self::compute_line_starts(&content);
-        Self {
-            content,
-            version,
-            language_id: None,
-            line_starts,
-        }
+        Self { content, version, language_id: None, line_starts }
     }
 
     /// Set the language ID for this document

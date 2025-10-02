@@ -6,16 +6,16 @@
 use anyhow::Result;
 use crossbeam::channel;
 use lsp_server::{Message, Notification, Request, RequestId, Response, ResponseError};
-use lsp_types::{self as types, notification::Notification as _};
+use lsp_types::{self as types};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::error;
 
 /// Client for sending messages to the LSP client
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Client {
-    sender: lsp_server::Connection,
+    sender: channel::Sender<Message>,
     /// Counter for generating unique request IDs
     request_id_counter: Arc<std::sync::atomic::AtomicI32>,
     /// Pending outgoing requests waiting for responses
@@ -23,16 +23,17 @@ pub struct Client {
 }
 
 /// Information about a pending request sent to the client
+#[derive(Debug)]
 struct PendingRequest {
     method: String,
     sent_at: std::time::Instant,
 }
 
 impl Client {
-    /// Create a new client with the given connection
-    pub fn new(connection: lsp_server::Connection) -> Self {
+    /// Create a new client with the given sender
+    pub fn new(sender: channel::Sender<Message>) -> Self {
         Self {
-            sender: connection,
+            sender,
             request_id_counter: Arc::new(std::sync::atomic::AtomicI32::new(1)),
             pending_requests: Arc::new(std::sync::Mutex::new(HashMap::new())),
         }
@@ -51,9 +52,7 @@ impl Client {
             params: serde_json::to_value(params)?,
         };
 
-        self.sender
-            .sender
-            .send(Message::Notification(notification))?;
+        self.sender.send(Message::Notification(notification))?;
 
         Ok(())
     }
@@ -62,7 +61,7 @@ impl Client {
     pub fn send_request<R: types::request::Request>(
         &self,
         params: R::Params,
-        handler: impl FnOnce(R::Result) + Send + 'static,
+        _handler: impl FnOnce(R::Result) + Send + 'static,
     ) -> Result<()>
     where
         R::Params: Serialize,
@@ -88,7 +87,7 @@ impl Client {
             params: serde_json::to_value(params)?,
         };
 
-        self.sender.sender.send(Message::Request(request))?;
+        self.sender.send(Message::Request(request))?;
 
         // In a real implementation, you'd store the handler and call it when
         // the response comes back. For this barebones version, we just log.
@@ -105,19 +104,15 @@ impl Client {
             error: None,
         };
 
-        self.sender.sender.send(Message::Response(response))?;
+        self.sender.send(Message::Response(response))?;
         Ok(())
     }
 
     /// Send an error response to a client request
     pub fn send_error_response(&self, id: RequestId, error: ResponseError) -> Result<()> {
-        let response = Response {
-            id,
-            result: None,
-            error: Some(error),
-        };
+        let response = Response { id, result: None, error: Some(error) };
 
-        self.sender.sender.send(Message::Response(response))?;
+        self.sender.send(Message::Response(response))?;
         Ok(())
     }
 
@@ -129,11 +124,7 @@ impl Client {
         version: Option<i32>,
     ) -> Result<()> {
         self.send_notification::<types::notification::PublishDiagnostics>(
-            types::PublishDiagnosticsParams {
-                uri,
-                diagnostics,
-                version,
-            },
+            types::PublishDiagnosticsParams { uri, diagnostics, version },
         )
     }
 
@@ -226,15 +217,12 @@ impl ToLspError for anyhow::Error {
     }
 
     fn to_lsp_error_with_code(self, code: i32) -> ResponseError {
-        ResponseError {
-            code,
-            message: self.to_string(),
-            data: None,
-        }
+        ResponseError { code, message: self.to_string(), data: None }
     }
 }
 
 /// Common LSP error codes
+#[allow(dead_code)]
 pub mod error_codes {
     pub const PARSE_ERROR: i32 = -32700;
     pub const INVALID_REQUEST: i32 = -32600;
@@ -251,16 +239,14 @@ pub mod error_codes {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lsp_server::Connection;
     use std::sync::mpsc;
 
     fn create_test_client() -> (Client, mpsc::Receiver<Message>) {
-        let (connection, _io_threads) = Connection::memory();
-        let client = Client::new(connection);
-        // In a real test, you'd need to properly handle the receiver
-        // This is just for compilation
-        let (_, receiver) = mpsc::channel();
-        (client, receiver)
+        let (sender, _receiver) = channel::unbounded();
+        let client = Client::new(sender);
+        // Convert crossbeam receiver to mpsc for compatibility
+        let (_mpsc_sender, mpsc_receiver) = mpsc::channel();
+        (client, mpsc_receiver)
     }
 
     #[test]

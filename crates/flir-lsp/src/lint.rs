@@ -6,8 +6,8 @@
 
 use anyhow::{anyhow, Result};
 use flir_core::location::Location;
-use lsp_types::{Diagnostic, DiagnosticSeverity, Position, Range, Url};
-use std::collections::HashMap;
+use lsp_types::{Diagnostic, DiagnosticSeverity, Position, Range};
+
 use std::path::Path;
 
 use crate::document::PositionEncoding;
@@ -47,32 +47,7 @@ pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<Vec<Diagnostic>> {
 }
 
 /// Run the Flir linting engine on the given content
-///
-/// TODO: Replace this mock implementation with actual calls to your flir_core crate:
-///
-/// ```rust
-/// fn run_flir_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<FlirDiagnostic>> {
-///     let config = flir_core::Config::load_from_path(file_path)?;
-///     let linter = flir_core::Linter::new(config);
-///     let results = linter.lint_text(content, file_path)?;
-///
-///     Ok(results.into_iter().map(|d| FlirDiagnostic {
-///         message: d.message,
-///         severity: match d.level {
-///             flir_core::Level::Error => FlirSeverity::Error,
-///             flir_core::Level::Warning => FlirSeverity::Warning,
-///             // ... etc
-///         },
-///         line: d.span.start.line,
-///         column: d.span.start.column,
-///         end_line: d.span.end.line,
-///         end_column: d.span.end.column,
-///         code: Some(d.rule_code),
-///         rule_name: Some(d.rule_name),
-///     }).collect())
-/// }
-/// ```
-fn run_flir_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<FlirDiagnostic>> {
+pub fn run_flir_linting(_content: &str, file_path: Option<&Path>) -> Result<Vec<FlirDiagnostic>> {
     let path: Vec<String> = vec![file_path.unwrap().to_str().unwrap().to_string()];
 
     let mut resolver = PathResolver::new(Settings::default());
@@ -242,73 +217,6 @@ mod tests {
         let snapshot = create_test_snapshot("");
         let diagnostics = lint_document(&snapshot).unwrap();
         assert!(diagnostics.is_empty());
-    }
-
-    #[test]
-    fn test_long_line_detection() {
-        let long_line = "a".repeat(150); // 150 characters, over the 100 limit
-        let snapshot = create_test_snapshot(&long_line);
-        let diagnostics = lint_document(&snapshot).unwrap();
-
-        assert_eq!(diagnostics.len(), 1);
-        let diag = &diagnostics[0];
-        assert!(diag.message.contains("Line too long"));
-        assert_eq!(diag.severity, Some(DiagnosticSeverity::WARNING));
-        assert_eq!(diag.range.start.line, 0);
-        assert_eq!(diag.range.start.character, 0);
-    }
-
-    #[test]
-    fn test_todo_comment_detection() {
-        let content = "# TODO: implement this\nprint('hello')";
-        let snapshot = create_test_snapshot(content);
-        let diagnostics = lint_document(&snapshot).unwrap();
-
-        assert_eq!(diagnostics.len(), 1);
-        let diag = &diagnostics[0];
-        assert!(diag.message.contains("TODO comment"));
-        assert_eq!(diag.severity, Some(DiagnosticSeverity::INFORMATION));
-        assert_eq!(diag.range.start.line, 0);
-        assert_eq!(diag.range.start.character, 2); // Position of "todo" in "# TODO"
-    }
-
-    #[test]
-    fn test_trailing_whitespace_detection() {
-        let content = "print('hello')   \nprint('world')";
-        let snapshot = create_test_snapshot(content);
-        let diagnostics = lint_document(&snapshot).unwrap();
-
-        assert_eq!(diagnostics.len(), 1);
-        let diag = &diagnostics[0];
-        assert!(diag.message.contains("Trailing whitespace"));
-        assert_eq!(diag.severity, Some(DiagnosticSeverity::INFORMATION));
-        assert_eq!(diag.range.start.line, 0);
-        assert_eq!(diag.range.start.character, 14); // After "print('hello')"
-    }
-
-    #[test]
-    fn test_multiple_issues() {
-        let content = r#"# TODO: fix this line that is way too long and exceeds the maximum allowed length of 100 characters which should trigger multiple diagnostics
-print('hello world')
-"#;
-        let snapshot = create_test_snapshot(content);
-        let diagnostics = lint_document(&snapshot).unwrap();
-
-        // Should have: long line + TODO + trailing whitespace = 3 diagnostics
-        assert_eq!(diagnostics.len(), 3);
-
-        let codes: Vec<_> = diagnostics
-            .iter()
-            .filter_map(|d| d.code.as_ref())
-            .filter_map(|c| match c {
-                lsp_types::NumberOrString::String(s) => Some(s.as_str()),
-                _ => None,
-            })
-            .collect();
-
-        assert!(codes.contains(&"FLIR001")); // long line
-        assert!(codes.contains(&"FLIR002")); // TODO
-        assert!(codes.contains(&"FLIR003")); // trailing whitespace
     }
 
     #[test]

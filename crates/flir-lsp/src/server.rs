@@ -4,23 +4,20 @@
 //! focused purely on diagnostic (linting) capabilities. No code actions,
 //! formatting, or other advanced features.
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Result};
 use crossbeam::channel;
 use lsp_server::{Connection, Message, Notification, Request, RequestId, Response};
-use lsp_types::{
-    self as types, InitializeParams, ServerCapabilities, notification::Notification as _,
-    request::Request as _,
-};
-use std::collections::HashMap;
+use lsp_types::{self as types, notification::Notification as _, request::Request as _};
+
 use std::num::NonZeroUsize;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use crate::client::{Client, ToLspError};
-use crate::document::{DocumentKey, PositionEncoding, TextDocument};
+use crate::document::TextDocument;
 use crate::lint;
-use crate::session::{DocumentSnapshot, Session, negotiate_position_encoding};
-use crate::{DIAGNOSTIC_SOURCE, LspResult, SERVER_NAME};
+use crate::session::{negotiate_position_encoding, DocumentSnapshot, Session};
+use crate::LspResult;
 
 /// Main LSP server
 pub struct Server {
@@ -30,6 +27,7 @@ pub struct Server {
 
 /// Events that can be processed by the main loop
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum Event {
     /// LSP message from client
     Message(Message),
@@ -57,16 +55,16 @@ pub enum Task {
 impl Server {
     /// Create a new server instance
     pub fn new(worker_threads: NonZeroUsize, connection: Connection) -> Result<Self> {
-        Ok(Self {
-            connection,
-            worker_threads,
-        })
+        Ok(Self { connection, worker_threads })
     }
 
     /// Run the main server loop
     pub fn run(self) -> Result<()> {
         // Perform LSP handshake
         let (id, init_params) = self.connection.initialize_start()?;
+
+        // Parse initialize params
+        let init_params: lsp_types::InitializeParams = serde_json::from_value(init_params)?;
 
         // Negotiate capabilities
         let client_capabilities = init_params.capabilities.clone();
@@ -75,7 +73,7 @@ impl Server {
         tracing::info!("Negotiated position encoding: {:?}", position_encoding);
 
         // Create client for communication
-        let client = Client::new(self.connection.clone());
+        let client = Client::new(self.connection.sender.clone());
 
         // Create session
         let mut session = Session::new(
@@ -89,12 +87,9 @@ impl Server {
         let server_capabilities = session.initialize(init_params)?;
 
         // Complete handshake
-        self.connection.initialize_finish(
-            id,
-            &server_capabilities,
-            SERVER_NAME,
-            crate::version(),
-        )?;
+        let server_capabilities_json = serde_json::to_value(server_capabilities)?;
+        self.connection
+            .initialize_finish(id, server_capabilities_json)?;
 
         tracing::info!("LSP server initialized successfully");
 
@@ -335,11 +330,7 @@ impl Server {
                         tracing::error!("Error in lint task: {}", e);
                     }
                 }
-                Task::HandleDiagnosticRequest {
-                    snapshot,
-                    request_id,
-                    client,
-                } => {
+                Task::HandleDiagnosticRequest { snapshot, request_id, client } => {
                     if let Err(e) =
                         Self::handle_diagnostic_request(snapshot, request_id, client, &event_sender)
                     {
@@ -377,7 +368,7 @@ impl Server {
     fn handle_diagnostic_request(
         snapshot: DocumentSnapshot,
         request_id: RequestId,
-        client: Client,
+        _client: Client,
         event_sender: &channel::Sender<Event>,
     ) -> LspResult<()> {
         let diagnostics = lint::lint_document(&snapshot)?;
