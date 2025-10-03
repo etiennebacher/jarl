@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.7.34">
+<meta name="generator" content="quarto-1.8.25">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -67,14 +67,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <meta name="quarto:offset" content="./">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-c8ad9e5dbd60b7b70b38521ab19b7da4.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7b89279ff1a6dce999919e0e67d4d9ec.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-8e522160f6cd9e55291864200cb4d651.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-169705d3eabda05963f3986ba613488e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -113,6 +114,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
+    <a href="./index.html" class="navbar-brand navbar-brand-logo">
+    </a>
     <a class="navbar-brand" href="./index.html">
     <span class="navbar-title">flir</span>
     </a>
@@ -210,7 +213,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </blockquote>
 <p>Since I focus on lint-rule analysis for now and ignore the semantic analysis. Only point 4 is interesting for us.</p>
 <p>There is one giant Checker struct, with some fields that aren’t necessary here, either because they are related to the formatter, to the semantic analysis, or to Python itself:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> Checker<span class="op">&lt;</span><span class="ot">'a</span><span class="op">&gt;</span> <span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> Checker<span class="op">&lt;</span><span class="ot">'a</span><span class="op">&gt;</span> <span class="op">{</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// The [`Parsed`] output for the source code.</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    parsed<span class="op">:</span> <span class="op">&amp;</span><span class="ot">'a</span> Parsed<span class="op">&lt;</span>ModModule<span class="op">&gt;,</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// An internal cache for parsed string annotations</span></span>
@@ -263,14 +266,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>    semantic_errors<span class="op">:</span> RefCell<span class="op">&lt;</span><span class="dt">Vec</span><span class="op">&lt;</span>SemanticSyntaxError<span class="op">&gt;&gt;,</span></span>
 <span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>    <span class="co">///////////</span></span>
 <span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>The interesting part, where the checks actually happen, is the <code>visit_*()</code> functions at the end of this file, e.g.&nbsp;<code>visit_stmt()</code>. A big part of those functions is dedicated to steps 1-3 mentioned above in which I’m not interested. The lint analysis is done by a single line: <code>analyze::statement(stmt, self)</code>. This calls the functions in the file <a href="https://github.com/astral-sh/ruff/blob/c7372d218de365c8298afb37530ee26999ba91b0/crates/ruff_linter/src/checkers/ast/analyze/statement.rs"><code>analyze/statement.rs</code></a>.</p>
 <p>This file contains a huge <code>match</code> call with every type of statement (for loop, if condition, function definition, assign, expr, etc.). In each of those types of statement, they check whether a relevant rule is enabled or not, and apply it if it is.</p>
 <p>This was for <code>visit_stmt()</code>, but there are other visiting functions, such as <code>visit_expr()</code>. This follows the same org as before: the large majority of the function is dedicated to the semantic analysis, and then a few lines are dedicated to linting rules. There’s <code>analyze::expression(expr, self)</code> which does the same as <code>analyze::statement(expr, self)</code> but this time the <code>match</code> call is made on the type of expression (tuple, list, dict, f-string, etc.).</p>
 <p>There are a bunch of <code>visit_*()</code> functions: <code>visit_parameter()</code>, <code>visit_parameters()</code>, <code>visit_body()</code>, <code>visit_f_string_element()</code>, etc.</p>
 <p>Most of the rest of the file is dedicated to deferred visit, which concerns semantic analysis.</p>
 <p>The final function of the file is <a href="https://github.com/astral-sh/ruff/blob/c7372d218de365c8298afb37530ee26999ba91b0/crates/ruff_linter/src/checkers/ast/mod.rs#L2865"><code>check_ast()</code></a>, which takes a path, builds a Checker, and applies the checks. A bunch of those are related to semantic analysis, but those I’m probably interested in is <code>visit_body()</code>. This function calls <code>analyze::suite(body, self)</code> but I’m not interested in this (I’m not sure why the two checks in this function are here). The important part is the for loop:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> visit_body(<span class="op">&amp;</span><span class="kw">mut</span> <span class="kw">self</span><span class="op">,</span> body<span class="op">:</span> <span class="op">&amp;</span><span class="ot">'a</span> [Stmt]) <span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> visit_body(<span class="op">&amp;</span><span class="kw">mut</span> <span class="kw">self</span><span class="op">,</span> body<span class="op">:</span> <span class="op">&amp;</span><span class="ot">'a</span> [Stmt]) <span class="op">{</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Step 4: Analysis</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="pp">analyze::</span>suite(body<span class="op">,</span> <span class="kw">self</span>)<span class="op">;</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -278,7 +281,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> stmt <span class="kw">in</span> body <span class="op">{</span></span>
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">self</span><span class="op">.</span>visit_stmt(stmt)<span class="op">;</span></span>
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>PROBLEM: <code>visit_body()</code> is not enough. I need to go through the deferred analysis as well because not everything there is related to semantic analysis. For instance, we have:</p>
 <pre><code>check_ast()
 -&gt; visit_deferred()
@@ -290,13 +293,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="reporting" class="level3">
 <h3 class="anchored" data-anchor-id="reporting">Reporting</h3>
 <p>Ruff has a struct <a href="https://github.com/astral-sh/ruff/blob/c7372d218de365c8298afb37530ee26999ba91b0/crates/ruff_linter/src/message/mod.rs">Message</a>:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>derive<span class="at">(</span><span class="bu">Clone</span><span class="op">,</span> <span class="bu">Debug</span><span class="op">,</span> <span class="bu">PartialEq</span><span class="op">,</span> <span class="bu">Eq</span><span class="at">)]</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>derive<span class="at">(</span><span class="bu">Clone</span><span class="op">,</span> <span class="bu">Debug</span><span class="op">,</span> <span class="bu">PartialEq</span><span class="op">,</span> <span class="bu">Eq</span><span class="at">)]</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">enum</span> Message <span class="op">{</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    Diagnostic(DiagnosticMessage)<span class="op">,</span></span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    SyntaxError(SyntaxErrorMessage)<span class="op">,</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This contains two types of messages: Diagnostic and SyntaxError.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>derive<span class="at">(</span><span class="bu">Clone</span><span class="op">,</span> <span class="bu">Debug</span><span class="op">,</span> <span class="bu">PartialEq</span><span class="op">,</span> <span class="bu">Eq</span><span class="at">)]</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>derive<span class="at">(</span><span class="bu">Clone</span><span class="op">,</span> <span class="bu">Debug</span><span class="op">,</span> <span class="bu">PartialEq</span><span class="op">,</span> <span class="bu">Eq</span><span class="at">)]</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">struct</span> DiagnosticMessage <span class="op">{</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> kind<span class="op">:</span> DiagnosticKind<span class="op">,</span></span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> range<span class="op">:</span> TextRange<span class="op">,</span></span>
@@ -311,7 +314,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> message<span class="op">:</span> <span class="dt">String</span><span class="op">,</span></span>
 <span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> range<span class="op">:</span> TextRange<span class="op">,</span></span>
 <span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> file<span class="op">:</span> SourceFile<span class="op">,</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><code>Message</code> has a lot of methods, for instance to return the message itself, the suggested fix, whether the violation has a fix or not, etc.</p>
 </section>
 <section id="fixing-files" class="level3">
@@ -320,14 +323,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ul>
 <li><a href="https://github.com/astral-sh/ruff/blob/c7372d218de365c8298afb37530ee26999ba91b0/crates/ruff_linter/src/fix/mod.rs"><code>FixResult</code></a> contains the output, after applying the fixes:</li>
 </ul>
-<div class="sourceCode" id="cb6"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> FixResult <span class="op">{</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> FixResult <span class="op">{</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// The resulting source code, after applying all fixes.</span></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span>(<span class="kw">crate</span>) code<span class="op">:</span> <span class="dt">String</span><span class="op">,</span></span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// The number of fixes applied for each [`Rule`].</span></span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span>(<span class="kw">crate</span>) fixes<span class="op">:</span> FixTable<span class="op">,</span></span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// Source map for the fixed source code.</span></span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span>(<span class="kw">crate</span>) source_map<span class="op">:</span> SourceMap<span class="op">,</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Two main functions:</p>
 <ul>
 <li><p><code>fix_file()</code> takes a list of <code>Message</code> that contain everything needed (original code, location, replacement, fix applicability, etc.), and only keeps those that have the correct fix applicability (for instance allowing or disallowing unsafe fixes). It runs <code>apply_fixes()</code> on those.</p></li>
@@ -397,13 +400,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       e.clearSelection();
     }
     const getTextToCopy = function(trigger) {
-        const codeEl = trigger.previousElementSibling.cloneNode(true);
-        for (const childEl of codeEl.children) {
-          if (isCodeAnnotation(childEl)) {
-            childEl.remove();
-          }
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
         }
-        return codeEl.innerText;
+      }
+      return codeEl.innerText;
     }
     const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
       text: getTextToCopy
