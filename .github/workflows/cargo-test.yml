@@ -6,15 +6,17 @@ on:
       - .github/workflows/cargo-test.yml
       - Cargo.toml
       - dist-workspace.toml
-      - src/**
-      - tests/**
+      - crates/**/src/**
+      - crates/**/tests/**
+      - crates/**/Cargo.toml
   pull_request:
     paths:
       - .github/workflows/cargo-test.yml
       - Cargo.toml
       - dist-workspace.toml
-      - src/**
-      - tests/**
+      - crates/**/src/**
+      - crates/**/tests/**
+      - crates/**/Cargo.toml
 
 env:
   CARGO_TERM_COLOR: always
@@ -32,5 +34,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
-      - run: cargo install --path . --profile=dev
+      - run: cargo install --path crates/flir-cli --profile=dev
       - run: cargo test --verbose
