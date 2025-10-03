@@ -1,7 +1,7 @@
 [package]
 name = "flir-lsp"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 description = "Language Server Protocol implementation for Flir linter"
 authors = ["Your Name <your.email@example.com>"]
 license = "MIT"
