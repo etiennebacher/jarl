@@ -79,10 +79,10 @@ jobs:
             repo_dir=$(echo "$repo_name" | tr '/' '_')
 
             # Run main
-            (cd "$repo_dir" && $MAIN_FLIR --output-format json) > "../results/${repo_dir}_main.json" || true
+            (cd "$repo_dir" && $MAIN_FLIR check . --output-format json) > "../results/${repo_dir}_main.json" || true
 
             # Run PR
-            (cd "$repo_dir" && $PR_FLIR --output-format json) > "../results/${repo_dir}_pr.json" || true
+            (cd "$repo_dir" && $PR_FLIR check . --output-format json) > "../results/${repo_dir}_pr.json" || true
           done
 
       - name: Upload all result JSONs
