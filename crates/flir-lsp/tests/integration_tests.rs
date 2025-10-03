@@ -22,7 +22,7 @@ fn test_server_binary_exists_and_runs() {
             );
         }
         Err(e) => {
-            panic!("Failed to run binary: {}", e);
+            panic!("Failed to run binary: {e}");
         }
     }
 }

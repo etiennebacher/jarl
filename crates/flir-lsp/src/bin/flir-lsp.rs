@@ -14,9 +14,9 @@ fn main() {
     eprintln!("FLIR LSP Binary: main() started");
 
     if let Err(err) = run() {
-        eprintln!("FLIR LSP Binary: run() failed with error: {}", err);
+        eprintln!("FLIR LSP Binary: run() failed with error: {err}");
         for cause in err.chain() {
-            eprintln!("  Caused by: {}", cause);
+            eprintln!("  Caused by: {cause}");
         }
         process::exit(1);
     }
@@ -77,12 +77,12 @@ fn run() -> Result<()> {
 }
 
 fn setup_logging(level: &str, log_file: Option<&String>) -> Result<()> {
-    eprintln!("FLIR LSP Binary: Setting up logging with level: {}", level);
+    eprintln!("FLIR LSP Binary: Setting up logging with level: {level}");
 
     use tracing_subscriber::{EnvFilter, fmt};
 
     // Simple, robust logging setup
-    let filter = match EnvFilter::try_new(format!("flir_lsp={}", level)) {
+    let filter = match EnvFilter::try_new(format!("flir_lsp={level}")) {
         Ok(f) => f,
         Err(_) => {
             eprintln!("FLIR LSP Binary: Failed to parse log level, using 'info'");
@@ -91,7 +91,7 @@ fn setup_logging(level: &str, log_file: Option<&String>) -> Result<()> {
     };
 
     if let Some(log_file) = log_file {
-        eprintln!("FLIR LSP Binary: Attempting to log to file: {}", log_file);
+        eprintln!("FLIR LSP Binary: Attempting to log to file: {log_file}");
         // Log to file - useful for debugging
         match std::fs::OpenOptions::new()
             .create(true)
@@ -105,12 +105,11 @@ fn setup_logging(level: &str, log_file: Option<&String>) -> Result<()> {
                     .with_target(true)
                     .with_env_filter(filter)
                     .init();
-                eprintln!("Flir LSP server logging to: {}", log_file);
+                eprintln!("Flir LSP server logging to: {log_file}");
             }
             Err(e) => {
                 eprintln!(
-                    "FLIR LSP Binary: Failed to open log file, falling back to stderr: {}",
-                    e
+                    "FLIR LSP Binary: Failed to open log file, falling back to stderr: {e}"
                 );
                 fmt()
                     .with_writer(std::io::stderr)

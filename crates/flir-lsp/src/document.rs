@@ -8,20 +8,17 @@ use std::path::PathBuf;
 
 /// Position encoding supported by the LSP server
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Default)]
 pub enum PositionEncoding {
     /// UTF-8 encoding (each character is a UTF-8 code unit)
     UTF8,
     /// UTF-16 encoding (each character is a UTF-16 code unit) - LSP default
+    #[default]
     UTF16,
     /// UTF-32 encoding (each character is a UTF-32 code unit)
     UTF32,
 }
 
-impl Default for PositionEncoding {
-    fn default() -> Self {
-        PositionEncoding::UTF16
-    }
-}
 
 impl From<PositionEncoding> for lsp_types::PositionEncodingKind {
     fn from(encoding: PositionEncoding) -> Self {

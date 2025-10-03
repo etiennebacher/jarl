@@ -74,19 +74,18 @@ pub fn run() -> Result<()> {
         }
         (Err(server_err), Err(io_err)) => {
             eprintln!(
-                "FLIR LSP: Server error: {}, IO error: {}",
-                server_err, io_err
+                "FLIR LSP: Server error: {server_err}, IO error: {io_err}"
             );
             tracing::error!("Server error: {}, IO error: {}", server_err, io_err);
             Err(server_err).context(format!("IO thread error: {io_err}"))
         }
         (Err(server_err), _) => {
-            eprintln!("FLIR LSP: Server error: {}", server_err);
+            eprintln!("FLIR LSP: Server error: {server_err}");
             tracing::error!("Server error: {}", server_err);
             Err(server_err)
         }
         (_, Err(io_err)) => {
-            eprintln!("FLIR LSP: IO error: {}", io_err);
+            eprintln!("FLIR LSP: IO error: {io_err}");
             tracing::error!("IO error: {}", io_err);
             Err(io_err).context("IO thread error")
         }

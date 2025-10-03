@@ -348,7 +348,7 @@ pub fn negotiate_position_encoding(client_capabilities: &ClientCapabilities) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crossbeam;
+    
     use lsp_types::{ClientCapabilities, GeneralClientCapabilities, PositionEncodingKind};
 
     fn create_test_session() -> Session {

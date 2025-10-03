@@ -10,9 +10,9 @@ pub(crate) fn server(_command: ServerCommand) -> anyhow::Result<ExitStatus> {
             Ok(ExitStatus::Success)
         }
         Err(e) => {
-            eprintln!("FLIR CLI: LSP server failed with error: {}", e);
+            eprintln!("FLIR CLI: LSP server failed with error: {e}");
             for cause in e.chain() {
-                eprintln!("  Caused by: {}", cause);
+                eprintln!("  Caused by: {cause}");
             }
             Err(e)
         }

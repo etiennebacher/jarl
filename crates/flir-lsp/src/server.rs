@@ -71,7 +71,7 @@ impl Server {
             .initialize_start()
             .context("Failed to start LSP initialization")?;
         eprintln!("FLIR LSP: initialize_start() completed successfully");
-        eprintln!("FLIR LSP: Received initialize request with id: {:?}", id);
+        eprintln!("FLIR LSP: Received initialize request with id: {id:?}");
         tracing::debug!("Received initialize request with id: {:?}", id);
 
         // Parse initialize params
@@ -88,8 +88,7 @@ impl Server {
 
         tracing::info!("Negotiated position encoding: {:?}", position_encoding);
         eprintln!(
-            "FLIR LSP: Position encoding negotiated: {:?}",
-            position_encoding
+            "FLIR LSP: Position encoding negotiated: {position_encoding:?}"
         );
 
         // Create client for communication
@@ -114,7 +113,7 @@ impl Server {
 
         // Complete handshake
         eprintln!("FLIR LSP: About to serialize initialize result");
-        eprintln!("FLIR LSP: Raw initialize result: {:?}", initialize_result);
+        eprintln!("FLIR LSP: Raw initialize result: {initialize_result:?}");
         let initialize_result_json = serde_json::to_value(initialize_result)
             .context("Failed to serialize initialize result")?;
         eprintln!(
@@ -182,12 +181,12 @@ impl Server {
                         Ok(msg) => {
                             tracing::debug!("Received LSP message: {:?}", msg);
                             if let Err(e) = self.handle_message(msg, &mut session, &task_sender) {
-                                eprintln!("FLIR LSP: Error handling message: {}", e);
+                                eprintln!("FLIR LSP: Error handling message: {e}");
                                 tracing::error!("Error handling message: {}", e);
                             }
                         }
                         Err(e) => {
-                            eprintln!("FLIR LSP: Error receiving message: {}", e);
+                            eprintln!("FLIR LSP: Error receiving message: {e}");
                             tracing::error!("Error receiving message: {}", e);
                             break;
                         }
