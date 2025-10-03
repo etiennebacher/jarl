@@ -79,7 +79,7 @@ fn run() -> Result<()> {
 fn setup_logging(level: &str, log_file: Option<&String>) -> Result<()> {
     eprintln!("FLIR LSP Binary: Setting up logging with level: {}", level);
 
-    use tracing_subscriber::{fmt, EnvFilter};
+    use tracing_subscriber::{EnvFilter, fmt};
 
     // Simple, robust logging setup
     let filter = match EnvFilter::try_new(format!("flir_lsp={}", level)) {

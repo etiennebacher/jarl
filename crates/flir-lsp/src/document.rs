@@ -2,7 +2,7 @@
 //!
 //! This module handles document lifecycle, content tracking, and position encoding.
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use lsp_types::{Position, Range, TextDocumentContentChangeEvent, Url};
 use std::path::PathBuf;
 

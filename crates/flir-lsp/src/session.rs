@@ -3,7 +3,7 @@
 //! This module handles the overall state of the LSP session, including
 //! document management, client capabilities, and workspace configuration.
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use lsp_types::{
     ClientCapabilities, DiagnosticOptions, DiagnosticServerCapabilities, InitializeParams,
     InitializeResult, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
@@ -15,7 +15,7 @@ use std::path::PathBuf;
 
 use crate::client::Client;
 use crate::document::{DocumentKey, DocumentVersion, PositionEncoding, TextDocument};
-use crate::{LspResult, DIAGNOSTIC_SOURCE};
+use crate::{DIAGNOSTIC_SOURCE, LspResult};
 
 /// Main session state for the LSP server
 pub struct Session {

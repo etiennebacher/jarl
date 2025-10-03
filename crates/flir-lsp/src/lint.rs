@@ -4,19 +4,19 @@
 //! It focuses purely on running your linter and converting results to LSP diagnostics.
 //! No code actions, fixes, or other advanced features - just highlighting issues.
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use lsp_types::{Diagnostic, DiagnosticSeverity, Position, Range};
 
 use std::path::Path;
 
+use crate::DIAGNOSTIC_SOURCE;
 use crate::document::PositionEncoding;
 use crate::session::DocumentSnapshot;
-use crate::DIAGNOSTIC_SOURCE;
 
 use air_workspace::resolve::PathResolver;
-use flir_core::discovery::{discover_r_file_paths, discover_settings, DiscoveredSettings};
+use flir_core::discovery::{DiscoveredSettings, discover_r_file_paths, discover_settings};
 use flir_core::{
-    config::build_config, config::ArgsConfig, diagnostic::Diagnostic as FlirDiagnostic,
+    config::ArgsConfig, config::build_config, diagnostic::Diagnostic as FlirDiagnostic,
     settings::Settings,
 };
 

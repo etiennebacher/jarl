@@ -4,7 +4,7 @@
 //! focused purely on diagnostic (linting) capabilities. No code actions,
 //! formatting, or other advanced features.
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use crossbeam::channel;
 use lsp_server::{Connection, Message, Notification, Request, RequestId, Response};
 use lsp_types::{self as types, notification::Notification as _, request::Request as _};
@@ -13,11 +13,11 @@ use std::num::NonZeroUsize;
 use std::thread;
 use std::time::Instant;
 
+use crate::LspResult;
 use crate::client::{Client, ToLspError};
 use crate::document::TextDocument;
 use crate::lint;
-use crate::session::{negotiate_position_encoding, DocumentSnapshot, Session};
-use crate::LspResult;
+use crate::session::{DocumentSnapshot, Session, negotiate_position_encoding};
 
 /// Main LSP server
 pub struct Server {
