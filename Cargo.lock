@@ -637,21 +637,17 @@ dependencies = [
 
 [[package]]
 name = "flir-lsp"
-version = "0.1.0"
+version = "0.0.16"
 dependencies = [
  "anyhow",
  "clap",
  "crossbeam",
  "flir-core",
- "indexmap",
- "insta",
  "lsp-server",
  "lsp-types",
  "rustc-hash",
  "serde",
  "serde_json",
- "tempfile",
- "thiserror",
  "tracing",
  "tracing-subscriber",
  "workspace",

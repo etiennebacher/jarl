@@ -1,12 +1,12 @@
 [package]
 name = "flir-lsp"
-version = "0.1.0"
-edition = "2024"
 description = "Language Server Protocol implementation for Flir linter"
-authors = ["Your Name <your.email@example.com>"]
-license = "MIT"
-
-[lib]
+version = "0.0.16"
+authors.workspace = true
+edition.workspace = true
+license-file.workspace = true
+repository.workspace = true
+readme.workspace = true
 
 [[bin]]
 name = "flir-lsp"
@@ -26,7 +26,6 @@ crossbeam = "0.8"
 
 # Error handling and utilities
 anyhow = "1.0"
-thiserror = "2.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 
@@ -36,11 +35,8 @@ serde_json = "1.0"
 
 # Collections and utilities
 rustc-hash = "2.0"
-indexmap = "2.0"
 
 # CLI for binary
 clap = { version = "4.0", features = ["derive"] }
 
 [dev-dependencies]
-insta = "1.35"
-tempfile = "3.0"
