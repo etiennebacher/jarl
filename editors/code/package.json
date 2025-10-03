@@ -32,7 +32,6 @@
 		"workspaceContains:*.R",
 		"workspaceContains:flir.toml",
 		"workspaceContains:.flir.toml",
-		"workspaceContains:pyproject.toml",
 		"workspaceContains:DESCRIPTION",
 		"workspaceContains:*.Rproj"
 	],

@@ -129,8 +129,8 @@ local configs = require('lspconfig.configs')
 configs.flir = {
   default_config = {
     cmd = {'flir-lsp'},
-    filetypes = {'python', 'py'},  -- or your target file types
-    root_dir = lspconfig.util.root_pattern('.git', 'pyproject.toml', 'flir.toml'),
+    filetypes = {'r'},  -- R language files
+    root_dir = lspconfig.util.root_pattern('.git', 'flir.toml', '.Rprofile'),
     settings = {},
   },
 }
@@ -145,7 +145,7 @@ lspconfig.flir.setup{}
 
 (lsp-register-client
  (make-lsp-client :new-connection (lsp-stdio-connection "flir-lsp")
-                  :major-modes '(python-mode)
+                  :major-modes '(r-mode ess-r-mode)
                   :server-id 'flir-lsp))
 ```
 

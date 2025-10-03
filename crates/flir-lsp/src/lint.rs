@@ -221,7 +221,7 @@ mod tests {
     use lsp_types::{ClientCapabilities, Url};
 
     fn create_test_snapshot(content: &str) -> DocumentSnapshot {
-        let uri = Url::parse("file:///test.py").unwrap();
+        let uri = Url::parse("file:///test.R").unwrap();
         let key = DocumentKey::from(uri);
         let document = TextDocument::new(content.to_string(), 1);
 
