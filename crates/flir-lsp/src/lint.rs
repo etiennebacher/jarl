@@ -38,7 +38,7 @@ pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<Vec<Diagnostic>> {
     // Convert to LSP diagnostics
     let mut lsp_diagnostics = Vec::new();
     for flir_diagnostic in flir_diagnostics {
-        let lsp_diagnostic = convert_to_lsp_diagnostic(flir_diagnostic, content, encoding)?;
+        let lsp_diagnostic = convert_to_lsp_diagnostic(&flir_diagnostic, content, encoding)?;
         lsp_diagnostics.push(lsp_diagnostic);
     }
 
@@ -116,7 +116,7 @@ fn run_flir_linting(_content: &str, file_path: Option<&Path>) -> Result<Vec<Flir
 
 /// Convert a Flir diagnostic to LSP diagnostic format
 fn convert_to_lsp_diagnostic(
-    flir_diag: FlirDiagnostic,
+    flir_diag: &FlirDiagnostic,
     content: &str,
     encoding: PositionEncoding,
 ) -> Result<Diagnostic> {
@@ -138,10 +138,10 @@ fn convert_to_lsp_diagnostic(
     let diagnostic = Diagnostic {
         range,
         severity: Some(severity),
-        code: Some(lsp_types::NumberOrString::String(flir_diag.message.name)),
+        code: None, // Remove code to avoid duplication in hover tooltip
         code_description: None,
         source: Some(DIAGNOSTIC_SOURCE.to_string()),
-        message: flir_diag.message.body,
+        message: flir_diag.message.body.clone(),
         related_information: None,
         tags: None,
         data: None, // No fix data needed for diagnostics-only mode

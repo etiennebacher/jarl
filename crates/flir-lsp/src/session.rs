@@ -5,17 +5,16 @@
 
 use anyhow::{Result, anyhow};
 use lsp_types::{
-    ClientCapabilities, DiagnosticOptions, DiagnosticServerCapabilities, InitializeParams,
-    InitializeResult, SaveOptions, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
-    TextDocumentSyncKind, TextDocumentSyncOptions, Url, WorkDoneProgressOptions,
+    ClientCapabilities, InitializeParams, InitializeResult, SaveOptions, ServerCapabilities,
+    ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Url,
 };
 use rustc_hash::FxHashMap;
 
 use std::path::PathBuf;
 
+use crate::LspResult;
 use crate::client::Client;
 use crate::document::{DocumentKey, DocumentVersion, PositionEncoding, TextDocument};
-use crate::{DIAGNOSTIC_SOURCE, LspResult};
 
 /// Main session state for the LSP server
 pub struct Session {
@@ -109,14 +108,7 @@ impl Session {
                     save: Some(SaveOptions { include_text: Some(false) }.into()),
                 },
             )),
-            diagnostic_provider: Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
-                identifier: Some(DIAGNOSTIC_SOURCE.to_string()),
-                inter_file_dependencies: false,
-                workspace_diagnostics: false,
-                work_done_progress_options: WorkDoneProgressOptions {
-                    work_done_progress: Some(false),
-                },
-            })),
+            diagnostic_provider: None, // Use push diagnostics only
             // Only diagnostic support - no hover, completion, or code actions
             hover_provider: None,
             completion_provider: None,
