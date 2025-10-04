@@ -6,7 +6,7 @@
 use anyhow::{Result, anyhow};
 use lsp_types::{
     ClientCapabilities, DiagnosticOptions, DiagnosticServerCapabilities, InitializeParams,
-    InitializeResult, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
+    InitializeResult, SaveOptions, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
     TextDocumentSyncKind, TextDocumentSyncOptions, Url, WorkDoneProgressOptions,
 };
 use rustc_hash::FxHashMap;
@@ -106,7 +106,7 @@ impl Session {
                     change: Some(TextDocumentSyncKind::INCREMENTAL),
                     will_save: Some(false),
                     will_save_wait_until: Some(false),
-                    save: None,
+                    save: Some(SaveOptions { include_text: Some(false) }.into()),
                 },
             )),
             diagnostic_provider: Some(DiagnosticServerCapabilities::Options(DiagnosticOptions {
@@ -142,13 +142,26 @@ impl Session {
     ) -> LspResult<()> {
         let key = DocumentKey::from(uri);
 
+        eprintln!(
+            "FLIR LSP: Updating document {} with {} changes to version {}",
+            key.uri(),
+            changes.len(),
+            version
+        );
+
         let document = self
             .documents
             .get_mut(&key)
             .ok_or_else(|| anyhow!("Document not found: {}", key.uri()))?;
 
+        eprintln!("FLIR LSP: Found document, applying changes");
         document.apply_changes(changes, version, self.position_encoding)?;
 
+        eprintln!(
+            "FLIR LSP: Document updated successfully: {} to version {}",
+            key.uri(),
+            version
+        );
         tracing::debug!("Updated document: {} to version {}", key.uri(), version);
         Ok(())
     }
@@ -190,14 +203,11 @@ impl Session {
     }
 
     /// Check if the client supports pull diagnostics
-    /// If not, we'll use push diagnostics (sending notifications)
+    /// For FLIR, we always prefer push diagnostics for real-time linting
     pub fn supports_pull_diagnostics(&self) -> bool {
-        self.client_capabilities
-            .text_document
-            .as_ref()
-            .and_then(|td| td.diagnostic.as_ref())
-            .map(|diag| diag.dynamic_registration.unwrap_or(false))
-            .unwrap_or(false)
+        // Always use push diagnostics for immediate feedback
+        // This ensures diagnostics are sent automatically on document changes
+        false
     }
 
     /// Get the position encoding
@@ -348,7 +358,7 @@ pub fn negotiate_position_encoding(client_capabilities: &ClientCapabilities) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     use lsp_types::{ClientCapabilities, GeneralClientCapabilities, PositionEncodingKind};
 
     fn create_test_session() -> Session {

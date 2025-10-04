@@ -87,9 +87,7 @@ impl Server {
         let position_encoding = negotiate_position_encoding(&client_capabilities);
 
         tracing::info!("Negotiated position encoding: {:?}", position_encoding);
-        eprintln!(
-            "FLIR LSP: Position encoding negotiated: {position_encoding:?}"
-        );
+        eprintln!("FLIR LSP: Position encoding negotiated: {position_encoding:?}");
 
         // Create client for communication
         eprintln!("FLIR LSP: Creating client");
@@ -323,13 +321,32 @@ impl Server {
                 session.open_document(params.text_document.uri.clone(), document);
 
                 // Trigger linting for push diagnostics (real-time as you type)
-                if !session.supports_pull_diagnostics() {
-                    if let Some(snapshot) = session.take_snapshot(params.text_document.uri) {
+                let supports_pull = session.supports_pull_diagnostics();
+                eprintln!(
+                    "FLIR LSP: Document opened, supports pull diagnostics: {}",
+                    supports_pull
+                );
+
+                if !supports_pull {
+                    eprintln!("FLIR LSP: Using push diagnostics, triggering initial lint");
+                    if let Some(snapshot) = session.take_snapshot(params.text_document.uri.clone())
+                    {
+                        eprintln!("FLIR LSP: Got document snapshot for initial lint, sending task");
                         task_sender.send(Task::LintDocument {
                             snapshot,
                             client: session.client().clone(),
                         })?;
+                        eprintln!("FLIR LSP: Initial lint task sent successfully");
+                    } else {
+                        eprintln!(
+                            "FLIR LSP: WARNING - Could not get document snapshot for initial lint: {}",
+                            params.text_document.uri
+                        );
                     }
+                } else {
+                    eprintln!(
+                        "FLIR LSP: Using pull diagnostics, not triggering automatic initial lint"
+                    );
                 }
                 Ok(())
             }
@@ -337,6 +354,7 @@ impl Server {
                 let params: types::DidChangeTextDocumentParams =
                     serde_json::from_value(notification.params)?;
 
+                eprintln!("FLIR LSP: Document changed: {}", params.text_document.uri);
                 tracing::debug!("Document changed: {}", params.text_document.uri);
 
                 session.update_document(
@@ -345,15 +363,13 @@ impl Server {
                     params.text_document.version,
                 )?;
 
-                // Re-lint after document changes for push diagnostics
-                if !session.supports_pull_diagnostics() {
-                    if let Some(snapshot) = session.take_snapshot(params.text_document.uri) {
-                        task_sender.send(Task::LintDocument {
-                            snapshot,
-                            client: session.client().clone(),
-                        })?;
-                    }
-                }
+                let supports_pull = session.supports_pull_diagnostics();
+                eprintln!("FLIR LSP: Supports pull diagnostics: {}", supports_pull);
+
+                // Don't lint on every keystroke - only on save for better performance
+                eprintln!(
+                    "FLIR LSP: Document changed, but not triggering lint (will lint on save)"
+                );
                 Ok(())
             }
             types::notification::DidCloseTextDocument::METHOD => {
@@ -366,6 +382,43 @@ impl Server {
                 session
                     .client()
                     .publish_diagnostics(params.text_document.uri, vec![], None)?;
+                Ok(())
+            }
+            types::notification::DidSaveTextDocument::METHOD => {
+                let params: types::DidSaveTextDocumentParams =
+                    serde_json::from_value(notification.params)?;
+
+                eprintln!("FLIR LSP: Document saved: {}", params.text_document.uri);
+                tracing::debug!("Document saved: {}", params.text_document.uri);
+
+                let supports_pull = session.supports_pull_diagnostics();
+                eprintln!(
+                    "FLIR LSP: On save, supports pull diagnostics: {}",
+                    supports_pull
+                );
+
+                // Re-lint after document save for push diagnostics
+                if !supports_pull {
+                    eprintln!("FLIR LSP: Using push diagnostics, triggering lint on save");
+                    if let Some(snapshot) = session.take_snapshot(params.text_document.uri.clone())
+                    {
+                        eprintln!("FLIR LSP: Got document snapshot on save, sending lint task");
+                        task_sender.send(Task::LintDocument {
+                            snapshot,
+                            client: session.client().clone(),
+                        })?;
+                        eprintln!("FLIR LSP: Save lint task sent successfully");
+                    } else {
+                        eprintln!(
+                            "FLIR LSP: WARNING - Could not get document snapshot on save for {}",
+                            params.text_document.uri
+                        );
+                    }
+                } else {
+                    eprintln!(
+                        "FLIR LSP: Using pull diagnostics, not triggering automatic lint on save"
+                    );
+                }
                 Ok(())
             }
             _ => {
@@ -403,9 +456,17 @@ impl Server {
     fn handle_lint_task(snapshot: DocumentSnapshot, client: Client) -> LspResult<()> {
         let start = Instant::now();
 
+        eprintln!("FLIR LSP: Starting lint task for {}", snapshot.uri());
+
         let diagnostics = lint::lint_document(&snapshot)?;
 
         let elapsed = start.elapsed();
+        eprintln!(
+            "FLIR LSP: Linted {} in {:?}: {} diagnostics found",
+            snapshot.uri(),
+            elapsed,
+            diagnostics.len()
+        );
         tracing::debug!(
             "Linted {} in {:?}: {} diagnostics found",
             snapshot.uri(),
@@ -413,11 +474,20 @@ impl Server {
             diagnostics.len()
         );
 
+        eprintln!(
+            "FLIR LSP: Publishing {} diagnostics for {}",
+            diagnostics.len(),
+            snapshot.uri()
+        );
         client.publish_diagnostics(
             snapshot.uri().clone(),
             diagnostics,
             Some(snapshot.version()),
         )?;
+        eprintln!(
+            "FLIR LSP: Diagnostics published successfully for {}",
+            snapshot.uri()
+        );
 
         Ok(())
     }

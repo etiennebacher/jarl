@@ -7,8 +7,7 @@ use lsp_types::{Position, Range, TextDocumentContentChangeEvent, Url};
 use std::path::PathBuf;
 
 /// Position encoding supported by the LSP server
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum PositionEncoding {
     /// UTF-8 encoding (each character is a UTF-8 code unit)
     UTF8,
@@ -18,7 +17,6 @@ pub enum PositionEncoding {
     /// UTF-32 encoding (each character is a UTF-32 code unit)
     UTF32,
 }
-
 
 impl From<PositionEncoding> for lsp_types::PositionEncodingKind {
     fn from(encoding: PositionEncoding) -> Self {
@@ -129,12 +127,27 @@ impl TextDocument {
         new_version: DocumentVersion,
         encoding: PositionEncoding,
     ) -> Result<()> {
-        for change in changes {
+        eprintln!(
+            "FLIR LSP: Applying {} changes to document, new version: {}",
+            changes.len(),
+            new_version
+        );
+
+        for (i, change) in changes.iter().enumerate() {
+            eprintln!(
+                "FLIR LSP: Processing change {}: range={:?}",
+                i, change.range
+            );
             match change.range {
                 Some(range) => {
                     // Incremental change
                     let start_offset = self.position_to_offset(range.start, encoding)?;
                     let end_offset = self.position_to_offset(range.end, encoding)?;
+
+                    eprintln!(
+                        "FLIR LSP: Incremental change at {}..{}, replacing with: '{}'",
+                        start_offset, end_offset, change.text
+                    );
 
                     if start_offset > self.content.len() || end_offset > self.content.len() {
                         return Err(anyhow!(
@@ -150,13 +163,21 @@ impl TextDocument {
                 }
                 None => {
                     // Full document replacement
-                    self.content = change.text;
+                    eprintln!(
+                        "FLIR LSP: Full document replacement with {} chars",
+                        change.text.len()
+                    );
+                    self.content = change.text.clone();
                 }
             }
         }
 
         self.version = new_version;
         self.line_starts = Self::compute_line_starts(&self.content);
+        eprintln!(
+            "FLIR LSP: Document changes applied successfully, final content length: {}",
+            self.content.len()
+        );
         Ok(())
     }
 
