@@ -431,7 +431,7 @@ mod tests {
         let caps = session.server_capabilities();
 
         assert!(caps.text_document_sync.is_some());
-        assert!(caps.diagnostic_provider.is_some());
+        assert!(caps.diagnostic_provider.is_none());
 
         if let Some(sync) = caps.text_document_sync {
             if let TextDocumentSyncCapability::Options(options) = sync {
