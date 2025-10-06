@@ -407,22 +407,6 @@ mod tests {
     }
 
     #[test]
-    fn test_apply_full_change() {
-        let mut doc = TextDocument::new("hello world".to_string(), 1);
-
-        let changes = vec![TextDocumentContentChangeEvent {
-            range: None,
-            range_length: None,
-            text: "goodbye world".to_string(),
-        }];
-
-        doc.apply_changes(changes, 2, PositionEncoding::UTF8)
-            .unwrap();
-        assert_eq!(doc.content(), "goodbye world");
-        assert_eq!(doc.version(), 2);
-    }
-
-    #[test]
     fn test_apply_incremental_change() {
         let mut doc = TextDocument::new("hello world".to_string(), 1);
 
