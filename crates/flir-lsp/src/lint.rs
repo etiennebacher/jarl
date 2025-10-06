@@ -62,14 +62,14 @@ fn run_flir_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<FlirD
         }
     };
 
-    let _path_str = match file_path.to_str() {
-        Some(s) => s.to_string(),
-        None => {
-            tracing::warn!("File path contains invalid UTF-8: {:?}", file_path);
-            return Ok(Vec::new());
-        }
-    };
+    if file_path.to_str().is_none() {
+        tracing::warn!("File path contains invalid UTF-8: {:?}", file_path);
+        return Ok(Vec::new());
+    }
 
+    // TODO: we shoudln't have to write the content to a tempfile to then read
+    // it and get diagnostic. The check function should be able to take the R
+    // code as a string.
     // Write in-memory content to a temporary file for linting
     let temp_dir = std::env::temp_dir();
     let temp_file = temp_dir.join(format!("flir_lsp_{}.R", std::process::id()));

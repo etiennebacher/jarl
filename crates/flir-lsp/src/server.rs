@@ -121,17 +121,15 @@ impl Server {
 
         // Spawn worker threads
         tracing::debug!("Spawning {} worker threads", self.worker_threads.get());
-        let _worker_handles: Vec<_> = (0..self.worker_threads.get())
-            .map(|i| {
-                let task_receiver = task_receiver.clone();
-                let event_sender = event_sender.clone();
-                thread::spawn(move || {
-                    tracing::debug!("Worker thread {} started", i);
-                    Self::worker_thread(i, task_receiver, event_sender);
-                    tracing::debug!("Worker thread {} stopped", i);
-                })
-            })
-            .collect();
+        for i in 0..self.worker_threads.get() {
+            let task_receiver = task_receiver.clone();
+            let event_sender = event_sender.clone();
+            thread::spawn(move || {
+                tracing::debug!("Worker thread {} started", i);
+                Self::worker_thread(i, task_receiver, event_sender);
+                tracing::debug!("Worker thread {} stopped", i);
+            });
+        }
 
         // Run main loop
         tracing::debug!("Starting main event loop");
