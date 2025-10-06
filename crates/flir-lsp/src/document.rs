@@ -127,57 +127,73 @@ impl TextDocument {
         new_version: DocumentVersion,
         encoding: PositionEncoding,
     ) -> Result<()> {
-        eprintln!(
-            "FLIR LSP: Applying {} changes to document, new version: {}",
+        tracing::debug!(
+            "Applying {} changes to document, new version: {}",
             changes.len(),
             new_version
         );
 
-        for (i, change) in changes.iter().enumerate() {
-            eprintln!(
-                "FLIR LSP: Processing change {}: range={:?}",
-                i, change.range
-            );
-            match change.range {
-                Some(range) => {
-                    // Incremental change
-                    let start_offset = self.position_to_offset(range.start, encoding)?;
-                    let end_offset = self.position_to_offset(range.end, encoding)?;
+        // Separate incremental and full changes
+        let mut incremental_changes = Vec::new();
+        let mut full_changes = Vec::new();
 
-                    eprintln!(
-                        "FLIR LSP: Incremental change at {}..{}, replacing with: '{}'",
-                        start_offset, end_offset, change.text
-                    );
-
-                    if start_offset > self.content.len() || end_offset > self.content.len() {
-                        return Err(anyhow!(
-                            "Change range is out of bounds: {}..{} in document of length {}",
-                            start_offset,
-                            end_offset,
-                            self.content.len()
-                        ));
-                    }
-
-                    self.content
-                        .replace_range(start_offset..end_offset, &change.text);
-                }
-                None => {
-                    // Full document replacement
-                    eprintln!(
-                        "FLIR LSP: Full document replacement with {} chars",
-                        change.text.len()
-                    );
-                    self.content = change.text.clone();
-                }
+        for change in changes {
+            if change.range.is_some() {
+                incremental_changes.push(change);
+            } else {
+                full_changes.push(change);
             }
+        }
+
+        // Apply full changes first (they replace entire document)
+        for change in full_changes {
+            self.content = change.text.clone();
+        }
+
+        // Convert positions to offsets first, then sort by offset in reverse order
+        let mut changes_with_offsets = Vec::new();
+        for change in incremental_changes {
+            let range = change.range.unwrap();
+            let start_offset = self.position_to_offset(range.start, encoding)?;
+            let end_offset = self.position_to_offset(range.end, encoding)?;
+            changes_with_offsets.push((start_offset, end_offset, change));
+        }
+
+        // Sort by start offset in reverse order (end to beginning)
+        changes_with_offsets.sort_by(|a, b| b.0.cmp(&a.0));
+
+        for (i, (start_offset, end_offset, change)) in changes_with_offsets.iter().enumerate() {
+            tracing::trace!(
+                "Processing incremental change {}: {}..{} -> '{}'",
+                i,
+                start_offset,
+                end_offset,
+                change.text
+            );
+
+            if *start_offset > self.content.len() || *end_offset > self.content.len() {
+                return Err(anyhow!(
+                    "Change range is out of bounds: {}..{} in document of length {}",
+                    start_offset,
+                    end_offset,
+                    self.content.len()
+                ));
+            }
+
+            if start_offset > end_offset {
+                return Err(anyhow!(
+                    "Invalid change range: start {} > end {}",
+                    start_offset,
+                    end_offset
+                ));
+            }
+
+            self.content
+                .replace_range(*start_offset..*end_offset, &change.text);
         }
 
         self.version = new_version;
         self.line_starts = Self::compute_line_starts(&self.content);
-        eprintln!(
-            "FLIR LSP: Document changes applied successfully, final content length: {}",
-            self.content.len()
-        );
         Ok(())
     }
 

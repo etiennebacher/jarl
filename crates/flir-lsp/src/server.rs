@@ -1,8 +1,7 @@
 //! Main LSP server implementation for Flir
 //!
 //! This module contains the core server logic that handles the LSP protocol,
-//! focused purely on diagnostic (linting) capabilities. No code actions,
-//! formatting, or other advanced features.
+//! providing diagnostic (linting) capabilities and code actions for quick fixes.
 
 use anyhow::{Context, Result, anyhow};
 use crossbeam::channel;
@@ -50,6 +49,13 @@ pub enum Task {
         request_id: RequestId,
         client: Client,
     },
+    /// Handle a code action request
+    HandleCodeActionRequest {
+        snapshot: DocumentSnapshot,
+        request_id: RequestId,
+        params: types::CodeActionParams,
+        client: Client,
+    },
 }
 
 impl Server {
@@ -60,41 +66,33 @@ impl Server {
 
     /// Run the main server loop
     pub fn run(self) -> Result<()> {
-        eprintln!("FLIR LSP: Starting server (this should appear in VS Code logs)");
-        eprintln!("FLIR LSP: Server.run() method called");
         tracing::info!("Starting LSP handshake");
 
         // Perform LSP handshake
-        eprintln!("FLIR LSP: About to call initialize_start()");
         let (id, init_params) = self
             .connection
             .initialize_start()
             .context("Failed to start LSP initialization")?;
-        eprintln!("FLIR LSP: initialize_start() completed successfully");
-        eprintln!("FLIR LSP: Received initialize request with id: {id:?}");
+
         tracing::debug!("Received initialize request with id: {:?}", id);
 
         // Parse initialize params
-        eprintln!("FLIR LSP: About to parse initialize params");
         let init_params: lsp_types::InitializeParams = serde_json::from_value(init_params)
             .context("Failed to parse initialization parameters")?;
-        eprintln!("FLIR LSP: Parsed initialize params successfully");
+
         tracing::debug!("Parsed initialize params successfully");
 
         // Negotiate capabilities
-        eprintln!("FLIR LSP: About to negotiate capabilities");
         let client_capabilities = init_params.capabilities.clone();
         let position_encoding = negotiate_position_encoding(&client_capabilities);
 
         tracing::info!("Negotiated position encoding: {:?}", position_encoding);
-        eprintln!("FLIR LSP: Position encoding negotiated: {position_encoding:?}");
+        tracing::debug!("Position encoding negotiated: {:?}", position_encoding);
 
         // Create client for communication
-        eprintln!("FLIR LSP: Creating client");
         let client = Client::new(self.connection.sender.clone());
 
         // Create session
-        eprintln!("FLIR LSP: Creating session");
         let mut session = Session::new(
             client_capabilities,
             position_encoding,
@@ -103,43 +101,26 @@ impl Server {
         );
 
         // Initialize session and get initialize result
-        eprintln!("FLIR LSP: About to initialize session");
         let initialize_result = session
             .initialize(init_params)
             .context("Failed to initialize session")?;
-        eprintln!("FLIR LSP: Session initialized successfully");
 
         // Complete handshake
-        eprintln!("FLIR LSP: About to serialize initialize result");
-        eprintln!("FLIR LSP: Raw initialize result: {initialize_result:?}");
         let initialize_result_json = serde_json::to_value(initialize_result)
             .context("Failed to serialize initialize result")?;
-        eprintln!(
-            "FLIR LSP: Serialized initialize result JSON: {}",
-            serde_json::to_string_pretty(&initialize_result_json)
-                .unwrap_or_else(|_| "Failed to pretty print".to_string())
-        );
         tracing::debug!("Initialize result: {:?}", initialize_result_json);
 
-        eprintln!("FLIR LSP: About to call initialize_finish()");
         self.connection
             .initialize_finish(id, initialize_result_json)
             .context("Failed to finish LSP initialization")?;
-        eprintln!("FLIR LSP: initialize_finish() completed successfully");
-
-        eprintln!("FLIR LSP: Server initialized successfully");
         tracing::info!("LSP server initialized successfully");
 
         // Create worker thread pool
-        eprintln!("FLIR LSP: Creating worker thread channels");
         let (task_sender, task_receiver) = channel::bounded::<Task>(100);
         let (event_sender, event_receiver) = channel::bounded::<Event>(100);
 
         // Spawn worker threads
-        eprintln!(
-            "FLIR LSP: Spawning {} worker threads",
-            self.worker_threads.get()
-        );
+        tracing::debug!("Spawning {} worker threads", self.worker_threads.get());
         let _worker_handles: Vec<_> = (0..self.worker_threads.get())
             .map(|i| {
                 let task_receiver = task_receiver.clone();
@@ -153,13 +134,8 @@ impl Server {
             .collect();
 
         // Run main loop
-        eprintln!("FLIR LSP: About to start main loop");
-        let result = self.main_loop(session, task_sender, event_receiver);
-        eprintln!(
-            "FLIR LSP: Main loop finished with result: {:?}",
-            result.is_ok()
-        );
-        result
+        tracing::debug!("Starting main event loop");
+        self.main_loop(session, task_sender, event_receiver)
     }
 
     /// Main event processing loop
@@ -177,14 +153,11 @@ impl Server {
                 recv(self.connection.receiver) -> msg => {
                     match msg {
                         Ok(msg) => {
-                            tracing::debug!("Received LSP message: {:?}", msg);
                             if let Err(e) = self.handle_message(msg, &mut session, &task_sender) {
-                                eprintln!("FLIR LSP: Error handling message: {e}");
                                 tracing::error!("Error handling message: {}", e);
                             }
                         }
                         Err(e) => {
-                            eprintln!("FLIR LSP: Error receiving message: {e}");
                             tracing::error!("Error receiving message: {}", e);
                             break;
                         }
@@ -276,6 +249,25 @@ impl Server {
                 }
                 Ok(())
             }
+            types::request::CodeActionRequest::METHOD => {
+                let params: types::CodeActionParams = serde_json::from_value(request.params)?;
+                let uri = params.text_document.uri.clone();
+
+                if let Some(snapshot) = session.take_snapshot(uri) {
+                    task_sender.send(Task::HandleCodeActionRequest {
+                        snapshot,
+                        request_id: request.id,
+                        params,
+                        client,
+                    })?;
+                } else {
+                    client.send_error_response(
+                        request.id,
+                        anyhow!("Document not found").to_lsp_error(),
+                    )?;
+                }
+                Ok(())
+            }
             _ => {
                 tracing::debug!(
                     "Unhandled request method: {} (not supported in diagnostics-only mode)",
@@ -311,8 +303,7 @@ impl Server {
                 let params: types::DidOpenTextDocumentParams =
                     serde_json::from_value(notification.params)?;
 
-                eprintln!("FLIR LSP: Opening document: {}", params.text_document.uri);
-                tracing::info!("Opening document: {}", params.text_document.uri);
+                tracing::debug!("Document opened: {}", params.text_document.uri);
 
                 let document =
                     TextDocument::new(params.text_document.text, params.text_document.version)
@@ -321,32 +312,15 @@ impl Server {
                 session.open_document(params.text_document.uri.clone(), document);
 
                 // Trigger linting for push diagnostics (real-time as you type)
-                let supports_pull = session.supports_pull_diagnostics();
-                eprintln!(
-                    "FLIR LSP: Document opened, supports pull diagnostics: {}",
-                    supports_pull
-                );
+                let supports_pull_diagnostics = session.supports_pull_diagnostics();
 
-                if !supports_pull {
-                    eprintln!("FLIR LSP: Using push diagnostics, triggering initial lint");
-                    if let Some(snapshot) = session.take_snapshot(params.text_document.uri.clone())
-                    {
-                        eprintln!("FLIR LSP: Got document snapshot for initial lint, sending task");
+                if !supports_pull_diagnostics {
+                    if let Some(snapshot) = session.take_snapshot(params.text_document.uri) {
                         task_sender.send(Task::LintDocument {
                             snapshot,
                             client: session.client().clone(),
                         })?;
-                        eprintln!("FLIR LSP: Initial lint task sent successfully");
-                    } else {
-                        eprintln!(
-                            "FLIR LSP: WARNING - Could not get document snapshot for initial lint: {}",
-                            params.text_document.uri
-                        );
                     }
-                } else {
-                    eprintln!(
-                        "FLIR LSP: Using pull diagnostics, not triggering automatic initial lint"
-                    );
                 }
                 Ok(())
             }
@@ -354,7 +328,6 @@ impl Server {
                 let params: types::DidChangeTextDocumentParams =
                     serde_json::from_value(notification.params)?;
 
-                eprintln!("FLIR LSP: Document changed: {}", params.text_document.uri);
                 tracing::debug!("Document changed: {}", params.text_document.uri);
 
                 session.update_document(
@@ -363,13 +336,7 @@ impl Server {
                     params.text_document.version,
                 )?;
 
-                let supports_pull = session.supports_pull_diagnostics();
-                eprintln!("FLIR LSP: Supports pull diagnostics: {}", supports_pull);
-
-                // Don't lint on every keystroke - only on save for better performance
-                eprintln!(
-                    "FLIR LSP: Document changed, but not triggering lint (will lint on save)"
-                );
+                // Don't trigger linting on every change, only on save
                 Ok(())
             }
             types::notification::DidCloseTextDocument::METHOD => {
@@ -388,36 +355,17 @@ impl Server {
                 let params: types::DidSaveTextDocumentParams =
                     serde_json::from_value(notification.params)?;
 
-                eprintln!("FLIR LSP: Document saved: {}", params.text_document.uri);
                 tracing::debug!("Document saved: {}", params.text_document.uri);
 
-                let supports_pull = session.supports_pull_diagnostics();
-                eprintln!(
-                    "FLIR LSP: On save, supports pull diagnostics: {}",
-                    supports_pull
-                );
+                let supports_pull_diagnostics = session.supports_pull_diagnostics();
 
-                // Re-lint after document save for push diagnostics
-                if !supports_pull {
-                    eprintln!("FLIR LSP: Using push diagnostics, triggering lint on save");
-                    if let Some(snapshot) = session.take_snapshot(params.text_document.uri.clone())
-                    {
-                        eprintln!("FLIR LSP: Got document snapshot on save, sending lint task");
+                if !supports_pull_diagnostics {
+                    if let Some(snapshot) = session.take_snapshot(params.text_document.uri) {
                         task_sender.send(Task::LintDocument {
                             snapshot,
                             client: session.client().clone(),
                         })?;
-                        eprintln!("FLIR LSP: Save lint task sent successfully");
-                    } else {
-                        eprintln!(
-                            "FLIR LSP: WARNING - Could not get document snapshot on save for {}",
-                            params.text_document.uri
-                        );
                     }
-                } else {
-                    eprintln!(
-                        "FLIR LSP: Using pull diagnostics, not triggering automatic lint on save"
-                    );
                 }
                 Ok(())
             }
@@ -448,6 +396,9 @@ impl Server {
                         tracing::error!("Error in diagnostic request task: {}", e);
                     }
                 }
+                Task::HandleCodeActionRequest { snapshot, request_id, params, client } => {
+                    Self::handle_code_action_request(snapshot, request_id, params, client);
+                }
             }
         }
     }
@@ -455,18 +406,9 @@ impl Server {
     /// Handle linting a document and publishing diagnostics
     fn handle_lint_task(snapshot: DocumentSnapshot, client: Client) -> LspResult<()> {
         let start = Instant::now();
-
-        eprintln!("FLIR LSP: Starting lint task for {}", snapshot.uri());
-
         let diagnostics = lint::lint_document(&snapshot)?;
-
         let elapsed = start.elapsed();
-        eprintln!(
-            "FLIR LSP: Linted {} in {:?}: {} diagnostics found",
-            snapshot.uri(),
-            elapsed,
-            diagnostics.len()
-        );
+
         tracing::debug!(
             "Linted {} in {:?}: {} diagnostics found",
             snapshot.uri(),
@@ -474,21 +416,11 @@ impl Server {
             diagnostics.len()
         );
 
-        eprintln!(
-            "FLIR LSP: Publishing {} diagnostics for {}",
-            diagnostics.len(),
-            snapshot.uri()
-        );
         client.publish_diagnostics(
             snapshot.uri().clone(),
             diagnostics,
             Some(snapshot.version()),
         )?;
-        eprintln!(
-            "FLIR LSP: Diagnostics published successfully for {}",
-            snapshot.uri()
-        );
-
         Ok(())
     }
 
@@ -520,6 +452,108 @@ impl Server {
         event_sender.send(Event::SendResponse(response))?;
         Ok(())
     }
+
+    /// Handle a code action request by providing quick fixes for diagnostics
+    fn handle_code_action_request(
+        snapshot: DocumentSnapshot,
+        request_id: RequestId,
+        params: types::CodeActionParams,
+        client: Client,
+    ) {
+        match Self::generate_code_actions(&snapshot, &params) {
+            Ok(actions) => {
+                if let Err(e) = client.send_response(request_id, actions) {
+                    tracing::error!("Failed to send code actions: {}", e);
+                }
+            }
+            Err(e) => {
+                tracing::error!("Failed to generate code actions: {}", e);
+                if let Err(send_err) = client.send_error_response(request_id, e.to_lsp_error()) {
+                    tracing::error!("Failed to send error response: {}", send_err);
+                }
+            }
+        }
+    }
+
+    /// Generate code actions (quick fixes) for diagnostics in the given range
+    fn generate_code_actions(
+        snapshot: &DocumentSnapshot,
+        params: &types::CodeActionParams,
+    ) -> LspResult<Vec<types::CodeActionOrCommand>> {
+        use crate::lint::lint_document;
+
+        // Get diagnostics with fix information
+        let diagnostics = lint_document(snapshot)?;
+
+        let mut actions = Vec::new();
+
+        // Filter diagnostics that intersect with the requested range
+        for diagnostic in diagnostics {
+            if ranges_overlap(&diagnostic.range, &params.range) {
+                if let Some(action) = Self::diagnostic_to_code_action(&diagnostic, snapshot) {
+                    actions.push(types::CodeActionOrCommand::CodeAction(action));
+                }
+            }
+        }
+
+        Ok(actions)
+    }
+
+    /// Convert a diagnostic with fix information to a code action
+    fn diagnostic_to_code_action(
+        diagnostic: &types::Diagnostic,
+        snapshot: &DocumentSnapshot,
+    ) -> Option<types::CodeAction> {
+        // Extract fix data from diagnostic (we'll store it in the data field)
+        let fix_data = diagnostic.data.as_ref()?;
+        let fix: crate::lint::DiagnosticFix = serde_json::from_value(fix_data.clone()).ok()?;
+
+        if fix.content.is_empty() && fix.start == fix.end {
+            return None; // No fix available
+        }
+
+        // Convert byte offsets to LSP positions
+        let content = snapshot.content();
+        let encoding = snapshot.position_encoding();
+
+        let start_pos =
+            crate::lint::byte_offset_to_lsp_position(fix.start, content, encoding).ok()?;
+        let end_pos = crate::lint::byte_offset_to_lsp_position(fix.end, content, encoding).ok()?;
+
+        let edit_range = types::Range::new(start_pos, end_pos);
+
+        // Create the text edit for this single file
+        let text_edit = types::TextEdit { range: edit_range, new_text: fix.content.clone() };
+
+        // Create workspace edit with just this file's changes
+        let mut changes = std::collections::HashMap::new();
+        changes.insert(snapshot.uri().clone(), vec![text_edit]);
+
+        let workspace_edit = types::WorkspaceEdit { changes: Some(changes), ..Default::default() };
+
+        // Determine the fix kind based on safety
+        let kind = if fix.is_safe {
+            types::CodeActionKind::QUICKFIX
+        } else {
+            types::CodeActionKind::from("quickfix.unsafe".to_string())
+        };
+
+        Some(types::CodeAction {
+            title: format!("Fix: {}", diagnostic.message),
+            kind: Some(kind),
+            diagnostics: Some(vec![diagnostic.clone()]),
+            edit: Some(workspace_edit),
+            command: None,
+            is_preferred: Some(fix.is_safe),
+            disabled: None,
+            data: None,
+        })
+    }
+}
+
+/// Check if two ranges overlap
+fn ranges_overlap(a: &types::Range, b: &types::Range) -> bool {
+    a.start <= b.end && b.start <= a.end
 }
 
 #[cfg(test)]

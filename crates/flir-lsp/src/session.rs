@@ -5,8 +5,10 @@
 
 use anyhow::{Result, anyhow};
 use lsp_types::{
-    ClientCapabilities, InitializeParams, InitializeResult, SaveOptions, ServerCapabilities,
-    ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Url,
+    ClientCapabilities, CodeActionKind, CodeActionOptions, CodeActionProviderCapability,
+    InitializeParams, InitializeResult, SaveOptions, ServerCapabilities, ServerInfo,
+    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Url,
+    WorkDoneProgressOptions,
 };
 use rustc_hash::FxHashMap;
 
@@ -109,10 +111,14 @@ impl Session {
                 },
             )),
             diagnostic_provider: None, // Use push diagnostics only
-            // Only diagnostic support - no hover, completion, or code actions
+            // Add code action support for quick fixes
             hover_provider: None,
             completion_provider: None,
-            code_action_provider: None,
+            code_action_provider: Some(CodeActionProviderCapability::Options(CodeActionOptions {
+                code_action_kinds: Some(vec![CodeActionKind::QUICKFIX]),
+                resolve_provider: Some(false),
+                work_done_progress_options: WorkDoneProgressOptions::default(),
+            })),
             workspace: None,
             ..Default::default()
         }
@@ -146,14 +152,8 @@ impl Session {
             .get_mut(&key)
             .ok_or_else(|| anyhow!("Document not found: {}", key.uri()))?;
 
-        eprintln!("FLIR LSP: Found document, applying changes");
         document.apply_changes(changes, version, self.position_encoding)?;
 
-        eprintln!(
-            "FLIR LSP: Document updated successfully: {} to version {}",
-            key.uri(),
-            version
-        );
         tracing::debug!("Updated document: {} to version {}", key.uri(), version);
         Ok(())
     }
