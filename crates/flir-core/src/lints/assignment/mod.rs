@@ -12,8 +12,12 @@ mod tests {
         expect_lint("blah=1", expected_message, "assignment", None);
         expect_lint("blah = 1", expected_message, "assignment", None);
         expect_lint("blah = fun(1)", expected_message, "assignment", None);
+        expect_lint("names(blah) = 'a'", expected_message, "assignment", None);
+        expect_lint("x[[1]] = 2", expected_message, "assignment", None);
         expect_lint("fun((blah = fun(1)))", expected_message, "assignment", None);
         expect_lint("1 -> fun", expected_message, "assignment", None);
+        expect_lint("1 -> names(fun)", expected_message, "assignment", None);
+        expect_lint("2 -> x[[1]]", expected_message, "assignment", None);
 
         assert_snapshot!(
             "fix_output",
@@ -22,8 +26,12 @@ mod tests {
                     "blah=1",
                     "blah = 1",
                     "blah = fun(1)",
+                    "names(blah) = 'a'",
+                    "x[[1]] = 2",
                     "fun((blah = fun(1)))",
                     "1 -> fun",
+                    "'a' -> names(fun)",
+                    "2 -> x[[1]]",
                 ],
                 "assignment",
                 None
