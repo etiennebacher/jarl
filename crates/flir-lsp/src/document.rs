@@ -133,35 +133,32 @@ impl TextDocument {
             new_version
         );
 
-        // Separate incremental and full changes
-        let mut incremental_changes = Vec::new();
-        let mut full_changes = Vec::new();
-
+        // Convert positions to offsets first, then sort by offset in reverse order
+        let mut changes_with_offsets = Vec::new();
         for change in changes {
-            if change.range.is_some() {
-                incremental_changes.push(change);
-            } else {
-                full_changes.push(change);
+            match change.range {
+                Some(range) => {
+                    // Incremental change
+                    let start_offset = self.position_to_offset(range.start, encoding)?;
+                    let end_offset = self.position_to_offset(range.end, encoding)?;
+                    changes_with_offsets.push((start_offset, end_offset, change));
+                }
+                None => {
+                    // Full document replacement - not expected for basic linting
+                    tracing::warn!(
+                        "Received full document replacement, but only incremental changes are supported for linting"
+                    );
+                    return Err(anyhow!(
+                        "Full document replacement not supported for linting mode"
+                    ));
+                }
             }
         }
 
-        // Apply full changes first (they replace entire document)
-        for change in full_changes {
-            self.content = change.text.clone();
-        }
-
-        // Convert positions to offsets first, then sort by offset in reverse order
-        let mut changes_with_offsets = Vec::new();
-        for change in incremental_changes {
-            let range = change.range.unwrap();
-            let start_offset = self.position_to_offset(range.start, encoding)?;
-            let end_offset = self.position_to_offset(range.end, encoding)?;
-            changes_with_offsets.push((start_offset, end_offset, change));
-        }
-
-        // Sort by start offset in reverse order (end to beginning)
+        // Sort by start offset in reverse order (end to beginning) to avoid offset invalidation
         changes_with_offsets.sort_by(|a, b| b.0.cmp(&a.0));
 
+        // Apply incremental changes in reverse order
         for (i, (start_offset, end_offset, change)) in changes_with_offsets.iter().enumerate() {
             tracing::trace!(
                 "Processing incremental change {}: {}..{} -> '{}'",
