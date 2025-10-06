@@ -136,23 +136,15 @@ impl TextDocument {
         // Convert positions to offsets first, then sort by offset in reverse order
         let mut changes_with_offsets = Vec::new();
         for change in changes {
-            match change.range {
-                Some(range) => {
-                    // Incremental change
-                    let start_offset = self.position_to_offset(range.start, encoding)?;
-                    let end_offset = self.position_to_offset(range.end, encoding)?;
-                    changes_with_offsets.push((start_offset, end_offset, change));
-                }
-                None => {
-                    // Full document replacement - not expected for basic linting
-                    tracing::warn!(
-                        "Received full document replacement, but only incremental changes are supported for linting"
-                    );
-                    return Err(anyhow!(
-                        "Full document replacement not supported for linting mode"
-                    ));
-                }
-            }
+            let range = change.range.ok_or_else(|| {
+                anyhow!(
+                    "Full document replacement not supported - only incremental changes allowed"
+                )
+            })?;
+
+            let start_offset = self.position_to_offset(range.start, encoding)?;
+            let end_offset = self.position_to_offset(range.end, encoding)?;
+            changes_with_offsets.push((start_offset, end_offset, change));
         }
 
         // Sort by start offset in reverse order (end to beginning) to avoid offset invalidation
