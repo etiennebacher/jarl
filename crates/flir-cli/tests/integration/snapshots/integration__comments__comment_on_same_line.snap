@@ -1,0 +1,5 @@
+---
+source: crates/flir-cli/tests/integration/comments.rs
+expression: "fs::read_to_string(directory.join(test_path))?"
+---
+anyNA(x) # a comment
