@@ -60,9 +60,6 @@ pub fn assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>>
 
     let replacement = match operator.kind() {
         RSyntaxKind::EQUAL => {
-            if lhs.kind() != RSyntaxKind::R_IDENTIFIER {
-                return Ok(None);
-            }
             range_to_report = TextRange::new(
                 lhs.text_trimmed_range().start(),
                 operator.text_trimmed_range().end(),
@@ -70,9 +67,6 @@ pub fn assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>>
             format!("{} <- {}", lhs.text_trimmed(), rhs.text_trimmed())
         }
         RSyntaxKind::ASSIGN_RIGHT => {
-            if rhs.kind() != RSyntaxKind::R_IDENTIFIER {
-                return Ok(None);
-            }
             range_to_report = TextRange::new(
                 operator.text_trimmed_range().start(),
                 rhs.text_trimmed_range().end(),

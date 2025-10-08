@@ -1,6 +1,6 @@
 ---
 source: crates/flir-core/src/lints/assignment/mod.rs
-expression: "get_fixed_text(vec![\"blah=1\", \"blah = 1\", \"blah = fun(1)\",\n\"fun((blah = fun(1)))\", \"1 -> fun\",], \"assignment\", None)"
+expression: "get_fixed_text(vec![\"blah=1\", \"blah = 1\", \"blah = fun(1)\",\n\"names(blah) = 'a'\", \"x[[1]] = 2\", \"fun((blah = fun(1)))\", \"1 -> fun\",\n\"'a' -> names(fun)\", \"2 -> x[[1]]\",], \"assignment\", None)"
 ---
   OLD:
   ====
@@ -25,6 +25,20 @@ blah <- fun(1)
 
   OLD:
   ====
+names(blah) = 'a'
+  NEW:
+  ====
+names(blah) <- 'a'
+
+  OLD:
+  ====
+x[[1]] = 2
+  NEW:
+  ====
+x[[1]] <- 2
+
+  OLD:
+  ====
 fun((blah = fun(1)))
   NEW:
   ====
@@ -36,3 +50,17 @@ fun((blah <- fun(1)))
   NEW:
   ====
 fun <- 1
+
+  OLD:
+  ====
+'a' -> names(fun)
+  NEW:
+  ====
+names(fun) <- 'a'
+
+  OLD:
+  ====
+2 -> x[[1]]
+  NEW:
+  ====
+x[[1]] <- 2
