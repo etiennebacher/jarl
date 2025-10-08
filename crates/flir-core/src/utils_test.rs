@@ -248,8 +248,7 @@ pub fn expect_diagnostic_highlight(text: &str, rule: &str, expected_highlight: &
     let highlighted = get_diagnostic_highlight(text, rule, None);
     assert_eq!(
         highlighted, expected_highlight,
-        "Expected highlight '{}' but got '{}' for rule '{}' on code: {}",
-        expected_highlight, highlighted, rule, text
+        "Expected highlight '{expected_highlight}' but got '{highlighted}' for rule '{rule}' on code: {text}"
     );
 }
 
@@ -260,13 +259,12 @@ pub fn get_diagnostic_highlight(text: &str, rule: &str, min_r_version: Option<&s
     let diagnostics = check_code(text, rule, min_r_version);
 
     if diagnostics.is_empty() {
-        panic!("No diagnostics found for rule '{}' on code: {}", rule, text);
+        panic!("No diagnostics found for rule '{rule}' on code: {text}");
     }
 
     if diagnostics.len() > 1 {
         panic!(
-            "Multiple diagnostics found for rule '{}' on code: {}. Expected exactly one.",
-            rule, text
+            "Multiple diagnostics found for rule '{rule}' on code: {text}. Expected exactly one."
         );
     }
 
