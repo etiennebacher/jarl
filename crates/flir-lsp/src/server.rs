@@ -40,20 +40,20 @@ pub enum Event {
 pub enum Task {
     /// Lint a document and publish diagnostics
     LintDocument {
-        snapshot: DocumentSnapshot,
+        snapshot: Box<DocumentSnapshot>,
         client: Client,
     },
     /// Handle a diagnostic request
     HandleDiagnosticRequest {
-        snapshot: DocumentSnapshot,
+        snapshot: Box<DocumentSnapshot>,
         request_id: RequestId,
         client: Client,
     },
     /// Handle a code action request
     HandleCodeActionRequest {
-        snapshot: DocumentSnapshot,
+        snapshot: Box<DocumentSnapshot>,
         request_id: RequestId,
-        params: types::CodeActionParams,
+        params: Box<types::CodeActionParams>,
         client: Client,
     },
 }
@@ -235,7 +235,7 @@ impl Server {
 
                 if let Some(snapshot) = session.take_snapshot(params.text_document.uri) {
                     task_sender.send(Task::HandleDiagnosticRequest {
-                        snapshot,
+                        snapshot: Box::new(snapshot),
                         request_id: request.id,
                         client,
                     })?;
@@ -253,9 +253,9 @@ impl Server {
 
                 if let Some(snapshot) = session.take_snapshot(uri) {
                     task_sender.send(Task::HandleCodeActionRequest {
-                        snapshot,
+                        snapshot: Box::new(snapshot),
                         request_id: request.id,
-                        params,
+                        params: Box::new(params),
                         client,
                     })?;
                 } else {
@@ -315,7 +315,7 @@ impl Server {
                 if !supports_pull_diagnostics {
                     if let Some(snapshot) = session.take_snapshot(params.text_document.uri) {
                         task_sender.send(Task::LintDocument {
-                            snapshot,
+                            snapshot: Box::new(snapshot),
                             client: session.client().clone(),
                         })?;
                     }
@@ -360,7 +360,7 @@ impl Server {
                 if !supports_pull_diagnostics {
                     if let Some(snapshot) = session.take_snapshot(params.text_document.uri) {
                         task_sender.send(Task::LintDocument {
-                            snapshot,
+                            snapshot: Box::new(snapshot),
                             client: session.client().clone(),
                         })?;
                     }
@@ -383,19 +383,22 @@ impl Server {
         while let Ok(task) = task_receiver.recv() {
             match task {
                 Task::LintDocument { snapshot, client } => {
-                    if let Err(e) = Self::handle_lint_task(snapshot, client) {
+                    if let Err(e) = Self::handle_lint_task(*snapshot, client) {
                         tracing::error!("Error in lint task: {}", e);
                     }
                 }
                 Task::HandleDiagnosticRequest { snapshot, request_id, client } => {
-                    if let Err(e) =
-                        Self::handle_diagnostic_request(snapshot, request_id, client, &event_sender)
-                    {
+                    if let Err(e) = Self::handle_diagnostic_request(
+                        *snapshot,
+                        request_id,
+                        client,
+                        &event_sender,
+                    ) {
                         tracing::error!("Error in diagnostic request task: {}", e);
                     }
                 }
                 Task::HandleCodeActionRequest { snapshot, request_id, params, client } => {
-                    Self::handle_code_action_request(snapshot, request_id, params, client);
+                    Self::handle_code_action_request(*snapshot, request_id, *params, client);
                 }
             }
         }
