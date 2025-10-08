@@ -12,11 +12,11 @@ pub use document::{DocumentKey, PositionEncoding, TextDocument};
 pub use server::Server;
 pub use session::{DocumentSnapshot, Session};
 
-mod client;
-mod document;
-mod lint;
-mod server;
-mod session;
+pub mod client;
+pub mod document;
+pub mod lint;
+pub mod server;
+pub mod session;
 
 #[allow(dead_code)]
 pub(crate) const SERVER_NAME: &str = "flir";
