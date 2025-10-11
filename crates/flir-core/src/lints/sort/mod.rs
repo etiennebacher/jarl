@@ -79,6 +79,7 @@ mod tests {
             "no_fix_with_comments",
             get_fixed_text(
                 vec![
+                    "# leading comment\nx[order(x)]",
                     "x[\n  # comment\n  order(x)\n]",
                     "x[order(\n    # comment\n    x\n  )]",
                     "x[order(x)] # trailing comment",

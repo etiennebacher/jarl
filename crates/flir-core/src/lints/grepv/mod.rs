@@ -60,6 +60,7 @@ mod tests {
             "no_fix_with_comments",
             get_fixed_text(
                 vec![
+                    "# leading comment\ngrep('i', x, value = TRUE)",
                     "grep(\n  # comment\n  'i', x, value = TRUE\n)",
                     "grep('i',\n    # comment\n    x, value = TRUE)",
                     "grep('i', x, value = TRUE) # trailing comment",

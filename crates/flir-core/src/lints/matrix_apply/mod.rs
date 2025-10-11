@@ -95,6 +95,7 @@ mod tests {
             "no_fix_with_comments",
             get_fixed_text(
                 vec![
+                    "# leading comment\napply(x, 1, sum)",
                     "apply(\n  # comment\n  x, 1, sum\n)",
                     "apply(x,\n    # comment\n    1, sum)",
                     "apply(x, 1, sum) # trailing comment",

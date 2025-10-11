@@ -1,7 +1,16 @@
 ---
 source: crates/flir-core/src/lints/any_is_na/mod.rs
-expression: "get_fixed_text(vec![\"any(\\n  # comment\\n  is.na(x)\\n)\",\n\"any(is.na(\\n    # comment\\n    x\\n  ))\",\n\"any(is.na(x)) # trailing comment\",], \"any_is_na\", None)"
+expression: "get_fixed_text(vec![\"# leading comment\\nany(is.na(x))\",\n\"any(\\n  # comment\\n  is.na(x)\\n)\", \"any(is.na(\\n    # comment\\n    x\\n  ))\",\n\"any(is.na(x)) # trailing comment\",], \"any_is_na\", None)"
 ---
+  OLD:
+  ====
+# leading comment
+any(is.na(x))
+  NEW:
+  ====
+# leading comment
+anyNA(x)
+
   OLD:
   ====
 any(

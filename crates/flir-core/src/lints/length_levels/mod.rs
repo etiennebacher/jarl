@@ -45,6 +45,7 @@ mod tests {
             "no_fix_with_comments",
             get_fixed_text(
                 vec![
+                    "# leading comment\nlength(levels(x))",
                     "length(\n  # comment\n  levels(x)\n)",
                     "length(levels(\n    # comment\n    x\n  ))",
                     "length(levels(x)) # trailing comment",

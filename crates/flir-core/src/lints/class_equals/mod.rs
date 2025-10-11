@@ -117,6 +117,7 @@ mod tests {
             "no_fix_with_comments",
             get_unsafe_fixed_text(
                 vec![
+                    "# leading comment\nclass(x) == 'lm'",
                     "class(\n  # comment\n  x\n) == 'lm'",
                     "# comment\nclass(x) == 'character'",
                     "class(x) == 'lm' # trailing comment",

@@ -1,7 +1,16 @@
 ---
 source: crates/flir-core/src/lints/class_equals/mod.rs
-expression: "get_unsafe_fixed_text(vec![\"class(\\n  # comment\\n  x\\n) == 'lm'\",\n\"# comment\\nclass(x) == 'character'\", \"class(x) == 'lm' # trailing comment\",],\n\"class_equals\")"
+expression: "get_unsafe_fixed_text(vec![\"# leading comment\\nclass(x) == 'lm'\",\n\"class(\\n  # comment\\n  x\\n) == 'lm'\", \"# comment\\nclass(x) == 'character'\",\n\"class(x) == 'lm' # trailing comment\",], \"class_equals\")"
 ---
+  OLD:
+  ====
+# leading comment
+class(x) == 'lm'
+  NEW:
+  ====
+# leading comment
+inherits(x, 'lm')
+
   OLD:
   ====
 class(

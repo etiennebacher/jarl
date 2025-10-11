@@ -49,6 +49,7 @@ mod tests {
             "no_fix_with_comments",
             get_fixed_text(
                 vec![
+                    "# leading comment\nany(is.na(x))",
                     "any(\n  # comment\n  is.na(x)\n)",
                     "any(is.na(\n    # comment\n    x\n  ))",
                     "any(is.na(x)) # trailing comment",

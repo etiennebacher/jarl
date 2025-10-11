@@ -112,6 +112,7 @@ mod tests {
             "no_fix_with_comments",
             get_fixed_text(
                 vec![
+                    "# leading comment\nis.numeric(x) || is.integer(x)",
                     "is.numeric(\n  # comment\n  x\n) || is.integer(x)",
                     "is.integer(x) ||\n    # comment\n    is.numeric(x)",
                     "is.numeric(x) || is.integer(x) # trailing comment",

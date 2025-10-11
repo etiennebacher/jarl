@@ -56,6 +56,7 @@ mod tests {
             "no_fix_with_comments",
             get_fixed_text(
                 vec![
+                    "# leading comment\nsapply(x, length)",
                     "sapply(\n  # comment\n  x, length\n)",
                     "sapply(x,\n    # comment\n    length)",
                     "sapply(x, length) # trailing comment",

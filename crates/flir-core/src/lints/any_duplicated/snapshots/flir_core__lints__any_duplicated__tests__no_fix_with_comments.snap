@@ -1,7 +1,16 @@
 ---
 source: crates/flir-core/src/lints/any_duplicated/mod.rs
-expression: "get_fixed_text(vec![\"any(\\n  # comment\\n  duplicated(x)\\n)\",\n\"any(duplicated(\\n    # comment\\n    x\\n  ))\",\n\"any(duplicated(x)) # trailing comment\",], \"any_duplicated\", None)"
+expression: "get_fixed_text(vec![\"# leading comment\\nany(duplicated(x))\",\n\"any(\\n  # comment\\n  duplicated(x)\\n)\",\n\"any(duplicated(\\n    # comment\\n    x\\n  ))\",\n\"any(duplicated(x)) # trailing comment\",], \"any_duplicated\", None)"
 ---
+  OLD:
+  ====
+# leading comment
+any(duplicated(x))
+  NEW:
+  ====
+# leading comment
+anyDuplicated(x) > 0
+
   OLD:
   ====
 any(

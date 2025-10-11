@@ -49,6 +49,7 @@ mod tests {
             "no_fix_with_comments",
             get_fixed_text(
                 vec![
+                    "# leading comment\nwhich(grepl('^a', x))",
                     "which(\n  # comment\n  grepl('^a', x)\n)",
                     "which(grepl(\n    # comment\n    '^a', x\n  ))",
                     "which(grepl('^a', x)) # trailing comment",

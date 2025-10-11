@@ -63,6 +63,7 @@ mod tests {
             "no_fix_with_comments",
             get_fixed_text(
                 vec![
+                    "# leading comment\nsample(1:10, 2)",
                     "sample(\n  # comment\n  1:10, 2\n)",
                     "sample(1:n,\n    # comment\n    2)",
                     "sample(1:10, 2) # trailing comment",

@@ -71,6 +71,7 @@ mod tests {
             "no_fix_with_comments",
             get_fixed_text(
                 vec![
+                    "# leading comment\nany(duplicated(x))",
                     "any(\n  # comment\n  duplicated(x)\n)",
                     "any(duplicated(\n    # comment\n    x\n  ))",
                     "any(duplicated(x)) # trailing comment",

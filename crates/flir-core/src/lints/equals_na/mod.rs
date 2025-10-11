@@ -64,6 +64,7 @@ mod tests {
             "no_fix_with_comments",
             get_fixed_text(
                 vec![
+                    "# leading comment\nx == NA",
                     "x # comment\n== NA",
                     "# comment\nx == NA",
                     "x == NA # trailing comment",

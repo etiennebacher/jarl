@@ -49,6 +49,7 @@ mod tests {
             "no_fix_with_comments",
             get_fixed_text(
                 vec![
+                    "# leading comment\nlength(x != 0)",
                     "length(\n  # comment\n  x != 0\n)",
                     "length(x\n    # comment\n    >= 0)",
                     "length(x > 0) # trailing comment",

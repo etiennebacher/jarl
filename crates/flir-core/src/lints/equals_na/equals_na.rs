@@ -43,9 +43,9 @@ impl Violation for EqualsNa {
 pub fn equals_na(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
-    let left = left?;
+    let left = left?.to_trimmed_string();
     let operator = operator?;
-    let right = right?;
+    let right = right?.to_trimmed_string();
 
     if operator.kind() != RSyntaxKind::EQUAL2 && operator.kind() != RSyntaxKind::NOT_EQUAL {
         return Ok(None);
