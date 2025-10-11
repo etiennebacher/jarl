@@ -1,0 +1,34 @@
+---
+source: crates/flir-core/src/lints/matrix_apply/mod.rs
+expression: "get_fixed_text(vec![\"apply(\\n  # comment\\n  x, 1, sum\\n)\",\n\"apply(x,\\n    # comment\\n    1, sum)\",\n\"apply(x, 1, sum) # trailing comment\",], \"matrix_apply\", None)"
+---
+  OLD:
+  ====
+apply(
+  # comment
+  x, 1, sum
+)
+  NEW:
+  ====
+apply(
+  # comment
+  x, 1, sum
+)
+
+  OLD:
+  ====
+apply(x,
+    # comment
+    1, sum)
+  NEW:
+  ====
+apply(x,
+    # comment
+    1, sum)
+
+  OLD:
+  ====
+apply(x, 1, sum) # trailing comment
+  NEW:
+  ====
+rowSums(x) # trailing comment

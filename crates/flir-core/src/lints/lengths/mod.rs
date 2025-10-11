@@ -47,4 +47,22 @@ mod tests {
         expect_no_lint("lapply(x, length)", "lengths", None);
         expect_no_lint("map(x, length)", "lengths", None);
     }
+
+    #[test]
+    fn test_lengths_with_comments_no_fix() {
+        use insta::assert_snapshot;
+        // Should detect lint but skip fix when comments are present to avoid destroying them
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_fixed_text(
+                vec![
+                    "sapply(\n  # comment\n  x, length\n)",
+                    "sapply(x,\n    # comment\n    length)",
+                    "sapply(x, length) # trailing comment",
+                ],
+                "lengths",
+                None
+            )
+        );
+    }
 }

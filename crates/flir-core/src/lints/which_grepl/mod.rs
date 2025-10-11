@@ -40,4 +40,22 @@ mod tests {
         expect_no_lint("which(grepl(p1, x) | grepl(p2, x))", "which_grepl", None);
         expect_no_lint("which(grep(p1, x))", "which_grepl", None);
     }
+
+    #[test]
+    fn test_which_grepl_with_comments_no_fix() {
+        use insta::assert_snapshot;
+        // Should detect lint but skip fix when comments are present to avoid destroying them
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_fixed_text(
+                vec![
+                    "which(\n  # comment\n  grepl('^a', x)\n)",
+                    "which(grepl(\n    # comment\n    '^a', x\n  ))",
+                    "which(grepl('^a', x)) # trailing comment",
+                ],
+                "which_grepl",
+                None
+            )
+        );
+    }
 }

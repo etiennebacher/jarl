@@ -36,4 +36,22 @@ mod tests {
     fn test_no_lint_length_levels() {
         expect_no_lint("length(c(levels(x), 'a'))", "length_levels", None);
     }
+
+    #[test]
+    fn test_length_levels_with_comments_no_fix() {
+        use insta::assert_snapshot;
+        // Should detect lint but skip fix when comments are present to avoid destroying them
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_fixed_text(
+                vec![
+                    "length(\n  # comment\n  levels(x)\n)",
+                    "length(levels(\n    # comment\n    x\n  ))",
+                    "length(levels(x)) # trailing comment",
+                ],
+                "length_levels",
+                None
+            )
+        );
+    }
 }

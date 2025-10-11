@@ -55,4 +55,22 @@ mod tests {
         expect_no_lint("'x == NA'", "equals_na", None);
         expect_no_lint("x == f(NA)", "equals_na", None);
     }
+
+    #[test]
+    fn test_equals_na_with_comments_no_fix() {
+        use insta::assert_snapshot;
+        // Should detect lint but skip fix when comments are present to avoid destroying them
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_fixed_text(
+                vec![
+                    "x # comment\n== NA",
+                    "# comment\nx == NA",
+                    "x == NA # trailing comment",
+                ],
+                "equals_na",
+                None
+            )
+        );
+    }
 }

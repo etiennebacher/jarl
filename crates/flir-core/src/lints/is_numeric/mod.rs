@@ -103,4 +103,22 @@ mod tests {
             )
         )
     }
+
+    #[test]
+    fn test_is_numeric_with_comments_no_fix() {
+        use insta::assert_snapshot;
+        // Should detect lint but skip fix when comments are present to avoid destroying them
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_fixed_text(
+                vec![
+                    "is.numeric(\n  # comment\n  x\n) || is.integer(x)",
+                    "is.integer(x) ||\n    # comment\n    is.numeric(x)",
+                    "is.numeric(x) || is.integer(x) # trailing comment",
+                ],
+                "is_numeric",
+                None
+            )
+        );
+    }
 }

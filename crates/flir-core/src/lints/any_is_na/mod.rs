@@ -40,4 +40,22 @@ mod tests {
         expect_no_lint("any()", "any_is_na", None);
         expect_no_lint("any(na.rm = TRUE)", "any_is_na", None);
     }
+
+    #[test]
+    fn test_any_is_na_with_comments_no_fix() {
+        use insta::assert_snapshot;
+        // Should detect lint but skip fix when comments are present to avoid destroying them
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_fixed_text(
+                vec![
+                    "any(\n  # comment\n  is.na(x)\n)",
+                    "any(is.na(\n    # comment\n    x\n  ))",
+                    "any(is.na(x)) # trailing comment",
+                ],
+                "any_is_na",
+                None
+            )
+        );
+    }
 }

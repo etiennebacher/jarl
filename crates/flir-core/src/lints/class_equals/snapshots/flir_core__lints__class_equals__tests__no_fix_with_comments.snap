@@ -1,0 +1,32 @@
+---
+source: crates/flir-core/src/lints/class_equals/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"class(\\n  # comment\\n  x\\n) == 'lm'\",\n\"# comment\\nclass(x) == 'character'\", \"class(x) == 'lm' # trailing comment\",],\n\"class_equals\")"
+---
+  OLD:
+  ====
+class(
+  # comment
+  x
+) == 'lm'
+  NEW:
+  ====
+class(
+  # comment
+  x
+) == 'lm'
+
+  OLD:
+  ====
+# comment
+class(x) == 'character'
+  NEW:
+  ====
+# comment
+inherits(x, 'character')
+
+  OLD:
+  ====
+class(x) == 'lm' # trailing comment
+  NEW:
+  ====
+inherits(x, 'lm') # trailing comment

@@ -40,4 +40,22 @@ mod tests {
         expect_no_lint("length(x) > 0", "length_test", None);
         expect_no_lint("length(DF[key == val, cols])", "length_test", None);
     }
+
+    #[test]
+    fn test_length_test_with_comments_no_fix() {
+        use insta::assert_snapshot;
+        // Should detect lint but skip fix when comments are present to avoid destroying them
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_fixed_text(
+                vec![
+                    "length(\n  # comment\n  x != 0\n)",
+                    "length(x\n    # comment\n    >= 0)",
+                    "length(x > 0) # trailing comment",
+                ],
+                "length_test",
+                None
+            )
+        );
+    }
 }

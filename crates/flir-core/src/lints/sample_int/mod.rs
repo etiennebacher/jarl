@@ -54,4 +54,22 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn test_sample_int_with_comments_no_fix() {
+        use insta::assert_snapshot;
+        // Should detect lint but skip fix when comments are present to avoid destroying them
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_fixed_text(
+                vec![
+                    "sample(\n  # comment\n  1:10, 2\n)",
+                    "sample(1:n,\n    # comment\n    2)",
+                    "sample(1:10, 2) # trailing comment",
+                ],
+                "sample_int",
+                None
+            )
+        );
+    }
 }

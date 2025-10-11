@@ -86,4 +86,22 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn test_matrix_apply_with_comments_no_fix() {
+        use insta::assert_snapshot;
+        // Should detect lint but skip fix when comments are present to avoid destroying them
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_fixed_text(
+                vec![
+                    "apply(\n  # comment\n  x, 1, sum\n)",
+                    "apply(x,\n    # comment\n    1, sum)",
+                    "apply(x, 1, sum) # trailing comment",
+                ],
+                "matrix_apply",
+                None
+            )
+        );
+    }
 }

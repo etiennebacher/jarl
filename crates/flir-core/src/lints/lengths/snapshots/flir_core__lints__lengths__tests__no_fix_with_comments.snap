@@ -1,0 +1,34 @@
+---
+source: crates/flir-core/src/lints/lengths/mod.rs
+expression: "get_fixed_text(vec![\"sapply(\\n  # comment\\n  x, length\\n)\",\n\"sapply(x,\\n    # comment\\n    length)\",\n\"sapply(x, length) # trailing comment\",], \"lengths\", None)"
+---
+  OLD:
+  ====
+sapply(
+  # comment
+  x, length
+)
+  NEW:
+  ====
+sapply(
+  # comment
+  x, length
+)
+
+  OLD:
+  ====
+sapply(x,
+    # comment
+    length)
+  NEW:
+  ====
+sapply(x,
+    # comment
+    length)
+
+  OLD:
+  ====
+sapply(x, length) # trailing comment
+  NEW:
+  ====
+lengths(x) # trailing comment

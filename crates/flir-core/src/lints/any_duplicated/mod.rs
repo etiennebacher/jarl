@@ -62,4 +62,22 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn test_any_duplicated_with_comments_no_fix() {
+        use insta::assert_snapshot;
+        // Should detect lint but skip fix when comments are present to avoid destroying them
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_fixed_text(
+                vec![
+                    "any(\n  # comment\n  duplicated(x)\n)",
+                    "any(duplicated(\n    # comment\n    x\n  ))",
+                    "any(duplicated(x)) # trailing comment",
+                ],
+                "any_duplicated",
+                None
+            )
+        );
+    }
 }

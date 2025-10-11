@@ -1,0 +1,36 @@
+---
+source: crates/flir-core/src/lints/length_levels/mod.rs
+expression: "get_fixed_text(vec![\"length(\\n  # comment\\n  levels(x)\\n)\",\n\"length(levels(\\n    # comment\\n    x\\n  ))\",\n\"length(levels(x)) # trailing comment\",], \"length_levels\", None)"
+---
+  OLD:
+  ====
+length(
+  # comment
+  levels(x)
+)
+  NEW:
+  ====
+length(
+  # comment
+  levels(x)
+)
+
+  OLD:
+  ====
+length(levels(
+    # comment
+    x
+  ))
+  NEW:
+  ====
+length(levels(
+    # comment
+    x
+  ))
+
+  OLD:
+  ====
+length(levels(x)) # trailing comment
+  NEW:
+  ====
+nlevels(x) # trailing comment

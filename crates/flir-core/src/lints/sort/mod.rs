@@ -70,4 +70,22 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn test_sort_with_comments_no_fix() {
+        use insta::assert_snapshot;
+        // Should detect lint but skip fix when comments are present to avoid destroying them
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_fixed_text(
+                vec![
+                    "x[\n  # comment\n  order(x)\n]",
+                    "x[order(\n    # comment\n    x\n  )]",
+                    "x[order(x)] # trailing comment",
+                ],
+                "sort",
+                None
+            )
+        );
+    }
 }

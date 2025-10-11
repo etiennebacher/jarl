@@ -1,0 +1,34 @@
+---
+source: crates/flir-core/src/lints/length_test/mod.rs
+expression: "get_fixed_text(vec![\"length(\\n  # comment\\n  x != 0\\n)\",\n\"length(x\\n    # comment\\n    >= 0)\", \"length(x > 0) # trailing comment\",],\n\"length_test\", None)"
+---
+  OLD:
+  ====
+length(
+  # comment
+  x != 0
+)
+  NEW:
+  ====
+length(
+  # comment
+  x != 0
+)
+
+  OLD:
+  ====
+length(x
+    # comment
+    >= 0)
+  NEW:
+  ====
+length(x
+    # comment
+    >= 0)
+
+  OLD:
+  ====
+length(x > 0) # trailing comment
+  NEW:
+  ====
+length(x) > 0 # trailing comment

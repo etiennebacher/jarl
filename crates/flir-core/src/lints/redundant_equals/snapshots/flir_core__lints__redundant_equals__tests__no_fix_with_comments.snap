@@ -1,0 +1,28 @@
+---
+source: crates/flir-core/src/lints/redundant_equals/mod.rs
+expression: "get_fixed_text(vec![\"a # comment\\n== TRUE\", \"# comment\\na == FALSE\",\n\"a == TRUE # trailing comment\",], \"redundant_equals\", None)"
+---
+  OLD:
+  ====
+a # comment
+== TRUE
+  NEW:
+  ====
+a # comment
+== TRUE
+
+  OLD:
+  ====
+# comment
+a == FALSE
+  NEW:
+  ====
+# comment
+!a
+
+  OLD:
+  ====
+a == TRUE # trailing comment
+  NEW:
+  ====
+a # trailing comment

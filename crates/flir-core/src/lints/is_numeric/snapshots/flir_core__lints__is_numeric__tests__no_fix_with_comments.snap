@@ -1,0 +1,34 @@
+---
+source: crates/flir-core/src/lints/is_numeric/mod.rs
+expression: "get_fixed_text(vec![\"is.numeric(\\n  # comment\\n  x\\n) || is.integer(x)\",\n\"is.integer(x) ||\\n    # comment\\n    is.numeric(x)\",\n\"is.numeric(x) || is.integer(x) # trailing comment\",], \"is_numeric\", None)"
+---
+  OLD:
+  ====
+is.numeric(
+  # comment
+  x
+) || is.integer(x)
+  NEW:
+  ====
+is.numeric(
+  # comment
+  x
+) || is.integer(x)
+
+  OLD:
+  ====
+is.integer(x) ||
+    # comment
+    is.numeric(x)
+  NEW:
+  ====
+is.integer(x) ||
+    # comment
+    is.numeric(x)
+
+  OLD:
+  ====
+is.numeric(x) || is.integer(x) # trailing comment
+  NEW:
+  ====
+is.numeric(x) # trailing comment

@@ -45,4 +45,22 @@ mod tests {
         expect_no_lint("x == 'FALSE'", "redundant_equals", None);
         expect_no_lint("x > 1", "redundant_equals", None);
     }
+
+    #[test]
+    fn test_redundant_equals_with_comments_no_fix() {
+        use insta::assert_snapshot;
+        // Should detect lint but skip fix when comments are present to avoid destroying them
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_fixed_text(
+                vec![
+                    "a # comment\n== TRUE",
+                    "# comment\na == FALSE",
+                    "a == TRUE # trailing comment",
+                ],
+                "redundant_equals",
+                None
+            )
+        );
+    }
 }

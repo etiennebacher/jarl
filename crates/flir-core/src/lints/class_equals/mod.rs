@@ -108,4 +108,21 @@ mod tests {
         // TODO: https://github.com/etiennebacher/flir2/issues/32
         // expect_no_lint("class(x)[class(x) == 'foo']", "class_equals");
     }
+
+    #[test]
+    fn test_class_equals_with_comments_no_fix() {
+        use insta::assert_snapshot;
+        // Should detect lint but skip fix when comments are present to avoid destroying them
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_unsafe_fixed_text(
+                vec![
+                    "class(\n  # comment\n  x\n) == 'lm'",
+                    "# comment\nclass(x) == 'character'",
+                    "class(x) == 'lm' # trailing comment",
+                ],
+                "class_equals"
+            )
+        );
+    }
 }

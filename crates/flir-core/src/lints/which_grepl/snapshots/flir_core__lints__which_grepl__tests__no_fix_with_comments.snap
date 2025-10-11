@@ -1,0 +1,36 @@
+---
+source: crates/flir-core/src/lints/which_grepl/mod.rs
+expression: "get_fixed_text(vec![\"which(\\n  # comment\\n  grepl('^a', x)\\n)\",\n\"which(grepl(\\n    # comment\\n    '^a', x\\n  ))\",\n\"which(grepl('^a', x)) # trailing comment\",], \"which_grepl\", None)"
+---
+  OLD:
+  ====
+which(
+  # comment
+  grepl('^a', x)
+)
+  NEW:
+  ====
+which(
+  # comment
+  grepl('^a', x)
+)
+
+  OLD:
+  ====
+which(grepl(
+    # comment
+    '^a', x
+  ))
+  NEW:
+  ====
+which(grepl(
+    # comment
+    '^a', x
+  ))
+
+  OLD:
+  ====
+which(grepl('^a', x)) # trailing comment
+  NEW:
+  ====
+grep('^a', x) # trailing comment
