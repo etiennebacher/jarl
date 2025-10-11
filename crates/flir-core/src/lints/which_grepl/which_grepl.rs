@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::get_nested_functions_content;
+use crate::utils::{get_nested_functions_content, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -53,6 +53,7 @@ pub fn which_grepl(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
                 content: format!("grep({inner_content})"),
                 start: range.start().into(),
                 end: range.end().into(),
+                to_skip: node_contains_comments(ast.syntax()),
             },
         );
         return Ok(Some(diagnostic));

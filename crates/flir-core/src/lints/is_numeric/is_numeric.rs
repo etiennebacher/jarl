@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -90,6 +91,7 @@ pub fn is_numeric(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>>
             content: format!("is.numeric{left_arg}"),
             start: range.start().into(),
             end: range.end().into(),
+            to_skip: node_contains_comments(ast.syntax()),
         },
     );
     Ok(Some(diagnostic))

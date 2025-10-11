@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::get_nested_functions_content;
+use crate::utils::{get_nested_functions_content, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -57,6 +57,7 @@ pub fn any_duplicated(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
                 content: format!("anyDuplicated({inner_content}) > 0"),
                 start: range.start().into(),
                 end: range.end().into(),
+                to_skip: node_contains_comments(ast.syntax()),
             },
         );
 

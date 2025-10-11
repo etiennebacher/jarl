@@ -141,6 +141,14 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
             x.filename = file.to_path_buf();
             x
         })
+        // TODO: this should be removed once comments in nodes are better
+        // handled, #95
+        .map(|mut x| {
+            if x.fix.to_skip {
+                x.fix = Fix::empty();
+            }
+            x
+        })
         .collect();
 
     let loc_new_lines = find_new_lines(syntax)?;

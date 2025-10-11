@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::get_nested_functions_content;
+use crate::utils::{get_nested_functions_content, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -54,6 +54,7 @@ pub fn any_is_na(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
                 content: format!("anyNA({inner_content})"),
                 start: range.start().into(),
                 end: range.end().into(),
+                to_skip: node_contains_comments(ast.syntax()),
             },
         );
         return Ok(Some(diagnostic));

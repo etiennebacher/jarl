@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -78,6 +79,7 @@ pub fn redundant_equals(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagno
                     content: fix,
                     start: range.start().into(),
                     end: range.end().into(),
+                    to_skip: node_contains_comments(ast.syntax()),
                 },
             )
         }
@@ -101,6 +103,7 @@ pub fn redundant_equals(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagno
                     content: fix,
                     start: range.start().into(),
                     end: range.end().into(),
+                    to_skip: node_contains_comments(ast.syntax()),
                 },
             )
         }

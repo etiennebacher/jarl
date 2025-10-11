@@ -60,11 +60,6 @@ any(
   )
 )";
     std::fs::write(directory.join(test_path), test_contents)?;
-
-    // Ideally, we should return a diagnostic here. This is not ideal, but
-    // better this than mishandling this type of code.
-    // TODO: when https://github.com/etiennebacher/flir2/issues/97 is fixed,
-    // check that --fix doesn't destroy comments.
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
@@ -93,7 +88,10 @@ any(
 )";
     std::fs::write(directory.join(test_path), test_contents)?;
 
-    // Check that the fix works
+    // Ideally, we should return a diagnostic here. This is not ideal, but
+    // better this than mishandling this type of code.
+    // TODO: when https://github.com/etiennebacher/flir2/issues/97 is fixed,
+    // check that --fix doesn't destroy comments.
     let _ = &mut Command::new(binary_path())
         .current_dir(directory)
         .arg("check")

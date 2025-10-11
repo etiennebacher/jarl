@@ -1,4 +1,5 @@
-use crate::{diagnostic::*, utils::get_function_name};
+use crate::diagnostic::*;
+use crate::utils::{get_function_name, node_contains_comments};
 use air_r_syntax::RSyntaxKind::*;
 use air_r_syntax::*;
 use anyhow::Context;
@@ -89,6 +90,7 @@ pub fn length_test(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
                 content: format!("length({lhs}) {operator_text} {rhs}"),
                 start: range.start().into(),
                 end: range.end().into(),
+                to_skip: node_contains_comments(ast.syntax()),
             },
         );
         return Ok(Some(diagnostic));

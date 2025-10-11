@@ -83,6 +83,7 @@ pub fn true_false_symbol(ast: &RIdentifier) -> anyhow::Result<Option<Diagnostic>
             },
             start: range.start().into(),
             end: range.end().into(),
+            to_skip: false,
         },
     );
 

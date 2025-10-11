@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::get_arg_by_position;
+use crate::utils::{get_arg_by_position, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -133,6 +133,7 @@ pub fn class_equals(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic
             content: format!("{}({}, {})", fun_name, fun_content.unwrap(), class_name),
             start: range.start().into(),
             end: range.end().into(),
+            to_skip: node_contains_comments(ast.syntax()),
         },
     );
     Ok(Some(diagnostic))

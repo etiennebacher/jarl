@@ -1,5 +1,7 @@
 use crate::diagnostic::*;
-use crate::utils::{drop_arg_by_name_or_position, get_arg_by_name_then_position};
+use crate::utils::{
+    drop_arg_by_name_or_position, get_arg_by_name_then_position, node_contains_comments,
+};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -92,6 +94,7 @@ pub fn sample_int(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             content: format!("sample.int({inner_content})"),
             start: range.start().into(),
             end: range.end().into(),
+            to_skip: node_contains_comments(ast.syntax()),
         },
     );
 

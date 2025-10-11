@@ -1,7 +1,7 @@
 use crate::diagnostic::*;
-use crate::utils::drop_arg_by_name_or_position;
-use crate::utils::get_function_name;
-use crate::utils::is_argument_present;
+use crate::utils::{
+    drop_arg_by_name_or_position, get_function_name, is_argument_present, node_contains_comments,
+};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 pub struct Grepv;
@@ -80,6 +80,7 @@ pub fn grepv(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             content: format!("grepv({inner_content})"),
             start: range.start().into(),
             end: range.end().into(),
+            to_skip: node_contains_comments(ast.syntax()),
         },
     );
 

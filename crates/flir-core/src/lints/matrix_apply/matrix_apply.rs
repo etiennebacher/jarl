@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name, get_arg_by_name_then_position};
+use crate::utils::{get_arg_by_name, get_arg_by_name_then_position, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 use biome_rowan::AstSeparatedList;
@@ -132,6 +132,7 @@ pub fn matrix_apply(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             content: fix,
             start: range.start().into(),
             end: range.end().into(),
+            to_skip: node_contains_comments(ast.syntax()),
         },
     );
 

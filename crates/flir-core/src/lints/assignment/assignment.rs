@@ -84,6 +84,7 @@ pub fn assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>>
             content: replacement,
             start: range.start().into(),
             end: range.end().into(),
+            to_skip: false,
         },
     );
 

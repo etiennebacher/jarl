@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -83,6 +84,7 @@ pub fn equals_na(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> 
                 content: format!("is.na({replacement})"),
                 start: range.start().into(),
                 end: range.end().into(),
+                to_skip: node_contains_comments(ast.syntax()),
             },
         ),
         RSyntaxKind::NOT_EQUAL => Diagnostic::new(
@@ -92,6 +94,7 @@ pub fn equals_na(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> 
                 content: format!("!is.na({replacement})"),
                 start: range.start().into(),
                 end: range.end().into(),
+                to_skip: node_contains_comments(ast.syntax()),
             },
         ),
         _ => unreachable!("This case is an early return"),

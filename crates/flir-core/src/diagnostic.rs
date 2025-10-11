@@ -12,6 +12,9 @@ pub struct Fix {
     pub content: String,
     pub start: usize,
     pub end: usize,
+    // TODO: This is used only to not add a Fix when the node contains a comment
+    // because I don't know how to handle them for now, #95.
+    pub to_skip: bool,
 }
 
 impl Fix {
@@ -20,6 +23,7 @@ impl Fix {
             content: "".to_string(),
             start: 0usize,
             end: 0usize,
+            to_skip: true,
         }
     }
 }
@@ -90,16 +94,16 @@ impl Diagnostic {
         }
     }
 
+    // TODO: in these three functions, the first condition should be removed
+    // once comments in nodes are better handled, #95.
     pub fn has_safe_fix(&self) -> bool {
-        all_safe_rules().contains(&self.message.name)
+        !self.fix.to_skip && all_safe_rules().contains(&self.message.name)
     }
-
     pub fn has_unsafe_fix(&self) -> bool {
-        all_unsafe_rules().contains(&self.message.name)
+        !self.fix.to_skip && all_unsafe_rules().contains(&self.message.name)
     }
-
     pub fn has_no_fix(&self) -> bool {
-        all_nofix_rules().contains(&self.message.name)
+        self.fix.to_skip || all_nofix_rules().contains(&self.message.name)
     }
 }
 

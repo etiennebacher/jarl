@@ -1,4 +1,5 @@
-use crate::{diagnostic::*, utils::get_arg_by_name_then_position};
+use crate::diagnostic::*;
+use crate::utils::{get_arg_by_name_then_position, node_contains_comments};
 use air_r_syntax::*;
 use anyhow::Context;
 use biome_rowan::AstNode;
@@ -70,6 +71,7 @@ pub fn lengths(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
                     content: format!("lengths({})", arg_x.unwrap().into_syntax().text_trimmed()),
                     start: range.start().into(),
                     end: range.end().into(),
+                    to_skip: node_contains_comments(ast.syntax()),
                 },
             );
             return Ok(Some(diagnostic));

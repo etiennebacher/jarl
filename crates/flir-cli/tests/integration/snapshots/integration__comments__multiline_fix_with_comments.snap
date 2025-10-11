@@ -2,6 +2,10 @@
 source: crates/flir-cli/tests/integration/comments.rs
 expression: "fs::read_to_string(directory.join(test_path))?"
 ---
-x <- a |>
-  # a comment
-  foo()
+any(
+  # first comment
+  is.na(
+    # second comment
+    x
+  )
+)

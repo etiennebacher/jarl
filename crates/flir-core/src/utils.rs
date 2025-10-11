@@ -293,3 +293,31 @@ pub fn get_nested_functions_content(
         Ok(None)
     }
 }
+
+/// Checks if a syntax node contains comments somewhere between subnodes.
+/// This is used to not provide a fix when comments are present to avoid
+/// destroying them.
+///
+/// This returns `false` if the comment is leading or trailing because we want
+/// to catch cases like:
+/// ```r,ignore
+/// any(
+///   # comment 1
+///   is.na(
+///     # comment 2
+///     x
+///   )
+/// )
+/// ```
+/// and not cases like
+/// ```r,ignore
+/// # comment 1
+/// any(is.na(x))
+///
+/// any(is.na(x)) # comment 2
+/// ```
+pub fn node_contains_comments(node: &air_r_syntax::RSyntaxNode) -> bool {
+    (node.has_comments_direct() || node.has_comments_descendants())
+        && !node.has_trailing_comments()
+        && !node.has_leading_comments()
+}
