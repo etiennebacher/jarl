@@ -1,4 +1,3 @@
-mod comments;
 /// Integration tests for the air CLI
 ///
 /// Directory structure inspired by:
