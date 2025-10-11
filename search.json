@@ -183,7 +183,7 @@
     "href": "rules/sample_int.html",
     "title": "sample_int",
     "section": "",
-    "text": "Checks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.\n\n\n\nsample() calls sample.int() internally so they have the same performance, but the latter is more readable.\n\n\n\n\nsample(1:10, 2)\n\n[1]  5 10\n\n\nUse instead:\n\nsample.int(10, 2)\n\n[1] 6 4\n\n\n\n\n\nSee ?sample",
+    "text": "Checks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.\n\n\n\nsample() calls sample.int() internally so they have the same performance, but the latter is more readable.\n\n\n\n\nsample(1:10, 2)\n\n[1] 9 3\n\n\nUse instead:\n\nsample.int(10, 2)\n\n[1] 7 6\n\n\n\n\n\nSee ?sample",
     "crumbs": [
       "Rules",
       "`sample_int`"
@@ -216,7 +216,7 @@
     "href": "rules/sample_int.html#example",
     "title": "sample_int",
     "section": "",
-    "text": "sample(1:10, 2)\n\n[1]  5 10\n\n\nUse instead:\n\nsample.int(10, 2)\n\n[1] 6 4",
+    "text": "sample(1:10, 2)\n\n[1] 9 3\n\n\nUse instead:\n\nsample.int(10, 2)\n\n[1] 7 6",
     "crumbs": [
       "Rules",
       "`sample_int`"
