@@ -1,11 +1,11 @@
 //! Core linting integration for the Flir LSP server
 //!
-//! This module provides the minimal bridge between the LSP server and your Flir linting engine.
-//! It focuses purely on running your linter and converting results to LSP diagnostics.
-//! No code actions, fixes, or other advanced features - just highlighting issues.
+//! This module provides the bridge between the LSP server and your Flir linting engine.
+//! It handles diagnostics, code actions, and fixes for automatic issue resolution.
 
 use anyhow::{Result, anyhow};
 use lsp_types::{Diagnostic, DiagnosticSeverity, Position, Range};
+use serde::{Deserialize, Serialize};
 
 use std::path::Path;
 
@@ -20,13 +20,20 @@ use flir_core::{
     settings::Settings,
 };
 
-// TODO: Replace these imports with your actual flir_core types:
-// use flir_core::{Linter, Config, Diagnostic as FlirCoreDiagnostic, Level};
+/// Fix information that can be attached to a diagnostic for code actions
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DiagnosticFix {
+    pub content: String,
+    pub start: usize,
+    pub end: usize,
+    pub is_safe: bool,
+}
 
 /// Main entry point for linting a document
 ///
 /// Takes a document snapshot, runs your Flir linter, and returns LSP diagnostics
-/// for highlighting issues in the editor. This is the core function of the LSP server.
+/// for highlighting issues in the editor. The diagnostics include fix information
+/// that can be used for code actions if needed.
 pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<Vec<Diagnostic>> {
     let content = snapshot.content();
     let file_path = snapshot.file_path();
@@ -35,7 +42,7 @@ pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<Vec<Diagnostic>> {
     // Run the actual linting
     let flir_diagnostics = run_flir_linting(content, file_path.as_deref())?;
 
-    // Convert to LSP diagnostics
+    // Convert to LSP diagnostics with fix information
     let mut lsp_diagnostics = Vec::new();
     for flir_diagnostic in flir_diagnostics {
         let lsp_diagnostic = convert_to_lsp_diagnostic(&flir_diagnostic, content, encoding)?;
@@ -46,7 +53,7 @@ pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<Vec<Diagnostic>> {
 }
 
 /// Run the Flir linting engine on the given content
-fn run_flir_linting(_content: &str, file_path: Option<&Path>) -> Result<Vec<FlirDiagnostic>> {
+fn run_flir_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<FlirDiagnostic>> {
     let file_path = match file_path {
         Some(path) => path,
         None => {
@@ -55,16 +62,22 @@ fn run_flir_linting(_content: &str, file_path: Option<&Path>) -> Result<Vec<Flir
         }
     };
 
-    let path_str = match file_path.to_str() {
-        Some(s) => s.to_string(),
-        None => {
-            tracing::warn!("File path contains invalid UTF-8: {:?}", file_path);
-            return Ok(Vec::new());
-        }
-    };
+    if file_path.to_str().is_none() {
+        tracing::warn!("File path contains invalid UTF-8: {:?}", file_path);
+        return Ok(Vec::new());
+    }
 
-    tracing::debug!("Linting file: {}", path_str);
-    let path: Vec<String> = vec![path_str];
+    // TODO: we shoudln't have to write the content to a tempfile to then read
+    // it and get diagnostic. The check function should be able to take the R
+    // code as a string.
+    // Write in-memory content to a temporary file for linting
+    let temp_dir = std::env::temp_dir();
+    let temp_file = temp_dir.join(format!("flir_lsp_{}.R", std::process::id()));
+
+    std::fs::write(&temp_file, content)
+        .map_err(|e| anyhow!("Failed to write temporary file: {}", e))?;
+    let temp_path_str = temp_file.to_string_lossy().to_string();
+    let path: Vec<String> = vec![temp_path_str];
 
     let mut resolver = PathResolver::new(Settings::default());
     for DiscoveredSettings { directory, settings } in discover_settings(&path)? {
@@ -89,7 +102,7 @@ fn run_flir_linting(_content: &str, file_path: Option<&Path>) -> Result<Vec<Flir
     let config = build_config(&check_config, &resolver, paths)?;
 
     let diagnostics = flir_core::check::check(config);
-    let all_diagnostics: Vec<FlirDiagnostic> = diagnostics
+    let mut all_diagnostics: Vec<FlirDiagnostic> = diagnostics
         .into_iter()
         .flat_map(|(_, result)| match result {
             Ok(diags) => {
@@ -103,18 +116,20 @@ fn run_flir_linting(_content: &str, file_path: Option<&Path>) -> Result<Vec<Flir
         })
         .collect();
 
-    tracing::debug!("Total diagnostics: {}", all_diagnostics.len());
+    // Clean up temporary file
+    if let Err(e) = std::fs::remove_file(&temp_file) {
+        tracing::warn!("Failed to remove temporary file {:?}: {}", temp_file, e);
+    }
 
-    tracing::debug!(
-        "Flir linting completed for {:?}: {} diagnostics found",
-        file_path,
-        all_diagnostics.len()
-    );
+    // Update diagnostics to point to the original file instead of temp file
+    for diagnostic in &mut all_diagnostics {
+        diagnostic.filename = file_path.to_path_buf();
+    }
 
     Ok(all_diagnostics)
 }
 
-/// Convert a Flir diagnostic to LSP diagnostic format
+/// Convert a Flir diagnostic to LSP diagnostic format with fix information
 fn convert_to_lsp_diagnostic(
     flir_diag: &FlirDiagnostic,
     content: &str,
@@ -134,24 +149,38 @@ fn convert_to_lsp_diagnostic(
     // let severity = convert_severity(flir_diag.severity);
     let severity = DiagnosticSeverity::WARNING;
 
-    // Build the LSP diagnostic (no code actions or fixes - just highlighting)
+    // Extract fix information if available
+    let fix_data = if !flir_diag.fix.content.is_empty() || flir_diag.fix.start != flir_diag.fix.end
+    {
+        let diagnostic_fix = DiagnosticFix {
+            content: flir_diag.fix.content.clone(),
+            start: flir_diag.fix.start,
+            end: flir_diag.fix.end,
+            is_safe: flir_diag.has_safe_fix(),
+        };
+        Some(serde_json::to_value(diagnostic_fix).unwrap_or_default())
+    } else {
+        None
+    };
+
+    // Build the LSP diagnostic with fix information
     let diagnostic = Diagnostic {
         range,
         severity: Some(severity),
-        code: None, // Remove code to avoid duplication in hover tooltip
+        code: None,
         code_description: None,
         source: Some(DIAGNOSTIC_SOURCE.to_string()),
         message: flir_diag.message.body.clone(),
         related_information: None,
         tags: None,
-        data: None, // No fix data needed for diagnostics-only mode
+        data: fix_data, // Include fix information for code actions when available
     };
 
     Ok(diagnostic)
 }
 
-/// Convert byte offset to LSP Position
-fn byte_offset_to_lsp_position(
+/// Convert byte offset to LSP Position (made public for code actions)
+pub fn byte_offset_to_lsp_position(
     byte_offset: usize,
     content: &str,
     encoding: PositionEncoding,

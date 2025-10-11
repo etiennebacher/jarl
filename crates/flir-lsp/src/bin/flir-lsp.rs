@@ -11,30 +11,24 @@ use clap::{Arg, Command};
 use std::process;
 
 fn main() {
-    eprintln!("FLIR LSP Binary: main() started");
-
     if let Err(err) = run() {
-        eprintln!("FLIR LSP Binary: run() failed with error: {err}");
-        for cause in err.chain() {
+        eprintln!("Error: {err}");
+        for cause in err.chain().skip(1) {
             eprintln!("  Caused by: {cause}");
         }
         process::exit(1);
     }
-
-    eprintln!("FLIR LSP Binary: main() completed successfully");
 }
 
 fn run() -> Result<()> {
-    eprintln!("FLIR LSP Binary: run() called");
-
     let matches = Command::new("flir-lsp")
         .version(flir_lsp::version())
         .about("Flir Language Server - Real-time diagnostics for your linter")
         .long_about(concat!(
-            "Starts the Flir Language Server for real-time lint diagnostics in editors and IDEs.\n\n",
-            "This server provides diagnostic highlighting only - no code actions, formatting, ",
-            "or other advanced features. Connect your editor to this server via the LSP protocol ",
-            "to get real-time feedback as you write code."
+            "Starts the Flir Language Server for real-time lint diagnostics and code actions.\n\n",
+            "This server provides diagnostic highlighting and quick fixes for your R code. ",
+            "Connect your editor to this server via the LSP protocol to get real-time feedback ",
+            "and automatic fixes as you write code."
         ))
         .arg(
             Arg::new("log-level")
@@ -42,56 +36,40 @@ fn run() -> Result<()> {
                 .value_name("LEVEL")
                 .help("Set the logging level")
                 .value_parser(["error", "warn", "info", "debug", "trace"])
-                .default_value("info")
+                .default_value("info"),
         )
         .arg(
             Arg::new("log-file")
                 .long("log-file")
                 .value_name("FILE")
-                .help("Write logs to a file instead of stderr")
+                .help("Write logs to a file instead of stderr"),
         )
         .get_matches();
 
     // Set up logging based on CLI arguments
-    eprintln!("FLIR LSP Binary: About to setup logging");
     setup_logging(
         matches.get_one::<String>("log-level").unwrap(),
         matches.get_one::<String>("log-file"),
     )?;
-    eprintln!("FLIR LSP Binary: Logging setup completed");
 
     // Log startup information
     tracing::info!("Starting Flir LSP server v{}", flir_lsp::version());
-    tracing::info!("Server mode: diagnostics only (no code actions or formatting)");
+    tracing::info!("Server mode: diagnostics and code actions");
     tracing::info!("Communication: stdio");
     tracing::info!("Use Ctrl+C to stop the server");
 
     // Start the LSP server (always uses stdio)
-    eprintln!("FLIR LSP Binary: About to call flir_lsp::run()");
-    let result = flir_lsp::run();
-    eprintln!(
-        "FLIR LSP Binary: flir_lsp::run() completed with result: {:?}",
-        result.is_ok()
-    );
-    result
+    flir_lsp::run()
 }
 
 fn setup_logging(level: &str, log_file: Option<&String>) -> Result<()> {
-    eprintln!("FLIR LSP Binary: Setting up logging with level: {level}");
-
     use tracing_subscriber::{EnvFilter, fmt};
 
     // Simple, robust logging setup
-    let filter = match EnvFilter::try_new(format!("flir_lsp={level}")) {
-        Ok(f) => f,
-        Err(_) => {
-            eprintln!("FLIR LSP Binary: Failed to parse log level, using 'info'");
-            EnvFilter::try_new("info").unwrap_or_else(|_| EnvFilter::new(""))
-        }
-    };
+    let filter = EnvFilter::try_new(format!("flir_lsp={level}"))
+        .unwrap_or_else(|_| EnvFilter::try_new("info").unwrap_or_else(|_| EnvFilter::new("")));
 
     if let Some(log_file) = log_file {
-        eprintln!("FLIR LSP Binary: Attempting to log to file: {log_file}");
         // Log to file - useful for debugging
         match std::fs::OpenOptions::new()
             .create(true)
@@ -105,12 +83,8 @@ fn setup_logging(level: &str, log_file: Option<&String>) -> Result<()> {
                     .with_target(true)
                     .with_env_filter(filter)
                     .init();
-                eprintln!("Flir LSP server logging to: {log_file}");
             }
-            Err(e) => {
-                eprintln!(
-                    "FLIR LSP Binary: Failed to open log file, falling back to stderr: {e}"
-                );
+            Err(_) => {
                 fmt()
                     .with_writer(std::io::stderr)
                     .with_ansi(false)
@@ -120,7 +94,6 @@ fn setup_logging(level: &str, log_file: Option<&String>) -> Result<()> {
             }
         }
     } else {
-        eprintln!("FLIR LSP Binary: Logging to stderr");
         // Log to stderr (IMPORTANT: never use stdout as it interferes with LSP protocol)
         fmt()
             .with_writer(std::io::stderr)
@@ -129,7 +102,5 @@ fn setup_logging(level: &str, log_file: Option<&String>) -> Result<()> {
             .with_env_filter(filter)
             .init();
     }
-
-    eprintln!("FLIR LSP Binary: Logging setup completed");
     Ok(())
 }

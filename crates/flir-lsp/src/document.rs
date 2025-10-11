@@ -127,57 +127,62 @@ impl TextDocument {
         new_version: DocumentVersion,
         encoding: PositionEncoding,
     ) -> Result<()> {
-        eprintln!(
-            "FLIR LSP: Applying {} changes to document, new version: {}",
+        tracing::debug!(
+            "Applying {} changes to document, new version: {}",
             changes.len(),
             new_version
         );
 
-        for (i, change) in changes.iter().enumerate() {
-            eprintln!(
-                "FLIR LSP: Processing change {}: range={:?}",
-                i, change.range
+        // Convert positions to offsets first, then sort by offset in reverse order
+        let mut changes_with_offsets = Vec::new();
+        for change in changes {
+            let range = change.range.ok_or_else(|| {
+                anyhow!(
+                    "Full document replacement not supported - only incremental changes allowed"
+                )
+            })?;
+
+            let start_offset = self.position_to_offset(range.start, encoding)?;
+            let end_offset = self.position_to_offset(range.end, encoding)?;
+            changes_with_offsets.push((start_offset, end_offset, change));
+        }
+
+        // Sort by start offset in reverse order (end to beginning) to avoid offset invalidation
+        changes_with_offsets.sort_by(|a, b| b.0.cmp(&a.0));
+
+        // Apply incremental changes in reverse order
+        for (i, (start_offset, end_offset, change)) in changes_with_offsets.iter().enumerate() {
+            tracing::trace!(
+                "Processing incremental change {}: {}..{} -> '{}'",
+                i,
+                start_offset,
+                end_offset,
+                change.text
             );
-            match change.range {
-                Some(range) => {
-                    // Incremental change
-                    let start_offset = self.position_to_offset(range.start, encoding)?;
-                    let end_offset = self.position_to_offset(range.end, encoding)?;
 
-                    eprintln!(
-                        "FLIR LSP: Incremental change at {}..{}, replacing with: '{}'",
-                        start_offset, end_offset, change.text
-                    );
-
-                    if start_offset > self.content.len() || end_offset > self.content.len() {
-                        return Err(anyhow!(
-                            "Change range is out of bounds: {}..{} in document of length {}",
-                            start_offset,
-                            end_offset,
-                            self.content.len()
-                        ));
-                    }
-
-                    self.content
-                        .replace_range(start_offset..end_offset, &change.text);
-                }
-                None => {
-                    // Full document replacement
-                    eprintln!(
-                        "FLIR LSP: Full document replacement with {} chars",
-                        change.text.len()
-                    );
-                    self.content = change.text.clone();
-                }
+            if *start_offset > self.content.len() || *end_offset > self.content.len() {
+                return Err(anyhow!(
+                    "Change range is out of bounds: {}..{} in document of length {}",
+                    start_offset,
+                    end_offset,
+                    self.content.len()
+                ));
             }
+
+            if start_offset > end_offset {
+                return Err(anyhow!(
+                    "Invalid change range: start {} > end {}",
+                    start_offset,
+                    end_offset
+                ));
+            }
+
+            self.content
+                .replace_range(*start_offset..*end_offset, &change.text);
         }
 
         self.version = new_version;
         self.line_starts = Self::compute_line_starts(&self.content);
-        eprintln!(
-            "FLIR LSP: Document changes applied successfully, final content length: {}",
-            self.content.len()
-        );
         Ok(())
     }
 
@@ -399,22 +404,6 @@ mod tests {
             doc.offset_to_position(6, PositionEncoding::UTF8).unwrap(),
             Position::new(1, 0)
         );
-    }
-
-    #[test]
-    fn test_apply_full_change() {
-        let mut doc = TextDocument::new("hello world".to_string(), 1);
-
-        let changes = vec![TextDocumentContentChangeEvent {
-            range: None,
-            range_length: None,
-            text: "goodbye world".to_string(),
-        }];
-
-        doc.apply_changes(changes, 2, PositionEncoding::UTF8)
-            .unwrap();
-        assert_eq!(doc.content(), "goodbye world");
-        assert_eq!(doc.version(), 2);
     }
 
     #[test]
