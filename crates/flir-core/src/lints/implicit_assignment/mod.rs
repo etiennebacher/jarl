@@ -1,0 +1,75 @@
+pub(crate) mod implicit_assignment;
+
+#[cfg(test)]
+mod tests {
+    use crate::utils_test::*;
+
+    #[test]
+    fn test_lint_implicit_assignment() {
+        expect_lint(
+            "if (x <- 1L) TRUE",
+            "in `if()` statements",
+            "implicit_assignment",
+            None,
+        );
+        expect_lint(
+            "if (1L -> x) TRUE",
+            "in `if()` statements",
+            "implicit_assignment",
+            None,
+        );
+        expect_lint(
+            "if (x <<- 1L) TRUE",
+            "in `if()` statements",
+            "implicit_assignment",
+            None,
+        );
+        expect_lint(
+            "if (1L ->> x) TRUE",
+            "in `if()` statements",
+            "implicit_assignment",
+            None,
+        );
+        expect_lint(
+            "if (A && (B <- foo())) { }",
+            "in `if()` statements",
+            "implicit_assignment",
+            None,
+        );
+        expect_lint(
+            "while (x <- 0L) FALSE",
+            "in `while()` statements",
+            "implicit_assignment",
+            None,
+        );
+        expect_lint(
+            "while (0L -> x) FALSE",
+            "in `while()` statements",
+            "implicit_assignment",
+            None,
+        );
+        expect_lint(
+            "for (x in y <- 1:10) print(x)",
+            "in `for()` statements",
+            "implicit_assignment",
+            None,
+        );
+        expect_lint(
+            "for (x in 1:10 -> y) print(x)",
+            "in `for()` statements",
+            "implicit_assignment",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_implicit_assignment() {
+        expect_no_lint("x <- 1", "implicit_assignment", None);
+        expect_no_lint("x <- { 3 + 4 }", "implicit_assignment", None);
+        expect_no_lint("y <- if (is.null(x)) z else x", "implicit_assignment", None);
+        expect_no_lint("foo({\na <- 1L\n})", "implicit_assignment", None);
+        expect_no_lint("if (1 + 1) TRUE", "implicit_assignment", None);
+        expect_no_lint("a %>% b()", "implicit_assignment", None);
+        expect_no_lint("a |> b()", "implicit_assignment", None);
+    }
+}

@@ -5,6 +5,7 @@ use crate::lints::assignment::assignment::assignment;
 use crate::lints::class_equals::class_equals::class_equals;
 use crate::lints::empty_assignment::empty_assignment::empty_assignment;
 use crate::lints::equals_na::equals_na::equals_na;
+use crate::lints::implicit_assignment::implicit_assignment::implicit_assignment;
 use crate::lints::is_numeric::is_numeric::is_numeric;
 use crate::lints::redundant_equals::redundant_equals::redundant_equals;
 
@@ -20,6 +21,9 @@ pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> a
     }
     if checker.is_rule_enabled("equals_na") {
         checker.report_diagnostic(equals_na(r_expr)?);
+    }
+    if checker.is_rule_enabled("implicit_assignment") {
+        checker.report_diagnostic(implicit_assignment(r_expr)?);
     }
     if checker.is_rule_enabled("is_numeric") {
         checker.report_diagnostic(is_numeric(r_expr)?);
