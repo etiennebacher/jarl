@@ -72,18 +72,70 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
         }
         result
     };
-    let ancestor_is_while = ast
-        .syntax()
-        .ancestors()
-        .any(|x| RWhileStatement::can_cast(x.kind()));
-    let ancestor_is_if = ast
-        .syntax()
-        .ancestors()
-        .any(|x| RIfStatement::can_cast(x.kind()));
-    let ancestor_is_for = ast
-        .syntax()
-        .ancestors()
-        .any(|x| RForStatement::can_cast(x.kind()));
+    let ancestor_is_if = {
+        let mut result = false;
+
+        // We want to not report cases like
+        // ```r
+        // if (TRUE) x <- 1
+        // ```
+        // Therefore, we want to skip cases that have an RIfStatement as
+        // ancestor AND whose previous sibling is ")". Problem is that
+        // `.prev_sibling()` skips the left and right parenthesis. This might
+        // be a bug: https://github.com/posit-dev/air/issues/414
+        //
+        // let previous_sibling = ast.syntax().prev_sibling();
+        // let previous_sibling_is_right_paren = if let Some(previous_sibling) = previous_sibling {
+        //     previous_sibling.kind() == RSyntaxKind::R_PAREN
+        // } else {
+        //     false
+        // };
+
+        for ancestor in ast.syntax().ancestors() {
+            if RBracedExpressions::can_cast(ancestor.kind()) {
+                // Found braced expressions first, so skip
+                result = false;
+                break;
+            } else if RIfStatement::can_cast(ancestor.kind()) {
+                // Found argument first, so include
+                result = true;
+                break;
+            }
+        }
+        result
+    };
+    let ancestor_is_while = {
+        let mut result = false;
+
+        for ancestor in ast.syntax().ancestors() {
+            if RBracedExpressions::can_cast(ancestor.kind()) {
+                // Found braced expressions first, so skip
+                result = false;
+                break;
+            } else if RWhileStatement::can_cast(ancestor.kind()) {
+                // Found argument first, so include
+                result = true;
+                break;
+            }
+        }
+        result
+    };
+    let ancestor_is_for = {
+        let mut result = false;
+
+        for ancestor in ast.syntax().ancestors() {
+            if RBracedExpressions::can_cast(ancestor.kind()) {
+                // Found braced expressions first, so skip
+                result = false;
+                break;
+            } else if RForStatement::can_cast(ancestor.kind()) {
+                // Found argument first, so include
+                result = true;
+                break;
+            }
+        }
+        result
+    };
 
     if !ancestor_is_if && !ancestor_is_while && !ancestor_is_arg && !ancestor_is_for {
         return Ok(None);
