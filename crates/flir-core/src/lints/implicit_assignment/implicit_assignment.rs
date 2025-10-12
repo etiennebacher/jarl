@@ -48,6 +48,15 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
         return Ok(None);
     };
 
+    // We want to report the use of assignment in function arguments, but not
+    // when they're part of the body of some functions, e.g.
+    // ```
+    // local({
+    //   x <- 1
+    // })
+    // ```
+    // so we set `ancestor_is_arg = false` if an RBracedExpressions is a closer
+    // ancestor.
     let ancestor_is_arg = {
         let mut result = false;
         for ancestor in ast.syntax().ancestors() {
