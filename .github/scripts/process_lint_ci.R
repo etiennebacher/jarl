@@ -90,9 +90,10 @@ for (repos in all_repos) {
   )
 
   msg_new_violations <- if (nrow(new_lints) > 0) {
+    new_lints <- head(new_lints, 100)
     paste(
       c(
-        "<br>\nNew violations:<pre>",
+        "<br>\nNew violations (first 100):<pre>",
         paste0(
           new_lints$filename,
           "[",
@@ -112,9 +113,10 @@ for (repos in all_repos) {
     ""
   }
   msg_old_violations <- if (nrow(deleted_lints) > 0) {
+    deleted_lints <- head(deleted_lints, 100)
     paste(
       c(
-        "<br>\nViolations removed:<pre>",
+        "<br>\nViolations removed (first 100):<pre>",
         paste0(
           deleted_lints$filename,
           "[",
