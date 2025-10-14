@@ -74,8 +74,8 @@ mod tests {
         expect_no_lint("if (TRUE) {\nx <- 1\n}", "implicit_assignment", None);
         expect_no_lint("while (TRUE) {\nx <- 1\n}", "implicit_assignment", None);
         expect_no_lint("for (i in 1:2) {\nx <- 1\n}", "implicit_assignment", None);
-        // TODO: this should be skipped but currently cannot. See comment in
-        // implicit_assignment().
-        // expect_no_lint("if (TRUE) x <- 1", "implicit_assignment", None);
+        expect_no_lint("if (TRUE) x <- 1", "implicit_assignment", None);
+        expect_no_lint("for (i in 1:2) x <- 1", "implicit_assignment", None);
+        expect_no_lint("while (TRUE) x <- 1", "implicit_assignment", None);
     }
 }

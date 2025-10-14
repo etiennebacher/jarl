@@ -48,6 +48,8 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
         return Ok(None);
     };
 
+    println!("index: {:?}", ast.syntax().index());
+
     // We want to report the use of assignment in function arguments, but not
     // when they're part of the body of some functions, e.g.
     // ```
@@ -72,34 +74,37 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
         }
         result
     };
+
+    // We want to not report cases like
+    // ```r
+    // if (TRUE) x <- 1
+    // for (i in 1:2) x <- 1
+    // while (TRUE) x <- 1
+    // ```
+    // Therefore, we want to skip cases that have an RIfStatement /
+    // RForStatement / RWhileStatement as ancestor AND whose previous sibling
+    // is ")".
+
     let ancestor_is_if = {
         let mut result = false;
+        let previous_sibling = ast.syntax().prev_sibling_or_token();
+        let previous_sibling_is_right_paren = if let Some(previous_sibling) = previous_sibling {
+            previous_sibling.kind() == RSyntaxKind::R_PAREN
+        } else {
+            false
+        };
 
-        // We want to not report cases like
-        // ```r
-        // if (TRUE) x <- 1
-        // ```
-        // Therefore, we want to skip cases that have an RIfStatement as
-        // ancestor AND whose previous sibling is ")". Problem is that
-        // `.prev_sibling()` skips the left and right parenthesis. This might
-        // be a bug: https://github.com/posit-dev/air/issues/414
-        //
-        // let previous_sibling = ast.syntax().prev_sibling();
-        // let previous_sibling_is_right_paren = if let Some(previous_sibling) = previous_sibling {
-        //     previous_sibling.kind() == RSyntaxKind::R_PAREN
-        // } else {
-        //     false
-        // };
-
-        for ancestor in ast.syntax().ancestors() {
-            if RBracedExpressions::can_cast(ancestor.kind()) {
-                // Found braced expressions first, so skip
-                result = false;
-                break;
-            } else if RIfStatement::can_cast(ancestor.kind()) {
-                // Found argument first, so include
-                result = true;
-                break;
+        if !previous_sibling_is_right_paren {
+            for ancestor in ast.syntax().ancestors() {
+                if RBracedExpressions::can_cast(ancestor.kind()) {
+                    // Found braced expressions first, so skip
+                    result = false;
+                    break;
+                } else if RIfStatement::can_cast(ancestor.kind()) {
+                    // Found argument first, so include
+                    result = true;
+                    break;
+                }
             }
         }
         result
@@ -107,15 +112,24 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
     let ancestor_is_while = {
         let mut result = false;
 
-        for ancestor in ast.syntax().ancestors() {
-            if RBracedExpressions::can_cast(ancestor.kind()) {
-                // Found braced expressions first, so skip
-                result = false;
-                break;
-            } else if RWhileStatement::can_cast(ancestor.kind()) {
-                // Found argument first, so include
-                result = true;
-                break;
+        let previous_sibling = ast.syntax().prev_sibling_or_token();
+        let previous_sibling_is_right_paren = if let Some(previous_sibling) = previous_sibling {
+            previous_sibling.kind() == RSyntaxKind::R_PAREN
+        } else {
+            false
+        };
+
+        if !previous_sibling_is_right_paren {
+            for ancestor in ast.syntax().ancestors() {
+                if RBracedExpressions::can_cast(ancestor.kind()) {
+                    // Found braced expressions first, so skip
+                    result = false;
+                    break;
+                } else if RWhileStatement::can_cast(ancestor.kind()) {
+                    // Found argument first, so include
+                    result = true;
+                    break;
+                }
             }
         }
         result
@@ -123,15 +137,24 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
     let ancestor_is_for = {
         let mut result = false;
 
-        for ancestor in ast.syntax().ancestors() {
-            if RBracedExpressions::can_cast(ancestor.kind()) {
-                // Found braced expressions first, so skip
-                result = false;
-                break;
-            } else if RForStatement::can_cast(ancestor.kind()) {
-                // Found argument first, so include
-                result = true;
-                break;
+        let previous_sibling = ast.syntax().prev_sibling_or_token();
+        let previous_sibling_is_right_paren = if let Some(previous_sibling) = previous_sibling {
+            previous_sibling.kind() == RSyntaxKind::R_PAREN
+        } else {
+            false
+        };
+
+        if !previous_sibling_is_right_paren {
+            for ancestor in ast.syntax().ancestors() {
+                if RBracedExpressions::can_cast(ancestor.kind()) {
+                    // Found braced expressions first, so skip
+                    result = false;
+                    break;
+                } else if RForStatement::can_cast(ancestor.kind()) {
+                    // Found argument first, so include
+                    result = true;
+                    break;
+                }
             }
         }
         result
