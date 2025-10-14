@@ -48,8 +48,6 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
         return Ok(None);
     };
 
-    println!("index: {:?}", ast.syntax().index());
-
     // We want to report the use of assignment in function arguments, but not
     // when they're part of the body of some functions, e.g.
     // ```
@@ -87,14 +85,14 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
 
     let ancestor_is_if = {
         let mut result = false;
-        let previous_sibling = ast.syntax().prev_sibling_or_token();
-        let previous_sibling_is_right_paren = if let Some(previous_sibling) = previous_sibling {
-            previous_sibling.kind() == RSyntaxKind::R_PAREN
-        } else {
-            false
-        };
 
-        if !previous_sibling_is_right_paren {
+        // The `consequence` part of an `RIfStatement` is always the 5th node
+        // (index 4):
+        // IF_KW - L_PAREN - [condition] - R_PAREN - [consequence]
+        let in_if_body = ast.syntax().parent().unwrap().kind() == RSyntaxKind::R_IF_STATEMENT
+            && ast.syntax().index() == 4;
+
+        if !in_if_body {
             for ancestor in ast.syntax().ancestors() {
                 if RBracedExpressions::can_cast(ancestor.kind()) {
                     // Found braced expressions first, so skip
@@ -112,14 +110,13 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
     let ancestor_is_while = {
         let mut result = false;
 
-        let previous_sibling = ast.syntax().prev_sibling_or_token();
-        let previous_sibling_is_right_paren = if let Some(previous_sibling) = previous_sibling {
-            previous_sibling.kind() == RSyntaxKind::R_PAREN
-        } else {
-            false
-        };
+        // The `consequence` part of an `RWhileStatement` is always the 5th node
+        // (index 4):
+        // WHILE_KW - L_PAREN - [condition] - R_PAREN - [consequence]
+        let in_while_body = ast.syntax().parent().unwrap().kind() == RSyntaxKind::R_WHILE_STATEMENT
+            && ast.syntax().index() == 4;
 
-        if !previous_sibling_is_right_paren {
+        if !in_while_body {
             for ancestor in ast.syntax().ancestors() {
                 if RBracedExpressions::can_cast(ancestor.kind()) {
                     // Found braced expressions first, so skip
@@ -137,14 +134,13 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
     let ancestor_is_for = {
         let mut result = false;
 
-        let previous_sibling = ast.syntax().prev_sibling_or_token();
-        let previous_sibling_is_right_paren = if let Some(previous_sibling) = previous_sibling {
-            previous_sibling.kind() == RSyntaxKind::R_PAREN
-        } else {
-            false
-        };
+        // The `consequence` part of an `RWhileStatement` is always the 7th node
+        // (index 6):
+        // FOR_KW - L_PAREN - [value] - IN_KW - [sequence] - R_PAREN - [consequence]
+        let in_for_body = ast.syntax().parent().unwrap().kind() == RSyntaxKind::R_FOR_STATEMENT
+            && ast.syntax().index() == 6;
 
-        if !previous_sibling_is_right_paren {
+        if !in_for_body {
             for ancestor in ast.syntax().ancestors() {
                 if RBracedExpressions::can_cast(ancestor.kind()) {
                     // Found braced expressions first, so skip
