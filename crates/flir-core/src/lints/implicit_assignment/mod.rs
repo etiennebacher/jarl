@@ -77,5 +77,16 @@ mod tests {
         expect_no_lint("if (TRUE) x <- 1", "implicit_assignment", None);
         expect_no_lint("for (i in 1:2) x <- 1", "implicit_assignment", None);
         expect_no_lint("while (TRUE) x <- 1", "implicit_assignment", None);
+        expect_no_lint(
+            "f <- function() {
+  if (TRUE)
+    x <- 1
+  else
+    x <- 2
+}
+",
+            "implicit_assignment",
+            None,
+        );
     }
 }

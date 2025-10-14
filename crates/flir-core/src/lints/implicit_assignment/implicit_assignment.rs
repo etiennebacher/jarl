@@ -94,8 +94,10 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
         // have a parent.
         let in_if_body = ast.syntax().parent().unwrap().kind() == RSyntaxKind::R_IF_STATEMENT
             && ast.syntax().index() == 4;
+        let in_else_body = ast.syntax().parent().unwrap().kind() == RSyntaxKind::R_ELSE_CLAUSE
+            && ast.syntax().index() == 1;
 
-        if !in_if_body {
+        if !in_if_body && !in_else_body {
             for ancestor in ast.syntax().ancestors() {
                 if RBracedExpressions::can_cast(ancestor.kind()) {
                     // Found braced expressions first, so skip
