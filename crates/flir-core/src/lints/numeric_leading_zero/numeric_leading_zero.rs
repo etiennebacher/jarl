@@ -44,7 +44,6 @@ pub fn numeric_leading_zero(ast: &AnyRValue) -> anyhow::Result<Option<Diagnostic
     if let Some(complex) = ast.as_r_complex_value() {
         value = complex.value_token()?;
         value_text = value.text_trimmed();
-        println!("{value_text}");
     };
 
     if value_text.starts_with(".") {
