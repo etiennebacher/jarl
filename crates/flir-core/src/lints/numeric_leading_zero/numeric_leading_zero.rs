@@ -6,7 +6,8 @@ pub struct NumericLeadingZero;
 
 /// ## What it does
 ///
-/// Checks for double values with a decimal component and a leading `.`.
+/// Checks for double or complex values with a decimal component and a
+/// leading `.`.
 ///
 /// ## Why is this bad?
 ///
