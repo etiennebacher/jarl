@@ -1,6 +1,6 @@
 use crate::diagnostic::*;
 use air_r_syntax::*;
-use biome_rowan::AstNode;
+// use biome_rowan::AstNode;
 
 /// ## What it does
 ///
@@ -38,7 +38,7 @@ use biome_rowan::AstNode;
 ///
 /// See:
 /// * https://style.tidyverse.org/syntax.html#assignment
-pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
+pub fn implicit_assignment(_ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     Ok(None)
 
     // let operator = ast.operator()?;
