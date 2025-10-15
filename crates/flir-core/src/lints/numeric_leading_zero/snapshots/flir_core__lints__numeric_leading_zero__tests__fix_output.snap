@@ -1,0 +1,31 @@
+---
+source: crates/flir-core/src/lints/numeric_leading_zero/mod.rs
+expression: "get_fixed_text(vec![\"0.1 + .22-0.3-.2\", \"d <- 6.7 + .8i\", \".7i + .2 + .8i\",\n\"'some text .7'\",], \"numeric_leading_zero\", None)"
+---
+OLD:
+====
+0.1 + .22-0.3-.2
+NEW:
+====
+0.1 + 0.22-0.3-0.2
+
+OLD:
+====
+d <- 6.7 + .8i
+NEW:
+====
+d <- 6.7 + .8i
+
+OLD:
+====
+.7i + .2 + .8i
+NEW:
+====
+.7i + 0.2 + .8i
+
+OLD:
+====
+'some text .7'
+NEW:
+====
+'some text .7'

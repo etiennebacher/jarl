@@ -15,6 +15,7 @@ pub(crate) mod length_levels;
 pub(crate) mod length_test;
 pub(crate) mod lengths;
 pub(crate) mod matrix_apply;
+pub(crate) mod numeric_leading_zero;
 pub(crate) mod redundant_equals;
 pub(crate) mod sample_int;
 pub(crate) mod sort;
@@ -46,6 +47,7 @@ pub fn all_rules_and_safety() -> RuleTable {
     rule_table.enable("length_test", "CORR", FixStatus::Safe, None);
     rule_table.enable("lengths", "PERF,READ", FixStatus::Safe, None);
     rule_table.enable("matrix_apply", "PERF", FixStatus::Safe, None);
+    rule_table.enable("numeric_leading_zero", "READ", FixStatus::Safe, None);
     rule_table.enable("redundant_equals", "READ", FixStatus::Safe, None);
     rule_table.enable("sample_int", "READ", FixStatus::Safe, None);
     rule_table.enable("sort", "PERF,READ", FixStatus::Safe, None);
