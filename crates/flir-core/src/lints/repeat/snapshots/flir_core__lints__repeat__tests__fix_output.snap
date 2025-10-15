@@ -1,0 +1,17 @@
+---
+source: crates/flir-core/src/lints/repeat/mod.rs
+expression: "get_fixed_text(vec![\"while (TRUE) 1 + 1\",\n\"for (i in 1:10) { while (TRUE) { if (i == 5) { break } } }\",], \"repeat\",\nNone)"
+---
+OLD:
+====
+while (TRUE) 1 + 1
+NEW:
+====
+repeat { 1 + 1 }
+
+OLD:
+====
+for (i in 1:10) { while (TRUE) { if (i == 5) { break } } }
+NEW:
+====
+for (i in 1:10) { repeat { if (i == 5) { break } } }

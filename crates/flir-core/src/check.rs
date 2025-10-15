@@ -267,6 +267,7 @@ pub fn check_expression(
             check_expression(&argument?, checker)?;
         }
         AnyRExpression::RWhileStatement(children) => {
+            analyze::while_::while_(children, checker)?;
             let RWhileStatementFields { condition, body, .. } = children.as_fields();
             check_expression(&condition?, checker)?;
             check_expression(&body?, checker)?;
