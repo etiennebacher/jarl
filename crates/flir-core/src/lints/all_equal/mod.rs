@@ -25,42 +25,48 @@ mod tests {
     fn test_lint_all_equal() {
         use insta::assert_snapshot;
 
-        let expected_message = "`any(duplicated(...))` is inefficient";
-        expect_lint("any(duplicated(x))", expected_message, "all_equal", None);
+        let expected_message = "Wrap `all.equal()` in `isTRUE()`";
+        let expected_message_2 = "Use `!isTRUE()` to check for differences";
         expect_lint(
-            "any(duplicated(foo(x)))",
+            "if (all.equal(a, b, tolerance = 1e-3)) message('equal')",
             expected_message,
             "all_equal",
             None,
         );
         expect_lint(
-            "any(duplicated(x), na.rm = TRUE)",
+            "if (all.equal(a, b)) message('equal')",
+            expected_message,
+            "all_equal",
+            None,
+        );
+        expect_lint("!all.equal(a, b)", expected_message, "all_equal", None);
+        expect_lint(
+            "while (all.equal(a, b)) message('equal')",
             expected_message,
             "all_equal",
             None,
         );
         expect_lint(
-            "any(na.rm = TRUE, duplicated(x))",
-            expected_message,
-            "all_equal",
-            None,
-        );
-        expect_lint(
-            "any(duplicated(x)); 1 + 1; any(duplicated(y))",
-            expected_message,
+            "isFALSE(all.equal(a, b))",
+            expected_message_2,
             "all_equal",
             None,
         );
         assert_snapshot!(
             "fix_output",
-            get_fixed_text(
+            get_unsafe_fixed_text(
                 vec![
-                    "any(duplicated(x))",
-                    "any(duplicated(foo(x)))",
-                    "any(duplicated(x), na.rm = TRUE)",
+                    "if (all.equal(a, b, tolerance = 1e-3)) message('equal')",
+                    "if (all.equal(a, b)) message('equal')",
+                    "!all.equal(a, b)",
+                    "while (all.equal(a, b)) message('equal')",
+                    "isFALSE(all.equal(a, b))",
+                    "if (
+  # A comment
+  all.equal(a, b)
+) message('equal')",
                 ],
                 "all_equal",
-                None
             )
         );
     }
@@ -71,15 +77,13 @@ mod tests {
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",
-            get_fixed_text(
+            get_unsafe_fixed_text(
                 vec![
-                    "# leading comment\nany(duplicated(x))",
-                    "any(\n  # comment\n  duplicated(x)\n)",
-                    "any(duplicated(\n    # comment\n    x\n  ))",
-                    "any(duplicated(x)) # trailing comment",
+                    "# leading comment\nif (all.equal(a, b)) message('equal')",
+                    "if (all.equal(a,\n# a comment\n b)) message('equal')",
+                    "if (all.equal(a, b)) message('equal') # trailing comment",
                 ],
                 "all_equal",
-                None
             )
         );
     }

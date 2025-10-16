@@ -65,12 +65,15 @@ pub fn all_equal(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     // The `condition` part of an `RIfStatement` is always the 3rd node
     // (index 2):
     // IF_KW - L_PAREN - [condition] - R_PAREN - [consequence]
-    //
-    // `.unwrap()` is fine here because the RBinaryExpression will always
-    // have a parent.
     let in_if_condition = ast.syntax().parent().unwrap().kind() == RSyntaxKind::R_IF_STATEMENT
         && ast.syntax().index() == 2;
-    if in_if_condition {
+    // The `consequence` part of an `RWhileStatement` is always the 3rd node
+    // (index 2):
+    // WHILE_KW - L_PAREN - [condition] - R_PAREN - [consequence]
+    let in_while_condition = ast.syntax().parent().unwrap().kind()
+        == RSyntaxKind::R_WHILE_STATEMENT
+        && ast.syntax().index() == 2;
+    if in_if_condition || in_while_condition {
         msg = "Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.".to_string();
         fix_content = format!("isTRUE({})", ast.to_trimmed_text());
     }
@@ -82,7 +85,7 @@ pub fn all_equal(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     };
     if prev_is_bang {
         msg = "Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.".to_string();
-        fix_content = format!("isTRUE({})", ast.to_trimmed_text());
+        fix_content = format!("!isTRUE({})", ast.to_trimmed_text());
         range = TextRange::new(
             ast.syntax()
                 .prev_sibling_or_token()
