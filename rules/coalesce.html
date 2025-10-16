@@ -177,6 +177,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../rules/all_equal.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><code>all_equal</code></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../rules/any_duplicated.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><code>any_duplicated</code></span></a>
   </div>
@@ -330,13 +336,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Using the coalesce operator <code>%||%</code> is more concise and readable than an if-else statement checking for null.</p>
 <p>This rule is only enabled if the project uses R &gt;= 4.4.0, since <code>%||%</code> was introduced in this version.</p>
 <p>This rule contains some automatic fixes, but only for cases where the branches are on a single line. For instance,</p>
-<pre class="zhl,ignore"><code>if (is.null(x)) {
+<pre class="dht,ignore"><code>if (is.null(x)) {
   y
 } else {
   x
 }</code></pre>
 <p>would be simplified to <code>x %||% y</code>, but</p>
-<pre class="zhl,ignore"><code>if (is.null(x)) {
+<pre class="dht,ignore"><code>if (is.null(x)) {
   y &lt;- 1
   y
 } else {
