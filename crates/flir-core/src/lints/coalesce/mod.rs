@@ -25,6 +25,9 @@ mod tests {
 
         // TODO: should maybe be reported? lintr reports this
         expect_no_lint("if (is.null(s <- foo(x))) y else s", "coalesce", version);
+
+        // `%||%` doesn't exist in this version
+        expect_no_lint("if (is.null(x)) y else x", "coalesce", Some("4.3"));
     }
 
     #[test]
