@@ -52,7 +52,7 @@ pub fn all_equal(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             ViolationData::new("all_equal".to_string(), "Use `!isTRUE()` to check for differences in `all.equal()`. `isFALSE(all.equal())` always returns `FALSE`.".to_string()),
             range,
             Fix {
-                content: format!("anyDuplicated({inner_content}) > 0"),
+                content: format!("!isTRUE(all.equal({inner_content}))"),
                 start: range.start().into(),
                 end: range.end().into(),
                 to_skip: node_contains_comments(ast.syntax()),
@@ -93,16 +93,20 @@ pub fn all_equal(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         )
     }
 
-    let diagnostic = Diagnostic::new(
-        ViolationData::new("all_equal".to_string(), msg),
-        range,
-        Fix {
-            content: fix_content,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
-    );
+    if !msg.is_empty() {
+        let diagnostic = Diagnostic::new(
+            ViolationData::new("all_equal".to_string(), msg),
+            range,
+            Fix {
+                content: fix_content,
+                start: range.start().into(),
+                end: range.end().into(),
+                to_skip: node_contains_comments(ast.syntax()),
+            },
+        );
 
-    return Ok(Some(diagnostic));
+        return Ok(Some(diagnostic));
+    }
+
+    Ok(None)
 }

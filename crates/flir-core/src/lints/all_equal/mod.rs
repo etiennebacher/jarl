@@ -6,12 +6,19 @@ mod tests {
 
     #[test]
     fn test_no_lint_all_equal() {
-        expect_no_lint("any(x)", "all_equal", None);
-        expect_no_lint("duplicated(x)", "all_equal", None);
-        expect_no_lint("any(!duplicated(x))", "all_equal", None);
-        expect_no_lint("any(!duplicated(foo(x)))", "all_equal", None);
-        expect_no_lint("any(na.rm = TRUE)", "all_equal", None);
-        expect_no_lint("any()", "all_equal", None);
+        expect_no_lint("all.equal(a, b)", "all_equal", None);
+        expect_no_lint("all.equal(a, b, tolerance = 1e-3)", "all_equal", None);
+        expect_no_lint(
+            "if (isTRUE(all.equal(a, b))) message('equal')",
+            "all_equal",
+            None,
+        );
+        expect_no_lint(
+            "if (!isTRUE(all.equal(a, b))) message('different')",
+            "all_equal",
+            None,
+        );
+        expect_no_lint("if (A) all.equal(x, y)", "all_equal", None);
     }
 
     #[test]
