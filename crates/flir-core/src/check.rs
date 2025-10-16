@@ -180,6 +180,9 @@ pub fn check_expression(
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
     match expression {
+        AnyRExpression::AnyRValue(children) => {
+            analyze::anyvalue::anyvalue(children, checker)?;
+        }
         AnyRExpression::RBinaryExpression(children) => {
             analyze::binary_expression::binary_expression(children, checker)?;
             let RBinaryExpressionFields { left, right, .. } = children.as_fields();
@@ -207,9 +210,6 @@ pub fn check_expression(
                 check_expression(&expr, checker)?;
             }
         }
-        AnyRExpression::AnyRValue(children) => {
-            analyze::anyvalue::anyvalue(children, checker)?;
-        }
         AnyRExpression::RForStatement(children) => {
             analyze::for_loop::for_loop(children, checker)?;
             let RForStatementFields { variable, sequence, body, .. } = children.as_fields();
@@ -226,6 +226,8 @@ pub fn check_expression(
             analyze::identifier::identifier(x, checker)?;
         }
         AnyRExpression::RIfStatement(children) => {
+            analyze::if_::if_(children, checker)?;
+
             let RIfStatementFields { condition, consequence, else_clause, .. } =
                 children.as_fields();
             check_expression(&condition?, checker)?;

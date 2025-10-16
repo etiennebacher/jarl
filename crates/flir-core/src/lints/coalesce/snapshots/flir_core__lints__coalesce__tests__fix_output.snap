@@ -1,0 +1,117 @@
+---
+source: crates/flir-core/src/lints/coalesce/mod.rs
+expression: "get_fixed_text(vec![\"if (is.null(x)) y else x\",\n\"if (is.null(x)) { y } else x\", \"if (is.null(x)) y else { x }\",\n\"if (is.null(x)) { y } else { x }\", \"if (is.null(x[1])) y else x[1]\",\n\"if (is.null(foo(x))) y else foo(x)\", \"if (!is.null(x)) x else y\",\n\"if (!is.null(x)) { x } else y\", \"if (!is.null(x)) x else { y }\",\n\"if (!is.null(x)) { x } else { y }\", \"if (!is.null(x[1])) x[1] else y\",\n\"if (!is.null(foo(x))) foo(x) else y\",\n\"if (is.null(x)) {\\n  y <- 1\\n  y\\n} else x\",\n\"if (is.null(x)) {\\n  y <- 1\\n  y\\n} else {\\n  x\\n}\",], \"coalesce\", version)"
+---
+OLD:
+====
+if (is.null(x)) y else x
+NEW:
+====
+x %||% y
+
+OLD:
+====
+if (is.null(x)) { y } else x
+NEW:
+====
+x %||% y
+
+OLD:
+====
+if (is.null(x)) y else { x }
+NEW:
+====
+x %||% y
+
+OLD:
+====
+if (is.null(x)) { y } else { x }
+NEW:
+====
+x %||% y
+
+OLD:
+====
+if (is.null(x[1])) y else x[1]
+NEW:
+====
+x[1] %||% y
+
+OLD:
+====
+if (is.null(foo(x))) y else foo(x)
+NEW:
+====
+foo(x) %||% y
+
+OLD:
+====
+if (!is.null(x)) x else y
+NEW:
+====
+x %||% y
+
+OLD:
+====
+if (!is.null(x)) { x } else y
+NEW:
+====
+x %||% y
+
+OLD:
+====
+if (!is.null(x)) x else { y }
+NEW:
+====
+x %||% y
+
+OLD:
+====
+if (!is.null(x)) { x } else { y }
+NEW:
+====
+x %||% y
+
+OLD:
+====
+if (!is.null(x[1])) x[1] else y
+NEW:
+====
+x[1] %||% y
+
+OLD:
+====
+if (!is.null(foo(x))) foo(x) else y
+NEW:
+====
+foo(x) %||% y
+
+OLD:
+====
+if (is.null(x)) {
+  y <- 1
+  y
+} else x
+NEW:
+====
+if (is.null(x)) {
+  y <- 1
+  y
+} else x
+
+OLD:
+====
+if (is.null(x)) {
+  y <- 1
+  y
+} else {
+  x
+}
+NEW:
+====
+if (is.null(x)) {
+  y <- 1
+  y
+} else {
+  x
+}
