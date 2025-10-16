@@ -8,6 +8,7 @@ mod tests {
     fn test_no_lint_all_equal() {
         expect_no_lint("all.equal(a, b)", "all_equal", None);
         expect_no_lint("all.equal(a, b, tolerance = 1e-3)", "all_equal", None);
+        expect_no_lint("if (isFALSE(x)) 1", "all_equal", None);
         expect_no_lint(
             "if (isTRUE(all.equal(a, b))) message('equal')",
             "all_equal",

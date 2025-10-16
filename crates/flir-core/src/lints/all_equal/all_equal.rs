@@ -52,16 +52,7 @@ use biome_rowan::AstNode;
 ///
 /// See `?all.equal`
 pub fn all_equal(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let fun_name = get_function_name(function);
-    if fun_name != "all.equal" && fun_name != "isFALSE" {
-        return Ok(None);
-    }
-
-    let mut msg = "".to_string();
-    let mut fix_content = "".to_string();
-    let mut range = ast.syntax().text_trimmed_range();
-
+    // 1) Check for isFALSE(all.equal(...))
     let inner_content = get_nested_functions_content(ast, "isFALSE", "all.equal")?;
     if let Some(inner_content) = inner_content {
         let range = ast.syntax().text_trimmed_range();
@@ -78,6 +69,17 @@ pub fn all_equal(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 
         return Ok(Some(diagnostic));
     }
+
+    // 2) Check for other cases: if (all.equal()), while(all.equal()), etc.
+    let function = ast.function()?;
+    let fun_name = get_function_name(function);
+    if fun_name != "all.equal" {
+        return Ok(None);
+    }
+
+    let mut msg = "".to_string();
+    let mut fix_content = "".to_string();
+    let mut range = ast.syntax().text_trimmed_range();
 
     // The `condition` part of an `RIfStatement` is always the 3rd node
     // (index 2):
