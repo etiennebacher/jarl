@@ -18,6 +18,7 @@ pub struct Repeat;
 /// ```r
 /// while (TRUE) {
 ///   # ...
+///   break
 /// }
 /// ```
 ///
@@ -25,6 +26,7 @@ pub struct Repeat;
 /// ```r
 /// repeat {
 ///   # ...
+///   break
 /// }
 /// ```
 impl Violation for Repeat {
