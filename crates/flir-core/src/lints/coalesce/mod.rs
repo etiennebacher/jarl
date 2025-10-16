@@ -22,6 +22,9 @@ mod tests {
         expect_no_lint("if (!is.null(x)) {x \n z} else y", "coalesce", version);
         expect_no_lint("if (is.null(s <- foo())) y else x", "coalesce", version);
         expect_no_lint("if (!is.null(s <- foo())) x else y", "coalesce", version);
+
+        // TODO: should maybe be reported? lintr reports this
+        expect_no_lint("if (is.null(s <- foo(x))) y else s", "coalesce", version);
     }
 
     #[test]
