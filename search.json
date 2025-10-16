@@ -168,311 +168,355 @@
     ]
   },
   {
-    "objectID": "rules/which_grepl.html",
-    "href": "rules/which_grepl.html",
-    "title": "which_grepl",
+    "objectID": "rules/matrix_apply.html",
+    "href": "rules/matrix_apply.html",
+    "title": "matrix_apply",
     "section": "",
-    "text": "Checks for usage of which(grepl(...)) and replaces it with grep(...).\n\n\n\nwhich(grepl(...)) is harder to read and is less efficient than grep() since it requires two passes on the vector.\n\n\n\n\nx &lt;- c(\"hello\", \"there\")\nwhich(grepl(\"hell\", x))\n\n[1] 1\n\nwhich(grepl(\"foo\", x))\n\ninteger(0)\n\n\nUse instead:\n\nx &lt;- c(\"hello\", \"there\")\ngrep(\"hell\", x)\n\n[1] 1\n\ngrep(\"foo\", x)\n\ninteger(0)\n\n\n\n\n\nSee ?grep",
+    "text": "Checks for usage of apply(x, 1/2, mean/sum).\n\n\n\napply() with FUN = sum or FUN = mean are inefficient when MARGIN is 1 or 2. colSums(), rowSums(), colMeans(), rowMeans() are both easier to read and much more efficient.\nThis rule provides an automated fix, except when extra arguments (outside of na.rm) are provided. In other words, this would be marked as lint and could be automatically replaced:\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, na.rm = TRUE)\n\n[1] 2.5 3.5 4.5\n\n\nbut this wouldn’t:\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, trim = 0.2)\n\n[1] 2.5 3.5 4.5\n\n\n\n\n\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, sum)\n\n[1] 5 7 9\n\napply(dat, 2, sum)\n\n x  y \n 6 15 \n\napply(dat, 1, mean)\n\n[1] 2.5 3.5 4.5\n\napply(dat, 2, mean)\n\nx y \n2 5 \n\napply(dat, 2, mean, na.rm = TRUE)\n\nx y \n2 5 \n\n\nUse instead:\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\nrowSums(dat)\n\n[1] 5 7 9\n\ncolSums(dat)\n\n x  y \n 6 15 \n\nrowMeans(dat)\n\n[1] 2.5 3.5 4.5\n\ncolMeans(dat)\n\nx y \n2 5 \n\ncolMeans(dat, na.rm = TRUE)\n\nx y \n2 5 \n\n\n\n\n\nSee ?colSums",
     "crumbs": [
       "Rules",
-      "`which_grepl`"
+      "`matrix_apply`"
     ]
   },
   {
-    "objectID": "rules/which_grepl.html#what-it-does",
-    "href": "rules/which_grepl.html#what-it-does",
-    "title": "which_grepl",
+    "objectID": "rules/matrix_apply.html#what-it-does",
+    "href": "rules/matrix_apply.html#what-it-does",
+    "title": "matrix_apply",
     "section": "",
-    "text": "Checks for usage of which(grepl(...)) and replaces it with grep(...).",
+    "text": "Checks for usage of apply(x, 1/2, mean/sum).",
     "crumbs": [
       "Rules",
-      "`which_grepl`"
+      "`matrix_apply`"
     ]
   },
   {
-    "objectID": "rules/which_grepl.html#why-is-this-bad",
-    "href": "rules/which_grepl.html#why-is-this-bad",
-    "title": "which_grepl",
+    "objectID": "rules/matrix_apply.html#why-is-this-bad",
+    "href": "rules/matrix_apply.html#why-is-this-bad",
+    "title": "matrix_apply",
     "section": "",
-    "text": "which(grepl(...)) is harder to read and is less efficient than grep() since it requires two passes on the vector.",
+    "text": "apply() with FUN = sum or FUN = mean are inefficient when MARGIN is 1 or 2. colSums(), rowSums(), colMeans(), rowMeans() are both easier to read and much more efficient.\nThis rule provides an automated fix, except when extra arguments (outside of na.rm) are provided. In other words, this would be marked as lint and could be automatically replaced:\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, na.rm = TRUE)\n\n[1] 2.5 3.5 4.5\n\n\nbut this wouldn’t:\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, trim = 0.2)\n\n[1] 2.5 3.5 4.5",
     "crumbs": [
       "Rules",
-      "`which_grepl`"
+      "`matrix_apply`"
     ]
   },
   {
-    "objectID": "rules/which_grepl.html#example",
-    "href": "rules/which_grepl.html#example",
-    "title": "which_grepl",
+    "objectID": "rules/matrix_apply.html#example",
+    "href": "rules/matrix_apply.html#example",
+    "title": "matrix_apply",
     "section": "",
-    "text": "x &lt;- c(\"hello\", \"there\")\nwhich(grepl(\"hell\", x))\n\n[1] 1\n\nwhich(grepl(\"foo\", x))\n\ninteger(0)\n\n\nUse instead:\n\nx &lt;- c(\"hello\", \"there\")\ngrep(\"hell\", x)\n\n[1] 1\n\ngrep(\"foo\", x)\n\ninteger(0)",
+    "text": "dat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, sum)\n\n[1] 5 7 9\n\napply(dat, 2, sum)\n\n x  y \n 6 15 \n\napply(dat, 1, mean)\n\n[1] 2.5 3.5 4.5\n\napply(dat, 2, mean)\n\nx y \n2 5 \n\napply(dat, 2, mean, na.rm = TRUE)\n\nx y \n2 5 \n\n\nUse instead:\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\nrowSums(dat)\n\n[1] 5 7 9\n\ncolSums(dat)\n\n x  y \n 6 15 \n\nrowMeans(dat)\n\n[1] 2.5 3.5 4.5\n\ncolMeans(dat)\n\nx y \n2 5 \n\ncolMeans(dat, na.rm = TRUE)\n\nx y \n2 5",
     "crumbs": [
       "Rules",
-      "`which_grepl`"
+      "`matrix_apply`"
     ]
   },
   {
-    "objectID": "rules/which_grepl.html#references",
-    "href": "rules/which_grepl.html#references",
-    "title": "which_grepl",
+    "objectID": "rules/matrix_apply.html#references",
+    "href": "rules/matrix_apply.html#references",
+    "title": "matrix_apply",
     "section": "",
-    "text": "See ?grep",
+    "text": "See ?colSums",
     "crumbs": [
       "Rules",
-      "`which_grepl`"
+      "`matrix_apply`"
     ]
   },
   {
-    "objectID": "rules/equals_na.html",
-    "href": "rules/equals_na.html",
-    "title": "equals_na",
+    "objectID": "rules/sample_int.html",
+    "href": "rules/sample_int.html",
+    "title": "sample_int",
     "section": "",
-    "text": "Check for x == NA, x != NA and x %in% NA, and replaces those by is.na() calls.\n\n\n\nComparing a value to NA using == returns NA in many cases:\n\nx &lt;- c(1, 2, 3, NA)\nx == NA\n\n[1] NA NA NA NA\n\n\nwhich is very likely not the expected output.\n\n\n\n\nx &lt;- c(1, 2, 3, NA)\nx == NA\n\n[1] NA NA NA NA\n\n\nUse instead:\n\nx &lt;- c(1, 2, 3, NA)\nis.na(x)\n\n[1] FALSE FALSE FALSE  TRUE",
+    "text": "Checks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.\n\n\n\nsample() calls sample.int() internally so they have the same performance, but the latter is more readable.\n\n\n\n\nsample(1:10, 2)\n\n[1] 2 9\n\n\nUse instead:\n\nsample.int(10, 2)\n\n[1] 3 2\n\n\n\n\n\nSee ?sample",
     "crumbs": [
       "Rules",
-      "`equals_na`"
+      "`sample_int`"
     ]
   },
   {
-    "objectID": "rules/equals_na.html#what-it-does",
-    "href": "rules/equals_na.html#what-it-does",
-    "title": "equals_na",
+    "objectID": "rules/sample_int.html#what-it-does",
+    "href": "rules/sample_int.html#what-it-does",
+    "title": "sample_int",
     "section": "",
-    "text": "Check for x == NA, x != NA and x %in% NA, and replaces those by is.na() calls.",
+    "text": "Checks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.",
     "crumbs": [
       "Rules",
-      "`equals_na`"
+      "`sample_int`"
     ]
   },
   {
-    "objectID": "rules/equals_na.html#why-is-this-bad",
-    "href": "rules/equals_na.html#why-is-this-bad",
-    "title": "equals_na",
+    "objectID": "rules/sample_int.html#why-is-this-bad",
+    "href": "rules/sample_int.html#why-is-this-bad",
+    "title": "sample_int",
     "section": "",
-    "text": "Comparing a value to NA using == returns NA in many cases:\n\nx &lt;- c(1, 2, 3, NA)\nx == NA\n\n[1] NA NA NA NA\n\n\nwhich is very likely not the expected output.",
+    "text": "sample() calls sample.int() internally so they have the same performance, but the latter is more readable.",
     "crumbs": [
       "Rules",
-      "`equals_na`"
+      "`sample_int`"
     ]
   },
   {
-    "objectID": "rules/equals_na.html#example",
-    "href": "rules/equals_na.html#example",
-    "title": "equals_na",
+    "objectID": "rules/sample_int.html#example",
+    "href": "rules/sample_int.html#example",
+    "title": "sample_int",
     "section": "",
-    "text": "x &lt;- c(1, 2, 3, NA)\nx == NA\n\n[1] NA NA NA NA\n\n\nUse instead:\n\nx &lt;- c(1, 2, 3, NA)\nis.na(x)\n\n[1] FALSE FALSE FALSE  TRUE",
+    "text": "sample(1:10, 2)\n\n[1] 2 9\n\n\nUse instead:\n\nsample.int(10, 2)\n\n[1] 3 2",
     "crumbs": [
       "Rules",
-      "`equals_na`"
+      "`sample_int`"
     ]
   },
   {
-    "objectID": "rules/assignment.html",
-    "href": "rules/assignment.html",
-    "title": "assignment",
+    "objectID": "rules/sample_int.html#references",
+    "href": "rules/sample_int.html#references",
+    "title": "sample_int",
     "section": "",
-    "text": "Checks for usage of = as assignment operator.\n\n\n\nThis is not “bad” strictly speaking since in most cases using = and &lt;- is equivalent. Some very popular packages use = without problems.\nNonetheless, &lt;- is more popular and this rule may be useful to avoid mixing both operators in a codebase.\n\n\n\n\nx = \"a\"\n\nUse instead:\n\nx &lt;- \"a\"\n\n\n\n\nSee: * https://style.tidyverse.org/syntax.html#assignment-1 * https://stackoverflow.com/a/1742550",
+    "text": "See ?sample",
     "crumbs": [
       "Rules",
-      "`assignment`"
+      "`sample_int`"
     ]
   },
   {
-    "objectID": "rules/assignment.html#what-it-does",
-    "href": "rules/assignment.html#what-it-does",
-    "title": "assignment",
+    "objectID": "rules/class_equals.html",
+    "href": "rules/class_equals.html",
+    "title": "class_equals",
     "section": "",
-    "text": "Checks for usage of = as assignment operator.",
+    "text": "Checks for usage of class(...) == \"some_class\" and class(...) %in% \"some_class\".\n\n\n\nAn R object can have several classes. Therefore, class(...) == \"some_class\" would return a logical vector with as many values as the object has classes, which is rarely desirable.\nIt is better to use inherits(..., \"some_class\") instead. inherits() checks whether any of the object’s classes match the desired class.\nThe same rationale applies to class(...) %in% \"some_class\".\n\n\n\n\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nclass(x) == \"lm\"\n\n[1] FALSE  TRUE\n\n\nUse instead:\n\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\ninherits(x, \"lm\")\n\n[1] TRUE\n\n\n\n\n\nSee ?inherits",
     "crumbs": [
       "Rules",
-      "`assignment`"
+      "`class_equals`"
     ]
   },
   {
-    "objectID": "rules/assignment.html#why-is-this-bad",
-    "href": "rules/assignment.html#why-is-this-bad",
-    "title": "assignment",
+    "objectID": "rules/class_equals.html#what-it-does",
+    "href": "rules/class_equals.html#what-it-does",
+    "title": "class_equals",
     "section": "",
-    "text": "This is not “bad” strictly speaking since in most cases using = and &lt;- is equivalent. Some very popular packages use = without problems.\nNonetheless, &lt;- is more popular and this rule may be useful to avoid mixing both operators in a codebase.",
+    "text": "Checks for usage of class(...) == \"some_class\" and class(...) %in% \"some_class\".",
     "crumbs": [
       "Rules",
-      "`assignment`"
+      "`class_equals`"
     ]
   },
   {
-    "objectID": "rules/assignment.html#example",
-    "href": "rules/assignment.html#example",
-    "title": "assignment",
+    "objectID": "rules/class_equals.html#why-is-this-bad",
+    "href": "rules/class_equals.html#why-is-this-bad",
+    "title": "class_equals",
     "section": "",
-    "text": "x = \"a\"\n\nUse instead:\n\nx &lt;- \"a\"",
+    "text": "An R object can have several classes. Therefore, class(...) == \"some_class\" would return a logical vector with as many values as the object has classes, which is rarely desirable.\nIt is better to use inherits(..., \"some_class\") instead. inherits() checks whether any of the object’s classes match the desired class.\nThe same rationale applies to class(...) %in% \"some_class\".",
     "crumbs": [
       "Rules",
-      "`assignment`"
+      "`class_equals`"
     ]
   },
   {
-    "objectID": "rules/assignment.html#references",
-    "href": "rules/assignment.html#references",
-    "title": "assignment",
+    "objectID": "rules/class_equals.html#example",
+    "href": "rules/class_equals.html#example",
+    "title": "class_equals",
     "section": "",
-    "text": "See: * https://style.tidyverse.org/syntax.html#assignment-1 * https://stackoverflow.com/a/1742550",
+    "text": "x &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nclass(x) == \"lm\"\n\n[1] FALSE  TRUE\n\n\nUse instead:\n\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\ninherits(x, \"lm\")\n\n[1] TRUE",
     "crumbs": [
       "Rules",
-      "`assignment`"
+      "`class_equals`"
     ]
   },
   {
-    "objectID": "rules/is_numeric.html",
-    "href": "rules/is_numeric.html",
-    "title": "is_numeric",
+    "objectID": "rules/class_equals.html#references",
+    "href": "rules/class_equals.html#references",
+    "title": "class_equals",
     "section": "",
-    "text": "Checks for usage of is.numeric(x) || is.integer(x).\n\n\n\nis.numeric(x) returns TRUE when x is double or integer. Therefore, testing is.numeric(x) || is.integer(x) is redundant and can be simplified.\n\n\n\n\nx &lt;- 1:3\nis.numeric(x) || is.integer(x)\n\n[1] TRUE\n\n\nUse instead:\n\nx &lt;- 1:3\nis.numeric(x)\n\n[1] TRUE\n\n\n\n\n\nSee ?is.numeric",
+    "text": "See ?inherits",
     "crumbs": [
       "Rules",
-      "`is_numeric`"
+      "`class_equals`"
     ]
   },
   {
-    "objectID": "rules/is_numeric.html#what-it-does",
-    "href": "rules/is_numeric.html#what-it-does",
-    "title": "is_numeric",
+    "objectID": "rules/implicit_assignment.html",
+    "href": "rules/implicit_assignment.html",
+    "title": "implicit_assignment",
     "section": "",
-    "text": "Checks for usage of is.numeric(x) || is.integer(x).",
+    "text": "Checks for implicit assignment in function calls and other situations.\n\n\n\nAssigning inside function calls or other situations such as in if() makes the code difficult to read, and should be avoided.\n\n\n\n\nmean(x &lt;- c(1, 2, 3))\n\n[1] 2\n\nx\n\n[1] 1 2 3\n\nif (any(y &lt;- x &gt; 0)) {\n  print(y)\n}\n\n[1] TRUE TRUE TRUE\n\n\nUse instead:\n\nx &lt;- c(1, 2, 3)\nmean(x)\n\n[1] 2\n\nx\n\n[1] 1 2 3\n\nlarger &lt;- x &gt; 0\nif (any(larger)) {\n  print(larger)\n}\n\n[1] TRUE TRUE TRUE\n\n\n\n\n\nSee: * https://style.tidyverse.org/syntax.html#assignment",
     "crumbs": [
       "Rules",
-      "`is_numeric`"
+      "`implicit_assignment`"
     ]
   },
   {
-    "objectID": "rules/is_numeric.html#why-is-this-bad",
-    "href": "rules/is_numeric.html#why-is-this-bad",
-    "title": "is_numeric",
+    "objectID": "rules/implicit_assignment.html#what-it-does",
+    "href": "rules/implicit_assignment.html#what-it-does",
+    "title": "implicit_assignment",
     "section": "",
-    "text": "is.numeric(x) returns TRUE when x is double or integer. Therefore, testing is.numeric(x) || is.integer(x) is redundant and can be simplified.",
+    "text": "Checks for implicit assignment in function calls and other situations.",
     "crumbs": [
       "Rules",
-      "`is_numeric`"
+      "`implicit_assignment`"
     ]
   },
   {
-    "objectID": "rules/is_numeric.html#example",
-    "href": "rules/is_numeric.html#example",
-    "title": "is_numeric",
+    "objectID": "rules/implicit_assignment.html#why-is-this-bad",
+    "href": "rules/implicit_assignment.html#why-is-this-bad",
+    "title": "implicit_assignment",
     "section": "",
-    "text": "x &lt;- 1:3\nis.numeric(x) || is.integer(x)\n\n[1] TRUE\n\n\nUse instead:\n\nx &lt;- 1:3\nis.numeric(x)\n\n[1] TRUE",
+    "text": "Assigning inside function calls or other situations such as in if() makes the code difficult to read, and should be avoided.",
     "crumbs": [
       "Rules",
-      "`is_numeric`"
+      "`implicit_assignment`"
     ]
   },
   {
-    "objectID": "rules/is_numeric.html#references",
-    "href": "rules/is_numeric.html#references",
-    "title": "is_numeric",
+    "objectID": "rules/implicit_assignment.html#example",
+    "href": "rules/implicit_assignment.html#example",
+    "title": "implicit_assignment",
     "section": "",
-    "text": "See ?is.numeric",
+    "text": "mean(x &lt;- c(1, 2, 3))\n\n[1] 2\n\nx\n\n[1] 1 2 3\n\nif (any(y &lt;- x &gt; 0)) {\n  print(y)\n}\n\n[1] TRUE TRUE TRUE\n\n\nUse instead:\n\nx &lt;- c(1, 2, 3)\nmean(x)\n\n[1] 2\n\nx\n\n[1] 1 2 3\n\nlarger &lt;- x &gt; 0\nif (any(larger)) {\n  print(larger)\n}\n\n[1] TRUE TRUE TRUE",
     "crumbs": [
       "Rules",
-      "`is_numeric`"
+      "`implicit_assignment`"
     ]
   },
   {
-    "objectID": "rules/any_is_na.html",
-    "href": "rules/any_is_na.html",
-    "title": "any_is_na",
+    "objectID": "rules/implicit_assignment.html#references",
+    "href": "rules/implicit_assignment.html#references",
+    "title": "implicit_assignment",
     "section": "",
-    "text": "Checks for usage of any(is.na(...)).\n\n\n\nany(is.na(...)) is valid code but requires the evaluation of is.na() on the entire input first.\nThere is a more efficient function in base R called anyNA() that is more efficient, both in speed and memory used.\n\n\n\n\nx &lt;- c(1:10000, NA)\nany(is.na(x))\n\n[1] TRUE\n\n\nUse instead:\n\nx &lt;- c(1:10000, NA)\nanyNA(x)\n\n[1] TRUE\n\n\n\n\n\nSee ?anyNA",
+    "text": "See: * https://style.tidyverse.org/syntax.html#assignment",
     "crumbs": [
       "Rules",
-      "`any_is_na`"
+      "`implicit_assignment`"
     ]
   },
   {
-    "objectID": "rules/any_is_na.html#what-it-does",
-    "href": "rules/any_is_na.html#what-it-does",
-    "title": "any_is_na",
+    "objectID": "rules/duplicated_arguments.html",
+    "href": "rules/duplicated_arguments.html",
+    "title": "duplicated_arguments",
     "section": "",
-    "text": "Checks for usage of any(is.na(...)).",
+    "text": "Checks for duplicated arguments in function calls.\n\n\n\nWhile some cases of duplicated arguments generate run-time errors (e.g. mean(x = 1:5, x = 2:3)), this is not always the case (e.g. c(a = 1, a = 2)).\nThis linter is used to discourage explicitly providing duplicate names to objects. Duplicate-named objects are hard to work with programmatically and should typically be avoided.\n\n\n\n\nlist(x = 1, x = 2)\n\n$x\n[1] 1\n\n$x\n[1] 2",
     "crumbs": [
       "Rules",
-      "`any_is_na`"
+      "`duplicated_arguments`"
     ]
   },
   {
-    "objectID": "rules/any_is_na.html#why-is-this-bad",
-    "href": "rules/any_is_na.html#why-is-this-bad",
-    "title": "any_is_na",
+    "objectID": "rules/duplicated_arguments.html#what-it-does",
+    "href": "rules/duplicated_arguments.html#what-it-does",
+    "title": "duplicated_arguments",
     "section": "",
-    "text": "any(is.na(...)) is valid code but requires the evaluation of is.na() on the entire input first.\nThere is a more efficient function in base R called anyNA() that is more efficient, both in speed and memory used.",
+    "text": "Checks for duplicated arguments in function calls.",
     "crumbs": [
       "Rules",
-      "`any_is_na`"
+      "`duplicated_arguments`"
     ]
   },
   {
-    "objectID": "rules/any_is_na.html#example",
-    "href": "rules/any_is_na.html#example",
-    "title": "any_is_na",
+    "objectID": "rules/duplicated_arguments.html#why-is-this-bad",
+    "href": "rules/duplicated_arguments.html#why-is-this-bad",
+    "title": "duplicated_arguments",
     "section": "",
-    "text": "x &lt;- c(1:10000, NA)\nany(is.na(x))\n\n[1] TRUE\n\n\nUse instead:\n\nx &lt;- c(1:10000, NA)\nanyNA(x)\n\n[1] TRUE",
+    "text": "While some cases of duplicated arguments generate run-time errors (e.g. mean(x = 1:5, x = 2:3)), this is not always the case (e.g. c(a = 1, a = 2)).\nThis linter is used to discourage explicitly providing duplicate names to objects. Duplicate-named objects are hard to work with programmatically and should typically be avoided.",
     "crumbs": [
       "Rules",
-      "`any_is_na`"
+      "`duplicated_arguments`"
     ]
   },
   {
-    "objectID": "rules/any_is_na.html#references",
-    "href": "rules/any_is_na.html#references",
-    "title": "any_is_na",
+    "objectID": "rules/duplicated_arguments.html#example",
+    "href": "rules/duplicated_arguments.html#example",
+    "title": "duplicated_arguments",
     "section": "",
-    "text": "See ?anyNA",
+    "text": "list(x = 1, x = 2)\n\n$x\n[1] 1\n\n$x\n[1] 2",
     "crumbs": [
       "Rules",
-      "`any_is_na`"
+      "`duplicated_arguments`"
     ]
   },
   {
-    "objectID": "rules/length_levels.html",
-    "href": "rules/length_levels.html",
-    "title": "length_levels",
+    "objectID": "rules/redundant_equals.html",
+    "href": "rules/redundant_equals.html",
+    "title": "redundant_equals",
     "section": "",
-    "text": "Check for length(levels(...)) and replace it with nlevels(...).\n\n\n\nlength(levels(...)) is harder to read nlevels(...).\nInternally, nlevels() calls length(levels(...)) so there are no performance gains.\n\n\n\n\nx &lt;- factor(1:3)\nlength(levels(x))\n\n[1] 3\n\n\nUse instead:\n\nx &lt;- factor(1:3)\nnlevels(x)\n\n[1] 3",
+    "text": "Checks for usage of == and != where one of the sides of the operation is TRUE or FALSE.\n\n\n\nTesting x == TRUE is redundant if x is a logical vector. Wherever this is used to improve readability, the solution should instead be to improve the naming of the object to better indicate that its contents are logical. This can be done using prefixes (is, has, can, etc.). For example, is_child, has_parent_supervision, can_watch_horror_movie clarify their logical nature, while child, parent_supervision, watch_horror_movie don’t.\n\n\n\n\nx &lt;- c(TRUE, FALSE)\nif (any(x == TRUE)) {\n  print(\"hi\")\n}\n\n[1] \"hi\"\n\n\nUse instead:\n\nx &lt;- c(TRUE, FALSE)\nif (any(x)) {\n  print(\"hi\")\n}\n\n[1] \"hi\"",
     "crumbs": [
       "Rules",
-      "`length_levels`"
+      "`redundant_equals`"
     ]
   },
   {
-    "objectID": "rules/length_levels.html#what-it-does",
-    "href": "rules/length_levels.html#what-it-does",
-    "title": "length_levels",
+    "objectID": "rules/redundant_equals.html#what-it-does",
+    "href": "rules/redundant_equals.html#what-it-does",
+    "title": "redundant_equals",
     "section": "",
-    "text": "Check for length(levels(...)) and replace it with nlevels(...).",
+    "text": "Checks for usage of == and != where one of the sides of the operation is TRUE or FALSE.",
     "crumbs": [
       "Rules",
-      "`length_levels`"
+      "`redundant_equals`"
     ]
   },
   {
-    "objectID": "rules/length_levels.html#why-is-this-bad",
-    "href": "rules/length_levels.html#why-is-this-bad",
-    "title": "length_levels",
+    "objectID": "rules/redundant_equals.html#why-is-this-bad",
+    "href": "rules/redundant_equals.html#why-is-this-bad",
+    "title": "redundant_equals",
     "section": "",
-    "text": "length(levels(...)) is harder to read nlevels(...).\nInternally, nlevels() calls length(levels(...)) so there are no performance gains.",
+    "text": "Testing x == TRUE is redundant if x is a logical vector. Wherever this is used to improve readability, the solution should instead be to improve the naming of the object to better indicate that its contents are logical. This can be done using prefixes (is, has, can, etc.). For example, is_child, has_parent_supervision, can_watch_horror_movie clarify their logical nature, while child, parent_supervision, watch_horror_movie don’t.",
     "crumbs": [
       "Rules",
-      "`length_levels`"
+      "`redundant_equals`"
     ]
   },
   {
-    "objectID": "rules/length_levels.html#example",
-    "href": "rules/length_levels.html#example",
-    "title": "length_levels",
+    "objectID": "rules/redundant_equals.html#example",
+    "href": "rules/redundant_equals.html#example",
+    "title": "redundant_equals",
     "section": "",
-    "text": "x &lt;- factor(1:3)\nlength(levels(x))\n\n[1] 3\n\n\nUse instead:\n\nx &lt;- factor(1:3)\nnlevels(x)\n\n[1] 3",
+    "text": "x &lt;- c(TRUE, FALSE)\nif (any(x == TRUE)) {\n  print(\"hi\")\n}\n\n[1] \"hi\"\n\n\nUse instead:\n\nx &lt;- c(TRUE, FALSE)\nif (any(x)) {\n  print(\"hi\")\n}\n\n[1] \"hi\"",
     "crumbs": [
       "Rules",
-      "`length_levels`"
+      "`redundant_equals`"
+    ]
+  },
+  {
+    "objectID": "rules/repeat.html",
+    "href": "rules/repeat.html",
+    "title": "repeat",
+    "section": "",
+    "text": "Checks use of while (TRUE) and recommends the use of repeat instead.\n\n\n\nwhile (TRUE) is valid R code but repeat better expresses the intent of infinite loop.\n\n\n\n\nwhile (TRUE) {\n  # ...\n  break\n}\n\nUse instead:\n\nrepeat {\n  # ...\n  break\n}",
+    "crumbs": [
+      "Rules",
+      "`repeat`"
+    ]
+  },
+  {
+    "objectID": "rules/repeat.html#what-it-does",
+    "href": "rules/repeat.html#what-it-does",
+    "title": "repeat",
+    "section": "",
+    "text": "Checks use of while (TRUE) and recommends the use of repeat instead.",
+    "crumbs": [
+      "Rules",
+      "`repeat`"
+    ]
+  },
+  {
+    "objectID": "rules/repeat.html#why-is-this-bad",
+    "href": "rules/repeat.html#why-is-this-bad",
+    "title": "repeat",
+    "section": "",
+    "text": "while (TRUE) is valid R code but repeat better expresses the intent of infinite loop.",
+    "crumbs": [
+      "Rules",
+      "`repeat`"
+    ]
+  },
+  {
+    "objectID": "rules/repeat.html#example",
+    "href": "rules/repeat.html#example",
+    "title": "repeat",
+    "section": "",
+    "text": "while (TRUE) {\n  # ...\n  break\n}\n\nUse instead:\n\nrepeat {\n  # ...\n  break\n}",
+    "crumbs": [
+      "Rules",
+      "`repeat`"
     ]
   },
   {
@@ -609,311 +653,366 @@
     ]
   },
   {
-    "objectID": "rules/redundant_equals.html",
-    "href": "rules/redundant_equals.html",
-    "title": "redundant_equals",
+    "objectID": "rules/length_levels.html",
+    "href": "rules/length_levels.html",
+    "title": "length_levels",
     "section": "",
-    "text": "Checks for usage of == and != where one of the sides of the operation is TRUE or FALSE.\n\n\n\nTesting x == TRUE is redundant if x is a logical vector. Wherever this is used to improve readability, the solution should instead be to improve the naming of the object to better indicate that its contents are logical. This can be done using prefixes (is, has, can, etc.). For example, is_child, has_parent_supervision, can_watch_horror_movie clarify their logical nature, while child, parent_supervision, watch_horror_movie don’t.\n\n\n\n\nx &lt;- c(TRUE, FALSE)\nif (any(x == TRUE)) {\n  print(\"hi\")\n}\n\n[1] \"hi\"\n\n\nUse instead:\n\nx &lt;- c(TRUE, FALSE)\nif (any(x)) {\n  print(\"hi\")\n}\n\n[1] \"hi\"",
+    "text": "Check for length(levels(...)) and replace it with nlevels(...).\n\n\n\nlength(levels(...)) is harder to read nlevels(...).\nInternally, nlevels() calls length(levels(...)) so there are no performance gains.\n\n\n\n\nx &lt;- factor(1:3)\nlength(levels(x))\n\n[1] 3\n\n\nUse instead:\n\nx &lt;- factor(1:3)\nnlevels(x)\n\n[1] 3",
     "crumbs": [
       "Rules",
-      "`redundant_equals`"
+      "`length_levels`"
     ]
   },
   {
-    "objectID": "rules/redundant_equals.html#what-it-does",
-    "href": "rules/redundant_equals.html#what-it-does",
-    "title": "redundant_equals",
+    "objectID": "rules/length_levels.html#what-it-does",
+    "href": "rules/length_levels.html#what-it-does",
+    "title": "length_levels",
     "section": "",
-    "text": "Checks for usage of == and != where one of the sides of the operation is TRUE or FALSE.",
+    "text": "Check for length(levels(...)) and replace it with nlevels(...).",
     "crumbs": [
       "Rules",
-      "`redundant_equals`"
+      "`length_levels`"
     ]
   },
   {
-    "objectID": "rules/redundant_equals.html#why-is-this-bad",
-    "href": "rules/redundant_equals.html#why-is-this-bad",
-    "title": "redundant_equals",
+    "objectID": "rules/length_levels.html#why-is-this-bad",
+    "href": "rules/length_levels.html#why-is-this-bad",
+    "title": "length_levels",
     "section": "",
-    "text": "Testing x == TRUE is redundant if x is a logical vector. Wherever this is used to improve readability, the solution should instead be to improve the naming of the object to better indicate that its contents are logical. This can be done using prefixes (is, has, can, etc.). For example, is_child, has_parent_supervision, can_watch_horror_movie clarify their logical nature, while child, parent_supervision, watch_horror_movie don’t.",
+    "text": "length(levels(...)) is harder to read nlevels(...).\nInternally, nlevels() calls length(levels(...)) so there are no performance gains.",
     "crumbs": [
       "Rules",
-      "`redundant_equals`"
+      "`length_levels`"
     ]
   },
   {
-    "objectID": "rules/redundant_equals.html#example",
-    "href": "rules/redundant_equals.html#example",
-    "title": "redundant_equals",
+    "objectID": "rules/length_levels.html#example",
+    "href": "rules/length_levels.html#example",
+    "title": "length_levels",
     "section": "",
-    "text": "x &lt;- c(TRUE, FALSE)\nif (any(x == TRUE)) {\n  print(\"hi\")\n}\n\n[1] \"hi\"\n\n\nUse instead:\n\nx &lt;- c(TRUE, FALSE)\nif (any(x)) {\n  print(\"hi\")\n}\n\n[1] \"hi\"",
+    "text": "x &lt;- factor(1:3)\nlength(levels(x))\n\n[1] 3\n\n\nUse instead:\n\nx &lt;- factor(1:3)\nnlevels(x)\n\n[1] 3",
     "crumbs": [
       "Rules",
-      "`redundant_equals`"
+      "`length_levels`"
     ]
   },
   {
-    "objectID": "rules/duplicated_arguments.html",
-    "href": "rules/duplicated_arguments.html",
-    "title": "duplicated_arguments",
+    "objectID": "rules/any_is_na.html",
+    "href": "rules/any_is_na.html",
+    "title": "any_is_na",
     "section": "",
-    "text": "Checks for duplicated arguments in function calls.\n\n\n\nWhile some cases of duplicated arguments generate run-time errors (e.g. mean(x = 1:5, x = 2:3)), this is not always the case (e.g. c(a = 1, a = 2)).\nThis linter is used to discourage explicitly providing duplicate names to objects. Duplicate-named objects are hard to work with programmatically and should typically be avoided.\n\n\n\n\nlist(x = 1, x = 2)\n\n$x\n[1] 1\n\n$x\n[1] 2",
+    "text": "Checks for usage of any(is.na(...)).\n\n\n\nany(is.na(...)) is valid code but requires the evaluation of is.na() on the entire input first.\nThere is a more efficient function in base R called anyNA() that is more efficient, both in speed and memory used.\n\n\n\n\nx &lt;- c(1:10000, NA)\nany(is.na(x))\n\n[1] TRUE\n\n\nUse instead:\n\nx &lt;- c(1:10000, NA)\nanyNA(x)\n\n[1] TRUE\n\n\n\n\n\nSee ?anyNA",
     "crumbs": [
       "Rules",
-      "`duplicated_arguments`"
+      "`any_is_na`"
     ]
   },
   {
-    "objectID": "rules/duplicated_arguments.html#what-it-does",
-    "href": "rules/duplicated_arguments.html#what-it-does",
-    "title": "duplicated_arguments",
+    "objectID": "rules/any_is_na.html#what-it-does",
+    "href": "rules/any_is_na.html#what-it-does",
+    "title": "any_is_na",
     "section": "",
-    "text": "Checks for duplicated arguments in function calls.",
+    "text": "Checks for usage of any(is.na(...)).",
     "crumbs": [
       "Rules",
-      "`duplicated_arguments`"
+      "`any_is_na`"
     ]
   },
   {
-    "objectID": "rules/duplicated_arguments.html#why-is-this-bad",
-    "href": "rules/duplicated_arguments.html#why-is-this-bad",
-    "title": "duplicated_arguments",
+    "objectID": "rules/any_is_na.html#why-is-this-bad",
+    "href": "rules/any_is_na.html#why-is-this-bad",
+    "title": "any_is_na",
     "section": "",
-    "text": "While some cases of duplicated arguments generate run-time errors (e.g. mean(x = 1:5, x = 2:3)), this is not always the case (e.g. c(a = 1, a = 2)).\nThis linter is used to discourage explicitly providing duplicate names to objects. Duplicate-named objects are hard to work with programmatically and should typically be avoided.",
+    "text": "any(is.na(...)) is valid code but requires the evaluation of is.na() on the entire input first.\nThere is a more efficient function in base R called anyNA() that is more efficient, both in speed and memory used.",
     "crumbs": [
       "Rules",
-      "`duplicated_arguments`"
+      "`any_is_na`"
     ]
   },
   {
-    "objectID": "rules/duplicated_arguments.html#example",
-    "href": "rules/duplicated_arguments.html#example",
-    "title": "duplicated_arguments",
+    "objectID": "rules/any_is_na.html#example",
+    "href": "rules/any_is_na.html#example",
+    "title": "any_is_na",
     "section": "",
-    "text": "list(x = 1, x = 2)\n\n$x\n[1] 1\n\n$x\n[1] 2",
+    "text": "x &lt;- c(1:10000, NA)\nany(is.na(x))\n\n[1] TRUE\n\n\nUse instead:\n\nx &lt;- c(1:10000, NA)\nanyNA(x)\n\n[1] TRUE",
     "crumbs": [
       "Rules",
-      "`duplicated_arguments`"
+      "`any_is_na`"
     ]
   },
   {
-    "objectID": "rules/implicit_assignment.html",
-    "href": "rules/implicit_assignment.html",
-    "title": "implicit_assignment",
+    "objectID": "rules/any_is_na.html#references",
+    "href": "rules/any_is_na.html#references",
+    "title": "any_is_na",
     "section": "",
-    "text": "Checks for implicit assignment in function calls and other situations.\n\n\n\nAssigning inside function calls or other situations such as in if() makes the code difficult to read, and should be avoided.\n\n\n\n\nmean(x &lt;- c(1, 2, 3))\n\n[1] 2\n\nx\n\n[1] 1 2 3\n\nif (any(y &lt;- x &gt; 0)) {\n  print(y)\n}\n\n[1] TRUE TRUE TRUE\n\n\nUse instead:\n\nx &lt;- c(1, 2, 3)\nmean(x)\n\n[1] 2\n\nx\n\n[1] 1 2 3\n\nlarger &lt;- x &gt; 0\nif (any(larger)) {\n  print(larger)\n}\n\n[1] TRUE TRUE TRUE\n\n\n\n\n\nSee: * https://style.tidyverse.org/syntax.html#assignment",
+    "text": "See ?anyNA",
     "crumbs": [
       "Rules",
-      "`implicit_assignment`"
+      "`any_is_na`"
     ]
   },
   {
-    "objectID": "rules/implicit_assignment.html#what-it-does",
-    "href": "rules/implicit_assignment.html#what-it-does",
-    "title": "implicit_assignment",
+    "objectID": "rules/is_numeric.html",
+    "href": "rules/is_numeric.html",
+    "title": "is_numeric",
     "section": "",
-    "text": "Checks for implicit assignment in function calls and other situations.",
+    "text": "Checks for usage of is.numeric(x) || is.integer(x).\n\n\n\nis.numeric(x) returns TRUE when x is double or integer. Therefore, testing is.numeric(x) || is.integer(x) is redundant and can be simplified.\n\n\n\n\nx &lt;- 1:3\nis.numeric(x) || is.integer(x)\n\n[1] TRUE\n\n\nUse instead:\n\nx &lt;- 1:3\nis.numeric(x)\n\n[1] TRUE\n\n\n\n\n\nSee ?is.numeric",
     "crumbs": [
       "Rules",
-      "`implicit_assignment`"
+      "`is_numeric`"
     ]
   },
   {
-    "objectID": "rules/implicit_assignment.html#why-is-this-bad",
-    "href": "rules/implicit_assignment.html#why-is-this-bad",
-    "title": "implicit_assignment",
+    "objectID": "rules/is_numeric.html#what-it-does",
+    "href": "rules/is_numeric.html#what-it-does",
+    "title": "is_numeric",
     "section": "",
-    "text": "Assigning inside function calls or other situations such as in if() makes the code difficult to read, and should be avoided.",
+    "text": "Checks for usage of is.numeric(x) || is.integer(x).",
     "crumbs": [
       "Rules",
-      "`implicit_assignment`"
+      "`is_numeric`"
     ]
   },
   {
-    "objectID": "rules/implicit_assignment.html#example",
-    "href": "rules/implicit_assignment.html#example",
-    "title": "implicit_assignment",
+    "objectID": "rules/is_numeric.html#why-is-this-bad",
+    "href": "rules/is_numeric.html#why-is-this-bad",
+    "title": "is_numeric",
     "section": "",
-    "text": "mean(x &lt;- c(1, 2, 3))\n\n[1] 2\n\nx\n\n[1] 1 2 3\n\nif (any(y &lt;- x &gt; 0)) {\n  print(y)\n}\n\n[1] TRUE TRUE TRUE\n\n\nUse instead:\n\nx &lt;- c(1, 2, 3)\nmean(x)\n\n[1] 2\n\nx\n\n[1] 1 2 3\n\nlarger &lt;- x &gt; 0\nif (any(larger)) {\n  print(larger)\n}\n\n[1] TRUE TRUE TRUE",
+    "text": "is.numeric(x) returns TRUE when x is double or integer. Therefore, testing is.numeric(x) || is.integer(x) is redundant and can be simplified.",
     "crumbs": [
       "Rules",
-      "`implicit_assignment`"
+      "`is_numeric`"
     ]
   },
   {
-    "objectID": "rules/implicit_assignment.html#references",
-    "href": "rules/implicit_assignment.html#references",
-    "title": "implicit_assignment",
+    "objectID": "rules/is_numeric.html#example",
+    "href": "rules/is_numeric.html#example",
+    "title": "is_numeric",
     "section": "",
-    "text": "See: * https://style.tidyverse.org/syntax.html#assignment",
+    "text": "x &lt;- 1:3\nis.numeric(x) || is.integer(x)\n\n[1] TRUE\n\n\nUse instead:\n\nx &lt;- 1:3\nis.numeric(x)\n\n[1] TRUE",
     "crumbs": [
       "Rules",
-      "`implicit_assignment`"
+      "`is_numeric`"
     ]
   },
   {
-    "objectID": "rules/class_equals.html",
-    "href": "rules/class_equals.html",
-    "title": "class_equals",
+    "objectID": "rules/is_numeric.html#references",
+    "href": "rules/is_numeric.html#references",
+    "title": "is_numeric",
     "section": "",
-    "text": "Checks for usage of class(...) == \"some_class\" and class(...) %in% \"some_class\".\n\n\n\nAn R object can have several classes. Therefore, class(...) == \"some_class\" would return a logical vector with as many values as the object has classes, which is rarely desirable.\nIt is better to use inherits(..., \"some_class\") instead. inherits() checks whether any of the object’s classes match the desired class.\nThe same rationale applies to class(...) %in% \"some_class\".\n\n\n\n\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nclass(x) == \"lm\"\n\n[1] FALSE  TRUE\n\n\nUse instead:\n\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\ninherits(x, \"lm\")\n\n[1] TRUE\n\n\n\n\n\nSee ?inherits",
+    "text": "See ?is.numeric",
     "crumbs": [
       "Rules",
-      "`class_equals`"
+      "`is_numeric`"
     ]
   },
   {
-    "objectID": "rules/class_equals.html#what-it-does",
-    "href": "rules/class_equals.html#what-it-does",
-    "title": "class_equals",
+    "objectID": "rules/assignment.html",
+    "href": "rules/assignment.html",
+    "title": "assignment",
     "section": "",
-    "text": "Checks for usage of class(...) == \"some_class\" and class(...) %in% \"some_class\".",
+    "text": "Checks for usage of = as assignment operator.\n\n\n\nThis is not “bad” strictly speaking since in most cases using = and &lt;- is equivalent. Some very popular packages use = without problems.\nNonetheless, &lt;- is more popular and this rule may be useful to avoid mixing both operators in a codebase.\n\n\n\n\nx = \"a\"\n\nUse instead:\n\nx &lt;- \"a\"\n\n\n\n\nSee: * https://style.tidyverse.org/syntax.html#assignment-1 * https://stackoverflow.com/a/1742550",
     "crumbs": [
       "Rules",
-      "`class_equals`"
+      "`assignment`"
     ]
   },
   {
-    "objectID": "rules/class_equals.html#why-is-this-bad",
-    "href": "rules/class_equals.html#why-is-this-bad",
-    "title": "class_equals",
+    "objectID": "rules/assignment.html#what-it-does",
+    "href": "rules/assignment.html#what-it-does",
+    "title": "assignment",
     "section": "",
-    "text": "An R object can have several classes. Therefore, class(...) == \"some_class\" would return a logical vector with as many values as the object has classes, which is rarely desirable.\nIt is better to use inherits(..., \"some_class\") instead. inherits() checks whether any of the object’s classes match the desired class.\nThe same rationale applies to class(...) %in% \"some_class\".",
+    "text": "Checks for usage of = as assignment operator.",
     "crumbs": [
       "Rules",
-      "`class_equals`"
+      "`assignment`"
     ]
   },
   {
-    "objectID": "rules/class_equals.html#example",
-    "href": "rules/class_equals.html#example",
-    "title": "class_equals",
+    "objectID": "rules/assignment.html#why-is-this-bad",
+    "href": "rules/assignment.html#why-is-this-bad",
+    "title": "assignment",
     "section": "",
-    "text": "x &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nclass(x) == \"lm\"\n\n[1] FALSE  TRUE\n\n\nUse instead:\n\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\ninherits(x, \"lm\")\n\n[1] TRUE",
+    "text": "This is not “bad” strictly speaking since in most cases using = and &lt;- is equivalent. Some very popular packages use = without problems.\nNonetheless, &lt;- is more popular and this rule may be useful to avoid mixing both operators in a codebase.",
     "crumbs": [
       "Rules",
-      "`class_equals`"
+      "`assignment`"
     ]
   },
   {
-    "objectID": "rules/class_equals.html#references",
-    "href": "rules/class_equals.html#references",
-    "title": "class_equals",
+    "objectID": "rules/assignment.html#example",
+    "href": "rules/assignment.html#example",
+    "title": "assignment",
     "section": "",
-    "text": "See ?inherits",
+    "text": "x = \"a\"\n\nUse instead:\n\nx &lt;- \"a\"",
     "crumbs": [
       "Rules",
-      "`class_equals`"
+      "`assignment`"
     ]
   },
   {
-    "objectID": "rules/sample_int.html",
-    "href": "rules/sample_int.html",
-    "title": "sample_int",
+    "objectID": "rules/assignment.html#references",
+    "href": "rules/assignment.html#references",
+    "title": "assignment",
     "section": "",
-    "text": "Checks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.\n\n\n\nsample() calls sample.int() internally so they have the same performance, but the latter is more readable.\n\n\n\n\nsample(1:10, 2)\n\n[1] 3 2\n\n\nUse instead:\n\nsample.int(10, 2)\n\n[1] 1 5\n\n\n\n\n\nSee ?sample",
+    "text": "See: * https://style.tidyverse.org/syntax.html#assignment-1 * https://stackoverflow.com/a/1742550",
     "crumbs": [
       "Rules",
-      "`sample_int`"
+      "`assignment`"
     ]
   },
   {
-    "objectID": "rules/sample_int.html#what-it-does",
-    "href": "rules/sample_int.html#what-it-does",
-    "title": "sample_int",
+    "objectID": "rules/equals_na.html",
+    "href": "rules/equals_na.html",
+    "title": "equals_na",
     "section": "",
-    "text": "Checks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.",
+    "text": "Check for x == NA, x != NA and x %in% NA, and replaces those by is.na() calls.\n\n\n\nComparing a value to NA using == returns NA in many cases:\n\nx &lt;- c(1, 2, 3, NA)\nx == NA\n\n[1] NA NA NA NA\n\n\nwhich is very likely not the expected output.\n\n\n\n\nx &lt;- c(1, 2, 3, NA)\nx == NA\n\n[1] NA NA NA NA\n\n\nUse instead:\n\nx &lt;- c(1, 2, 3, NA)\nis.na(x)\n\n[1] FALSE FALSE FALSE  TRUE",
     "crumbs": [
       "Rules",
-      "`sample_int`"
+      "`equals_na`"
     ]
   },
   {
-    "objectID": "rules/sample_int.html#why-is-this-bad",
-    "href": "rules/sample_int.html#why-is-this-bad",
-    "title": "sample_int",
+    "objectID": "rules/equals_na.html#what-it-does",
+    "href": "rules/equals_na.html#what-it-does",
+    "title": "equals_na",
     "section": "",
-    "text": "sample() calls sample.int() internally so they have the same performance, but the latter is more readable.",
+    "text": "Check for x == NA, x != NA and x %in% NA, and replaces those by is.na() calls.",
     "crumbs": [
       "Rules",
-      "`sample_int`"
+      "`equals_na`"
     ]
   },
   {
-    "objectID": "rules/sample_int.html#example",
-    "href": "rules/sample_int.html#example",
-    "title": "sample_int",
+    "objectID": "rules/equals_na.html#why-is-this-bad",
+    "href": "rules/equals_na.html#why-is-this-bad",
+    "title": "equals_na",
     "section": "",
-    "text": "sample(1:10, 2)\n\n[1] 3 2\n\n\nUse instead:\n\nsample.int(10, 2)\n\n[1] 1 5",
+    "text": "Comparing a value to NA using == returns NA in many cases:\n\nx &lt;- c(1, 2, 3, NA)\nx == NA\n\n[1] NA NA NA NA\n\n\nwhich is very likely not the expected output.",
     "crumbs": [
       "Rules",
-      "`sample_int`"
+      "`equals_na`"
     ]
   },
   {
-    "objectID": "rules/sample_int.html#references",
-    "href": "rules/sample_int.html#references",
-    "title": "sample_int",
+    "objectID": "rules/equals_na.html#example",
+    "href": "rules/equals_na.html#example",
+    "title": "equals_na",
     "section": "",
-    "text": "See ?sample",
+    "text": "x &lt;- c(1, 2, 3, NA)\nx == NA\n\n[1] NA NA NA NA\n\n\nUse instead:\n\nx &lt;- c(1, 2, 3, NA)\nis.na(x)\n\n[1] FALSE FALSE FALSE  TRUE",
     "crumbs": [
       "Rules",
-      "`sample_int`"
+      "`equals_na`"
     ]
   },
   {
-    "objectID": "rules/matrix_apply.html",
-    "href": "rules/matrix_apply.html",
-    "title": "matrix_apply",
+    "objectID": "rules/which_grepl.html",
+    "href": "rules/which_grepl.html",
+    "title": "which_grepl",
     "section": "",
-    "text": "Checks for usage of apply(x, 1/2, mean/sum).\n\n\n\napply() with FUN = sum or FUN = mean are inefficient when MARGIN is 1 or 2. colSums(), rowSums(), colMeans(), rowMeans() are both easier to read and much more efficient.\nThis rule provides an automated fix, except when extra arguments (outside of na.rm) are provided. In other words, this would be marked as lint and could be automatically replaced:\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, na.rm = TRUE)\n\n[1] 2.5 3.5 4.5\n\n\nbut this wouldn’t:\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, trim = 0.2)\n\n[1] 2.5 3.5 4.5\n\n\n\n\n\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, sum)\n\n[1] 5 7 9\n\napply(dat, 2, sum)\n\n x  y \n 6 15 \n\napply(dat, 1, mean)\n\n[1] 2.5 3.5 4.5\n\napply(dat, 2, mean)\n\nx y \n2 5 \n\napply(dat, 2, mean, na.rm = TRUE)\n\nx y \n2 5 \n\n\nUse instead:\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\nrowSums(dat)\n\n[1] 5 7 9\n\ncolSums(dat)\n\n x  y \n 6 15 \n\nrowMeans(dat)\n\n[1] 2.5 3.5 4.5\n\ncolMeans(dat)\n\nx y \n2 5 \n\ncolMeans(dat, na.rm = TRUE)\n\nx y \n2 5 \n\n\n\n\n\nSee ?colSums",
+    "text": "Checks for usage of which(grepl(...)) and replaces it with grep(...).\n\n\n\nwhich(grepl(...)) is harder to read and is less efficient than grep() since it requires two passes on the vector.\n\n\n\n\nx &lt;- c(\"hello\", \"there\")\nwhich(grepl(\"hell\", x))\n\n[1] 1\n\nwhich(grepl(\"foo\", x))\n\ninteger(0)\n\n\nUse instead:\n\nx &lt;- c(\"hello\", \"there\")\ngrep(\"hell\", x)\n\n[1] 1\n\ngrep(\"foo\", x)\n\ninteger(0)\n\n\n\n\n\nSee ?grep",
     "crumbs": [
       "Rules",
-      "`matrix_apply`"
+      "`which_grepl`"
     ]
   },
   {
-    "objectID": "rules/matrix_apply.html#what-it-does",
-    "href": "rules/matrix_apply.html#what-it-does",
-    "title": "matrix_apply",
+    "objectID": "rules/which_grepl.html#what-it-does",
+    "href": "rules/which_grepl.html#what-it-does",
+    "title": "which_grepl",
     "section": "",
-    "text": "Checks for usage of apply(x, 1/2, mean/sum).",
+    "text": "Checks for usage of which(grepl(...)) and replaces it with grep(...).",
     "crumbs": [
       "Rules",
-      "`matrix_apply`"
+      "`which_grepl`"
     ]
   },
   {
-    "objectID": "rules/matrix_apply.html#why-is-this-bad",
-    "href": "rules/matrix_apply.html#why-is-this-bad",
-    "title": "matrix_apply",
+    "objectID": "rules/which_grepl.html#why-is-this-bad",
+    "href": "rules/which_grepl.html#why-is-this-bad",
+    "title": "which_grepl",
     "section": "",
-    "text": "apply() with FUN = sum or FUN = mean are inefficient when MARGIN is 1 or 2. colSums(), rowSums(), colMeans(), rowMeans() are both easier to read and much more efficient.\nThis rule provides an automated fix, except when extra arguments (outside of na.rm) are provided. In other words, this would be marked as lint and could be automatically replaced:\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, na.rm = TRUE)\n\n[1] 2.5 3.5 4.5\n\n\nbut this wouldn’t:\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, trim = 0.2)\n\n[1] 2.5 3.5 4.5",
+    "text": "which(grepl(...)) is harder to read and is less efficient than grep() since it requires two passes on the vector.",
     "crumbs": [
       "Rules",
-      "`matrix_apply`"
+      "`which_grepl`"
     ]
   },
   {
-    "objectID": "rules/matrix_apply.html#example",
-    "href": "rules/matrix_apply.html#example",
-    "title": "matrix_apply",
+    "objectID": "rules/which_grepl.html#example",
+    "href": "rules/which_grepl.html#example",
+    "title": "which_grepl",
     "section": "",
-    "text": "dat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, sum)\n\n[1] 5 7 9\n\napply(dat, 2, sum)\n\n x  y \n 6 15 \n\napply(dat, 1, mean)\n\n[1] 2.5 3.5 4.5\n\napply(dat, 2, mean)\n\nx y \n2 5 \n\napply(dat, 2, mean, na.rm = TRUE)\n\nx y \n2 5 \n\n\nUse instead:\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\nrowSums(dat)\n\n[1] 5 7 9\n\ncolSums(dat)\n\n x  y \n 6 15 \n\nrowMeans(dat)\n\n[1] 2.5 3.5 4.5\n\ncolMeans(dat)\n\nx y \n2 5 \n\ncolMeans(dat, na.rm = TRUE)\n\nx y \n2 5",
+    "text": "x &lt;- c(\"hello\", \"there\")\nwhich(grepl(\"hell\", x))\n\n[1] 1\n\nwhich(grepl(\"foo\", x))\n\ninteger(0)\n\n\nUse instead:\n\nx &lt;- c(\"hello\", \"there\")\ngrep(\"hell\", x)\n\n[1] 1\n\ngrep(\"foo\", x)\n\ninteger(0)",
     "crumbs": [
       "Rules",
-      "`matrix_apply`"
+      "`which_grepl`"
     ]
   },
   {
-    "objectID": "rules/matrix_apply.html#references",
-    "href": "rules/matrix_apply.html#references",
-    "title": "matrix_apply",
+    "objectID": "rules/which_grepl.html#references",
+    "href": "rules/which_grepl.html#references",
+    "title": "which_grepl",
     "section": "",
-    "text": "See ?colSums",
+    "text": "See ?grep",
     "crumbs": [
       "Rules",
-      "`matrix_apply`"
+      "`which_grepl`"
+    ]
+  },
+  {
+    "objectID": "rules/coalesce.html",
+    "href": "rules/coalesce.html",
+    "title": "coalesce",
+    "section": "",
+    "text": "Checks for usage of if (is.null(x)) y else x or if (!is.null(x)) x else y and recommends using x %||% y instead.\n\n\n\nUsing the coalesce operator %||% is more concise and readable than an if-else statement checking for null.\nThis rule is only enabled if the project uses R &gt;= 4.4.0, since %||% was introduced in this version.\nThis rule contains some automatic fixes, but only for cases where the branches are on a single line. For instance,\nif (is.null(x)) {\n  y\n} else {\n  x\n}\nwould be simplified to x %||% y, but\nif (is.null(x)) {\n  y &lt;- 1\n  y\n} else {\n  x\n}\nwouldn’t.\n\n\n\n\nx &lt;- 1\ny &lt;- 2\n\nif (is.null(x)) y else x\n\n[1] 1\n\nif (!is.null(x)) {\n  x\n} else {\n  y\n}\n\n[1] 1\n\n\nUse instead:\n\nx &lt;- 1\ny &lt;- 2\n\nx %||% y # (in both cases)\n\n[1] 1\n\n\n\n\n\nSee ?Control",
+    "crumbs": [
+      "Rules",
+      "`coalesce`"
+    ]
+  },
+  {
+    "objectID": "rules/coalesce.html#what-it-does",
+    "href": "rules/coalesce.html#what-it-does",
+    "title": "coalesce",
+    "section": "",
+    "text": "Checks for usage of if (is.null(x)) y else x or if (!is.null(x)) x else y and recommends using x %||% y instead.",
+    "crumbs": [
+      "Rules",
+      "`coalesce`"
+    ]
+  },
+  {
+    "objectID": "rules/coalesce.html#why-is-this-bad",
+    "href": "rules/coalesce.html#why-is-this-bad",
+    "title": "coalesce",
+    "section": "",
+    "text": "Using the coalesce operator %||% is more concise and readable than an if-else statement checking for null.\nThis rule is only enabled if the project uses R &gt;= 4.4.0, since %||% was introduced in this version.\nThis rule contains some automatic fixes, but only for cases where the branches are on a single line. For instance,\nif (is.null(x)) {\n  y\n} else {\n  x\n}\nwould be simplified to x %||% y, but\nif (is.null(x)) {\n  y &lt;- 1\n  y\n} else {\n  x\n}\nwouldn’t.",
+    "crumbs": [
+      "Rules",
+      "`coalesce`"
+    ]
+  },
+  {
+    "objectID": "rules/coalesce.html#example",
+    "href": "rules/coalesce.html#example",
+    "title": "coalesce",
+    "section": "",
+    "text": "x &lt;- 1\ny &lt;- 2\n\nif (is.null(x)) y else x\n\n[1] 1\n\nif (!is.null(x)) {\n  x\n} else {\n  y\n}\n\n[1] 1\n\n\nUse instead:\n\nx &lt;- 1\ny &lt;- 2\n\nx %||% y # (in both cases)\n\n[1] 1",
+    "crumbs": [
+      "Rules",
+      "`coalesce`"
+    ]
+  },
+  {
+    "objectID": "rules/coalesce.html#reference",
+    "href": "rules/coalesce.html#reference",
+    "title": "coalesce",
+    "section": "",
+    "text": "See ?Control",
+    "crumbs": [
+      "Rules",
+      "`coalesce`"
     ]
   },
   {
