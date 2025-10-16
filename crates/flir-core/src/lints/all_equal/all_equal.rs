@@ -95,23 +95,13 @@ pub fn all_equal(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         fix_content = format!("isTRUE({})", ast.to_trimmed_text());
     }
 
-    let prev_is_bang = if let Some(prev) = ast.syntax().prev_sibling_or_token() {
-        prev.kind() == RSyntaxKind::BANG
-    } else {
-        false
+    if let Some(prev) = ast.syntax().prev_sibling_or_token() {
+        if prev.kind() == RSyntaxKind::BANG {
+            msg = "Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.".to_string();
+            fix_content = format!("!isTRUE({})", ast.to_trimmed_text());
+            range = TextRange::new(prev.text_trimmed_range().start(), range.end())
+        }
     };
-    if prev_is_bang {
-        msg = "Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.".to_string();
-        fix_content = format!("!isTRUE({})", ast.to_trimmed_text());
-        range = TextRange::new(
-            ast.syntax()
-                .prev_sibling_or_token()
-                .unwrap()
-                .text_trimmed_range()
-                .start(),
-            range.end(),
-        )
-    }
 
     if !msg.is_empty() {
         let diagnostic = Diagnostic::new(
