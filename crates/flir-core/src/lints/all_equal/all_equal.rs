@@ -5,35 +5,52 @@ use biome_rowan::AstNode;
 
 /// ## What it does
 ///
-/// Checks for usage of `any(duplicated(...))`.
+/// Checks for dangerous usage of `all.equal(...)`, for instance in `if()`
+/// conditions or `while()` loops.
 ///
 /// ## Why is this bad?
 ///
-/// `any(duplicated(...))` is valid code but requires the evaluation of
-/// `duplicated()` on the entire input first.
+/// `all.equal()` returns `TRUE` in the absence of differences but returns a
+/// character string (not `FALSE`) in the presence of differences. Usage of
+/// `all.equal()` without wrapping it in `isTRUE()` are thus likely to generate
+/// unexpected errors if the compared objects have differences. An alternative
+/// is to use `identical()` to compare vector of strings or when exact equality
+/// is expected.
 ///
-/// There is a more efficient function in base R called `anyDuplicated()` that
-/// is more efficient, both in speed and memory used. `anyDuplicated()` returns
-/// the index of the first duplicated value, or 0 if there is none.
-///
-/// Therefore, we can replace `any(duplicated(...))` by `anyDuplicated(...) > 0`.
+/// This rule has automated fixes that are marked unsafe and therefore require
+/// passing `--unsafe-fixes`. This is because automatically fixing those cases
+/// can change the runtime behavior if some code relied on the behaviour of
+/// `all.equal()` (likely by mistake).
 ///
 /// ## Example
 ///
 /// ```r
-/// x <- c(1:10000, 1, NA)
-/// any(duplicated(x))
+/// a <- 1
+/// b <- 1
+///
+/// if (all.equal(a, b, tolerance = 1e-3)) message('equal')
+/// if (all.equal(a, b)) message('equal')
+/// !all.equal(a, b)
+/// while (all.equal(a, b)) message('equal')
+/// isFALSE(all.equal(a, b))
+///
 /// ```
 ///
 /// Use instead:
 /// ```r
-/// x <- c(1:10000, 1, NA)
-/// anyDuplicated(x) > 0
+/// a <- 1
+/// b <- 1
+///
+/// if (isTRUE(all.equal(a, b, tolerance = 1e-3))) message('equal')
+/// if (isTRUE(all.equal(a, b))) message('equal')
+/// !isTRUE(all.equal(a, b))
+/// while (isTRUE(all.equal(a, b))) message('equal')
+/// !isTRUE(all.equal(a, b))
 /// ```
 ///
 /// ## References
 ///
-/// See `?anyDuplicated`
+/// See `?all.equal`
 pub fn all_equal(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let function = ast.function()?;
     let fun_name = get_function_name(function);
