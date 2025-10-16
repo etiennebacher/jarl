@@ -31,7 +31,6 @@ use biome_rowan::AstNode;
 /// if (all.equal(a, b, tolerance = 1e-3)) message('equal')
 /// if (all.equal(a, b)) message('equal')
 /// !all.equal(a, b)
-/// while (all.equal(a, b)) message('equal')
 /// isFALSE(all.equal(a, b))
 ///
 /// ```
@@ -44,7 +43,6 @@ use biome_rowan::AstNode;
 /// if (isTRUE(all.equal(a, b, tolerance = 1e-3))) message('equal')
 /// if (isTRUE(all.equal(a, b))) message('equal')
 /// !isTRUE(all.equal(a, b))
-/// while (isTRUE(all.equal(a, b))) message('equal')
 /// !isTRUE(all.equal(a, b))
 /// ```
 ///
