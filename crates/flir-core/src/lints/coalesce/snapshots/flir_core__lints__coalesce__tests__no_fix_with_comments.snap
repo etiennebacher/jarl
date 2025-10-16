@@ -1,0 +1,36 @@
+---
+source: crates/flir-core/src/lints/coalesce/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\nif (is.null(x)) {\\n  y\\n} else x\",\n\"if (is.null(x)) {\\n  # hello there\\n  y\\n} else x\",\n\"if (is.null(x)) {\\n  y\\n} else x # trailing comment\",], \"coalesce\",\nSome(\"4.5\"))"
+---
+OLD:
+====
+# leading comment
+if (is.null(x)) {
+  y
+} else x
+NEW:
+====
+# leading comment
+x %||% y
+
+OLD:
+====
+if (is.null(x)) {
+  # hello there
+  y
+} else x
+NEW:
+====
+if (is.null(x)) {
+  # hello there
+  y
+} else x
+
+OLD:
+====
+if (is.null(x)) {
+  y
+} else x # trailing comment
+NEW:
+====
+x %||% y # trailing comment

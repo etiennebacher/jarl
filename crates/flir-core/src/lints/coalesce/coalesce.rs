@@ -1,36 +1,28 @@
 use crate::diagnostic::*;
 use crate::utils::{get_function_name, node_contains_comments};
 use air_r_syntax::*;
-use biome_rowan::AstNode;
+use biome_rowan::{AstNode, AstNodeList};
 
 /// ## What it does
 ///
-/// Checks for usage of `grep(..., value = TRUE)` and recommends using
-/// `grepv()` instead (only if the R version used in the project is >= 4.5).
+/// Checks for usage of `if (is.null(x)) y else x` and recommends using
+/// `x %||% y` instead.
 ///
 /// ## Why is this bad?
 ///
-/// Starting from R 4.5, there is a function `grepv()` that is identical to
-/// `grep()` except that it uses `value = TRUE` by default.
-///
-/// Using `grepv(...)` is therefore more readable than `grep(...)`.
+/// Using the coalesce operator `%||%` is more concise and readable than
+/// an if-else statement checking for null.
 ///
 /// ## Example
 ///
 /// ```r
-/// x <- c("hello", "hi", "howdie")
-/// grep("i", x, value = TRUE)
+/// if (is.null(x)) y else x
 /// ```
 ///
 /// Use instead:
 /// ```r
-/// x <- c("hello", "hi", "howdie")
-/// grepv("i", x)
+/// x %||% y
 /// ```
-///
-/// ## References
-///
-/// See `?grepv`
 pub fn coalesce(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
     let condition = ast.condition()?;
     let consequence = ast.consequence()?;
@@ -42,6 +34,16 @@ pub fn coalesce(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
 
     let mut msg = "".to_string();
     let mut fix_content = "".to_string();
+    let mut skip_fix = false;
+
+    // Check if consequence or alternative have multiple expressions
+    let consequence_has_multiple = has_multiple_expressions(&consequence);
+    let alternative_has_multiple = has_multiple_expressions(&alternative);
+
+    // If either has multiple expressions, we'll report but not fix
+    if consequence_has_multiple || alternative_has_multiple {
+        skip_fix = true;
+    }
 
     // Case 1:
     // if (is.null(x)) y else x  => x %||% y
@@ -66,17 +68,20 @@ pub fn coalesce(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
         }
 
         let fn_body = fn_body.first().unwrap();
-        let alternative = remove_curly_braces(&alternative);
-        let consequence = remove_curly_braces(&consequence);
+        let alternative_str = extract_single_expression(&alternative);
+        let consequence_str = extract_single_expression(&consequence);
 
-        let inside_null_same_as_alternative = fn_body.to_trimmed_string() == alternative;
+        let inside_null_same_as_alternative = fn_body.to_trimmed_string() == alternative_str;
 
         if !inside_null_same_as_alternative {
             return Ok(None);
         }
 
         msg = "Use `x %||% y` instead of `if (is.null(x)) y else x`.".to_string();
-        fix_content = format!("{} %||% {}", fn_body.to_trimmed_string(), consequence);
+
+        if !skip_fix {
+            fix_content = format!("{} %||% {}", fn_body.to_trimmed_string(), consequence_str);
+        }
     }
 
     // Case 2:
@@ -114,17 +119,24 @@ pub fn coalesce(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
         }
 
         let fn_body = fn_body.first().unwrap();
-        let consequence = remove_curly_braces(&consequence);
-        let alternative = remove_curly_braces(&alternative);
+        let consequence_str = extract_single_expression(&consequence);
+        let alternative_str = extract_single_expression(&alternative);
 
-        let inside_null_same_as_consequence = fn_body.to_trimmed_string() == consequence;
+        let inside_null_same_as_consequence = fn_body.to_trimmed_string() == consequence_str;
 
         if !inside_null_same_as_consequence {
             return Ok(None);
         }
 
         msg = "Use `x %||% y` instead of `if (!is.null(x)) x else y`.".to_string();
-        fix_content = format!("{} %||% {}", fn_body.to_trimmed_string(), alternative);
+
+        if !skip_fix {
+            fix_content = format!("{} %||% {}", fn_body.to_trimmed_string(), alternative_str);
+        }
+    }
+
+    if msg.is_empty() {
+        return Ok(None);
     }
 
     let range = ast.syntax().text_trimmed_range();
@@ -132,28 +144,37 @@ pub fn coalesce(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
         ViolationData::new("coalesce".to_string(), msg),
         range,
         Fix {
-            content: fix_content,
+            content: fix_content.clone(),
             start: range.start().into(),
             end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
+            to_skip: node_contains_comments(ast.syntax()) || skip_fix || fix_content.is_empty(),
         },
     );
 
     Ok(Some(diagnostic))
 }
 
-fn remove_curly_braces(input: &AnyRExpression) -> String {
-    if let Some(input) = input.as_r_braced_expressions() {
-        let expressions = input.expressions().into_iter();
-        if expressions.len() == 1 {
-            return input.to_trimmed_string();
-        }
-
-        expressions
-            .map(|x| x.to_trimmed_string())
-            .collect::<Vec<String>>()
-            .join("\n")
+// Check if an expression has multiple statements
+fn has_multiple_expressions(input: &AnyRExpression) -> bool {
+    if let Some(braced) = input.as_r_braced_expressions() {
+        let expressions = braced.expressions();
+        expressions.len() > 1
     } else {
-        input.to_trimmed_string()
+        false
     }
+}
+
+// Extract single expression from braced expressions, or return the expression as-is
+fn extract_single_expression(input: &AnyRExpression) -> String {
+    if let Some(braced) = input.as_r_braced_expressions() {
+        let expressions: Vec<_> = braced.expressions().into_iter().collect();
+        if expressions.len() == 1 {
+            // Single expression in braces, extract it
+            if let Some(expr) = expressions.first() {
+                return expr.to_trimmed_string();
+            }
+        }
+    }
+
+    input.to_trimmed_string()
 }

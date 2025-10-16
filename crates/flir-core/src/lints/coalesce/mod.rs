@@ -131,22 +131,21 @@ mod tests {
         );
     }
 
-    // #[test]
-    // fn test_coalesce_with_comments_no_fix() {
-    //     use insta::assert_snapshot;
-    //     // Should detect lint but skip fix when comments are present to avoid destroying them
-    //     assert_snapshot!(
-    //         "no_fix_with_comments",
-    //         get_fixed_text(
-    //             vec![
-    //                 "# leading comment\ngrep('i', x, value = TRUE)",
-    //                 "grep(\n  # comment\n  'i', x, value = TRUE\n)",
-    //                 "grep('i',\n    # comment\n    x, value = TRUE)",
-    //                 "grep('i', x, value = TRUE) # trailing comment",
-    //             ],
-    //             "coalesce",
-    //             Some("4.5")
-    //         )
-    //     );
-    // }
+    #[test]
+    fn test_coalesce_with_comments_no_fix() {
+        use insta::assert_snapshot;
+        // Should detect lint but skip fix when comments are present to avoid destroying them
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_fixed_text(
+                vec![
+                    "# leading comment\nif (is.null(x)) {\n  y\n} else x",
+                    "if (is.null(x)) {\n  # hello there\n  y\n} else x",
+                    "if (is.null(x)) {\n  y\n} else x # trailing comment",
+                ],
+                "coalesce",
+                Some("4.5")
+            )
+        );
+    }
 }

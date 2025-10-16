@@ -94,8 +94,10 @@ if (is.null(x)) {
 } else x
 NEW:
 ====
-x %||% y <- 1
-y
+if (is.null(x)) {
+  y <- 1
+  y
+} else x
 
 OLD:
 ====
@@ -107,5 +109,9 @@ if (is.null(x)) {
 }
 NEW:
 ====
-x %||% y <- 1
-y
+if (is.null(x)) {
+  y <- 1
+  y
+} else {
+  x
+}
