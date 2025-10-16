@@ -5,24 +5,57 @@ use biome_rowan::{AstNode, AstNodeList};
 
 /// ## What it does
 ///
-/// Checks for usage of `if (is.null(x)) y else x` and recommends using
-/// `x %||% y` instead.
+/// Checks for usage of `if (is.null(x)) y else x` or
+/// `if (!is.null(x)) x else y` and recommends using `x %||% y` instead.
 ///
 /// ## Why is this bad?
 ///
 /// Using the coalesce operator `%||%` is more concise and readable than
 /// an if-else statement checking for null.
 ///
+/// This rule is only enabled if the project uses R >= 4.4.0, since `%||%` was
+/// introduced in this version.
+///
+/// This rule contains some automatic fixes, but only for cases where the
+/// branches are on a single line. For instance,
+/// ```r,ignore
+/// if (is.null(x)) {
+///   y
+/// } else {
+///   x
+/// }
+/// ```
+/// would be simplified to `x %||% y`, but
+/// ```r,ignore
+/// if (is.null(x)) {
+///   y <- 1
+///   y
+/// } else {
+///   x
+/// }
+/// ```
+/// wouldn't.
+///
 /// ## Example
 ///
 /// ```r
 /// if (is.null(x)) y else x
+///
+/// if (!is.null(x)) {
+///   x
+/// } else {
+///   y
+/// }
 /// ```
 ///
 /// Use instead:
 /// ```r
-/// x %||% y
+/// x %||% y # (in both cases)
 /// ```
+///
+/// ## Reference
+///
+/// See `?Control`
 pub fn coalesce(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
     let condition = ast.condition()?;
     let consequence = ast.consequence()?;
@@ -147,7 +180,7 @@ pub fn coalesce(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
             content: fix_content.clone(),
             start: range.start().into(),
             end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()) || skip_fix || fix_content.is_empty(),
+            to_skip: node_contains_comments(ast.syntax()) || skip_fix,
         },
     );
 
