@@ -1,5 +1,6 @@
 use crate::rule_table::{FixStatus, RuleTable};
 
+pub(crate) mod all_equal;
 pub(crate) mod any_duplicated;
 pub(crate) mod any_is_na;
 pub(crate) mod assignment;
@@ -33,6 +34,7 @@ pub(crate) mod which_grepl;
 ///         easier to read.
 pub fn all_rules_and_safety() -> RuleTable {
     let mut rule_table = RuleTable::empty();
+    rule_table.enable("all_equal", "SUSP", FixStatus::Unsafe, None);
     rule_table.enable("any_duplicated", "PERF", FixStatus::Safe, None);
     rule_table.enable("any_is_na", "PERF", FixStatus::Safe, None);
     rule_table.enable("assignment", "READ", FixStatus::Safe, None);

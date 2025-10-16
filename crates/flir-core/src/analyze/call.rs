@@ -1,6 +1,7 @@
 use crate::check::Checker;
 use air_r_syntax::RCall;
 
+use crate::lints::all_equal::all_equal::all_equal;
 use crate::lints::any_duplicated::any_duplicated::any_duplicated;
 use crate::lints::any_is_na::any_is_na::any_is_na;
 use crate::lints::duplicated_arguments::duplicated_arguments::duplicated_arguments;
@@ -13,6 +14,9 @@ use crate::lints::sample_int::sample_int::sample_int;
 use crate::lints::which_grepl::which_grepl::which_grepl;
 
 pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
+    if checker.is_rule_enabled("all_equal") {
+        checker.report_diagnostic(all_equal(r_expr)?);
+    }
     if checker.is_rule_enabled("any_duplicated") {
         checker.report_diagnostic(any_duplicated(r_expr)?);
     }
