@@ -9,7 +9,7 @@ import {
 import { Middleware, ResponseError } from "vscode-languageclient/node";
 import { SYNC_FILE_SETTINGS } from "./notification/sync-file-settings";
 import { registerLogger } from "./output";
-import { resolveFlirBinaryPath } from "./binary";
+import { resolveJarlBinaryPath } from "./binary";
 import { getRootWorkspaceFolder } from "./workspace";
 
 // All session management operations are put on a queue. They can't run
@@ -26,7 +26,7 @@ export class Lsp {
 
 	private binaryPath: string | null = null;
 
-	// We've received and processed an `flir.toml` settings synchronization
+	// We've received and processed an `jarl.toml` settings synchronization
 	// notification. Used to synchronize unit tests with the LSP.
 	private onSettingsNotification: vscode.Event<SyncFileSettingsParams>;
 
@@ -43,7 +43,7 @@ export class Lsp {
 
 	constructor(context: vscode.ExtensionContext) {
 		this.channel = vscode.window.createOutputChannel(
-			"Flir Language Server",
+			"Jarl Language Server",
 		);
 		context.subscriptions.push(this.channel, registerLogger(this.channel));
 
@@ -104,10 +104,10 @@ export class Lsp {
 
 		const workspaceFolder = await getRootWorkspaceFolder();
 
-		const workspaceSettings = getWorkspaceSettings("flir", workspaceFolder);
+		const workspaceSettings = getWorkspaceSettings("jarl", workspaceFolder);
 		const initializationOptions = {};
 
-		const binaryPath = await resolveFlirBinaryPath(
+		const binaryPath = await resolveJarlBinaryPath(
 			workspaceSettings.executableStrategy,
 			workspaceSettings.executablePath,
 		);
@@ -130,8 +130,8 @@ export class Lsp {
 		};
 
 		const client = new lc.LanguageClient(
-			"flirLanguageServer",
-			"Flir Language Server",
+			"jarlLanguageServer",
+			"Jarl Language Server",
 			serverOptions,
 			clientOptions,
 		);

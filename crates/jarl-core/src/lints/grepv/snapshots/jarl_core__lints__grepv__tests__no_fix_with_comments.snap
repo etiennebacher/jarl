@@ -1,0 +1,43 @@
+---
+source: crates/jarl-core/src/lints/grepv/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\ngrep('i', x, value = TRUE)\",\n\"grep(\\n  # comment\\n  'i', x, value = TRUE\\n)\",\n\"grep('i',\\n    # comment\\n    x, value = TRUE)\",\n\"grep('i', x, value = TRUE) # trailing comment\",], \"grepv\", Some(\"4.5\"))"
+---
+OLD:
+====
+# leading comment
+grep('i', x, value = TRUE)
+NEW:
+====
+# leading comment
+grepv('i', x)
+
+OLD:
+====
+grep(
+  # comment
+  'i', x, value = TRUE
+)
+NEW:
+====
+grep(
+  # comment
+  'i', x, value = TRUE
+)
+
+OLD:
+====
+grep('i',
+    # comment
+    x, value = TRUE)
+NEW:
+====
+grep('i',
+    # comment
+    x, value = TRUE)
+
+OLD:
+====
+grep('i', x, value = TRUE) # trailing comment
+NEW:
+====
+grepv('i', x) # trailing comment

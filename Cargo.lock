@@ -599,67 +599,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
 
 [[package]]
-name = "flir-cli"
-version = "0.0.17"
-dependencies = [
- "anyhow",
- "clap",
- "colored",
- "flir-core",
- "flir-lsp",
- "fs",
- "insta",
- "regex",
- "serde",
- "serde_json",
- "tempfile",
- "tracing",
- "tracing-subscriber",
- "workspace",
-]
-
-[[package]]
-name = "flir-core"
-version = "0.0.17"
-dependencies = [
- "air_r_parser",
- "air_r_syntax",
- "anyhow",
- "biome_formatter",
- "biome_rowan",
- "comments 0.0.0",
- "fs",
- "ignore",
- "insta",
- "path-absolutize",
- "rayon",
- "rustc-hash",
- "serde",
- "tempfile",
- "toml 0.9.6",
- "tracing",
- "workspace",
-]
-
-[[package]]
-name = "flir-lsp"
-version = "0.0.17"
-dependencies = [
- "anyhow",
- "clap",
- "crossbeam",
- "flir-core",
- "lsp-server",
- "lsp-types",
- "rustc-hash",
- "serde",
- "serde_json",
- "tracing",
- "tracing-subscriber",
- "workspace",
-]
-
-[[package]]
 name = "form_urlencoded"
 version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -884,6 +823,65 @@ name = "itoa"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4a5f13b858c8d314ee3e8f639011f7ccefe71f97f96e50151fb991f267928e2c"
+
+[[package]]
+name = "jarl-cli"
+version = "0.0.17"
+dependencies = [
+ "anyhow",
+ "clap",
+ "colored",
+ "fs",
+ "insta",
+ "jarl-core",
+ "jarl-lsp",
+ "regex",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tracing",
+ "tracing-subscriber",
+ "workspace",
+]
+
+[[package]]
+name = "jarl-core"
+version = "0.0.17"
+dependencies = [
+ "air_r_parser",
+ "air_r_syntax",
+ "anyhow",
+ "biome_rowan",
+ "fs",
+ "ignore",
+ "insta",
+ "path-absolutize",
+ "rayon",
+ "rustc-hash",
+ "serde",
+ "tempfile",
+ "toml 0.9.6",
+ "tracing",
+ "workspace",
+]
+
+[[package]]
+name = "jarl-lsp"
+version = "0.0.17"
+dependencies = [
+ "anyhow",
+ "clap",
+ "crossbeam",
+ "jarl-core",
+ "lsp-server",
+ "lsp-types",
+ "rustc-hash",
+ "serde",
+ "serde_json",
+ "tracing",
+ "tracing-subscriber",
+ "workspace",
+]
 
 [[package]]
 name = "lazy_static"

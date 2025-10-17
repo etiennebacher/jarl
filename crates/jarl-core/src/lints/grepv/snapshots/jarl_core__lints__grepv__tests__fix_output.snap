@@ -1,0 +1,38 @@
+---
+source: crates/jarl-core/src/lints/grepv/mod.rs
+expression: "get_fixed_text(vec![\"grep('i', x, value = TRUE)\",\n\"grep('i', x, TRUE, TRUE, TRUE)\",\n\"grep('i', x, TRUE, TRUE, TRUE, value = TRUE)\",\n\"grep(pattern = 'i', x, value = TRUE)\", \"grep(value = TRUE)\",], \"grepv\",\nSome(\"4.5\"))"
+---
+OLD:
+====
+grep('i', x, value = TRUE)
+NEW:
+====
+grepv('i', x)
+
+OLD:
+====
+grep('i', x, TRUE, TRUE, TRUE)
+NEW:
+====
+grepv('i', x, TRUE, TRUE)
+
+OLD:
+====
+grep('i', x, TRUE, TRUE, TRUE, value = TRUE)
+NEW:
+====
+grepv('i', x, TRUE, TRUE, TRUE)
+
+OLD:
+====
+grep(pattern = 'i', x, value = TRUE)
+NEW:
+====
+grepv(pattern = 'i', x)
+
+OLD:
+====
+grep(value = TRUE)
+NEW:
+====
+grepv()

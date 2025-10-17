@@ -1,0 +1,45 @@
+---
+source: crates/jarl-core/src/lints/any_is_na/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\nany(is.na(x))\",\n\"any(\\n  # comment\\n  is.na(x)\\n)\", \"any(is.na(\\n    # comment\\n    x\\n  ))\",\n\"any(is.na(x)) # trailing comment\",], \"any_is_na\", None)"
+---
+OLD:
+====
+# leading comment
+any(is.na(x))
+NEW:
+====
+# leading comment
+anyNA(x)
+
+OLD:
+====
+any(
+  # comment
+  is.na(x)
+)
+NEW:
+====
+any(
+  # comment
+  is.na(x)
+)
+
+OLD:
+====
+any(is.na(
+    # comment
+    x
+  ))
+NEW:
+====
+any(is.na(
+    # comment
+    x
+  ))
+
+OLD:
+====
+any(is.na(x)) # trailing comment
+NEW:
+====
+anyNA(x) # trailing comment

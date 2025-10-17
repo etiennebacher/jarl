@@ -1,0 +1,41 @@
+---
+source: crates/jarl-core/src/lints/class_equals/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"# leading comment\\nclass(x) == 'lm'\",\n\"class(\\n  # comment\\n  x\\n) == 'lm'\", \"# comment\\nclass(x) == 'character'\",\n\"class(x) == 'lm' # trailing comment\",], \"class_equals\")"
+---
+OLD:
+====
+# leading comment
+class(x) == 'lm'
+NEW:
+====
+# leading comment
+inherits(x, 'lm')
+
+OLD:
+====
+class(
+  # comment
+  x
+) == 'lm'
+NEW:
+====
+class(
+  # comment
+  x
+) == 'lm'
+
+OLD:
+====
+# comment
+class(x) == 'character'
+NEW:
+====
+# comment
+inherits(x, 'character')
+
+OLD:
+====
+class(x) == 'lm' # trailing comment
+NEW:
+====
+inherits(x, 'lm') # trailing comment

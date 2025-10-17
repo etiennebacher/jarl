@@ -1,0 +1,94 @@
+---
+source: crates/jarl-core/src/lints/matrix_apply/mod.rs
+expression: "get_fixed_text(vec![\"apply(x, 1, sum)\", \"apply(x, 1L, sum)\",\n\"apply(x, MARGIN = 1, FUN = sum)\", \"apply(MARGIN = 1, FUN = sum, X = x)\",\n\"apply(x, 1, mean)\", \"apply(x, 1L, mean)\", \"apply(x, MARGIN = 1, FUN = mean)\",\n\"apply(x, 1, sum, na.rm = TRUE)\", \"apply(x, 1, sum, na.rm = FALSE)\",\n\"apply(x, 1, sum, na.rm = foo)\", \"apply(x, 2, sum, na.rm = TRUE)\",\n\"apply(x, 2, sum, na.rm = FALSE)\", \"apply(x, 2, sum, na.rm = foo)\",],\n\"matrix_apply\", None)"
+---
+OLD:
+====
+apply(x, 1, sum)
+NEW:
+====
+rowSums(x)
+
+OLD:
+====
+apply(x, 1L, sum)
+NEW:
+====
+rowSums(x)
+
+OLD:
+====
+apply(x, MARGIN = 1, FUN = sum)
+NEW:
+====
+rowSums(x)
+
+OLD:
+====
+apply(MARGIN = 1, FUN = sum, X = x)
+NEW:
+====
+rowSums(x)
+
+OLD:
+====
+apply(x, 1, mean)
+NEW:
+====
+rowMeans(x)
+
+OLD:
+====
+apply(x, 1L, mean)
+NEW:
+====
+rowMeans(x)
+
+OLD:
+====
+apply(x, MARGIN = 1, FUN = mean)
+NEW:
+====
+rowMeans(x)
+
+OLD:
+====
+apply(x, 1, sum, na.rm = TRUE)
+NEW:
+====
+rowSums(x, na.rm = TRUE)
+
+OLD:
+====
+apply(x, 1, sum, na.rm = FALSE)
+NEW:
+====
+rowSums(x, na.rm = FALSE)
+
+OLD:
+====
+apply(x, 1, sum, na.rm = foo)
+NEW:
+====
+rowSums(x, na.rm = foo)
+
+OLD:
+====
+apply(x, 2, sum, na.rm = TRUE)
+NEW:
+====
+colSums(x, na.rm = TRUE)
+
+OLD:
+====
+apply(x, 2, sum, na.rm = FALSE)
+NEW:
+====
+colSums(x, na.rm = FALSE)
+
+OLD:
+====
+apply(x, 2, sum, na.rm = foo)
+NEW:
+====
+colSums(x, na.rm = foo)

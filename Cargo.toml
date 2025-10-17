@@ -1,8 +1,8 @@
 [workspace]
 members = [
-    "crates/flir-cli",
-    "crates/flir-core",
-    "crates/flir-lsp",
+    "crates/jarl-cli",
+    "crates/jarl-core",
+    "crates/jarl-lsp",
 ]
 resolver = "3"
 
@@ -10,14 +10,13 @@ resolver = "3"
 authors = ["Etienne Bacher"]
 edition = "2024"
 license-file = "LICENSE.md"
-repository = "https://github.com/etiennebacher/flir2/"
+repository = "https://github.com/etiennebacher/jarl2/"
 readme = "README.md"
 
 [workspace.dependencies]
-# Core flir crates
-flir-core = { path = "crates/flir-core" }
-flir-lsp = { path = "crates/flir-lsp" }
-comments = { path = "crates/comments" }
+# Core jarl crates
+jarl-core = { path = "crates/jarl-core" }
+jarl-lsp = { path = "crates/jarl-lsp" }
 
 # External dependencies
 colored = "2.1.0"

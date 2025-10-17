@@ -6,7 +6,7 @@ const folderName = path.basename(__dirname);
  * ID of the extension on the marketplaces.
  * Needed to access the extension from the `vscode` API.
  */
-export const FLIR_EXTENSION_ID = "etiennebacher.flir-vscode";
+export const JARL_EXTENSION_ID = "etiennebacher.jarl-vscode";
 
 /**
  * Path to the root directory of this extension.
@@ -18,17 +18,17 @@ export const EXTENSION_ROOT_DIR =
 		: path.dirname(__dirname);
 
 /**
- * Name of the `flir` binary based on the current platform.
+ * Name of the `jarl` binary based on the current platform.
  */
-export const FLIR_BINARY_NAME = process.platform === "win32" ? "flir.exe" : "flir";
+export const JARL_BINARY_NAME = process.platform === "win32" ? "jarl.exe" : "jarl";
 
 /**
- * Path to the `flir` executable that is bundled with the extension.
+ * Path to the `jarl` executable that is bundled with the extension.
  * The GitHub Action is in charge of placing the executable here.
  */
-export const BUNDLED_FLIR_EXECUTABLE = path.join(
+export const BUNDLED_JARL_EXECUTABLE = path.join(
 	EXTENSION_ROOT_DIR,
 	"bundled",
 	"bin",
-	FLIR_BINARY_NAME,
+	JARL_BINARY_NAME,
 );

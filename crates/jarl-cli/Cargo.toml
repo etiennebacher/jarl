@@ -1,0 +1,45 @@
+[package]
+name = "jarl-cli"
+description = "Command-line interface for the jarl R linter"
+version = "0.0.17"
+authors.workspace = true
+edition.workspace = true
+license-file.workspace = true
+repository.workspace = true
+readme.workspace = true
+
+[[bin]]
+name = "jarl"
+path = "src/main.rs"
+
+[dependencies]
+# Core jarl functionality
+jarl-core.workspace = true
+# LSP functionality
+jarl-lsp.workspace = true
+
+# CLI specific dependencies
+clap.workspace = true
+colored.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+# Workspace and file system
+air_workspace.workspace = true
+
+# Utilities
+tracing.workspace = true
+
+# File system operations
+air_fs.workspace = true
+
+# Additional utilities
+regex.workspace = true
+tempfile.workspace = true
+tracing-subscriber = "0.3.20"
+
+[dev-dependencies]
+tempfile.workspace = true
+insta.workspace = true
+regex.workspace = true

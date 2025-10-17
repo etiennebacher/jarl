@@ -1,0 +1,52 @@
+---
+source: crates/jarl-core/src/lints/length_test/mod.rs
+expression: "get_fixed_text(vec![\"length(x != 0)\", \"length(x >= 0)\", \"length(x <= 0)\",\n\"length(x > 0)\", \"length(x < 0)\", \"length(x < 0)\", \"length(x + y == 2)\"],\n\"length_test\", None)"
+---
+OLD:
+====
+length(x != 0)
+NEW:
+====
+length(x) != 0
+
+OLD:
+====
+length(x >= 0)
+NEW:
+====
+length(x) >= 0
+
+OLD:
+====
+length(x <= 0)
+NEW:
+====
+length(x) <= 0
+
+OLD:
+====
+length(x > 0)
+NEW:
+====
+length(x) > 0
+
+OLD:
+====
+length(x < 0)
+NEW:
+====
+length(x) < 0
+
+OLD:
+====
+length(x < 0)
+NEW:
+====
+length(x) < 0
+
+OLD:
+====
+length(x + y == 2)
+NEW:
+====
+length(x + y) == 2
