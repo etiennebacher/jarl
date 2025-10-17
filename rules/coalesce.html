@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>coalesce – flir</title>
+<title>coalesce – jarl</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -117,7 +117,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a href="../index.html" class="navbar-brand navbar-brand-logo">
     </a>
     <a class="navbar-brand" href="../index.html">
-    <span class="navbar-title">flir</span>
+    <span class="navbar-title">jarl</span>
     </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
@@ -336,13 +336,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Using the coalesce operator <code>%||%</code> is more concise and readable than an if-else statement checking for null.</p>
 <p>This rule is only enabled if the project uses R &gt;= 4.4.0, since <code>%||%</code> was introduced in this version.</p>
 <p>This rule contains some automatic fixes, but only for cases where the branches are on a single line. For instance,</p>
-<pre class="dht,ignore"><code>if (is.null(x)) {
+<pre class="jok,ignore"><code>if (is.null(x)) {
   y
 } else {
   x
 }</code></pre>
 <p>would be simplified to <code>x %||% y</code>, but</p>
-<pre class="dht,ignore"><code>if (is.null(x)) {
+<pre class="jok,ignore"><code>if (is.null(x)) {
   y &lt;- 1
   y
 } else {
@@ -462,7 +462,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp("https:\/\/etiennebacher\.github\.io\/flir2\/");
+        var filterRegex = new RegExp("https:\/\/etiennebacher\.github\.io\/jarl\/");
       var isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
