@@ -1,5 +1,6 @@
 use crate::check::Checker;
 use air_r_syntax::RCall;
+use biome_rowan::AstNode;
 
 use crate::lints::all_equal::all_equal::all_equal;
 use crate::lints::any_duplicated::any_duplicated::any_duplicated;
@@ -14,37 +15,44 @@ use crate::lints::sample_int::sample_int::sample_int;
 use crate::lints::which_grepl::which_grepl::which_grepl;
 
 pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
-    if checker.is_rule_enabled("all_equal") {
+    let node = r_expr.syntax();
+
+    if checker.is_rule_enabled("all_equal") && !checker.should_skip_rule(node, "all_equal") {
         checker.report_diagnostic(all_equal(r_expr)?);
     }
-    if checker.is_rule_enabled("any_duplicated") {
+    if checker.is_rule_enabled("any_duplicated")
+        && !checker.should_skip_rule(node, "any_duplicated")
+    {
         checker.report_diagnostic(any_duplicated(r_expr)?);
     }
-    if checker.is_rule_enabled("any_is_na") {
+    if checker.is_rule_enabled("any_is_na") && !checker.should_skip_rule(node, "any_is_na") {
         checker.report_diagnostic(any_is_na(r_expr)?);
     }
-    if checker.is_rule_enabled("duplicated_arguments") {
+    if checker.is_rule_enabled("duplicated_arguments")
+        && !checker.should_skip_rule(node, "duplicated_arguments")
+    {
         checker.report_diagnostic(duplicated_arguments(r_expr)?);
     }
-    if checker.is_rule_enabled("grepv") {
+    if checker.is_rule_enabled("grepv") && !checker.should_skip_rule(node, "grepv") {
         checker.report_diagnostic(grepv(r_expr)?);
     }
-    if checker.is_rule_enabled("length_levels") {
+    if checker.is_rule_enabled("length_levels") && !checker.should_skip_rule(node, "length_levels")
+    {
         checker.report_diagnostic(length_levels(r_expr)?);
     }
-    if checker.is_rule_enabled("length_test") {
+    if checker.is_rule_enabled("length_test") && !checker.should_skip_rule(node, "length_test") {
         checker.report_diagnostic(length_test(r_expr)?);
     }
-    if checker.is_rule_enabled("lengths") {
+    if checker.is_rule_enabled("lengths") && !checker.should_skip_rule(node, "lengths") {
         checker.report_diagnostic(lengths(r_expr)?);
     }
-    if checker.is_rule_enabled("matrix_apply") {
+    if checker.is_rule_enabled("matrix_apply") && !checker.should_skip_rule(node, "matrix_apply") {
         checker.report_diagnostic(matrix_apply(r_expr)?);
     }
-    if checker.is_rule_enabled("sample_int") {
+    if checker.is_rule_enabled("sample_int") && !checker.should_skip_rule(node, "sample_int") {
         checker.report_diagnostic(sample_int(r_expr)?);
     }
-    if checker.is_rule_enabled("which_grepl") {
+    if checker.is_rule_enabled("which_grepl") && !checker.should_skip_rule(node, "which_grepl") {
         checker.report_diagnostic(which_grepl(r_expr)?);
     }
     Ok(())

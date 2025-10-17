@@ -1,4 +1,5 @@
 use crate::error::ParseError;
+use crate::suppression::SuppressionManager;
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
 use air_r_syntax::RForStatementFields;
@@ -86,14 +87,17 @@ pub struct Checker {
     // The R version that is manually passed by the user in the CLI. Any rule
     // that has a minimum R version higher than this value will be deactivated.
     pub minimum_r_version: Option<(u32, u32, u32)>,
+    // Tracks comment-based suppression directives like `# flir-skip:`
+    pub suppression: SuppressionManager,
 }
 
 impl Checker {
-    fn new() -> Self {
+    fn new(suppression: SuppressionManager) -> Self {
         Self {
             diagnostics: vec![],
             rules: RuleTable::empty(),
             minimum_r_version: None,
+            suppression,
         }
     }
 
@@ -107,6 +111,11 @@ impl Checker {
 
     pub(crate) fn is_rule_enabled(&mut self, rule: &str) -> bool {
         self.rules.enabled.iter().any(|r| r.name == rule)
+    }
+
+    /// Check if a rule should be skipped for the given node due to suppression comments
+    pub(crate) fn should_skip_rule(&self, node: &air_r_syntax::RSyntaxNode, rule: &str) -> bool {
+        self.suppression.should_skip_rule(node, rule)
     }
 }
 
@@ -127,7 +136,8 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
     let expressions = &parsed.tree().expressions();
     let expressions_vec: Vec<_> = expressions.into_iter().collect();
 
-    let mut checker = Checker::new();
+    let suppression = SuppressionManager::from_node(syntax);
+    let mut checker = Checker::new(suppression);
     checker.rules = config.rules_to_apply;
     checker.minimum_r_version = config.minimum_r_version;
     for expr in expressions_vec {

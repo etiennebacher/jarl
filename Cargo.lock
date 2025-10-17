@@ -43,7 +43,7 @@ dependencies = [
  "air_r_syntax",
  "biome_formatter",
  "biome_rowan",
- "comments",
+ "comments 0.0.0 (git+https://github.com/posit-dev/air?rev=82751bec9d7b0297282c8e24b813e71bc4d461f6)",
  "itertools",
  "settings",
  "tracing",
@@ -452,6 +452,10 @@ dependencies = [
 [[package]]
 name = "comments"
 version = "0.0.0"
+
+[[package]]
+name = "comments"
+version = "0.0.0"
 source = "git+https://github.com/posit-dev/air?rev=82751bec9d7b0297282c8e24b813e71bc4d461f6#82751bec9d7b0297282c8e24b813e71bc4d461f6"
 
 [[package]]
@@ -621,7 +625,9 @@ dependencies = [
  "air_r_parser",
  "air_r_syntax",
  "anyhow",
+ "biome_formatter",
  "biome_rowan",
+ "comments 0.0.0",
  "fs",
  "ignore",
  "insta",

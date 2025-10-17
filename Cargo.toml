@@ -17,6 +17,7 @@ readme = "README.md"
 # Core flir crates
 flir-core = { path = "crates/flir-core" }
 flir-lsp = { path = "crates/flir-lsp" }
+comments = { path = "crates/comments" }
 
 # External dependencies
 colored = "2.1.0"
@@ -31,6 +32,7 @@ clap = { version = "4.5.21", features = ["derive"] }
 anyhow = "1.0.94"
 tempfile = "3.14.0"
 biome_rowan = { git = "https://github.com/biomejs/biome", rev = "c13fc60726883781e4530a4437724273b560c8e0" }
+biome_formatter = { git = "https://github.com/biomejs/biome", rev = "c13fc60726883781e4530a4437724273b560c8e0" }
 ignore = "0.4.23"
 tracing = "0.1.41"
 toml = "0.9.2"

@@ -20,6 +20,8 @@ air_r_syntax.workspace = true
 air_workspace.workspace = true
 air_fs.workspace = true
 biome_rowan.workspace = true
+biome_formatter.workspace = true
+comments.workspace = true
 
 # Serialization and data structures
 serde.workspace = true
