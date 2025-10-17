@@ -14,7 +14,7 @@ pub enum FormatDirective {
 pub enum LintDirective {
     /// Skip all lints for the next node
     Skip,
-    /// Skip specific lints for the next node, e.g. "# flir-skip: any_is_na, coalesce"
+    /// Skip specific lints for the next node, e.g. "# jarl-skip: any_is_na, coalesce"
     SkipRules(Vec<String>),
 }
 
@@ -50,7 +50,7 @@ pub fn parse_comment_directive(text: &str) -> Option<Directive> {
 
     match category {
         "fmt" => parse_format_directive(text),
-        "flir-skip" => parse_lint_directive(text),
+        "jarl-skip" => parse_lint_directive(text),
         _ => None,
     }
 }
@@ -88,7 +88,7 @@ pub fn parse_special_skip_file(text: &str) -> Option<Directive> {
 #[inline]
 fn parse_lint_directive(text: &str) -> Option<Directive> {
     if text.is_empty() {
-        // "# flir-skip:" with no rules means skip all
+        // "# jarl-skip:" with no rules means skip all
         return Some(Directive::Lint(LintDirective::Skip));
     }
 
@@ -164,18 +164,18 @@ mod test {
         let lint_skip = Some(Directive::Lint(LintDirective::Skip));
 
         // Basic skip all
-        assert_eq!(parse_comment_directive("# flir-skip:"), lint_skip);
-        assert_eq!(parse_comment_directive("#flir-skip:"), lint_skip);
-        assert_eq!(parse_comment_directive("# flir-skip: "), lint_skip);
+        assert_eq!(parse_comment_directive("# jarl-skip:"), lint_skip);
+        assert_eq!(parse_comment_directive("#jarl-skip:"), lint_skip);
+        assert_eq!(parse_comment_directive("# jarl-skip: "), lint_skip);
 
         // Skip specific rules
-        let result = parse_comment_directive("# flir-skip: any_is_na");
+        let result = parse_comment_directive("# jarl-skip: any_is_na");
         assert!(matches!(
             result,
             Some(Directive::Lint(LintDirective::SkipRules(ref rules))) if rules == &vec!["any_is_na"]
         ));
 
-        let result = parse_comment_directive("# flir-skip: any_is_na, coalesce");
+        let result = parse_comment_directive("# jarl-skip: any_is_na, coalesce");
         assert!(matches!(
             result,
             Some(Directive::Lint(LintDirective::SkipRules(ref rules)))
@@ -183,7 +183,7 @@ mod test {
         ));
 
         // With extra spaces
-        let result = parse_comment_directive("# flir-skip:  any_is_na  ,  coalesce  ");
+        let result = parse_comment_directive("# jarl-skip:  any_is_na  ,  coalesce  ");
         assert!(matches!(
             result,
             Some(Directive::Lint(LintDirective::SkipRules(ref rules)))
@@ -191,9 +191,9 @@ mod test {
         ));
 
         // Must have `:`
-        assert!(parse_comment_directive("# flir-skip").is_none());
+        assert!(parse_comment_directive("# jarl-skip").is_none());
 
         // Can't have unrelated leading text
-        assert!(parse_comment_directive("# please flir-skip:").is_none());
+        assert!(parse_comment_directive("# please jarl-skip:").is_none());
     }
 }

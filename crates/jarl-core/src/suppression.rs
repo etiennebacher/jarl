@@ -1,15 +1,15 @@
 //! Comment-based suppression for lint rules
 //!
-//! This module handles extracting and checking `# flir-skip` comments
+//! This module handles extracting and checking `# jarl-skip` comments
 //! to determine which nodes should skip linting.
 
 use air_r_syntax::{RLanguage, RSyntaxNode};
 use biome_formatter::comments::{CommentStyle, Comments};
 use biome_rowan::SyntaxTriviaPieceComments;
-use comments::{Directive, LintDirective, parse_comment_directive};
+use comments::{parse_comment_directive, Directive, LintDirective};
 use std::collections::HashSet;
 
-/// Comment style for R that identifies flir-skip directives
+/// Comment style for R that identifies jarl-skip directives
 #[derive(Default)]
 pub struct RCommentStyle;
 
@@ -59,7 +59,7 @@ impl SuppressionManager {
     pub fn check_suppression(&self, node: &RSyntaxNode) -> Option<Option<HashSet<String>>> {
         let leading = self.comments.leading_comments(node);
 
-        // Check each leading comment for flir-skip directives
+        // Check each leading comment for jarl-skip directives
         for comment in leading {
             let text = comment.piece().text();
 
@@ -87,13 +87,13 @@ impl SuppressionManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use air_r_parser::{RParserOptions, parse};
+    use air_r_parser::{parse, RParserOptions};
     use biome_rowan::AstNode;
 
     #[test]
     fn test_skip_all() {
         let code = r#"
-# flir-skip:
+# jarl-skip:
 any(is.na(x))
 "#;
 
@@ -111,7 +111,7 @@ any(is.na(x))
     #[test]
     fn test_skip_specific_rules() {
         let code = r#"
-# flir-skip: any_is_na, coalesce
+# jarl-skip: any_is_na, coalesce
 any(is.na(x))
 "#;
 
