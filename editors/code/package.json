@@ -1,17 +1,17 @@
 {
-	"name": "flir-vscode",
-	"displayName": "Flir - R Linter",
+	"name": "jarl-vscode",
+	"displayName": "Jarl - R Linter",
 	"description": "R linter with language server support",
 	"version": "0.1.2",
 	"publisher": "etiennebacher",
 	"license": "MIT",
-	"homepage": "https://github.com/etiennebacher/flir2",
+	"homepage": "https://github.com/etiennebacher/jarl2",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/etiennebacher/flir2.git"
+		"url": "https://github.com/etiennebacher/jarl2.git"
 	},
 	"bugs": {
-		"url": "https://github.com/etiennebacher/flir2/issues"
+		"url": "https://github.com/etiennebacher/jarl2/issues"
 	},
 	"keywords": [
 		"r",
@@ -25,13 +25,13 @@
 		"Linters",
 		"Programming Languages"
 	],
-	"icon": "flir.png",
+	"icon": "jarl.png",
 	"activationEvents": [
 		"onLanguage:r",
 		"workspaceContains:*.r",
 		"workspaceContains:*.R",
-		"workspaceContains:flir.toml",
-		"workspaceContains:.flir.toml",
+		"workspaceContains:jarl.toml",
+		"workspaceContains:.jarl.toml",
 		"workspaceContains:DESCRIPTION",
 		"workspaceContains:*.Rproj"
 	],
@@ -57,7 +57,7 @@
 		],
 		"configuration": {
 			"properties": {
-				"flir.logLevel": {
+				"jarl.logLevel": {
 					"default": null,
 					"markdownDescription": "Controls the log level of the language server.",
 					"enum": [
@@ -70,37 +70,37 @@
 					"scope": "application",
 					"type": "string"
 				},
-				"flir.dependencyLogLevels": {
+				"jarl.dependencyLogLevels": {
 					"default": null,
 					"markdownDescription": "Controls the log level of the Rust crates that the language server depends on.",
 					"scope": "application",
 					"type": "string"
 				},
-				"flir.syncFileSettingsWithClient": {
+				"jarl.syncFileSettingsWithClient": {
 					"default": true,
-					"markdownDescription": "Whether settings from flir.toml files should be propagated to the client (the IDE).",
+					"markdownDescription": "Whether settings from jarl.toml files should be propagated to the client (the IDE).",
 					"scope": "application",
 					"type": "boolean"
 				},
-				"flir.executableStrategy": {
+				"jarl.executableStrategy": {
 					"default": "bundled",
-					"markdownDescription": "Strategy used to locate the `flir` executable to start the language server with.",
+					"markdownDescription": "Strategy used to locate the `jarl` executable to start the language server with.",
 					"enum": [
 						"bundled",
 						"environment",
 						"path"
 					],
 					"enumDescriptions": [
-						"Always use the bundled `flir` executable.",
-						"Look for a `flir` executable using the `PATH` environment variable, falling back to the bundled version.",
-						"Look for a `flir` executable at the fixed path provided by `flir.executablePath`."
+						"Always use the bundled `jarl` executable.",
+						"Look for a `jarl` executable using the `PATH` environment variable, falling back to the bundled version.",
+						"Look for a `jarl` executable at the fixed path provided by `jarl.executablePath`."
 					],
 					"scope": "window",
 					"type": "string"
 				},
-				"flir.executablePath": {
+				"jarl.executablePath": {
 					"default": null,
-					"markdownDescription": "The path to a `flir` executable. Only utilized when `flir.executableStrategy` is set to \"path\".",
+					"markdownDescription": "The path to a `jarl` executable. Only utilized when `jarl.executableStrategy` is set to \"path\".",
 					"scope": "window",
 					"type": "string"
 				}
@@ -108,14 +108,14 @@
 		},
 		"configurationDefaults": {
 			"[r]": {
-				"editor.defaultFormatter": "etiennebacher.flir-vscode"
+				"editor.defaultFormatter": "etiennebacher.jarl-vscode"
 			}
 		},
 		"commands": [
 			{
 				"title": "Restart Server",
-				"category": "Flir",
-				"command": "flir.restart"
+				"category": "Jarl",
+				"command": "jarl.restart"
 			}
 		]
 	},

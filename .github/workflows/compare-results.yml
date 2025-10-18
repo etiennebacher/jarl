@@ -43,22 +43,22 @@ jobs:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
-      - name: Build flir binary from PR
-        run: cargo build --release --package flir-cli
+      - name: Build jarl binary from PR
+        run: cargo build --release --package jarl-cli
 
       - name: Save PR binary path
         run: |
-          cp target/release/flir target/release/flir-pr
-          echo "PR_FLIR=$(pwd)/target/release/flir-pr" >> $GITHUB_ENV
+          cp target/release/jarl target/release/jarl-pr
+          echo "PR_JARL=$(pwd)/target/release/jarl-pr" >> $GITHUB_ENV
 
-      - name: Build flir binary from main branch
+      - name: Build jarl binary from main branch
         run: |
           git fetch origin main
           git checkout origin/main
-          cargo build --release --package flir-cli
+          cargo build --release --package jarl-cli
 
       - name: Save main binary path
-        run: echo "MAIN_FLIR=$(pwd)/target/release/flir" >> $GITHUB_ENV
+        run: echo "MAIN_JARL=$(pwd)/target/release/jarl" >> $GITHUB_ENV
 
       - name: Clone all test repos
         run: |
@@ -81,16 +81,16 @@ jobs:
             repo_dir=$(echo "$repo_name" | tr '/' '_')
 
             # Run main
-            (cd "$repo_dir" && $MAIN_FLIR check . --output-format json) > "../results/${repo_dir}_main.json" || true
+            (cd "$repo_dir" && $MAIN_JARL check . --output-format json) > "../results/${repo_dir}_main.json" || true
 
             # Run PR
-            (cd "$repo_dir" && $PR_FLIR check . --output-format json) > "../results/${repo_dir}_pr.json" || true
+            (cd "$repo_dir" && $PR_JARL check . --output-format json) > "../results/${repo_dir}_pr.json" || true
           done
 
       - name: Upload all result JSONs
         uses: actions/upload-artifact@v4
         with:
-          name: flir-json-results
+          name: jarl-json-results
           path: results/
 
       - name: Setup R to process lint results

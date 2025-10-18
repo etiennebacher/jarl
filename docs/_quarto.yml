@@ -1,7 +1,7 @@
 project:
   type: website
 website:
-  title: flir
+  title: jarl
   navbar:
     search: true
     left:

@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 
-import { FLIR_EXTENSION_ID, EXTENSION_ROOT_DIR } from "../constants";
+import { JARL_EXTENSION_ID, EXTENSION_ROOT_DIR } from "../constants";
 
 // The test folder contains a default workspace configuration with formatting
 // settings that apply to our tests
@@ -18,10 +18,10 @@ export function snapshotPath(file: string): string {
 }
 
 export function extension() {
-	const extension = vscode.extensions.getExtension(FLIR_EXTENSION_ID);
+	const extension = vscode.extensions.getExtension(JARL_EXTENSION_ID);
 
 	if (extension === undefined) {
-		throw new Error(`Extension ${FLIR_EXTENSION_ID} not found`);
+		throw new Error(`Extension ${JARL_EXTENSION_ID} not found`);
 	}
 
 	return extension;
@@ -36,7 +36,7 @@ export function internalApi() {
 }
 
 export async function waitLsp() {
-	// Make sure flir-vscode is activated as activation events might not have
+	// Make sure jarl-vscode is activated as activation events might not have
 	// been triggered
 	await extension().activate();
 
@@ -53,7 +53,7 @@ export async function withToml(
 	const createdToml: Promise<void> =
 		internalApi().ctx.lsp.waitForSettingsNotification();
 
-	const tomlPath = testPath("flir.toml");
+	const tomlPath = testPath("jarl.toml");
 	fs.writeFileSync(tomlPath, content);
 
 	try {

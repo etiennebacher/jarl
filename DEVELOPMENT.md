@@ -17,7 +17,7 @@ src/lints/any_duplicated/
 ├── any_duplicated.rs
 ├── mod.rs
 └── snapshots
-    └── flir__lints__any_duplicated__tests__fix_output.snap
+    └── jarl__lints__any_duplicated__tests__fix_output.snap
 ```
 
 ## Integration tests

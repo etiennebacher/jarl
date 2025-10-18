@@ -1,0 +1,16 @@
+---
+source: crates/jarl-cli/tests/integration/comments.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 1
+----- stdout -----
+test.R [15:1] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+
+----- args -----
+check .

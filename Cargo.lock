@@ -43,7 +43,7 @@ dependencies = [
  "air_r_syntax",
  "biome_formatter",
  "biome_rowan",
- "comments",
+ "comments 0.0.0 (git+https://github.com/posit-dev/air?rev=82751bec9d7b0297282c8e24b813e71bc4d461f6)",
  "itertools",
  "settings",
  "tracing",
@@ -452,6 +452,10 @@ dependencies = [
 [[package]]
 name = "comments"
 version = "0.0.0"
+
+[[package]]
+name = "comments"
+version = "0.0.0"
 source = "git+https://github.com/posit-dev/air?rev=82751bec9d7b0297282c8e24b813e71bc4d461f6#82751bec9d7b0297282c8e24b813e71bc4d461f6"
 
 [[package]]
@@ -593,65 +597,6 @@ name = "fastrand"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
-
-[[package]]
-name = "flir-cli"
-version = "0.0.17"
-dependencies = [
- "anyhow",
- "clap",
- "colored",
- "flir-core",
- "flir-lsp",
- "fs",
- "insta",
- "regex",
- "serde",
- "serde_json",
- "tempfile",
- "tracing",
- "tracing-subscriber",
- "workspace",
-]
-
-[[package]]
-name = "flir-core"
-version = "0.0.17"
-dependencies = [
- "air_r_parser",
- "air_r_syntax",
- "anyhow",
- "biome_rowan",
- "fs",
- "ignore",
- "insta",
- "path-absolutize",
- "rayon",
- "rustc-hash",
- "serde",
- "tempfile",
- "toml 0.9.6",
- "tracing",
- "workspace",
-]
-
-[[package]]
-name = "flir-lsp"
-version = "0.0.17"
-dependencies = [
- "anyhow",
- "clap",
- "crossbeam",
- "flir-core",
- "lsp-server",
- "lsp-types",
- "rustc-hash",
- "serde",
- "serde_json",
- "tracing",
- "tracing-subscriber",
- "workspace",
-]
 
 [[package]]
 name = "form_urlencoded"
@@ -878,6 +823,67 @@ name = "itoa"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4a5f13b858c8d314ee3e8f639011f7ccefe71f97f96e50151fb991f267928e2c"
+
+[[package]]
+name = "jarl-cli"
+version = "0.0.17"
+dependencies = [
+ "anyhow",
+ "clap",
+ "colored",
+ "fs",
+ "insta",
+ "jarl-core",
+ "jarl-lsp",
+ "regex",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tracing",
+ "tracing-subscriber",
+ "workspace",
+]
+
+[[package]]
+name = "jarl-core"
+version = "0.0.17"
+dependencies = [
+ "air_r_parser",
+ "air_r_syntax",
+ "anyhow",
+ "biome_formatter",
+ "biome_rowan",
+ "comments 0.0.0",
+ "fs",
+ "ignore",
+ "insta",
+ "path-absolutize",
+ "rayon",
+ "rustc-hash",
+ "serde",
+ "tempfile",
+ "toml 0.9.6",
+ "tracing",
+ "workspace",
+]
+
+[[package]]
+name = "jarl-lsp"
+version = "0.0.17"
+dependencies = [
+ "anyhow",
+ "clap",
+ "crossbeam",
+ "jarl-core",
+ "lsp-server",
+ "lsp-types",
+ "rustc-hash",
+ "serde",
+ "serde_json",
+ "tracing",
+ "tracing-subscriber",
+ "workspace",
+]
 
 [[package]]
 name = "lazy_static"

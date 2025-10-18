@@ -1,0 +1,15 @@
+---
+source: crates/jarl-cli/tests/integration/jarl.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--fix\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 1
+----- stdout -----
+test.R [3:1] duplicated_arguments Avoid duplicate arguments in function calls. Duplicated argument(s): "x".
+
+Found 1 error.
+
+----- stderr -----
+
+----- args -----
+check . --fix

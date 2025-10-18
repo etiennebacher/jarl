@@ -1,0 +1,15 @@
+---
+source: crates/jarl-core/src/lints/repeat/mod.rs
+expression: "get_fixed_text(vec![\"while (\\n#a comment\\nTRUE) { }\\n\",], \"any_is_na\", None)"
+---
+OLD:
+====
+while (
+#a comment
+TRUE) { }
+
+NEW:
+====
+while (
+#a comment
+TRUE) { }

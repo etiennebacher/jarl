@@ -1,0 +1,37 @@
+---
+source: crates/jarl-core/src/lints/equals_na/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\nx == NA\", \"x # comment\\n== NA\",\n\"# comment\\nx == NA\", \"x == NA # trailing comment\",], \"equals_na\", None)"
+---
+OLD:
+====
+# leading comment
+x == NA
+NEW:
+====
+# leading comment
+is.na(x)
+
+OLD:
+====
+x # comment
+== NA
+NEW:
+====
+x # comment
+== NA
+
+OLD:
+====
+# comment
+x == NA
+NEW:
+====
+# comment
+is.na(x)
+
+OLD:
+====
+x == NA # trailing comment
+NEW:
+====
+is.na(x) # trailing comment

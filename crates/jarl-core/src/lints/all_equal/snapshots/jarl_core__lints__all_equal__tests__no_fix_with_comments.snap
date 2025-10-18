@@ -1,0 +1,30 @@
+---
+source: crates/jarl-core/src/lints/all_equal/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"# leading comment\\nif (all.equal(a, b)) message('equal')\",\n\"if (all.equal(a,\\n# a comment\\n b)) message('equal')\",\n\"if (all.equal(a, b)) message('equal') # trailing comment\",], \"all_equal\",)"
+---
+OLD:
+====
+# leading comment
+if (all.equal(a, b)) message('equal')
+NEW:
+====
+# leading comment
+if (isTRUE(all.equal(a, b))) message('equal')
+
+OLD:
+====
+if (all.equal(a,
+# a comment
+ b)) message('equal')
+NEW:
+====
+if (all.equal(a,
+# a comment
+ b)) message('equal')
+
+OLD:
+====
+if (all.equal(a, b)) message('equal') # trailing comment
+NEW:
+====
+if (isTRUE(all.equal(a, b))) message('equal') # trailing comment

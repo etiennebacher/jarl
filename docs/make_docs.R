@@ -5,7 +5,7 @@ if (dir.exists("docs/rules")) {
 }
 dir.create("docs/rules")
 
-rule_dirs <- list.files("crates/flir-core/src/lints", full.names = TRUE)
+rule_dirs <- list.files("crates/jarl-core/src/lints", full.names = TRUE)
 rule_dirs <- rule_dirs[!grepl("mod.rs", rule_dirs)]
 rule_names <- basename(rule_dirs)
 

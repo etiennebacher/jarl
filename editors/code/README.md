@@ -1,6 +1,6 @@
-# Flir VS Code Extension
+# Jarl VS Code Extension
 
-A Visual Studio Code extension that provides linting support for R code through the Flir language server.
+A Visual Studio Code extension that provides linting support for R code through the Jarl language server.
 
 ## Features
 
@@ -16,24 +16,24 @@ A Visual Studio Code extension that provides linting support for R code through 
 1. Build the extension:
    ```bash
    cargo build --release
-   cd /path_to/flir2/editors/code
-   cp ../../target/release/flir bundled/bin/flir # don't forget to use target/debug if used `cargo build`
+   cd /path_to/jarl2/editors/code
+   cp ../../target/release/jarl bundled/bin/jarl # don't forget to use target/debug if used `cargo build`
    npm install
    npm run package
    ```
 
 2. Install the generated `.vsix` file:
    ```bash
-   positron --install-extension flir-vscode-*.vsix
+   positron --install-extension jarl-vscode-*.vsix
    ```
 
 
 ## Requirements
 
-The extension requires the Flir language server binary. The extension will automatically:
+The extension requires the Jarl language server binary. The extension will automatically:
 
 1. Try to use a bundled binary (if available)
-2. Look for `flir` in your system PATH
+2. Look for `jarl` in your system PATH
 3. Use a custom path if configured
 
 ## Configuration
@@ -42,22 +42,22 @@ Configure the extension through Positron / VS Code settings:
 
 ### Basic Settings
 
-- `flir.logLevel`: Set the log level for the language server (`error`, `warning`, `info`, `debug`, `trace`)
-- `flir.executableStrategy`: How to locate the flir binary (`bundled`, `environment`, `path`)
-- `flir.executablePath`: Custom path to flir binary (when using `path` strategy)
+- `jarl.logLevel`: Set the log level for the language server (`error`, `warning`, `info`, `debug`, `trace`)
+- `jarl.executableStrategy`: How to locate the jarl binary (`bundled`, `environment`, `path`)
+- `jarl.executablePath`: Custom path to jarl binary (when using `path` strategy)
 
 ### Example Configuration
 
 ```json
 {
-  "flir.logLevel": "info",
-  "flir.executableStrategy": "environment",
-  "flir.executablePath": "/path/to/custom/flir"
+  "jarl.logLevel": "info",
+  "jarl.executableStrategy": "environment",
+  "jarl.executablePath": "/path/to/custom/jarl"
 }
 ```
 
 ## Commands
 
-- **Flir: Restart Server** - Restart the language server
+- **Jarl: Restart Server** - Restart the language server
 
-Access commands via `Ctrl+Shift+P` (Cmd+Shift+P on macOS) and search for "Flir".
+Access commands via `Ctrl+Shift+P` (Cmd+Shift+P on macOS) and search for "Jarl".
