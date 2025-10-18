@@ -25,6 +25,8 @@ pub struct ArgsConfig {
     /// that require functions that are not available in all R versions, e.g.
     /// grepv() introduced in R 4.5.0.
     pub min_r_version: Option<String>,
+    /// Apply fixes even if the Git branch still has uncommitted files?
+    pub allow_dirty: bool,
 }
 
 #[derive(Clone)]
@@ -47,6 +49,8 @@ pub struct Config {
     /// that require functions that are not available in all R versions, e.g.
     /// grepv() introduced in R 4.5.0.
     pub minimum_r_version: Option<(u32, u32, u32)>,
+    /// Apply fixes even if the Git branch still has uncommitted files?
+    pub allow_dirty: bool,
 }
 
 pub fn build_config(
@@ -119,6 +123,7 @@ pub fn build_config(
         apply_fixes: check_config.fix,
         apply_unsafe_fixes: check_config.unsafe_fixes,
         minimum_r_version,
+        allow_dirty: check_config.allow_dirty,
     })
 }
 

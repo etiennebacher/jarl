@@ -1,0 +1,13 @@
+---
+source: crates/jarl-cli/tests/integration/allow_dirty.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--fix\").run().normalize_os_executable_name()"
+---
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+
+----- args -----
+check . --fix

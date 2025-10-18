@@ -1,5 +1,6 @@
 use crate::error::ParseError;
 use crate::suppression::SuppressionManager;
+use crate::vcs::check_version_control;
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
 use air_r_syntax::RForStatementFields;
@@ -51,6 +52,8 @@ pub fn lint_only(path: &PathBuf, config: Config) -> Result<Vec<Diagnostic>, anyh
 
 pub fn lint_fix(path: &PathBuf, config: Config) -> Result<Vec<Diagnostic>, anyhow::Error> {
     let path = relativize_path(path);
+    check_version_control(&path, &config)?;
+
     let mut has_skipped_fixes = true;
     let mut checks: Vec<Diagnostic>;
 

@@ -16,6 +16,7 @@ Options:
   -f, --fix                            Automatically fix issues detected by the linter.
   -u, --unsafe-fixes                   Include fixes that may not retain the original intent of the  code.
       --fix-only                       Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
+      --allow-dirty                    Apply fixes if the Git branch is not clean, meaning that there are uncommitted files.
   -s, --select-rules <SELECT_RULES>    Names of rules to include, separated by a comma (no spaces). [default: ]
   -i, --ignore-rules <IGNORE_RULES>    Names of rules to exclude, separated by a comma (no spaces). [default: ]
   -w, --with-timing                    Show the time taken by the function.

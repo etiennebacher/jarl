@@ -97,6 +97,7 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlD
         select_rules: "".to_string(),
         ignore_rules: "".to_string(),
         min_r_version: None,
+        allow_dirty: false,
     };
 
     let config = build_config(&check_config, &resolver, paths)?;

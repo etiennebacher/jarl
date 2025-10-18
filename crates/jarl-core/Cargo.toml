@@ -37,6 +37,7 @@ tempfile.workspace = true
 
 # Parallel processing
 rayon.workspace = true
+git2 = "0.20.2"
 
 [dev-dependencies]
 insta.workspace = true
