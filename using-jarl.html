@@ -20,6 +20,41 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -132,9 +167,10 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#using-jarl" id="toc-using-jarl" class="nav-link active" data-scroll-target="#using-jarl">Using Jarl</a>
   <ul class="collapse">
   <li><a href="#linting-and-fixing" id="toc-linting-and-fixing" class="nav-link" data-scroll-target="#linting-and-fixing">Linting and fixing</a></li>
-  <li><a href="#selecting-rules" id="toc-selecting-rules" class="nav-link" data-scroll-target="#selecting-rules">Selecting rules</a></li>
-  <li><a href="#ignoring-pieces-of-code" id="toc-ignoring-pieces-of-code" class="nav-link" data-scroll-target="#ignoring-pieces-of-code">Ignoring pieces of code</a></li>
-  <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section"></a></li>
+  <li><a href="#selecting-and-ignoring-rules" id="toc-selecting-and-ignoring-rules" class="nav-link" data-scroll-target="#selecting-and-ignoring-rules">Selecting and ignoring rules</a></li>
+  <li><a href="#ignoring-diagnostics" id="toc-ignoring-diagnostics" class="nav-link" data-scroll-target="#ignoring-diagnostics">Ignoring diagnostics</a></li>
+  <li><a href="#dealing-with-r-versions" id="toc-dealing-with-r-versions" class="nav-link" data-scroll-target="#dealing-with-r-versions">Dealing with R versions</a></li>
+  <li><a href="#using-a-configuration-file" id="toc-using-a-configuration-file" class="nav-link" data-scroll-target="#using-a-configuration-file">Using a configuration file</a></li>
   </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/using-jarl.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
@@ -151,7 +187,7 @@ ul.task-list li input[type="checkbox"] {
 <h2 class="anchored" data-anchor-id="linting-and-fixing">Linting and fixing</h2>
 <p><code>jarl check</code> is the command required to diagnoze one or several files. It takes a path as its first argument, such as <code>jarl check .</code> to check all files starting from the current directory. This command will return a list of diagnostics, one per rule violation.</p>
 <p>This is already useful information, but it can be tedious to fix those violations one by one. To help addressing this issue, Jarl can apply automatic fixes to some of those diagnostics. This is done simply by passing the argument <code>--fix</code>, such as <code>jarl check . --fix</code>.</p>
-<p>For some rules, an automatic fix cannot be inferred simply based on static code analysis. For example, the rule <code>for_loop_index</code> reports cases such as <code>for (x in foo(x))</code>, which is problematic because <code>x</code> is both in the index and in the sequence component of the loop. It is recommended to rename <code>x</code> to disambiguate its use, but this requires manual interventation.</p>
+<p>For some rules, an automatic fix cannot be inferred simply based on static code analysis. For example, the rule <code>for_loop_index</code> reports cases such as <code>for (x in foo(x))</code>, which is problematic because <code>x</code> is both in the index and in the sequence component of the loop. It is recommended to rename <code>x</code> to disambiguate its use, but this requires manual intervention.</p>
 <div class="callout callout-style-default callout-warning callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -174,14 +210,71 @@ Automatic fixes and version control
 <p><strong>Unsafe fixes</strong> may change the behavior of the code when it runs. For example, <a href="./rules/all_equal.html"><code>all_equal</code></a> reports cases such as <code>!all.equal(x, y)</code>. This code is likely a mistake because <code>all.equal()</code> returns a character vector and not <code>FALSE</code> when <code>x != y</code>. Jarl could fix this to be <code>!isTRUE(all.equal(x, y))</code> instead, but this would change the behavior of the code, so it is marked “unsafe”.</p>
 <p>By default, only safe fixes are applied. To apply the unsafe fixes, use <code>--unsafe-fixes</code>, e.g.&nbsp;<code>jarl check . --fix --unsafe-fixes</code>.</p>
 </section>
-<section id="selecting-rules" class="level2">
-<h2 class="anchored" data-anchor-id="selecting-rules">Selecting rules</h2>
+<section id="selecting-and-ignoring-rules" class="level2">
+<h2 class="anchored" data-anchor-id="selecting-and-ignoring-rules">Selecting and ignoring rules</h2>
+<p>We can apply a subset of rules using the <code>--select-rules</code> and <code>--ignore-rules</code> parameters:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--select-rules</span> any_is_na,is_numeric,length_levels</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--ignore-rules</span> any_duplicated,matrix_apply</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<!-- TODO: mention the groups of linters when https://github.com/etiennebacher/jarl/issues/108 is done -->
 </section>
-<section id="ignoring-pieces-of-code" class="level2">
-<h2 class="anchored" data-anchor-id="ignoring-pieces-of-code">Ignoring pieces of code</h2>
+<section id="ignoring-diagnostics" class="level2">
+<h2 class="anchored" data-anchor-id="ignoring-diagnostics">Ignoring diagnostics</h2>
+<p>It is sometimes needed to ignore diagnostics on certain lines of code, either for all rules or just a subset. Jarl follows the existing infrastructure of <code>lintr</code> and uses special comments starting with <code># nolint</code>. The node that follows this special comment will be ignored.</p>
+<p>Several comments are supported:</p>
+<ol type="1">
+<li><code># nolint</code> ignores all rules on the next node;</li>
+<li><code># nolint: any_duplicated, any_is_na</code> ignores these two rules only on the next node;</li>
+<li><code># nolint start</code> and <code># nolint end</code> mark the start and end of the chunk of code where diagnostics are ignored. It is also possible to use <code># nolint start: any_duplicated, any_is_na</code> to ignore only those two rules on this chunk of code.</li>
+</ol>
+<p>Note that I have mentioned several times the term “node”. Comments are associated to a node in the representation of R code, and not to a line of code. In other words, when Jarl inspects comments to determine whether some code should be ignored, it considers these two pieces of code to be equivalent:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># nolint</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">is.na</span>(x))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># nolint</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">is.na</span>(x)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>What matters is the position of the comment relative to the start of the node. The following code is different from the two examples above because the comment is now attached to <code>is.na(x)</code>, not to the <code>any()</code> call anymore:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># nolint</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">is.na</span>(x)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>so this would be reported.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Compatibility with <code>lintr</code>
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>To make it easier to switch between <code>lintr</code> and Jarl (or to use both), putting the special comment at the end of the node is also supported. For example, this wouldn’t be reported:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">is.na</span>(x)) <span class="co"># nolint</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Also for compatibilty, rule names that end with “_linter” are supported, so these two are equivalent:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">is.na</span>(x)) <span class="co"># nolint: any_is_na</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">is.na</span>(x)) <span class="co"># nolint: any_is_na_linter</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+<p>It is also possible to ignore entire files. Jarl will ignore all files that contain “Generated by” in a comment at the top of the file, to avoid linting autogenerated files (by Roxygen2 or Rcpp for example).</p>
+<!-- TODO: Uncomment when this is possible:
+
+For now, the only other way to ignore entire files is to list them in the "ignore-files" field in jarl.toml
+
+ -->
 </section>
-<section id="section" class="level2">
-<h2 class="anchored" data-anchor-id="section"></h2>
+<section id="dealing-with-r-versions" class="level2">
+<h2 class="anchored" data-anchor-id="dealing-with-r-versions">Dealing with R versions</h2>
+<p>Some rules depend on the R version that is used in the project. For example, <code>grepv</code> recommends the use of <code>grepv()</code> over <code>grep(value = TRUE)</code>, but this rule only makes sense if the project uses <code>R &gt;= 4.5.0</code> since this function was introduced in this version.</p>
+<p>By default, when the R version used in the project cannot be retrieved, Jarl doesn’t apply rules that depend on an R version. There are two ways to tell Jarl which R version you’re using:</p>
+<ol type="1">
+<li>you can pass this information by hand using <code>--min-r-version</code>. For example, passing <code>--min-r-version 4.3</code> will tell Jarl that it can apply rules that depend on R 4.3.0 or before. Rules that depend on R 4.3.1 or more would still be ignored.</li>
+<li>if your project has a <code>DESCRIPTION</code> file, you can set <code>R (&gt;= x.y.z)</code> in the <code>Depends</code> field and Jarl will retrieve this version.</li>
+</ol>
+</section>
+<section id="using-a-configuration-file" class="level2">
+<h2 class="anchored" data-anchor-id="using-a-configuration-file">Using a configuration file</h2>
+<p>It is possible to save settings in a <code>jarl.toml</code> file. See the <a href="config.md">Configuration page</a>.</p>
 
 
 </section>
