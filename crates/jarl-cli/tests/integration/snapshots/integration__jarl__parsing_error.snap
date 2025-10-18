@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-cli/tests/integration/jarl.rs
-expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name()"
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--allow-no-vcs\").run().normalize_os_executable_name()"
 ---
 success: false
 exit_code: 255
@@ -10,4 +10,4 @@ exit_code: 255
 Error: Failed to parse test.R due to syntax errors.
 
 ----- args -----
-check .
+check . --allow-no-vcs

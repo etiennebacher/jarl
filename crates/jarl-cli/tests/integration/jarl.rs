@@ -29,6 +29,7 @@ fn test_no_r_files() -> anyhow::Result<()> {
             .current_dir(directory)
             .arg("check")
             .arg(".")
+            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name()
     );
@@ -48,6 +49,7 @@ fn test_parsing_error() -> anyhow::Result<()> {
             .current_dir(directory)
             .arg("check")
             .arg(".")
+            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name()
     );
@@ -71,6 +73,7 @@ fn test_parsing_error_for_some_files() -> anyhow::Result<()> {
             .current_dir(directory)
             .arg("check")
             .arg(".")
+            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name()
     );
@@ -93,6 +96,7 @@ fn test_parsing_weird_raw_strings() -> anyhow::Result<()> {
             .current_dir(directory)
             .arg("check")
             .arg(".")
+            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name()
     );
@@ -112,6 +116,7 @@ fn test_parsing_braced_anonymous_function() -> anyhow::Result<()> {
             .current_dir(directory)
             .arg("check")
             .arg(".")
+            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name()
     );
@@ -131,6 +136,7 @@ fn test_no_lints() -> anyhow::Result<()> {
             .current_dir(directory)
             .arg("check")
             .arg(".")
+            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name()
     );
@@ -151,6 +157,7 @@ fn test_one_lint() -> anyhow::Result<()> {
             .current_dir(directory)
             .arg("check")
             .arg(".")
+            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name()
     );
@@ -172,6 +179,7 @@ fn test_several_lints_one_file() -> anyhow::Result<()> {
             .current_dir(directory)
             .arg("check")
             .arg(".")
+            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name()
     );
@@ -197,6 +205,7 @@ fn test_several_lints_several_files() -> anyhow::Result<()> {
             .current_dir(directory)
             .arg("check")
             .arg(".")
+            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name()
     );
@@ -222,6 +231,7 @@ fn test_not_all_fixable_lints() -> anyhow::Result<()> {
             .current_dir(directory)
             .arg("check")
             .arg(".")
+            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name()
     );
@@ -242,6 +252,7 @@ fn test_corner_case() -> anyhow::Result<()> {
             .current_dir(directory)
             .arg("check")
             .arg(".")
+            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name()
     );
@@ -268,6 +279,7 @@ fn test_fix_options() -> anyhow::Result<()> {
             .arg("check")
             .arg(".")
             .arg("--fix")
+            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name()
     );
@@ -280,6 +292,7 @@ fn test_fix_options() -> anyhow::Result<()> {
             .arg(".")
             .arg("--fix")
             .arg("--unsafe-fixes")
+            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name()
     );
@@ -293,6 +306,7 @@ fn test_fix_options() -> anyhow::Result<()> {
             .arg("--fix")
             .arg("--unsafe-fixes")
             .arg("--fix-only")
+            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name()
     );
@@ -305,6 +319,7 @@ fn test_fix_options() -> anyhow::Result<()> {
             .arg(".")
             .arg("--fix")
             .arg("--fix-only")
+            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name()
     );
@@ -317,6 +332,7 @@ fn test_fix_options() -> anyhow::Result<()> {
             .arg(".")
             .arg("--unsafe-fixes")
             .arg("--fix-only")
+            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name()
     );
@@ -342,6 +358,7 @@ fn test_safe_and_unsafe_lints() -> anyhow::Result<()> {
             .current_dir(directory)
             .arg("check")
             .arg(".")
+            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name()
     );
@@ -363,6 +380,7 @@ fn test_newline_character_in_string() -> anyhow::Result<()> {
             .current_dir(directory)
             .arg("check")
             .arg(".")
+            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name()
     );

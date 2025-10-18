@@ -27,6 +27,8 @@ pub struct ArgsConfig {
     pub min_r_version: Option<String>,
     /// Apply fixes even if the Git branch still has uncommitted files?
     pub allow_dirty: bool,
+    /// Apply fixes even if there is no version control system?
+    pub allow_no_vcs: bool,
 }
 
 #[derive(Clone)]
@@ -51,6 +53,8 @@ pub struct Config {
     pub minimum_r_version: Option<(u32, u32, u32)>,
     /// Apply fixes even if the Git branch still has uncommitted files?
     pub allow_dirty: bool,
+    /// Apply fixes even if there is no version control system?
+    pub allow_no_vcs: bool,
 }
 
 pub fn build_config(
@@ -124,6 +128,7 @@ pub fn build_config(
         apply_unsafe_fixes: check_config.unsafe_fixes,
         minimum_r_version,
         allow_dirty: check_config.allow_dirty,
+        allow_no_vcs: check_config.allow_no_vcs,
     })
 }
 

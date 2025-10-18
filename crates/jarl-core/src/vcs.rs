@@ -2,42 +2,43 @@ use crate::config::Config;
 use anyhow::{Result, bail};
 use std::path::Path;
 
-// fn in_git_repo(path: &Path, cwd: &Path) -> bool {
-//     if let Ok(repo) = GitRepo::discover(path, cwd) {
-//         // Don't check if the working directory itself is ignored.
-//         if repo.workdir().map_or(false, |workdir| workdir == path) {
-//             true
-//         } else {
-//             !repo.is_path_ignored(path).unwrap_or(false)
-//         }
-//     } else {
-//         false
-//     }
-// }
+fn in_git_repo(path: &String) -> bool {
+    let path = Path::new(path);
+    if let Ok(repo) = GitRepo::discover(path) {
+        // Don't check if the working directory itself is ignored.
+        if repo.workdir().map_or(false, |workdir| workdir == path) {
+            true
+        } else {
+            !repo.is_path_ignored(path).unwrap_or(false)
+        }
+    } else {
+        false
+    }
+}
 
 pub struct GitRepo;
 
 impl GitRepo {
-    pub fn init(path: &Path, _: &Path) -> Result<GitRepo> {
+    pub fn init(path: &Path) -> Result<GitRepo> {
         git2::Repository::init(path)?;
         Ok(GitRepo)
     }
-    pub fn discover(path: &Path, _: &Path) -> Result<git2::Repository, git2::Error> {
+    pub fn discover(path: &Path) -> Result<git2::Repository, git2::Error> {
         git2::Repository::discover(path)
     }
 }
 
 pub fn check_version_control(path: &String, config: &Config) -> Result<()> {
-    // if opts.allow_no_vcs {
-    //     return Ok(());
-    // }
-    // if !existing_vcs_repo(gctx.cwd(), gctx.cwd()) {
-    //     bail!(
-    //         "no VCS found for this package and `cargo fix` can potentially \
-    //          perform destructive changes; if you'd like to suppress this \
-    //          error pass `--allow-no-vcs`"
-    //     )
-    // }
+    if config.allow_no_vcs {
+        return Ok(());
+    }
+    if !in_git_repo(&path) {
+        bail!(
+            "no Version Control System (e.g. Git) found for this package and \
+            `jarl check --fix` can potentially perform destructive changes; if \
+            you'd like to suppress this error pass `--allow-no-vcs`"
+        )
+    }
 
     if config.allow_dirty {
         return Ok(());
@@ -91,8 +92,8 @@ pub fn check_version_control(path: &String, config: &Config) -> Result<()> {
 
     bail!(
         "the working directory of this package has uncommitted changes, and \
-         `cargo fix` can potentially perform destructive changes; if you'd \
-         like to suppress this error pass `--allow-dirty`, \
+         `jarl check --fix` can potentially perform destructive changes; if \
+         you'd like to suppress this error pass `--allow-dirty`, \
          or commit the changes to these files:\n\
          \n\
          {}\n\

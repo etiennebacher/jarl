@@ -57,9 +57,15 @@ pub struct CheckCommand {
     #[arg(
         long,
         default_value = "false",
-        help = "Apply fixes if the Git branch is not clean, meaning that there are uncommitted files."
+        help = "Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files."
     )]
     pub allow_dirty: bool,
+    #[arg(
+        long,
+        default_value = "false",
+        help = "Apply fixes even if there is no version control system."
+    )]
+    pub allow_no_vcs: bool,
     #[arg(
         short,
         long,

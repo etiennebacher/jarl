@@ -1,13 +1,11 @@
 ---
-source: crates/jarl-cli/tests/integration/jarl.rs
+source: crates/jarl-cli/tests/integration/allow_no_vcs.rs
 expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--fix\").arg(\"--allow-no-vcs\").run().normalize_os_executable_name()"
 ---
-success: false
-exit_code: 1
+success: true
+exit_code: 0
 ----- stdout -----
-test.R [3:1] duplicated_arguments Avoid duplicate arguments in function calls. Duplicated argument(s): "x".
-
-Found 1 error.
+All checks passed!
 
 ----- stderr -----
 

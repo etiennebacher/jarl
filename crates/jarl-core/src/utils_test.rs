@@ -25,6 +25,7 @@ pub fn has_lint(text: &str, msg: &str, rule: &str, min_r_version: Option<&str>) 
         ignore_rules: String::new(),
         min_r_version: min_r_version.map(|s| s.to_string()),
         allow_dirty: false,
+        allow_no_vcs: true,
     };
 
     let mut resolver = PathResolver::new(Settings::default());
@@ -77,6 +78,7 @@ pub fn has_no_lint(text: &str, rule: &str, min_r_version: Option<&str>) -> bool 
         ignore_rules: String::new(),
         min_r_version: min_r_version.map(|s| s.to_string()),
         allow_dirty: false,
+        allow_no_vcs: true,
     };
 
     let mut resolver = PathResolver::new(Settings::default());
@@ -132,6 +134,7 @@ pub fn apply_fixes(
         ignore_rules: String::new(),
         min_r_version: min_r_version.map(|s| s.to_string()),
         allow_dirty: false,
+        allow_no_vcs: true,
     };
 
     let mut resolver = PathResolver::new(Settings::default());
@@ -175,6 +178,7 @@ pub fn check_code(text: &str, rule: &str, min_r_version: Option<&str>) -> Vec<Di
         ignore_rules: String::new(),
         min_r_version: min_r_version.map(|s| s.to_string()),
         allow_dirty: false,
+        allow_no_vcs: true,
     };
 
     let mut resolver = PathResolver::new(Settings::default());

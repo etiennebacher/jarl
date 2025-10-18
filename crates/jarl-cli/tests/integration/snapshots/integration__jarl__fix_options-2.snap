@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-cli/tests/integration/jarl.rs
-expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--fix\").arg(\"--unsafe-fixes\").run().normalize_os_executable_name()"
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--fix\").arg(\"--unsafe-fixes\").arg(\"--allow-no-vcs\").run().normalize_os_executable_name()"
 ---
 success: false
 exit_code: 1
@@ -12,4 +12,4 @@ Found 1 error.
 ----- stderr -----
 
 ----- args -----
-check . --fix --unsafe-fixes
+check . --fix --unsafe-fixes --allow-no-vcs

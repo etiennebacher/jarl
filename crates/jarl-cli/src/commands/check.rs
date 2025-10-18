@@ -55,6 +55,7 @@ pub fn check() -> Result<ExitStatus> {
         ignore_rules: args.ignore_rules.clone(),
         min_r_version: args.min_r_version.clone(),
         allow_dirty: args.allow_dirty.clone(),
+        allow_no_vcs: args.allow_no_vcs.clone(),
     };
 
     let config = build_config(&check_config, &resolver, paths)?;
