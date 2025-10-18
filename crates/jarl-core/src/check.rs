@@ -137,6 +137,12 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
     let expressions_vec: Vec<_> = expressions.into_iter().collect();
 
     let suppression = SuppressionManager::from_node(syntax);
+
+    // Check if the entire file should be skipped
+    if suppression.should_skip_file(syntax) {
+        return Ok(vec![]);
+    }
+
     let mut checker = Checker::new(suppression);
     checker.rules = config.rules_to_apply;
     checker.minimum_r_version = config.minimum_r_version;
