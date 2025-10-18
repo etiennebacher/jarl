@@ -12,7 +12,7 @@ directory of this project has uncommitted changes, so no fixes were applied.
 To apply the fixes, either add `--allow-dirty` to the call, or commit the changes 
 to these files:
 
-  * test.R (dirty)
+  * demos/ (dirty)
 
 
 

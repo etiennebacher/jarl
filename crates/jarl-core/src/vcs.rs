@@ -4,16 +4,7 @@ use std::path::Path;
 
 fn in_git_repo(path: &String) -> bool {
     let path = Path::new(path);
-    if let Ok(repo) = GitRepo::discover(path) {
-        // Don't check if the working directory itself is ignored.
-        if repo.workdir().map_or(false, |workdir| workdir == path) {
-            true
-        } else {
-            !repo.is_path_ignored(path).unwrap_or(false)
-        }
-    } else {
-        false
-    }
+    GitRepo::discover(path).is_ok()
 }
 
 pub struct GitRepo;
