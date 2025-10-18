@@ -87,7 +87,7 @@ pub struct Checker {
     // The R version that is manually passed by the user in the CLI. Any rule
     // that has a minimum R version higher than this value will be deactivated.
     pub minimum_r_version: Option<(u32, u32, u32)>,
-    // Tracks comment-based suppression directives like `# jarl-skip:`
+    // Tracks comment-based suppression directives like `# nolint`
     pub suppression: SuppressionManager,
 }
 

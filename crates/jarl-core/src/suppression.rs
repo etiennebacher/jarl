@@ -1,15 +1,15 @@
 //! Comment-based suppression for lint rules
 //!
-//! This module handles extracting and checking `# jarl-skip` comments
+//! This module handles extracting and checking `# nolint` comments
 //! to determine which nodes should skip linting.
 
 use air_r_syntax::{RLanguage, RSyntaxNode};
 use biome_formatter::comments::{CommentStyle, Comments};
 use biome_rowan::SyntaxTriviaPieceComments;
-use comments::{parse_comment_directive, Directive, LintDirective};
+use comments::{Directive, LintDirective, parse_comment_directive};
 use std::collections::HashSet;
 
-/// Comment style for R that identifies jarl-skip directives
+/// Comment style for R that identifies nolint directives
 #[derive(Default)]
 pub struct RCommentStyle;
 
@@ -57,18 +57,56 @@ impl SuppressionManager {
     /// - `Some(Some(rules))` if specific rules should be skipped
     /// - `None` if linting should proceed normally
     pub fn check_suppression(&self, node: &RSyntaxNode) -> Option<Option<HashSet<String>>> {
-        let leading = self.comments.leading_comments(node);
+        // Helper function to check comments for nolint directives
+        let check_comments = |comments: &[biome_formatter::comments::SourceComment<
+            RLanguage,
+        >]|
+         -> Option<Option<HashSet<String>>> {
+            for comment in comments {
+                let text = comment.piece().text();
 
-        // Check each leading comment for jarl-skip directives
-        for comment in leading {
-            let text = comment.piece().text();
-
-            if let Some(Directive::Lint(directive)) = parse_comment_directive(text) {
-                return match directive {
-                    LintDirective::Skip => Some(None), // Skip all
-                    LintDirective::SkipRules(rules) => Some(Some(rules.into_iter().collect())),
-                };
+                match parse_comment_directive(text) {
+                    Ok(Some(Directive::Lint(directive))) => {
+                        return match directive {
+                            LintDirective::Skip => Some(None), // Skip all
+                            LintDirective::SkipRules(rules) => {
+                                Some(Some(rules.into_iter().collect()))
+                            }
+                            LintDirective::SkipFile => {
+                                // SkipFile directive should be handled at file level, not node level
+                                // For now, treat it as skip all for this node
+                                Some(None)
+                            }
+                        };
+                    }
+                    Ok(None) => {
+                        // Not a directive, continue checking other comments
+                    }
+                    Err(_) => {
+                        // Invalid directive, ignore and continue
+                        // TODO: Could log or report the error
+                    }
+                }
             }
+            None
+        };
+
+        // Check leading comments
+        let leading = self.comments.leading_comments(node);
+        if let Some(result) = check_comments(leading) {
+            return Some(result);
+        }
+
+        // Check trailing comments
+        let trailing = self.comments.trailing_comments(node);
+        if let Some(result) = check_comments(trailing) {
+            return Some(result);
+        }
+
+        // Check dangling comments
+        let dangling = self.comments.dangling_comments(node);
+        if let Some(result) = check_comments(dangling) {
+            return Some(result);
         }
 
         None
@@ -87,13 +125,13 @@ impl SuppressionManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use air_r_parser::{parse, RParserOptions};
+    use air_r_parser::{RParserOptions, parse};
     use biome_rowan::AstNode;
 
     #[test]
     fn test_skip_all() {
         let code = r#"
-# jarl-skip:
+# nolint
 any(is.na(x))
 "#;
 
@@ -111,7 +149,7 @@ any(is.na(x))
     #[test]
     fn test_skip_specific_rules() {
         let code = r#"
-# jarl-skip: any_is_na, coalesce
+# nolint: any_is_na, coalesce
 any(is.na(x))
 "#;
 
@@ -144,5 +182,38 @@ any(is.na(x))
 
         assert_eq!(manager.check_suppression(first_expr), None);
         assert!(!manager.should_skip_rule(first_expr, "any_is_na"));
+    }
+
+    #[test]
+    fn test_trailing_skip_all() {
+        let code = r#"any(is.na(x)) # nolint"#;
+
+        let parsed = parse(code, RParserOptions::default());
+        let manager = SuppressionManager::from_node(&parsed.syntax());
+
+        let expressions: Vec<_> = parsed.tree().expressions().into_iter().collect();
+        let first_expr = expressions[0].syntax();
+
+        assert_eq!(manager.check_suppression(first_expr), Some(None));
+        assert!(manager.should_skip_rule(first_expr, "any_is_na"));
+        assert!(manager.should_skip_rule(first_expr, "coalesce"));
+    }
+
+    #[test]
+    fn test_trailing_skip_specific_rules() {
+        let code = r#"any(is.na(x)) # nolint: any_is_na, coalesce"#;
+
+        let parsed = parse(code, RParserOptions::default());
+        let manager = SuppressionManager::from_node(&parsed.syntax());
+
+        let expressions: Vec<_> = parsed.tree().expressions().into_iter().collect();
+        let first_expr = expressions[0].syntax();
+
+        let suppressed = manager.check_suppression(first_expr);
+        assert!(matches!(suppressed, Some(Some(_))));
+
+        assert!(manager.should_skip_rule(first_expr, "any_is_na"));
+        assert!(manager.should_skip_rule(first_expr, "coalesce"));
+        assert!(!manager.should_skip_rule(first_expr, "scalar_in"));
     }
 }

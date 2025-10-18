@@ -17,6 +17,7 @@ readme = "README.md"
 # Core jarl crates
 jarl-core = { path = "crates/jarl-core" }
 jarl-lsp = { path = "crates/jarl-lsp" }
+comments = { path = "crates/comments" }
 
 # External dependencies
 colored = "2.1.0"
