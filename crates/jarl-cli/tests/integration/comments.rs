@@ -97,40 +97,76 @@ any(is.na(x))
     Ok(())
 }
 
-// #[test]
-// fn test_nolint_start_end() -> anyhow::Result<()> {
-//     let directory = TempDir::new()?;
-//     let directory = directory.path();
+#[test]
+fn test_nolint_start_end() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
 
-//     let test_path = "test.R";
-//     std::fs::write(
-//         directory.join(test_path),
-//         "
-// # nolint: any_is_na
-// any(is.na(x))
+    let test_path = "test.R";
+    std::fs::write(
+        directory.join(test_path),
+        "
+# nolint start
+any(is.na(x))
+any(duplicated(x))
+# nolint end
 
-// # nolint: class_equals, any_is_na
-// any(is.na(x))
+any(is.na(x))
 
-// # compatibility with lintr
-// # nolint: any_is_na_linter
-// any(is.na(x))
-// # nolint: class_equals_linter, any_is_na_linter
-// any(is.na(x))
+# Test not in root node
+f <- function() {
+    # nolint start
+    any(is.na(x))
+    any(duplicated(x))
+    # nolint end
 
-// # nolint: any_duplicated
-// any(is.na(x))
-// ",
-//     )?;
+    any(is.na(x))
+}
+",
+    )?;
 
-//     insta::assert_snapshot!(
-//         &mut Command::new(binary_path())
-//             .current_dir(directory)
-//             .arg("check")
-//             .arg(".")
-//             .run()
-//             .normalize_os_executable_name()
-//     );
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
 
-//     Ok(())
-// }
+    Ok(())
+}
+
+#[test]
+fn test_nolint_start_end_with_specific_rules() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    std::fs::write(
+        directory.join(test_path),
+        "
+# nolint start: any_is_na
+any(is.na(x))
+any(duplicated(x))
+# nolint end
+
+# compatibility with lintr
+# nolint start: any_is_na_linter
+any(is.na(x))
+any(duplicated(x))
+# nolint end
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}

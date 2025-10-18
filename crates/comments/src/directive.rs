@@ -6,6 +6,12 @@ pub enum LintDirective {
     SkipRules(Vec<String>),
     /// Skip an entire file
     SkipFile,
+    /// Start a block where all lints are skipped
+    SkipStart,
+    /// Start a block where specific lints are skipped
+    SkipStartRules(Vec<String>),
+    /// End a skip block
+    SkipEnd,
 }
 
 /// Parse a comment directive
@@ -15,9 +21,13 @@ pub enum LintDirective {
 /// ```text
 /// # nolint
 /// # nolint: rule1, rule2
+/// # nolint start
+/// # nolint start: rule1, rule2
+/// # nolint end
 /// ```
 ///
-/// Note that directives are applied to the node they are attached to.
+/// Note that directives are applied to the node they are attached to,
+/// except for start/end directives which define regions.
 ///
 /// `text` should be single line but we don't check for this. A potential usage
 /// of this function is to iterate over a document line by line to scan for a
@@ -35,18 +45,35 @@ pub fn parse_comment_directive(text: &str) -> Option<LintDirective> {
 
     let text = &text[2..]; // Skip "# "
 
-    // Handle "nolint" specially to allow both "# nolint" and "# nolint: rules"
+    // Handle "nolint" specially to allow various forms
     if let Some(stripped) = text.strip_prefix("nolint") {
         let rest = stripped.trim_start();
         if rest.is_empty() {
             // "# nolint" with nothing after -> skip all
             return Some(LintDirective::Skip);
+        } else if let Some(after_start) = rest.strip_prefix("start") {
+            // "# nolint start" or "# nolint start: rules"
+            let after_start = after_start.trim_start();
+            if after_start.is_empty() {
+                // "# nolint start" -> skip all in block
+                return Some(LintDirective::SkipStart);
+            } else if let Some(after_colon) = after_start.strip_prefix(':') {
+                // "# nolint start: rules"
+                let after_colon = after_colon.trim();
+                return parse_lint_directive_for_start(after_colon);
+            } else {
+                // "# nolint start" followed by something that's not a colon -> invalid
+                return None;
+            }
+        } else if rest == "end" {
+            // "# nolint end"
+            return Some(LintDirective::SkipEnd);
         } else if let Some(after_colon) = rest.strip_prefix(':') {
             // "# nolint: rules"
             let after_colon = after_colon.trim();
             return parse_lint_directive(after_colon);
         } else {
-            // "# nolint" followed by something that's not a colon -> invalid
+            // "# nolint" followed by something that's not recognized -> invalid
             return None;
         }
     }
@@ -81,7 +108,28 @@ fn parse_lint_directive(text: &str) -> Option<LintDirective> {
         .map(|s| s.trim().trim_end_matches("_linter").to_string())
         .filter(|s| !s.is_empty())
         .collect();
-    Some(LintDirective::SkipRules(rules))
+
+    if rules.is_empty() {
+        None
+    } else {
+        Some(LintDirective::SkipRules(rules))
+    }
+}
+
+#[inline]
+fn parse_lint_directive_for_start(text: &str) -> Option<LintDirective> {
+    // Parse comma-separated rule names for start directive
+    let rules: Vec<String> = text
+        .split(',')
+        .map(|s| s.trim().trim_end_matches("_linter").to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
+
+    if rules.is_empty() {
+        None
+    } else {
+        Some(LintDirective::SkipStartRules(rules))
+    }
 }
 
 #[cfg(test)]
@@ -147,5 +195,48 @@ mod test {
 
         // Can't have text after nolint without a colon
         assert_eq!(parse_comment_directive("# nolint any_is_na"), None);
+    }
+
+    #[test]
+    fn test_lint_directive_start_end() {
+        // "# nolint start" should start skipping all
+        assert_eq!(
+            parse_comment_directive("# nolint start"),
+            Some(LintDirective::SkipStart)
+        );
+
+        // "# nolint end" should end skipping
+        assert_eq!(
+            parse_comment_directive("# nolint end"),
+            Some(LintDirective::SkipEnd)
+        );
+
+        // "# nolint start: rules" should start skipping specific rules
+        let result = parse_comment_directive("# nolint start: any_is_na");
+        assert!(matches!(
+            result,
+            Some(LintDirective::SkipStartRules(ref rules)) if rules == &vec!["any_is_na"]
+        ));
+
+        let result = parse_comment_directive("# nolint start: any_is_na, coalesce");
+        assert!(matches!(
+            result,
+            Some(LintDirective::SkipStartRules(ref rules))
+            if rules == &vec!["any_is_na", "coalesce"]
+        ));
+
+        // With extra spaces
+        let result = parse_comment_directive("# nolint start:  any_is_na  ,  coalesce_linter  ");
+        assert!(matches!(
+            result,
+            Some(LintDirective::SkipStartRules(ref rules))
+            if rules == &vec!["any_is_na", "coalesce"]
+        ));
+
+        // Invalid forms
+        assert_eq!(parse_comment_directive("# nolint start:"), None);
+        assert_eq!(parse_comment_directive("# nolint start: "), None);
+        assert_eq!(parse_comment_directive("# nolint start any_is_na"), None);
+        assert_eq!(parse_comment_directive("# nolint ending"), None);
     }
 }

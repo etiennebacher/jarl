@@ -5,7 +5,7 @@
 
 use air_r_syntax::{RLanguage, RSyntaxNode};
 use biome_formatter::comments::{CommentStyle, Comments};
-use biome_rowan::SyntaxTriviaPieceComments;
+use biome_rowan::{SyntaxTriviaPieceComments, TextRange};
 use comments::{LintDirective, parse_comment_directive};
 use std::collections::HashSet;
 
@@ -37,17 +37,83 @@ impl CommentStyle for RCommentStyle {
     }
 }
 
+/// Represents a region where linting should be skipped
+#[derive(Debug, Clone)]
+struct SkipRegion {
+    /// The range of text covered by this skip region
+    range: TextRange,
+    /// Rules to skip (None means skip all rules)
+    rules: Option<HashSet<String>>,
+}
+
 /// Tracks which nodes should skip linting based on comments
 #[derive(Debug)]
 pub struct SuppressionManager {
     comments: Comments<RLanguage>,
+    /// Regions defined by nolint start/end blocks
+    skip_regions: Vec<SkipRegion>,
 }
 
 impl SuppressionManager {
     /// Create a new suppression manager from the root syntax node
     pub fn from_node(root: &RSyntaxNode) -> Self {
         let comments = Comments::from_node(root, &RCommentStyle, None);
-        Self { comments }
+        let skip_regions = Self::build_skip_regions(root, &comments);
+        Self { comments, skip_regions }
+    }
+
+    /// Build skip regions from nolint start/end directives
+    fn build_skip_regions(root: &RSyntaxNode, comments: &Comments<RLanguage>) -> Vec<SkipRegion> {
+        let mut regions = Vec::new();
+        let mut stack: Vec<(TextRange, Option<Vec<String>>)> = Vec::new();
+
+        Self::collect_start_end_directives(root, comments, &mut stack, &mut regions);
+
+        regions
+    }
+
+    fn collect_start_end_directives(
+        node: &RSyntaxNode,
+        comments: &Comments<RLanguage>,
+        stack: &mut Vec<(TextRange, Option<Vec<String>>)>,
+        regions: &mut Vec<SkipRegion>,
+    ) {
+        // Check all comment types for this node
+        for comment in comments
+            .leading_comments(node)
+            .iter()
+            .chain(comments.trailing_comments(node))
+            .chain(comments.dangling_comments(node))
+        {
+            let text = comment.piece().text();
+            let range = comment.piece().text_range();
+
+            match parse_comment_directive(text) {
+                Some(LintDirective::SkipStart) => {
+                    // Start skipping all rules
+                    stack.push((range, None));
+                }
+                Some(LintDirective::SkipStartRules(rules)) => {
+                    // Start skipping specific rules
+                    stack.push((range, Some(rules)));
+                }
+                Some(LintDirective::SkipEnd) => {
+                    // End the most recent skip block
+                    if let Some((start_range, rules)) = stack.pop() {
+                        regions.push(SkipRegion {
+                            range: TextRange::new(start_range.start(), range.end()),
+                            rules: rules.map(|r| r.into_iter().collect()),
+                        });
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        // Recursively process children
+        for child in node.children() {
+            Self::collect_start_end_directives(&child, comments, stack, regions);
+        }
     }
 
     /// Check if the entire file should be skipped
@@ -106,6 +172,17 @@ impl SuppressionManager {
     /// - `Some(Some(rules))` if specific rules should be skipped
     /// - `None` if linting should proceed normally
     pub fn check_suppression(&self, node: &RSyntaxNode) -> Option<Option<HashSet<String>>> {
+        // Check if node is in a skip region
+        let node_range = node.text_trimmed_range();
+        let mut region_suppression: Option<Option<HashSet<String>>> = None;
+        for region in &self.skip_regions {
+            if region.range.contains_range(node_range) {
+                region_suppression = Some(region.rules.clone());
+                break;
+            }
+        }
+
+        // Check for node-level directives
         // Helper function to check comments for nolint directives
         let check_comments = |comments: &[biome_formatter::comments::SourceComment<
             RLanguage,
@@ -125,6 +202,13 @@ impl SuppressionManager {
                                 // SkipFile directives are handled at file level via should_skip_file()
                                 // If we encounter one here, treat it as skip all for this node
                                 Some(None)
+                            }
+                            LintDirective::SkipStart
+                            | LintDirective::SkipStartRules(_)
+                            | LintDirective::SkipEnd => {
+                                // Start/End directives are handled by skip regions
+                                // Continue checking other comments for node-level directives
+                                continue;
                             }
                         };
                     }
@@ -154,11 +238,28 @@ impl SuppressionManager {
             return Some(result);
         }
 
-        None
+        // If no node-level directive, return region suppression
+        region_suppression
     }
 
     /// Check if a specific rule should be skipped for this node
     pub fn should_skip_rule(&self, node: &RSyntaxNode, rule_name: &str) -> bool {
+        // Check skip regions first
+        let node_range = node.text_trimmed_range();
+        for region in &self.skip_regions {
+            if region.range.contains_range(node_range) {
+                match &region.rules {
+                    None => return true, // Skip all
+                    Some(rules) => {
+                        if rules.contains(rule_name) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Then check node-level suppression
         match self.check_suppression(node) {
             Some(None) => true, // Skip all
             Some(Some(rules)) => rules.contains(rule_name),
