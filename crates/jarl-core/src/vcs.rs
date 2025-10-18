@@ -24,9 +24,11 @@ pub fn check_version_control(path: &String, config: &Config) -> Result<()> {
         return Ok(());
     }
     if !in_git_repo(&path) {
+        // Do not add too many line breaks here so that the text wraps the terminal
+        // width.
         bail!(
-            "`jarl check --fix` can potentially perform destructive changes but no \n\
-            Version Control System (e.g. Git) was found on this project, so no fixes \n\
+            "`jarl check --fix` can potentially perform destructive changes but no \
+            Version Control System (e.g. Git) was found on this project, so no fixes \
             were applied. \n\
             Add `--allow-no-vcs` to the call to apply the fixes."
         )
@@ -82,10 +84,12 @@ pub fn check_version_control(path: &String, config: &Config) -> Result<()> {
         files_list.push_str(" (staged)\n");
     }
 
+    // Do not add too many line breaks here so that the text wraps the terminal
+    // width.
     bail!(
-        "`jarl check --fix` can potentially perform destructive changes but the working \n\
+        "`jarl check --fix` can potentially perform destructive changes but the working \
         directory of this project has uncommitted changes, so no fixes were applied. \n\
-        To apply the fixes, either add `--allow-dirty` to the call, or commit the changes \n\
+        To apply the fixes, either add `--allow-dirty` to the call, or commit the changes \
         to these files:\n\
          \n\
          {}\n\
