@@ -10,7 +10,15 @@ all_files <- list.files(
 )
 all_files_name <- basename(all_files)
 
-repos_raw <- Sys.getenv("TEST_REPOS")
+repos_raw <-
+  "pola-rs/r-polars@055f891d977d6a8004fe8ab1bb5d47cfdd44872a
+Rdatatable/data.table@d7833cb3a0c36ab329fcfe5cc1523449663f898f
+ropensci/targets@d45243e1a239da467c6e96e0069ecb7368f78021
+rstudio/shiny@b6e9e9d216cd574cf8985d23772399f51ee4a4ac
+tidyverse/dplyr@384ff2c4af79a9bd9142d8bdab23efbcd52f275b
+tidyverse/ggplot2@bed8e32d45c7dc98afb783b409edac98854d41a7
+vincentarelbundock/marginaleffects@ffe5a4f5962a9ba51c3e68e1c55eea62887c25da
+wch/r-source@b5cf23a805f4305852f55c4148f2a302b06844b5"
 repo_lines <- strsplit(repos_raw, "\n")[[1]]
 repo_lines <- repo_lines[repo_lines != ""]
 repo_parts <- strsplit(repo_lines, "@")
