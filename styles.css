@@ -1,0 +1,9 @@
+/* css styles */
+
+pre.sourceCode {
+	border: 1px solid #a2a2a2;
+}
+
+p, a, li {
+	color: #303d64 !important;
+}
