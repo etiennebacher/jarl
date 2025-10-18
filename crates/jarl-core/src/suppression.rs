@@ -6,7 +6,7 @@
 use air_r_syntax::{RLanguage, RSyntaxNode};
 use biome_formatter::comments::{CommentStyle, Comments};
 use biome_rowan::SyntaxTriviaPieceComments;
-use comments::{Directive, LintDirective, parse_comment_directive};
+use comments::{LintDirective, parse_comment_directive};
 use std::collections::HashSet;
 
 /// Comment style for R that identifies nolint directives
@@ -66,25 +66,21 @@ impl SuppressionManager {
                 let text = comment.piece().text();
 
                 match parse_comment_directive(text) {
-                    Ok(Some(Directive::Lint(directive))) => {
+                    Some(directive) => {
                         return match directive {
                             LintDirective::Skip => Some(None), // Skip all
                             LintDirective::SkipRules(rules) => {
                                 Some(Some(rules.into_iter().collect()))
                             }
                             LintDirective::SkipFile => {
-                                // SkipFile directive should be handled at file level, not node level
+                                // TODO: SkipFile directive should be handled at file level, not node level
                                 // For now, treat it as skip all for this node
                                 Some(None)
                             }
                         };
                     }
-                    Ok(None) => {
+                    None => {
                         // Not a directive, continue checking other comments
-                    }
-                    Err(_) => {
-                        // Invalid directive, ignore and continue
-                        // TODO: Could log or report the error
                     }
                 }
             }
