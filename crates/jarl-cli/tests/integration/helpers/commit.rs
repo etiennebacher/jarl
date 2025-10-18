@@ -3,7 +3,6 @@ use std::path::{Path, PathBuf};
 
 pub fn create_commit(file_path: PathBuf, repo: Repository) -> anyhow::Result<()> {
     let file_path = PathBuf::from(Path::file_name(&file_path).unwrap());
-    println!("file_path: {:?}", file_path);
 
     // 1. Add the file to the index
     let mut index = repo.index()?;
