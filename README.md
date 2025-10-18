@@ -1,6 +1,8 @@
-# jarl
+<div align="center"><h1>jarl</h1></div>
+<div align="center"><i>Just Another R Linter</i> </div>
 
-`jarl` is a fast linter for R, written in Rust. It is built upon Air, a fast formatter.
+<br><br>
+`jarl` is a linter for R. It is written in Rust and built upon Air, a fast formatter for R.
 
 ## Installation
 
