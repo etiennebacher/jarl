@@ -34,9 +34,10 @@ pub fn check_version_control(path: &String, config: &Config) -> Result<()> {
     }
     if !in_git_repo(&path) {
         bail!(
-            "no Version Control System (e.g. Git) found for this package and \
-            `jarl check --fix` can potentially perform destructive changes; if \
-            you'd like to suppress this error pass `--allow-no-vcs`"
+            "`jarl check --fix` can potentially perform destructive changes but no \n\
+            Version Control System (e.g. Git) was found on this project, so no fixes \n\
+            were applied. \n\
+            Add `--allow-no-vcs` to the call to apply the fixes."
         )
     }
 
@@ -91,10 +92,10 @@ pub fn check_version_control(path: &String, config: &Config) -> Result<()> {
     }
 
     bail!(
-        "the working directory of this package has uncommitted changes, and \
-         `jarl check --fix` can potentially perform destructive changes; if \
-         you'd like to suppress this error pass `--allow-dirty`, \
-         or commit the changes to these files:\n\
+        "`jarl check --fix` can potentially perform destructive changes but the working \n\
+        directory of this project has uncommitted changes, so no fixes were applied. \n\
+        To apply the fixes, either add `--allow-dirty` to the call, or commit the changes \n\
+        to these files:\n\
          \n\
          {}\n\
          ",

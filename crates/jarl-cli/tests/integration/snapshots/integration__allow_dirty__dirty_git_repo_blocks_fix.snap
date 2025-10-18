@@ -7,7 +7,10 @@ exit_code: 255
 ----- stdout -----
 
 ----- stderr -----
-Error: the working directory of this package has uncommitted changes, and `jarl check --fix` can potentially perform destructive changes; if you'd like to suppress this error pass `--allow-dirty`, or commit the changes to these files:
+Error: `jarl check --fix` can potentially perform destructive changes but the working 
+directory of this project has uncommitted changes, so no fixes were applied. 
+To apply the fixes, either add `--allow-dirty` to the call, or commit the changes 
+to these files:
 
   * test.R (dirty)
 
