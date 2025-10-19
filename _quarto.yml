@@ -1,0 +1,70 @@
+project:
+  type: website
+  output-dir: docs/_site
+filters:
+  - docs/newpagelink.lua
+format:
+  html:
+    theme: morph
+    css: docs/styles.css
+    toc: true
+    code-copy: true
+language:
+  search-text-placeholder: Search (press "s")
+execute:
+  eval: false
+website:
+  title: jarl
+  repo-url: https://github.com/etiennebacher/jarl
+  repo-subdir: docs
+  repo-actions:
+  - source
+  - issue
+  search:
+    location: navbar
+    type: textbox
+    keyboard-shortcut: s
+  navbar:
+    right:
+    - icon: github
+      href: https://github.com/etiennebacher/jarl
+      aria-label: GitHub
+    left:
+    - text: Home
+      href: docs/index.qmd
+    - text: Using Jarl
+      href: docs/using-jarl.md
+    - text: Configuration
+      href: docs/config.md
+    - text: Rules
+      href: docs/rules.md
+    - text: Contributing
+      href: docs/contributing.md
+  sidebar:
+  - title: Rules
+    style: floating
+    contents:
+    - docs/rules.md
+    - docs/rules/all_equal.md
+    - docs/rules/any_duplicated.md
+    - docs/rules/any_is_na.md
+    - docs/rules/assignment.md
+    - docs/rules/class_equals.md
+    - docs/rules/coalesce.md
+    - docs/rules/duplicated_arguments.md
+    - docs/rules/equals_na.md
+    - docs/rules/for_loop_index.md
+    - docs/rules/grepv.md
+    - docs/rules/implicit_assignment.md
+    - docs/rules/is_numeric.md
+    - docs/rules/length_levels.md
+    - docs/rules/length_test.md
+    - docs/rules/lengths.md
+    - docs/rules/matrix_apply.md
+    - docs/rules/numeric_leading_zero.md
+    - docs/rules/redundant_equals.md
+    - docs/rules/repeat.md
+    - docs/rules/sample_int.md
+    - docs/rules/sort.md
+    - docs/rules/true_false_symbol.md
+    - docs/rules/which_grepl.md
