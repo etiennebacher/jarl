@@ -95,7 +95,7 @@ ul.task-list li input[type="checkbox"] {
 <span class="menu-text">Using Jarl</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./config.md"> 
+    <a class="nav-link" href="./config.html"> 
 <span class="menu-text">Configuration</span></a>
   </li>  
   <li class="nav-item">
@@ -103,8 +103,8 @@ ul.task-list li input[type="checkbox"] {
 <span class="menu-text">Rules</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./about.html"> 
-<span class="menu-text">About</span></a>
+    <a class="nav-link" href="./contributing.html"> 
+<span class="menu-text">Contributing</span></a>
   </li>  
 </ul>
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
@@ -302,7 +302,151 @@ ul.task-list li input[type="checkbox"] {
 
 <section id="rules" class="level2">
 <h2 class="anchored" data-anchor-id="rules">Rules</h2>
-<p>Rules to use.</p>
+<p>All rules belong to at least one category:</p>
+<ul>
+<li>CORR: correctness, code that is outright wrong or useless</li>
+<li>SUSP: suspicious, code that is most likely wrong or useless</li>
+<li>PERF: performance, code that can be written to run faster</li>
+<li>READ: readability, code is correct but can be written in a way that is easier to read.</li>
+</ul>
+<p>You can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.</p>
+<p>The column “Has fix?” can take the following values:</p>
+<ul>
+<li><p>✅ safe fix</p></li>
+<li><p>❗Unsafe fix</p></li>
+<li><p>❌ No fix</p></li>
+</ul>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Rule name</th>
+<th>Group</th>
+<th>Has fix?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>all_equal</td>
+<td>SUSP</td>
+<td>❗</td>
+</tr>
+<tr class="even">
+<td>any_duplicated</td>
+<td>PERF</td>
+<td>✅</td>
+</tr>
+<tr class="odd">
+<td>any_is_na</td>
+<td>PERF</td>
+<td>✅</td>
+</tr>
+<tr class="even">
+<td>assignment</td>
+<td>READ</td>
+<td>✅</td>
+</tr>
+<tr class="odd">
+<td>class_equals</td>
+<td>SUSP</td>
+<td>❗</td>
+</tr>
+<tr class="even">
+<td>coalesce</td>
+<td>READ</td>
+<td>✅</td>
+</tr>
+<tr class="odd">
+<td>duplicated_arguments</td>
+<td>SUSP</td>
+<td>❌</td>
+</tr>
+<tr class="even">
+<td>empty_assignment</td>
+<td>READ</td>
+<td>❌</td>
+</tr>
+<tr class="odd">
+<td>equals_na</td>
+<td>CORR</td>
+<td>✅</td>
+</tr>
+<tr class="even">
+<td>for_loop_index</td>
+<td>READ</td>
+<td>❌</td>
+</tr>
+<tr class="odd">
+<td>grepv</td>
+<td>READ</td>
+<td>✅</td>
+</tr>
+<tr class="even">
+<td>implicit_assignment</td>
+<td>READ</td>
+<td>❌</td>
+</tr>
+<tr class="odd">
+<td>is_numeric</td>
+<td>READ</td>
+<td>✅</td>
+</tr>
+<tr class="even">
+<td>length_levels</td>
+<td>READ</td>
+<td>✅</td>
+</tr>
+<tr class="odd">
+<td>length_test</td>
+<td>CORR</td>
+<td>✅</td>
+</tr>
+<tr class="even">
+<td>lengths</td>
+<td>PERF, READ</td>
+<td>✅</td>
+</tr>
+<tr class="odd">
+<td>matrix_apply</td>
+<td>PERF</td>
+<td>✅</td>
+</tr>
+<tr class="even">
+<td>numeric_leading_zero</td>
+<td>READ</td>
+<td>✅</td>
+</tr>
+<tr class="odd">
+<td>redundant_equals</td>
+<td>READ</td>
+<td>✅</td>
+</tr>
+<tr class="even">
+<td>repeat</td>
+<td>READ</td>
+<td>✅</td>
+</tr>
+<tr class="odd">
+<td>sample_int</td>
+<td>READ</td>
+<td>✅</td>
+</tr>
+<tr class="even">
+<td>sort</td>
+<td>PERF, READ</td>
+<td>✅</td>
+</tr>
+<tr class="odd">
+<td>true_false_symbol</td>
+<td>READ</td>
+<td>❌</td>
+</tr>
+<tr class="even">
+<td>which_grepl</td>
+<td>PERF, READ</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
 
 
 </section>

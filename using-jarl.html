@@ -130,7 +130,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">Using Jarl</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./config.md"> 
+    <a class="nav-link" href="./config.html"> 
 <span class="menu-text">Configuration</span></a>
   </li>  
   <li class="nav-item">
@@ -138,8 +138,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">Rules</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./about.html"> 
-<span class="menu-text">About</span></a>
+    <a class="nav-link" href="./contributing.html"> 
+<span class="menu-text">Contributing</span></a>
   </li>  
 </ul>
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
@@ -206,8 +206,8 @@ Automatic fixes and version control
 </div>
 </div>
 <p>Automatic fixes are distinguished between “safe” and “unsafe”.</p>
-<p><strong>Safe fixes</strong> do not change the behavior of the code when it runs, but improve its readability or performance, for instance by using more appropriate functions (see <a href="./rules/any_is_na.html"><code>any_is_na</code></a>).</p>
-<p><strong>Unsafe fixes</strong> may change the behavior of the code when it runs. For example, <a href="./rules/all_equal.html"><code>all_equal</code></a> reports cases such as <code>!all.equal(x, y)</code>. This code is likely a mistake because <code>all.equal()</code> returns a character vector and not <code>FALSE</code> when <code>x != y</code>. Jarl could fix this to be <code>!isTRUE(all.equal(x, y))</code> instead, but this would change the behavior of the code, so it is marked “unsafe”.</p>
+<p><strong>Safe fixes</strong> do not change the behavior of the code when it runs, but improve its readability or performance, for instance by using more appropriate functions (see <a href="./rules/any_is_na.html" target="_blank"><code>any_is_na</code></a>).</p>
+<p><strong>Unsafe fixes</strong> may change the behavior of the code when it runs. For example, <a href="./rules/all_equal.html" target="_blank"><code>all_equal</code></a> reports cases such as <code>!all.equal(x, y)</code>. This code is likely a mistake because <code>all.equal()</code> returns a character vector and not <code>FALSE</code> when <code>x != y</code>. Jarl could fix this to be <code>!isTRUE(all.equal(x, y))</code> instead, but this would change the behavior of the code, so it is marked “unsafe”.</p>
 <p>By default, only safe fixes are applied. To apply the unsafe fixes, use <code>--unsafe-fixes</code>, e.g.&nbsp;<code>jarl check . --fix --unsafe-fixes</code>.</p>
 </section>
 <section id="selecting-and-ignoring-rules" class="level2">
@@ -274,7 +274,7 @@ For now, the only other way to ignore entire files is to list them in the "ignor
 </section>
 <section id="using-a-configuration-file" class="level2">
 <h2 class="anchored" data-anchor-id="using-a-configuration-file">Using a configuration file</h2>
-<p>It is possible to save settings in a <code>jarl.toml</code> file. See the <a href="config.md">Configuration page</a>.</p>
+<p>It is possible to save settings in a <code>jarl.toml</code> file. See the <a href="./config.html" target="_blank">Configuration page</a>.</p>
 
 
 </section>
