@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>jarl</title>
+<title>contributing – jarl</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -104,7 +104,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link rel="stylesheet" href="styles.css">
 </head>
 
-<body class="nav-fixed fullcontent quarto-light">
+<body class="nav-fixed quarto-light">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -122,7 +122,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="./index.html" aria-current="page"> 
+    <a class="nav-link" href="./index.html"> 
 <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
@@ -138,7 +138,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">Rules</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./contributing.html"> 
+    <a class="nav-link active" href="./contributing.html" aria-current="page"> 
 <span class="menu-text">Contributing</span></a>
   </li>  
 </ul>
@@ -159,70 +159,94 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#contributing-to-jarl" id="toc-contributing-to-jarl" class="nav-link active" data-scroll-target="#contributing-to-jarl">Contributing to Jarl</a>
+  <ul class="collapse">
+  <li><a href="#tools" id="toc-tools" class="nav-link" data-scroll-target="#tools">Tools</a></li>
+  <li><a href="#basic-structure-of-the-repository" id="toc-basic-structure-of-the-repository" class="nav-link" data-scroll-target="#basic-structure-of-the-repository">Basic structure of the repository</a></li>
+  <li><a href="#adding-or-modifying-a-rule" id="toc-adding-or-modifying-a-rule" class="nav-link" data-scroll-target="#adding-or-modifying-a-rule">Adding or modifying a rule</a>
+  <ul class="collapse">
+  <li><a href="#list-of-existing-rules" id="toc-list-of-existing-rules" class="nav-link" data-scroll-target="#list-of-existing-rules">List of existing rules</a></li>
+  <li><a href="#lint-definition" id="toc-lint-definition" class="nav-link" data-scroll-target="#lint-definition">Lint definition</a></li>
+  <li><a href="#adding-a-new-rule" id="toc-adding-a-new-rule" class="nav-link" data-scroll-target="#adding-a-new-rule">Adding a new rule</a></li>
+  <li><a href="#useful-commands" id="toc-useful-commands" class="nav-link" data-scroll-target="#useful-commands">Useful commands</a></li>
+  </ul></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/contributing.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><h1 class="title display-7">
-jarl
-</h1></header>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
 
 
 
 
-<div style="text-align: center !important">
-
-</div>
-<div style="text-align: center">
-<i>Just Another R Linter</i>
-</div>
-<p><br></p>
-<p>Jarl is a fast linter<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> for R.</p>
+<section id="contributing-to-jarl" class="level1">
+<h1>Contributing to Jarl</h1>
+<section id="tools" class="level2">
+<h2 class="anchored" data-anchor-id="tools">Tools</h2>
+<p>Jarl is written in Rust, so you must <a href="https://rust-lang.org/tools/install/" target="_blank">install the Rust toolchain</a>.</p>
+<p>Jarl relies on Insta to run snapshot tests. You can install it with:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install cargo-insta</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="basic-structure-of-the-repository" class="level2">
+<h2 class="anchored" data-anchor-id="basic-structure-of-the-repository">Basic structure of the repository</h2>
+<p>The folder <code>crates</code> contains several sub-crates. At the time of writing (October 2025), there are three:</p>
 <ul>
-<li>XXX times faster than <code>lintr</code> and XXX times faster than <code>flir</code></li>
-<li>automatic fixes when possible</li>
-<li>support for 20+ <a href="./rules.html" target="_blank"><code>lintr</code> rules</a> (and growing)</li>
-<li>integration in popular IDEs and editors (VS Code, Positron, Emacs, Vim, …)</li>
-<li>CLI available</li>
-<li>built-in CI workflow</li>
+<li><code>jarl-cli</code> contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.</li>
+<li><code>jarl-core</code> contains the “meat” of the linter. It is where the R code is parsed and checked, and where the rules are defined. <strong>This is probably the crate you will have to modify.</strong></li>
+<li><code>jarl-lsp</code> contains the code to integrate the linter with the Language Server Protocol, which allows editors such as VS Code or Positron to highlight diagnostics and provide “Quick Fix” buttons for example.</li>
 </ul>
-<p>Jarl is built on <a href="https://posit-dev.github.io/air/" target="_blank">Air</a>, a fast formatter for R written in Rust.</p>
-<p><br></p>
-<section id="installation" class="level2">
-<h2 class="anchored" data-anchor-id="installation">Installation</h2>
-<section id="binaries" class="level3">
-<h3 class="anchored" data-anchor-id="binaries">Binaries</h3>
-<p><strong>macOS and Linux:</strong></p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">--proto</span> <span class="st">'=https'</span> <span class="at">--tlsv1.2</span> <span class="at">-LsSf</span> <span class="dt">\</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  https://github.com/etiennebacher/jarl/releases/download/v0.0.17/jarl-installer.sh <span class="kw">|</span> <span class="fu">sh</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p><strong>Windows:</strong></p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">powershell</span> <span class="at">-ExecutionPolicy</span> Bypass <span class="at">-c</span> <span class="dt">\</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"irm https://github.com/etiennebacher/jarl/releases/download/v0.0.17/jarl-installer.ps1 | iex"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
-<section id="from-source" class="level3">
-<h3 class="anchored" data-anchor-id="from-source">From source</h3>
-<p>Alternatively, if you have Rust installed, you can get the development version with:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install <span class="at">--git</span> https://github.com/etiennebacher/jarl <span class="at">--profile</span><span class="op">=</span>release</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="adding-or-modifying-a-rule" class="level2">
+<h2 class="anchored" data-anchor-id="adding-or-modifying-a-rule">Adding or modifying a rule</h2>
+<p>In this section, all paths refer to files in <code>crates/jarl-core</code>.</p>
+<section id="list-of-existing-rules" class="level3">
+<h3 class="anchored" data-anchor-id="list-of-existing-rules">List of existing rules</h3>
+<p><code>src/lints/mod.rs</code> contains the existing list of rules. Each rule must have a name, belong to one or several categories (<code>PERF</code>, <code>READ</code>, etc.), a <code>FixStatus</code> indicating whether it has a fix and, if so, whether this fix is safe or unsafe, and an optional minimum required R version.</p>
 </section>
+<section id="lint-definition" class="level3">
+<h3 class="anchored" data-anchor-id="lint-definition">Lint definition</h3>
+<p><code>src/lints</code> contains the definition of the rules, along with their associated documentation and tests. It has one subfolder per rule and two mandatory files: <code>&lt;rule_name&gt;.rs</code> (which contains the definition and documentation) and <code>mod.rs</code> (which contains the tests).</p>
+<p>If there are snapshot tests for this rule, then a subfolder <code>snapshots</code> will also be created. For example, the folder for the rule <code>any_duplicated</code> looks like this:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">src/lints/any_duplicated/</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">├──</span> any_duplicated.rs</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">├──</span> mod.rs</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ex">└──</span> snapshots</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="ex">└──</span> jarl__lints__any_duplicated__tests__fix_output.snap</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
-<section id="acknowledgements" class="level2">
-<h2 class="anchored" data-anchor-id="acknowledgements">Acknowledgements</h2>
-<ul>
-<li><a href="https://lintr.r-lib.org/authors.html" target="_blank"><code>lintr</code> authors and contributors</a>: while the infrastructure is completely different, all the rule definitions and a large part of the tests are inspired or taken from <code>lintr</code>.</li>
-<li>Davis Vaughan and Lionel Henry, both for their work on Air and for their advices and answers to my questions during the development of <code>jarl</code>.</li>
-<li>R Consortium for funding part of the development of <code>jarl</code>.</li>
-<li>the design of Jarl is heavily inspired by <a href="https://docs.astral.sh/ruff" target="_blank">Ruff</a> and <a href="https://doc.rust-lang.org/stable/clippy/" target="_blank">Cargo clippy</a>.</li>
-</ul>
-<p><img src="r-consortium-logo.png" class="img-fluid"></p>
-
-
-</section>
-
-
-<div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
-
-<ol>
-<li id="fn1"><p>A code linter is a tool that does static code analysis to search for programming errors, bugs, and suspicious patterns of code.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<section id="adding-a-new-rule" class="level3">
+<h3 class="anchored" data-anchor-id="adding-a-new-rule">Adding a new rule</h3>
+<p>Adding a new rule requires four main steps:</p>
+<ol type="1">
+<li>Add the new rule to the list in <code>src/lints/mod.rs</code>. In the same file, also add <code>pub(crate) mod &lt;rulename&gt;;</code></li>
+<li>Add a subfolder with the rule name in <code>src/lints</code>. Add the documentation and the code for the rule.</li>
+<li>Add tests in <code>src/lints/&lt;rulename&gt;/mod.rs</code></li>
+<li>Add the rule in the <code>src/analyze</code> folder. This depends on the initial node in the AST. For instance, for the rule <code>equals_na</code>, we check the presence of code such as <code>x == NA</code>. Since the top node for this expression is a <code>R_BINARY_EXPRESSION</code>, this rule is ran in <code>src/analyze/binary_expression.rs</code>.</li>
 </ol>
-</section></div></main> <!-- /main -->
+</section>
+<section id="useful-commands" class="level3">
+<h3 class="anchored" data-anchor-id="useful-commands">Useful commands</h3>
+<ul>
+<li><code>cargo run --bin jarl -- check demos/foo.R</code> (or any other paths to check). The <code>--</code> in the middle is required to use the CLI in development mode (i.e.&nbsp;without installing it with <code>cargo install</code>)</li>
+<li><code>cargo build &amp;&amp; cargo test</code>. It is required to build the crate before running tests.</li>
+<li><code>cargo insta test</code> and <code>cargo insta review</code> (if necessary) for snapshot tests.</li>
+<li><code>cargo install --path crates/jarl-cli --profile=release</code> (or <code>--profile=dev</code>) to have a system-wide install and test the crate in other R projects.</li>
+</ul>
+<!-- ## Integration tests
+
+In addition to tests specific to each lint, some integration tests are stored in `tests/integration`. They are here to check that the general behavior is correct (what happens when there are no R files, no lints, several lints in the same file, a mix of safe and unsafe lints, etc.). -->
+
+
+</section>
+</section>
+</section>
+
+</main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";
@@ -627,4 +651,4 @@ jarl
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/index.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/contributing.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
