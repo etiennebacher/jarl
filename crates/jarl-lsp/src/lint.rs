@@ -196,29 +196,32 @@ pub fn byte_offset_to_lsp_position(
         ));
     }
 
-    // Find the line number and column by counting from the start
-    let mut current_offset = 0;
+    // Find the line number and column by iterating through the content
     let mut line = 0;
+    let mut line_start_offset = 0;
 
-    for line_content in content.lines() {
-        let line_start = current_offset;
-        let line_end = current_offset + line_content.len();
+    // Iterate through the content to find line breaks
+    for (i, ch) in content.char_indices() {
+        if i >= byte_offset {
+            // We've passed the target offset, so we're on the current line
+            let column_byte_offset = byte_offset - line_start_offset;
+            let line_content = &content[line_start_offset..];
 
-        if byte_offset <= line_end {
-            // Found the line containing this offset
-            let column_byte_offset = byte_offset - line_start;
+            // Find the end of the current line
+            let line_end = line_content.find('\n').unwrap_or(line_content.len());
+            let line_str = &line_content[..line_end];
 
             // Convert byte offset within the line to the appropriate character offset
             let lsp_character = match encoding {
                 PositionEncoding::UTF8 => column_byte_offset as u32,
                 PositionEncoding::UTF16 => {
                     // Convert from byte offset to UTF-16 code unit offset
-                    let prefix = &line_content[..column_byte_offset.min(line_content.len())];
+                    let prefix = &line_str[..column_byte_offset.min(line_str.len())];
                     prefix.chars().map(|c| c.len_utf16()).sum::<usize>() as u32
                 }
                 PositionEncoding::UTF32 => {
                     // Convert from byte offset to Unicode scalar value offset
-                    let prefix = &line_content[..column_byte_offset.min(line_content.len())];
+                    let prefix = &line_str[..column_byte_offset.min(line_str.len())];
                     prefix.chars().count() as u32
                 }
             };
@@ -226,13 +229,28 @@ pub fn byte_offset_to_lsp_position(
             return Ok(Position::new(line as u32, lsp_character));
         }
 
-        // Move to the next line (add 1 for the newline character)
-        current_offset = line_end + 1;
-        line += 1;
+        if ch == '\n' {
+            line += 1;
+            // The next line starts right after this newline character
+            // char_indices gives us the byte offset of the current char,
+            // so the next char starts at i + ch.len_utf8()
+            line_start_offset = i + ch.len_utf8();
+        }
     }
 
-    // If we get here, the offset was at the very end of the file
-    Ok(Position::new(line as u32, 0))
+    // If we get here, the offset is at the very end of the file
+    let column_byte_offset = byte_offset - line_start_offset;
+    let line_content = &content[line_start_offset..];
+
+    let lsp_character = match encoding {
+        PositionEncoding::UTF8 => column_byte_offset as u32,
+        PositionEncoding::UTF16 => {
+            line_content.chars().map(|c| c.len_utf16()).sum::<usize>() as u32
+        }
+        PositionEncoding::UTF32 => line_content.chars().count() as u32,
+    };
+
+    Ok(Position::new(line as u32, lsp_character))
 }
 
 // /// Convert Jarl severity to LSP diagnostic severity
@@ -315,5 +333,35 @@ mod tests {
         let pos_utf32 = byte_offset_to_lsp_position(6, content, PositionEncoding::UTF32).unwrap();
         assert_eq!(pos_utf32.line, 0);
         assert_eq!(pos_utf32.character, 6); // 6 Unicode scalar values: "hello "
+    }
+
+    #[test]
+    fn test_multiline_with_empty_lines() {
+        let content = "any(is.na(x))\n\nany(is.na(y))";
+
+        // Position 0 should be line 0, col 0
+        let pos = byte_offset_to_lsp_position(0, content, PositionEncoding::UTF8).unwrap();
+        assert_eq!(pos.line, 0);
+        assert_eq!(pos.character, 0);
+
+        // Position 13 is the first newline
+        let pos = byte_offset_to_lsp_position(13, content, PositionEncoding::UTF8).unwrap();
+        assert_eq!(pos.line, 0);
+        assert_eq!(pos.character, 13);
+
+        // Position 14 is the second newline (empty line)
+        let pos = byte_offset_to_lsp_position(14, content, PositionEncoding::UTF8).unwrap();
+        assert_eq!(pos.line, 1);
+        assert_eq!(pos.character, 0);
+
+        // Position 15 is the start of "any(is.na(y))" - should be line 2, col 0
+        let pos = byte_offset_to_lsp_position(15, content, PositionEncoding::UTF8).unwrap();
+        assert_eq!(pos.line, 2);
+        assert_eq!(pos.character, 0);
+
+        // Position 16 is 'n' in the second "any" - should be line 2, col 1
+        let pos = byte_offset_to_lsp_position(16, content, PositionEncoding::UTF8).unwrap();
+        assert_eq!(pos.line, 2);
+        assert_eq!(pos.character, 1);
     }
 }

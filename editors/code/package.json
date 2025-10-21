@@ -2,7 +2,7 @@
 	"name": "jarl-vscode",
 	"displayName": "Jarl - R Linter",
 	"description": "R linter with language server support",
-	"version": "0.1.2",
+	"version": "0.0.1",
 	"publisher": "etiennebacher",
 	"license": "MIT",
 	"homepage": "https://github.com/etiennebacher/jarl",
