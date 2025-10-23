@@ -11,6 +11,7 @@ pub mod check;
 pub mod config;
 pub mod description;
 pub mod diagnostic;
+pub mod directive;
 pub mod discovery;
 pub mod error;
 pub mod fix;

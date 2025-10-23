@@ -134,8 +134,8 @@ fn parse_lint_directive_for_start(text: &str) -> Option<LintDirective> {
 
 #[cfg(test)]
 mod test {
-    use crate::LintDirective;
-    use crate::parse_comment_directive;
+    use crate::directive::LintDirective;
+    use crate::directive::parse_comment_directive;
 
     #[test]
     fn test_lint_directive() {

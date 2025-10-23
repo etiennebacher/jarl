@@ -43,7 +43,7 @@ dependencies = [
  "air_r_syntax",
  "biome_formatter",
  "biome_rowan",
- "comments 0.0.0 (git+https://github.com/posit-dev/air?rev=82751bec9d7b0297282c8e24b813e71bc4d461f6)",
+ "comments",
  "itertools",
  "settings",
  "tracing",
@@ -450,10 +450,6 @@ dependencies = [
  "lazy_static",
  "windows-sys 0.59.0",
 ]
-
-[[package]]
-name = "comments"
-version = "0.0.0"
 
 [[package]]
 name = "comments"
@@ -871,7 +867,6 @@ dependencies = [
  "anyhow",
  "biome_formatter",
  "biome_rowan",
- "comments 0.0.0",
  "fs",
  "git2",
  "ignore",
