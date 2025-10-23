@@ -83,66 +83,67 @@ pub struct LinterTomlOptions {
     /// importance than `select`, so if a rule name appears by mistake in both
     /// `select` and `ignore`, it is ignored.
     pub ignore: Option<Vec<String>>,
+
     // TODO: Ruff also has a "fixable" field, but not sure what's the purpose
     // https://docs.astral.sh/ruff/configuration/#__tabbed_1_2
     // # Rules for which the fix is never applied
     //
     // This only matters if you pass `--fix` in the CLI.
     // pub unfixable: Option<Vec<String>>,
+    /// # Patterns to exclude from checking
+    ///
+    /// By default, jarl will refuse to check files matched by patterns listed in
+    /// `default-exclude`. Use this option to supply an additional list of exclude
+    /// patterns.
+    ///
+    /// Exclude patterns are modeled after what you can provide in a
+    /// [.gitignore](https://git-scm.com/docs/gitignore), and are resolved relative to the
+    /// parent directory that your `jarl.toml` is contained within. For example, if your
+    /// `jarl.toml` was located at `root/jarl.toml`, then:
+    ///
+    /// - `file.R` excludes a file named `file.R` located anywhere below `root/`. This is
+    ///   equivalent to `**/file.R`.
+    ///
+    /// - `folder/` excludes a directory named `folder` (and all of its children) located
+    ///   anywhere below `root/`. You can also just use `folder`, but this would
+    ///   technically also match a file named `folder`, so the trailing slash is preferred
+    ///   when targeting directories. This is equivalent to `**/folder/`.
+    ///
+    /// - `/file.R` excludes a file named `file.R` located at `root/file.R`.
+    ///
+    /// - `/folder/` excludes a directory named `folder` (and all of its children) located
+    ///   at `root/folder/`.
+    ///
+    /// - `file-*.R` excludes R files named like `file-this.R` and `file-that.R` located
+    ///   anywhere below `root/`.
+    ///
+    /// - `folder/*.R` excludes all R files located at `root/folder/`. Note that R files
+    ///   in directories under `folder/` are not excluded in this case (such as
+    ///   `root/folder/subfolder/file.R`).
+    ///
+    /// - `folder/**/*.R` excludes all R files located anywhere below `root/folder/`.
+    ///
+    /// - `**/folder/*.R` excludes all R files located directly inside a `folder/`
+    ///   directory, where the `folder/` directory itself can appear anywhere.
+    ///
+    /// See the full [.gitignore](https://git-scm.com/docs/gitignore) documentation for
+    /// all of the patterns you can provide.
+    pub exclude: Option<Vec<String>>,
 
-    // # Patterns to exclude from checking
-    //
-    // By default, jarl will refuse to check files matched by patterns listed in
-    // `default-exclude`. Use this option to supply an additional list of exclude
-    // patterns.
-    //
-    // Exclude patterns are modeled after what you can provide in a
-    // [.gitignore](https://git-scm.com/docs/gitignore), and are resolved relative to the
-    // parent directory that your `jarl.toml` is contained within. For example, if your
-    // `jarl.toml` was located at `root/jarl.toml`, then:
-    //
-    // - `file.R` excludes a file named `file.R` located anywhere below `root/`. This is
-    //   equivalent to `**/file.R`.
-    //
-    // - `folder/` excludes a directory named `folder` (and all of its children) located
-    //   anywhere below `root/`. You can also just use `folder`, but this would
-    //   technically also match a file named `folder`, so the trailing slash is preferred
-    //   when targeting directories. This is equivalent to `**/folder/`.
-    //
-    // - `/file.R` excludes a file named `file.R` located at `root/file.R`.
-    //
-    // - `/folder/` excludes a directory named `folder` (and all of its children) located
-    //   at `root/folder/`.
-    //
-    // - `file-*.R` excludes R files named like `file-this.R` and `file-that.R` located
-    //   anywhere below `root/`.
-    //
-    // - `folder/*.R` excludes all R files located at `root/folder/`. Note that R files
-    //   in directories under `folder/` are not excluded in this case (such as
-    //   `root/folder/subfolder/file.R`).
-    //
-    // - `folder/**/*.R` excludes all R files located anywhere below `root/folder/`.
-    //
-    // - `**/folder/*.R` excludes all R files located directly inside a `folder/`
-    //   directory, where the `folder/` directory itself can appear anywhere.
-    //
-    // See the full [.gitignore](https://git-scm.com/docs/gitignore) documentation for
-    // all of the patterns you can provide.
-    // pub exclude: Option<Vec<String>>,
-    // # Whether or not to use default exclude patterns
-    //
-    // jarl automatically excludes a default set of folders and files. If this option is
-    // set to `false`, these files will be formatted as well.
-    //
-    // The default set of excluded patterns are:
-    // - `.git/`
-    // - `renv/`
-    // - `revdep/`
-    // - `cpp11.R`
-    // - `RcppExports.R`
-    // - `extendr-wrappers.R`
-    // - `import-standalone-*.R`
-    // pub default_exclude: Option<bool>,
+    /// # Whether or not to use default exclude patterns
+    ///
+    /// jarl automatically excludes a default set of folders and files. If this option is
+    /// set to `false`, these files will be formatted as well.
+    ///
+    /// The default set of excluded patterns are:
+    /// - `.git/`
+    /// - `renv/`
+    /// - `revdep/`
+    /// - `cpp11.R`
+    /// - `RcppExports.R`
+    /// - `extendr-wrappers.R`
+    /// - `import-standalone-*.R`
+    pub default_exclude: Option<bool>,
     /// # Assignment operator to use
     ///
     /// This can be either `"<-"` or `"="`. Both are valid in R, so this
@@ -186,6 +187,8 @@ impl TomlOptions {
             select: linter.select,
             ignore: linter.ignore,
             assignment: linter.assignment,
+            exclude: linter.exclude,
+            default_exclude: linter.default_exclude,
         };
 
         Ok(Settings { linter })

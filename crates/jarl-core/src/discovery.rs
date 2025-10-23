@@ -16,6 +16,18 @@ use crate::toml::find_jarl_toml_in_directory;
 use crate::toml::parse_jarl_toml;
 use air_workspace::resolve::PathResolver;
 
+/// Default patterns to exclude from linting
+/// These match common R project files that should not be linted
+const DEFAULT_EXCLUDE_PATTERNS: &[&str] = &[
+    ".git/",
+    "renv/",
+    "revdep/",
+    "cpp11.R",
+    "RcppExports.R",
+    "extendr-wrappers.R",
+    "import-standalone-*.R",
+];
+
 #[derive(Debug)]
 pub struct DiscoveredSettings {
     pub directory: PathBuf,
@@ -80,8 +92,8 @@ type DiscoveredFiles = Vec<Result<PathBuf, ignore::Error>>;
 /// consistently applied to [discover_settings()].
 pub fn discover_r_file_paths<P: AsRef<Path>>(
     paths: &[P],
-    _resolver: &PathResolver<Settings>,
-    _use_linter_settings: bool,
+    resolver: &PathResolver<Settings>,
+    use_linter_settings: bool,
 ) -> DiscoveredFiles {
     let paths: Vec<PathBuf> = paths.iter().map(fs::normalize_path).collect();
 
@@ -108,6 +120,46 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
     builder.git_ignore(true);
     builder.git_global(true);
     builder.git_exclude(true);
+
+    // Add exclude patterns from settings if linter settings should be used
+    if use_linter_settings {
+        if let Some(settings_item) = resolver.items().first() {
+            let settings = settings_item.value();
+            let root = settings_item.path();
+
+            // Check if default_exclude is disabled (true by default)
+            let use_default_exclude = settings.linter.default_exclude.unwrap_or(true);
+
+            // Build custom ignore patterns
+            let mut patterns = Vec::new();
+
+            if use_default_exclude {
+                // Add default exclude patterns
+                patterns.extend_from_slice(DEFAULT_EXCLUDE_PATTERNS);
+            }
+
+            // Add custom exclude patterns from jarl.toml
+            if let Some(exclude_patterns) = &settings.linter.exclude {
+                for pattern in exclude_patterns {
+                    patterns.push(pattern.as_str());
+                }
+            }
+
+            // If we have patterns, create an override and add it to the builder
+            if !patterns.is_empty() {
+                let mut override_builder = ignore::overrides::OverrideBuilder::new(root);
+                for pattern in patterns {
+                    // Add as negation pattern (exclude)
+                    if let Err(e) = override_builder.add(&format!("!{}", pattern)) {
+                        tracing::warn!("Failed to add exclude pattern '{}': {}", pattern, e);
+                    }
+                }
+                if let Ok(overrides) = override_builder.build() {
+                    builder.overrides(overrides);
+                }
+            }
+        }
+    }
 
     // Prefer `available_parallelism()`, with a max of 12 threads
     builder.threads(

@@ -1,0 +1,5 @@
+[lint]
+assignment = "="
+ignore = ["assignment"]
+default-exclude=true
+exclude=["demos/foo2.R"]

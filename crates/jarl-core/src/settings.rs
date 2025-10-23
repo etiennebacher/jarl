@@ -15,6 +15,8 @@ pub struct LinterSettings {
     pub select: Option<Vec<String>>,
     pub ignore: Option<Vec<String>>,
     pub assignment: Option<String>,
+    pub exclude: Option<Vec<String>>,
+    pub default_exclude: Option<bool>,
 }
 
 impl Default for LinterSettings {
@@ -22,6 +24,12 @@ impl Default for LinterSettings {
     ///
     /// Uses `None` to indicate no rules specified, rather than empty vectors.
     fn default() -> Self {
-        Self { select: None, ignore: None, assignment: None }
+        Self {
+            select: None,
+            ignore: None,
+            assignment: None,
+            exclude: None,
+            default_exclude: None,
+        }
     }
 }
