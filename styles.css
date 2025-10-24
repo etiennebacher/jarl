@@ -40,3 +40,7 @@ p, a, li, .callout-title-container, table {
 	border-bottom: 1px solid #a2a2a2 !important;
 	border-top: 1px solid #a2a2a2 !important;
 }
+
+h1 {
+	margin-top: 0rem !important;
+}

@@ -1,1247 +1,5 @@
 [
   {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "\njarl\n",
-    "section": "",
-    "text": "Jarl is a fast linter1 for R.\nJarl is built on Air, a fast formatter for R written in Rust."
-  },
-  {
-    "objectID": "index.html#installation",
-    "href": "index.html#installation",
-    "title": "\njarl\n",
-    "section": "Installation",
-    "text": "Installation\n\nBinaries\nmacOS and Linux:\ncurl --proto '=https' --tlsv1.2 -LsSf \\\n  https://github.com/etiennebacher/jarl/releases/download/v0.0.17/jarl-installer.sh | sh\nWindows:\npowershell -ExecutionPolicy Bypass -c \\\n  \"irm https://github.com/etiennebacher/jarl/releases/download/v0.0.17/jarl-installer.ps1 | iex\"\n\n\nFrom source\nAlternatively, if you have Rust installed, you can get the development version with:\ncargo install --git https://github.com/etiennebacher/jarl --profile=release"
-  },
-  {
-    "objectID": "index.html#acknowledgements",
-    "href": "index.html#acknowledgements",
-    "title": "\njarl\n",
-    "section": "Acknowledgements",
-    "text": "Acknowledgements\n\nlintr authors and contributors: while the infrastructure is completely different, all the rule definitions and a large part of the tests are inspired or taken from lintr.\nDavis Vaughan and Lionel Henry, both for their work on Air and for their advices and answers to my questions during the development of jarl.\nR Consortium for funding part of the development of jarl.\nthe design of Jarl is heavily inspired by Ruff and Cargo clippy."
-  },
-  {
-    "objectID": "index.html#footnotes",
-    "href": "index.html#footnotes",
-    "title": "\njarl\n",
-    "section": "Footnotes",
-    "text": "Footnotes\n\n\nA code linter is a tool that does static code analysis to search for programming errors, bugs, and suspicious patterns of code.↩︎"
-  },
-  {
-    "objectID": "contributing.html",
-    "href": "contributing.html",
-    "title": "Contributing to Jarl",
-    "section": "",
-    "text": "Jarl is written in Rust, so you must install the Rust toolchain.\nJarl relies on Insta to run snapshot tests. You can install it with:\ncargo install cargo-insta\n\n\n\nThe folder crates contains several sub-crates. At the time of writing (October 2025), there are three:\n\njarl-cli contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.\njarl-core contains the “meat” of the linter. It is where the R code is parsed and checked, and where the rules are defined. This is probably the crate you will have to modify.\njarl-lsp contains the code to integrate the linter with the Language Server Protocol, which allows editors such as VS Code or Positron to highlight diagnostics and provide “Quick Fix” buttons for example.\n\n\n\n\nIn this section, all paths refer to files in crates/jarl-core.\n\n\nsrc/lints/mod.rs contains the existing list of rules. Each rule must have a name, belong to one or several categories (PERF, READ, etc.), a FixStatus indicating whether it has a fix and, if so, whether this fix is safe or unsafe, and an optional minimum required R version.\n\n\n\nsrc/lints contains the definition of the rules, along with their associated documentation and tests. It has one subfolder per rule and two mandatory files: &lt;rule_name&gt;.rs (which contains the definition and documentation) and mod.rs (which contains the tests).\nIf there are snapshot tests for this rule, then a subfolder snapshots will also be created. For example, the folder for the rule any_duplicated looks like this:\nsrc/lints/any_duplicated/\n├── any_duplicated.rs\n├── mod.rs\n└── snapshots\n    └── jarl__lints__any_duplicated__tests__fix_output.snap\n\n\n\nAdding a new rule requires four main steps:\n\nAdd the new rule to the list in src/lints/mod.rs. In the same file, also add pub(crate) mod &lt;rulename&gt;;\nAdd a subfolder with the rule name in src/lints. Add the documentation and the code for the rule.\nAdd tests in src/lints/&lt;rulename&gt;/mod.rs\nAdd the rule in the src/analyze folder. This depends on the initial node in the AST. For instance, for the rule equals_na, we check the presence of code such as x == NA. Since the top node for this expression is a R_BINARY_EXPRESSION, this rule is ran in src/analyze/binary_expression.rs.\n\n\n\n\n\ncargo run --bin jarl -- check demos/foo.R (or any other paths to check). The -- in the middle is required to use the CLI in development mode (i.e. without installing it with cargo install)\ncargo build && cargo test. It is required to build the crate before running tests.\ncargo insta test and cargo insta review (if necessary) for snapshot tests.\ncargo install --path crates/jarl-cli --profile=release (or --profile=dev) to have a system-wide install and test the crate in other R projects."
-  },
-  {
-    "objectID": "contributing.html#tools",
-    "href": "contributing.html#tools",
-    "title": "Contributing to Jarl",
-    "section": "",
-    "text": "Jarl is written in Rust, so you must install the Rust toolchain.\nJarl relies on Insta to run snapshot tests. You can install it with:\ncargo install cargo-insta"
-  },
-  {
-    "objectID": "contributing.html#basic-structure-of-the-repository",
-    "href": "contributing.html#basic-structure-of-the-repository",
-    "title": "Contributing to Jarl",
-    "section": "",
-    "text": "The folder crates contains several sub-crates. At the time of writing (October 2025), there are three:\n\njarl-cli contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.\njarl-core contains the “meat” of the linter. It is where the R code is parsed and checked, and where the rules are defined. This is probably the crate you will have to modify.\njarl-lsp contains the code to integrate the linter with the Language Server Protocol, which allows editors such as VS Code or Positron to highlight diagnostics and provide “Quick Fix” buttons for example."
-  },
-  {
-    "objectID": "contributing.html#adding-or-modifying-a-rule",
-    "href": "contributing.html#adding-or-modifying-a-rule",
-    "title": "Contributing to Jarl",
-    "section": "",
-    "text": "In this section, all paths refer to files in crates/jarl-core.\n\n\nsrc/lints/mod.rs contains the existing list of rules. Each rule must have a name, belong to one or several categories (PERF, READ, etc.), a FixStatus indicating whether it has a fix and, if so, whether this fix is safe or unsafe, and an optional minimum required R version.\n\n\n\nsrc/lints contains the definition of the rules, along with their associated documentation and tests. It has one subfolder per rule and two mandatory files: &lt;rule_name&gt;.rs (which contains the definition and documentation) and mod.rs (which contains the tests).\nIf there are snapshot tests for this rule, then a subfolder snapshots will also be created. For example, the folder for the rule any_duplicated looks like this:\nsrc/lints/any_duplicated/\n├── any_duplicated.rs\n├── mod.rs\n└── snapshots\n    └── jarl__lints__any_duplicated__tests__fix_output.snap\n\n\n\nAdding a new rule requires four main steps:\n\nAdd the new rule to the list in src/lints/mod.rs. In the same file, also add pub(crate) mod &lt;rulename&gt;;\nAdd a subfolder with the rule name in src/lints. Add the documentation and the code for the rule.\nAdd tests in src/lints/&lt;rulename&gt;/mod.rs\nAdd the rule in the src/analyze folder. This depends on the initial node in the AST. For instance, for the rule equals_na, we check the presence of code such as x == NA. Since the top node for this expression is a R_BINARY_EXPRESSION, this rule is ran in src/analyze/binary_expression.rs.\n\n\n\n\n\ncargo run --bin jarl -- check demos/foo.R (or any other paths to check). The -- in the middle is required to use the CLI in development mode (i.e. without installing it with cargo install)\ncargo build && cargo test. It is required to build the crate before running tests.\ncargo insta test and cargo insta review (if necessary) for snapshot tests.\ncargo install --path crates/jarl-cli --profile=release (or --profile=dev) to have a system-wide install and test the crate in other R projects."
-  },
-  {
-    "objectID": "rules/is_numeric.html",
-    "href": "rules/is_numeric.html",
-    "title": "is_numeric",
-    "section": "",
-    "text": "Checks for usage of is.numeric(x) || is.integer(x).\n\n\n\nis.numeric(x) returns TRUE when x is double or integer. Therefore, testing is.numeric(x) || is.integer(x) is redundant and can be simplified.\n\n\n\nx &lt;- 1:3\nis.numeric(x) || is.integer(x)\nUse instead:\nx &lt;- 1:3\nis.numeric(x)\n\n\n\nSee ?is.numeric",
-    "crumbs": [
-      "Rules",
-      "`is_numeric`"
-    ]
-  },
-  {
-    "objectID": "rules/is_numeric.html#what-it-does",
-    "href": "rules/is_numeric.html#what-it-does",
-    "title": "is_numeric",
-    "section": "",
-    "text": "Checks for usage of is.numeric(x) || is.integer(x).",
-    "crumbs": [
-      "Rules",
-      "`is_numeric`"
-    ]
-  },
-  {
-    "objectID": "rules/is_numeric.html#why-is-this-bad",
-    "href": "rules/is_numeric.html#why-is-this-bad",
-    "title": "is_numeric",
-    "section": "",
-    "text": "is.numeric(x) returns TRUE when x is double or integer. Therefore, testing is.numeric(x) || is.integer(x) is redundant and can be simplified.",
-    "crumbs": [
-      "Rules",
-      "`is_numeric`"
-    ]
-  },
-  {
-    "objectID": "rules/is_numeric.html#example",
-    "href": "rules/is_numeric.html#example",
-    "title": "is_numeric",
-    "section": "",
-    "text": "x &lt;- 1:3\nis.numeric(x) || is.integer(x)\nUse instead:\nx &lt;- 1:3\nis.numeric(x)",
-    "crumbs": [
-      "Rules",
-      "`is_numeric`"
-    ]
-  },
-  {
-    "objectID": "rules/is_numeric.html#references",
-    "href": "rules/is_numeric.html#references",
-    "title": "is_numeric",
-    "section": "",
-    "text": "See ?is.numeric",
-    "crumbs": [
-      "Rules",
-      "`is_numeric`"
-    ]
-  },
-  {
-    "objectID": "rules/numeric_leading_zero.html",
-    "href": "rules/numeric_leading_zero.html",
-    "title": "numeric_leading_zero",
-    "section": "",
-    "text": "Checks for double or complex values with a decimal component and a leading ..\n\n\n\nWhile .1 and 0.1 mean the same thing, the latter is easier to read due to the small size of the . glyph.\n\n\n\nx &lt;- .1\nUse instead:\nx &lt;- 0.1",
-    "crumbs": [
-      "Rules",
-      "`numeric_leading_zero`"
-    ]
-  },
-  {
-    "objectID": "rules/numeric_leading_zero.html#what-it-does",
-    "href": "rules/numeric_leading_zero.html#what-it-does",
-    "title": "numeric_leading_zero",
-    "section": "",
-    "text": "Checks for double or complex values with a decimal component and a leading ..",
-    "crumbs": [
-      "Rules",
-      "`numeric_leading_zero`"
-    ]
-  },
-  {
-    "objectID": "rules/numeric_leading_zero.html#why-is-this-bad",
-    "href": "rules/numeric_leading_zero.html#why-is-this-bad",
-    "title": "numeric_leading_zero",
-    "section": "",
-    "text": "While .1 and 0.1 mean the same thing, the latter is easier to read due to the small size of the . glyph.",
-    "crumbs": [
-      "Rules",
-      "`numeric_leading_zero`"
-    ]
-  },
-  {
-    "objectID": "rules/numeric_leading_zero.html#example",
-    "href": "rules/numeric_leading_zero.html#example",
-    "title": "numeric_leading_zero",
-    "section": "",
-    "text": "x &lt;- .1\nUse instead:\nx &lt;- 0.1",
-    "crumbs": [
-      "Rules",
-      "`numeric_leading_zero`"
-    ]
-  },
-  {
-    "objectID": "rules/repeat.html",
-    "href": "rules/repeat.html",
-    "title": "repeat",
-    "section": "",
-    "text": "Checks use of while (TRUE) and recommends the use of repeat instead.\n\n\n\nwhile (TRUE) is valid R code but repeat better expresses the intent of infinite loop.\n\n\n\nwhile (TRUE) {\n  # ...\n  break\n}\nUse instead:\nrepeat {\n  # ...\n  break\n}",
-    "crumbs": [
-      "Rules",
-      "`repeat`"
-    ]
-  },
-  {
-    "objectID": "rules/repeat.html#what-it-does",
-    "href": "rules/repeat.html#what-it-does",
-    "title": "repeat",
-    "section": "",
-    "text": "Checks use of while (TRUE) and recommends the use of repeat instead.",
-    "crumbs": [
-      "Rules",
-      "`repeat`"
-    ]
-  },
-  {
-    "objectID": "rules/repeat.html#why-is-this-bad",
-    "href": "rules/repeat.html#why-is-this-bad",
-    "title": "repeat",
-    "section": "",
-    "text": "while (TRUE) is valid R code but repeat better expresses the intent of infinite loop.",
-    "crumbs": [
-      "Rules",
-      "`repeat`"
-    ]
-  },
-  {
-    "objectID": "rules/repeat.html#example",
-    "href": "rules/repeat.html#example",
-    "title": "repeat",
-    "section": "",
-    "text": "while (TRUE) {\n  # ...\n  break\n}\nUse instead:\nrepeat {\n  # ...\n  break\n}",
-    "crumbs": [
-      "Rules",
-      "`repeat`"
-    ]
-  },
-  {
-    "objectID": "rules/sample_int.html",
-    "href": "rules/sample_int.html",
-    "title": "sample_int",
-    "section": "",
-    "text": "Checks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.\n\n\n\nsample() calls sample.int() internally so they have the same performance, but the latter is more readable.\n\n\n\nsample(1:10, 2)\nUse instead:\nsample.int(10, 2)\n\n\n\nSee ?sample",
-    "crumbs": [
-      "Rules",
-      "`sample_int`"
-    ]
-  },
-  {
-    "objectID": "rules/sample_int.html#what-it-does",
-    "href": "rules/sample_int.html#what-it-does",
-    "title": "sample_int",
-    "section": "",
-    "text": "Checks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.",
-    "crumbs": [
-      "Rules",
-      "`sample_int`"
-    ]
-  },
-  {
-    "objectID": "rules/sample_int.html#why-is-this-bad",
-    "href": "rules/sample_int.html#why-is-this-bad",
-    "title": "sample_int",
-    "section": "",
-    "text": "sample() calls sample.int() internally so they have the same performance, but the latter is more readable.",
-    "crumbs": [
-      "Rules",
-      "`sample_int`"
-    ]
-  },
-  {
-    "objectID": "rules/sample_int.html#example",
-    "href": "rules/sample_int.html#example",
-    "title": "sample_int",
-    "section": "",
-    "text": "sample(1:10, 2)\nUse instead:\nsample.int(10, 2)",
-    "crumbs": [
-      "Rules",
-      "`sample_int`"
-    ]
-  },
-  {
-    "objectID": "rules/sample_int.html#references",
-    "href": "rules/sample_int.html#references",
-    "title": "sample_int",
-    "section": "",
-    "text": "See ?sample",
-    "crumbs": [
-      "Rules",
-      "`sample_int`"
-    ]
-  },
-  {
-    "objectID": "rules/length_levels.html",
-    "href": "rules/length_levels.html",
-    "title": "length_levels",
-    "section": "",
-    "text": "Check for length(levels(...)) and replace it with nlevels(...).\n\n\n\nlength(levels(...)) is harder to read nlevels(...).\nInternally, nlevels() calls length(levels(...)) so there are no performance gains.\n\n\n\nx &lt;- factor(1:3)\nlength(levels(x))\nUse instead:\nx &lt;- factor(1:3)\nnlevels(x)",
-    "crumbs": [
-      "Rules",
-      "`length_levels`"
-    ]
-  },
-  {
-    "objectID": "rules/length_levels.html#what-it-does",
-    "href": "rules/length_levels.html#what-it-does",
-    "title": "length_levels",
-    "section": "",
-    "text": "Check for length(levels(...)) and replace it with nlevels(...).",
-    "crumbs": [
-      "Rules",
-      "`length_levels`"
-    ]
-  },
-  {
-    "objectID": "rules/length_levels.html#why-is-this-bad",
-    "href": "rules/length_levels.html#why-is-this-bad",
-    "title": "length_levels",
-    "section": "",
-    "text": "length(levels(...)) is harder to read nlevels(...).\nInternally, nlevels() calls length(levels(...)) so there are no performance gains.",
-    "crumbs": [
-      "Rules",
-      "`length_levels`"
-    ]
-  },
-  {
-    "objectID": "rules/length_levels.html#example",
-    "href": "rules/length_levels.html#example",
-    "title": "length_levels",
-    "section": "",
-    "text": "x &lt;- factor(1:3)\nlength(levels(x))\nUse instead:\nx &lt;- factor(1:3)\nnlevels(x)",
-    "crumbs": [
-      "Rules",
-      "`length_levels`"
-    ]
-  },
-  {
-    "objectID": "rules/any_is_na.html",
-    "href": "rules/any_is_na.html",
-    "title": "any_is_na",
-    "section": "",
-    "text": "Checks for usage of any(is.na(...)).\n\n\n\nany(is.na(...)) is valid code but requires the evaluation of is.na() on the entire input first.\nThere is a more efficient function in base R called anyNA() that is more efficient, both in speed and memory used.\n\n\n\nx &lt;- c(1:10000, NA)\nany(is.na(x))\nUse instead:\nx &lt;- c(1:10000, NA)\nanyNA(x)\n\n\n\nSee ?anyNA",
-    "crumbs": [
-      "Rules",
-      "`any_is_na`"
-    ]
-  },
-  {
-    "objectID": "rules/any_is_na.html#what-it-does",
-    "href": "rules/any_is_na.html#what-it-does",
-    "title": "any_is_na",
-    "section": "",
-    "text": "Checks for usage of any(is.na(...)).",
-    "crumbs": [
-      "Rules",
-      "`any_is_na`"
-    ]
-  },
-  {
-    "objectID": "rules/any_is_na.html#why-is-this-bad",
-    "href": "rules/any_is_na.html#why-is-this-bad",
-    "title": "any_is_na",
-    "section": "",
-    "text": "any(is.na(...)) is valid code but requires the evaluation of is.na() on the entire input first.\nThere is a more efficient function in base R called anyNA() that is more efficient, both in speed and memory used.",
-    "crumbs": [
-      "Rules",
-      "`any_is_na`"
-    ]
-  },
-  {
-    "objectID": "rules/any_is_na.html#example",
-    "href": "rules/any_is_na.html#example",
-    "title": "any_is_na",
-    "section": "",
-    "text": "x &lt;- c(1:10000, NA)\nany(is.na(x))\nUse instead:\nx &lt;- c(1:10000, NA)\nanyNA(x)",
-    "crumbs": [
-      "Rules",
-      "`any_is_na`"
-    ]
-  },
-  {
-    "objectID": "rules/any_is_na.html#references",
-    "href": "rules/any_is_na.html#references",
-    "title": "any_is_na",
-    "section": "",
-    "text": "See ?anyNA",
-    "crumbs": [
-      "Rules",
-      "`any_is_na`"
-    ]
-  },
-  {
-    "objectID": "rules/length_test.html",
-    "href": "rules/length_test.html",
-    "title": "length_test",
-    "section": "",
-    "text": "Checks for usage of length(... == some_val) and replaces it with length(...) == some_val.\n\n\n\nThis is very likely a mistake since computing the length of the output of == is the same as computing the length of the inputs.\n\n\n\nx &lt;- 1:3\nlength(x == 1)\nUse instead:\nx &lt;- 1:3\nlength(x) == 1",
-    "crumbs": [
-      "Rules",
-      "`length_test`"
-    ]
-  },
-  {
-    "objectID": "rules/length_test.html#what-it-does",
-    "href": "rules/length_test.html#what-it-does",
-    "title": "length_test",
-    "section": "",
-    "text": "Checks for usage of length(... == some_val) and replaces it with length(...) == some_val.",
-    "crumbs": [
-      "Rules",
-      "`length_test`"
-    ]
-  },
-  {
-    "objectID": "rules/length_test.html#why-is-this-bad",
-    "href": "rules/length_test.html#why-is-this-bad",
-    "title": "length_test",
-    "section": "",
-    "text": "This is very likely a mistake since computing the length of the output of == is the same as computing the length of the inputs.",
-    "crumbs": [
-      "Rules",
-      "`length_test`"
-    ]
-  },
-  {
-    "objectID": "rules/length_test.html#example",
-    "href": "rules/length_test.html#example",
-    "title": "length_test",
-    "section": "",
-    "text": "x &lt;- 1:3\nlength(x == 1)\nUse instead:\nx &lt;- 1:3\nlength(x) == 1",
-    "crumbs": [
-      "Rules",
-      "`length_test`"
-    ]
-  },
-  {
-    "objectID": "rules/any_duplicated.html",
-    "href": "rules/any_duplicated.html",
-    "title": "any_duplicated",
-    "section": "",
-    "text": "Checks for usage of any(duplicated(...)).\n\n\n\nany(duplicated(...)) is valid code but requires the evaluation of duplicated() on the entire input first.\nThere is a more efficient function in base R called anyDuplicated() that is more efficient, both in speed and memory used. anyDuplicated() returns the index of the first duplicated value, or 0 if there is none.\nTherefore, we can replace any(duplicated(...)) by anyDuplicated(...) &gt; 0.\n\n\n\nx &lt;- c(1:10000, 1, NA)\nany(duplicated(x))\nUse instead:\nx &lt;- c(1:10000, 1, NA)\nanyDuplicated(x) &gt; 0\n\n\n\nSee ?anyDuplicated",
-    "crumbs": [
-      "Rules",
-      "`any_duplicated`"
-    ]
-  },
-  {
-    "objectID": "rules/any_duplicated.html#what-it-does",
-    "href": "rules/any_duplicated.html#what-it-does",
-    "title": "any_duplicated",
-    "section": "",
-    "text": "Checks for usage of any(duplicated(...)).",
-    "crumbs": [
-      "Rules",
-      "`any_duplicated`"
-    ]
-  },
-  {
-    "objectID": "rules/any_duplicated.html#why-is-this-bad",
-    "href": "rules/any_duplicated.html#why-is-this-bad",
-    "title": "any_duplicated",
-    "section": "",
-    "text": "any(duplicated(...)) is valid code but requires the evaluation of duplicated() on the entire input first.\nThere is a more efficient function in base R called anyDuplicated() that is more efficient, both in speed and memory used. anyDuplicated() returns the index of the first duplicated value, or 0 if there is none.\nTherefore, we can replace any(duplicated(...)) by anyDuplicated(...) &gt; 0.",
-    "crumbs": [
-      "Rules",
-      "`any_duplicated`"
-    ]
-  },
-  {
-    "objectID": "rules/any_duplicated.html#example",
-    "href": "rules/any_duplicated.html#example",
-    "title": "any_duplicated",
-    "section": "",
-    "text": "x &lt;- c(1:10000, 1, NA)\nany(duplicated(x))\nUse instead:\nx &lt;- c(1:10000, 1, NA)\nanyDuplicated(x) &gt; 0",
-    "crumbs": [
-      "Rules",
-      "`any_duplicated`"
-    ]
-  },
-  {
-    "objectID": "rules/any_duplicated.html#references",
-    "href": "rules/any_duplicated.html#references",
-    "title": "any_duplicated",
-    "section": "",
-    "text": "See ?anyDuplicated",
-    "crumbs": [
-      "Rules",
-      "`any_duplicated`"
-    ]
-  },
-  {
-    "objectID": "rules/implicit_assignment.html",
-    "href": "rules/implicit_assignment.html",
-    "title": "implicit_assignment",
-    "section": "",
-    "text": "Checks for implicit assignment in function calls and other situations.\n\n\n\nAssigning inside function calls or other situations such as in if() makes the code difficult to read, and should be avoided.\n\n\n\nmean(x &lt;- c(1, 2, 3))\nx\n\nif (any(y &lt;- x &gt; 0)) {\n  print(y)\n}\nUse instead:\nx &lt;- c(1, 2, 3)\nmean(x)\nx\n\nlarger &lt;- x &gt; 0\nif (any(larger)) {\n  print(larger)\n}\n\n\n\nSee:\n\nhttps://style.tidyverse.org/syntax.html#assignment",
-    "crumbs": [
-      "Rules",
-      "`implicit_assignment`"
-    ]
-  },
-  {
-    "objectID": "rules/implicit_assignment.html#what-it-does",
-    "href": "rules/implicit_assignment.html#what-it-does",
-    "title": "implicit_assignment",
-    "section": "",
-    "text": "Checks for implicit assignment in function calls and other situations.",
-    "crumbs": [
-      "Rules",
-      "`implicit_assignment`"
-    ]
-  },
-  {
-    "objectID": "rules/implicit_assignment.html#why-is-this-bad",
-    "href": "rules/implicit_assignment.html#why-is-this-bad",
-    "title": "implicit_assignment",
-    "section": "",
-    "text": "Assigning inside function calls or other situations such as in if() makes the code difficult to read, and should be avoided.",
-    "crumbs": [
-      "Rules",
-      "`implicit_assignment`"
-    ]
-  },
-  {
-    "objectID": "rules/implicit_assignment.html#example",
-    "href": "rules/implicit_assignment.html#example",
-    "title": "implicit_assignment",
-    "section": "",
-    "text": "mean(x &lt;- c(1, 2, 3))\nx\n\nif (any(y &lt;- x &gt; 0)) {\n  print(y)\n}\nUse instead:\nx &lt;- c(1, 2, 3)\nmean(x)\nx\n\nlarger &lt;- x &gt; 0\nif (any(larger)) {\n  print(larger)\n}",
-    "crumbs": [
-      "Rules",
-      "`implicit_assignment`"
-    ]
-  },
-  {
-    "objectID": "rules/implicit_assignment.html#references",
-    "href": "rules/implicit_assignment.html#references",
-    "title": "implicit_assignment",
-    "section": "",
-    "text": "See:\n\nhttps://style.tidyverse.org/syntax.html#assignment",
-    "crumbs": [
-      "Rules",
-      "`implicit_assignment`"
-    ]
-  },
-  {
-    "objectID": "rules/matrix_apply.html",
-    "href": "rules/matrix_apply.html",
-    "title": "matrix_apply",
-    "section": "",
-    "text": "Checks for usage of apply(x, 1/2, mean/sum).\n\n\n\napply() with FUN = sum or FUN = mean are inefficient when MARGIN is 1 or 2. colSums(), rowSums(), colMeans(), rowMeans() are both easier to read and much more efficient.\nThis rule provides an automated fix, except when extra arguments (outside of na.rm) are provided. In other words, this would be marked as lint and could be automatically replaced:\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, na.rm = TRUE)\nbut this wouldn’t:\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, trim = 0.2)\n\n\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, sum)\napply(dat, 2, sum)\napply(dat, 1, mean)\napply(dat, 2, mean)\napply(dat, 2, mean, na.rm = TRUE)\nUse instead:\ndat &lt;- data.frame(x = 1:3, y = 4:6)\nrowSums(dat)\ncolSums(dat)\nrowMeans(dat)\ncolMeans(dat)\ncolMeans(dat, na.rm = TRUE)\n\n\n\nSee ?colSums",
-    "crumbs": [
-      "Rules",
-      "`matrix_apply`"
-    ]
-  },
-  {
-    "objectID": "rules/matrix_apply.html#what-it-does",
-    "href": "rules/matrix_apply.html#what-it-does",
-    "title": "matrix_apply",
-    "section": "",
-    "text": "Checks for usage of apply(x, 1/2, mean/sum).",
-    "crumbs": [
-      "Rules",
-      "`matrix_apply`"
-    ]
-  },
-  {
-    "objectID": "rules/matrix_apply.html#why-is-this-bad",
-    "href": "rules/matrix_apply.html#why-is-this-bad",
-    "title": "matrix_apply",
-    "section": "",
-    "text": "apply() with FUN = sum or FUN = mean are inefficient when MARGIN is 1 or 2. colSums(), rowSums(), colMeans(), rowMeans() are both easier to read and much more efficient.\nThis rule provides an automated fix, except when extra arguments (outside of na.rm) are provided. In other words, this would be marked as lint and could be automatically replaced:\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, na.rm = TRUE)\nbut this wouldn’t:\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, trim = 0.2)",
-    "crumbs": [
-      "Rules",
-      "`matrix_apply`"
-    ]
-  },
-  {
-    "objectID": "rules/matrix_apply.html#example",
-    "href": "rules/matrix_apply.html#example",
-    "title": "matrix_apply",
-    "section": "",
-    "text": "dat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, sum)\napply(dat, 2, sum)\napply(dat, 1, mean)\napply(dat, 2, mean)\napply(dat, 2, mean, na.rm = TRUE)\nUse instead:\ndat &lt;- data.frame(x = 1:3, y = 4:6)\nrowSums(dat)\ncolSums(dat)\nrowMeans(dat)\ncolMeans(dat)\ncolMeans(dat, na.rm = TRUE)",
-    "crumbs": [
-      "Rules",
-      "`matrix_apply`"
-    ]
-  },
-  {
-    "objectID": "rules/matrix_apply.html#references",
-    "href": "rules/matrix_apply.html#references",
-    "title": "matrix_apply",
-    "section": "",
-    "text": "See ?colSums",
-    "crumbs": [
-      "Rules",
-      "`matrix_apply`"
-    ]
-  },
-  {
-    "objectID": "rules/redundant_equals.html",
-    "href": "rules/redundant_equals.html",
-    "title": "redundant_equals",
-    "section": "",
-    "text": "Checks for usage of == and != where one of the sides of the operation is TRUE or FALSE.\n\n\n\nTesting x == TRUE is redundant if x is a logical vector. Wherever this is used to improve readability, the solution should instead be to improve the naming of the object to better indicate that its contents are logical. This can be done using prefixes (is, has, can, etc.). For example, is_child, has_parent_supervision, can_watch_horror_movie clarify their logical nature, while child, parent_supervision, watch_horror_movie don’t.\n\n\n\nx &lt;- c(TRUE, FALSE)\nif (any(x == TRUE)) {\n  print(\"hi\")\n}\nUse instead:\nx &lt;- c(TRUE, FALSE)\nif (any(x)) {\n  print(\"hi\")\n}",
-    "crumbs": [
-      "Rules",
-      "`redundant_equals`"
-    ]
-  },
-  {
-    "objectID": "rules/redundant_equals.html#what-it-does",
-    "href": "rules/redundant_equals.html#what-it-does",
-    "title": "redundant_equals",
-    "section": "",
-    "text": "Checks for usage of == and != where one of the sides of the operation is TRUE or FALSE.",
-    "crumbs": [
-      "Rules",
-      "`redundant_equals`"
-    ]
-  },
-  {
-    "objectID": "rules/redundant_equals.html#why-is-this-bad",
-    "href": "rules/redundant_equals.html#why-is-this-bad",
-    "title": "redundant_equals",
-    "section": "",
-    "text": "Testing x == TRUE is redundant if x is a logical vector. Wherever this is used to improve readability, the solution should instead be to improve the naming of the object to better indicate that its contents are logical. This can be done using prefixes (is, has, can, etc.). For example, is_child, has_parent_supervision, can_watch_horror_movie clarify their logical nature, while child, parent_supervision, watch_horror_movie don’t.",
-    "crumbs": [
-      "Rules",
-      "`redundant_equals`"
-    ]
-  },
-  {
-    "objectID": "rules/redundant_equals.html#example",
-    "href": "rules/redundant_equals.html#example",
-    "title": "redundant_equals",
-    "section": "",
-    "text": "x &lt;- c(TRUE, FALSE)\nif (any(x == TRUE)) {\n  print(\"hi\")\n}\nUse instead:\nx &lt;- c(TRUE, FALSE)\nif (any(x)) {\n  print(\"hi\")\n}",
-    "crumbs": [
-      "Rules",
-      "`redundant_equals`"
-    ]
-  },
-  {
-    "objectID": "rules/grepv.html",
-    "href": "rules/grepv.html",
-    "title": "grepv",
-    "section": "",
-    "text": "Checks for usage of grep(..., value = TRUE) and recommends using grepv() instead (only if the R version used in the project is &gt;= 4.5).\n\n\n\nStarting from R 4.5, there is a function grepv() that is identical to grep() except that it uses value = TRUE by default.\nUsing grepv(...) is therefore more readable than grep(...).\n\n\n\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrep(\"i\", x, value = TRUE)\nUse instead:\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrepv(\"i\", x)\n\n\n\nSee ?grepv",
-    "crumbs": [
-      "Rules",
-      "`grepv`"
-    ]
-  },
-  {
-    "objectID": "rules/grepv.html#what-it-does",
-    "href": "rules/grepv.html#what-it-does",
-    "title": "grepv",
-    "section": "",
-    "text": "Checks for usage of grep(..., value = TRUE) and recommends using grepv() instead (only if the R version used in the project is &gt;= 4.5).",
-    "crumbs": [
-      "Rules",
-      "`grepv`"
-    ]
-  },
-  {
-    "objectID": "rules/grepv.html#why-is-this-bad",
-    "href": "rules/grepv.html#why-is-this-bad",
-    "title": "grepv",
-    "section": "",
-    "text": "Starting from R 4.5, there is a function grepv() that is identical to grep() except that it uses value = TRUE by default.\nUsing grepv(...) is therefore more readable than grep(...).",
-    "crumbs": [
-      "Rules",
-      "`grepv`"
-    ]
-  },
-  {
-    "objectID": "rules/grepv.html#example",
-    "href": "rules/grepv.html#example",
-    "title": "grepv",
-    "section": "",
-    "text": "x &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrep(\"i\", x, value = TRUE)\nUse instead:\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrepv(\"i\", x)",
-    "crumbs": [
-      "Rules",
-      "`grepv`"
-    ]
-  },
-  {
-    "objectID": "rules/grepv.html#references",
-    "href": "rules/grepv.html#references",
-    "title": "grepv",
-    "section": "",
-    "text": "See ?grepv",
-    "crumbs": [
-      "Rules",
-      "`grepv`"
-    ]
-  },
-  {
-    "objectID": "rules.html",
-    "href": "rules.html",
-    "title": "jarl",
-    "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless\nSUSP: suspicious, code that is most likely wrong or useless\nPERF: performance, code that can be written to run faster\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\nThe column “Has fix?” can take the following values:\n\n✅ safe fix\n❗Unsafe fix\n❌ No fix\n\n\n\n\nRule name\nGroup\nHas fix?\n\n\n\n\nall_equal\nSUSP\n❗\n\n\nany_duplicated\nPERF\n✅\n\n\nany_is_na\nPERF\n✅\n\n\nassignment\nREAD\n✅\n\n\nclass_equals\nSUSP\n❗\n\n\ncoalesce\nREAD\n✅\n\n\nduplicated_arguments\nSUSP\n❌\n\n\nempty_assignment\nREAD\n❌\n\n\nequals_na\nCORR\n✅\n\n\nfor_loop_index\nREAD\n❌\n\n\ngrepv\nREAD\n✅\n\n\nimplicit_assignment\nREAD\n❌\n\n\nis_numeric\nREAD\n✅\n\n\nlength_levels\nREAD\n✅\n\n\nlength_test\nCORR\n✅\n\n\nlengths\nPERF, READ\n✅\n\n\nmatrix_apply\nPERF\n✅\n\n\nnumeric_leading_zero\nREAD\n✅\n\n\nredundant_equals\nREAD\n✅\n\n\nrepeat\nREAD\n✅\n\n\nsample_int\nREAD\n✅\n\n\nsort\nPERF, READ\n✅\n\n\ntrue_false_symbol\nREAD\n❌\n\n\nwhich_grepl\nPERF, READ\n✅",
-    "crumbs": [
-      "Rules"
-    ]
-  },
-  {
-    "objectID": "rules.html#rules",
-    "href": "rules.html#rules",
-    "title": "jarl",
-    "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless\nSUSP: suspicious, code that is most likely wrong or useless\nPERF: performance, code that can be written to run faster\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\nThe column “Has fix?” can take the following values:\n\n✅ safe fix\n❗Unsafe fix\n❌ No fix\n\n\n\n\nRule name\nGroup\nHas fix?\n\n\n\n\nall_equal\nSUSP\n❗\n\n\nany_duplicated\nPERF\n✅\n\n\nany_is_na\nPERF\n✅\n\n\nassignment\nREAD\n✅\n\n\nclass_equals\nSUSP\n❗\n\n\ncoalesce\nREAD\n✅\n\n\nduplicated_arguments\nSUSP\n❌\n\n\nempty_assignment\nREAD\n❌\n\n\nequals_na\nCORR\n✅\n\n\nfor_loop_index\nREAD\n❌\n\n\ngrepv\nREAD\n✅\n\n\nimplicit_assignment\nREAD\n❌\n\n\nis_numeric\nREAD\n✅\n\n\nlength_levels\nREAD\n✅\n\n\nlength_test\nCORR\n✅\n\n\nlengths\nPERF, READ\n✅\n\n\nmatrix_apply\nPERF\n✅\n\n\nnumeric_leading_zero\nREAD\n✅\n\n\nredundant_equals\nREAD\n✅\n\n\nrepeat\nREAD\n✅\n\n\nsample_int\nREAD\n✅\n\n\nsort\nPERF, READ\n✅\n\n\ntrue_false_symbol\nREAD\n❌\n\n\nwhich_grepl\nPERF, READ\n✅",
-    "crumbs": [
-      "Rules"
-    ]
-  },
-  {
-    "objectID": "rules/class_equals.html",
-    "href": "rules/class_equals.html",
-    "title": "class_equals",
-    "section": "",
-    "text": "Checks for usage of class(...) == \"some_class\" and class(...) %in% \"some_class\".\n\n\n\nAn R object can have several classes. Therefore, class(...) == \"some_class\" would return a logical vector with as many values as the object has classes, which is rarely desirable.\nIt is better to use inherits(..., \"some_class\") instead. inherits() checks whether any of the object’s classes match the desired class.\nThe same rationale applies to class(...) %in% \"some_class\".\n\n\n\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nclass(x) == \"lm\"\nUse instead:\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\ninherits(x, \"lm\")\n\n\n\nSee ?inherits",
-    "crumbs": [
-      "Rules",
-      "`class_equals`"
-    ]
-  },
-  {
-    "objectID": "rules/class_equals.html#what-it-does",
-    "href": "rules/class_equals.html#what-it-does",
-    "title": "class_equals",
-    "section": "",
-    "text": "Checks for usage of class(...) == \"some_class\" and class(...) %in% \"some_class\".",
-    "crumbs": [
-      "Rules",
-      "`class_equals`"
-    ]
-  },
-  {
-    "objectID": "rules/class_equals.html#why-is-this-bad",
-    "href": "rules/class_equals.html#why-is-this-bad",
-    "title": "class_equals",
-    "section": "",
-    "text": "An R object can have several classes. Therefore, class(...) == \"some_class\" would return a logical vector with as many values as the object has classes, which is rarely desirable.\nIt is better to use inherits(..., \"some_class\") instead. inherits() checks whether any of the object’s classes match the desired class.\nThe same rationale applies to class(...) %in% \"some_class\".",
-    "crumbs": [
-      "Rules",
-      "`class_equals`"
-    ]
-  },
-  {
-    "objectID": "rules/class_equals.html#example",
-    "href": "rules/class_equals.html#example",
-    "title": "class_equals",
-    "section": "",
-    "text": "x &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nclass(x) == \"lm\"\nUse instead:\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\ninherits(x, \"lm\")",
-    "crumbs": [
-      "Rules",
-      "`class_equals`"
-    ]
-  },
-  {
-    "objectID": "rules/class_equals.html#references",
-    "href": "rules/class_equals.html#references",
-    "title": "class_equals",
-    "section": "",
-    "text": "See ?inherits",
-    "crumbs": [
-      "Rules",
-      "`class_equals`"
-    ]
-  },
-  {
-    "objectID": "rules/assignment.html",
-    "href": "rules/assignment.html",
-    "title": "assignment",
-    "section": "",
-    "text": "Checks for usage of = as assignment operator.\n\n\n\nThis is not “bad” strictly speaking since in most cases using = and &lt;- is equivalent. Some very popular packages use = without problems.\nNonetheless, &lt;- is more popular and this rule may be useful to avoid mixing both operators in a codebase.\n\n\n\nx = \"a\"\nUse instead:\nx &lt;- \"a\"\n\n\n\nSee:\n\nhttps://style.tidyverse.org/syntax.html#assignment-1\nhttps://stackoverflow.com/a/1742550",
-    "crumbs": [
-      "Rules",
-      "`assignment`"
-    ]
-  },
-  {
-    "objectID": "rules/assignment.html#what-it-does",
-    "href": "rules/assignment.html#what-it-does",
-    "title": "assignment",
-    "section": "",
-    "text": "Checks for usage of = as assignment operator.",
-    "crumbs": [
-      "Rules",
-      "`assignment`"
-    ]
-  },
-  {
-    "objectID": "rules/assignment.html#why-is-this-bad",
-    "href": "rules/assignment.html#why-is-this-bad",
-    "title": "assignment",
-    "section": "",
-    "text": "This is not “bad” strictly speaking since in most cases using = and &lt;- is equivalent. Some very popular packages use = without problems.\nNonetheless, &lt;- is more popular and this rule may be useful to avoid mixing both operators in a codebase.",
-    "crumbs": [
-      "Rules",
-      "`assignment`"
-    ]
-  },
-  {
-    "objectID": "rules/assignment.html#example",
-    "href": "rules/assignment.html#example",
-    "title": "assignment",
-    "section": "",
-    "text": "x = \"a\"\nUse instead:\nx &lt;- \"a\"",
-    "crumbs": [
-      "Rules",
-      "`assignment`"
-    ]
-  },
-  {
-    "objectID": "rules/assignment.html#references",
-    "href": "rules/assignment.html#references",
-    "title": "assignment",
-    "section": "",
-    "text": "See:\n\nhttps://style.tidyverse.org/syntax.html#assignment-1\nhttps://stackoverflow.com/a/1742550",
-    "crumbs": [
-      "Rules",
-      "`assignment`"
-    ]
-  },
-  {
-    "objectID": "rules/equals_na.html",
-    "href": "rules/equals_na.html",
-    "title": "equals_na",
-    "section": "",
-    "text": "Check for x == NA, x != NA and x %in% NA, and replaces those by is.na() calls.\n\n\n\nComparing a value to NA using == returns NA in many cases:\nx &lt;- c(1, 2, 3, NA)\nx == NA\nwhich is very likely not the expected output.\n\n\n\nx &lt;- c(1, 2, 3, NA)\nx == NA\nUse instead:\nx &lt;- c(1, 2, 3, NA)\nis.na(x)",
-    "crumbs": [
-      "Rules",
-      "`equals_na`"
-    ]
-  },
-  {
-    "objectID": "rules/equals_na.html#what-it-does",
-    "href": "rules/equals_na.html#what-it-does",
-    "title": "equals_na",
-    "section": "",
-    "text": "Check for x == NA, x != NA and x %in% NA, and replaces those by is.na() calls.",
-    "crumbs": [
-      "Rules",
-      "`equals_na`"
-    ]
-  },
-  {
-    "objectID": "rules/equals_na.html#why-is-this-bad",
-    "href": "rules/equals_na.html#why-is-this-bad",
-    "title": "equals_na",
-    "section": "",
-    "text": "Comparing a value to NA using == returns NA in many cases:\nx &lt;- c(1, 2, 3, NA)\nx == NA\nwhich is very likely not the expected output.",
-    "crumbs": [
-      "Rules",
-      "`equals_na`"
-    ]
-  },
-  {
-    "objectID": "rules/equals_na.html#example",
-    "href": "rules/equals_na.html#example",
-    "title": "equals_na",
-    "section": "",
-    "text": "x &lt;- c(1, 2, 3, NA)\nx == NA\nUse instead:\nx &lt;- c(1, 2, 3, NA)\nis.na(x)",
-    "crumbs": [
-      "Rules",
-      "`equals_na`"
-    ]
-  },
-  {
-    "objectID": "rules/sort.html",
-    "href": "rules/sort.html",
-    "title": "sort",
-    "section": "",
-    "text": "Checks for usage of x[order(x, ...)].\n\n\n\nIt is better to use sort(x, ...), which is more readable than x[order(x, ...)] and more efficient.\n\n\n\nx &lt;- c(3, 2, 5, 1, 5, 6)\nx[order(x)]\nx[order(x, na.last = TRUE)]\nx[order(x, decreasing = TRUE)]\nUse instead:\nx &lt;- c(3, 2, 5, 1, 5, 6)\nsort(x)\nsort(x, na.last = TRUE)\nsort(x, decreasing = TRUE)\n\n\n\nSee ?sort",
-    "crumbs": [
-      "Rules",
-      "`sort`"
-    ]
-  },
-  {
-    "objectID": "rules/sort.html#what-it-does",
-    "href": "rules/sort.html#what-it-does",
-    "title": "sort",
-    "section": "",
-    "text": "Checks for usage of x[order(x, ...)].",
-    "crumbs": [
-      "Rules",
-      "`sort`"
-    ]
-  },
-  {
-    "objectID": "rules/sort.html#why-is-this-bad",
-    "href": "rules/sort.html#why-is-this-bad",
-    "title": "sort",
-    "section": "",
-    "text": "It is better to use sort(x, ...), which is more readable than x[order(x, ...)] and more efficient.",
-    "crumbs": [
-      "Rules",
-      "`sort`"
-    ]
-  },
-  {
-    "objectID": "rules/sort.html#example",
-    "href": "rules/sort.html#example",
-    "title": "sort",
-    "section": "",
-    "text": "x &lt;- c(3, 2, 5, 1, 5, 6)\nx[order(x)]\nx[order(x, na.last = TRUE)]\nx[order(x, decreasing = TRUE)]\nUse instead:\nx &lt;- c(3, 2, 5, 1, 5, 6)\nsort(x)\nsort(x, na.last = TRUE)\nsort(x, decreasing = TRUE)",
-    "crumbs": [
-      "Rules",
-      "`sort`"
-    ]
-  },
-  {
-    "objectID": "rules/sort.html#references",
-    "href": "rules/sort.html#references",
-    "title": "sort",
-    "section": "",
-    "text": "See ?sort",
-    "crumbs": [
-      "Rules",
-      "`sort`"
-    ]
-  },
-  {
-    "objectID": "rules/duplicated_arguments.html",
-    "href": "rules/duplicated_arguments.html",
-    "title": "duplicated_arguments",
-    "section": "",
-    "text": "Checks for duplicated arguments in function calls.\n\n\n\nWhile some cases of duplicated arguments generate run-time errors (e.g. mean(x = 1:5, x = 2:3)), this is not always the case (e.g. c(a = 1, a = 2)).\nThis linter is used to discourage explicitly providing duplicate names to objects. Duplicate-named objects are hard to work with programmatically and should typically be avoided.\n\n\n\nlist(x = 1, x = 2)",
-    "crumbs": [
-      "Rules",
-      "`duplicated_arguments`"
-    ]
-  },
-  {
-    "objectID": "rules/duplicated_arguments.html#what-it-does",
-    "href": "rules/duplicated_arguments.html#what-it-does",
-    "title": "duplicated_arguments",
-    "section": "",
-    "text": "Checks for duplicated arguments in function calls.",
-    "crumbs": [
-      "Rules",
-      "`duplicated_arguments`"
-    ]
-  },
-  {
-    "objectID": "rules/duplicated_arguments.html#why-is-this-bad",
-    "href": "rules/duplicated_arguments.html#why-is-this-bad",
-    "title": "duplicated_arguments",
-    "section": "",
-    "text": "While some cases of duplicated arguments generate run-time errors (e.g. mean(x = 1:5, x = 2:3)), this is not always the case (e.g. c(a = 1, a = 2)).\nThis linter is used to discourage explicitly providing duplicate names to objects. Duplicate-named objects are hard to work with programmatically and should typically be avoided.",
-    "crumbs": [
-      "Rules",
-      "`duplicated_arguments`"
-    ]
-  },
-  {
-    "objectID": "rules/duplicated_arguments.html#example",
-    "href": "rules/duplicated_arguments.html#example",
-    "title": "duplicated_arguments",
-    "section": "",
-    "text": "list(x = 1, x = 2)",
-    "crumbs": [
-      "Rules",
-      "`duplicated_arguments`"
-    ]
-  },
-  {
-    "objectID": "rules/true_false_symbol.html",
-    "href": "rules/true_false_symbol.html",
-    "title": "true_false_symbol",
-    "section": "",
-    "text": "Checks for usage of T and F symbols. If they correspond to the TRUE and FALSE values, then replace them by that. If they correspond to something else, such as an object or a variable name, then no automatic fixes are applied.\n\n\n\nT and F are not reserved symbols (like break) and therefore can be used as variable names. Therefore, it is better for readability to replace them by TRUE and FALSE.\nIt is also recommended to rename objects or parameters named F and T to avoid confusion.\n\n\n\nx &lt;- T\ny &lt;- F\nUse instead:\nx &lt;- TRUE\ny &lt;- FALSE",
-    "crumbs": [
-      "Rules",
-      "`true_false_symbol`"
-    ]
-  },
-  {
-    "objectID": "rules/true_false_symbol.html#what-it-does",
-    "href": "rules/true_false_symbol.html#what-it-does",
-    "title": "true_false_symbol",
-    "section": "",
-    "text": "Checks for usage of T and F symbols. If they correspond to the TRUE and FALSE values, then replace them by that. If they correspond to something else, such as an object or a variable name, then no automatic fixes are applied.",
-    "crumbs": [
-      "Rules",
-      "`true_false_symbol`"
-    ]
-  },
-  {
-    "objectID": "rules/true_false_symbol.html#why-is-this-bad",
-    "href": "rules/true_false_symbol.html#why-is-this-bad",
-    "title": "true_false_symbol",
-    "section": "",
-    "text": "T and F are not reserved symbols (like break) and therefore can be used as variable names. Therefore, it is better for readability to replace them by TRUE and FALSE.\nIt is also recommended to rename objects or parameters named F and T to avoid confusion.",
-    "crumbs": [
-      "Rules",
-      "`true_false_symbol`"
-    ]
-  },
-  {
-    "objectID": "rules/true_false_symbol.html#example",
-    "href": "rules/true_false_symbol.html#example",
-    "title": "true_false_symbol",
-    "section": "",
-    "text": "x &lt;- T\ny &lt;- F\nUse instead:\nx &lt;- TRUE\ny &lt;- FALSE",
-    "crumbs": [
-      "Rules",
-      "`true_false_symbol`"
-    ]
-  },
-  {
-    "objectID": "rules/coalesce.html",
-    "href": "rules/coalesce.html",
-    "title": "coalesce",
-    "section": "",
-    "text": "Checks for usage of if (is.null(x)) y else x or if (!is.null(x)) x else y and recommends using x %||% y instead.\n\n\n\nUsing the coalesce operator %||% is more concise and readable than an if-else statement checking for null.\nThis rule is only enabled if the project uses R &gt;= 4.4.0, since %||% was introduced in this version.\nThis rule contains some automatic fixes, but only for cases where the branches are on a single line. For instance,\nif (is.null(x)) {\n  y\n} else {\n  x\n}\nwould be simplified to x %||% y, but\nif (is.null(x)) {\n  y &lt;- 1\n  y\n} else {\n  x\n}\nwouldn’t.\n\n\n\nx &lt;- 1\ny &lt;- 2\n\nif (is.null(x)) y else x\n\nif (!is.null(x)) {\n  x\n} else {\n  y\n}\nUse instead:\nx &lt;- 1\ny &lt;- 2\n\nx %||% y # (in both cases)\n\n\n\nSee ?Control",
-    "crumbs": [
-      "Rules",
-      "`coalesce`"
-    ]
-  },
-  {
-    "objectID": "rules/coalesce.html#what-it-does",
-    "href": "rules/coalesce.html#what-it-does",
-    "title": "coalesce",
-    "section": "",
-    "text": "Checks for usage of if (is.null(x)) y else x or if (!is.null(x)) x else y and recommends using x %||% y instead.",
-    "crumbs": [
-      "Rules",
-      "`coalesce`"
-    ]
-  },
-  {
-    "objectID": "rules/coalesce.html#why-is-this-bad",
-    "href": "rules/coalesce.html#why-is-this-bad",
-    "title": "coalesce",
-    "section": "",
-    "text": "Using the coalesce operator %||% is more concise and readable than an if-else statement checking for null.\nThis rule is only enabled if the project uses R &gt;= 4.4.0, since %||% was introduced in this version.\nThis rule contains some automatic fixes, but only for cases where the branches are on a single line. For instance,\nif (is.null(x)) {\n  y\n} else {\n  x\n}\nwould be simplified to x %||% y, but\nif (is.null(x)) {\n  y &lt;- 1\n  y\n} else {\n  x\n}\nwouldn’t.",
-    "crumbs": [
-      "Rules",
-      "`coalesce`"
-    ]
-  },
-  {
-    "objectID": "rules/coalesce.html#example",
-    "href": "rules/coalesce.html#example",
-    "title": "coalesce",
-    "section": "",
-    "text": "x &lt;- 1\ny &lt;- 2\n\nif (is.null(x)) y else x\n\nif (!is.null(x)) {\n  x\n} else {\n  y\n}\nUse instead:\nx &lt;- 1\ny &lt;- 2\n\nx %||% y # (in both cases)",
-    "crumbs": [
-      "Rules",
-      "`coalesce`"
-    ]
-  },
-  {
-    "objectID": "rules/coalesce.html#reference",
-    "href": "rules/coalesce.html#reference",
-    "title": "coalesce",
-    "section": "",
-    "text": "See ?Control",
-    "crumbs": [
-      "Rules",
-      "`coalesce`"
-    ]
-  },
-  {
-    "objectID": "rules/which_grepl.html",
-    "href": "rules/which_grepl.html",
-    "title": "which_grepl",
-    "section": "",
-    "text": "Checks for usage of which(grepl(...)) and replaces it with grep(...).\n\n\n\nwhich(grepl(...)) is harder to read and is less efficient than grep() since it requires two passes on the vector.\n\n\n\nx &lt;- c(\"hello\", \"there\")\nwhich(grepl(\"hell\", x))\nwhich(grepl(\"foo\", x))\nUse instead:\nx &lt;- c(\"hello\", \"there\")\ngrep(\"hell\", x)\ngrep(\"foo\", x)\n\n\n\nSee ?grep",
-    "crumbs": [
-      "Rules",
-      "`which_grepl`"
-    ]
-  },
-  {
-    "objectID": "rules/which_grepl.html#what-it-does",
-    "href": "rules/which_grepl.html#what-it-does",
-    "title": "which_grepl",
-    "section": "",
-    "text": "Checks for usage of which(grepl(...)) and replaces it with grep(...).",
-    "crumbs": [
-      "Rules",
-      "`which_grepl`"
-    ]
-  },
-  {
-    "objectID": "rules/which_grepl.html#why-is-this-bad",
-    "href": "rules/which_grepl.html#why-is-this-bad",
-    "title": "which_grepl",
-    "section": "",
-    "text": "which(grepl(...)) is harder to read and is less efficient than grep() since it requires two passes on the vector.",
-    "crumbs": [
-      "Rules",
-      "`which_grepl`"
-    ]
-  },
-  {
-    "objectID": "rules/which_grepl.html#example",
-    "href": "rules/which_grepl.html#example",
-    "title": "which_grepl",
-    "section": "",
-    "text": "x &lt;- c(\"hello\", \"there\")\nwhich(grepl(\"hell\", x))\nwhich(grepl(\"foo\", x))\nUse instead:\nx &lt;- c(\"hello\", \"there\")\ngrep(\"hell\", x)\ngrep(\"foo\", x)",
-    "crumbs": [
-      "Rules",
-      "`which_grepl`"
-    ]
-  },
-  {
-    "objectID": "rules/which_grepl.html#references",
-    "href": "rules/which_grepl.html#references",
-    "title": "which_grepl",
-    "section": "",
-    "text": "See ?grep",
-    "crumbs": [
-      "Rules",
-      "`which_grepl`"
-    ]
-  },
-  {
-    "objectID": "rules/for_loop_index.html",
-    "href": "rules/for_loop_index.html",
-    "title": "for_loop_index",
-    "section": "",
-    "text": "Checks whether the index symbol in a for loop is already used anywhere in the sequence of the same for loop.\n\n\n\nfor (x in x) or for (x in foo(x)) are confusing to read and can lead to errors.\n\n\n\nx &lt;- c(1, 2, 3)\nfor (x in x) {\n  x + 1\n}\nUse instead:\nx &lt;- c(1, 2, 3)\nfor (xi in x) {\n  xi + 1\n}",
-    "crumbs": [
-      "Rules",
-      "`for_loop_index`"
-    ]
-  },
-  {
-    "objectID": "rules/for_loop_index.html#what-it-does",
-    "href": "rules/for_loop_index.html#what-it-does",
-    "title": "for_loop_index",
-    "section": "",
-    "text": "Checks whether the index symbol in a for loop is already used anywhere in the sequence of the same for loop.",
-    "crumbs": [
-      "Rules",
-      "`for_loop_index`"
-    ]
-  },
-  {
-    "objectID": "rules/for_loop_index.html#why-is-this-bad",
-    "href": "rules/for_loop_index.html#why-is-this-bad",
-    "title": "for_loop_index",
-    "section": "",
-    "text": "for (x in x) or for (x in foo(x)) are confusing to read and can lead to errors.",
-    "crumbs": [
-      "Rules",
-      "`for_loop_index`"
-    ]
-  },
-  {
-    "objectID": "rules/for_loop_index.html#example",
-    "href": "rules/for_loop_index.html#example",
-    "title": "for_loop_index",
-    "section": "",
-    "text": "x &lt;- c(1, 2, 3)\nfor (x in x) {\n  x + 1\n}\nUse instead:\nx &lt;- c(1, 2, 3)\nfor (xi in x) {\n  xi + 1\n}",
-    "crumbs": [
-      "Rules",
-      "`for_loop_index`"
-    ]
-  },
-  {
-    "objectID": "rules/all_equal.html",
-    "href": "rules/all_equal.html",
-    "title": "all_equal",
-    "section": "",
-    "text": "Checks for dangerous usage of all.equal(...), for instance in if() conditions or while() loops.\n\n\n\nall.equal() returns TRUE in the absence of differences but returns a character string (not FALSE) in the presence of differences. Usage of all.equal() without wrapping it in isTRUE() are thus likely to generate unexpected errors if the compared objects have differences. An alternative is to use identical() to compare vector of strings or when exact equality is expected.\nThis rule has automated fixes that are marked unsafe and therefore require passing --unsafe-fixes. This is because automatically fixing those cases can change the runtime behavior if some code relied on the behaviour of all.equal() (likely by mistake).\n\n\n\na &lt;- 1\nb &lt;- 1\n\nif (all.equal(a, b, tolerance = 1e-3)) message('equal')\nif (all.equal(a, b)) message('equal')\n!all.equal(a, b)\nisFALSE(all.equal(a, b))\nUse instead:\na &lt;- 1\nb &lt;- 1\n\nif (isTRUE(all.equal(a, b, tolerance = 1e-3))) message('equal')\nif (isTRUE(all.equal(a, b))) message('equal')\n!isTRUE(all.equal(a, b))\n!isTRUE(all.equal(a, b))\n\n\n\nSee ?all.equal",
-    "crumbs": [
-      "Rules",
-      "`all_equal`"
-    ]
-  },
-  {
-    "objectID": "rules/all_equal.html#what-it-does",
-    "href": "rules/all_equal.html#what-it-does",
-    "title": "all_equal",
-    "section": "",
-    "text": "Checks for dangerous usage of all.equal(...), for instance in if() conditions or while() loops.",
-    "crumbs": [
-      "Rules",
-      "`all_equal`"
-    ]
-  },
-  {
-    "objectID": "rules/all_equal.html#why-is-this-bad",
-    "href": "rules/all_equal.html#why-is-this-bad",
-    "title": "all_equal",
-    "section": "",
-    "text": "all.equal() returns TRUE in the absence of differences but returns a character string (not FALSE) in the presence of differences. Usage of all.equal() without wrapping it in isTRUE() are thus likely to generate unexpected errors if the compared objects have differences. An alternative is to use identical() to compare vector of strings or when exact equality is expected.\nThis rule has automated fixes that are marked unsafe and therefore require passing --unsafe-fixes. This is because automatically fixing those cases can change the runtime behavior if some code relied on the behaviour of all.equal() (likely by mistake).",
-    "crumbs": [
-      "Rules",
-      "`all_equal`"
-    ]
-  },
-  {
-    "objectID": "rules/all_equal.html#example",
-    "href": "rules/all_equal.html#example",
-    "title": "all_equal",
-    "section": "",
-    "text": "a &lt;- 1\nb &lt;- 1\n\nif (all.equal(a, b, tolerance = 1e-3)) message('equal')\nif (all.equal(a, b)) message('equal')\n!all.equal(a, b)\nisFALSE(all.equal(a, b))\nUse instead:\na &lt;- 1\nb &lt;- 1\n\nif (isTRUE(all.equal(a, b, tolerance = 1e-3))) message('equal')\nif (isTRUE(all.equal(a, b))) message('equal')\n!isTRUE(all.equal(a, b))\n!isTRUE(all.equal(a, b))",
-    "crumbs": [
-      "Rules",
-      "`all_equal`"
-    ]
-  },
-  {
-    "objectID": "rules/all_equal.html#references",
-    "href": "rules/all_equal.html#references",
-    "title": "all_equal",
-    "section": "",
-    "text": "See ?all.equal",
-    "crumbs": [
-      "Rules",
-      "`all_equal`"
-    ]
-  },
-  {
-    "objectID": "rules/lengths.html",
-    "href": "rules/lengths.html",
-    "title": "lengths",
-    "section": "",
-    "text": "Checks for usage of length() in several functions that apply it to each element of a list, such as lapply(), vapply(), purrr::map(), etc., and replaces it with lengths().\n\n\n\nlengths() is faster and more memory-efficient than applying length() on each element of the list.\n\n\n\nx &lt;- list(a = 1, b = 2:3, c = 1:10)\nsapply(x, length)\nUse instead:\nx &lt;- list(a = 1, b = 2:3, c = 1:10)\nlengths(x)\n\n\n\nSee ?lengths",
-    "crumbs": [
-      "Rules",
-      "`lengths`"
-    ]
-  },
-  {
-    "objectID": "rules/lengths.html#what-it-does",
-    "href": "rules/lengths.html#what-it-does",
-    "title": "lengths",
-    "section": "",
-    "text": "Checks for usage of length() in several functions that apply it to each element of a list, such as lapply(), vapply(), purrr::map(), etc., and replaces it with lengths().",
-    "crumbs": [
-      "Rules",
-      "`lengths`"
-    ]
-  },
-  {
-    "objectID": "rules/lengths.html#why-is-this-bad",
-    "href": "rules/lengths.html#why-is-this-bad",
-    "title": "lengths",
-    "section": "",
-    "text": "lengths() is faster and more memory-efficient than applying length() on each element of the list.",
-    "crumbs": [
-      "Rules",
-      "`lengths`"
-    ]
-  },
-  {
-    "objectID": "rules/lengths.html#example",
-    "href": "rules/lengths.html#example",
-    "title": "lengths",
-    "section": "",
-    "text": "x &lt;- list(a = 1, b = 2:3, c = 1:10)\nsapply(x, length)\nUse instead:\nx &lt;- list(a = 1, b = 2:3, c = 1:10)\nlengths(x)",
-    "crumbs": [
-      "Rules",
-      "`lengths`"
-    ]
-  },
-  {
-    "objectID": "rules/lengths.html#references",
-    "href": "rules/lengths.html#references",
-    "title": "lengths",
-    "section": "",
-    "text": "See ?lengths",
-    "crumbs": [
-      "Rules",
-      "`lengths`"
-    ]
-  },
-  {
     "objectID": "using-jarl.html",
     "href": "using-jarl.html",
     "title": "Using Jarl",
@@ -1284,10 +42,1268 @@
     "text": "It is possible to save settings in a jarl.toml file. See the Configuration page."
   },
   {
+    "objectID": "rules/which_grepl.html",
+    "href": "rules/which_grepl.html",
+    "title": "which_grepl",
+    "section": "",
+    "text": "Checks for usage of which(grepl(...)) and replaces it with grep(...).\n\n\n\nwhich(grepl(...)) is harder to read and is less efficient than grep() since it requires two passes on the vector.\n\n\n\nx &lt;- c(\"hello\", \"there\")\nwhich(grepl(\"hell\", x))\nwhich(grepl(\"foo\", x))\nUse instead:\nx &lt;- c(\"hello\", \"there\")\ngrep(\"hell\", x)\ngrep(\"foo\", x)\n\n\n\nSee ?grep",
+    "crumbs": [
+      "Rules",
+      "which_grepl"
+    ]
+  },
+  {
+    "objectID": "rules/which_grepl.html#what-it-does",
+    "href": "rules/which_grepl.html#what-it-does",
+    "title": "which_grepl",
+    "section": "",
+    "text": "Checks for usage of which(grepl(...)) and replaces it with grep(...).",
+    "crumbs": [
+      "Rules",
+      "which_grepl"
+    ]
+  },
+  {
+    "objectID": "rules/which_grepl.html#why-is-this-bad",
+    "href": "rules/which_grepl.html#why-is-this-bad",
+    "title": "which_grepl",
+    "section": "",
+    "text": "which(grepl(...)) is harder to read and is less efficient than grep() since it requires two passes on the vector.",
+    "crumbs": [
+      "Rules",
+      "which_grepl"
+    ]
+  },
+  {
+    "objectID": "rules/which_grepl.html#example",
+    "href": "rules/which_grepl.html#example",
+    "title": "which_grepl",
+    "section": "",
+    "text": "x &lt;- c(\"hello\", \"there\")\nwhich(grepl(\"hell\", x))\nwhich(grepl(\"foo\", x))\nUse instead:\nx &lt;- c(\"hello\", \"there\")\ngrep(\"hell\", x)\ngrep(\"foo\", x)",
+    "crumbs": [
+      "Rules",
+      "which_grepl"
+    ]
+  },
+  {
+    "objectID": "rules/which_grepl.html#references",
+    "href": "rules/which_grepl.html#references",
+    "title": "which_grepl",
+    "section": "",
+    "text": "See ?grep",
+    "crumbs": [
+      "Rules",
+      "which_grepl"
+    ]
+  },
+  {
+    "objectID": "rules/sort.html",
+    "href": "rules/sort.html",
+    "title": "sort",
+    "section": "",
+    "text": "Checks for usage of x[order(x, ...)].\n\n\n\nIt is better to use sort(x, ...), which is more readable than x[order(x, ...)] and more efficient.\n\n\n\nx &lt;- c(3, 2, 5, 1, 5, 6)\nx[order(x)]\nx[order(x, na.last = TRUE)]\nx[order(x, decreasing = TRUE)]\nUse instead:\nx &lt;- c(3, 2, 5, 1, 5, 6)\nsort(x)\nsort(x, na.last = TRUE)\nsort(x, decreasing = TRUE)\n\n\n\nSee ?sort",
+    "crumbs": [
+      "Rules",
+      "sort"
+    ]
+  },
+  {
+    "objectID": "rules/sort.html#what-it-does",
+    "href": "rules/sort.html#what-it-does",
+    "title": "sort",
+    "section": "",
+    "text": "Checks for usage of x[order(x, ...)].",
+    "crumbs": [
+      "Rules",
+      "sort"
+    ]
+  },
+  {
+    "objectID": "rules/sort.html#why-is-this-bad",
+    "href": "rules/sort.html#why-is-this-bad",
+    "title": "sort",
+    "section": "",
+    "text": "It is better to use sort(x, ...), which is more readable than x[order(x, ...)] and more efficient.",
+    "crumbs": [
+      "Rules",
+      "sort"
+    ]
+  },
+  {
+    "objectID": "rules/sort.html#example",
+    "href": "rules/sort.html#example",
+    "title": "sort",
+    "section": "",
+    "text": "x &lt;- c(3, 2, 5, 1, 5, 6)\nx[order(x)]\nx[order(x, na.last = TRUE)]\nx[order(x, decreasing = TRUE)]\nUse instead:\nx &lt;- c(3, 2, 5, 1, 5, 6)\nsort(x)\nsort(x, na.last = TRUE)\nsort(x, decreasing = TRUE)",
+    "crumbs": [
+      "Rules",
+      "sort"
+    ]
+  },
+  {
+    "objectID": "rules/sort.html#references",
+    "href": "rules/sort.html#references",
+    "title": "sort",
+    "section": "",
+    "text": "See ?sort",
+    "crumbs": [
+      "Rules",
+      "sort"
+    ]
+  },
+  {
+    "objectID": "rules/repeat.html",
+    "href": "rules/repeat.html",
+    "title": "repeat",
+    "section": "",
+    "text": "Checks use of while (TRUE) and recommends the use of repeat instead.\n\n\n\nwhile (TRUE) is valid R code but repeat better expresses the intent of infinite loop.\n\n\n\nwhile (TRUE) {\n  # ...\n  break\n}\nUse instead:\nrepeat {\n  # ...\n  break\n}",
+    "crumbs": [
+      "Rules",
+      "repeat"
+    ]
+  },
+  {
+    "objectID": "rules/repeat.html#what-it-does",
+    "href": "rules/repeat.html#what-it-does",
+    "title": "repeat",
+    "section": "",
+    "text": "Checks use of while (TRUE) and recommends the use of repeat instead.",
+    "crumbs": [
+      "Rules",
+      "repeat"
+    ]
+  },
+  {
+    "objectID": "rules/repeat.html#why-is-this-bad",
+    "href": "rules/repeat.html#why-is-this-bad",
+    "title": "repeat",
+    "section": "",
+    "text": "while (TRUE) is valid R code but repeat better expresses the intent of infinite loop.",
+    "crumbs": [
+      "Rules",
+      "repeat"
+    ]
+  },
+  {
+    "objectID": "rules/repeat.html#example",
+    "href": "rules/repeat.html#example",
+    "title": "repeat",
+    "section": "",
+    "text": "while (TRUE) {\n  # ...\n  break\n}\nUse instead:\nrepeat {\n  # ...\n  break\n}",
+    "crumbs": [
+      "Rules",
+      "repeat"
+    ]
+  },
+  {
+    "objectID": "rules/numeric_leading_zero.html",
+    "href": "rules/numeric_leading_zero.html",
+    "title": "numeric_leading_zero",
+    "section": "",
+    "text": "Checks for double or complex values with a decimal component and a leading ..\n\n\n\nWhile .1 and 0.1 mean the same thing, the latter is easier to read due to the small size of the . glyph.\n\n\n\nx &lt;- .1\nUse instead:\nx &lt;- 0.1",
+    "crumbs": [
+      "Rules",
+      "numeric_leading_zero"
+    ]
+  },
+  {
+    "objectID": "rules/numeric_leading_zero.html#what-it-does",
+    "href": "rules/numeric_leading_zero.html#what-it-does",
+    "title": "numeric_leading_zero",
+    "section": "",
+    "text": "Checks for double or complex values with a decimal component and a leading ..",
+    "crumbs": [
+      "Rules",
+      "numeric_leading_zero"
+    ]
+  },
+  {
+    "objectID": "rules/numeric_leading_zero.html#why-is-this-bad",
+    "href": "rules/numeric_leading_zero.html#why-is-this-bad",
+    "title": "numeric_leading_zero",
+    "section": "",
+    "text": "While .1 and 0.1 mean the same thing, the latter is easier to read due to the small size of the . glyph.",
+    "crumbs": [
+      "Rules",
+      "numeric_leading_zero"
+    ]
+  },
+  {
+    "objectID": "rules/numeric_leading_zero.html#example",
+    "href": "rules/numeric_leading_zero.html#example",
+    "title": "numeric_leading_zero",
+    "section": "",
+    "text": "x &lt;- .1\nUse instead:\nx &lt;- 0.1",
+    "crumbs": [
+      "Rules",
+      "numeric_leading_zero"
+    ]
+  },
+  {
+    "objectID": "rules/length_test.html",
+    "href": "rules/length_test.html",
+    "title": "length_test",
+    "section": "",
+    "text": "Checks for usage of length(... == some_val) and replaces it with length(...) == some_val.\n\n\n\nThis is very likely a mistake since computing the length of the output of == is the same as computing the length of the inputs.\n\n\n\nx &lt;- 1:3\nlength(x == 1)\nUse instead:\nx &lt;- 1:3\nlength(x) == 1",
+    "crumbs": [
+      "Rules",
+      "length_test"
+    ]
+  },
+  {
+    "objectID": "rules/length_test.html#what-it-does",
+    "href": "rules/length_test.html#what-it-does",
+    "title": "length_test",
+    "section": "",
+    "text": "Checks for usage of length(... == some_val) and replaces it with length(...) == some_val.",
+    "crumbs": [
+      "Rules",
+      "length_test"
+    ]
+  },
+  {
+    "objectID": "rules/length_test.html#why-is-this-bad",
+    "href": "rules/length_test.html#why-is-this-bad",
+    "title": "length_test",
+    "section": "",
+    "text": "This is very likely a mistake since computing the length of the output of == is the same as computing the length of the inputs.",
+    "crumbs": [
+      "Rules",
+      "length_test"
+    ]
+  },
+  {
+    "objectID": "rules/length_test.html#example",
+    "href": "rules/length_test.html#example",
+    "title": "length_test",
+    "section": "",
+    "text": "x &lt;- 1:3\nlength(x == 1)\nUse instead:\nx &lt;- 1:3\nlength(x) == 1",
+    "crumbs": [
+      "Rules",
+      "length_test"
+    ]
+  },
+  {
+    "objectID": "rules/lengths.html",
+    "href": "rules/lengths.html",
+    "title": "lengths",
+    "section": "",
+    "text": "Checks for usage of length() in several functions that apply it to each element of a list, such as lapply(), vapply(), purrr::map(), etc., and replaces it with lengths().\n\n\n\nlengths() is faster and more memory-efficient than applying length() on each element of the list.\n\n\n\nx &lt;- list(a = 1, b = 2:3, c = 1:10)\nsapply(x, length)\nUse instead:\nx &lt;- list(a = 1, b = 2:3, c = 1:10)\nlengths(x)\n\n\n\nSee ?lengths",
+    "crumbs": [
+      "Rules",
+      "lengths"
+    ]
+  },
+  {
+    "objectID": "rules/lengths.html#what-it-does",
+    "href": "rules/lengths.html#what-it-does",
+    "title": "lengths",
+    "section": "",
+    "text": "Checks for usage of length() in several functions that apply it to each element of a list, such as lapply(), vapply(), purrr::map(), etc., and replaces it with lengths().",
+    "crumbs": [
+      "Rules",
+      "lengths"
+    ]
+  },
+  {
+    "objectID": "rules/lengths.html#why-is-this-bad",
+    "href": "rules/lengths.html#why-is-this-bad",
+    "title": "lengths",
+    "section": "",
+    "text": "lengths() is faster and more memory-efficient than applying length() on each element of the list.",
+    "crumbs": [
+      "Rules",
+      "lengths"
+    ]
+  },
+  {
+    "objectID": "rules/lengths.html#example",
+    "href": "rules/lengths.html#example",
+    "title": "lengths",
+    "section": "",
+    "text": "x &lt;- list(a = 1, b = 2:3, c = 1:10)\nsapply(x, length)\nUse instead:\nx &lt;- list(a = 1, b = 2:3, c = 1:10)\nlengths(x)",
+    "crumbs": [
+      "Rules",
+      "lengths"
+    ]
+  },
+  {
+    "objectID": "rules/lengths.html#references",
+    "href": "rules/lengths.html#references",
+    "title": "lengths",
+    "section": "",
+    "text": "See ?lengths",
+    "crumbs": [
+      "Rules",
+      "lengths"
+    ]
+  },
+  {
+    "objectID": "rules/implicit_assignment.html",
+    "href": "rules/implicit_assignment.html",
+    "title": "implicit_assignment",
+    "section": "",
+    "text": "Checks for implicit assignment in function calls and other situations.\n\n\n\nAssigning inside function calls or other situations such as in if() makes the code difficult to read, and should be avoided.\n\n\n\nmean(x &lt;- c(1, 2, 3))\nx\n\nif (any(y &lt;- x &gt; 0)) {\n  print(y)\n}\nUse instead:\nx &lt;- c(1, 2, 3)\nmean(x)\nx\n\nlarger &lt;- x &gt; 0\nif (any(larger)) {\n  print(larger)\n}\n\n\n\nSee:\n\nhttps://style.tidyverse.org/syntax.html#assignment",
+    "crumbs": [
+      "Rules",
+      "implicit_assignment"
+    ]
+  },
+  {
+    "objectID": "rules/implicit_assignment.html#what-it-does",
+    "href": "rules/implicit_assignment.html#what-it-does",
+    "title": "implicit_assignment",
+    "section": "",
+    "text": "Checks for implicit assignment in function calls and other situations.",
+    "crumbs": [
+      "Rules",
+      "implicit_assignment"
+    ]
+  },
+  {
+    "objectID": "rules/implicit_assignment.html#why-is-this-bad",
+    "href": "rules/implicit_assignment.html#why-is-this-bad",
+    "title": "implicit_assignment",
+    "section": "",
+    "text": "Assigning inside function calls or other situations such as in if() makes the code difficult to read, and should be avoided.",
+    "crumbs": [
+      "Rules",
+      "implicit_assignment"
+    ]
+  },
+  {
+    "objectID": "rules/implicit_assignment.html#example",
+    "href": "rules/implicit_assignment.html#example",
+    "title": "implicit_assignment",
+    "section": "",
+    "text": "mean(x &lt;- c(1, 2, 3))\nx\n\nif (any(y &lt;- x &gt; 0)) {\n  print(y)\n}\nUse instead:\nx &lt;- c(1, 2, 3)\nmean(x)\nx\n\nlarger &lt;- x &gt; 0\nif (any(larger)) {\n  print(larger)\n}",
+    "crumbs": [
+      "Rules",
+      "implicit_assignment"
+    ]
+  },
+  {
+    "objectID": "rules/implicit_assignment.html#references",
+    "href": "rules/implicit_assignment.html#references",
+    "title": "implicit_assignment",
+    "section": "",
+    "text": "See:\n\nhttps://style.tidyverse.org/syntax.html#assignment",
+    "crumbs": [
+      "Rules",
+      "implicit_assignment"
+    ]
+  },
+  {
+    "objectID": "rules/for_loop_index.html",
+    "href": "rules/for_loop_index.html",
+    "title": "for_loop_index",
+    "section": "",
+    "text": "Checks whether the index symbol in a for loop is already used anywhere in the sequence of the same for loop.\n\n\n\nfor (x in x) or for (x in foo(x)) are confusing to read and can lead to errors.\n\n\n\nx &lt;- c(1, 2, 3)\nfor (x in x) {\n  x + 1\n}\nUse instead:\nx &lt;- c(1, 2, 3)\nfor (xi in x) {\n  xi + 1\n}",
+    "crumbs": [
+      "Rules",
+      "for_loop_index"
+    ]
+  },
+  {
+    "objectID": "rules/for_loop_index.html#what-it-does",
+    "href": "rules/for_loop_index.html#what-it-does",
+    "title": "for_loop_index",
+    "section": "",
+    "text": "Checks whether the index symbol in a for loop is already used anywhere in the sequence of the same for loop.",
+    "crumbs": [
+      "Rules",
+      "for_loop_index"
+    ]
+  },
+  {
+    "objectID": "rules/for_loop_index.html#why-is-this-bad",
+    "href": "rules/for_loop_index.html#why-is-this-bad",
+    "title": "for_loop_index",
+    "section": "",
+    "text": "for (x in x) or for (x in foo(x)) are confusing to read and can lead to errors.",
+    "crumbs": [
+      "Rules",
+      "for_loop_index"
+    ]
+  },
+  {
+    "objectID": "rules/for_loop_index.html#example",
+    "href": "rules/for_loop_index.html#example",
+    "title": "for_loop_index",
+    "section": "",
+    "text": "x &lt;- c(1, 2, 3)\nfor (x in x) {\n  x + 1\n}\nUse instead:\nx &lt;- c(1, 2, 3)\nfor (xi in x) {\n  xi + 1\n}",
+    "crumbs": [
+      "Rules",
+      "for_loop_index"
+    ]
+  },
+  {
+    "objectID": "rules/duplicated_arguments.html",
+    "href": "rules/duplicated_arguments.html",
+    "title": "duplicated_arguments",
+    "section": "",
+    "text": "Checks for duplicated arguments in function calls.\n\n\n\nWhile some cases of duplicated arguments generate run-time errors (e.g. mean(x = 1:5, x = 2:3)), this is not always the case (e.g. c(a = 1, a = 2)).\nThis linter is used to discourage explicitly providing duplicate names to objects. Duplicate-named objects are hard to work with programmatically and should typically be avoided.\n\n\n\nlist(x = 1, x = 2)",
+    "crumbs": [
+      "Rules",
+      "duplicated_arguments"
+    ]
+  },
+  {
+    "objectID": "rules/duplicated_arguments.html#what-it-does",
+    "href": "rules/duplicated_arguments.html#what-it-does",
+    "title": "duplicated_arguments",
+    "section": "",
+    "text": "Checks for duplicated arguments in function calls.",
+    "crumbs": [
+      "Rules",
+      "duplicated_arguments"
+    ]
+  },
+  {
+    "objectID": "rules/duplicated_arguments.html#why-is-this-bad",
+    "href": "rules/duplicated_arguments.html#why-is-this-bad",
+    "title": "duplicated_arguments",
+    "section": "",
+    "text": "While some cases of duplicated arguments generate run-time errors (e.g. mean(x = 1:5, x = 2:3)), this is not always the case (e.g. c(a = 1, a = 2)).\nThis linter is used to discourage explicitly providing duplicate names to objects. Duplicate-named objects are hard to work with programmatically and should typically be avoided.",
+    "crumbs": [
+      "Rules",
+      "duplicated_arguments"
+    ]
+  },
+  {
+    "objectID": "rules/duplicated_arguments.html#example",
+    "href": "rules/duplicated_arguments.html#example",
+    "title": "duplicated_arguments",
+    "section": "",
+    "text": "list(x = 1, x = 2)",
+    "crumbs": [
+      "Rules",
+      "duplicated_arguments"
+    ]
+  },
+  {
+    "objectID": "rules/class_equals.html",
+    "href": "rules/class_equals.html",
+    "title": "class_equals",
+    "section": "",
+    "text": "Checks for usage of class(...) == \"some_class\" and class(...) %in% \"some_class\". The only cases that are flagged (and potentially fixed) are cases that:\n\nhappen in the condition part of an if () statement or of a while () statement,\nand are not nested in other calls.\n\nFor example, if (class(x) == \"foo\") would be reported, but not if (my_function(class(x) == \"foo\")).\n\n\n\nAn R object can have several classes. Therefore, class(...) == \"some_class\" would return a logical vector with as many values as the object has classes, which is rarely desirable.\nIt is better to use inherits(..., \"some_class\") instead. inherits() checks whether any of the object’s classes match the desired class.\nThe same rationale applies to class(...) %in% \"some_class\".\n\n\n\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nif (class(x) == \"lm\") {\n  # &lt;do something&gt;\n}\nUse instead:\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nif (inherits(x, \"lm\")) {\n  # &lt;do something&gt;\n}\n\n\n\nSee ?inherits",
+    "crumbs": [
+      "Rules",
+      "class_equals"
+    ]
+  },
+  {
+    "objectID": "rules/class_equals.html#what-it-does",
+    "href": "rules/class_equals.html#what-it-does",
+    "title": "class_equals",
+    "section": "",
+    "text": "Checks for usage of class(...) == \"some_class\" and class(...) %in% \"some_class\". The only cases that are flagged (and potentially fixed) are cases that:\n\nhappen in the condition part of an if () statement or of a while () statement,\nand are not nested in other calls.\n\nFor example, if (class(x) == \"foo\") would be reported, but not if (my_function(class(x) == \"foo\")).",
+    "crumbs": [
+      "Rules",
+      "class_equals"
+    ]
+  },
+  {
+    "objectID": "rules/class_equals.html#why-is-this-bad",
+    "href": "rules/class_equals.html#why-is-this-bad",
+    "title": "class_equals",
+    "section": "",
+    "text": "An R object can have several classes. Therefore, class(...) == \"some_class\" would return a logical vector with as many values as the object has classes, which is rarely desirable.\nIt is better to use inherits(..., \"some_class\") instead. inherits() checks whether any of the object’s classes match the desired class.\nThe same rationale applies to class(...) %in% \"some_class\".",
+    "crumbs": [
+      "Rules",
+      "class_equals"
+    ]
+  },
+  {
+    "objectID": "rules/class_equals.html#example",
+    "href": "rules/class_equals.html#example",
+    "title": "class_equals",
+    "section": "",
+    "text": "x &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nif (class(x) == \"lm\") {\n  # &lt;do something&gt;\n}\nUse instead:\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nif (inherits(x, \"lm\")) {\n  # &lt;do something&gt;\n}",
+    "crumbs": [
+      "Rules",
+      "class_equals"
+    ]
+  },
+  {
+    "objectID": "rules/class_equals.html#references",
+    "href": "rules/class_equals.html#references",
+    "title": "class_equals",
+    "section": "",
+    "text": "See ?inherits",
+    "crumbs": [
+      "Rules",
+      "class_equals"
+    ]
+  },
+  {
+    "objectID": "rules/any_is_na.html",
+    "href": "rules/any_is_na.html",
+    "title": "any_is_na",
+    "section": "",
+    "text": "Checks for usage of any(is.na(...)).\n\n\n\nany(is.na(...)) is valid code but requires the evaluation of is.na() on the entire input first.\nThere is a more efficient function in base R called anyNA() that is more efficient, both in speed and memory used.\n\n\n\nx &lt;- c(1:10000, NA)\nany(is.na(x))\nUse instead:\nx &lt;- c(1:10000, NA)\nanyNA(x)\n\n\n\nSee ?anyNA",
+    "crumbs": [
+      "Rules",
+      "any_is_na"
+    ]
+  },
+  {
+    "objectID": "rules/any_is_na.html#what-it-does",
+    "href": "rules/any_is_na.html#what-it-does",
+    "title": "any_is_na",
+    "section": "",
+    "text": "Checks for usage of any(is.na(...)).",
+    "crumbs": [
+      "Rules",
+      "any_is_na"
+    ]
+  },
+  {
+    "objectID": "rules/any_is_na.html#why-is-this-bad",
+    "href": "rules/any_is_na.html#why-is-this-bad",
+    "title": "any_is_na",
+    "section": "",
+    "text": "any(is.na(...)) is valid code but requires the evaluation of is.na() on the entire input first.\nThere is a more efficient function in base R called anyNA() that is more efficient, both in speed and memory used.",
+    "crumbs": [
+      "Rules",
+      "any_is_na"
+    ]
+  },
+  {
+    "objectID": "rules/any_is_na.html#example",
+    "href": "rules/any_is_na.html#example",
+    "title": "any_is_na",
+    "section": "",
+    "text": "x &lt;- c(1:10000, NA)\nany(is.na(x))\nUse instead:\nx &lt;- c(1:10000, NA)\nanyNA(x)",
+    "crumbs": [
+      "Rules",
+      "any_is_na"
+    ]
+  },
+  {
+    "objectID": "rules/any_is_na.html#references",
+    "href": "rules/any_is_na.html#references",
+    "title": "any_is_na",
+    "section": "",
+    "text": "See ?anyNA",
+    "crumbs": [
+      "Rules",
+      "any_is_na"
+    ]
+  },
+  {
+    "objectID": "rules/all_equal.html",
+    "href": "rules/all_equal.html",
+    "title": "all_equal",
+    "section": "",
+    "text": "Checks for dangerous usage of all.equal(...), for instance in if() conditions or while() loops.\n\n\n\nall.equal() returns TRUE in the absence of differences but returns a character string (not FALSE) in the presence of differences. Usage of all.equal() without wrapping it in isTRUE() are thus likely to generate unexpected errors if the compared objects have differences. An alternative is to use identical() to compare vector of strings or when exact equality is expected.\nThis rule has automated fixes that are marked unsafe and therefore require passing --unsafe-fixes. This is because automatically fixing those cases can change the runtime behavior if some code relied on the behaviour of all.equal() (likely by mistake).\n\n\n\na &lt;- 1\nb &lt;- 1\n\nif (all.equal(a, b, tolerance = 1e-3)) message('equal')\nif (all.equal(a, b)) message('equal')\n!all.equal(a, b)\nisFALSE(all.equal(a, b))\nUse instead:\na &lt;- 1\nb &lt;- 1\n\nif (isTRUE(all.equal(a, b, tolerance = 1e-3))) message('equal')\nif (isTRUE(all.equal(a, b))) message('equal')\n!isTRUE(all.equal(a, b))\n!isTRUE(all.equal(a, b))\n\n\n\nSee ?all.equal",
+    "crumbs": [
+      "Rules",
+      "all_equal"
+    ]
+  },
+  {
+    "objectID": "rules/all_equal.html#what-it-does",
+    "href": "rules/all_equal.html#what-it-does",
+    "title": "all_equal",
+    "section": "",
+    "text": "Checks for dangerous usage of all.equal(...), for instance in if() conditions or while() loops.",
+    "crumbs": [
+      "Rules",
+      "all_equal"
+    ]
+  },
+  {
+    "objectID": "rules/all_equal.html#why-is-this-bad",
+    "href": "rules/all_equal.html#why-is-this-bad",
+    "title": "all_equal",
+    "section": "",
+    "text": "all.equal() returns TRUE in the absence of differences but returns a character string (not FALSE) in the presence of differences. Usage of all.equal() without wrapping it in isTRUE() are thus likely to generate unexpected errors if the compared objects have differences. An alternative is to use identical() to compare vector of strings or when exact equality is expected.\nThis rule has automated fixes that are marked unsafe and therefore require passing --unsafe-fixes. This is because automatically fixing those cases can change the runtime behavior if some code relied on the behaviour of all.equal() (likely by mistake).",
+    "crumbs": [
+      "Rules",
+      "all_equal"
+    ]
+  },
+  {
+    "objectID": "rules/all_equal.html#example",
+    "href": "rules/all_equal.html#example",
+    "title": "all_equal",
+    "section": "",
+    "text": "a &lt;- 1\nb &lt;- 1\n\nif (all.equal(a, b, tolerance = 1e-3)) message('equal')\nif (all.equal(a, b)) message('equal')\n!all.equal(a, b)\nisFALSE(all.equal(a, b))\nUse instead:\na &lt;- 1\nb &lt;- 1\n\nif (isTRUE(all.equal(a, b, tolerance = 1e-3))) message('equal')\nif (isTRUE(all.equal(a, b))) message('equal')\n!isTRUE(all.equal(a, b))\n!isTRUE(all.equal(a, b))",
+    "crumbs": [
+      "Rules",
+      "all_equal"
+    ]
+  },
+  {
+    "objectID": "rules/all_equal.html#references",
+    "href": "rules/all_equal.html#references",
+    "title": "all_equal",
+    "section": "",
+    "text": "See ?all.equal",
+    "crumbs": [
+      "Rules",
+      "all_equal"
+    ]
+  },
+  {
+    "objectID": "contributing.html",
+    "href": "contributing.html",
+    "title": "Contributing to Jarl",
+    "section": "",
+    "text": "Jarl is written in Rust, so you must install the Rust toolchain.\nJarl relies on Insta to run snapshot tests. You can install it with:\ncargo install cargo-insta\n\n\n\nThe folder crates contains several sub-crates. At the time of writing (October 2025), there are three:\n\njarl-cli contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.\njarl-core contains the “meat” of the linter. It is where the R code is parsed and checked, and where the rules are defined. This is probably the crate you will have to modify.\njarl-lsp contains the code to integrate the linter with the Language Server Protocol, which allows editors such as VS Code or Positron to highlight diagnostics and provide “Quick Fix” buttons for example.\n\n\n\n\nIn this section, all paths refer to files in crates/jarl-core.\n\n\nsrc/lints/mod.rs contains the existing list of rules. Each rule must have a name, belong to one or several categories (PERF, READ, etc.), a FixStatus indicating whether it has a fix and, if so, whether this fix is safe or unsafe, and an optional minimum required R version.\n\n\n\nsrc/lints contains the definition of the rules, along with their associated documentation and tests. It has one subfolder per rule and two mandatory files: &lt;rule_name&gt;.rs (which contains the definition and documentation) and mod.rs (which contains the tests).\nIf there are snapshot tests for this rule, then a subfolder snapshots will also be created. For example, the folder for the rule any_duplicated looks like this:\nsrc/lints/any_duplicated/\n├── any_duplicated.rs\n├── mod.rs\n└── snapshots\n    └── jarl__lints__any_duplicated__tests__fix_output.snap\n\n\n\nAdding a new rule requires four main steps:\n\nAdd the new rule to the list in src/lints/mod.rs. In the same file, also add pub(crate) mod &lt;rulename&gt;;\nAdd a subfolder with the rule name in src/lints. Add the documentation and the code for the rule.\nAdd tests in src/lints/&lt;rulename&gt;/mod.rs\nAdd the rule in the src/analyze folder. This depends on the initial node in the AST. For instance, for the rule equals_na, we check the presence of code such as x == NA. Since the top node for this expression is a R_BINARY_EXPRESSION, this rule is ran in src/analyze/binary_expression.rs.\n\n\n\n\n\ncargo run --bin jarl -- check demos/foo.R (or any other paths to check). The -- in the middle is required to use the CLI in development mode (i.e. without installing it with cargo install)\ncargo build && cargo test. It is required to build the crate before running tests.\ncargo insta test and cargo insta review (if necessary) for snapshot tests.\ncargo install --path crates/jarl-cli --profile=release (or --profile=dev) to have a system-wide install and test the crate in other R projects."
+  },
+  {
+    "objectID": "contributing.html#tools",
+    "href": "contributing.html#tools",
+    "title": "Contributing to Jarl",
+    "section": "",
+    "text": "Jarl is written in Rust, so you must install the Rust toolchain.\nJarl relies on Insta to run snapshot tests. You can install it with:\ncargo install cargo-insta"
+  },
+  {
+    "objectID": "contributing.html#basic-structure-of-the-repository",
+    "href": "contributing.html#basic-structure-of-the-repository",
+    "title": "Contributing to Jarl",
+    "section": "",
+    "text": "The folder crates contains several sub-crates. At the time of writing (October 2025), there are three:\n\njarl-cli contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.\njarl-core contains the “meat” of the linter. It is where the R code is parsed and checked, and where the rules are defined. This is probably the crate you will have to modify.\njarl-lsp contains the code to integrate the linter with the Language Server Protocol, which allows editors such as VS Code or Positron to highlight diagnostics and provide “Quick Fix” buttons for example."
+  },
+  {
+    "objectID": "contributing.html#adding-or-modifying-a-rule",
+    "href": "contributing.html#adding-or-modifying-a-rule",
+    "title": "Contributing to Jarl",
+    "section": "",
+    "text": "In this section, all paths refer to files in crates/jarl-core.\n\n\nsrc/lints/mod.rs contains the existing list of rules. Each rule must have a name, belong to one or several categories (PERF, READ, etc.), a FixStatus indicating whether it has a fix and, if so, whether this fix is safe or unsafe, and an optional minimum required R version.\n\n\n\nsrc/lints contains the definition of the rules, along with their associated documentation and tests. It has one subfolder per rule and two mandatory files: &lt;rule_name&gt;.rs (which contains the definition and documentation) and mod.rs (which contains the tests).\nIf there are snapshot tests for this rule, then a subfolder snapshots will also be created. For example, the folder for the rule any_duplicated looks like this:\nsrc/lints/any_duplicated/\n├── any_duplicated.rs\n├── mod.rs\n└── snapshots\n    └── jarl__lints__any_duplicated__tests__fix_output.snap\n\n\n\nAdding a new rule requires four main steps:\n\nAdd the new rule to the list in src/lints/mod.rs. In the same file, also add pub(crate) mod &lt;rulename&gt;;\nAdd a subfolder with the rule name in src/lints. Add the documentation and the code for the rule.\nAdd tests in src/lints/&lt;rulename&gt;/mod.rs\nAdd the rule in the src/analyze folder. This depends on the initial node in the AST. For instance, for the rule equals_na, we check the presence of code such as x == NA. Since the top node for this expression is a R_BINARY_EXPRESSION, this rule is ran in src/analyze/binary_expression.rs.\n\n\n\n\n\ncargo run --bin jarl -- check demos/foo.R (or any other paths to check). The -- in the middle is required to use the CLI in development mode (i.e. without installing it with cargo install)\ncargo build && cargo test. It is required to build the crate before running tests.\ncargo insta test and cargo insta review (if necessary) for snapshot tests.\ncargo install --path crates/jarl-cli --profile=release (or --profile=dev) to have a system-wide install and test the crate in other R projects."
+  },
+  {
     "objectID": "config.html",
     "href": "config.html",
     "title": "Configuring Jarl",
     "section": "",
-    "text": "Configuring Jarl\nTo ensure all uses of Jarl in a project are consistent, it is possible to store options in jarl.toml.\nFor now, this only supports two fields: select and ignore to determine which rules to use. This file looks like this:\n[lint]\nselect = []\nignore = []\nThis has the same capabilities as --select-rules and --ignore-rules, so it is possible to pass rule names and names of groups of rules:\n[lint]\nselect = [\"PERF\", \"length_test\"]\nignore = [\"SUSP\"]\n\n\n\n\n\n\nUsing CLI arguments and jarl.toml\n\n\n\nArguments in the command line always have the priority on those specified in jarl.toml. For example, if you have the following file:\n[lint]\nselect = [\"PERF\", \"length_test\"]\nignore = []\nthen calling\njarl check . --ignore-rules PERF\nwill only apply the rule length_test."
+    "text": "Jarl comes with various options available directly from the command line. These can be listed with jarl check --help:\nCheck a set of files or directories\n\nUsage: flir.exe check [OPTIONS] &lt;FILES&gt;...\n\nArguments:\n  &lt;FILES&gt;...\n          List of files or directories to check or fix lints, for example `flir \ncheck .`.\n\nOptions:\n  -f, --fix\n          Automatically fix issues detected by the linter.\n\n  -u, --unsafe-fixes\n          Include fixes that may not retain the original intent of the  code.   \n\n      --fix-only\n          Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.\n\n  -s, --select-rules &lt;SELECT_RULES&gt;\n          Names of rules to include, separated by a comma (no spaces).\n\n          [default: ]\n\n  -i, --ignore-rules &lt;IGNORE_RULES&gt;\n          Names of rules to exclude, separated by a comma (no spaces).\n\n          [default: ]\n\n  -w, --with-timing\n          Show the time taken by the function.\n\n  -m, --min-r-version &lt;MIN_R_VERSION&gt;\n          The mimimum R version to be used by the linter. Some rules only work starting from a specific version.\n\n      --output-format &lt;OUTPUT_FORMAT&gt;\n          Output serialization format for violations.\n\n          Possible values:\n          - concise: Print diagnostics in a concise format, one per line        \n          - json:    Print diagnostics as JSON\n\n          [default: concise]\n\n  -h, --help\n          Print help (see a summary with '-h')\nYou can pass multiple options at once, for instance\njarl check . --fix --select-rules any_is_na,class_equals\n\n\n\nTo avoid typing options every time and to ensure all uses of Jarl in a project are consistent, it is possible to store options in jarl.toml.\nFor now, this only supports two fields: select and ignore to determine which rules to use. This file looks like this:\n[lint]\nselect = []\nignore = []\nThis has the same capabilities as --select-rules and --ignore-rules, so it is possible to pass rule names and names of groups of rules:\n[lint]\nselect = [\"PERF\", \"length_test\"]\nignore = [\"SUSP\"]\n\n\n\n\n\n\nUsing CLI arguments and jarl.toml\n\n\n\nArguments in the command line always have the priority on those specified in jarl.toml. For example, if you have the following file:\n[lint]\nselect = [\"PERF\", \"length_test\"]\nignore = []\nthen calling\njarl check . --ignore-rules PERF\nwill only apply the rule length_test."
+  },
+  {
+    "objectID": "config.html#with-the-command-line",
+    "href": "config.html#with-the-command-line",
+    "title": "Configuring Jarl",
+    "section": "",
+    "text": "Jarl comes with various options available directly from the command line. These can be listed with jarl check --help:\nCheck a set of files or directories\n\nUsage: flir.exe check [OPTIONS] &lt;FILES&gt;...\n\nArguments:\n  &lt;FILES&gt;...\n          List of files or directories to check or fix lints, for example `flir \ncheck .`.\n\nOptions:\n  -f, --fix\n          Automatically fix issues detected by the linter.\n\n  -u, --unsafe-fixes\n          Include fixes that may not retain the original intent of the  code.   \n\n      --fix-only\n          Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.\n\n  -s, --select-rules &lt;SELECT_RULES&gt;\n          Names of rules to include, separated by a comma (no spaces).\n\n          [default: ]\n\n  -i, --ignore-rules &lt;IGNORE_RULES&gt;\n          Names of rules to exclude, separated by a comma (no spaces).\n\n          [default: ]\n\n  -w, --with-timing\n          Show the time taken by the function.\n\n  -m, --min-r-version &lt;MIN_R_VERSION&gt;\n          The mimimum R version to be used by the linter. Some rules only work starting from a specific version.\n\n      --output-format &lt;OUTPUT_FORMAT&gt;\n          Output serialization format for violations.\n\n          Possible values:\n          - concise: Print diagnostics in a concise format, one per line        \n          - json:    Print diagnostics as JSON\n\n          [default: concise]\n\n  -h, --help\n          Print help (see a summary with '-h')\nYou can pass multiple options at once, for instance\njarl check . --fix --select-rules any_is_na,class_equals"
+  },
+  {
+    "objectID": "config.html#with-a-config-file",
+    "href": "config.html#with-a-config-file",
+    "title": "Configuring Jarl",
+    "section": "",
+    "text": "To avoid typing options every time and to ensure all uses of Jarl in a project are consistent, it is possible to store options in jarl.toml.\nFor now, this only supports two fields: select and ignore to determine which rules to use. This file looks like this:\n[lint]\nselect = []\nignore = []\nThis has the same capabilities as --select-rules and --ignore-rules, so it is possible to pass rule names and names of groups of rules:\n[lint]\nselect = [\"PERF\", \"length_test\"]\nignore = [\"SUSP\"]\n\n\n\n\n\n\nUsing CLI arguments and jarl.toml\n\n\n\nArguments in the command line always have the priority on those specified in jarl.toml. For example, if you have the following file:\n[lint]\nselect = [\"PERF\", \"length_test\"]\nignore = []\nthen calling\njarl check . --ignore-rules PERF\nwill only apply the rule length_test."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "\njarl\n",
+    "section": "",
+    "text": "Jarl is a fast linter1 for R.\nJarl is built on Air, a fast formatter for R written in Rust."
+  },
+  {
+    "objectID": "index.html#installation",
+    "href": "index.html#installation",
+    "title": "\njarl\n",
+    "section": "Installation",
+    "text": "Installation\n\nBinaries\nmacOS and Linux:\ncurl --proto '=https' --tlsv1.2 -LsSf \\\n  https://github.com/etiennebacher/jarl/releases/download/v0.0.17/jarl-installer.sh | sh\nWindows:\npowershell -ExecutionPolicy Bypass -c \\\n  \"irm https://github.com/etiennebacher/jarl/releases/download/v0.0.17/jarl-installer.ps1 | iex\"\n\n\nFrom source\nAlternatively, if you have Rust installed, you can get the development version with:\ncargo install --git https://github.com/etiennebacher/jarl --profile=release"
+  },
+  {
+    "objectID": "index.html#acknowledgements",
+    "href": "index.html#acknowledgements",
+    "title": "\njarl\n",
+    "section": "Acknowledgements",
+    "text": "Acknowledgements\n\nlintr authors and contributors: while the infrastructure is completely different, all the rule definitions and a large part of the tests are inspired or taken from lintr.\nDavis Vaughan and Lionel Henry, both for their work on Air and for their advices and answers to my questions during the development of jarl.\nR Consortium for funding part of the development of jarl.\nthe design of Jarl is heavily inspired by Ruff and Cargo clippy."
+  },
+  {
+    "objectID": "index.html#footnotes",
+    "href": "index.html#footnotes",
+    "title": "\njarl\n",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nA code linter is a tool that does static code analysis to search for programming errors, bugs, and suspicious patterns of code.↩︎"
+  },
+  {
+    "objectID": "rules/any_duplicated.html",
+    "href": "rules/any_duplicated.html",
+    "title": "any_duplicated",
+    "section": "",
+    "text": "Checks for usage of any(duplicated(...)).\n\n\n\nany(duplicated(...)) is valid code but requires the evaluation of duplicated() on the entire input first.\nThere is a more efficient function in base R called anyDuplicated() that is more efficient, both in speed and memory used. anyDuplicated() returns the index of the first duplicated value, or 0 if there is none.\nTherefore, we can replace any(duplicated(...)) by anyDuplicated(...) &gt; 0.\n\n\n\nx &lt;- c(1:10000, 1, NA)\nany(duplicated(x))\nUse instead:\nx &lt;- c(1:10000, 1, NA)\nanyDuplicated(x) &gt; 0\n\n\n\nSee ?anyDuplicated",
+    "crumbs": [
+      "Rules",
+      "any_duplicated"
+    ]
+  },
+  {
+    "objectID": "rules/any_duplicated.html#what-it-does",
+    "href": "rules/any_duplicated.html#what-it-does",
+    "title": "any_duplicated",
+    "section": "",
+    "text": "Checks for usage of any(duplicated(...)).",
+    "crumbs": [
+      "Rules",
+      "any_duplicated"
+    ]
+  },
+  {
+    "objectID": "rules/any_duplicated.html#why-is-this-bad",
+    "href": "rules/any_duplicated.html#why-is-this-bad",
+    "title": "any_duplicated",
+    "section": "",
+    "text": "any(duplicated(...)) is valid code but requires the evaluation of duplicated() on the entire input first.\nThere is a more efficient function in base R called anyDuplicated() that is more efficient, both in speed and memory used. anyDuplicated() returns the index of the first duplicated value, or 0 if there is none.\nTherefore, we can replace any(duplicated(...)) by anyDuplicated(...) &gt; 0.",
+    "crumbs": [
+      "Rules",
+      "any_duplicated"
+    ]
+  },
+  {
+    "objectID": "rules/any_duplicated.html#example",
+    "href": "rules/any_duplicated.html#example",
+    "title": "any_duplicated",
+    "section": "",
+    "text": "x &lt;- c(1:10000, 1, NA)\nany(duplicated(x))\nUse instead:\nx &lt;- c(1:10000, 1, NA)\nanyDuplicated(x) &gt; 0",
+    "crumbs": [
+      "Rules",
+      "any_duplicated"
+    ]
+  },
+  {
+    "objectID": "rules/any_duplicated.html#references",
+    "href": "rules/any_duplicated.html#references",
+    "title": "any_duplicated",
+    "section": "",
+    "text": "See ?anyDuplicated",
+    "crumbs": [
+      "Rules",
+      "any_duplicated"
+    ]
+  },
+  {
+    "objectID": "rules/assignment.html",
+    "href": "rules/assignment.html",
+    "title": "assignment",
+    "section": "",
+    "text": "Checks for usage of = as assignment operator.\n\n\n\nThis is not “bad” strictly speaking since in most cases using = and &lt;- is equivalent. Some very popular packages use = without problems.\nNonetheless, &lt;- is more popular and this rule may be useful to avoid mixing both operators in a codebase.\n\n\n\nx = \"a\"\nUse instead:\nx &lt;- \"a\"\n\n\n\nSee:\n\nhttps://style.tidyverse.org/syntax.html#assignment-1\nhttps://stackoverflow.com/a/1742550",
+    "crumbs": [
+      "Rules",
+      "assignment"
+    ]
+  },
+  {
+    "objectID": "rules/assignment.html#what-it-does",
+    "href": "rules/assignment.html#what-it-does",
+    "title": "assignment",
+    "section": "",
+    "text": "Checks for usage of = as assignment operator.",
+    "crumbs": [
+      "Rules",
+      "assignment"
+    ]
+  },
+  {
+    "objectID": "rules/assignment.html#why-is-this-bad",
+    "href": "rules/assignment.html#why-is-this-bad",
+    "title": "assignment",
+    "section": "",
+    "text": "This is not “bad” strictly speaking since in most cases using = and &lt;- is equivalent. Some very popular packages use = without problems.\nNonetheless, &lt;- is more popular and this rule may be useful to avoid mixing both operators in a codebase.",
+    "crumbs": [
+      "Rules",
+      "assignment"
+    ]
+  },
+  {
+    "objectID": "rules/assignment.html#example",
+    "href": "rules/assignment.html#example",
+    "title": "assignment",
+    "section": "",
+    "text": "x = \"a\"\nUse instead:\nx &lt;- \"a\"",
+    "crumbs": [
+      "Rules",
+      "assignment"
+    ]
+  },
+  {
+    "objectID": "rules/assignment.html#references",
+    "href": "rules/assignment.html#references",
+    "title": "assignment",
+    "section": "",
+    "text": "See:\n\nhttps://style.tidyverse.org/syntax.html#assignment-1\nhttps://stackoverflow.com/a/1742550",
+    "crumbs": [
+      "Rules",
+      "assignment"
+    ]
+  },
+  {
+    "objectID": "rules/coalesce.html",
+    "href": "rules/coalesce.html",
+    "title": "coalesce",
+    "section": "",
+    "text": "Checks for usage of if (is.null(x)) y else x or if (!is.null(x)) x else y and recommends using x %||% y instead.\n\n\n\nUsing the coalesce operator %||% is more concise and readable than an if-else statement checking for null.\nThis rule is only enabled if the project uses R &gt;= 4.4.0, since %||% was introduced in this version.\nThis rule contains some automatic fixes, but only for cases where the branches are on a single line. For instance,\nif (is.null(x)) {\n  y\n} else {\n  x\n}\nwould be simplified to x %||% y, but\nif (is.null(x)) {\n  y &lt;- 1\n  y\n} else {\n  x\n}\nwouldn’t.\n\n\n\nx &lt;- 1\ny &lt;- 2\n\nif (is.null(x)) y else x\n\nif (!is.null(x)) {\n  x\n} else {\n  y\n}\nUse instead:\nx &lt;- 1\ny &lt;- 2\n\nx %||% y # (in both cases)\n\n\n\nSee ?Control",
+    "crumbs": [
+      "Rules",
+      "coalesce"
+    ]
+  },
+  {
+    "objectID": "rules/coalesce.html#what-it-does",
+    "href": "rules/coalesce.html#what-it-does",
+    "title": "coalesce",
+    "section": "",
+    "text": "Checks for usage of if (is.null(x)) y else x or if (!is.null(x)) x else y and recommends using x %||% y instead.",
+    "crumbs": [
+      "Rules",
+      "coalesce"
+    ]
+  },
+  {
+    "objectID": "rules/coalesce.html#why-is-this-bad",
+    "href": "rules/coalesce.html#why-is-this-bad",
+    "title": "coalesce",
+    "section": "",
+    "text": "Using the coalesce operator %||% is more concise and readable than an if-else statement checking for null.\nThis rule is only enabled if the project uses R &gt;= 4.4.0, since %||% was introduced in this version.\nThis rule contains some automatic fixes, but only for cases where the branches are on a single line. For instance,\nif (is.null(x)) {\n  y\n} else {\n  x\n}\nwould be simplified to x %||% y, but\nif (is.null(x)) {\n  y &lt;- 1\n  y\n} else {\n  x\n}\nwouldn’t.",
+    "crumbs": [
+      "Rules",
+      "coalesce"
+    ]
+  },
+  {
+    "objectID": "rules/coalesce.html#example",
+    "href": "rules/coalesce.html#example",
+    "title": "coalesce",
+    "section": "",
+    "text": "x &lt;- 1\ny &lt;- 2\n\nif (is.null(x)) y else x\n\nif (!is.null(x)) {\n  x\n} else {\n  y\n}\nUse instead:\nx &lt;- 1\ny &lt;- 2\n\nx %||% y # (in both cases)",
+    "crumbs": [
+      "Rules",
+      "coalesce"
+    ]
+  },
+  {
+    "objectID": "rules/coalesce.html#reference",
+    "href": "rules/coalesce.html#reference",
+    "title": "coalesce",
+    "section": "",
+    "text": "See ?Control",
+    "crumbs": [
+      "Rules",
+      "coalesce"
+    ]
+  },
+  {
+    "objectID": "rules/equals_na.html",
+    "href": "rules/equals_na.html",
+    "title": "equals_na",
+    "section": "",
+    "text": "Check for x == NA, x != NA and x %in% NA, and replaces those by is.na() calls.\n\n\n\nComparing a value to NA using == returns NA in many cases:\nx &lt;- c(1, 2, 3, NA)\nx == NA\nwhich is very likely not the expected output.\n\n\n\nx &lt;- c(1, 2, 3, NA)\nx == NA\nUse instead:\nx &lt;- c(1, 2, 3, NA)\nis.na(x)",
+    "crumbs": [
+      "Rules",
+      "equals_na"
+    ]
+  },
+  {
+    "objectID": "rules/equals_na.html#what-it-does",
+    "href": "rules/equals_na.html#what-it-does",
+    "title": "equals_na",
+    "section": "",
+    "text": "Check for x == NA, x != NA and x %in% NA, and replaces those by is.na() calls.",
+    "crumbs": [
+      "Rules",
+      "equals_na"
+    ]
+  },
+  {
+    "objectID": "rules/equals_na.html#why-is-this-bad",
+    "href": "rules/equals_na.html#why-is-this-bad",
+    "title": "equals_na",
+    "section": "",
+    "text": "Comparing a value to NA using == returns NA in many cases:\nx &lt;- c(1, 2, 3, NA)\nx == NA\nwhich is very likely not the expected output.",
+    "crumbs": [
+      "Rules",
+      "equals_na"
+    ]
+  },
+  {
+    "objectID": "rules/equals_na.html#example",
+    "href": "rules/equals_na.html#example",
+    "title": "equals_na",
+    "section": "",
+    "text": "x &lt;- c(1, 2, 3, NA)\nx == NA\nUse instead:\nx &lt;- c(1, 2, 3, NA)\nis.na(x)",
+    "crumbs": [
+      "Rules",
+      "equals_na"
+    ]
+  },
+  {
+    "objectID": "rules/grepv.html",
+    "href": "rules/grepv.html",
+    "title": "grepv",
+    "section": "",
+    "text": "Checks for usage of grep(..., value = TRUE) and recommends using grepv() instead (only if the R version used in the project is &gt;= 4.5).\n\n\n\nStarting from R 4.5, there is a function grepv() that is identical to grep() except that it uses value = TRUE by default.\nUsing grepv(...) is therefore more readable than grep(...).\n\n\n\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrep(\"i\", x, value = TRUE)\nUse instead:\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrepv(\"i\", x)\n\n\n\nSee ?grepv",
+    "crumbs": [
+      "Rules",
+      "grepv"
+    ]
+  },
+  {
+    "objectID": "rules/grepv.html#what-it-does",
+    "href": "rules/grepv.html#what-it-does",
+    "title": "grepv",
+    "section": "",
+    "text": "Checks for usage of grep(..., value = TRUE) and recommends using grepv() instead (only if the R version used in the project is &gt;= 4.5).",
+    "crumbs": [
+      "Rules",
+      "grepv"
+    ]
+  },
+  {
+    "objectID": "rules/grepv.html#why-is-this-bad",
+    "href": "rules/grepv.html#why-is-this-bad",
+    "title": "grepv",
+    "section": "",
+    "text": "Starting from R 4.5, there is a function grepv() that is identical to grep() except that it uses value = TRUE by default.\nUsing grepv(...) is therefore more readable than grep(...).",
+    "crumbs": [
+      "Rules",
+      "grepv"
+    ]
+  },
+  {
+    "objectID": "rules/grepv.html#example",
+    "href": "rules/grepv.html#example",
+    "title": "grepv",
+    "section": "",
+    "text": "x &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrep(\"i\", x, value = TRUE)\nUse instead:\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrepv(\"i\", x)",
+    "crumbs": [
+      "Rules",
+      "grepv"
+    ]
+  },
+  {
+    "objectID": "rules/grepv.html#references",
+    "href": "rules/grepv.html#references",
+    "title": "grepv",
+    "section": "",
+    "text": "See ?grepv",
+    "crumbs": [
+      "Rules",
+      "grepv"
+    ]
+  },
+  {
+    "objectID": "rules/is_numeric.html",
+    "href": "rules/is_numeric.html",
+    "title": "is_numeric",
+    "section": "",
+    "text": "Checks for usage of is.numeric(x) || is.integer(x).\n\n\n\nis.numeric(x) returns TRUE when x is double or integer. Therefore, testing is.numeric(x) || is.integer(x) is redundant and can be simplified.\n\n\n\nx &lt;- 1:3\nis.numeric(x) || is.integer(x)\nUse instead:\nx &lt;- 1:3\nis.numeric(x)\n\n\n\nSee ?is.numeric",
+    "crumbs": [
+      "Rules",
+      "is_numeric"
+    ]
+  },
+  {
+    "objectID": "rules/is_numeric.html#what-it-does",
+    "href": "rules/is_numeric.html#what-it-does",
+    "title": "is_numeric",
+    "section": "",
+    "text": "Checks for usage of is.numeric(x) || is.integer(x).",
+    "crumbs": [
+      "Rules",
+      "is_numeric"
+    ]
+  },
+  {
+    "objectID": "rules/is_numeric.html#why-is-this-bad",
+    "href": "rules/is_numeric.html#why-is-this-bad",
+    "title": "is_numeric",
+    "section": "",
+    "text": "is.numeric(x) returns TRUE when x is double or integer. Therefore, testing is.numeric(x) || is.integer(x) is redundant and can be simplified.",
+    "crumbs": [
+      "Rules",
+      "is_numeric"
+    ]
+  },
+  {
+    "objectID": "rules/is_numeric.html#example",
+    "href": "rules/is_numeric.html#example",
+    "title": "is_numeric",
+    "section": "",
+    "text": "x &lt;- 1:3\nis.numeric(x) || is.integer(x)\nUse instead:\nx &lt;- 1:3\nis.numeric(x)",
+    "crumbs": [
+      "Rules",
+      "is_numeric"
+    ]
+  },
+  {
+    "objectID": "rules/is_numeric.html#references",
+    "href": "rules/is_numeric.html#references",
+    "title": "is_numeric",
+    "section": "",
+    "text": "See ?is.numeric",
+    "crumbs": [
+      "Rules",
+      "is_numeric"
+    ]
+  },
+  {
+    "objectID": "rules/length_levels.html",
+    "href": "rules/length_levels.html",
+    "title": "length_levels",
+    "section": "",
+    "text": "Check for length(levels(...)) and replace it with nlevels(...).\n\n\n\nlength(levels(...)) is harder to read nlevels(...).\nInternally, nlevels() calls length(levels(...)) so there are no performance gains.\n\n\n\nx &lt;- factor(1:3)\nlength(levels(x))\nUse instead:\nx &lt;- factor(1:3)\nnlevels(x)",
+    "crumbs": [
+      "Rules",
+      "length_levels"
+    ]
+  },
+  {
+    "objectID": "rules/length_levels.html#what-it-does",
+    "href": "rules/length_levels.html#what-it-does",
+    "title": "length_levels",
+    "section": "",
+    "text": "Check for length(levels(...)) and replace it with nlevels(...).",
+    "crumbs": [
+      "Rules",
+      "length_levels"
+    ]
+  },
+  {
+    "objectID": "rules/length_levels.html#why-is-this-bad",
+    "href": "rules/length_levels.html#why-is-this-bad",
+    "title": "length_levels",
+    "section": "",
+    "text": "length(levels(...)) is harder to read nlevels(...).\nInternally, nlevels() calls length(levels(...)) so there are no performance gains.",
+    "crumbs": [
+      "Rules",
+      "length_levels"
+    ]
+  },
+  {
+    "objectID": "rules/length_levels.html#example",
+    "href": "rules/length_levels.html#example",
+    "title": "length_levels",
+    "section": "",
+    "text": "x &lt;- factor(1:3)\nlength(levels(x))\nUse instead:\nx &lt;- factor(1:3)\nnlevels(x)",
+    "crumbs": [
+      "Rules",
+      "length_levels"
+    ]
+  },
+  {
+    "objectID": "rules/matrix_apply.html",
+    "href": "rules/matrix_apply.html",
+    "title": "matrix_apply",
+    "section": "",
+    "text": "Checks for usage of apply(x, 1/2, mean/sum).\n\n\n\napply() with FUN = sum or FUN = mean are inefficient when MARGIN is 1 or 2. colSums(), rowSums(), colMeans(), rowMeans() are both easier to read and much more efficient.\nThis rule provides an automated fix, except when extra arguments (outside of na.rm) are provided. In other words, this would be marked as lint and could be automatically replaced:\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, na.rm = TRUE)\nbut this wouldn’t:\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, trim = 0.2)\n\n\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, sum)\napply(dat, 2, sum)\napply(dat, 1, mean)\napply(dat, 2, mean)\napply(dat, 2, mean, na.rm = TRUE)\nUse instead:\ndat &lt;- data.frame(x = 1:3, y = 4:6)\nrowSums(dat)\ncolSums(dat)\nrowMeans(dat)\ncolMeans(dat)\ncolMeans(dat, na.rm = TRUE)\n\n\n\nSee ?colSums",
+    "crumbs": [
+      "Rules",
+      "matrix_apply"
+    ]
+  },
+  {
+    "objectID": "rules/matrix_apply.html#what-it-does",
+    "href": "rules/matrix_apply.html#what-it-does",
+    "title": "matrix_apply",
+    "section": "",
+    "text": "Checks for usage of apply(x, 1/2, mean/sum).",
+    "crumbs": [
+      "Rules",
+      "matrix_apply"
+    ]
+  },
+  {
+    "objectID": "rules/matrix_apply.html#why-is-this-bad",
+    "href": "rules/matrix_apply.html#why-is-this-bad",
+    "title": "matrix_apply",
+    "section": "",
+    "text": "apply() with FUN = sum or FUN = mean are inefficient when MARGIN is 1 or 2. colSums(), rowSums(), colMeans(), rowMeans() are both easier to read and much more efficient.\nThis rule provides an automated fix, except when extra arguments (outside of na.rm) are provided. In other words, this would be marked as lint and could be automatically replaced:\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, na.rm = TRUE)\nbut this wouldn’t:\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, trim = 0.2)",
+    "crumbs": [
+      "Rules",
+      "matrix_apply"
+    ]
+  },
+  {
+    "objectID": "rules/matrix_apply.html#example",
+    "href": "rules/matrix_apply.html#example",
+    "title": "matrix_apply",
+    "section": "",
+    "text": "dat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, sum)\napply(dat, 2, sum)\napply(dat, 1, mean)\napply(dat, 2, mean)\napply(dat, 2, mean, na.rm = TRUE)\nUse instead:\ndat &lt;- data.frame(x = 1:3, y = 4:6)\nrowSums(dat)\ncolSums(dat)\nrowMeans(dat)\ncolMeans(dat)\ncolMeans(dat, na.rm = TRUE)",
+    "crumbs": [
+      "Rules",
+      "matrix_apply"
+    ]
+  },
+  {
+    "objectID": "rules/matrix_apply.html#references",
+    "href": "rules/matrix_apply.html#references",
+    "title": "matrix_apply",
+    "section": "",
+    "text": "See ?colSums",
+    "crumbs": [
+      "Rules",
+      "matrix_apply"
+    ]
+  },
+  {
+    "objectID": "rules/redundant_equals.html",
+    "href": "rules/redundant_equals.html",
+    "title": "redundant_equals",
+    "section": "",
+    "text": "Checks for usage of == and != where one of the sides of the operation is TRUE or FALSE.\n\n\n\nTesting x == TRUE is redundant if x is a logical vector. Wherever this is used to improve readability, the solution should instead be to improve the naming of the object to better indicate that its contents are logical. This can be done using prefixes (is, has, can, etc.). For example, is_child, has_parent_supervision, can_watch_horror_movie clarify their logical nature, while child, parent_supervision, watch_horror_movie don’t.\n\n\n\nx &lt;- c(TRUE, FALSE)\nif (any(x == TRUE)) {\n  print(\"hi\")\n}\nUse instead:\nx &lt;- c(TRUE, FALSE)\nif (any(x)) {\n  print(\"hi\")\n}",
+    "crumbs": [
+      "Rules",
+      "redundant_equals"
+    ]
+  },
+  {
+    "objectID": "rules/redundant_equals.html#what-it-does",
+    "href": "rules/redundant_equals.html#what-it-does",
+    "title": "redundant_equals",
+    "section": "",
+    "text": "Checks for usage of == and != where one of the sides of the operation is TRUE or FALSE.",
+    "crumbs": [
+      "Rules",
+      "redundant_equals"
+    ]
+  },
+  {
+    "objectID": "rules/redundant_equals.html#why-is-this-bad",
+    "href": "rules/redundant_equals.html#why-is-this-bad",
+    "title": "redundant_equals",
+    "section": "",
+    "text": "Testing x == TRUE is redundant if x is a logical vector. Wherever this is used to improve readability, the solution should instead be to improve the naming of the object to better indicate that its contents are logical. This can be done using prefixes (is, has, can, etc.). For example, is_child, has_parent_supervision, can_watch_horror_movie clarify their logical nature, while child, parent_supervision, watch_horror_movie don’t.",
+    "crumbs": [
+      "Rules",
+      "redundant_equals"
+    ]
+  },
+  {
+    "objectID": "rules/redundant_equals.html#example",
+    "href": "rules/redundant_equals.html#example",
+    "title": "redundant_equals",
+    "section": "",
+    "text": "x &lt;- c(TRUE, FALSE)\nif (any(x == TRUE)) {\n  print(\"hi\")\n}\nUse instead:\nx &lt;- c(TRUE, FALSE)\nif (any(x)) {\n  print(\"hi\")\n}",
+    "crumbs": [
+      "Rules",
+      "redundant_equals"
+    ]
+  },
+  {
+    "objectID": "rules/sample_int.html",
+    "href": "rules/sample_int.html",
+    "title": "sample_int",
+    "section": "",
+    "text": "Checks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.\n\n\n\nsample() calls sample.int() internally so they have the same performance, but the latter is more readable.\n\n\n\nsample(1:10, 2)\nUse instead:\nsample.int(10, 2)\n\n\n\nSee ?sample",
+    "crumbs": [
+      "Rules",
+      "sample_int"
+    ]
+  },
+  {
+    "objectID": "rules/sample_int.html#what-it-does",
+    "href": "rules/sample_int.html#what-it-does",
+    "title": "sample_int",
+    "section": "",
+    "text": "Checks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.",
+    "crumbs": [
+      "Rules",
+      "sample_int"
+    ]
+  },
+  {
+    "objectID": "rules/sample_int.html#why-is-this-bad",
+    "href": "rules/sample_int.html#why-is-this-bad",
+    "title": "sample_int",
+    "section": "",
+    "text": "sample() calls sample.int() internally so they have the same performance, but the latter is more readable.",
+    "crumbs": [
+      "Rules",
+      "sample_int"
+    ]
+  },
+  {
+    "objectID": "rules/sample_int.html#example",
+    "href": "rules/sample_int.html#example",
+    "title": "sample_int",
+    "section": "",
+    "text": "sample(1:10, 2)\nUse instead:\nsample.int(10, 2)",
+    "crumbs": [
+      "Rules",
+      "sample_int"
+    ]
+  },
+  {
+    "objectID": "rules/sample_int.html#references",
+    "href": "rules/sample_int.html#references",
+    "title": "sample_int",
+    "section": "",
+    "text": "See ?sample",
+    "crumbs": [
+      "Rules",
+      "sample_int"
+    ]
+  },
+  {
+    "objectID": "rules/true_false_symbol.html",
+    "href": "rules/true_false_symbol.html",
+    "title": "true_false_symbol",
+    "section": "",
+    "text": "Checks for usage of T and F symbols. If they correspond to the TRUE and FALSE values, then replace them by that. If they correspond to something else, such as an object or a variable name, then no automatic fixes are applied.\n\n\n\nT and F are not reserved symbols (like break) and therefore can be used as variable names. Therefore, it is better for readability to replace them by TRUE and FALSE.\nIt is also recommended to rename objects or parameters named F and T to avoid confusion.\n\n\n\nx &lt;- T\ny &lt;- F\nUse instead:\nx &lt;- TRUE\ny &lt;- FALSE",
+    "crumbs": [
+      "Rules",
+      "true_false_symbol"
+    ]
+  },
+  {
+    "objectID": "rules/true_false_symbol.html#what-it-does",
+    "href": "rules/true_false_symbol.html#what-it-does",
+    "title": "true_false_symbol",
+    "section": "",
+    "text": "Checks for usage of T and F symbols. If they correspond to the TRUE and FALSE values, then replace them by that. If they correspond to something else, such as an object or a variable name, then no automatic fixes are applied.",
+    "crumbs": [
+      "Rules",
+      "true_false_symbol"
+    ]
+  },
+  {
+    "objectID": "rules/true_false_symbol.html#why-is-this-bad",
+    "href": "rules/true_false_symbol.html#why-is-this-bad",
+    "title": "true_false_symbol",
+    "section": "",
+    "text": "T and F are not reserved symbols (like break) and therefore can be used as variable names. Therefore, it is better for readability to replace them by TRUE and FALSE.\nIt is also recommended to rename objects or parameters named F and T to avoid confusion.",
+    "crumbs": [
+      "Rules",
+      "true_false_symbol"
+    ]
+  },
+  {
+    "objectID": "rules/true_false_symbol.html#example",
+    "href": "rules/true_false_symbol.html#example",
+    "title": "true_false_symbol",
+    "section": "",
+    "text": "x &lt;- T\ny &lt;- F\nUse instead:\nx &lt;- TRUE\ny &lt;- FALSE",
+    "crumbs": [
+      "Rules",
+      "true_false_symbol"
+    ]
+  },
+  {
+    "objectID": "rules.html",
+    "href": "rules.html",
+    "title": "jarl",
+    "section": "",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix?” can take the following values:\n\n✅ safe fix\n❗Unsafe fix\n❌ No fix\n\n\n\n\nRule name\nGroup\nHas fix?\n\n\n\n\nall_equal\nSUSP\n❗\n\n\nany_duplicated\nPERF\n✅\n\n\nany_is_na\nPERF\n✅\n\n\nassignment\nREAD\n✅\n\n\nclass_equals\nSUSP\n❗\n\n\ncoalesce\nREAD\n✅\n\n\nduplicated_arguments\nSUSP\n❌\n\n\nempty_assignment\nREAD\n❌\n\n\nequals_na\nCORR\n✅\n\n\nfor_loop_index\nREAD\n❌\n\n\ngrepv\nREAD\n✅\n\n\nimplicit_assignment\nREAD\n❌\n\n\nis_numeric\nREAD\n✅\n\n\nlength_levels\nREAD\n✅\n\n\nlength_test\nCORR\n✅\n\n\nlengths\nPERF, READ\n✅\n\n\nmatrix_apply\nPERF\n✅\n\n\nnumeric_leading_zero\nREAD\n✅\n\n\nredundant_equals\nREAD\n✅\n\n\nrepeat\nREAD\n✅\n\n\nsample_int\nREAD\n✅\n\n\nsort\nPERF, READ\n✅\n\n\ntrue_false_symbol\nREAD\n❌\n\n\nwhich_grepl\nPERF, READ\n✅",
+    "crumbs": [
+      "Rules",
+      "Overview"
+    ]
+  },
+  {
+    "objectID": "rules.html#overview",
+    "href": "rules.html#overview",
+    "title": "jarl",
+    "section": "",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix?” can take the following values:\n\n✅ safe fix\n❗Unsafe fix\n❌ No fix\n\n\n\n\nRule name\nGroup\nHas fix?\n\n\n\n\nall_equal\nSUSP\n❗\n\n\nany_duplicated\nPERF\n✅\n\n\nany_is_na\nPERF\n✅\n\n\nassignment\nREAD\n✅\n\n\nclass_equals\nSUSP\n❗\n\n\ncoalesce\nREAD\n✅\n\n\nduplicated_arguments\nSUSP\n❌\n\n\nempty_assignment\nREAD\n❌\n\n\nequals_na\nCORR\n✅\n\n\nfor_loop_index\nREAD\n❌\n\n\ngrepv\nREAD\n✅\n\n\nimplicit_assignment\nREAD\n❌\n\n\nis_numeric\nREAD\n✅\n\n\nlength_levels\nREAD\n✅\n\n\nlength_test\nCORR\n✅\n\n\nlengths\nPERF, READ\n✅\n\n\nmatrix_apply\nPERF\n✅\n\n\nnumeric_leading_zero\nREAD\n✅\n\n\nredundant_equals\nREAD\n✅\n\n\nrepeat\nREAD\n✅\n\n\nsample_int\nREAD\n✅\n\n\nsort\nPERF, READ\n✅\n\n\ntrue_false_symbol\nREAD\n❌\n\n\nwhich_grepl\nPERF, READ\n✅",
+    "crumbs": [
+      "Rules",
+      "Overview"
+    ]
   }
 ]
