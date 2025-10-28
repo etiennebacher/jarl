@@ -1,4 +1,4 @@
-# `which_grepl`
+# which_grepl
 ## What it does
 
 Checks for usage of `which(grepl(...))` and replaces it with `grep(...)`.

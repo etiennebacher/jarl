@@ -1,4 +1,4 @@
-# `all_equal`
+# all_equal
 ## What it does
 
 Checks for dangerous usage of `all.equal(...)`, for instance in `if()`

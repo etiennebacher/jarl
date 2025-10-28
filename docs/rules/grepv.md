@@ -1,4 +1,4 @@
-# `grepv`
+# grepv
 ## What it does
 
 Checks for usage of `grep(..., value = TRUE)` and recommends using

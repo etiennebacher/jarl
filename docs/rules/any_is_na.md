@@ -1,4 +1,4 @@
-# `any_is_na`
+# any_is_na
 ## What it does
 
 Checks for usage of `any(is.na(...))`.

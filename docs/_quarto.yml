@@ -1,7 +1,8 @@
 project:
   type: website
   pre-render: copy_readme.R
-filters: newpagelink.lua
+filters:
+- newpagelink.lua
 format:
   html:
     theme: morph
@@ -44,26 +45,28 @@ website:
     style: floating
     contents:
     - rules.md
-    - rules/all_equal.md
-    - rules/any_duplicated.md
-    - rules/any_is_na.md
-    - rules/assignment.md
-    - rules/class_equals.md
-    - rules/coalesce.md
-    - rules/duplicated_arguments.md
-    - rules/equals_na.md
-    - rules/for_loop_index.md
-    - rules/grepv.md
-    - rules/implicit_assignment.md
-    - rules/is_numeric.md
-    - rules/length_levels.md
-    - rules/length_test.md
-    - rules/lengths.md
-    - rules/matrix_apply.md
-    - rules/numeric_leading_zero.md
-    - rules/redundant_equals.md
-    - rules/repeat.md
-    - rules/sample_int.md
-    - rules/sort.md
-    - rules/true_false_symbol.md
-    - rules/which_grepl.md
+    - section: Rules
+      contents:
+      - rules/all_equal.md
+      - rules/any_duplicated.md
+      - rules/any_is_na.md
+      - rules/assignment.md
+      - rules/class_equals.md
+      - rules/coalesce.md
+      - rules/duplicated_arguments.md
+      - rules/equals_na.md
+      - rules/for_loop_index.md
+      - rules/grepv.md
+      - rules/implicit_assignment.md
+      - rules/is_numeric.md
+      - rules/length_levels.md
+      - rules/length_test.md
+      - rules/lengths.md
+      - rules/matrix_apply.md
+      - rules/numeric_leading_zero.md
+      - rules/redundant_equals.md
+      - rules/repeat.md
+      - rules/sample_int.md
+      - rules/sort.md
+      - rules/true_false_symbol.md
+      - rules/which_grepl.md

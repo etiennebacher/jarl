@@ -1,4 +1,4 @@
-# `coalesce`
+# coalesce
 ## What it does
 
 Checks for usage of `if (is.null(x)) y else x` or

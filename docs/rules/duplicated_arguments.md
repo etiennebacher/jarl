@@ -1,4 +1,4 @@
-# `duplicated_arguments`
+# duplicated_arguments
 ## What it does
 
 Checks for duplicated arguments in function calls.

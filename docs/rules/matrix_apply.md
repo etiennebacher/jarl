@@ -1,4 +1,4 @@
-# `matrix_apply`
+# matrix_apply
 ## What it does
 
 Checks for usage of `apply(x, 1/2, mean/sum)`.

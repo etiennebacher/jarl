@@ -1,4 +1,4 @@
-# `any_duplicated`
+# any_duplicated
 ## What it does
 
 Checks for usage of `any(duplicated(...))`.

@@ -1,4 +1,4 @@
-# `repeat`
+# repeat
 ## What it does
 
 Checks use of `while (TRUE)` and recommends the use of `repeat` instead.

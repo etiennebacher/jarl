@@ -1,4 +1,4 @@
-# `numeric_leading_zero`
+# numeric_leading_zero
 ## What it does
 
 Checks for double or complex values with a decimal component and a

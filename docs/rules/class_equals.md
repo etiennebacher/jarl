@@ -1,4 +1,4 @@
-# `class_equals`
+# class_equals
 ## What it does
 
 Checks for usage of `class(...) == "some_class"` and

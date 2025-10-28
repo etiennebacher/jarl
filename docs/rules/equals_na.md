@@ -1,4 +1,4 @@
-# `equals_na`
+# equals_na
 ## What it does
 
 Check for `x == NA`, `x != NA` and `x %in% NA`, and replaces those by

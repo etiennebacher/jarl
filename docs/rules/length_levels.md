@@ -1,4 +1,4 @@
-# `length_levels`
+# length_levels
 ## What it does
 
 Check for `length(levels(...))` and replace it with `nlevels(...)`.

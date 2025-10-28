@@ -1,4 +1,4 @@
-# `length_test`
+# length_test
 ## What it does
 
 Checks for usage of `length(... == some_val)` and replaces it with

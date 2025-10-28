@@ -1,4 +1,4 @@
-## Rules
+## Overview
 
 All rules belong to at least one category:
 

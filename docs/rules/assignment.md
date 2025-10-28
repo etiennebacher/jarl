@@ -1,4 +1,4 @@
-# `assignment`
+# assignment
 ## What it does
 
 Checks for usage of `=` as assignment operator.

@@ -1,4 +1,4 @@
-# `true_false_symbol`
+# true_false_symbol
 ## What it does
 
 Checks for usage of `T` and `F` symbols. If they correspond to the `TRUE`

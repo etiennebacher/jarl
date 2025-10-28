@@ -1,4 +1,4 @@
-# `sort`
+# sort
 ## What it does
 
 Checks for usage of `x[order(x, ...)]`.

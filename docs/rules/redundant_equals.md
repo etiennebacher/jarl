@@ -1,4 +1,4 @@
-# `redundant_equals`
+# redundant_equals
 ## What it does
 
 Checks for usage of `==` and `!=` where one of the sides of the operation

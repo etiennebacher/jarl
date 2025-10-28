@@ -1,4 +1,4 @@
-# `sample_int`
+# sample_int
 ## What it does
 
 Checks for usage of `sample(1:n, m, ...)` and replaces it with

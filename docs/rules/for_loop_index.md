@@ -1,4 +1,4 @@
-# `for_loop_index`
+# for_loop_index
 ## What it does
 
 Checks whether the index symbol in a for loop is already used anywhere in

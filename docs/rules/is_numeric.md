@@ -1,4 +1,4 @@
-# `is_numeric`
+# is_numeric
 ## What it does
 
 Checks for usage of `is.numeric(x) || is.integer(x)`.

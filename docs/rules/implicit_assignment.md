@@ -1,4 +1,4 @@
-# `implicit_assignment`
+# implicit_assignment
 ## What it does
 
 Checks for implicit assignment in function calls and other situations.

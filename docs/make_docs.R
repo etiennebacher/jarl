@@ -36,7 +36,7 @@ rule_names <- rule_names[!empty_docs]
 names(docs) <- rule_names
 
 for (i in seq_along(docs)) {
-  to_write <- c(paste0("# `", rule_names[i], "`"), docs[[i]])
+  to_write <- c(paste0("# ", rule_names[i]), docs[[i]])
   writeLines(to_write, paste0("docs/rules/", rule_names[i], ".md"))
 }
 
@@ -47,10 +47,11 @@ for (i in seq_along(docs)) {
 doc_names <- sort(rule_names)
 
 quarto_yml <- read_yaml("docs/_quarto.yml")
-quarto_yml$website$sidebar[[1]]$contents <- c(
+quarto_yml$website$sidebar[[1]]$contents <- list(
   "rules.md",
-  paste0("rules/", doc_names, ".md")
+  list(section = "Rules", contents = paste0("rules/", doc_names, ".md"))
 )
+quarto_yml$filters <- list("newpagelink.lua")
 write_yaml(
   quarto_yml,
   "docs/_quarto.yml",

@@ -1,4 +1,4 @@
-# `lengths`
+# lengths
 ## What it does
 
 Checks for usage of `length()` in several functions that apply it to each
