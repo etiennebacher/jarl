@@ -903,8 +903,8 @@ exclude = ["**/test/**"]
     std::fs::write(directory.join("lib/test/deep/file.R"), "any(is.na(y))")?;
 
     // Create files that should be included
-    std::fs::create_dir(directory.join("src"))?;
-    std::fs::write(directory.join("src/main.R"), "any(is.na(z))")?;
+    std::fs::create_dir(directory.join("other"))?;
+    std::fs::write(directory.join("other/main.R"), "any(is.na(z))")?;
 
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
