@@ -715,3 +715,294 @@ default-exclude = ["a"]
 
     Ok(())
 }
+
+#[test]
+fn test_exclude_single_file() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+exclude = ["excluded.R"]
+"#,
+    )?;
+
+    // File that should be excluded
+    let excluded_path = "excluded.R";
+    let excluded_contents = "any(is.na(x))";
+    std::fs::write(directory.join(excluded_path), excluded_contents)?;
+
+    // File that should be checked
+    let included_path = "included.R";
+    let included_contents = "any(is.na(y))";
+    std::fs::write(directory.join(included_path), included_contents)?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_exclude_directory() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+exclude = ["excluded_dir/"]
+"#,
+    )?;
+
+    // Create excluded directory with files
+    std::fs::create_dir(directory.join("excluded_dir"))?;
+    std::fs::write(directory.join("excluded_dir/file.R"), "any(is.na(x))")?;
+
+    // Create included file
+    std::fs::write(directory.join("included.R"), "any(is.na(y))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_exclude_glob_pattern() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+exclude = ["test-*.R"]
+"#,
+    )?;
+
+    // These two should be excluded
+    std::fs::write(directory.join("test-one.R"), "any(is.na(x))")?;
+    std::fs::write(directory.join("test-two.R"), "any(is.na(y))")?;
+    // This one should be included
+    std::fs::write(directory.join("normal.R"), "any(is.na(z))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_exclude_multiple_patterns() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+exclude = ["excluded.R", "temp/", "*.tmp.R"]
+"#,
+    )?;
+
+    // Files that should be excluded
+    std::fs::write(directory.join("excluded.R"), "any(is.na(a))")?;
+    std::fs::create_dir(directory.join("temp"))?;
+    std::fs::write(directory.join("temp/file.R"), "any(is.na(b))")?;
+    std::fs::write(directory.join("test.tmp.R"), "any(is.na(c))")?;
+
+    // File that should be included
+    std::fs::write(directory.join("included.R"), "any(is.na(d))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_exclude_with_default_exclude_false() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+default-exclude = false
+exclude = ["custom_exclude.R"]
+"#,
+    )?;
+
+    // Should be included because default-exclude is false
+    std::fs::write(directory.join("cpp11.R"), "any(is.na(x))")?;
+
+    // Should be excluded by custom pattern
+    std::fs::write(directory.join("custom_exclude.R"), "any(is.na(y))")?;
+
+    std::fs::write(directory.join("normal.R"), "any(is.na(z))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_exclude_nested_directory_pattern() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+exclude = ["**/test/**"]
+"#,
+    )?;
+
+    // Create nested test directories that should be excluded
+    std::fs::create_dir_all(directory.join("src/test"))?;
+    std::fs::write(directory.join("src/test/file.R"), "any(is.na(x))")?;
+
+    std::fs::create_dir_all(directory.join("lib/test/deep"))?;
+    std::fs::write(directory.join("lib/test/deep/file.R"), "any(is.na(y))")?;
+
+    // Create files that should be included
+    std::fs::create_dir(directory.join("src"))?;
+    std::fs::write(directory.join("src/main.R"), "any(is.na(z))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_exclude_empty_array() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+exclude = []
+"#,
+    )?;
+
+    std::fs::write(directory.join("test.R"), "any(is.na(x))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_exclude_wrong_values() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+exclude = true
+"#,
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths()
+    );
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+exclude = 1
+"#,
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths()
+    );
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+exclude = ["a", 1]
+"#,
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths()
+    );
+
+    Ok(())
+}
