@@ -621,3 +621,97 @@ fn test_no_toml_file_uses_all_rules() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_default_exclude_works() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // "default-exclude" is true by default
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+"#,
+    )?;
+
+    // This file is in the builtin list of excluded patterns
+    let test_path = "cpp11.R";
+    let test_contents = "any(is.na(x))\nany(duplicated(x))";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    // "default-exclude" specified by the user
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+default-exclude = false
+"#,
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_default_exclude_wrong_values() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // "default-exclude" is true by default
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+default-exclude = 1
+"#,
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths()
+    );
+
+    // "default-exclude" specified by the user
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+default-exclude = ["a"]
+"#,
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths()
+    );
+
+    Ok(())
+}
