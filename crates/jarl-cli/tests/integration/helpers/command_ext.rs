@@ -34,21 +34,21 @@ impl Output {
     pub fn normalize_temp_paths(self) -> Self {
         use regex::Regex;
 
-        // Match temporary directory paths:
-        // - Linux: /tmp/.tmpXXXXXX
-        // - macOS: /var/folders/.../T/.tmpXXXXXX or /private/var/folders/...
-        // - Windows: C:\Users\...\AppData\Local\Temp\...
+        // Match temporary directory paths with trailing separator:
+        // - Linux: /tmp/.tmpXXXXXX/
+        // - macOS: /var/folders/.../T/.tmpXXXXXX/ or /private/var/folders/.../
+        // - Windows: C:\Users\...\AppData\Local\Temp\...\
         let temp_path_regex =
-            Regex::new(r"(?:/private)?/(?:tmp|var/folders/[^/]+/[^/]+/T)/\.tmp[A-Za-z0-9]+|C:\\Users\\[^\\]+\\AppData\\Local\\Temp\\[^\\]+")
+            Regex::new(r"(?:/private)?/(?:tmp|var/folders/[^/]+/[^/]+/T)/\.tmp[A-Za-z0-9]+/|C:\\Users\\[^\\]+\\AppData\\Local\\Temp\\[^\\]+\\")
                 .unwrap();
 
         Self {
             status: self.status,
             stdout: temp_path_regex
-                .replace_all(&self.stdout, "[TEMP_DIR]")
+                .replace_all(&self.stdout, "[TEMP_DIR]/")
                 .to_string(),
             stderr: temp_path_regex
-                .replace_all(&self.stderr, "[TEMP_DIR]")
+                .replace_all(&self.stderr, "[TEMP_DIR]/")
                 .to_string(),
             arguments: self.arguments,
         }
