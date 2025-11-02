@@ -7,7 +7,7 @@ Jarl is a fast linter[^linter-explanation] for R.
 
 * XXX times faster than `lintr` and XXX times faster than `flir`
 * automatic fixes when possible
-* support for 20+ [`lintr` rules](rules.md) (and growing)
+* support for 20+ [`lintr` rules](https://jarl.etiennebacher.com/rules) (and growing)
 * integration in popular IDEs and editors (VS Code, Positron, Emacs, Vim, ...)
 * CLI available
 * built-in CI workflow
