@@ -184,11 +184,12 @@ jarl
 <p><br></p>
 <p>Jarl is a fast linter<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> for R.</p>
 <ul>
-<li>XXX times faster than <code>lintr</code> and XXX times faster than <code>flir</code></li>
+<li>orders of magnitudes faster than <code>lintr</code> and <code>flir</code><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a></li>
 <li>automatic fixes when possible</li>
 <li>support for 20+ <a href="https://jarl.etiennebacher.com/rules" target="_blank"><code>lintr</code> rules</a> (and growing)</li>
 <li>integration in popular IDEs and editors (VS Code, Positron, Emacs, Vim, …)</li>
 <li>CLI available</li>
+<li>multiple output modes available (concise, detailed, JSON format)</li>
 <li>built-in CI workflow</li>
 </ul>
 <p>Jarl is built on <a href="https://posit-dev.github.io/air/" target="_blank">Air</a>, a fast formatter for R written in Rust.</p>
@@ -214,8 +215,8 @@ jarl
 <h2 class="anchored" data-anchor-id="acknowledgements">Acknowledgements</h2>
 <ul>
 <li><a href="https://lintr.r-lib.org/authors.html" target="_blank"><code>lintr</code> authors and contributors</a>: while the infrastructure is completely different, all the rule definitions and a large part of the tests are inspired or taken from <code>lintr</code>.</li>
-<li>Davis Vaughan and Lionel Henry, both for their work on Air and for their advices and answers to my questions during the development of <code>jarl</code>.</li>
-<li>R Consortium for funding part of the development of <code>jarl</code>.</li>
+<li>Davis Vaughan and Lionel Henry, both for their work on Air and for their advices and answers to my questions during the development of Jarl.</li>
+<li>R Consortium for funding part of the development of Jarl.</li>
 <li>the design of Jarl is heavily inspired by <a href="https://docs.astral.sh/ruff" target="_blank">Ruff</a> and <a href="https://doc.rust-lang.org/stable/clippy/" target="_blank">Cargo clippy</a>.</li>
 </ul>
 <p><img src="r-consortium-logo.png" class="img-fluid"></p>
@@ -228,6 +229,7 @@ jarl
 
 <ol>
 <li id="fn1"><p>A code linter is a tool that does static code analysis to search for programming errors, bugs, and suspicious patterns of code.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>Using 20 rules on the <code>dplyr</code> package (~25k lines of R code), Jarl took 0.131s, <code>flir</code> took 4.5s, and <code>lintr</code> took 18.5s (9s with caching enabled).<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
