@@ -25,7 +25,6 @@
 		"Linters",
 		"Programming Languages"
 	],
-	"icon": "jarl.png",
 	"activationEvents": [
 		"onLanguage:r",
 		"workspaceContains:*.r",
