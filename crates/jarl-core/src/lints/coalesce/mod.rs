@@ -33,7 +33,7 @@ mod tests {
     #[test]
     fn test_lint_coalesce() {
         use insta::assert_snapshot;
-        let expected_message = "Use `x %||% y` instead of";
+        let expected_message = "Use `x %||% y` instead";
         let version = Some("4.4");
 
         expect_lint(

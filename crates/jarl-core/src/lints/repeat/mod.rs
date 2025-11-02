@@ -8,7 +8,7 @@ mod tests {
     fn test_lint_repeat() {
         use insta::assert_snapshot;
 
-        let expected_message = "Use `repeat` instead of `while (TRUE)`";
+        let expected_message = "Use `repeat {}` instead";
         expect_lint("while (TRUE) { }", expected_message, "repeat", None);
         expect_lint(
             "for (i in 1:10) { while (TRUE) { if (i == 5) { break } } }",

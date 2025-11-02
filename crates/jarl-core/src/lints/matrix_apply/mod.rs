@@ -27,7 +27,7 @@ mod tests {
     fn test_lint_matrix_apply() {
         use insta::assert_snapshot;
 
-        let expected_message = "rather than `apply(x,";
+        let expected_message = "is inefficient";
         expect_lint("apply(x, 1, sum)", expected_message, "matrix_apply", None);
         expect_lint(
             "apply(x, MARGIN = 1, FUN = sum)",

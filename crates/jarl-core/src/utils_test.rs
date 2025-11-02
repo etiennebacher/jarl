@@ -50,7 +50,13 @@ pub fn has_lint(text: &str, msg: &str, rule: &str, min_r_version: Option<&str>) 
     for (_, result) in results {
         if let Ok(diagnostics) = result {
             for diagnostic in diagnostics {
-                if diagnostic.message.body.contains(msg) {
+                let message = if let Some(suggestion) = &diagnostic.message.suggestion {
+                    format!("{} {}", diagnostic.message.body, suggestion)
+                } else {
+                    diagnostic.message.body.clone()
+                };
+
+                if message.contains(msg) {
                     return true;
                 }
             }

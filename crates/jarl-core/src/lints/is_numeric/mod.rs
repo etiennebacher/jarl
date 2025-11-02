@@ -27,7 +27,7 @@ mod tests {
     fn test_lint_is_numeric() {
         use insta::assert_snapshot;
 
-        let expected_message = "Use `is.numeric(x)` instead of";
+        let expected_message = "`is.numeric(x) || is.integer(x)` is redundant";
         expect_lint(
             "is.numeric(x) || is.integer(x)",
             expected_message,

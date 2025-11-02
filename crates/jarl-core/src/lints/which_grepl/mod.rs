@@ -7,7 +7,7 @@ mod tests {
     #[test]
     fn test_lint_which_grepl() {
         use insta::assert_snapshot;
-        let expected_message = "`grep(pattern, x)` is better than";
+        let expected_message = "Use `grep(pattern, x)` instead";
 
         expect_lint(
             "which(grepl('^a', x))",

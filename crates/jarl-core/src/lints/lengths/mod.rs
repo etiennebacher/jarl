@@ -7,7 +7,7 @@ mod tests {
     #[test]
     fn test_lint_lengths() {
         use insta::assert_snapshot;
-        let expected_message = "Use `lengths()` to find the length";
+        let expected_message = "Use `lengths()` instead";
 
         expect_lint("sapply(x, length)", expected_message, "lengths", None);
         expect_lint("sapply(x, FUN = length)", expected_message, "lengths", None);

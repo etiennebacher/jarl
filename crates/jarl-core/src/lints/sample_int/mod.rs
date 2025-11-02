@@ -22,7 +22,7 @@ mod tests {
     fn test_lint_sample_int() {
         use insta::assert_snapshot;
 
-        let expected_message = "is preferable to `sample(1:n, m, ...)`";
+        let expected_message = "is less readable than `sample.int";
         expect_lint("sample(1:10, 2)", expected_message, "sample_int", None);
         expect_lint("sample(1L:10L, 2)", expected_message, "sample_int", None);
         expect_lint("sample(1:n, 2)", expected_message, "sample_int", None);

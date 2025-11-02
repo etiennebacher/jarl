@@ -8,7 +8,7 @@ mod tests {
     fn test_lint_equals_na() {
         use insta::assert_snapshot;
 
-        let expected_message = "instead of comparing to NA";
+        let expected_message = "Comparing to NA with";
 
         expect_lint("x == NA", expected_message, "equals_na", None);
         expect_lint("x == NA_integer_", expected_message, "equals_na", None);

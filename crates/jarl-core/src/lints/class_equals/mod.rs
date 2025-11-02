@@ -8,7 +8,7 @@ mod tests {
     fn test_lint_class_equals() {
         use insta::assert_snapshot;
 
-        let expected_message = "instead of comparing `class";
+        let expected_message = "Comparing `class(x)` with";
 
         expect_lint(
             "if (class(x) == 'character') 1",
