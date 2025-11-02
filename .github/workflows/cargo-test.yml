@@ -1,4 +1,4 @@
-name: Cargo Build & Test
+name: cargo-test
 
 on:
   push:
@@ -27,7 +27,7 @@ env:
 
 jobs:
   build_and_test:
-    name: Rust project - latest
+    name: cargo-test
     strategy:
       matrix:
         toolchain: [stable, nightly]
