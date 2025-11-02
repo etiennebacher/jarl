@@ -3,10 +3,9 @@ source: crates/jarl-cli/tests/integration/output_format.rs
 expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--output-format\").arg(\"github\").run().normalize_os_executable_name()"
 ---
 success: false
-exit_code: 1
+exit_code: 255
 ----- stdout -----
 ::warning file=test.R,line=1,col=1::[any_is_na] `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
-::warning file=test2.R,line=1,col=1::[any_duplicated] `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
 
 ----- stderr -----
 

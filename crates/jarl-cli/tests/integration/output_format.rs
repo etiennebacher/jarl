@@ -58,6 +58,33 @@ fn test_output_concise() -> anyhow::Result<()> {
 }
 
 #[test]
+fn test_output_full() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    let test_contents = "any(is.na(x))";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    let test_path_2 = "test2.R";
+    let test_contents_2 = "any(duplicated(x))";
+    std::fs::write(directory.join(test_path_2), test_contents_2)?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("full")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
 fn test_output_json() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();
@@ -96,6 +123,66 @@ fn test_output_github() -> anyhow::Result<()> {
     let test_path_2 = "test2.R";
     let test_contents_2 = "any(duplicated(x))";
     std::fs::write(directory.join(test_path_2), test_contents_2)?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("github")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_with_parsing_error() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    let test_contents = "any(is.na(x))";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    let test_path_2 = "test2.R";
+    let test_contents_2 = "any(";
+    std::fs::write(directory.join(test_path_2), test_contents_2)?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("full")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("json")
+            .run()
+            .normalize_os_executable_name()
+    );
 
     insta::assert_snapshot!(
         &mut Command::new(binary_path())

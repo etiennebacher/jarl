@@ -5,8 +5,21 @@ expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"chec
 success: false
 exit_code: 1
 ----- stdout -----
-test.R [1:0] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
-test2.R [1:0] all_equal Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: all_equal
+ --> test2.R:1:1
+  |
+1 | !all.equal(x, y)
+  | ---------------- `all.equal()` can return a string instead of FALSE.
+  |
+  = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
 
 Found 2 errors.
 1 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).

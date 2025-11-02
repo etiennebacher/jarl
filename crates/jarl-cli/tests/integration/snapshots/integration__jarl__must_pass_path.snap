@@ -24,7 +24,7 @@ Options:
   -i, --ignore-rules <IGNORE_RULES>    Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ]
   -w, --with-timing                    Show the time taken by the function.
   -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
-      --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: concise] [possible values: concise, github, json]
+      --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: full] [possible values: full, concise, github, json]
       --assignment-op <ASSIGNMENT_OP>  Assignment operator to use, can be either `<-` or `=`.
   -h, --help                           Print help (see more with '--help')
 

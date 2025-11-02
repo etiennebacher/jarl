@@ -5,7 +5,13 @@ expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"chec
 success: false
 exit_code: 1
 ----- stdout -----
-normal.R [1:0] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
+warning: any_is_na
+ --> normal.R:1:1
+  |
+1 | any(is.na(z))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
 
 Found 1 error.
 1 fixable with the `--fix` option.

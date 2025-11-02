@@ -5,7 +5,13 @@ expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"chec
 success: false
 exit_code: 1
 ----- stdout -----
-test.R [2:0] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
 
 Found 1 error.
 1 fixable with the `--fix` option.

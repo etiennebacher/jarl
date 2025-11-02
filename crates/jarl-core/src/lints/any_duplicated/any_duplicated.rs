@@ -44,7 +44,7 @@ impl Violation for AnyDuplicated {
         "`any(duplicated(...))` is inefficient.".to_string()
     }
     fn suggestion(&self) -> Option<String> {
-        Some("Use `anyDuplicated(...) > 0` instead".to_string())
+        Some("Use `anyDuplicated(...) > 0` instead.".to_string())
     }
 }
 

@@ -61,13 +61,13 @@ impl Emitter for ConciseEmitter {
         // Then, print the diagnostics.
         for diagnostic in diagnostics {
             let (row, col) = match diagnostic.location {
-                Some(loc) => (loc.row(), loc.column()),
+                Some(loc) => (loc.row(), loc.column() + 1), // Convert to 1-based for display
                 None => {
                     unreachable!("Row/col locations must have been parsed successfully before.")
                 }
             };
             let message = if let Some(suggestion) = &diagnostic.message.suggestion {
-                format!("{}. {}", diagnostic.message.body, suggestion)
+                format!("{} {}", diagnostic.message.body, suggestion)
             } else {
                 diagnostic.message.body.clone()
             };
@@ -154,7 +154,7 @@ impl Emitter for GithubEmitter {
     ) -> anyhow::Result<()> {
         for diagnostic in diagnostics {
             let (row, col) = match diagnostic.location {
-                Some(loc) => (loc.row(), loc.column()),
+                Some(loc) => (loc.row(), loc.column() + 1), // Convert to 1-based for display
                 None => {
                     unreachable!("Row/col locations must have been parsed successfully before.")
                 }
@@ -167,7 +167,7 @@ impl Emitter for GithubEmitter {
             )?;
 
             let message = if let Some(suggestion) = &diagnostic.message.suggestion {
-                format!("{}. {}", diagnostic.message.body, suggestion)
+                format!("{} {}", diagnostic.message.body, suggestion)
             } else {
                 diagnostic.message.body.clone()
             };
@@ -187,7 +187,12 @@ impl Emitter for FullEmitter {
         diagnostics: &[&Diagnostic],
         errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
-        let renderer = Renderer::styled();
+        // Use plain renderer when NO_COLOR is set or in snapshots
+        let renderer = if std::env::var("NO_COLOR").is_ok() {
+            Renderer::plain()
+        } else {
+            Renderer::styled()
+        };
         let mut total_diagnostics = 0;
         let mut n_diagnostic_with_fixes = 0usize;
         let mut n_diagnostic_with_unsafe_fixes = 0usize;

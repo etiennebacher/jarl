@@ -49,11 +49,12 @@ Options:
           Output serialization format for violations.
 
           Possible values:
+          - full:    Print diagnostics with full context using annotated code snippets
           - concise: Print diagnostics in a concise format, one per line
           - github:  Print diagnostics as GitHub format
           - json:    Print diagnostics as JSON
           
-          [default: concise]
+          [default: full]
 
       --assignment-op <ASSIGNMENT_OP>
           Assignment operator to use, can be either `<-` or `=`.

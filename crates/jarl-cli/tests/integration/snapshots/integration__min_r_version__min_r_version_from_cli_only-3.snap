@@ -5,7 +5,13 @@ expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"chec
 success: false
 exit_code: 1
 ----- stdout -----
-test.R [1:0] grepv Use `grepv(...)` instead of `grep(..., value = TRUE)`.
+warning: grepv
+ --> test.R:1:1
+  |
+1 | grep('a', x, value = TRUE)
+  | -------------------------- `grep(..., value = TRUE)` can be simplified.
+  |
+  = help: Use `grepv(...)` instead.
 
 Found 1 error.
 1 fixable with the `--fix` option.

@@ -52,6 +52,14 @@ impl Output {
     }
 }
 
+/// Strip ANSI escape codes from a string
+fn strip_ansi_escape_codes(s: &str) -> String {
+    // This regex matches ANSI escape sequences
+    use regex::Regex;
+    let ansi_regex = Regex::new(r"\x1b\[[0-9;]*m").unwrap();
+    ansi_regex.replace_all(s, "").to_string()
+}
+
 impl CommandExt for Command {
     fn run(&mut self) -> Output {
         // Augment `std::process::Output` with the arguments
@@ -74,6 +82,10 @@ impl CommandExt for Command {
 
 impl Display for Output {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Strip ANSI codes for readable snapshots
+        let stdout = strip_ansi_escape_codes(&self.stdout);
+        let stderr = strip_ansi_escape_codes(&self.stderr);
+
         f.write_fmt(format_args!(
             "
 success: {:?}
@@ -86,8 +98,8 @@ exit_code: {}
 {}",
             self.status.success(),
             self.status.code().unwrap_or(1),
-            self.stdout,
-            self.stderr,
+            stdout,
+            stderr,
             self.arguments,
         ))
     }

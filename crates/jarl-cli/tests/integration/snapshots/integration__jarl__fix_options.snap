@@ -5,7 +5,12 @@ expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"chec
 success: false
 exit_code: 1
 ----- stdout -----
-test.R [3:0] duplicated_arguments Avoid duplicate arguments in function calls. Duplicated argument(s): "x".
+warning: duplicated_arguments
+ --> test.R:3:1
+  |
+3 | list(x = 1, x = 2)
+  | ------------------ Avoid duplicate arguments in function calls. Duplicated argument(s): "x".
+  |
 
 Found 1 error.
 
