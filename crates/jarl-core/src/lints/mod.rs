@@ -25,6 +25,8 @@ pub(crate) mod sort;
 pub(crate) mod true_false_symbol;
 pub(crate) mod which_grepl;
 
+pub static RULE_GROUPS: &[&str] = &["CORR", "PERF", "READ", "SUSP"];
+
 /// List of supported rules and whether they have a safe fix.
 ///
 /// Possible categories:
@@ -32,10 +34,7 @@ pub(crate) mod which_grepl;
 /// - SUSP: suspicious, code that is most likely wrong or useless
 /// - PERF: performance, code that can be written to run faster
 /// - READ: readibility, code is correct but can be written in a way that is
-///         easier to read.
-
-pub static RULE_GROUPS: &[&str] = &["CORR", "PERF", "READ", "SUSP"];
-
+///   easier to read.
 pub fn all_rules_and_safety() -> RuleTable {
     let mut rule_table = RuleTable::empty();
     rule_table.enable("all_equal", "SUSP", FixStatus::Unsafe, None);

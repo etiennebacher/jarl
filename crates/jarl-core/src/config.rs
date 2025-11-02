@@ -293,7 +293,7 @@ fn replace_group_rules(rules_passed_by_user: &Vec<&str>, all_rules: &RuleTable) 
 // individual rule names.
 fn get_invalid_rules(
     all_rule_names: &RuleTable,
-    rules_passed_by_user: &Vec<String>,
+    rules_passed_by_user: &[String],
 ) -> Option<Vec<String>> {
     let all_rules_set: HashSet<_> = all_rule_names.iter().map(|x| x.name.clone()).collect();
 

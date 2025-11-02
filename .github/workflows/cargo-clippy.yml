@@ -1,0 +1,59 @@
+name: cargo-clippy
+
+on:
+  pull_request:
+    paths:
+      - crates/**
+      - .github/workflows/cargo-clippy.yml
+  push:
+    branches:
+      - main
+    paths:
+      - crates/**
+      - .github/workflows/cargo-clippy.yml
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  RUSTFLAGS: -C debuginfo=0
+
+jobs:
+  cargo-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Run cargo fmt
+        working-directory: src/rust
+        run: |
+          rustup component add rustfmt
+          cargo fmt --all --check
+
+  cargo-clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Rust
+        run: rustup update stable && rustup default stable
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run cargo clippy
+        working-directory: src/rust
+        run: |
+          rustup component add clippy
+          cargo clippy \
+            --all-targets \
+            --all-features \
+            --locked \
+            -- \
+            -D warnings \
+            -D clippy::dbg_macro

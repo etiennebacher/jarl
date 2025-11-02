@@ -150,7 +150,7 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
                 let mut override_builder = ignore::overrides::OverrideBuilder::new(root);
                 for pattern in patterns {
                     // Add as negation pattern (exclude)
-                    if let Err(e) = override_builder.add(&format!("!{}", pattern)) {
+                    if let Err(e) = override_builder.add(&format!("!{pattern}")) {
                         tracing::warn!("Failed to add exclude pattern '{}': {}", pattern, e);
                     }
                 }

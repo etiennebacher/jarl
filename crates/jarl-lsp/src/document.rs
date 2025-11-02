@@ -187,6 +187,7 @@ impl TextDocument {
     }
 
     /// Convert a Position to a byte offset in the document
+    #[allow(clippy::explicit_counter_loop)]
     pub fn position_to_offset(
         &self,
         position: Position,

@@ -273,7 +273,7 @@ impl Emitter for FullEmitter {
             }
 
             let rendered = renderer.render(message);
-            writeln!(writer, "{}\n", rendered)?;
+            writeln!(writer, "{rendered}\n")?;
 
             if diagnostic.has_safe_fix() {
                 n_diagnostic_with_fixes += 1;
