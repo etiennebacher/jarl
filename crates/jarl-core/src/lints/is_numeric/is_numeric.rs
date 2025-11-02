@@ -35,7 +35,10 @@ impl Violation for IsNumeric {
         "is_numeric".to_string()
     }
     fn body(&self) -> String {
-        "Use `is.numeric(x)` instead of the equivalent `is.numeric(x) || is.integer(x)`. `Use is.double(x)` to test for objects stored as 64-bit floating point.".to_string()
+        "`is.numeric(x) || is.integer(x)` is redundant.".to_string()
+    }
+    fn suggestion(&self) -> Option<String> {
+        Some("Use `is.numeric(x)` instead. Use `is.double(x)` to test for objects stored as 64-bit floating point".to_string())
     }
 }
 

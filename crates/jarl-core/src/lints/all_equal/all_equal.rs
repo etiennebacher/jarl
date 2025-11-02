@@ -55,7 +55,11 @@ pub fn all_equal(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     if let Some(inner_content) = inner_content {
         let range = ast.syntax().text_trimmed_range();
         let diagnostic = Diagnostic::new(
-            ViolationData::new("all_equal".to_string(), "Use `!isTRUE()` to check for differences in `all.equal()`. `isFALSE(all.equal())` always returns `FALSE`.".to_string()),
+            ViolationData::new(
+                "all_equal".to_string(),
+                "`isFALSE(all.equal())` always returns `FALSE`".to_string(),
+                Some("Use `!isTRUE()` to check for differences instead.".to_string()),
+            ),
             range,
             Fix {
                 content: format!("!isTRUE(all.equal({inner_content}))"),
@@ -91,13 +95,13 @@ pub fn all_equal(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         == RSyntaxKind::R_WHILE_STATEMENT
         && ast.syntax().index() == 2;
     if in_if_condition || in_while_condition {
-        msg = "Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.".to_string();
+        msg = "`all.equal()` can return a string instead of FALSE.".to_string();
         fix_content = format!("isTRUE({})", ast.to_trimmed_text());
     }
 
     if let Some(prev) = ast.syntax().prev_sibling_or_token() {
         if prev.kind() == RSyntaxKind::BANG {
-            msg = "Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.".to_string();
+            msg = "`all.equal()` can return a string instead of FALSE.".to_string();
             fix_content = format!("!isTRUE({})", ast.to_trimmed_text());
             range = TextRange::new(prev.text_trimmed_range().start(), range.end())
         }
@@ -105,7 +109,11 @@ pub fn all_equal(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 
     if !msg.is_empty() {
         let diagnostic = Diagnostic::new(
-            ViolationData::new("all_equal".to_string(), msg),
+            ViolationData::new(
+                "all_equal".to_string(),
+                msg,
+                Some("Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.".to_string()),
+            ),
             range,
             Fix {
                 content: fix_content,

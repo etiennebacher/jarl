@@ -38,7 +38,10 @@ impl Violation for Lengths {
         "lengths".to_string()
     }
     fn body(&self) -> String {
-        "Use `lengths()` to find the length of each element in a list.".to_string()
+        "Using `length()` on each element of a list is inefficient.".to_string()
+    }
+    fn suggestion(&self) -> Option<String> {
+        Some("Use `lengths()` instead.".to_string())
     }
 }
 

@@ -115,7 +115,7 @@ pub fn coalesce(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
             return Ok(None);
         }
 
-        msg = "Use `x %||% y` instead of `if (is.null(x)) y else x`.".to_string();
+        msg = "`if (is.null(x)) y else x` can be simplified.".to_string();
 
         if !skip_fix {
             fix_content = format!("{} %||% {}", fn_body.to_trimmed_string(), consequence_str);
@@ -165,7 +165,7 @@ pub fn coalesce(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
             return Ok(None);
         }
 
-        msg = "Use `x %||% y` instead of `if (!is.null(x)) x else y`.".to_string();
+        msg = "`if (!is.null(x)) x else y` can be simplified.".to_string();
 
         if !skip_fix {
             fix_content = format!("{} %||% {}", fn_body.to_trimmed_string(), alternative_str);
@@ -178,7 +178,11 @@ pub fn coalesce(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
-        ViolationData::new("coalesce".to_string(), msg),
+        ViolationData::new(
+            "coalesce".to_string(),
+            msg,
+            Some("Use `x %||% y` instead.".to_string()),
+        ),
         range,
         Fix {
             content: fix_content.clone(),

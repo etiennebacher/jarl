@@ -99,7 +99,7 @@ pub fn assignment(
 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
-        ViolationData::new("assignment".to_string(), msg.to_string()),
+        ViolationData::new("assignment".to_string(), msg.to_string(), None),
         range_to_report,
         Fix {
             content: replacement,

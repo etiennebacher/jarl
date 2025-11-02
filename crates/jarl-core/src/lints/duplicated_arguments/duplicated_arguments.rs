@@ -104,6 +104,7 @@ pub fn duplicated_arguments(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
                 ]
                 .join("")
                 .to_string(),
+                None,
             ),
             range,
             Fix::empty(),

@@ -185,7 +185,7 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
-        ViolationData::new("implicit_assignment".to_string(), msg.to_string()),
+        ViolationData::new("implicit_assignment".to_string(), msg.to_string(), None),
         range,
         Fix::empty(),
     );

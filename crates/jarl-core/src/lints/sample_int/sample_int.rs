@@ -36,7 +36,10 @@ impl Violation for SampleInt {
         "sample_int".to_string()
     }
     fn body(&self) -> String {
-        "`sample.int(n, m, ...)` is preferable to `sample(1:n, m, ...)`.".to_string()
+        "`sample(1:n, m, ...)` is less readable than `sample.int(n, m, ...)`.".to_string()
+    }
+    fn suggestion(&self) -> Option<String> {
+        Some("Use `sample.int(n, m, ...)` instead.".to_string())
     }
 }
 

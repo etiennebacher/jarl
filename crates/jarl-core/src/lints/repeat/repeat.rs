@@ -34,7 +34,10 @@ impl Violation for Repeat {
         "repeat".to_string()
     }
     fn body(&self) -> String {
-        "Use `repeat` instead of `while (TRUE)` for infinite loops.".to_string()
+        "`while (TRUE)` is less clear than `repeat` for infinite loops.".to_string()
+    }
+    fn suggestion(&self) -> Option<String> {
+        Some("Use `repeat {}` instead.".to_string())
     }
 }
 

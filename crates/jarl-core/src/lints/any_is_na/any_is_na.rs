@@ -38,7 +38,10 @@ impl Violation for AnyIsNa {
         "any_is_na".to_string()
     }
     fn body(&self) -> String {
-        "`any(is.na(...))` is inefficient. Use `anyNA(...)` instead.".to_string()
+        "`any(is.na(...))` is inefficient.".to_string()
+    }
+    fn suggestion(&self) -> Option<String> {
+        Some("Use `anyNA(...)` instead.".to_string())
     }
 }
 

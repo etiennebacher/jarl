@@ -36,7 +36,10 @@ impl Violation for EqualsNa {
         "equals_na".to_string()
     }
     fn body(&self) -> String {
-        "Use `is.na()` instead of comparing to NA with ==, != or %in%.".to_string()
+        "Comparing to NA with `==`, `!=` or `%in%` is problematic.".to_string()
+    }
+    fn suggestion(&self) -> Option<String> {
+        Some("Use `is.na()` instead.".to_string())
     }
 }
 

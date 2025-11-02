@@ -34,12 +34,17 @@ pub trait Violation {
     fn name(&self) -> String;
     /// Explanation of the rule.
     fn body(&self) -> String;
+    /// Optional suggestion for how to fix the violation.
+    fn suggestion(&self) -> Option<String> {
+        None
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct ViolationData {
     pub name: String,
     pub body: String,
+    pub suggestion: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -60,16 +65,22 @@ impl<T: Violation> From<T> for ViolationData {
         Self {
             name: Violation::name(&value),
             body: Violation::body(&value),
+            suggestion: Violation::suggestion(&value),
         }
     }
 }
 
 impl ViolationData {
-    pub fn new(name: String, body: String) -> Self {
-        Self { name, body }
+    pub fn new(name: String, body: String, suggestion: Option<String>) -> Self {
+        Self { name, body, suggestion }
     }
+
     pub fn empty() -> Self {
-        Self { name: "".to_string(), body: "".to_string() }
+        Self {
+            name: "".to_string(),
+            body: "".to_string(),
+            suggestion: None,
+        }
     }
 }
 

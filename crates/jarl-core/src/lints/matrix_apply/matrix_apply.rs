@@ -103,11 +103,23 @@ pub fn matrix_apply(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 
     let fun = fun.as_str();
     let range = ast.syntax().text_trimmed_range();
-    let msg = match (fun, margin) {
-        ("mean", "1") => "Use `rowMeans(x)` rather than `apply(x, 1, mean)`",
-        ("mean", "2") => "Use `colMeans(x)` rather than `apply(x, 2, mean)`",
-        ("sum", "1") => "Use `rowSums(x)` rather than `apply(x, 1, sum)`",
-        ("sum", "2") => "Use `colSums(x)` rather than `apply(x, 2, sum)`",
+    let (msg, suggestion) = match (fun, margin) {
+        ("mean", "1") => (
+            "`apply(x, 1, mean)` is inefficient.",
+            "Use `rowMeans(x)` instead.",
+        ),
+        ("mean", "2") => (
+            "`apply(x, 2, mean)` is inefficient.",
+            "Use `colMeans(x)` instead.",
+        ),
+        ("sum", "1") => (
+            "`apply(x, 1, sum)` is inefficient.",
+            "Use `rowSums(x)` instead.",
+        ),
+        ("sum", "2") => (
+            "`apply(x, 2, sum)` is inefficient.",
+            "Use `colSums(x)` instead.",
+        ),
         _ => unreachable!(),
     };
 
@@ -126,7 +138,11 @@ pub fn matrix_apply(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     };
 
     let diagnostic = Diagnostic::new(
-        ViolationData::new("matrix_apply".to_string(), msg.to_string()),
+        ViolationData::new(
+            "matrix_apply".to_string(),
+            msg.to_string(),
+            Some(suggestion.to_string()),
+        ),
         range,
         Fix {
             content: fix,

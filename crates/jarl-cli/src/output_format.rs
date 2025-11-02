@@ -66,6 +66,11 @@ impl Emitter for ConciseEmitter {
                     unreachable!("Row/col locations must have been parsed successfully before.")
                 }
             };
+            let message = if let Some(suggestion) = &diagnostic.message.suggestion {
+                format!("{}. {}", diagnostic.message.body, suggestion)
+            } else {
+                diagnostic.message.body.clone()
+            };
             writeln!(
                 writer,
                 "{} [{}:{}] {} {}",
@@ -73,7 +78,7 @@ impl Emitter for ConciseEmitter {
                 row,
                 col,
                 diagnostic.message.name.red(),
-                diagnostic.message.body
+                message
             )?;
 
             if diagnostic.has_safe_fix() {
@@ -161,11 +166,12 @@ impl Emitter for GithubEmitter {
                 file = diagnostic.filename.to_string_lossy()
             )?;
 
-            writeln!(
-                writer,
-                "[{}] {}",
-                diagnostic.message.name, diagnostic.message.body
-            )?;
+            let message = if let Some(suggestion) = &diagnostic.message.suggestion {
+                format!("{}. {}", diagnostic.message.body, suggestion)
+            } else {
+                diagnostic.message.body.clone()
+            };
+            writeln!(writer, "[{}] {}", diagnostic.message.name, message)?;
         }
 
         Ok(())
@@ -240,19 +246,29 @@ impl Emitter for FullEmitter {
 
             // Create the snippet with annotate-snippets
             let file_path = relativize_path(diagnostic.filename.clone());
-            let message = Level::Warning.title(&diagnostic.message.name).snippet(
-                Snippet::source(&source)
-                    .origin(&file_path)
-                    .fold(true)
-                    .annotation(
-                        Level::Warning
-                            .span(start_offset..end_offset)
-                            .label(&diagnostic.message.body),
-                    ),
-            );
+
+            // Build the message with snippet
+            let snippet = Snippet::source(&source)
+                .origin(&file_path)
+                .fold(true)
+                .annotation(
+                    Level::Warning
+                        .span(start_offset..end_offset)
+                        .label(&diagnostic.message.body),
+                );
+
+            // Create the main message
+            let mut message = Level::Warning
+                .title(&diagnostic.message.name)
+                .snippet(snippet);
+
+            // Add suggestion as a footer message if present
+            if let Some(suggestion_text) = &diagnostic.message.suggestion {
+                message = message.footer(Level::Help.title(suggestion_text));
+            }
 
             let rendered = renderer.render(message);
-            writeln!(writer, "{}", rendered)?;
+            writeln!(writer, "{}\n", rendered)?;
 
             if diagnostic.has_safe_fix() {
                 n_diagnostic_with_fixes += 1;
@@ -267,9 +283,9 @@ impl Emitter for FullEmitter {
         // many can be fixed.
         if total_diagnostics > 0 {
             if total_diagnostics > 1 {
-                println!("\nFound {total_diagnostics} errors.");
+                println!("Found {total_diagnostics} errors.");
             } else {
-                println!("\nFound 1 error.");
+                println!("Found 1 error.");
             }
 
             if n_diagnostic_with_fixes > 0 {

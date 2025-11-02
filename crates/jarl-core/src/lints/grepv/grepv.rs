@@ -39,7 +39,10 @@ impl Violation for Grepv {
         "grepv".to_string()
     }
     fn body(&self) -> String {
-        "Use `grepv(...)` instead of `grep(..., value = TRUE)`.".to_string()
+        "`grep(..., value = TRUE)` can be simplified.".to_string()
+    }
+    fn suggestion(&self) -> Option<String> {
+        Some("Use `grepv(...)` instead.".to_string())
     }
 }
 

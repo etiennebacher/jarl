@@ -32,7 +32,10 @@ impl Violation for LengthLevels {
         "length_levels".to_string()
     }
     fn body(&self) -> String {
-        "Use `nlevels(...)` instead of `length(levels(...))`.".to_string()
+        "`length(levels(...))` is less readable than `nlevels(...)`.".to_string()
+    }
+    fn suggestion(&self) -> Option<String> {
+        Some("Use `nlevels(...)` instead.".to_string())
     }
 }
 

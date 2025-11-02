@@ -37,7 +37,10 @@ impl Violation for WhichGrepl {
         "which_grepl".to_string()
     }
     fn body(&self) -> String {
-        "`grep(pattern, x)` is better than `which(grepl(pattern, x))`.".to_string()
+        "`which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.".to_string()
+    }
+    fn suggestion(&self) -> Option<String> {
+        Some("Use `grep(pattern, x)` instead.".to_string())
     }
 }
 

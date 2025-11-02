@@ -39,7 +39,10 @@ impl Violation for Sort {
         "sort".to_string()
     }
     fn body(&self) -> String {
-        "`x[order(x)]` is inefficient. Use `sort(x)` instead.".to_string()
+        "`x[order(x)]` is inefficient.".to_string()
+    }
+    fn suggestion(&self) -> Option<String> {
+        Some("Use `sort(x)` instead.".to_string())
     }
 }
 

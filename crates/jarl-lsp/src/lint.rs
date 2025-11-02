@@ -191,13 +191,20 @@ fn convert_to_lsp_diagnostic(
     };
 
     // Build the LSP diagnostic with fix information
+    // Combine body and suggestion for the message
+    let message = if let Some(suggestion) = &jarl_diag.message.suggestion {
+        format!("{} {}", jarl_diag.message.body, suggestion)
+    } else {
+        jarl_diag.message.body.clone()
+    };
+
     let diagnostic = Diagnostic {
         range,
         severity: Some(severity),
         code: None,
         code_description: None,
         source: Some(DIAGNOSTIC_SOURCE.to_string()),
-        message: jarl_diag.message.body.clone(),
+        message,
         related_information: None,
         tags: None,
         data: fix_data, // Include fix information for code actions when available
