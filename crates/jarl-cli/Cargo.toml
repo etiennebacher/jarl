@@ -39,6 +39,7 @@ regex.workspace = true
 tempfile.workspace = true
 tracing-subscriber = "0.3.20"
 git2 = "0.20.2"
+annotate-snippets = "0.11"
 
 [dev-dependencies]
 tempfile.workspace = true

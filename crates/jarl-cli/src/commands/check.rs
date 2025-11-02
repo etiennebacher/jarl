@@ -13,7 +13,7 @@ use crate::args::CheckCommand;
 use crate::output_format::{self, GithubEmitter};
 use crate::status::ExitStatus;
 
-use output_format::{ConciseEmitter, Emitter, JsonEmitter, OutputFormat};
+use output_format::{ConciseEmitter, Emitter, FullEmitter, JsonEmitter, OutputFormat};
 
 pub fn check() -> Result<ExitStatus> {
     let args = CheckCommand::parse();
@@ -98,6 +98,9 @@ pub fn check() -> Result<ExitStatus> {
         }
         OutputFormat::Github => {
             GithubEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+        }
+        OutputFormat::Full => {
+            FullEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
         }
     }
 
