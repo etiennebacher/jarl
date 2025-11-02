@@ -85,9 +85,9 @@ impl CommandExt for Command {
 
 impl Display for Output {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // Strip ANSI codes for readable snapshots
-        let stdout = strip_ansi_escape_codes(&self.stdout);
-        let stderr = strip_ansi_escape_codes(&self.stderr);
+        // Strip ANSI codes and normalize path separators for readable snapshots
+        let stdout = strip_ansi_escape_codes(&self.stdout).replace("\\", "/");
+        let stderr = strip_ansi_escape_codes(&self.stderr).replace("\\", "/");
 
         f.write_fmt(format_args!(
             "
