@@ -141,14 +141,12 @@ pub fn drop_arg_by_name_or_position(
         .iter()
         .filter_map(|arg| {
             let arg = arg.clone().unwrap();
-            if let Some(name_clause) = arg.name_clause() {
-                if let Ok(n) = name_clause.name() {
-                    if n.to_string().trim() == name {
+            if let Some(name_clause) = arg.name_clause()
+                && let Ok(n) = name_clause.name()
+                    && n.to_string().trim() == name {
                         dropped_by_name = true;
                         return None;
                     }
-                }
-            }
             Some(arg)
         })
         .collect();

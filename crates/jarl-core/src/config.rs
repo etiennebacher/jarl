@@ -386,11 +386,10 @@ fn determine_minimum_r_version(
 
         if desc_path.exists() {
             let desc = fs::read_to_string(&desc_path)?;
-            if let Ok(versions) = Description::get_depend_r_version(&desc) {
-                if let Some(version_str) = versions.first() {
+            if let Ok(versions) = Description::get_depend_r_version(&desc)
+                && let Some(version_str) = versions.first() {
                     return Ok(Some(parse_r_version(version_str.to_string())?));
                 }
-            }
         }
     }
 

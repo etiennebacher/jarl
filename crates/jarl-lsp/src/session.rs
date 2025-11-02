@@ -452,14 +452,16 @@ mod tests {
     #[test]
     fn test_position_encoding_negotiation() {
         // Test UTF-8 preference
-        let mut caps = ClientCapabilities::default();
-        caps.general = Some(GeneralClientCapabilities {
-            position_encodings: Some(vec![
-                PositionEncodingKind::UTF8,
-                PositionEncodingKind::UTF16,
-            ]),
+        let mut caps = ClientCapabilities {
+            general: Some(GeneralClientCapabilities {
+                position_encodings: Some(vec![
+                    PositionEncodingKind::UTF8,
+                    PositionEncodingKind::UTF16,
+                ]),
+                ..Default::default()
+            }),
             ..Default::default()
-        });
+        };
 
         assert_eq!(negotiate_position_encoding(&caps), PositionEncoding::UTF8);
 

@@ -108,11 +108,10 @@ pub fn has_no_lint(text: &str, rule: &str, min_r_version: Option<&str>) -> bool 
     let results = check(config);
 
     for (_, result) in results {
-        if let Ok(diagnostics) = result {
-            if !diagnostics.is_empty() {
+        if let Ok(diagnostics) = result
+            && !diagnostics.is_empty() {
                 return false;
             }
-        }
     }
 
     true

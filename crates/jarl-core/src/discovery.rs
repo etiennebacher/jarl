@@ -122,8 +122,8 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
     builder.git_exclude(true);
 
     // Add exclude patterns from settings if linter settings should be used
-    if use_linter_settings {
-        if let Some(settings_item) = resolver.items().first() {
+    if use_linter_settings
+        && let Some(settings_item) = resolver.items().first() {
             let settings = settings_item.value();
             let root = settings_item.path();
 
@@ -159,7 +159,6 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
                 }
             }
         }
-    }
 
     // Prefer `available_parallelism()`, with a max of 12 threads
     builder.threads(

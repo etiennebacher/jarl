@@ -58,8 +58,8 @@ pub fn lengths(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let arg_x = get_arg_by_name_then_position(&arguments, "x", 1);
     let arg_fun = get_arg_by_name_then_position(&arguments, "FUN", 2);
 
-    if let Some(arg_fun) = arg_fun {
-        if arg_fun
+    if let Some(arg_fun) = arg_fun
+        && arg_fun
             .value()
             .context("Found named argument without any value")?
             .into_syntax()
@@ -78,8 +78,7 @@ pub fn lengths(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
                 },
             );
             return Ok(Some(diagnostic));
-        }
-    };
+        };
 
     Ok(None)
 }
