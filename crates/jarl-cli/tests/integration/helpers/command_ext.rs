@@ -34,9 +34,12 @@ impl Output {
     pub fn normalize_temp_paths(self) -> Self {
         use regex::Regex;
 
-        // Match temporary directory paths like /tmp/.tmpXXXXXX/ or C:\Users\...\AppData\Local\Temp\...
+        // Match temporary directory paths:
+        // - Linux: /tmp/.tmpXXXXXX
+        // - macOS: /var/folders/.../T/.tmpXXXXXX or /private/var/folders/...
+        // - Windows: C:\Users\...\AppData\Local\Temp\...
         let temp_path_regex =
-            Regex::new(r"/tmp/\.tmp[A-Za-z0-9]+|C:\\Users\\[^\\]+\\AppData\\Local\\Temp\\[^\\]+")
+            Regex::new(r"(?:/private)?/(?:tmp|var/folders/[^/]+/[^/]+/T)/\.tmp[A-Za-z0-9]+|C:\\Users\\[^\\]+\\AppData\\Local\\Temp\\[^\\]+")
                 .unwrap();
 
         Self {
