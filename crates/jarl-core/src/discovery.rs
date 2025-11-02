@@ -122,43 +122,42 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
     builder.git_exclude(true);
 
     // Add exclude patterns from settings if linter settings should be used
-    if use_linter_settings
-        && let Some(settings_item) = resolver.items().first() {
-            let settings = settings_item.value();
-            let root = settings_item.path();
+    if use_linter_settings && let Some(settings_item) = resolver.items().first() {
+        let settings = settings_item.value();
+        let root = settings_item.path();
 
-            // Check if default_exclude is disabled (true by default)
-            let use_default_exclude = settings.linter.default_exclude.unwrap_or(true);
+        // Check if default_exclude is disabled (true by default)
+        let use_default_exclude = settings.linter.default_exclude.unwrap_or(true);
 
-            // Build custom ignore patterns
-            let mut patterns = Vec::new();
+        // Build custom ignore patterns
+        let mut patterns = Vec::new();
 
-            if use_default_exclude {
-                // Add default exclude patterns
-                patterns.extend_from_slice(DEFAULT_EXCLUDE_PATTERNS);
-            }
+        if use_default_exclude {
+            // Add default exclude patterns
+            patterns.extend_from_slice(DEFAULT_EXCLUDE_PATTERNS);
+        }
 
-            // Add custom exclude patterns from jarl.toml
-            if let Some(exclude_patterns) = &settings.linter.exclude {
-                for pattern in exclude_patterns {
-                    patterns.push(pattern.as_str());
-                }
-            }
-
-            // If we have patterns, create an override and add it to the builder
-            if !patterns.is_empty() {
-                let mut override_builder = ignore::overrides::OverrideBuilder::new(root);
-                for pattern in patterns {
-                    // Add as negation pattern (exclude)
-                    if let Err(e) = override_builder.add(&format!("!{pattern}")) {
-                        tracing::warn!("Failed to add exclude pattern '{}': {}", pattern, e);
-                    }
-                }
-                if let Ok(overrides) = override_builder.build() {
-                    builder.overrides(overrides);
-                }
+        // Add custom exclude patterns from jarl.toml
+        if let Some(exclude_patterns) = &settings.linter.exclude {
+            for pattern in exclude_patterns {
+                patterns.push(pattern.as_str());
             }
         }
+
+        // If we have patterns, create an override and add it to the builder
+        if !patterns.is_empty() {
+            let mut override_builder = ignore::overrides::OverrideBuilder::new(root);
+            for pattern in patterns {
+                // Add as negation pattern (exclude)
+                if let Err(e) = override_builder.add(&format!("!{pattern}")) {
+                    tracing::warn!("Failed to add exclude pattern '{}': {}", pattern, e);
+                }
+            }
+            if let Ok(overrides) = override_builder.build() {
+                builder.overrides(overrides);
+            }
+        }
+    }
 
     // Prefer `available_parallelism()`, with a max of 12 threads
     builder.threads(

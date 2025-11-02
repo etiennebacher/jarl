@@ -109,9 +109,10 @@ pub fn has_no_lint(text: &str, rule: &str, min_r_version: Option<&str>) -> bool 
 
     for (_, result) in results {
         if let Ok(diagnostics) = result
-            && !diagnostics.is_empty() {
-                return false;
-            }
+            && !diagnostics.is_empty()
+        {
+            return false;
+        }
     }
 
     true

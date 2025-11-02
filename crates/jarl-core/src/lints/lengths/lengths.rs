@@ -65,20 +65,20 @@ pub fn lengths(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             .into_syntax()
             .text_trimmed()
             == "length"
-        {
-            let range = ast.syntax().text_trimmed_range();
-            let diagnostic = Diagnostic::new(
-                Lengths,
-                range,
-                Fix {
-                    content: format!("lengths({})", arg_x.unwrap().into_syntax().text_trimmed()),
-                    start: range.start().into(),
-                    end: range.end().into(),
-                    to_skip: node_contains_comments(ast.syntax()),
-                },
-            );
-            return Ok(Some(diagnostic));
-        };
+    {
+        let range = ast.syntax().text_trimmed_range();
+        let diagnostic = Diagnostic::new(
+            Lengths,
+            range,
+            Fix {
+                content: format!("lengths({})", arg_x.unwrap().into_syntax().text_trimmed()),
+                start: range.start().into(),
+                end: range.end().into(),
+                to_skip: node_contains_comments(ast.syntax()),
+            },
+        );
+        return Ok(Some(diagnostic));
+    };
 
     Ok(None)
 }
