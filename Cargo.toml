@@ -41,6 +41,7 @@ regex = { version = "1.11.1", default-features = false, features = ["std"] }
 
 # Dev dependencies
 insta = { version = "1.42.0", features = ["yaml"] }
+gix = { version = "0.74.1", default-features = false, features = ["index", "status"] }
 
 [profile.release]
 lto = true

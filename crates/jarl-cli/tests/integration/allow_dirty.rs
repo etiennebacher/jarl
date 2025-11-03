@@ -1,4 +1,3 @@
-use git2::*;
 use std::process::Command;
 use tempfile::TempDir;
 
@@ -20,7 +19,7 @@ fn test_clean_git_repo() -> anyhow::Result<()> {
     let test_contents = "any(is.na(x))";
     std::fs::write(&file_path, test_contents)?;
 
-    let repo = Repository::init(directory)?;
+    let repo = gix::init(directory)?;
     create_commit(file_path, repo)?;
 
     insta::assert_snapshot!(
@@ -45,7 +44,7 @@ fn test_dirty_git_repo_does_not_block_lint() -> anyhow::Result<()> {
     std::fs::create_dir_all(directory.join("demos"))?;
     std::fs::write(directory.join(test_path), test_contents)?;
 
-    let _ = Repository::init(directory)?;
+    let _ = gix::init(directory)?;
 
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
@@ -68,7 +67,7 @@ fn test_dirty_git_repo_blocks_fix() -> anyhow::Result<()> {
     std::fs::create_dir_all(directory.join("demos"))?;
     std::fs::write(directory.join(test_path), test_contents)?;
 
-    let _ = Repository::init(directory)?;
+    let _ = gix::init(directory)?;
 
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
@@ -92,7 +91,7 @@ fn test_dirty_git_repo_allow_dirty() -> anyhow::Result<()> {
     std::fs::create_dir_all(directory.join("demos"))?;
     std::fs::write(directory.join(test_path), test_contents)?;
 
-    let _ = Repository::init(directory)?;
+    let _ = gix::init(directory)?;
 
     insta::assert_snapshot!(
         &mut Command::new(binary_path())

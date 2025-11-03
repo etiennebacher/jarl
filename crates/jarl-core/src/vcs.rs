@@ -1,21 +1,35 @@
 use crate::config::Config;
 use anyhow::{Result, bail};
+use std::env;
 use std::path::Path;
 
 fn in_git_repo(path: &String) -> bool {
     let path = Path::new(path);
-    GitRepo::discover(path).is_ok()
+    let abs_path = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        env::current_dir().unwrap_or_default().join(path)
+    };
+
+    // If path is a file, use its parent directory for discovery
+    let discovery_path = if abs_path.is_file() {
+        abs_path.parent().unwrap_or(&abs_path)
+    } else {
+        &abs_path
+    };
+
+    GitRepo::discover(discovery_path).is_ok()
 }
 
 pub struct GitRepo;
 
 impl GitRepo {
     pub fn init(path: &Path) -> Result<GitRepo> {
-        git2::Repository::init(path)?;
+        gix::init(path)?;
         Ok(GitRepo)
     }
-    pub fn discover(path: &Path) -> Result<git2::Repository, git2::Error> {
-        git2::Repository::discover(path)
+    pub fn discover(path: &Path) -> Result<gix::Repository, gix::discover::Error> {
+        gix::discover(path)
     }
 }
 
@@ -39,36 +53,38 @@ pub fn check_version_control(path: &String, config: &Config) -> Result<()> {
     }
 
     let mut dirty_files = Vec::new();
-    let mut _staged_files: Vec<String> = Vec::new();
-    if let Ok(repo) = git2::Repository::discover(path) {
-        let mut repo_opts = git2::StatusOptions::new();
-        repo_opts.include_ignored(false);
-        repo_opts.include_untracked(true);
-        for status in repo.statuses(Some(&mut repo_opts))?.iter() {
-            if let Some(path) = status.path() {
-                match status.status() {
-                    git2::Status::CURRENT => (),
-                    // TODO: add an arg --allow-staged?
-                    // git2::Status::INDEX_NEW
-                    // | git2::Status::INDEX_MODIFIED
-                    // | git2::Status::INDEX_DELETED
-                    // | git2::Status::INDEX_RENAMED
-                    // | git2::Status::INDEX_TYPECHANGE => {
-                    //     if !opts.allow_staged {
-                    //         staged_files.push(path.to_string())
-                    //     }
-                    // }
-                    _ => {
-                        if !config.allow_dirty {
-                            dirty_files.push(path.to_string())
-                        }
-                    }
-                };
+
+    let path_buf = Path::new(path);
+    let abs_path = if path_buf.is_absolute() {
+        path_buf.to_path_buf()
+    } else {
+        env::current_dir().unwrap_or_default().join(path_buf)
+    };
+
+    // If path is a file, use its parent directory for discovery
+    let discovery_path = if abs_path.is_file() {
+        abs_path.parent().unwrap_or(&abs_path)
+    } else {
+        &abs_path
+    };
+
+    if let Ok(repo) = gix::discover(discovery_path) {
+        let platform = repo.status(gix::progress::Discard)?;
+
+        for item in platform.into_iter(None)? {
+            let item = item?;
+
+            // Collect any files that have changes (worktree or index)
+            if let gix::status::Item::IndexWorktree(worktree_item) = item {
+                let path_bytes = worktree_item.rela_path();
+                if let Ok(path_str) = std::str::from_utf8(path_bytes.as_ref()) {
+                    dirty_files.push(path_str.to_string());
+                }
             }
         }
     }
 
-    if dirty_files.is_empty() && _staged_files.is_empty() {
+    if dirty_files.is_empty() {
         return Ok(());
     }
 
@@ -77,11 +93,6 @@ pub fn check_version_control(path: &String, config: &Config) -> Result<()> {
         files_list.push_str("  * ");
         files_list.push_str(&file);
         files_list.push_str(" (dirty)\n");
-    }
-    for file in _staged_files {
-        files_list.push_str("  * ");
-        files_list.push_str(&file);
-        files_list.push_str(" (staged)\n");
     }
 
     // Do not add too many line breaks here so that the text wraps the terminal

@@ -37,10 +37,7 @@ tempfile.workspace = true
 # Parallel processing
 rayon.workspace = true
 
-# Need this feature to cross-compile, otherwise get an error "Could not find
-# directory of OpenSSL installation, and this `-sys` crate cannot proceed
-# without this knowledge."
-git2 = {version  = "0.20.2", features = ["vendored-openssl"]}
+gix = { version = "0.74.1", default-features = false, features = ["index", "status"] }
 
 [dev-dependencies]
 insta.workspace = true
