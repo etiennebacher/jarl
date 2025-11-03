@@ -13,7 +13,7 @@ use clap::{Parser, Subcommand, arg};
 pub struct Args {
     #[command(subcommand)]
     pub(crate) command: Command,
-    #[clap(flatten)]
+    #[command(flatten)]
     pub(crate) global_options: GlobalOptions,
 }
 
@@ -29,6 +29,8 @@ pub(crate) enum Command {
 #[derive(Clone, Debug, Parser)]
 #[command(arg_required_else_help(true))]
 pub struct CheckCommand {
+    #[command(flatten)]
+    pub(crate) global_options: GlobalOptions,
     #[arg(
         required = true,
         help = "List of files or directories to check or fix lints, for example `jarl check .`."
@@ -109,10 +111,13 @@ pub struct CheckCommand {
 }
 
 #[derive(Clone, Debug, Parser)]
-pub(crate) struct ServerCommand {}
+pub(crate) struct ServerCommand {
+    #[command(flatten)]
+    pub(crate) global_options: GlobalOptions,
+}
 
 /// All configuration options that can be passed "globally"
-#[derive(Debug, Default, clap::Args)]
+#[derive(Clone, Debug, Default, clap::Args)]
 #[command(next_help_heading = "Global options")]
 pub(crate) struct GlobalOptions {
     /// The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults

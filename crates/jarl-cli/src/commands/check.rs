@@ -35,11 +35,17 @@ pub fn check() -> Result<ExitStatus> {
         .collect::<Vec<_>>();
 
     if paths.is_empty() {
-        println!(
-            "{}: {}",
-            "Warning".yellow().bold(),
-            "No R files found under the given path(s).".white().bold()
-        );
+        // Check both the --no-color flag and NO_COLOR environment variable
+        let no_color = args.global_options.no_color || std::env::var("NO_COLOR").is_ok();
+        if no_color {
+            println!("Warning: No R files found under the given path(s).");
+        } else {
+            println!(
+                "{}: {}",
+                "Warning".yellow().bold(),
+                "No R files found under the given path(s).".white().bold()
+            );
+        }
         return Ok(ExitStatus::Success);
     }
 
@@ -89,18 +95,21 @@ pub fn check() -> Result<ExitStatus> {
 
     let mut stdout = std::io::stdout();
 
+    // Check both the --no-color flag and NO_COLOR environment variable
+    let no_color = args.global_options.no_color || std::env::var("NO_COLOR").is_ok();
+
     match args.output_format {
         OutputFormat::Concise => {
-            ConciseEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            ConciseEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, no_color)?;
         }
         OutputFormat::Json => {
-            JsonEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            JsonEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, no_color)?;
         }
         OutputFormat::Github => {
-            GithubEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            GithubEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, no_color)?;
         }
         OutputFormat::Full => {
-            FullEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+            FullEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors, no_color)?;
         }
     }
 

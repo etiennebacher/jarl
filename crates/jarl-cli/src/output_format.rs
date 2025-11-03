@@ -30,6 +30,7 @@ pub trait Emitter {
         writer: &mut W,
         diagnostics: &[&Diagnostic],
         errors: &[(String, anyhow::Error)],
+        no_color: bool,
     ) -> anyhow::Result<()>;
 }
 
@@ -41,6 +42,7 @@ impl Emitter for ConciseEmitter {
         writer: &mut W,
         diagnostics: &[&Diagnostic],
         errors: &[(String, anyhow::Error)],
+        no_color: bool,
     ) -> anyhow::Result<()> {
         let mut total_diagnostics = 0;
         let mut n_diagnostic_with_fixes = 0usize;
@@ -51,9 +53,17 @@ impl Emitter for ConciseEmitter {
             for (_path, err) in errors {
                 let root_cause = err.chain().last().unwrap();
                 if root_cause.is::<jarl_core::error::ParseError>() {
-                    eprintln!("{}: {}", "Error".red().bold(), root_cause);
+                    if no_color {
+                        eprintln!("Error: {}", root_cause);
+                    } else {
+                        eprintln!("{}: {}", "Error".red().bold(), root_cause);
+                    }
                 } else {
-                    eprintln!("{}: {}", "Error".red().bold(), err);
+                    if no_color {
+                        eprintln!("Error: {}", err);
+                    } else {
+                        eprintln!("{}: {}", "Error".red().bold(), err);
+                    }
                 }
             }
         }
@@ -71,15 +81,27 @@ impl Emitter for ConciseEmitter {
             } else {
                 diagnostic.message.body.clone()
             };
-            writeln!(
-                writer,
-                "{} [{}:{}] {} {}",
-                relativize_path(diagnostic.filename.clone()).white(),
-                row,
-                col,
-                diagnostic.message.name.red(),
-                message
-            )?;
+            if no_color {
+                writeln!(
+                    writer,
+                    "{} [{}:{}] {} {}",
+                    relativize_path(diagnostic.filename.clone()),
+                    row,
+                    col,
+                    diagnostic.message.name,
+                    message
+                )?;
+            } else {
+                writeln!(
+                    writer,
+                    "{} [{}:{}] {} {}",
+                    relativize_path(diagnostic.filename.clone()).white(),
+                    row,
+                    col,
+                    diagnostic.message.name.red(),
+                    message
+                )?;
+            }
 
             if diagnostic.has_safe_fix() {
                 n_diagnostic_with_fixes += 1;
@@ -137,6 +159,7 @@ impl Emitter for JsonEmitter {
         writer: &mut W,
         diagnostics: &[&Diagnostic],
         _errors: &[(String, anyhow::Error)],
+        _no_color: bool,
     ) -> anyhow::Result<()> {
         serde_json::to_writer_pretty(writer, diagnostics)?;
         Ok(())
@@ -151,6 +174,7 @@ impl Emitter for GithubEmitter {
         writer: &mut W,
         diagnostics: &[&Diagnostic],
         _errors: &[(String, anyhow::Error)],
+        _no_color: bool,
     ) -> anyhow::Result<()> {
         for diagnostic in diagnostics {
             let (row, col) = match diagnostic.location {
@@ -186,9 +210,10 @@ impl Emitter for FullEmitter {
         writer: &mut W,
         diagnostics: &[&Diagnostic],
         errors: &[(String, anyhow::Error)],
+        no_color: bool,
     ) -> anyhow::Result<()> {
-        // Use plain renderer when NO_COLOR is set or in snapshots
-        let renderer = if std::env::var("NO_COLOR").is_ok() {
+        // Use plain renderer when no_color is set
+        let renderer = if no_color {
             Renderer::plain()
         } else {
             Renderer::styled()
@@ -202,9 +227,17 @@ impl Emitter for FullEmitter {
             for (_path, err) in errors {
                 let root_cause = err.chain().last().unwrap();
                 if root_cause.is::<jarl_core::error::ParseError>() {
-                    eprintln!("{}: {}", "Error".red().bold(), root_cause);
+                    if no_color {
+                        eprintln!("Error: {}", root_cause);
+                    } else {
+                        eprintln!("{}: {}", "Error".red().bold(), root_cause);
+                    }
                 } else {
-                    eprintln!("{}: {}", "Error".red().bold(), err);
+                    if no_color {
+                        eprintln!("Error: {}", err);
+                    } else {
+                        eprintln!("{}: {}", "Error".red().bold(), err);
+                    }
                 }
             }
             if !diagnostics.is_empty() {
