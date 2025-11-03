@@ -28,14 +28,14 @@ Jarl is built on [Air](https://posit-dev.github.io/air/), a fast formatter for R
 
 ```sh
 curl --proto '=https' --tlsv1.2 -LsSf \
-  https://github.com/etiennebacher/jarl/releases/download/latest/jarl-installer.sh | sh
+  https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.sh | sh
 ```
 
 **Windows:**
 
 ```sh
 powershell -ExecutionPolicy Bypass -c \
-  "irm https://github.com/etiennebacher/jarl/releases/download/latest/jarl-installer.ps1 | iex"
+  "irm https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.ps1 | iex"
 ```
 
 ### From source
