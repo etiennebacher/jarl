@@ -7,7 +7,7 @@ exit_code: 255
 ----- stdout -----
 
 ----- stderr -----
-Error: `jarl check --fix` can potentially perform destructive changes but no Version Control System (e.g. Git) was found on this project, so no fixes were applied.
+Error: `jarl check --fix` can potentially perform destructive changes but no Version Control System (e.g. Git) was found on this project, so no fixes were applied. 
 Add `--allow-no-vcs` to the call to apply the fixes.
 
 ----- args -----

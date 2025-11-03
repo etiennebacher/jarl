@@ -31,12 +31,12 @@ Options:
 
   -s, --select-rules <SELECT_RULES>
           Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF".
-
+          
           [default: ]
 
   -i, --ignore-rules <IGNORE_RULES>
           Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF".
-
+          
           [default: ]
 
   -w, --with-timing
@@ -53,7 +53,7 @@ Options:
           - concise: Print diagnostics in a concise format, one per line
           - github:  Print diagnostics as GitHub format
           - json:    Print diagnostics as JSON
-
+          
           [default: full]
 
       --assignment-op <ASSIGNMENT_OP>
