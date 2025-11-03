@@ -14,7 +14,7 @@ cargo install cargo-insta
 The folder `crates` contains several sub-crates.
 At the time of writing (October 2025), there are three:
 
-* `jarl-cli` contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.
+* `jarl` contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.
 * `jarl-core` contains the "meat" of the linter. It is where the R code is parsed and checked, and where the rules are defined. **This is probably the crate you will have to modify.**
 * `jarl-lsp` contains the code to integrate the linter with the Language Server Protocol, which allows editors such as VS Code or Positron to highlight diagnostics and provide "Quick Fix" buttons for example.
 
@@ -56,7 +56,7 @@ Adding a new rule requires four main steps:
 * `cargo run --bin jarl -- check demos/foo.R` (or any other paths to check). The `--` in the middle is required to use the CLI in development mode (i.e. without installing it with `cargo install`)
 * `cargo build && cargo test`. It is required to build the crate before running tests.
 * `cargo insta test` and `cargo insta review` (if necessary) for snapshot tests.
-* `cargo install --path crates/jarl-cli --profile=release` (or `--profile=dev`) to have a system-wide install and test the crate in other R projects.
+* `cargo install --path crates/jarl --profile=release` (or `--profile=dev`) to have a system-wide install and test the crate in other R projects.
 
 
 <!-- ## Integration tests

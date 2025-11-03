@@ -1,0 +1,14 @@
+---
+source: crates/jarl/tests/integration/rules.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--select-rules\").arg(\"foo,any_is_na,barbaz\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in `--select-rules`: foo, barbaz
+
+----- args -----
+check . --select-rules foo,any_is_na,barbaz

@@ -1,0 +1,36 @@
+---
+source: crates/jarl/tests/integration/jarl.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 2
+----- stdout -----
+
+----- stderr -----
+Check a set of files or directories
+
+Usage: jarl check [OPTIONS] <FILES>...
+
+Arguments:
+  <FILES>...  List of files or directories to check or fix lints, for example `jarl check .`.
+
+Options:
+  -f, --fix                            Automatically fix issues detected by the linter.
+  -u, --unsafe-fixes                   Include fixes that may not retain the original intent of the  code.
+      --fix-only                       Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
+      --allow-dirty                    Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
+      --allow-no-vcs                   Apply fixes even if there is no version control system.
+  -s, --select-rules <SELECT_RULES>    Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ]
+  -i, --ignore-rules <IGNORE_RULES>    Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ]
+  -w, --with-timing                    Show the time taken by the function.
+  -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
+      --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: full] [possible values: full, concise, github, json]
+      --assignment-op <ASSIGNMENT_OP>  Assignment operator to use, can be either `<-` or `=`.
+  -h, --help                           Print help (see more with '--help')
+
+Global options:
+      --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+      --no-color               Disable colored output. To turn colored output off, either set this option or set the environment variable `NO_COLOR` to any non-zero value
+
+----- args -----
+check

@@ -1,5 +1,5 @@
 [workspace]
-members = ["cargo:crates/jarl-cli"]
+members = ["cargo:crates/jarl"]
 
 # Config for 'dist'
 [dist]

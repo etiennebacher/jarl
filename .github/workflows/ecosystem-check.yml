@@ -45,7 +45,7 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Build jarl binary from PR
-        run: cargo build --release --package jarl-cli
+        run: cargo build --release --package jarl
 
       - name: Save PR binary path
         run: |
@@ -56,7 +56,7 @@ jobs:
         run: |
           git fetch origin main
           git checkout origin/main
-          cargo build --release --package jarl-cli
+          cargo build --release --package jarl
 
       - name: Save main binary path
         run: echo "MAIN_JARL=$(pwd)/target/release/jarl" >> $GITHUB_ENV

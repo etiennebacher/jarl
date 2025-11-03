@@ -1,0 +1,13 @@
+---
+source: crates/jarl/tests/integration/rules.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--ignore-rules\").arg(\"any_is_na,SUSP\").run().normalize_os_executable_name()"
+---
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+
+----- args -----
+check . --ignore-rules any_is_na,SUSP

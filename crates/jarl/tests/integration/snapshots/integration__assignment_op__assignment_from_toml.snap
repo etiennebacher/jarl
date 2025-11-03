@@ -1,0 +1,28 @@
+---
+source: crates/jarl/tests/integration/assignment_op.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 1
+----- stdout -----
+warning: assignment
+ --> test.R:2:1
+  |
+2 | x = 1
+  | --- Use `<-` for assignment.
+  |
+
+warning: assignment
+ --> test.R:4:3
+  |
+4 | 3 -> z
+  |   ---- Use `<-` for assignment.
+  |
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+
+----- args -----
+check .

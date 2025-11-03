@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "crates/jarl-cli",
+    "crates/jarl",
     "crates/jarl-core",
     "crates/jarl-lsp",
 ]

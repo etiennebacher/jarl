@@ -1,0 +1,13 @@
+---
+source: crates/jarl/tests/integration/toml.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--select-rules\").arg(\"length_levels,any_duplicated\").arg(\"--ignore-rules\").arg(\"length_levels\").run().normalize_os_executable_name().normalize_temp_paths()"
+---
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+
+----- args -----
+check . --select-rules length_levels,any_duplicated --ignore-rules length_levels

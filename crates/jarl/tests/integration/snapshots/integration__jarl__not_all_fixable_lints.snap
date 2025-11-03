@@ -1,0 +1,29 @@
+---
+source: crates/jarl/tests/integration/jarl.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--allow-no-vcs\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: duplicated_arguments
+ --> test2.R:1:1
+  |
+1 | list(x = 1, x = 2)
+  | ------------------ Avoid duplicate arguments in function calls. Duplicated argument(s): "x".
+  |
+
+Found 2 errors.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+
+----- args -----
+check . --allow-no-vcs
