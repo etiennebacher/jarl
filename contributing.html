@@ -200,7 +200,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="basic-structure-of-the-repository">Basic structure of the repository</h2>
 <p>The folder <code>crates</code> contains several sub-crates. At the time of writing (October 2025), there are three:</p>
 <ul>
-<li><code>jarl-cli</code> contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.</li>
+<li><code>jarl</code> contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.</li>
 <li><code>jarl-core</code> contains the “meat” of the linter. It is where the R code is parsed and checked, and where the rules are defined. <strong>This is probably the crate you will have to modify.</strong></li>
 <li><code>jarl-lsp</code> contains the code to integrate the linter with the Language Server Protocol, which allows editors such as VS Code or Positron to highlight diagnostics and provide “Quick Fix” buttons for example.</li>
 </ul>
@@ -238,7 +238,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><code>cargo run --bin jarl -- check demos/foo.R</code> (or any other paths to check). The <code>--</code> in the middle is required to use the CLI in development mode (i.e.&nbsp;without installing it with <code>cargo install</code>)</li>
 <li><code>cargo build &amp;&amp; cargo test</code>. It is required to build the crate before running tests.</li>
 <li><code>cargo insta test</code> and <code>cargo insta review</code> (if necessary) for snapshot tests.</li>
-<li><code>cargo install --path crates/jarl-cli --profile=release</code> (or <code>--profile=dev</code>) to have a system-wide install and test the crate in other R projects.</li>
+<li><code>cargo install --path crates/jarl --profile=release</code> (or <code>--profile=dev</code>) to have a system-wide install and test the crate in other R projects.</li>
 </ul>
 <!-- ## Integration tests
 
