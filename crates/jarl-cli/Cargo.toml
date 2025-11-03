@@ -39,10 +39,11 @@ regex.workspace = true
 tempfile.workspace = true
 tracing-subscriber = "0.3.20"
 
-# Need this feature to cross-compile, otherwise get an error "Could not find
-# directory of OpenSSL installation, and this `-sys` crate cannot proceed
-# without this knowledge."
-git2 = {version  = "0.20.2", features = ["vendored-openssl"]}
+# Disable default features because we just need basic ones and we absolutely
+# don't want this crate to pull openssl-sys as dependency as it prevents
+# cross-compiling in the release workflow: "Could not find directory of OpenSSL
+# installation, and this `-sys` crate cannot proceed without this knowledge."
+git2 = {version  = "0.20.2", default-features = false}
 annotate-snippets = "0.11"
 
 [dev-dependencies]
