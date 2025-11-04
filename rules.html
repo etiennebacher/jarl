@@ -310,7 +310,7 @@ ul.task-list li input[type="checkbox"] {
   <ul>
   <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">Overview</a></li>
   </ul>
-<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
@@ -342,143 +342,80 @@ ul.task-list li input[type="checkbox"] {
 <p><strong>Supporting those rules is not an objective of Jarl.</strong> Instead, I recommend using the <a href="https://posit-dev.github.io/air/" target="_blank">Air formatter</a>.</p>
 </div>
 </div>
-<p>The column “Has fix?” can take the following values:</p>
+<p>The column “Has fix” can take the following values:</p>
 <ul>
-<li><p>✅ safe fix</p></li>
-<li><p>❗Unsafe fix</p></li>
+<li><p>✅ Safe fix</p></li>
+<li><p>❗ Unsafe fix</p></li>
 <li><p>❌ No fix</p></li>
 </ul>
-<table class="caption-top table">
-<thead>
-<tr class="header">
-<th>Rule name</th>
-<th>Group</th>
-<th>Has fix?</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>all_equal</td>
-<td>SUSP</td>
-<td>❗</td>
-</tr>
-<tr class="even">
-<td>any_duplicated</td>
-<td>PERF</td>
-<td>✅</td>
-</tr>
-<tr class="odd">
-<td>any_is_na</td>
-<td>PERF</td>
-<td>✅</td>
-</tr>
-<tr class="even">
-<td>assignment</td>
-<td>READ</td>
-<td>✅</td>
-</tr>
-<tr class="odd">
-<td>class_equals</td>
-<td>SUSP</td>
-<td>❗</td>
-</tr>
-<tr class="even">
-<td>coalesce</td>
-<td>READ</td>
-<td>✅</td>
-</tr>
-<tr class="odd">
-<td>duplicated_arguments</td>
-<td>SUSP</td>
-<td>❌</td>
-</tr>
-<tr class="even">
-<td>empty_assignment</td>
-<td>READ</td>
-<td>❌</td>
-</tr>
-<tr class="odd">
-<td>equals_na</td>
-<td>CORR</td>
-<td>✅</td>
-</tr>
-<tr class="even">
-<td>for_loop_index</td>
-<td>READ</td>
-<td>❌</td>
-</tr>
-<tr class="odd">
-<td>grepv</td>
-<td>READ</td>
-<td>✅</td>
-</tr>
-<tr class="even">
-<td>implicit_assignment</td>
-<td>READ</td>
-<td>❌</td>
-</tr>
-<tr class="odd">
-<td>is_numeric</td>
-<td>READ</td>
-<td>✅</td>
-</tr>
-<tr class="even">
-<td>length_levels</td>
-<td>READ</td>
-<td>✅</td>
-</tr>
-<tr class="odd">
-<td>length_test</td>
-<td>CORR</td>
-<td>✅</td>
-</tr>
-<tr class="even">
-<td>lengths</td>
-<td>PERF, READ</td>
-<td>✅</td>
-</tr>
-<tr class="odd">
-<td>matrix_apply</td>
-<td>PERF</td>
-<td>✅</td>
-</tr>
-<tr class="even">
-<td>numeric_leading_zero</td>
-<td>READ</td>
-<td>✅</td>
-</tr>
-<tr class="odd">
-<td>redundant_equals</td>
-<td>READ</td>
-<td>✅</td>
-</tr>
-<tr class="even">
-<td>repeat</td>
-<td>READ</td>
-<td>✅</td>
-</tr>
-<tr class="odd">
-<td>sample_int</td>
-<td>READ</td>
-<td>✅</td>
-</tr>
-<tr class="even">
-<td>sort</td>
-<td>PERF, READ</td>
-<td>✅</td>
-</tr>
-<tr class="odd">
-<td>true_false_symbol</td>
-<td>READ</td>
-<td>❌</td>
-</tr>
-<tr class="even">
-<td>which_grepl</td>
-<td>PERF, READ</td>
-<td>✅</td>
-</tr>
-</tbody>
-</table>
+<div class="cell">
+<style type="text/css">
+.tabulator, .tabulator-header, .tabulator-col, .tabulator-row, .tabulator-cell, .tabulator-table {
+    background-color: transparent !important;
+}
+
+.tabulator-header-filter > input {
+    background-color: transparent !important;
+}
+</style>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<!-- preamble start -->
+
+
+  
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tinytable_mbgojvadv61rlicb69yf</title>
+    <link href="https://cdn.jsdelivr.net/npm/tabulator-tables@6.3/dist/css/tabulator.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/vincentarelbundock/tinytable@main/inst/tabulator_tinytable.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css" rel="stylesheet">
+  
+  
+<!-- preamble end -->
+
+    <div class="container">
+      
+      <div id="tinytable_mbgojvadv61rlicb69yf" style="margin-left: auto; margin-right: auto;"></div>
+      
+      <br>
+    </div>
+
+    <!-- Luxon for date handling -->
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
+
+    <!-- Tabulator JS -->
+    <script src="https://cdn.jsdelivr.net/npm/tabulator-tables@6.3/dist/js/tabulator.min.js"></script>
+
+    <!-- TinyTable custom formatters -->
+    <script src="https://cdn.jsdelivr.net/gh/vincentarelbundock/tinytable@main/inst/tinytable.js"></script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        const table_tinytable_mbgojvadv61rlicb69yf = TinyTable.createTabulator("#tinytable_mbgojvadv61rlicb69yf", {
+          data: [{"Rule_name":"all_equal","Group":"Suspicious","Has_fix":"❗","_tinytable_row_index":1},{"Rule_name":"any_duplicated","Group":"Performance","Has_fix":"✅","_tinytable_row_index":2},{"Rule_name":"any_is_na","Group":"Performance","Has_fix":"✅","_tinytable_row_index":3},{"Rule_name":"assignment","Group":"Readability","Has_fix":"✅","_tinytable_row_index":4},{"Rule_name":"class_equals","Group":"Suspicious","Has_fix":"❗","_tinytable_row_index":5},{"Rule_name":"coalesce","Group":"Readability","Has_fix":"✅","_tinytable_row_index":6},{"Rule_name":"duplicated_arguments","Group":"Suspicious","Has_fix":"❌","_tinytable_row_index":7},{"Rule_name":"empty_assignment","Group":"Readability","Has_fix":"❌","_tinytable_row_index":8},{"Rule_name":"equals_na","Group":"Correctness","Has_fix":"✅","_tinytable_row_index":9},{"Rule_name":"for_loop_index","Group":"Readability","Has_fix":"❌","_tinytable_row_index":10},{"Rule_name":"grepv","Group":"Readability","Has_fix":"✅","_tinytable_row_index":11},{"Rule_name":"implicit_assignment","Group":"Readability","Has_fix":"❌","_tinytable_row_index":12},{"Rule_name":"is_numeric","Group":"Readability","Has_fix":"✅","_tinytable_row_index":13},{"Rule_name":"length_levels","Group":"Readability","Has_fix":"✅","_tinytable_row_index":14},{"Rule_name":"length_test","Group":"Correctness","Has_fix":"✅","_tinytable_row_index":15},{"Rule_name":"lengths","Group":"Performance, readability","Has_fix":"✅","_tinytable_row_index":16},{"Rule_name":"matrix_apply","Group":"Performance","Has_fix":"✅","_tinytable_row_index":17},{"Rule_name":"numeric_leading_zero","Group":"Readability","Has_fix":"✅","_tinytable_row_index":18},{"Rule_name":"redundant_equals","Group":"Readability","Has_fix":"✅","_tinytable_row_index":19},{"Rule_name":"repeat","Group":"Readability","Has_fix":"✅","_tinytable_row_index":20},{"Rule_name":"sample_int","Group":"Readability","Has_fix":"✅","_tinytable_row_index":21},{"Rule_name":"sort","Group":"Performance, readability","Has_fix":"✅","_tinytable_row_index":22},{"Rule_name":"true_false_symbol","Group":"Readability","Has_fix":"❌","_tinytable_row_index":23},{"Rule_name":"which_grepl","Group":"Performance, readability","Has_fix":"✅","_tinytable_row_index":24}],
+          columns: [{"title":"Rule name","field":"Rule_name","headerFilter":"input","headerFilterPlaceholder":""},{"title":"Group","field":"Group","headerFilter":"input","headerFilterPlaceholder":""},{"title":"Has fix","field":"Has_fix","headerFilter":"input","headerFilterPlaceholder":""}],
+          
+        layout: 'fitDataTable'
+      ,
+        });
+
+        
+
+        
+      });
+    </script>
+
+    
+
+<!-- postamble start -->
+  
+
+
+
+</div>
+</div>
 
 
 </section>
@@ -889,4 +826,4 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
