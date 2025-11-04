@@ -125,10 +125,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link" href="./index.html"> 
-<span class="menu-text">Home</span></a>
-  </li>  
-  <li class="nav-item">
     <a class="nav-link active" href="./using-jarl.html" aria-current="page"> 
 <span class="menu-text">Using Jarl</span></a>
   </li>  
@@ -167,14 +163,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#using-jarl" id="toc-using-jarl" class="nav-link active" data-scroll-target="#using-jarl">Using Jarl</a>
-  <ul class="collapse">
-  <li><a href="#linting-and-fixing" id="toc-linting-and-fixing" class="nav-link" data-scroll-target="#linting-and-fixing">Linting and fixing</a></li>
+  <li><a href="#linting-and-fixing" id="toc-linting-and-fixing" class="nav-link active" data-scroll-target="#linting-and-fixing">Linting and fixing</a></li>
   <li><a href="#selecting-and-ignoring-rules" id="toc-selecting-and-ignoring-rules" class="nav-link" data-scroll-target="#selecting-and-ignoring-rules">Selecting and ignoring rules</a></li>
   <li><a href="#ignoring-diagnostics" id="toc-ignoring-diagnostics" class="nav-link" data-scroll-target="#ignoring-diagnostics">Ignoring diagnostics</a></li>
   <li><a href="#dealing-with-r-versions" id="toc-dealing-with-r-versions" class="nav-link" data-scroll-target="#dealing-with-r-versions">Dealing with R versions</a></li>
   <li><a href="#using-a-configuration-file" id="toc-using-a-configuration-file" class="nav-link" data-scroll-target="#using-a-configuration-file">Using a configuration file</a></li>
-  </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/using-jarl.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -200,8 +193,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="using-jarl" class="level1">
-<h1>Using Jarl</h1>
 <section id="linting-and-fixing" class="level2">
 <h2 class="anchored" data-anchor-id="linting-and-fixing">Linting and fixing</h2>
 <p><code>jarl check</code> is the command required to diagnoze one or several files. It takes a path as its first argument, such as <code>jarl check .</code> to check all files starting from the current directory. This command will return a list of diagnostics, one per rule violation.</p>
@@ -296,7 +287,6 @@ For now, the only other way to ignore entire files is to list them in the "ignor
 <p>It is possible to save settings in a <code>jarl.toml</code> file. See the <a href="./config.html" target="_blank">Configuration page</a>.</p>
 
 
-</section>
 </section>
 
 </main> <!-- /main -->

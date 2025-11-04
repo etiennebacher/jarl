@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Contributing – jarl</title>
+<title>Contributing to Jarl – jarl</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -125,10 +125,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link" href="./index.html"> 
-<span class="menu-text">Home</span></a>
-  </li>  
-  <li class="nav-item">
     <a class="nav-link" href="./using-jarl.html"> 
 <span class="menu-text">Using Jarl</span></a>
   </li>  
@@ -167,9 +163,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#contributing-to-jarl" id="toc-contributing-to-jarl" class="nav-link active" data-scroll-target="#contributing-to-jarl">Contributing to Jarl</a>
-  <ul class="collapse">
-  <li><a href="#tools" id="toc-tools" class="nav-link" data-scroll-target="#tools">Tools</a></li>
+  <li><a href="#tools" id="toc-tools" class="nav-link active" data-scroll-target="#tools">Tools</a></li>
   <li><a href="#basic-structure-of-the-repository" id="toc-basic-structure-of-the-repository" class="nav-link" data-scroll-target="#basic-structure-of-the-repository">Basic structure of the repository</a></li>
   <li><a href="#adding-or-modifying-a-rule" id="toc-adding-or-modifying-a-rule" class="nav-link" data-scroll-target="#adding-or-modifying-a-rule">Adding or modifying a rule</a>
   <ul class="collapse">
@@ -177,7 +171,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#lint-definition" id="toc-lint-definition" class="nav-link" data-scroll-target="#lint-definition">Lint definition</a></li>
   <li><a href="#adding-a-new-rule" id="toc-adding-a-new-rule" class="nav-link" data-scroll-target="#adding-a-new-rule">Adding a new rule</a></li>
   <li><a href="#useful-commands" id="toc-useful-commands" class="nav-link" data-scroll-target="#useful-commands">Useful commands</a></li>
-  </ul></li>
   </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/contributing.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
@@ -187,7 +180,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Contributing</h1>
+<h1 class="title">Contributing to Jarl</h1>
 </div>
 
 
@@ -204,8 +197,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="contributing-to-jarl" class="level1">
-<h1>Contributing to Jarl</h1>
 <section id="tools" class="level2">
 <h2 class="anchored" data-anchor-id="tools">Tools</h2>
 <p>Jarl is written in Rust, so you must <a href="https://rust-lang.org/tools/install/" target="_blank">install the Rust toolchain</a>.</p>
@@ -261,7 +252,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 In addition to tests specific to each lint, some integration tests are stored in `tests/integration`. They are here to check that the general behavior is correct (what happens when there are no R files, no lints, several lints in the same file, a mix of safe and unsafe lints, etc.). -->
 
 
-</section>
 </section>
 </section>
 
