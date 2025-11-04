@@ -164,7 +164,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul>
   <li><a href="#with-the-command-line" id="toc-with-the-command-line" class="nav-link active" data-scroll-target="#with-the-command-line">With the command line</a></li>
-  <li><a href="#with-a-config-file" id="toc-with-a-config-file" class="nav-link" data-scroll-target="#with-a-config-file">With a config file</a></li>
+  <li><a href="#with-a-config-file" id="toc-with-a-config-file" class="nav-link" data-scroll-target="#with-a-config-file">With a config file</a>
+  <ul class="collapse">
+  <li><a href="#select" id="toc-select" class="nav-link" data-scroll-target="#select"><code>select</code></a></li>
+  <li><a href="#ignore" id="toc-ignore" class="nav-link" data-scroll-target="#ignore"><code>ignore</code></a></li>
+  <li><a href="#exclude" id="toc-exclude" class="nav-link" data-scroll-target="#exclude"><code>exclude</code></a></li>
+  <li><a href="#default-exclude" id="toc-default-exclude" class="nav-link" data-scroll-target="#default-exclude"><code>default-exclude</code></a></li>
+  <li><a href="#assignment" id="toc-assignment" class="nav-link" data-scroll-target="#assignment"><code>assignment</code></a></li>
+  </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/config.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -255,14 +262,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="with-a-config-file" class="level2">
 <h2 class="anchored" data-anchor-id="with-a-config-file">With a config file</h2>
 <p>To avoid typing options every time and to ensure all uses of Jarl in a project are consistent, it is possible to store options in <code>jarl.toml</code>.</p>
-<p>For now, this only supports two fields: <code>select</code> and <code>ignore</code> to determine which rules to use. This file looks like this:</p>
+<p>This file looks like this:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="dt">select</span> <span class="op">=</span> <span class="op">[]</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="dt">ignore</span> <span class="op">=</span> <span class="op">[]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>This has the same capabilities as <code>--select-rules</code> and <code>--ignore-rules</code>, so it is possible to pass rule names and names of groups of rules:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="dt">select</span> <span class="op">=</span> <span class="op">[</span><span class="st">"PERF"</span><span class="op">,</span> <span class="st">"length_test"</span><span class="op">]</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="dt">ignore</span> <span class="op">=</span> <span class="op">[</span><span class="st">"SUSP"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="dt">ignore</span> <span class="op">=</span> <span class="op">[]</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="dt">exclude</span> <span class="op">=</span> <span class="op">[]</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="dt">default-exclude</span> <span class="op">=</span> <span class="cn">true</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="dt">assignment</span> <span class="op">=</span> <span class="st">"&lt;-"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>These arguments are described below.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -274,16 +281,64 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="callout-body-container callout-body">
 <p>Arguments in the command line always have the priority on those specified in <code>jarl.toml</code>. For example, if you have the following file:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="dt">select</span> <span class="op">=</span> <span class="op">[</span><span class="st">"PERF"</span><span class="op">,</span> <span class="st">"length_test"</span><span class="op">]</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="dt">ignore</span> <span class="op">=</span> <span class="op">[]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="dt">select</span> <span class="op">=</span> <span class="op">[</span><span class="st">"PERF"</span><span class="op">,</span> <span class="st">"length_test"</span><span class="op">]</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="dt">ignore</span> <span class="op">=</span> <span class="op">[]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>then calling</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--ignore-rules</span> PERF</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--ignore-rules</span> PERF</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>will only apply the rule <code>length_test</code>.</p>
 </div>
 </div>
+<section id="select" class="level3">
+<h3 class="anchored" data-anchor-id="select"><code>select</code></h3>
+<p>Select some rules by default.</p>
+<p>This has the same capabilities as <code>--select-rules</code>, so it is possible to pass rule names and names of groups of rules:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="dt">select</span> <span class="op">=</span> <span class="op">[</span><span class="st">"PERF"</span><span class="op">,</span> <span class="st">"length_test"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="ignore" class="level3">
+<h3 class="anchored" data-anchor-id="ignore"><code>ignore</code></h3>
+<p>Ignore some rules by default.</p>
+<p>This has the same capabilities as <code>--ignore-rules</code>, so it is possible to pass rule names and names of groups of rules:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="dt">ignore</span> <span class="op">=</span> <span class="op">[</span><span class="st">"PERF"</span><span class="op">,</span> <span class="st">"length_test"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="exclude" class="level3">
+<h3 class="anchored" data-anchor-id="exclude"><code>exclude</code></h3>
+<p>Files and/or directories that are not checked.</p>
+<p>This takes a list relative paths to ignore:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="dt">exclude</span> <span class="op">=</span> <span class="op">[</span><span class="st">"excluded.R"</span><span class="op">,</span> <span class="st">"tests/"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>It also supports glob patterns:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="dt">exclude</span> <span class="op">=</span> <span class="op">[</span><span class="st">"excluded-*.R"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="default-exclude" class="level3">
+<h3 class="anchored" data-anchor-id="default-exclude"><code>default-exclude</code></h3>
+<p>This takes a boolean argument indicating whether the default file exclude patterns are used.</p>
+<p>By default, Jarl (just like the Air formatter) excludes a set of files and folders that are probably not worth checking, for instance because they are automatically generated by another program.</p>
+<p>The complete list of default exclude patterns is:</p>
+<ul>
+<li><code>.git/</code></li>
+<li><code>renv/</code></li>
+<li><code>revdep/</code></li>
+<li><code>cpp11.R</code></li>
+<li><code>RcppExports.R</code></li>
+<li><code>extendr-wrappers.R</code></li>
+<li><code>import-standalone-*.R</code></li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="dt">default-exclude</span> <span class="op">=</span> <span class="cn">true</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="assignment" class="level3">
+<h3 class="anchored" data-anchor-id="assignment"><code>assignment</code></h3>
+<p>This takes a single value (<code>"&lt;-"</code> or <code>"="</code>) indicating the preferred assignment operator in the files to check. While <code>"&lt;-"</code> is recommended by several style guides, using <code>"="</code> is equivalent in most cases and several popular projects use it.</p>
+<p>This parameter is only useful if the <code>assignment</code> rule is active. If <code>assignment = "&lt;-"</code> (default), then any use of the <code>"="</code> operator to assign values will be reported, and vice-versa.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="dt">assignment</span> <span class="op">=</span> <span class="st">"&lt;-"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->
