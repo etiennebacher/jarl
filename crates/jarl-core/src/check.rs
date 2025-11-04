@@ -23,10 +23,8 @@ use crate::utils::*;
 pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
     // Check version control once before processing files, if fixes will be applied
     if (config.apply_fixes || config.apply_unsafe_fixes) && !config.paths.is_empty() {
-        // Use the first path to check the repository
         let first_path = relativize_path(&config.paths[0]);
         if let Err(e) = check_version_control(&first_path, &config) {
-            // Return the error for all files so it's only displayed once
             return vec![(first_path.clone(), Err(e))];
         }
     }
