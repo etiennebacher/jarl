@@ -616,28 +616,28 @@
   {
     "objectID": "contributing.html",
     "href": "contributing.html",
-    "title": "Contributing to Jarl",
+    "title": "Contributing",
     "section": "",
     "text": "Jarl is written in Rust, so you must install the Rust toolchain.\nJarl relies on Insta to run snapshot tests. You can install it with:\ncargo install cargo-insta\n\n\n\nThe folder crates contains several sub-crates. At the time of writing (October 2025), there are three:\n\njarl contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.\njarl-core contains the “meat” of the linter. It is where the R code is parsed and checked, and where the rules are defined. This is probably the crate you will have to modify.\njarl-lsp contains the code to integrate the linter with the Language Server Protocol, which allows editors such as VS Code or Positron to highlight diagnostics and provide “Quick Fix” buttons for example.\n\n\n\n\nIn this section, all paths refer to files in crates/jarl-core.\n\n\nsrc/lints/mod.rs contains the existing list of rules. Each rule must have a name, belong to one or several categories (PERF, READ, etc.), a FixStatus indicating whether it has a fix and, if so, whether this fix is safe or unsafe, and an optional minimum required R version.\n\n\n\nsrc/lints contains the definition of the rules, along with their associated documentation and tests. It has one subfolder per rule and two mandatory files: &lt;rule_name&gt;.rs (which contains the definition and documentation) and mod.rs (which contains the tests).\nIf there are snapshot tests for this rule, then a subfolder snapshots will also be created. For example, the folder for the rule any_duplicated looks like this:\nsrc/lints/any_duplicated/\n├── any_duplicated.rs\n├── mod.rs\n└── snapshots\n    └── jarl__lints__any_duplicated__tests__fix_output.snap\n\n\n\nAdding a new rule requires four main steps:\n\nAdd the new rule to the list in src/lints/mod.rs. In the same file, also add pub(crate) mod &lt;rulename&gt;;\nAdd a subfolder with the rule name in src/lints. Add the documentation and the code for the rule.\nAdd tests in src/lints/&lt;rulename&gt;/mod.rs\nAdd the rule in the src/analyze folder. This depends on the initial node in the AST. For instance, for the rule equals_na, we check the presence of code such as x == NA. Since the top node for this expression is a R_BINARY_EXPRESSION, this rule is ran in src/analyze/binary_expression.rs.\n\n\n\n\n\ncargo run --bin jarl -- check demos/foo.R (or any other paths to check). The -- in the middle is required to use the CLI in development mode (i.e. without installing it with cargo install)\ncargo build && cargo test. It is required to build the crate before running tests.\ncargo insta test and cargo insta review (if necessary) for snapshot tests.\ncargo install --path crates/jarl --profile=release (or --profile=dev) to have a system-wide install and test the crate in other R projects."
   },
   {
     "objectID": "contributing.html#tools",
     "href": "contributing.html#tools",
-    "title": "Contributing to Jarl",
+    "title": "Contributing",
     "section": "",
     "text": "Jarl is written in Rust, so you must install the Rust toolchain.\nJarl relies on Insta to run snapshot tests. You can install it with:\ncargo install cargo-insta"
   },
   {
     "objectID": "contributing.html#basic-structure-of-the-repository",
     "href": "contributing.html#basic-structure-of-the-repository",
-    "title": "Contributing to Jarl",
+    "title": "Contributing",
     "section": "",
     "text": "The folder crates contains several sub-crates. At the time of writing (October 2025), there are three:\n\njarl contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.\njarl-core contains the “meat” of the linter. It is where the R code is parsed and checked, and where the rules are defined. This is probably the crate you will have to modify.\njarl-lsp contains the code to integrate the linter with the Language Server Protocol, which allows editors such as VS Code or Positron to highlight diagnostics and provide “Quick Fix” buttons for example."
   },
   {
     "objectID": "contributing.html#adding-or-modifying-a-rule",
     "href": "contributing.html#adding-or-modifying-a-rule",
-    "title": "Contributing to Jarl",
+    "title": "Contributing",
     "section": "",
     "text": "In this section, all paths refer to files in crates/jarl-core.\n\n\nsrc/lints/mod.rs contains the existing list of rules. Each rule must have a name, belong to one or several categories (PERF, READ, etc.), a FixStatus indicating whether it has a fix and, if so, whether this fix is safe or unsafe, and an optional minimum required R version.\n\n\n\nsrc/lints contains the definition of the rules, along with their associated documentation and tests. It has one subfolder per rule and two mandatory files: &lt;rule_name&gt;.rs (which contains the definition and documentation) and mod.rs (which contains the tests).\nIf there are snapshot tests for this rule, then a subfolder snapshots will also be created. For example, the folder for the rule any_duplicated looks like this:\nsrc/lints/any_duplicated/\n├── any_duplicated.rs\n├── mod.rs\n└── snapshots\n    └── jarl__lints__any_duplicated__tests__fix_output.snap\n\n\n\nAdding a new rule requires four main steps:\n\nAdd the new rule to the list in src/lints/mod.rs. In the same file, also add pub(crate) mod &lt;rulename&gt;;\nAdd a subfolder with the rule name in src/lints. Add the documentation and the code for the rule.\nAdd tests in src/lints/&lt;rulename&gt;/mod.rs\nAdd the rule in the src/analyze folder. This depends on the initial node in the AST. For instance, for the rule equals_na, we check the presence of code such as x == NA. Since the top node for this expression is a R_BINARY_EXPRESSION, this rule is ran in src/analyze/binary_expression.rs.\n\n\n\n\n\ncargo run --bin jarl -- check demos/foo.R (or any other paths to check). The -- in the middle is required to use the CLI in development mode (i.e. without installing it with cargo install)\ncargo build && cargo test. It is required to build the crate before running tests.\ncargo insta test and cargo insta review (if necessary) for snapshot tests.\ncargo install --path crates/jarl --profile=release (or --profile=dev) to have a system-wide install and test the crate in other R projects."
   },
@@ -665,23 +665,21 @@
   {
     "objectID": "rules.html",
     "href": "rules.html",
-    "title": "jarl",
+    "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_mbgojvadv61rlicb69yf",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_gvozqm3wqncly9c27ub6",
     "crumbs": [
-      "Rules",
-      "Overview"
+      "Rules"
     ]
   },
   {
     "objectID": "rules.html#overview",
     "href": "rules.html#overview",
-    "title": "jarl",
+    "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_mbgojvadv61rlicb69yf",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_gvozqm3wqncly9c27ub6",
     "crumbs": [
-      "Rules",
-      "Overview"
+      "Rules"
     ]
   },
   {
