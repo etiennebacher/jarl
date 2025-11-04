@@ -31,10 +31,14 @@ fn test_no_git_repo_blocks_fix() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();
 
+    // Ensure that the message is printed only once and not once per file
+    // https://github.com/etiennebacher/jarl/issues/135
     let test_path = "demos/test.R";
+    let test_path_2 = "demos/test_2.R";
     let test_contents = "any(is.na(x))";
     std::fs::create_dir_all(directory.join("demos"))?;
     std::fs::write(directory.join(test_path), test_contents)?;
+    std::fs::write(directory.join(test_path_2), test_contents)?;
 
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
