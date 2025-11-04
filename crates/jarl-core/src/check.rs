@@ -21,6 +21,16 @@ use crate::rule_table::RuleTable;
 use crate::utils::*;
 
 pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
+    // Check version control once before processing files, if fixes will be applied
+    if (config.apply_fixes || config.apply_unsafe_fixes) && !config.paths.is_empty() {
+        // Use the first path to check the repository
+        let first_path = relativize_path(&config.paths[0]);
+        if let Err(e) = check_version_control(&first_path, &config) {
+            // Return the error for all files so it's only displayed once
+            return vec![(first_path.clone(), Err(e))];
+        }
+    }
+
     config
         .paths
         .par_iter()
@@ -52,7 +62,6 @@ pub fn lint_only(path: &PathBuf, config: Config) -> Result<Vec<Diagnostic>, anyh
 
 pub fn lint_fix(path: &PathBuf, config: Config) -> Result<Vec<Diagnostic>, anyhow::Error> {
     let path = relativize_path(path);
-    check_version_control(&path, &config)?;
 
     let mut has_skipped_fixes = true;
     let mut checks: Vec<Diagnostic>;
