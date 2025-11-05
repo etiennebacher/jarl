@@ -44,3 +44,22 @@ p, a, li, .callout-title-container, table {
 h1 {
 	margin-top: 0rem !important;
 }
+
+header {
+    nav {
+        ul {
+            &.navbar-nav {
+                li {
+                    a {
+                        border-bottom: 3px solid transparent;
+                        transition: border-bottom 0.5s;
+                        &:hover, &.active {
+                            border-color: #4b5f9b;
+														color: #4b5f9b !important;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
