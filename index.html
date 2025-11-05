@@ -201,15 +201,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p><a href="https://jarl.etiennebacher.com/" target="_blank"><img src="https://img.shields.io/static/v1?label=Docs&amp;message=Visit&amp;color=blue"></a> <a href="https://github.com/etiennebacher/jarl/actions" target="_blank"><img src="https://github.com/etiennebacher/jarl/workflows/cargo-test/badge.svg"></a></p>
 </div>
 <p><br></p>
-<p>Jarl is a fast linter<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> for R.</p>
+<p>Jarl is a fast linter for R, it does static code analysis to search for programming errors, bugs, and suspicious patterns of code.</p>
 <ul>
-<li>orders of magnitudes faster than <code>lintr</code> and <code>flir</code><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a></li>
-<li>automatic fixes when possible</li>
-<li>support for 20+ <a href="https://jarl.etiennebacher.com/rules" target="_blank"><code>lintr</code> rules</a> (and growing)</li>
-<li>integration in popular IDEs and editors (VS Code, Positron, Emacs, Vim, …)</li>
+<li>Orders of magnitudes faster than <code>lintr</code> and <code>flir</code><a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></li>
+<li>Automatic fixes when possible</li>
+<li>Support for 20+ <a href="https://jarl.etiennebacher.com/rules" target="_blank"><code>lintr</code> rules</a> (and growing)</li>
+<li>Integration in popular IDEs and editors (VS Code, Positron, Emacs, Vim, …)</li>
 <li>CLI available</li>
-<li>multiple output modes available (concise, detailed, JSON format)</li>
-<li>built-in CI workflow</li>
+<li>Multiple output modes (concise, detailed, JSON format)</li>
+<li>CI workflow</li>
 </ul>
 <p>Jarl is built on <a href="https://posit-dev.github.io/air/" target="_blank">Air</a>, a fast formatter for R written in Rust.</p>
 <p><br></p>
@@ -269,8 +269,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
 
 <ol>
-<li id="fn1"><p>A code linter is a tool that does static code analysis to search for programming errors, bugs, and suspicious patterns of code.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2"><p>Using 20 rules on the <code>dplyr</code> package (~25k lines of R code), Jarl took 0.131s, <code>flir</code> took 4.5s, and <code>lintr</code> took 18.5s (9s with caching enabled).<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn1"><p>Using 20 rules on the <code>dplyr</code> package (~25k lines of R code), Jarl took 0.131s, <code>flir</code> took 4.5s, and <code>lintr</code> took 18.5s (9s with caching enabled).<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
