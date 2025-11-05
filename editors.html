@@ -106,7 +106,7 @@ ul.task-list li input[type="checkbox"] {
 <span class="menu-text">Editors</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./integration.md"> 
+    <a class="nav-link" href="./integrations.html"> 
 <span class="menu-text">Integrations</span></a>
   </li>  
   <li class="nav-item">
@@ -169,13 +169,13 @@ ul.task-list li input[type="checkbox"] {
 <ul>
 <li>code highlights will underline pieces of code that violate any rule in your setup:</li>
 </ul>
-<p><img src="img/code_highlight.PNG" class="img-fluid"></p>
+<p><img src="img/code_highlight.PNG" class="img-fluid" alt="R script with `any(is.na(x))` underlined in yellow, indicating a rule violation. A popup shows Jarl message."></p>
 <ul>
 <li>quick fixes lightbulb icons will appear when the cursor is next to a highlighted piece of code. Clicking this icon will allow you to apply the fix only for this piece of code:</li>
 </ul>
-<p><img src="img/code_quick_fix_1.PNG" class="img-fluid"></p>
-<p><img src="img/code_quick_fix_2.PNG" class="img-fluid"></p>
-<p><img src="img/code_quick_fix_3.PNG" class="img-fluid"></p>
+<p><img src="img/code_quick_fix_1.PNG" class="img-fluid" alt="R script showing the code `any(is.na(x))`. A blue lightbulb shows that a quick fix is available for this piece of code."></p>
+<p><img src="img/code_quick_fix_2.PNG" class="img-fluid" alt="After clicking on the lightbulb, a popup appears with a button to automatically apply the fix."></p>
+<p><img src="img/code_quick_fix_3.PNG" class="img-fluid" alt="The fix has been applied, the screenshot now shows `anyNA(x)`."></p>
 <p>This extension provides few options integrated in VS Code or Positron. One of them is “Assignment operator”, that indicates which of <code>"="</code> or <code>"&lt;-"</code> is preferred in the files parsed by Jarl. This option can be set at the User or Workspace level by looking for “Jarl” in the IDE settings.</p>
 <p>It is recommended to use <a href="./config.html" target="_blank"><code>jarl.toml</code></a> if more configuration is needed.</p>
 <div class="callout callout-style-default callout-tip callout-titled">
