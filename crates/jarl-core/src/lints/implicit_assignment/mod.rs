@@ -60,6 +60,12 @@ mod tests {
             "implicit_assignment",
             None,
         );
+        expect_lint(
+            "expect_true(x <- 1 > 2)",
+            "in function calls",
+            "implicit_assignment",
+            None,
+        );
     }
 
     #[test]
@@ -88,5 +94,10 @@ mod tests {
             "implicit_assignment",
             None,
         );
+
+        // Whitelist: https://github.com/etiennebacher/jarl/issues/133
+        expect_no_lint("expect_message(x <- 1)", "implicit_assignment", None);
+        expect_no_lint("expect_warning(x <- 1)", "implicit_assignment", None);
+        expect_no_lint("expect_error(x <- 1)", "implicit_assignment", None);
     }
 }

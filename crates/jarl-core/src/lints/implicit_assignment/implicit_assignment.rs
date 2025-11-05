@@ -74,6 +74,23 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
         result
     };
 
+    // Do not report cases like `expect_message(x <- foo)` because this code
+    // could test that `<-.foo` returns a message, which is a valid usage.
+    if ancestor_is_arg {
+        for ancestor in ast.syntax().ancestors() {
+            if RCall::can_cast(ancestor.kind()) {
+                let function_name = RCall::cast(ancestor).unwrap().function()?.to_trimmed_text();
+                if ["expect_error", "expect_warning", "expect_message"]
+                    .contains(&function_name.to_string().as_str())
+                {
+                    return Ok(None);
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+
     // We want to skip cases like
     // ```r
     // if (TRUE) x <- 1
