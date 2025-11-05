@@ -36,6 +36,8 @@ website:
       href: config.md
     - text: Rules
       href: rules.qmd
+    - text: Editors
+      href: editors.md
     - text: Contributing
       href: contributing.md
   sidebar:

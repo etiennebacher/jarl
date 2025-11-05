@@ -5,9 +5,9 @@
 
 ---
 toc: false
+title: Jarl
 ---
 
-<div style="text-align: center !important"><h1>jarl</h1></div>
 <div style="text-align: center !important"><i>Just Another R Linter</i> </div>
 <br>
 <div style="text-align: center !important">
@@ -33,6 +33,45 @@ Jarl is built on [Air](https://posit-dev.github.io/air/), a fast formatter for R
 
 [^linter-explanation]: A code linter is a tool that does static code analysis to search for programming errors, bugs, and suspicious patterns of code.
 [^benchmark]: Using 20 rules on the `dplyr` package (~25k lines of R code), Jarl took 0.131s, `flir` took 4.5s, and `lintr` took 18.5s (9s with caching enabled).
+
+
+## Quick start
+
+You can use Jarl via the command line.
+
+`test.R`:
+```r
+any(is.na(x))
+```
+
+```sh
+> jarl check test.R
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+```
+
+Use `--fix` to automatically fix rule violations when possible:
+
+```sh
+> jarl check test.R --fix
+```
+
+`test.R`:
+```r
+anyNA(x)
+```
+
+Jarl can also be directly integrated in your coding environment, see [Editors](https://jarl.etiennebacher.com/editors).
+
+
 
 ## Installation
 
