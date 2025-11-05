@@ -71,7 +71,6 @@ anyNA(x)
 Jarl can also be directly integrated in your coding environment, see [Editors](https://jarl.etiennebacher.com/editors).
 
 
-
 ## Installation
 
 ### Binaries
@@ -86,7 +85,7 @@ curl --proto '=https' --tlsv1.2 -LsSf \
 **Windows:**
 
 ```sh
-powershell -ExecutionPolicy Bypass -c \
+powershell -ExecutionPolicy Bypass -c `
   "irm https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.ps1 | iex"
 ```
 
