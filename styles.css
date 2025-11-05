@@ -63,3 +63,14 @@ header {
         }
     }
 }
+
+/* Wrap text that overflows in codeblocks */
+pre {
+  padding: 1em;
+}
+
+pre code {
+  background-color: transparent;
+  display: block;
+  overflow-x: auto;
+}

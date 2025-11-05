@@ -674,7 +674,7 @@
     "href": "rules.html",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_6uemlizxrgyyslrd9bxe",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_pfgiffwnah69u7x9if6u",
     "crumbs": [
       "Rules"
     ]
@@ -684,7 +684,7 @@
     "href": "rules.html#overview",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_6uemlizxrgyyslrd9bxe",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_pfgiffwnah69u7x9if6u",
     "crumbs": [
       "Rules"
     ]
@@ -729,7 +729,7 @@
     "href": "index.html#installation",
     "title": "Jarl",
     "section": "Installation",
-    "text": "Installation\n\nBinaries\nmacOS and Linux:\ncurl --proto '=https' --tlsv1.2 -LsSf \\\n  https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.sh | sh\nWindows:\npowershell -ExecutionPolicy Bypass -c \\\n  \"irm https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.ps1 | iex\"\n\n\nFrom source\nAlternatively, if you have Rust installed, you can get the development version with:\ncargo install --git https://github.com/etiennebacher/jarl --profile=release"
+    "text": "Installation\n\nBinaries\nmacOS and Linux:\ncurl --proto '=https' --tlsv1.2 -LsSf \\\n  https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.sh | sh\nWindows:\npowershell -ExecutionPolicy Bypass -c `\n  \"irm https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.ps1 | iex\"\n\n\nFrom source\nAlternatively, if you have Rust installed, you can get the development version with:\ncargo install --git https://github.com/etiennebacher/jarl --profile=release"
   },
   {
     "objectID": "index.html#acknowledgements",
