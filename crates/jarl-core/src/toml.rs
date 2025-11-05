@@ -58,6 +58,7 @@ pub struct GlobalTomlOptions {}
 
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct LinterTomlOptions {
     /// # Rules to select
     ///

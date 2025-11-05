@@ -43,6 +43,7 @@ rayon.workspace = true
 # cross-compiling in the release workflow: "Could not find directory of OpenSSL
 # installation, and this `-sys` crate cannot proceed without this knowledge."
 git2 = {version  = "0.20.2", default-features = false}
+schemars = "1.1.0"
 
 [dev-dependencies]
 insta.workspace = true
