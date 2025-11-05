@@ -127,8 +127,14 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#vs-code-positron" id="toc-vs-code-positron" class="nav-link active" data-scroll-target="#vs-code-positron">VS Code / Positron</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/editors.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -152,8 +158,38 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<section id="vs-code-positron" class="level2">
+<h2 class="anchored" data-anchor-id="vs-code-positron">VS Code / Positron</h2>
+<p>Both VS Code and Positron have access to the Jarl extension via the <a href="https://marketplace.visualstudio.com/items?itemName=EtienneBacher.jarl-vscode" target="_blank">VS Marketplace</a> and <a href="https://open-vsx.org/extension/etiennebacher/jarl-vscode" target="_blank">Open VSX</a>.</p>
+<p>This extension provides code higlights and quick fixes:</p>
+<ul>
+<li>code highlights will underline pieces of code that violate any rule in your setup:</li>
+</ul>
+<p><img src="img/code_highlight.PNG" class="img-fluid"></p>
+<ul>
+<li>quick fixes lightbulb icons will appear when the cursor is next to a highlighted piece of code. Clicking this icon will allow you to apply the fix only for this piece of code:</li>
+</ul>
+<p><img src="img/code_quick_fix_1.PNG" class="img-fluid"></p>
+<p><img src="img/code_quick_fix_2.PNG" class="img-fluid"></p>
+<p><img src="img/code_quick_fix_3.PNG" class="img-fluid"></p>
+<p>This extension provides few options integrated in VS Code or Positron. One of them is “Assignment operator”, that indicates which of <code>"="</code> or <code>"&lt;-"</code> is preferred in the files parsed by Jarl. This option can be set at the User or Workspace level by looking for “Jarl” in the IDE settings.</p>
+<p>It is recommended to use <a href="./config.html" target="_blank"><code>jarl.toml</code></a> if more configuration is needed.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The <a href="https://github.com/tombi-toml/tombi" target="_blank">Tombi extension</a> is useful to have suggestions and autocompletion when editing <code>jarl.toml</code>.</p>
+</div>
+</div>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -561,4 +597,4 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/editors.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/editors.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
