@@ -642,6 +642,26 @@
     "text": "Adding or modifying a rule\nIn this section, all paths refer to files in crates/jarl-core.\n\nList of existing rules\nsrc/lints/mod.rs contains the existing list of rules. Each rule must have a name, belong to one or several categories (PERF, READ, etc.), a FixStatus indicating whether it has a fix and, if so, whether this fix is safe or unsafe, and an optional minimum required R version.\n\n\nLint definition\nsrc/lints contains the definition of the rules, along with their associated documentation and tests. It has one subfolder per rule and two mandatory files: &lt;rule_name&gt;.rs (which contains the definition and documentation) and mod.rs (which contains the tests).\nIf there are snapshot tests for this rule, then a subfolder snapshots will also be created. For example, the folder for the rule any_duplicated looks like this:\nsrc/lints/any_duplicated/\n├── any_duplicated.rs\n├── mod.rs\n└── snapshots\n    └── jarl__lints__any_duplicated__tests__fix_output.snap\n\n\nAdding a new rule\nAdding a new rule requires four main steps:\n\nAdd the new rule to the list in src/lints/mod.rs. In the same file, also add pub(crate) mod &lt;rulename&gt;;\nAdd a subfolder with the rule name in src/lints. Add the documentation and the code for the rule.\nAdd tests in src/lints/&lt;rulename&gt;/mod.rs\nAdd the rule in the src/analyze folder. This depends on the initial node in the AST. For instance, for the rule equals_na, we check the presence of code such as x == NA. Since the top node for this expression is a R_BINARY_EXPRESSION, this rule is ran in src/analyze/binary_expression.rs.\n\n\n\nUseful commands\n\ncargo run --bin jarl -- check demos/foo.R (or any other paths to check). The -- in the middle is required to use the CLI in development mode (i.e. without installing it with cargo install)\ncargo build && cargo test. It is required to build the crate before running tests.\ncargo insta test and cargo insta review (if necessary) for snapshot tests.\ncargo install --path crates/jarl --profile=release (or --profile=dev) to have a system-wide install and test the crate in other R projects."
   },
   {
+    "objectID": "rules.html",
+    "href": "rules.html",
+    "title": "Rules",
+    "section": "",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_xcqppp7yce2df549pikg",
+    "crumbs": [
+      "Rules"
+    ]
+  },
+  {
+    "objectID": "rules.html#overview",
+    "href": "rules.html#overview",
+    "title": "Rules",
+    "section": "",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_xcqppp7yce2df549pikg",
+    "crumbs": [
+      "Rules"
+    ]
+  },
+  {
     "objectID": "config.html",
     "href": "config.html",
     "title": "Configuring Jarl",
@@ -663,31 +683,18 @@
     "text": "With a config file\nTo avoid typing options every time and to ensure all uses of Jarl in a project are consistent, it is possible to store options in jarl.toml.\nThis file looks like this:\n[lint]\nselect = []\nignore = []\nexclude = []\ndefault-exclude = true\nassignment = \"&lt;-\"\nThese arguments are described below.\n\n\n\n\n\n\nNoteUsing CLI arguments and jarl.toml\n\n\n\nArguments in the command line always have the priority on those specified in jarl.toml. For example, if you have the following file:\n[lint]\nselect = [\"PERF\", \"length_test\"]\nignore = []\nthen calling\njarl check . --ignore-rules PERF\nwill only apply the rule length_test.\n\n\n\nselect\nSelect some rules by default.\nThis has the same capabilities as --select-rules, so it is possible to pass rule names and names of groups of rules:\n[lint]\nselect = [\"PERF\", \"length_test\"]\n\n\nignore\nIgnore some rules by default.\nThis has the same capabilities as --ignore-rules, so it is possible to pass rule names and names of groups of rules:\n[lint]\nignore = [\"PERF\", \"length_test\"]\n\n\nexclude\nFiles and/or directories that are not checked.\nThis takes a list relative paths to ignore:\n[lint]\nexclude = [\"excluded.R\", \"tests/\"]\nIt also supports glob patterns:\n[lint]\nexclude = [\"excluded-*.R\"]\n\n\ndefault-exclude\nThis takes a boolean argument indicating whether the default file exclude patterns are used.\nBy default, Jarl (just like the Air formatter) excludes a set of files and folders that are probably not worth checking, for instance because they are automatically generated by another program.\nThe complete list of default exclude patterns is:\n\n.git/\nrenv/\nrevdep/\ncpp11.R\nRcppExports.R\nextendr-wrappers.R\nimport-standalone-*.R\n\n[lint]\ndefault-exclude = true\n\n\nassignment\nThis takes a single value (\"&lt;-\" or \"=\") indicating the preferred assignment operator in the files to check. While \"&lt;-\" is recommended by several style guides, using \"=\" is equivalent in most cases and several popular projects use it.\nThis parameter is only useful if the assignment rule is active. If assignment = \"&lt;-\" (default), then any use of the \"=\" operator to assign values will be reported, and vice-versa.\n[lint]\nassignment = \"&lt;-\""
   },
   {
-    "objectID": "rules.html",
-    "href": "rules.html",
-    "title": "Rules",
-    "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_082585sac51r1zb3s3i6",
-    "crumbs": [
-      "Rules"
-    ]
-  },
-  {
-    "objectID": "rules.html#overview",
-    "href": "rules.html#overview",
-    "title": "Rules",
-    "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_082585sac51r1zb3s3i6",
-    "crumbs": [
-      "Rules"
-    ]
-  },
-  {
     "objectID": "index.html",
     "href": "index.html",
     "title": "Jarl",
     "section": "",
     "text": "Just Another R Linter\nJarl is a fast linter1 for R.\nJarl is built on Air, a fast formatter for R written in Rust."
+  },
+  {
+    "objectID": "index.html#quick-start",
+    "href": "index.html#quick-start",
+    "title": "Jarl",
+    "section": "Quick start",
+    "text": "Quick start\nYou can use Jarl via the command line.\ntest.R:\nany(is.na(x))\n&gt; jarl check test.R\nwarning: any_is_na\n --&gt; test.R:1:1\n  |\n1 | any(is.na(x))\n  | ------------- `any(is.na(...))` is inefficient.\n  |\n  = help: Use `anyNA(...)` instead.\n\nFound 1 error.\n1 fixable with the `--fix` option.\nUse --fix to automatically fix rule violations when possible:\n&gt; jarl check test.R --fix\ntest.R:\nanyNA(x)\nJarl can also be directly integrated in your coding environment, see Editors."
   },
   {
     "objectID": "index.html#installation",
