@@ -38,6 +38,8 @@ website:
       href: rules.qmd
     - text: Editors
       href: editors.md
+    - text: Integrations
+      href: integration.md
     - text: Contributing
       href: contributing.md
   sidebar:
