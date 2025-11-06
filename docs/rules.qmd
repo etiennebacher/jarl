@@ -44,34 +44,33 @@ The column "Has fix" can take the following values:
 library(tinytable)
 dat <- as.data.frame(
   rbind(
-    c("all_equal", "Suspicious", "❗"),
-    c("any_duplicated", "Performance", "✅"),
-    c("any_is_na", "Performance", "✅"),
-    c("assignment", "Readability", "✅"),
-    c("class_equals", "Suspicious", "❗"),
-    c("coalesce", "Readability", "✅"),
-    c("duplicated_arguments", "Suspicious", "❌"),
-    c("empty_assignment", "Readability", "❌"),
-    c("equals_na", "Correctness", "✅"),
-    c("for_loop_index", "Readability", "❌"),
-    c("grepv", "Readability", "✅"),
-    c("implicit_assignment", "Readability", "❌"),
-    c("is_numeric", "Readability", "✅"),
-    c("length_levels", "Readability", "✅"),
-    c("length_test", "Correctness", "✅"),
-    c("lengths", "Performance, readability", "✅"),
-    c("matrix_apply", "Performance", "✅"),
-    c("numeric_leading_zero", "Readability", "✅"),
-    c("redundant_equals", "Readability", "✅"),
-    c("repeat", "Readability", "✅"),
-    c("sample_int", "Readability", "✅"),
-    c("sort", "Performance, readability", "✅"),
-    c("true_false_symbol", "Readability", "❌"),
-    c("which_grepl", "Performance, readability", "✅")
+    c("all_equal", "Suspicious", "❗", ""),
+    c("any_duplicated", "Performance", "✅", ""),
+    c("any_is_na", "Performance", "✅", ""),
+    c("assignment", "Readability", "✅", ""),
+    c("class_equals", "Suspicious", "❗", ""),
+    c("coalesce", "Readability", "✅", "R >= 4.4"),
+    c("duplicated_arguments", "Suspicious", "❌", ""),
+    c("empty_assignment", "Readability", "❌", ""),
+    c("equals_na", "Correctness", "✅", ""),
+    c("for_loop_index", "Readability", "❌", ""),
+    c("grepv", "Readability", "✅", "R >= 4.5"),
+    c("implicit_assignment", "Readability", "❌", ""),
+    c("is_numeric", "Readability", "✅", ""),
+    c("length_levels", "Readability", "✅", ""),
+    c("length_test", "Correctness", "✅", ""),
+    c("lengths", "Performance, readability", "✅", ""),
+    c("matrix_apply", "Performance", "✅", ""),
+    c("numeric_leading_zero", "Readability", "✅", ""),
+    c("redundant_equals", "Readability", "✅", ""),
+    c("repeat", "Readability", "✅", ""),
+    c("sample_int", "Readability", "✅", ""),
+    c("sort", "Performance, readability", "✅", ""),
+    c("true_false_symbol", "Readability", "❌", ""),
+    c("which_grepl", "Performance, readability", "✅", "")
   )
 )
-names(dat) <- c("Rule name", "Group", "Has fix")
+names(dat) <- c("Rule name", "Group", "Has fix", "Conditions")
 tt(dat) |>
-  format_tt(escape = TRUE) |> 
   theme_html(engine = "tabulator", tabulator_search = "column")
 ```
