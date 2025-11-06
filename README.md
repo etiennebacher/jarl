@@ -8,9 +8,9 @@
 
 <br>
 
-Jarl is a fast linter for R, it does static code analysis to search for programming errors, bugs, and suspicious patterns of code.
+Jarl is a fast linter for R: it does static code analysis to search for programming errors, bugs, and suspicious patterns of code.
 
-* Orders of magnitudes faster than `lintr` and `flir`[^benchmark]
+* Orders of magnitude faster than `lintr` and `flir`[^benchmark]
 * Automatic fixes when possible
 * Support for 20+ [`lintr` rules](https://jarl.etiennebacher.com/rules) (and growing)
 * Integration in popular IDEs and editors (VS Code, Positron, Emacs, Vim, ...)
@@ -76,8 +76,8 @@ curl --proto '=https' --tlsv1.2 -LsSf \
 **Windows:**
 
 ```sh
-powershell -ExecutionPolicy Bypass -c `
-  "irm https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.ps1 | iex"
+powershell Set-ExecutionPolicy Bypass -Scope Process -Force; `
+   iwr https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.ps1 | iex   
 ```
 
 ### From source
