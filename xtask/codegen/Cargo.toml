@@ -1,0 +1,16 @@
+[package]
+name = "xtask_codegen"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+anyhow = { workspace = true }
+bpaf = { version = "0.9.15", features = ["derive"] }
+schemars = { workspace = true }
+serde_json = { workspace = true }
+xtask = { version = "0.0", path = "../" }
+jarl-core = { workspace = true, features = ["schemars"] }
+
+[dev-dependencies]
+insta = { workspace = true }

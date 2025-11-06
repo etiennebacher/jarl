@@ -45,6 +45,7 @@ pub fn parse_jarl_toml(path: &Path) -> Result<TomlOptions, ParseTomlError> {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct TomlOptions {
     #[serde(flatten)]
@@ -53,12 +54,13 @@ pub struct TomlOptions {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct GlobalTomlOptions {}
 
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "kebab-case")]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct LinterTomlOptions {
     /// # Rules to select
     ///

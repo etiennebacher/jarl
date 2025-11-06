@@ -1,8 +1,7 @@
 [workspace]
 members = [
-    "crates/jarl",
-    "crates/jarl-core",
-    "crates/jarl-lsp",
+    "crates/*",
+    "xtask/codegen"
 ]
 resolver = "3"
 
@@ -39,6 +38,7 @@ toml = "0.9.2"
 rustc-hash = "2.1.1"
 path-absolutize = "3.1.1"
 regex = { version = "1.11.1", default-features = false, features = ["std"] }
+schemars = "1.1.0"
 
 # Dev dependencies
 insta = { version = "1.42.0", features = ["yaml"] }
