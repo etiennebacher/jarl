@@ -253,6 +253,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install <span class="at">--git</span> https://github.com/etiennebacher/jarl <span class="at">--profile</span><span class="op">=</span>release</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 </section>
+<section id="related-work" class="level2">
+<h2 class="anchored" data-anchor-id="related-work">Related work</h2>
+<p><a href="https://lintr.r-lib.org/" target="_blank"><code>lintr</code></a> is the most famous R linter. It provides dozens of rules related to performance, readibility, formatting, and more. Jarl is heavily influenced by <code>lintr</code> since most rule definitions come from it. However, <code>lintr</code> doesn’t provide automatic fixes for rule violations, which makes it harder to use. Its performance also noticeably degrades as the number of files and their length increase.</p>
+<p><a href="https://flir.etiennebacher.com/" target="_blank"><code>flir</code></a> is a relatively novel package. It uses <a href="https://ast-grep.github.io/" target="_blank"><code>ast-grep</code></a> in the background to search and replace code patterns. It is therefore quite flexible and easy to extend by users who may want more custom rules. Both Jarl and <code>ast-grep</code> use <a href="https://tree-sitter.github.io/tree-sitter/" target="_blank"><code>tree-sitter</code></a> in the background to parse R files, their structure is completely different. Jarl is faster and also easier to link to the Language Server Protocol, which enables its use via VS Code or Positron Extensions for instance.</p>
+</section>
 <section id="acknowledgements" class="level2">
 <h2 class="anchored" data-anchor-id="acknowledgements">Acknowledgements</h2>
 <ul>

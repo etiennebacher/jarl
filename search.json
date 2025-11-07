@@ -674,7 +674,7 @@
     "href": "rules.html",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_1moh2ca38cauxj2ajpqi",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_56kkrfs3fb024z6znyjr",
     "crumbs": [
       "Rules"
     ]
@@ -684,7 +684,7 @@
     "href": "rules.html#overview",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_1moh2ca38cauxj2ajpqi",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_56kkrfs3fb024z6znyjr",
     "crumbs": [
       "Rules"
     ]
@@ -730,6 +730,13 @@
     "title": "Jarl",
     "section": "Installation",
     "text": "Installation\n\nBinaries\nEither get binaries from the Releases page or install Jarl from the existing installer scripts below.\nmacOS and Linux:\ncurl --proto '=https' --tlsv1.2 -LsSf \\\n  https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.sh | sh\nWindows:\npowershell Set-ExecutionPolicy Bypass -Scope Process -Force; `\n   iwr https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.ps1 | iex   \n\n\nFrom source\nAlternatively, if you have Rust installed, you can get the development version with:\ncargo install --git https://github.com/etiennebacher/jarl --profile=release"
+  },
+  {
+    "objectID": "index.html#related-work",
+    "href": "index.html#related-work",
+    "title": "Jarl",
+    "section": "Related work",
+    "text": "Related work\nlintr is the most famous R linter. It provides dozens of rules related to performance, readibility, formatting, and more. Jarl is heavily influenced by lintr since most rule definitions come from it. However, lintr doesn’t provide automatic fixes for rule violations, which makes it harder to use. Its performance also noticeably degrades as the number of files and their length increase.\nflir is a relatively novel package. It uses ast-grep in the background to search and replace code patterns. It is therefore quite flexible and easy to extend by users who may want more custom rules. Both Jarl and ast-grep use tree-sitter in the background to parse R files, their structure is completely different. Jarl is faster and also easier to link to the Language Server Protocol, which enables its use via VS Code or Positron Extensions for instance."
   },
   {
     "objectID": "index.html#acknowledgements",
