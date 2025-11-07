@@ -1,0 +1,143 @@
+name: Benchmark
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/benchmark.yml
+      - crates/**/src/**
+      - crates/**/Cargo.toml
+      - crates/**/benches/**
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  # Same repositories as ecosystem-check for consistency
+  TEST_REPOS: |
+    lrberge/stringmagic@87b187d40c745ea1d8496f071aee7229985da23c
+    pola-rs/r-polars@055f891d977d6a8004fe8ab1bb5d47cfdd44872a
+    Rdatatable/data.table@d7833cb3a0c36ab329fcfe5cc1523449663f898f
+    ropensci/targets@d45243e1a239da467c6e96e0069ecb7368f78021
+    rstudio/shiny@b6e9e9d216cd574cf8985d23772399f51ee4a4ac
+    tidyverse/dplyr@384ff2c4af79a9bd9142d8bdab23efbcd52f275b
+    tidyverse/ggplot2@bed8e32d45c7dc98afb783b409edac98854d41a7
+    vincentarelbundock/marginaleffects@ffe5a4f5962a9ba51c3e68e1c55eea62887c25da
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout current PR branch
+        uses: actions/checkout@v4
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: benchmark-pr
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Clone all test repos
+        run: |
+          mkdir -p test-repos
+          cd test-repos
+          for repo in $TEST_REPOS; do
+            repo_name=$(echo "$repo" | cut -d'@' -f1)
+            commit_sha=$(echo "$repo" | cut -d'@' -f2)
+            repo_dir=$(echo "$repo_name" | tr '/' '_')
+
+            echo "Cloning $repo_name at $commit_sha..."
+            git clone --depth 1 https://github.com/$repo_name.git $repo_dir
+            (cd $repo_dir && git fetch --depth 1 origin $commit_sha && git checkout $commit_sha)
+          done
+
+      - name: Run benchmarks on PR branch
+        run: |
+          mkdir -p benchmark-results
+          cd test-repos
+          for repo in $TEST_REPOS; do
+            repo_name=$(echo "$repo" | cut -d'@' -f1)
+            repo_dir=$(echo "$repo_name" | tr '/' '_')
+
+            echo "Benchmarking $repo_name..."
+
+            # Run benchmark with the repository path
+            # Divan outputs timing to stdout
+            BENCH_REPO_PATH="$(pwd)/$repo_dir" cargo bench \
+              --package jarl-core \
+              --bench lint_repos \
+              2>&1 | tee "../benchmark-results/${repo_dir}_pr.txt" || true
+          done
+
+      - name: Save PR benchmark results
+        run: |
+          cp -r benchmark-results benchmark-results-pr
+
+      - name: Checkout main branch
+        run: |
+          git fetch origin main
+          git checkout origin/main
+
+      - name: Clear Rust cache for main
+        run: |
+          cargo clean
+
+      - name: Run benchmarks on main branch
+        run: |
+          rm -rf benchmark-results
+          mkdir -p benchmark-results
+          cd test-repos
+          for repo in $TEST_REPOS; do
+            repo_name=$(echo "$repo" | cut -d'@' -f1)
+            repo_dir=$(echo "$repo_name" | tr '/' '_')
+
+            echo "Benchmarking $repo_name on main..."
+
+            # Run benchmark with the repository path
+            BENCH_REPO_PATH="$(pwd)/$repo_dir" cargo bench \
+              --package jarl-core \
+              --bench lint_repos \
+              2>&1 | tee "../benchmark-results/${repo_dir}_main.txt" || true
+          done
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            benchmark-results/
+            benchmark-results-pr/
+
+      - name: Checkout PR branch for processing
+        run: |
+          git checkout ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup R to process benchmark results
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Install R dependencies
+        run: |
+          R -e "install.packages('jsonlite')"
+
+      - name: Process benchmark results
+        run: |
+          Rscript .github/scripts/process_benchmarks.R
+
+      - name: Post benchmark results to PR
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          file-path: benchmark_comparison.md
+          comment-tag: benchmarks
