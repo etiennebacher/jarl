@@ -168,16 +168,30 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
         check_expression(&expr, &mut checker)?;
     }
 
+    // Some rules have a fix available in their implementation but do not have
+    // fix in the config, for instance because they are part of the "unfixable"
+    // arg or not part of the "fixable" arg in `jarl.toml`.
+    // When we get all the diagnostics with check_expression() above, we don't
+    // pay attention to whether the user wants to fix them or not. Adding this
+    // step here is a way to filter those fixes out before calling apply_fixes().
+    let rules_without_fix = checker
+        .rules
+        .enabled
+        .iter()
+        .filter(|x| x.has_no_fix())
+        .map(|x| x.name.clone())
+        .collect::<Vec<String>>();
+
     let diagnostics: Vec<Diagnostic> = checker
         .diagnostics
         .into_iter()
         .map(|mut x| {
             x.filename = file.to_path_buf();
-            x
-        })
-        // TODO: this should be removed once comments in nodes are better
-        // handled, #95
-        .map(|mut x| {
+            if rules_without_fix.contains(&x.message.name) {
+                x.fix = Fix::empty();
+            }
+            // TODO: this should be removed once comments in nodes are better
+            // handled, #95
             if x.fix.to_skip {
                 x.fix = Fix::empty();
             }

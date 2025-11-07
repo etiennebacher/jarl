@@ -17,6 +17,8 @@ pub struct LinterSettings {
     pub assignment: Option<String>,
     pub exclude: Option<Vec<String>>,
     pub default_exclude: Option<bool>,
+    pub fixable: Option<Vec<String>>,
+    pub unfixable: Option<Vec<String>>,
 }
 
 impl Default for LinterSettings {
@@ -30,6 +32,8 @@ impl Default for LinterSettings {
             assignment: None,
             exclude: None,
             default_exclude: None,
+            fixable: None,
+            unfixable: None,
         }
     }
 }

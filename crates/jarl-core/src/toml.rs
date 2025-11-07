@@ -87,12 +87,19 @@ pub struct LinterTomlOptions {
     /// `select` and `ignore`, it is ignored.
     pub ignore: Option<Vec<String>>,
 
-    // TODO: Ruff also has a "fixable" field, but not sure what's the purpose
-    // https://docs.astral.sh/ruff/configuration/#__tabbed_1_2
-    // # Rules for which the fix is never applied
-    //
-    // This only matters if you pass `--fix` in the CLI.
-    // pub unfixable: Option<Vec<String>>,
+    /// # Rule violations to always fix
+    ///
+    /// A list of rules for which violations will be fixed if possible. By
+    /// default, all rules are considered fixable.
+    /// This only matters if you pass `--fix` in the CLI.
+    pub fixable: Option<Vec<String>>,
+
+    /// # Rule violations to never fix
+    ///
+    /// A list of rules that are never fixed. This only matters if you pass
+    /// `--fix` in the CLI.
+    pub unfixable: Option<Vec<String>>,
+
     /// # Patterns to exclude from checking
     ///
     /// By default, jarl will refuse to check files matched by patterns listed in
@@ -192,6 +199,8 @@ impl TomlOptions {
             assignment: linter.assignment,
             exclude: linter.exclude,
             default_exclude: linter.default_exclude,
+            fixable: linter.fixable,
+            unfixable: linter.unfixable,
         };
 
         Ok(Settings { linter })
