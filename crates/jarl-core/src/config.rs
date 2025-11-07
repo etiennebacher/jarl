@@ -564,8 +564,8 @@ fn apply_fixable_filters(
             }
 
             // If fixable is specified and rule is not in it, mark as having no fix
-            if let Some(ref fixable_set) = fixable {
-                if !fixable_set.contains(&rule.name) {
+            if let Some(ref fixable_set) = fixable
+                && !fixable_set.contains(&rule.name) {
                     return Rule {
                         name: rule.name.clone(),
                         categories: rule.categories.clone(),
@@ -573,7 +573,6 @@ fn apply_fixable_filters(
                         minimum_r_version: rule.minimum_r_version,
                     };
                 }
-            }
 
             // Otherwise keep the rule's original fix status
             rule.clone()
