@@ -46,6 +46,17 @@
             "type": "string"
           }
         },
+        "fixable": {
+          "title": "Rule violations to always fix",
+          "description": "A list of rules for which violations will be fixed if possible. By\ndefault, all rules are considered fixable.\nThis only matters if you pass `--fix` in the CLI.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
         "ignore": {
           "title": "Rules to ignore",
           "description": "If this is empty, then no rules are excluded. This field has higher\nimportance than `select`, so if a rule name appears by mistake in both\n`select` and `ignore`, it is ignored.",
@@ -60,6 +71,17 @@
         "select": {
           "title": "Rules to select",
           "description": "If this is empty, then all rules that are provided by `jarl` are used,\nwith one limitation related to the minimum R version used in the project.\nBy default, if this minimum R version is unknown, then all rules that\nhave a version restriction are deactivated. This is for example the case\nof `grepv` since the eponymous function was introduced in R 4.5.0.\n\nThere are three ways to inform `jarl` about the minimum version used in\nthe project:\n1. pass the argument `--min-r-version` in the CLI, e.g.,\n   `jarl --min-r-version 4.3`;\n2. if the project is an R package, then `jarl` looks for mentions of a\n   minimum R version in the `Depends` field sometimes present in the\n   `DESCRIPTION` file.\n3. specify `min-r-version` in `jarl.toml`.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "unfixable": {
+          "title": "Rule violations to never fix",
+          "description": "A list of rules that are never fixed. This only matters if you pass\n`--fix` in the CLI.",
           "type": [
             "array",
             "null"
