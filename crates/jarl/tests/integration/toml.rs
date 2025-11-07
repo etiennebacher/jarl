@@ -1025,14 +1025,17 @@ fixable = ["any_is_na"]
     let test_contents = "any(is.na(x))\nany(duplicated(x))";
     std::fs::write(directory.join(test_path), test_contents)?;
 
-    let _ = &mut Command::new(binary_path())
-        .current_dir(directory)
-        .arg("check")
-        .arg(".")
-        .arg("--fix")
-        .arg("--allow-no-vcs")
-        .run()
-        .normalize_os_executable_name();
+    // Keep the snapshot to show that the unfixable violation is still reported.
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--fix")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name()
+    );
 
     // Only any_is_na should be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
