@@ -1361,8 +1361,8 @@ fixable = ["any_is_na"]
     let test_contents = "any(is.na(x))\nany(duplicated(x))";
     std::fs::write(directory.join(test_path), test_contents)?;
 
-    // We keep the snapshot here to ensure that the number of violations that
-    // are marked as "fixable" in the message is correct
+    // TODO: I guess here the message should say that only 1 violation is
+    // fixable.
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
