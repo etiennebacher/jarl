@@ -1179,6 +1179,42 @@ unfixable = ["any_is_na"]
 }
 
 #[test]
+fn test_toml_unnecessary_unfixable() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // `fixable` already specified which rules to fix, so `unfixable` is basically
+    // a no-op here.
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+fixable = ["any_is_na"]
+unfixable = ["any_duplicated"]
+"#,
+    )?;
+
+    let test_path = "test.R";
+    let test_contents = "any(is.na(x))\nany(duplicated(x))";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    let _ = &mut Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--fix")
+        .arg("--allow-no-vcs")
+        .run()
+        .normalize_os_executable_name();
+
+    // any_is_na should not be fixed
+    let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
+    insta::assert_snapshot!(fixed_contents);
+
+    Ok(())
+}
+
+#[test]
 fn test_toml_fixable_empty_array() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();
