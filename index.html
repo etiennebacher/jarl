@@ -245,12 +245,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.sh <span class="kw">|</span> <span class="fu">sh</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Windows:</strong></p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">powershell</span> Set-ExecutionPolicy Bypass <span class="at">-Scope</span> Process <span class="at">-Force</span><span class="kw">;</span> <span class="kw">`</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>   <span class="ex">iwr</span> https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.ps1 <span class="kw">|</span> <span class="ex">iex</span>   </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>   <span class="ex">iwr</span> https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.ps1 <span class="kw">|</span> <span class="ex">iex</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="from-source" class="level3">
 <h3 class="anchored" data-anchor-id="from-source">From source</h3>
 <p>Alternatively, if you have Rust installed, you can get the development version with:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install <span class="at">--git</span> https://github.com/etiennebacher/jarl <span class="at">--profile</span><span class="op">=</span>release</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install <span class="at">--git</span> https://github.com/etiennebacher/jarl jarl <span class="at">--profile</span><span class="op">=</span>release</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 </section>
 <section id="related-work" class="level2">
