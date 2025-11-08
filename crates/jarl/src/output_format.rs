@@ -171,7 +171,7 @@ impl Emitter for GithubEmitter {
             //   without the Github annotations.
             write!(
                 writer,
-                "::warning title=Jarl ({}),file={file},line={row},col={col}::file:{row}:{col} ",
+                "::warning title=Jarl ({}),file={file},line={row},col={col}::{file}:{row}:{col} ",
                 diagnostic.message.name,
                 file = diagnostic.filename.to_string_lossy()
             )?;

@@ -5,7 +5,7 @@ expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"chec
 success: false
 exit_code: 255
 ----- stdout -----
-::warning title=Jarl (any_is_na),file=test.R,line=1,col=1::file:1:1 [any_is_na] `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
+::warning title=Jarl (any_is_na),file=test.R,line=1,col=1::test.R:1:1 [any_is_na] `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
 
 ----- stderr -----
 
