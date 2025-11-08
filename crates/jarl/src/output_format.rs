@@ -160,9 +160,19 @@ impl Emitter for GithubEmitter {
                 }
             };
 
+            // We want a message like this:
+            // ::warning title=Jarl (any_is_na),file=demos/foo.R,line=4,col=5::demos/foo.R:4:5: any_is_na `any(is.na(...))` etc.
+            //
+            // The location appears twice:
+            // - one between the "::" markers: this is for the annotation to
+            //   appear when we browse changed files in Github PR;
+            // - one after the "::" marker: this is so that the workflow shows
+            //   the location of diagnostics when we inspect the workflow itself,
+            //   without the Github annotations.
             write!(
                 writer,
-                "::warning file={file},line={row},col={col}::",
+                "::warning title=Jarl ({}),file={file},line={row},col={col}::file:{row}:{col} ",
+                diagnostic.message.name,
                 file = diagnostic.filename.to_string_lossy()
             )?;
 
