@@ -47,7 +47,7 @@ website:
     style: floating
     contents:
     - rules.qmd
-    - section: Rules
+    - section: List of rules
       contents:
       - rules/all_equal.md
       - rules/any_duplicated.md

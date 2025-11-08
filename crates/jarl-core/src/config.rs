@@ -1,7 +1,7 @@
 use crate::{
     description::Description,
     lints::{RULE_GROUPS, all_rules_and_safety},
-    rule_table::RuleTable,
+    rule_table::{FixStatus, Rule, RuleTable},
     settings::Settings,
 };
 use air_r_syntax::RSyntaxKind;
@@ -96,6 +96,11 @@ pub fn build_config(
     let rules = reconcile_rules(rules_cli, rules_toml)?;
 
     let rules = filter_rules_by_version(&rules, minimum_r_version);
+
+    // Parse fixable/unfixable rules from TOML and apply them to rules
+    // This must happen before we check fix/unsafe-fixes flags
+    let (fixable_toml, unfixable_toml) = parse_fixable_toml(toml_settings)?;
+    let rules = apply_fixable_filters(rules, fixable_toml, unfixable_toml, check_config);
 
     // Resolve the interaction between --fix and --unsafe-fixes first. Using
     // --unsafe-fixes implies using --fix, but the opposite is not true.
@@ -258,6 +263,70 @@ pub fn parse_rules_toml(
     };
 
     Ok((selected_rules, ignored_rules))
+}
+
+/// Parse fixable and unfixable rules from TOML configuration.
+///
+/// Returns (fixable_rules, unfixable_rules).
+/// Returns None for fixable_rules if no fixable was specified in TOML.
+/// Returns empty set for unfixable_rules if no unfixable was specified in TOML.
+pub fn parse_fixable_toml(
+    toml_settings: Option<&Settings>,
+) -> Result<(Option<HashSet<String>>, HashSet<String>)> {
+    let all_rules = all_rules_and_safety();
+
+    let Some(settings) = toml_settings else {
+        // No TOML configuration found
+        return Ok((None, HashSet::new()));
+    };
+
+    let linter_settings = &settings.linter;
+
+    // Handle fixable rules from TOML
+    let fixable_rules: Option<HashSet<String>> =
+        if let Some(fixable_rules) = &linter_settings.fixable {
+            let passed_by_user = fixable_rules.iter().map(|s| s.as_str()).collect();
+            let expanded_rules = replace_group_rules(&passed_by_user, &all_rules);
+            let invalid_rules = get_invalid_rules(&all_rules, &expanded_rules);
+            if let Some(invalid_rules) = invalid_rules {
+                return Err(anyhow::anyhow!(
+                    "Unknown rules in field `fixable` in 'jarl.toml': {}",
+                    invalid_rules.join(", ")
+                ));
+            }
+            Some(HashSet::from_iter(
+                all_rules
+                    .iter()
+                    .filter(|r| expanded_rules.contains(&r.name))
+                    .map(|x| x.name.clone()),
+            ))
+        } else {
+            None
+        };
+
+    // Handle unfixable rules from TOML
+    let unfixable_rules: HashSet<String> = if let Some(unfixable_rules) = &linter_settings.unfixable
+    {
+        let passed_by_user = unfixable_rules.iter().map(|s| s.as_str()).collect();
+        let expanded_rules = replace_group_rules(&passed_by_user, &all_rules);
+        let invalid_rules = get_invalid_rules(&all_rules, &expanded_rules);
+        if let Some(invalid_rules) = invalid_rules {
+            return Err(anyhow::anyhow!(
+                "Unknown rules in field `unfixable` in 'jarl.toml': {}",
+                invalid_rules.join(", ")
+            ));
+        }
+        HashSet::from_iter(
+            all_rules
+                .iter()
+                .filter(|r| expanded_rules.contains(&r.name))
+                .map(|x| x.name.clone()),
+        )
+    } else {
+        HashSet::new()
+    };
+
+    Ok((fixable_rules, unfixable_rules))
 }
 
 // This takes rules that refer to groups (e.g. "PERF", "READ") and replaces them
@@ -457,6 +526,59 @@ fn filter_rules_by_version(
                 .collect::<RuleTable>()
         }
     }
+}
+
+/// Apply fixable and unfixable filters to rules.
+///
+/// Strategy:
+/// - If fixable is Some, only those rules (that have fixes) can be fixed
+/// - unfixable rules are never fixed (takes precedence over fixable)
+/// - Rules with no fix are always kept in the table (they just report diagnostics)
+fn apply_fixable_filters(
+    rules: RuleTable,
+    fixable: Option<HashSet<String>>,
+    unfixable: HashSet<String>,
+    check_config: &ArgsConfig,
+) -> RuleTable {
+    // Don't worry about fixable / unfixable if the user doesn't want to fix
+    // anything.
+    if !check_config.fix && !check_config.fix_only && !check_config.unsafe_fixes {
+        return rules;
+    }
+    rules
+        .iter()
+        .map(|rule| {
+            // If the rule has no fix, keep it as-is
+            if rule.has_no_fix() {
+                return rule.clone();
+            }
+
+            // If rule is in unfixable list, mark it as having no fix
+            if unfixable.contains(&rule.name) {
+                return Rule {
+                    name: rule.name.clone(),
+                    categories: rule.categories.clone(),
+                    fix_status: FixStatus::None,
+                    minimum_r_version: rule.minimum_r_version,
+                };
+            }
+
+            // If fixable is specified and rule is not in it, mark as having no fix
+            if let Some(ref fixable_set) = fixable
+                && !fixable_set.contains(&rule.name)
+            {
+                return Rule {
+                    name: rule.name.clone(),
+                    categories: rule.categories.clone(),
+                    fix_status: FixStatus::None,
+                    minimum_r_version: rule.minimum_r_version,
+                };
+            }
+
+            // Otherwise keep the rule's original fix status
+            rule.clone()
+        })
+        .collect()
 }
 
 fn parse_assignment(

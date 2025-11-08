@@ -180,3 +180,43 @@ If `assignment = "<-"` (default), then any use of the `"="` operator to assign v
 [lint]
 assignment = "<-"
 ```
+
+### `fixable`
+
+This determines which rule violations will be fixed if `--fix` is passed.
+It takes a list of rule names or names or groups of rules, and defaults to all rules if this argument is not specified.
+
+If a rule appears in both `fixable` and `unfixable`, `unfixable` takes precedence (i.e. violations of this rule will not be fixed).
+
+```toml
+[lint]
+# Only fix violations of rules in the "PERF" group.
+fixable = ["PERF"]
+```
+
+```toml
+[lint]
+# Do not fix any violation.
+fixable = []
+```
+
+### `unfixable`
+
+This determines which rule violations will be not fixed, even if `--fix` is passed.
+It takes a list of rule names or names or groups of rules, and defaults no rules if this argument is not specified.
+
+If a rule appears in both `fixable` and `unfixable`, `unfixable` takes precedence (i.e. violations of this rule will not be fixed).
+
+```toml
+[lint]
+# Fix all violations, except those for rules in the "PERF" group.
+unfixable = ["PERF"]
+```
+
+```toml
+[lint]
+# Fix all violations.
+unfixable = []
+```
+
+

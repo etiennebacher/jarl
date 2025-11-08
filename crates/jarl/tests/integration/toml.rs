@@ -1006,3 +1006,405 @@ exclude = ["a", 1]
 
     Ok(())
 }
+
+#[test]
+fn test_toml_fixable_basic() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // TOML with fixable list - only these rules should be fixed
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+fixable = ["any_is_na"]
+"#,
+    )?;
+
+    let test_path = "test.R";
+    let test_contents = "any(is.na(x))\nany(duplicated(x))";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    // Keep the snapshot to show that the unfixable violation is still reported.
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--fix")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    // Only any_is_na should be fixed
+    let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
+    insta::assert_snapshot!(fixed_contents);
+
+    Ok(())
+}
+
+#[test]
+fn test_toml_unfixable_basic() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // TOML with unfixable list - these rules should not be fixed
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+unfixable = ["any_is_na"]
+"#,
+    )?;
+
+    let test_path = "test.R";
+    let test_contents = "any(is.na(x))\nany(duplicated(x))";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    let _ = &mut Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--fix")
+        .arg("--allow-no-vcs")
+        .run()
+        .normalize_os_executable_name();
+
+    // Only any_duplicated should be fixed
+    let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
+    insta::assert_snapshot!(fixed_contents);
+
+    Ok(())
+}
+
+#[test]
+fn test_toml_fixable_with_group() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // TOML with fixable using group name
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+fixable = ["PERF"]
+"#,
+    )?;
+
+    let test_path = "test.R";
+    let test_contents = "any(is.na(x))\nany(duplicated(x))\nlength(levels(x))";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    let _ = &mut Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--fix")
+        .arg("--allow-no-vcs")
+        .run()
+        .normalize_os_executable_name();
+
+    // Only PERF rules should be fixed
+    let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
+    insta::assert_snapshot!(fixed_contents);
+
+    Ok(())
+}
+
+#[test]
+fn test_toml_unfixable_with_group() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // TOML with unfixable using group name
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+unfixable = ["PERF"]
+"#,
+    )?;
+
+    let test_path = "test.R";
+    let test_contents = "any(is.na(x))\nany(duplicated(x))\nlength(levels(x))";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    let _ = &mut Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--fix")
+        .arg("--allow-no-vcs")
+        .run()
+        .normalize_os_executable_name();
+
+    // PERF rules should not be fixed
+    let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
+    insta::assert_snapshot!(fixed_contents);
+
+    Ok(())
+}
+
+#[test]
+fn test_toml_fixable_and_unfixable_conflict() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // TOML with both fixable and unfixable - unfixable takes precedence
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+fixable = ["any_is_na", "any_duplicated"]
+unfixable = ["any_is_na"]
+"#,
+    )?;
+
+    let test_path = "test.R";
+    let test_contents = "any(is.na(x))\nany(duplicated(x))";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    let _ = &mut Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--fix")
+        .arg("--allow-no-vcs")
+        .run()
+        .normalize_os_executable_name();
+
+    // any_is_na should not be fixed
+    let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
+    insta::assert_snapshot!(fixed_contents);
+
+    Ok(())
+}
+
+#[test]
+fn test_toml_unnecessary_unfixable() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // `fixable` already specified which rules to fix, so `unfixable` is basically
+    // a no-op here.
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+fixable = ["any_is_na"]
+unfixable = ["any_duplicated"]
+"#,
+    )?;
+
+    let test_path = "test.R";
+    let test_contents = "any(is.na(x))\nany(duplicated(x))";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    let _ = &mut Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--fix")
+        .arg("--allow-no-vcs")
+        .run()
+        .normalize_os_executable_name();
+
+    // any_is_na should not be fixed
+    let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
+    insta::assert_snapshot!(fixed_contents);
+
+    Ok(())
+}
+
+#[test]
+fn test_toml_fixable_empty_array() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // TOML with empty fixable array - no rules should be fixed
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+fixable = []
+"#,
+    )?;
+
+    let test_path = "test.R";
+    let test_contents = "any(is.na(x))\nany(duplicated(x))";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    let _ = &mut Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--fix")
+        .arg("--allow-no-vcs")
+        .run()
+        .normalize_os_executable_name();
+
+    let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
+    insta::assert_snapshot!(fixed_contents);
+
+    Ok(())
+}
+
+#[test]
+fn test_toml_unfixable_empty_array() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // TOML with empty unfixable array - all rules should be fixed normally
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+unfixable = []
+"#,
+    )?;
+
+    let test_path = "test.R";
+    let test_contents = "any(is.na(x))\nany(duplicated(x))";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    // Run with --fix flag - all fixable rules should be fixed
+    let _ = &mut Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--fix")
+        .arg("--allow-no-vcs")
+        .run()
+        .normalize_os_executable_name();
+
+    let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
+    insta::assert_snapshot!(fixed_contents);
+
+    Ok(())
+}
+
+#[test]
+fn test_invalid_toml_fixable_rule() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // TOML with invalid rule in fixable
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+fixable = ["invalid_rule_name"]
+"#,
+    )?;
+
+    let test_path = "test.R";
+    let test_contents = "any(is.na(x))";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_invalid_toml_unfixable_rule() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // TOML with invalid rule in unfixable
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+unfixable = ["invalid_rule_name"]
+"#,
+    )?;
+
+    let test_path = "test.R";
+    let test_contents = "any(is.na(x))";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_toml_fixable_without_fix_flag() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+fixable = ["any_is_na"]
+"#,
+    )?;
+
+    let test_path = "test.R";
+    let test_contents = "any(is.na(x))\nany(duplicated(x))";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    // TODO: I guess here the message should say that only 1 violation is
+    // fixable.
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_toml_fixable_with_select() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // TOML with both select and fixable
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+select = ["any_is_na", "any_duplicated", "length_levels"]
+fixable = ["any_is_na"]
+"#,
+    )?;
+
+    let test_path = "test.R";
+    let test_contents = "any(is.na(x))\nany(duplicated(x))\nlength(levels(x))";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    let _ = &mut Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--fix")
+        .arg("--allow-no-vcs")
+        .run()
+        .normalize_os_executable_name();
+
+    let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
+    insta::assert_snapshot!(fixed_contents);
+
+    Ok(())
+}

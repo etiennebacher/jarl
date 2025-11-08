@@ -1,0 +1,7 @@
+---
+source: crates/jarl/tests/integration/toml.rs
+expression: fixed_contents
+---
+anyNA(x)
+any(duplicated(x))
+length(levels(x))

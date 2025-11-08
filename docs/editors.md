@@ -2,6 +2,13 @@
 title: Editor support
 ---
 
+::: {.callout-note}
+Version numbers of the Jarl extensions may differ from the version number of Jarl itself.
+This is made on purpose so that it is easier to make releases that are specific to each extension or to Jarl itself.
+
+To get the version number of Jarl itself, use `jarl --version`.
+:::
+
 ## VS Code / Positron
 
 Both VS Code and Positron have access to the Jarl extension via the [VS Marketplace](https://marketplace.visualstudio.com/items?itemName=EtienneBacher.jarl-vscode) and [Open VSX](https://open-vsx.org/extension/etiennebacher/jarl-vscode).

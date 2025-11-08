@@ -1,0 +1,21 @@
+---
+source: crates/jarl/tests/integration/toml.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--fix\").arg(\"--allow-no-vcs\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 1 error.
+
+----- stderr -----
+
+----- args -----
+check . --fix --allow-no-vcs

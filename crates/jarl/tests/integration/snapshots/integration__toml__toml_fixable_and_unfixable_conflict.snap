@@ -1,0 +1,6 @@
+---
+source: crates/jarl/tests/integration/toml.rs
+expression: fixed_contents
+---
+any(is.na(x))
+anyDuplicated(x) > 0

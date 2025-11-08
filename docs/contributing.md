@@ -56,11 +56,18 @@ Adding a new rule requires four main steps:
 ### Useful commands
 
 * `cargo run --bin jarl -- check demos/foo.R` (or any other paths to check). The `--` in the middle is required to use the CLI in development mode (i.e. without installing it with `cargo install`)
-* `cargo build && cargo test`. It is required to build the crate before running tests.
-* `cargo insta test` and `cargo insta review` (if necessary) for snapshot tests.
+* `cargo test` to run all tests, including snapshot tests.
+* `cargo insta test` and `cargo insta review` (if necessary) for snapshot tests only.
 * `cargo install --path crates/jarl --profile=release` (or `--profile=dev`) to have a system-wide install and test the crate in other R projects.
 
 
-<!-- ## Integration tests
+## Integration tests
 
-In addition to tests specific to each lint, some integration tests are stored in `tests/integration`. They are here to check that the general behavior is correct (what happens when there are no R files, no lints, several lints in the same file, a mix of safe and unsafe lints, etc.). -->
+When you add a new rule, it is usually sufficient to add tests in the directory of this rule only, e.g. in `crates/jarl-core/src/lints/any_duplicated`.
+
+However, in some cases you may affect the way users interact with Jarl as a whole, for instance by adding new command line arguments or arguments that can be set in `jarl.toml`. For those changes, it is important to check that the general behavior of Jarl is correct (check what happens when there are no R files, how TOML and CLI arguments interact, etc.).
+
+Tests for this are stored in `crates/jarl-cli/tests/integration`.
+It is likely that you will need to edit one of the files instead of creating a new one.
+For example, adding an extra argument in `crates/jarl-core/toml.rs` would require adding tests in `crates/jarl-cli/tests/integration/toml.rs`.
+

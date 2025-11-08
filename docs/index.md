@@ -75,6 +75,8 @@ Jarl can also be directly integrated in your coding environment, see [Editors](h
 
 ### Binaries
 
+Either get binaries from the [Releases page](https://github.com/etiennebacher/jarl/releases) or install Jarl from the existing installer scripts below.
+
 **macOS and Linux:**
 
 ```sh
@@ -86,7 +88,7 @@ curl --proto '=https' --tlsv1.2 -LsSf \
 
 ```sh
 powershell Set-ExecutionPolicy Bypass -Scope Process -Force; `
-   iwr https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.ps1 | iex   
+   iwr https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.ps1 | iex
 ```
 
 ### From source
@@ -94,8 +96,23 @@ powershell Set-ExecutionPolicy Bypass -Scope Process -Force; `
 Alternatively, if you have Rust installed, you can get the development version with:
 
 ```sh
-cargo install --git https://github.com/etiennebacher/jarl --profile=release
+cargo install --git https://github.com/etiennebacher/jarl jarl --profile=release
 ```
+
+## Related work
+
+[`lintr`](https://lintr.r-lib.org/) is the most famous R linter.
+It provides dozens of rules related to performance, readibility, formatting, and more.
+Jarl is heavily influenced by `lintr` since most rule definitions come from it.
+However, `lintr` doesn't provide automatic fixes for rule violations, which makes it harder to use.
+Its performance also noticeably degrades as the number of files and their length increase.
+
+[`flir`](https://flir.etiennebacher.com/) is a relatively novel package.
+It uses [`ast-grep`](https://ast-grep.github.io/) in the background to search and replace code patterns.
+It is therefore quite flexible and easy to extend by users who may want more custom rules.
+Both Jarl and `ast-grep` use [`tree-sitter`](https://tree-sitter.github.io/tree-sitter/) in the background to parse R files, their structure is completely different.
+Jarl is faster and also easier to link to the Language Server Protocol, which enables its use via VS Code or Positron Extensions for instance.
+
 
 ## Acknowledgements
 
@@ -104,4 +121,4 @@ cargo install --git https://github.com/etiennebacher/jarl --profile=release
 * the design of Jarl is heavily inspired by [Ruff](https://docs.astral.sh/ruff) and [Cargo clippy](https://doc.rust-lang.org/stable/clippy/).
 * R Consortium for funding part of the development of Jarl.
 
-![](r-consortium-logo.png){width="30%"}
+<img src="r-consortium-logo.png" alt="R Consortium logo" width="30%"/>

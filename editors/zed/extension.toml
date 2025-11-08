@@ -1,0 +1,11 @@
+id = "jarl"
+name = "Jarl"
+description = "Jarl extension for Zed"
+version = "0.1.0"
+schema_version = 1
+authors = ["Etienne Bacher"]
+repository = "https://github.com/etiennebacher/jarl"
+
+[language_servers.jarl]
+name = "Jarl Language Server"
+languages = ["R"]
