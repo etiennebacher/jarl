@@ -260,8 +260,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="integration-tests" class="level2">
 <h2 class="anchored" data-anchor-id="integration-tests">Integration tests</h2>
-<p>When you add a new rule, it is usually sufficient to add tests in the directory of this rule only, e.g.&nbsp;in <code>src/lints/any_duplicated</code>. Some modifications affect the way user interact with Jarl as a whole. They may modify the command line arguments or change the arguments that can be set in <code>jarl/toml</code>.</p>
-<p>For those changes, it is important to check that the general behavior of Jarl is correct (check what happens when there are no R files, how TOML options and CLI arguments interact, etc.). Tests for this are stored in <code>crates/jarl-cli/tests/integration</code>. It is likely that you will need to edit one of the files instead of creating a new one. For example, adding an extra argument in <code>crates/jarl-core/toml.rs</code> would require adding tests in <code>crates/jarl-cli/tests/integration/toml.rs</code>.</p>
+<p>When you add a new rule, it is usually sufficient to add tests in the directory of this rule only, e.g.&nbsp;in <code>crates/jarl-core/src/lints/any_duplicated</code>.</p>
+<p>However, in some cases you may affect the way users interact with Jarl as a whole, for instance by adding new command line arguments or arguments that can be set in <code>jarl.toml</code>. For those changes, it is important to check that the general behavior of Jarl is correct (check what happens when there are no R files, how TOML and CLI arguments interact, etc.).</p>
+<p>Tests for this are stored in <code>crates/jarl-cli/tests/integration</code>. It is likely that you will need to edit one of the files instead of creating a new one. For example, adding an extra argument in <code>crates/jarl-core/toml.rs</code> would require adding tests in <code>crates/jarl-cli/tests/integration/toml.rs</code>.</p>
 
 
 </section>
