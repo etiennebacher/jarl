@@ -180,6 +180,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#adding-a-new-rule" id="toc-adding-a-new-rule" class="nav-link" data-scroll-target="#adding-a-new-rule">Adding a new rule</a></li>
   <li><a href="#useful-commands" id="toc-useful-commands" class="nav-link" data-scroll-target="#useful-commands">Useful commands</a></li>
   </ul></li>
+  <li><a href="#integration-tests" id="toc-integration-tests" class="nav-link" data-scroll-target="#integration-tests">Integration tests</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/contributing.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -251,16 +252,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="useful-commands">Useful commands</h3>
 <ul>
 <li><code>cargo run --bin jarl -- check demos/foo.R</code> (or any other paths to check). The <code>--</code> in the middle is required to use the CLI in development mode (i.e.&nbsp;without installing it with <code>cargo install</code>)</li>
-<li><code>cargo build &amp;&amp; cargo test</code>. It is required to build the crate before running tests.</li>
-<li><code>cargo insta test</code> and <code>cargo insta review</code> (if necessary) for snapshot tests.</li>
+<li><code>cargo test</code> to run all tests, including snapshot tests.</li>
+<li><code>cargo insta test</code> and <code>cargo insta review</code> (if necessary) for snapshot tests only.</li>
 <li><code>cargo install --path crates/jarl --profile=release</code> (or <code>--profile=dev</code>) to have a system-wide install and test the crate in other R projects.</li>
 </ul>
-<!-- ## Integration tests
-
-In addition to tests specific to each lint, some integration tests are stored in `tests/integration`. They are here to check that the general behavior is correct (what happens when there are no R files, no lints, several lints in the same file, a mix of safe and unsafe lints, etc.). -->
-
-
 </section>
+</section>
+<section id="integration-tests" class="level2">
+<h2 class="anchored" data-anchor-id="integration-tests">Integration tests</h2>
+<p>When you add a new rule, it is usually sufficient to add tests in the directory of this rule only, e.g.&nbsp;in <code>src/lints/any_duplicated</code>. Some modifications affect the way user interact with Jarl as a whole. They may modify the command line arguments or change the arguments that can be set in <code>jarl/toml</code>.</p>
+<p>For those changes, it is important to check that the general behavior of Jarl is correct (check what happens when there are no R files, how TOML options and CLI arguments interact, etc.). Tests for this are stored in <code>crates/jarl-cli/tests/integration</code>. It is likely that you will need to edit one of the files instead of creating a new one. For example, adding an extra argument in <code>crates/jarl-core/toml.rs</code> would require adding tests in <code>crates/jarl-cli/tests/integration/toml.rs</code>.</p>
+
+
 </section>
 
 </main> <!-- /main -->
