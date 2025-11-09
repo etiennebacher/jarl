@@ -119,8 +119,8 @@ Its performance also noticeably degrades as the number of files and their length
 [`flir`](https://flir.etiennebacher.com/) is a relatively novel package.
 It uses [`ast-grep`](https://ast-grep.github.io/) in the background to search and replace code patterns.
 It is therefore quite flexible and easy to extend by users who may want more custom rules.
-Both Jarl and `ast-grep` use [`tree-sitter`](https://tree-sitter.github.io/tree-sitter/) in the background to parse R files, their structure is completely different.
-Jarl is faster and also easier to link to the Language Server Protocol, which enables its use via VS Code or Positron Extensions for instance.
+While both Jarl and `ast-grep` use [`tree-sitter`](https://tree-sitter.github.io/tree-sitter/) in the background to parse R files, their structure is completely different.
+Jarl is faster and also easier to link to the Language Server Protocol, which enables its use via VS Code or Positron extensions for instance.
 
 
 ## Acknowledgements
