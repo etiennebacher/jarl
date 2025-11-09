@@ -110,7 +110,7 @@ jobs:
 
       - name: Install R dependencies
         run: |
-          R -e "install.packages(c('data.table', 'jsonlite', 'tinytable'))"
+          R -e "install.packages(c('data.table', 'jsonlite', 'pandoc', 'tinytable'))"
 
       - name: Process benchmark results
         run: |
