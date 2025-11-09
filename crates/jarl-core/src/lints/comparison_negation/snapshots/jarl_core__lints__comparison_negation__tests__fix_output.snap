@@ -1,0 +1,59 @@
+---
+source: crates/jarl-core/src/lints/comparison_negation/mod.rs
+expression: "get_fixed_text(vec![\"!(x >= y)\", \"!(x > y)\", \"!(x <= y)\", \"!(x < y)\",\n\"!(x == y)\", \"!(x != y)\", \"!(foo(x + 1) != foo(bar(if (x == 1) 2 else 3)))\",\n\"if (TRUE && !(bar > foo)) 1\"], \"comparison_negation\", None)"
+---
+OLD:
+====
+!(x >= y)
+NEW:
+====
+x < y
+
+OLD:
+====
+!(x > y)
+NEW:
+====
+x <= y
+
+OLD:
+====
+!(x <= y)
+NEW:
+====
+x > y
+
+OLD:
+====
+!(x < y)
+NEW:
+====
+x >= y
+
+OLD:
+====
+!(x == y)
+NEW:
+====
+x != y
+
+OLD:
+====
+!(x != y)
+NEW:
+====
+x == y
+
+OLD:
+====
+!(foo(x + 1) != foo(bar(if (x == 1) 2 else 3)))
+NEW:
+====
+foo(x + 1) == foo(bar(if (x == 1) 2 else 3))
+
+OLD:
+====
+if (TRUE && !(bar > foo)) 1
+NEW:
+====
+if (TRUE && bar <= foo) 1

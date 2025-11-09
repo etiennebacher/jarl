@@ -5,4 +5,5 @@ pub(crate) mod for_loop;
 pub(crate) mod identifier;
 pub(crate) mod if_;
 pub(crate) mod subset;
+pub(crate) mod unary_expression;
 pub(crate) mod while_;

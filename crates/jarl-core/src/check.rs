@@ -313,6 +313,8 @@ pub fn check_expression(
             }
         }
         AnyRExpression::RUnaryExpression(children) => {
+            analyze::unary_expression::unary_expression(children, checker)?;
+
             let argument = children.argument();
             check_expression(&argument?, checker)?;
         }
