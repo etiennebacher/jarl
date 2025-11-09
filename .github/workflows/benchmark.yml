@@ -8,7 +8,6 @@ on:
       - .github/workflows/benchmark.yml
       - crates/**/src/**
       - crates/**/Cargo.toml
-      - crates/**/benches/**
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -40,6 +39,9 @@ jobs:
       - name: Checkout current PR branch
         uses: actions/checkout@v4
 
+      - name: Install hyperfine
+        run: sudo apt install hyperfine
+
       - name: Cache Rust
         uses: Swatinem/rust-cache@v2
         with:
@@ -47,6 +49,23 @@ jobs:
 
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Build jarl binary from PR
+        run: cargo build --release --package jarl
+
+      - name: Save PR binary path
+        run: |
+          cp target/release/jarl target/release/jarl-pr
+          echo "PR_JARL=$(pwd)/target/release/jarl-pr" >> $GITHUB_ENV
+
+      - name: Build jarl binary from main branch
+        run: |
+          git fetch origin main
+          git checkout origin/main
+          cargo build --release --package jarl
+
+      - name: Save main binary path
+        run: echo "MAIN_JARL=$(pwd)/target/release/jarl" >> $GITHUB_ENV
 
       - name: Clone all test repos
         run: |
@@ -62,82 +81,50 @@ jobs:
             (cd $repo_dir && git fetch --depth 1 origin $commit_sha && git checkout $commit_sha)
           done
 
-      - name: Run benchmarks on PR branch
+      - name: Run hyperfine on all repos
         run: |
-          mkdir -p benchmark-results
+          mkdir -p results_bench
           cd test-repos
           for repo in $TEST_REPOS; do
             repo_name=$(echo "$repo" | cut -d'@' -f1)
             repo_dir=$(echo "$repo_name" | tr '/' '_')
 
-            echo "Benchmarking $repo_name..."
+            # Run main
+            (cd "$repo_dir" && hyperfine --warmup 5 '$MAIN_JARL check .' --ignore-failure  --export json ../results_bench/${repo_dir}_main.json) || true
 
-            # Run benchmark with the repository path
-            # Divan outputs timing to stdout
-            BENCH_REPO_PATH="$(pwd)/$repo_dir" cargo bench \
-              --package jarl-core \
-              --bench lint_repos \
-              2>&1 | tee "../benchmark-results/${repo_dir}_pr.txt" || true
+            # Run PR
+            (cd "$repo_dir" && hyperfine --warmup 5 '$PR_JARL check .' --ignore-failure  --export json ../results_bench/${repo_dir}_pr.json) || true
           done
 
-      - name: Save PR benchmark results
-        run: |
-          cp -r benchmark-results benchmark-results-pr
-
-      - name: Checkout main branch
-        run: |
-          git fetch origin main
-          git checkout origin/main
-
-      - name: Clear Rust cache for main
-        run: |
-          cargo clean
-
-      - name: Run benchmarks on main branch
-        run: |
-          rm -rf benchmark-results
-          mkdir -p benchmark-results
-          cd test-repos
-          for repo in $TEST_REPOS; do
-            repo_name=$(echo "$repo" | cut -d'@' -f1)
-            repo_dir=$(echo "$repo_name" | tr '/' '_')
-
-            echo "Benchmarking $repo_name on main..."
-
-            # Run benchmark with the repository path
-            BENCH_REPO_PATH="$(pwd)/$repo_dir" cargo bench \
-              --package jarl-core \
-              --bench lint_repos \
-              2>&1 | tee "../benchmark-results/${repo_dir}_main.txt" || true
-          done
-
-      - name: Upload benchmark results
+      - name: Upload all result JSONs
         uses: actions/upload-artifact@v4
         with:
-          name: benchmark-results
-          path: |
-            benchmark-results/
-            benchmark-results-pr/
+          name: hyperfine-json-results
+          path: results_bench/
 
-      - name: Checkout PR branch for processing
-        run: |
-          git checkout ${{ github.event.pull_request.head.sha }}
-
-      - name: Setup R to process benchmark results
+      - name: Setup R to process lint results
         uses: r-lib/actions/setup-r@v2
         with:
           use-public-rspm: true
 
       - name: Install R dependencies
         run: |
-          R -e "install.packages('jsonlite')"
+          R -e "install.packages(c('data.table', 'jsonlite', 'tinytable'))"
 
-      - name: Process benchmark results
+      - name: Process lint results
         run: |
-          Rscript .github/scripts/process_benchmarks.R
+          source(".github/scripts/process_bench_ci.R", echo = TRUE)
+        shell: Rscript {0}
 
-      - name: Post benchmark results to PR
+      - name: Upload results
+        id: artifact-upload-step
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-results
+          path: .github/scripts/
+
+      - name: Post comment on PR
         uses: thollander/actions-comment-pull-request@v3
         with:
-          file-path: benchmark_comparison.md
-          comment-tag: benchmarks
+          file-path: benchmark.md
+          comment-tag: execution
