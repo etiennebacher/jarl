@@ -86,14 +86,15 @@ jobs:
           mkdir -p results_bench
           cd test-repos
           for repo in $TEST_REPOS; do
+            echo "Benchmarking repo $repo..."
             repo_name=$(echo "$repo" | cut -d'@' -f1)
             repo_dir=$(echo "$repo_name" | tr '/' '_')
 
             # Run main
-            (cd "$repo_dir" && hyperfine --warmup 5 --min-runs 50 '$MAIN_JARL check .' --ignore-failure  --export json ../results_bench/${repo_dir}_main.json) || true
+            (cd "$repo_dir" && hyperfine --warmup 5 --min-runs 50 '$MAIN_JARL check .' --ignore-failure  --export-json ../results_bench/${repo_dir}_main.json) || true
 
             # Run PR
-            (cd "$repo_dir" && hyperfine --warmup 5 --min-runs 50 '$PR_JARL check .' --ignore-failure  --export json ../results_bench/${repo_dir}_pr.json) || true
+            (cd "$repo_dir" && hyperfine --warmup 5 --min-runs 50 '$PR_JARL check .' --ignore-failure  --export-json ../results_bench/${repo_dir}_pr.json) || true
           done
 
       - name: Upload all result JSONs
@@ -102,7 +103,7 @@ jobs:
           name: hyperfine-json-results
           path: results_bench/
 
-      - name: Setup R to process lint results
+      - name: Setup R to process benchmark results
         uses: r-lib/actions/setup-r@v2
         with:
           use-public-rspm: true
@@ -111,7 +112,7 @@ jobs:
         run: |
           R -e "install.packages(c('data.table', 'jsonlite', 'tinytable'))"
 
-      - name: Process lint results
+      - name: Process benchmark results
         run: |
           source(".github/scripts/process_bench_ci.R", echo = TRUE)
         shell: Rscript {0}
