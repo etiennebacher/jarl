@@ -57,5 +57,6 @@ for (i in seq_along(all_repos)) {
 all_results <- rbindlist(list_results)
 
 tt(all_results) |>
+  theme_markdown(style = "gfm") |>
   save_tt(output = "markdown") |>
   cat(file = "benchmark.md", append = TRUE)
