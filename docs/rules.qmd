@@ -50,6 +50,7 @@ dat <- as.data.frame(
     c("assignment", "Readability", "✅", ""),
     c("class_equals", "Suspicious", "❗", ""),
     c("coalesce", "Readability", "✅", "R >= 4.4"),
+    c("comparison_negation", "Readability", "✅", ""),
     c("duplicated_arguments", "Suspicious", "❌", ""),
     c("empty_assignment", "Readability", "❌", ""),
     c("equals_na", "Correctness", "✅", ""),
