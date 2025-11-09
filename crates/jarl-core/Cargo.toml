@@ -48,7 +48,6 @@ schemars = { workspace = true, optional = true }
 
 [dev-dependencies]
 insta.workspace = true
-divan = "0.1"
 
 
 [lints.clippy]
@@ -56,7 +55,3 @@ module-inception = "allow"
 
 [features]
 schemars = ["dep:schemars"]
-
-[[bench]]
-name = "lint_repos"
-harness = false
