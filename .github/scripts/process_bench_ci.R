@@ -33,12 +33,12 @@ for (i in seq_along(all_repos)) {
     "results_bench/",
     gsub("/", "_", repos),
     "_main.json"
-  ))[["results_bench"]][[1]][["times"]]
+  ))[["results"]][[1]][["times"]]
   pr_results_json <- jsonlite::read_json(paste0(
     "results_bench/",
     gsub("/", "_", repos),
     "_pr.json"
-  ))[["results_bench"]][[1]][["times"]]
+  ))[["results"]][[1]][["times"]]
 
   main_mean <- mean(unlist(main_results_json))
   pr_mean <- mean(unlist(pr_results_json))
