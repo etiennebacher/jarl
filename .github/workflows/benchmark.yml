@@ -108,6 +108,9 @@ jobs:
         with:
           use-public-rspm: true
 
+      - name: Setup Pandoc
+        uses: r-lib/actions/setup-pandoc@v2
+
       - name: Install R dependencies
         run: |
           R -e "install.packages(c('data.table', 'jsonlite', 'pandoc', 'tinytable'))"
