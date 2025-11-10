@@ -223,28 +223,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">all.equal</span>(x, y)) {</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">"x and y are equal"</span>)</span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># In the terminal:</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> jarl check test.R</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">warning:</span> any_is_na</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a> <span class="ex">--</span><span class="op">&gt;</span> test.R:1:1</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">|</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ex">1</span> <span class="kw">|</span> <span class="ex">any</span><span class="er">(</span><span class="ex">is.na</span><span class="er">(</span><span class="ex">x</span><span class="kw">))</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">|</span> <span class="ex">-------------</span> <span class="kw">`</span><span class="ex">any</span><span class="er">(</span><span class="ex">is.na</span><span class="er">(</span><span class="ex">...</span><span class="kw">))`</span> is inefficient.</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">|</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="ex">=</span> help: Use <span class="kw">`</span><span class="ex">anyNA</span><span class="er">(</span><span class="ex">...</span><span class="kw">)`</span> instead.</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="ex">warning:</span> all_equal</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a> <span class="ex">--</span><span class="op">&gt;</span> test.R:3:5</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">|</span></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="ex">3</span> <span class="kw">|</span> <span class="cf">if</span> <span class="kw">(</span><span class="ex">all.equal</span><span class="er">(</span><span class="ex">x,</span> y<span class="kw">))</span> <span class="kw">{</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">|</span>     <span class="ex">---------------</span> <span class="kw">`</span><span class="fu">all.equal()</span><span class="kw">`</span> can return a string instead of FALSE.</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  <span class="kw">|</span></span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  <span class="ex">=</span> help: Wrap <span class="kw">`</span><span class="fu">all.equal()</span><span class="kw">`</span> in <span class="kw">`</span><span class="fu">isTRUE()</span><span class="kw">`</span>, or replace it by <span class="kw">`</span><span class="fu">identical()</span><span class="kw">`</span> if</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="ex">no</span> tolerance is required.</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="ex">Found</span> 2 errors.</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="ex">1</span> fixable with the <span class="kw">`</span><span class="ex">--fix</span><span class="kw">`</span> option <span class="er">(</span><span class="ex">1</span> hidden fix can be enabled with the</span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="kw">`</span><span class="ex">--unsafe-fixes</span><span class="kw">`</span> option<span class="kw">)</span><span class="bu">.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code># In the terminal:
+$ jarl check test.R
+warning: any_is_na
+ --&gt; test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: all_equal
+ --&gt; test.R:3:5
+  |
+3 | if (all.equal(x, y)) {
+  |     --------------- `all.equal()` can return a string instead of FALSE.
+  |
+  = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if
+    no tolerance is required.
+
+Found 2 errors.
+1 fixable with the `--fix` option (1 hidden fix can be enabled with the
+`--unsafe-fixes` option).</code></pre>
 <p>Use <code>--fix</code> to automatically fix rule violations when possible:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> jarl check test.R <span class="at">--fix</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><code>test.R</code>:</p>
