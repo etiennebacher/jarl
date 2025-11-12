@@ -23,7 +23,6 @@ crossbeam = "0.8"
 # Error handling and utilities
 anyhow = "1.0"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -31,8 +30,5 @@ serde_json = "1.0"
 
 # Collections and utilities
 rustc-hash = "2.0"
-
-# CLI for binary
-clap = { version = "4.0", features = ["derive"] }
 
 [dev-dependencies]

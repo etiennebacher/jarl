@@ -5,6 +5,7 @@ use biome_rowan::AstNode;
 use crate::lints::all_equal::all_equal::all_equal;
 use crate::lints::any_duplicated::any_duplicated::any_duplicated;
 use crate::lints::any_is_na::any_is_na::any_is_na;
+use crate::lints::download_file::download_file::download_file;
 use crate::lints::duplicated_arguments::duplicated_arguments::duplicated_arguments;
 use crate::lints::grepv::grepv::grepv;
 use crate::lints::length_levels::length_levels::length_levels;
@@ -27,6 +28,10 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled("any_is_na") && !checker.should_skip_rule(node, "any_is_na") {
         checker.report_diagnostic(any_is_na(r_expr)?);
+    }
+    if checker.is_rule_enabled("download_file") && !checker.should_skip_rule(node, "download_file")
+    {
+        checker.report_diagnostic(download_file(r_expr)?);
     }
     if checker.is_rule_enabled("duplicated_arguments")
         && !checker.should_skip_rule(node, "duplicated_arguments")

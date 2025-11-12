@@ -111,6 +111,7 @@ pub fn get_arg_by_position(args: &RArgumentList, pos: usize) -> Option<RArgument
 /// If it doesn't find any argument with this name, it tries to get the
 /// argument in position `pos`.
 /// Returns None if this second attempt also fails.
+/// Argument `pos` is 1-indexed.
 pub fn get_arg_by_name_then_position(
     args: &RArgumentList,
     name: &str,
