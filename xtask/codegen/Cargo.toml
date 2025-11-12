@@ -13,4 +13,3 @@ xtask = { version = "0.0", path = "../" }
 jarl-core = { workspace = true, features = ["schemars"] }
 
 [dev-dependencies]
-insta = { workspace = true }

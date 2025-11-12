@@ -7,6 +7,7 @@ pub(crate) mod assignment;
 pub(crate) mod class_equals;
 pub(crate) mod coalesce;
 pub(crate) mod comparison_negation;
+pub(crate) mod download_file;
 pub(crate) mod duplicated_arguments;
 pub(crate) mod empty_assignment;
 pub(crate) mod equals_na;
@@ -45,6 +46,7 @@ pub fn all_rules_and_safety() -> RuleTable {
     rule_table.enable("class_equals", "SUSP", FixStatus::Safe, None);
     rule_table.enable("comparison_negation", "READ", FixStatus::Safe, None);
     rule_table.enable("coalesce", "READ", FixStatus::Safe, Some((4, 4, 0)));
+    rule_table.enable("download_file", "SUSP", FixStatus::None, None);
     rule_table.enable("duplicated_arguments", "SUSP", FixStatus::None, None);
     rule_table.enable("empty_assignment", "READ", FixStatus::Safe, None);
     rule_table.enable("equals_na", "CORR", FixStatus::Safe, None);
