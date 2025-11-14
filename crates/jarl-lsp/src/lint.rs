@@ -27,6 +27,7 @@ pub struct DiagnosticFix {
     pub start: usize,
     pub end: usize,
     pub is_safe: bool,
+    pub rule_name: String,
 }
 
 /// Main entry point for linting a document
@@ -177,18 +178,15 @@ fn convert_to_lsp_diagnostic(
     let severity = DiagnosticSeverity::WARNING;
 
     // Extract fix information if available
-    let fix_data = if !jarl_diag.fix.content.is_empty() || jarl_diag.fix.start != jarl_diag.fix.end
-    {
-        let diagnostic_fix = DiagnosticFix {
-            content: jarl_diag.fix.content.clone(),
-            start: jarl_diag.fix.start,
-            end: jarl_diag.fix.end,
-            is_safe: jarl_diag.has_safe_fix(),
-        };
-        Some(serde_json::to_value(diagnostic_fix).unwrap_or_default())
-    } else {
-        None
+    // Always include fix_data even if there's no actual fix, so we can access the rule_name
+    let diagnostic_fix = DiagnosticFix {
+        content: jarl_diag.fix.content.clone(),
+        start: jarl_diag.fix.start,
+        end: jarl_diag.fix.end,
+        is_safe: jarl_diag.has_safe_fix(),
+        rule_name: jarl_diag.message.name.clone(),
     };
+    let fix_data = Some(serde_json::to_value(diagnostic_fix).unwrap_or_default());
 
     // Build the LSP diagnostic with fix information
     // Combine body and suggestion for the message
