@@ -8,6 +8,7 @@ on:
       - .github/workflows/compare-results.yml
       - crates/**/src/**
       - crates/**/Cargo.toml
+      - "!crates/jarl-lsp/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
