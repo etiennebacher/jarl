@@ -82,6 +82,9 @@ impl CommandExt for Command {
 
 impl Display for Output {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Normalize path separators for readable snapshots
+        let stdout = &self.stdout.replace("\\", "/");
+        let stderr = &self.stderr.replace("\\", "/");
         f.write_fmt(format_args!(
             "
 success: {:?}
@@ -94,8 +97,8 @@ exit_code: {}
 {}",
             self.status.success(),
             self.status.code().unwrap_or(1),
-            self.stdout,
-            self.stderr,
+            stdout,
+            stderr,
             self.arguments,
         ))
     }
