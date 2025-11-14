@@ -39,7 +39,7 @@
     "href": "using-jarl.html#using-a-configuration-file",
     "title": "Using Jarl",
     "section": "Using a configuration file",
-    "text": "Using a configuration file\nIt is possible to save settings in a jarl.toml file. See the Configuration page."
+    "text": "Using a configuration file\nIt is possible to save settings in a jarl.toml file. See the Configuration page.\n\n\n\n\n\n\nNoteAbout colored output\n\n\n\nBy default, Jarl will print colored output in the terminal. To deactivate this, set the environment variable NO_COLOR to 1. For example, in Bash, the following command would return non-colored output:\nNO_COLOR=1 jarl check ."
   },
   {
     "objectID": "rules/any_duplicated.html",
@@ -781,7 +781,7 @@
     "href": "rules.html",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_25k616xw66w5u8zq9bw8",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_ruosnbxw26z9bv9vfh3t",
     "crumbs": [
       "Rules"
     ]
@@ -791,7 +791,7 @@
     "href": "rules.html#overview",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_25k616xw66w5u8zq9bw8",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_ruosnbxw26z9bv9vfh3t",
     "crumbs": [
       "Rules"
     ]
