@@ -129,9 +129,4 @@ pub(crate) struct GlobalOptions {
     /// to `warn`.
     #[arg(long, global = true)]
     pub(crate) log_level: Option<LogLevel>,
-
-    /// Disable colored output. To turn colored output off, either set this option or set
-    /// the environment variable `NO_COLOR` to any non-zero value.
-    #[arg(long, global = true)]
-    pub(crate) no_color: bool,
 }

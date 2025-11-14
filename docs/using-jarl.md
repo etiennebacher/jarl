@@ -129,3 +129,16 @@ There are two ways to tell Jarl which R version you're using:
 ## Using a configuration file
 
 It is possible to save settings in a `jarl.toml` file. See the [Configuration page](config.md).
+
+
+::: {.callout-note}
+## About colored output
+
+By default, Jarl will print colored output in the terminal.
+To deactivate this, set the environment variable `NO_COLOR` to `1`.
+For example, in Bash, the following command would return non-colored output:
+
+```sh
+NO_COLOR=1 jarl check .
+```
+:::

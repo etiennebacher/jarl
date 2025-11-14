@@ -8,6 +8,8 @@ pub trait CommandExt {
     /// Like [Command::output], but also collects arguments
     ///
     /// The [Output] has a suitable [Display] method for capturing with insta
+    ///
+    /// Sets the `NO_COLOR` environment variable to disable colored output in tests
     fn run(&mut self) -> Output;
 }
 
@@ -55,16 +57,11 @@ impl Output {
     }
 }
 
-/// Strip ANSI escape codes from a string
-fn strip_ansi_escape_codes(s: &str) -> String {
-    // This regex matches ANSI escape sequences
-    use regex::Regex;
-    let ansi_regex = Regex::new(r"\x1b\[[0-9;]*m").unwrap();
-    ansi_regex.replace_all(s, "").to_string()
-}
-
 impl CommandExt for Command {
     fn run(&mut self) -> Output {
+        // Set NO_COLOR environment variable to disable colored output in tests
+        self.env("NO_COLOR", "1");
+
         // Augment `std::process::Output` with the arguments
         let output = self.output().unwrap();
 
@@ -85,10 +82,6 @@ impl CommandExt for Command {
 
 impl Display for Output {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // Strip ANSI codes and normalize path separators for readable snapshots
-        let stdout = strip_ansi_escape_codes(&self.stdout).replace("\\", "/");
-        let stderr = strip_ansi_escape_codes(&self.stderr).replace("\\", "/");
-
         f.write_fmt(format_args!(
             "
 success: {:?}
@@ -101,8 +94,8 @@ exit_code: {}
 {}",
             self.status.success(),
             self.status.code().unwrap_or(1),
-            stdout,
-            stderr,
+            self.stdout,
+            self.stderr,
             self.arguments,
         ))
     }
