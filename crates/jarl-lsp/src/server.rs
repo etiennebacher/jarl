@@ -683,7 +683,7 @@ impl Server {
         let workspace_edit = types::WorkspaceEdit { changes: Some(changes), ..Default::default() };
 
         Some(types::CodeAction {
-            title: format!("Ignore `{}` violation on this node", rule_name),
+            title: format!("Ignore `{}` violation on this node.", rule_name),
             kind: Some(types::CodeActionKind::QUICKFIX),
             diagnostics: Some(vec![diagnostic.clone()]),
             edit: Some(workspace_edit),
@@ -747,7 +747,7 @@ impl Server {
         let workspace_edit = types::WorkspaceEdit { changes: Some(changes), ..Default::default() };
 
         Some(types::CodeAction {
-            title: "Ignore all violations on this node".to_string(),
+            title: "Ignore all violations on this node.".to_string(),
             kind: Some(types::CodeActionKind::QUICKFIX),
             diagnostics: Some(vec![diagnostic.clone()]),
             edit: Some(workspace_edit),
@@ -1360,7 +1360,7 @@ mod tests {
 
         assert_eq!(
             action.title,
-            "Ignore `assignment_operator` violation on this node"
+            "Ignore `assignment_operator` violation on this node."
         );
         assert_eq!(action.kind, Some(types::CodeActionKind::QUICKFIX));
         assert!(!action.is_preferred.unwrap_or(true));
@@ -1400,7 +1400,7 @@ mod tests {
         assert!(action.is_some());
         let action = action.unwrap();
 
-        assert_eq!(action.title, "Ignore all violations on this node");
+        assert_eq!(action.title, "Ignore all violations on this node.");
         assert_eq!(action.kind, Some(types::CodeActionKind::QUICKFIX));
 
         let edit = action.edit.unwrap();
@@ -1765,10 +1765,10 @@ mod tests {
         let action1 = action1.unwrap();
         let action2 = action2.unwrap();
 
-        assert_eq!(action1.title, "Ignore `any_is_na` violation on this node");
+        assert_eq!(action1.title, "Ignore `any_is_na` violation on this node.");
         assert_eq!(
             action2.title,
-            "Ignore `any_duplicated` violation on this node"
+            "Ignore `any_duplicated` violation on this node."
         );
 
         // They should insert at different positions (different lines)
