@@ -99,5 +99,8 @@ mod tests {
         expect_no_lint("expect_message(x <- 1)", "implicit_assignment", None);
         expect_no_lint("expect_warning(x <- 1)", "implicit_assignment", None);
         expect_no_lint("expect_error(x <- 1)", "implicit_assignment", None);
+        expect_no_lint("suppressMessages(x <- 1)", "implicit_assignment", None);
+        expect_no_lint("suppressWarnings(x <- 1)", "implicit_assignment", None);
+        expect_no_lint("suppressWarnings({x <- 1})", "implicit_assignment", None);
     }
 }

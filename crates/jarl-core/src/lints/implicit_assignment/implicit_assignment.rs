@@ -80,8 +80,14 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
         for ancestor in ast.syntax().ancestors() {
             if RCall::can_cast(ancestor.kind()) {
                 let function_name = RCall::cast(ancestor).unwrap().function()?.to_trimmed_text();
-                if ["expect_error", "expect_warning", "expect_message"]
-                    .contains(&function_name.to_string().as_str())
+                if [
+                    "expect_error",
+                    "expect_warning",
+                    "expect_message",
+                    "suppressMessages",
+                    "suppressWarnings",
+                ]
+                .contains(&function_name.to_string().as_str())
                 {
                     return Ok(None);
                 } else {
