@@ -19,7 +19,7 @@ This extension provides code higlights and quick fixes:
 
 ![](img/code_highlight.PNG){fig-alt="R script with `any(is.na(x))` underlined in yellow, indicating a rule violation. A popup shows Jarl message."}
 
-* quick fixes lightbulb icons will appear when the cursor is next to a highlighted piece of code. Clicking this icon will allow you to apply the fix only for this piece of code:
+* quick fixes lightbulb icons will appear when the cursor is next to a highlighted piece of code. Clicking this icon will give you several options: apply the fix only for this piece of code, add a comment to ignore this specific violation, or add a comment to ignore all violations present in this piece of code. The screenshots below show the procedure to apply the fix:
 
 ![](img/code_quick_fix_1.PNG){fig-alt="R script showing the code `any(is.na(x))`. A blue lightbulb shows that a quick fix is available for this piece of code."}
 
