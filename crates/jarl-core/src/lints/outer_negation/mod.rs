@@ -35,12 +35,7 @@ mod tests {
             "outer_negation",
             None,
         );
-        expect_lint(
-            "all(!foo(x))",
-            "Use `!any(x)` instead",
-            "outer_negation",
-            None,
-        );
+        expect_lint("all(!x)", "Use `!any(x)` instead", "outer_negation", None);
         expect_lint(
             "all(!(x + y))",
             "Use `!any(x)` instead",
