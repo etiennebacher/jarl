@@ -12,6 +12,7 @@ use crate::lints::length_levels::length_levels::length_levels;
 use crate::lints::length_test::length_test::length_test;
 use crate::lints::lengths::lengths::lengths;
 use crate::lints::matrix_apply::matrix_apply::matrix_apply;
+use crate::lints::outer_negation::outer_negation::outer_negation;
 use crate::lints::sample_int::sample_int::sample_int;
 use crate::lints::which_grepl::which_grepl::which_grepl;
 
@@ -53,6 +54,11 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled("matrix_apply") && !checker.should_skip_rule(node, "matrix_apply") {
         checker.report_diagnostic(matrix_apply(r_expr)?);
+    }
+    if checker.is_rule_enabled("outer_negation")
+        && !checker.should_skip_rule(node, "outer_negation")
+    {
+        checker.report_diagnostic(outer_negation(r_expr)?);
     }
     if checker.is_rule_enabled("sample_int") && !checker.should_skip_rule(node, "sample_int") {
         checker.report_diagnostic(sample_int(r_expr)?);
