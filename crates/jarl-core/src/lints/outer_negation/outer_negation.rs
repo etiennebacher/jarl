@@ -31,15 +31,12 @@ use biome_rowan::AstNode;
 /// ```
 pub fn outer_negation(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     // We don't want to report calls like `!any(x)`, just `any(x)`
-    if let Some(parent) = ast.syntax().parent() {
-        if parent.kind() == RSyntaxKind::R_UNARY_EXPRESSION {
-            if let Some(prev_sibling) = ast.syntax().prev_sibling() {
-                if prev_sibling.kind() == RSyntaxKind::BANG {
+    if let Some(parent) = ast.syntax().parent()
+        && parent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
+            && let Some(prev_sibling) = ast.syntax().prev_sibling()
+                && prev_sibling.kind() == RSyntaxKind::BANG {
                     return Ok(None);
                 }
-            }
-        }
-    }
 
     let function = ast.function()?;
     let function_name = function.to_trimmed_string();
