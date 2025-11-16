@@ -68,6 +68,7 @@ website:
       - rules/lengths.md
       - rules/matrix_apply.md
       - rules/numeric_leading_zero.md
+      - rules/outer_negation.md
       - rules/redundant_equals.md
       - rules/repeat.md
       - rules/sample_int.md

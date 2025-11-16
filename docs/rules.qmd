@@ -64,6 +64,7 @@ dat <- as.data.frame(
     c("lengths", "Performance, readability", "✅", ""),
     c("matrix_apply", "Performance", "✅", ""),
     c("numeric_leading_zero", "Readability", "✅", ""),
+    c("outer_negation", "Performance, readability", "✅", ""),
     c("redundant_equals", "Readability", "✅", ""),
     c("repeat", "Readability", "✅", ""),
     c("sample_int", "Readability", "✅", ""),
