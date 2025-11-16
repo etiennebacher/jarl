@@ -84,7 +84,7 @@ pub fn outer_negation(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     // comes after "!". So we don't need to check that this is indeed using the
     // BANG operator because it's the only R_UNARY_EXPRESSION available.
 
-    // Don't report consecutive unary expressions (e.g., any(!!x))
+    // Don't report consecutive unary expressions (e.g., `any(!!x)`)
     if expr.kind() == RSyntaxKind::R_UNARY_EXPRESSION {
         return Ok(None);
     }
