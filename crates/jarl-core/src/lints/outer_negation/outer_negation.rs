@@ -30,16 +30,16 @@ use biome_rowan::AstNode;
 /// !any(x)
 /// ```
 pub fn outer_negation(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    // We don't want to report calls like !any(x), just any(x)
+    // We don't want to report calls like `!any(x)`, just `any(x)`
     if let Some(parent) = ast.syntax().parent() {
-        if let Some(prev_sibling) = ast.syntax().prev_sibling() {
-            if parent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
-                && prev_sibling.kind() == RSyntaxKind::BANG
-            {
-                return Ok(None);
+        if parent.kind() == RSyntaxKind::R_UNARY_EXPRESSION {
+            if let Some(prev_sibling) = ast.syntax().prev_sibling() {
+                if prev_sibling.kind() == RSyntaxKind::BANG {
+                    return Ok(None);
+                }
             }
         }
-    };
+    }
 
     let function = ast.function()?;
     let function_name = function.to_trimmed_string();
@@ -49,23 +49,34 @@ pub fn outer_negation(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     };
 
     let args = ast.arguments()?.items();
-    let arg = get_arg_by_position(&args, 1);
-    if arg.is_none() {
+
+    // Only check calls with exactly one argument
+    let first_arg = match get_arg_by_position(&args, 1) {
+        Some(arg) => arg,
+        None => return Ok(None),
+    };
+
+    // Ensure there's not more than one argument (e.g. skip `any(!x, y)`).
+    if get_arg_by_position(&args, 2).is_some() {
+        return Ok(None);
+    }
+    let arg_value = match first_arg.value() {
+        Some(val) => val,
+        None => return Ok(None),
+    };
+    // Check if the argument is a unary expression (negation)
+    if arg_value.syntax().kind() != RSyntaxKind::R_UNARY_EXPRESSION {
         return Ok(None);
     }
 
-    let n_args = args
-        .into_iter()
-        .map(|x| x.unwrap())
-        .collect::<Vec<_>>()
-        .len();
+    // Get the expression after the negation operator
+    // Skip the BANG token to get the actual expression
+    let negated_expr = arg_value
+        .syntax()
+        .children()
+        .find(|child| child.kind() != RSyntaxKind::BANG);
 
-    if n_args > 1 {
-        return Ok(None);
-    }
-
-    let arg = arg.unwrap().value().unwrap();
-    if arg.syntax().kind() != RSyntaxKind::R_UNARY_EXPRESSION {
+    let Some(expr) = negated_expr else {
         return Ok(None);
     };
 
@@ -73,16 +84,12 @@ pub fn outer_negation(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     // comes after "!". So we don't need to check that this is indeed using the
     // BANG operator because it's the only R_UNARY_EXPRESSION available.
 
-    let content = if let Some(expr) = arg.syntax().first_child() {
-        // We don't want to report consecutive unary expressions, e.g. any(!!x),
-        // because they could be special syntax.
-        if expr.kind() == RSyntaxKind::R_UNARY_EXPRESSION {
-            return Ok(None);
-        };
-        expr.text_trimmed().to_string()
-    } else {
-        "".to_string()
-    };
+    // Don't report consecutive unary expressions (e.g., any(!!x))
+    if expr.kind() == RSyntaxKind::R_UNARY_EXPRESSION {
+        return Ok(None);
+    }
+
+    let content = expr.text_trimmed().to_string();
 
     let (replacement_function, msg, suggestion) = match function_name.as_str() {
         "any" => (
