@@ -817,7 +817,7 @@
     "href": "rules.html",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_0389lbl2gpqb52ldcydz",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_fy8bjkrvguh264fm1yhv",
     "crumbs": [
       "Rules"
     ]
@@ -827,7 +827,7 @@
     "href": "rules.html#overview",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_0389lbl2gpqb52ldcydz",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_fy8bjkrvguh264fm1yhv",
     "crumbs": [
       "Rules"
     ]
@@ -859,6 +859,13 @@
     "title": "Editor support",
     "section": "VS Code / Positron",
     "text": "VS Code / Positron\nBoth VS Code and Positron have access to the Jarl extension via the VS Marketplace and Open VSX.\nThis extension provides code higlights and quick fixes:\n\ncode highlights will underline pieces of code that violate any rule in your setup:\n\n\n\nquick fixes lightbulb icons will appear when the cursor is next to a highlighted piece of code. Clicking this icon will give you several options: apply the fix only for this piece of code, add a comment to ignore this specific violation, or add a comment to ignore all violations present in this piece of code. The screenshots below show the procedure to apply the fix:\n\n\n\n\nThis extension provides few options integrated in VS Code or Positron. One of them is “Assignment operator”, that indicates which of \"=\" or \"&lt;-\" is preferred in the files parsed by Jarl. This option can be set at the User or Workspace level by looking for “Jarl” in the IDE settings.\nIt is recommended to use jarl.toml if more configuration is needed.\n\n\n\n\n\n\nTip\n\n\n\nThe Tombi extension is useful to have suggestions and autocompletion when editing jarl.toml."
+  },
+  {
+    "objectID": "editors.html#zed",
+    "href": "editors.html#zed",
+    "title": "Editor support",
+    "section": "Zed",
+    "text": "Zed\nJarl is available in the list of Zed extensions. After installing it, you will need to update settings.json, in particular the field languages:\n\"languages\": {\n  \"Python\": {\n    [...]\n  },\n  \"R\": {\n    \"language_servers\": [\"jarl\"]\n  }\n}\nlanguage_servers accepts multiple values, so you may have \"language_servers\": [\"jarl\", \"air\"] for example.\nAs in Positron / VS Code, it is possible to pass a few options, such as assignmentOperator. This has to be specified in the lsp field:\n\"lsp\": {\n  \"jarl\": {\n    \"initialization_options\": {\n      \"assignmentOperator\": \"=\"\n    }\n  }\n}"
   },
   {
     "objectID": "contributing.html",
