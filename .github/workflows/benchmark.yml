@@ -31,6 +31,7 @@ env:
     tidyverse/dplyr@384ff2c4af79a9bd9142d8bdab23efbcd52f275b
     tidyverse/ggplot2@bed8e32d45c7dc98afb783b409edac98854d41a7
     vincentarelbundock/marginaleffects@ffe5a4f5962a9ba51c3e68e1c55eea62887c25da
+    wch/r-source@b5cf23a805f4305852f55c4148f2a302b06844b5
 
 jobs:
   benchmark:
