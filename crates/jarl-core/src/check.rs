@@ -4,14 +4,15 @@ use crate::vcs::check_version_control;
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
 use air_r_syntax::{
-    AnyRExpression, RBinaryExpressionFields, RIfStatementFields, RWhileStatementFields,
+    AnyRExpression, RBinaryExpressionFields, RForStatementFields, RIfStatementFields, RSyntaxKind,
+    RWhileStatementFields,
 };
-use air_r_syntax::{RForStatementFields, RSyntaxKind};
 use anyhow::{Context, Result};
 use rayon::prelude::*;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use crate::analyze;
 use crate::config::Config;
@@ -34,17 +35,20 @@ pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Err
         }
     }
 
+    // Wrap config in Arc to avoid expensive clones in parallel execution
+    let config = Arc::new(config);
+
     config
         .paths
         .par_iter()
         .map(|file| {
-            let res = check_path(file, config.clone());
+            let res = check_path(file, Arc::clone(&config));
             (relativize_path(file), res)
         })
         .collect()
 }
 
-pub fn check_path(path: &PathBuf, config: Config) -> Result<Vec<Diagnostic>, anyhow::Error> {
+pub fn check_path(path: &PathBuf, config: Arc<Config>) -> Result<Vec<Diagnostic>, anyhow::Error> {
     if config.apply_fixes || config.apply_unsafe_fixes {
         lint_fix(path, config)
     } else {
@@ -52,18 +56,18 @@ pub fn check_path(path: &PathBuf, config: Config) -> Result<Vec<Diagnostic>, any
     }
 }
 
-pub fn lint_only(path: &PathBuf, config: Config) -> Result<Vec<Diagnostic>, anyhow::Error> {
+pub fn lint_only(path: &PathBuf, config: Arc<Config>) -> Result<Vec<Diagnostic>, anyhow::Error> {
     let path = relativize_path(path);
     let contents = fs::read_to_string(Path::new(&path))
         .with_context(|| format!("Failed to read file: {path}"))?;
 
-    let checks = get_checks(&contents, &PathBuf::from(&path), config.clone())
+    let checks = get_checks(&contents, &PathBuf::from(&path), &config)
         .with_context(|| format!("Failed to get checks for file: {path}"))?;
 
     Ok(checks)
 }
 
-pub fn lint_fix(path: &PathBuf, config: Config) -> Result<Vec<Diagnostic>, anyhow::Error> {
+pub fn lint_fix(path: &PathBuf, config: Arc<Config>) -> Result<Vec<Diagnostic>, anyhow::Error> {
     let path = relativize_path(path);
 
     let mut has_skipped_fixes = true;
@@ -73,7 +77,7 @@ pub fn lint_fix(path: &PathBuf, config: Config) -> Result<Vec<Diagnostic>, anyho
         let contents = fs::read_to_string(Path::new(&path))
             .with_context(|| format!("Failed to read file: {path}",))?;
 
-        checks = get_checks(&contents, &PathBuf::from(&path), config.clone())
+        checks = get_checks(&contents, &PathBuf::from(&path), &config)
             .with_context(|| format!("Failed to get checks for file: {path}",))?;
 
         if !has_skipped_fixes {
@@ -142,7 +146,7 @@ impl Checker {
 //
 // If there are diagnostics to report, this is also where their range in the
 // string is converted to their location (row, column).
-pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Diagnostic>> {
+pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Diagnostic>> {
     let parser_options = RParserOptions::default();
     let parsed = air_r_parser::parse(contents, parser_options);
 
@@ -162,7 +166,7 @@ pub fn get_checks(contents: &str, file: &Path, config: Config) -> Result<Vec<Dia
     }
 
     let mut checker = Checker::new(suppression, config.assignment_op);
-    checker.rules = config.rules_to_apply;
+    checker.rules = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
     for expr in expressions_vec {
         check_expression(&expr, &mut checker)?;
