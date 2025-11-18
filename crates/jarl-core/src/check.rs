@@ -19,7 +19,6 @@ use crate::analyze;
 use crate::config::Config;
 use crate::diagnostic::*;
 use crate::fix::*;
-use crate::rule_table::RuleTable;
 use crate::utils::*;
 
 pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
@@ -100,12 +99,10 @@ pub fn lint_fix(path: &PathBuf, config: Arc<Config>) -> Result<Vec<Diagnostic>, 
 pub struct Checker {
     // The diagnostics to report (possibly empty).
     pub diagnostics: Vec<Diagnostic>,
-    // A vector of `Rule`. A `rule` contains the name of the rule to apply,
-    // whether it is safe to fix, unsafe to fix, or doesn't have a fix, and
-    // the minimum R version from which this rule is available.
-    pub rules: RuleTable,
     // HashSet of enabled rule names for O(1) lookup performance
     enabled_rules: HashSet<String>,
+    // Keep a reference to the full rule list for metadata (no-fix rules, etc.)
+    rules_without_fix: Vec<String>,
     // The R version that is manually passed by the user in the CLI. Any rule
     // that has a minimum R version higher than this value will be deactivated.
     pub minimum_r_version: Option<(u32, u32, u32)>,
@@ -116,20 +113,20 @@ pub struct Checker {
 }
 
 impl Checker {
-    fn new(suppression: SuppressionManager, assignment_op: RSyntaxKind) -> Self {
+    fn new(
+        suppression: SuppressionManager,
+        assignment_op: RSyntaxKind,
+        enabled_rules: HashSet<String>,
+        rules_without_fix: Vec<String>,
+    ) -> Self {
         Self {
             diagnostics: vec![],
-            rules: RuleTable::empty(),
-            enabled_rules: HashSet::new(),
+            enabled_rules,
+            rules_without_fix,
             minimum_r_version: None,
             suppression,
             assignment_op,
         }
-    }
-
-    /// Update the enabled rules HashSet from the RuleTable
-    fn update_enabled_rules(&mut self) {
-        self.enabled_rules = self.rules.iter().map(|r| r.name.clone()).collect();
     }
 
     // This takes an Option<Diagnostic> because each lint rule reports a
@@ -174,34 +171,39 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
         return Ok(vec![]);
     }
 
-    let mut checker = Checker::new(suppression, config.assignment_op);
-    checker.rules = config.rules_to_apply.clone();
-    checker.update_enabled_rules();
+    // Build enabled rules HashSet directly from config without cloning RuleTable
+    let enabled_rules: HashSet<String> = config
+        .rules_to_apply
+        .iter()
+        .map(|r| r.name.clone())
+        .collect();
+
+    // Pre-compute rules without fix for later filtering
+    let rules_without_fix: Vec<String> = config
+        .rules_to_apply
+        .iter()
+        .filter(|x| x.has_no_fix())
+        .map(|x| x.name.clone())
+        .collect();
+
+    let mut checker = Checker::new(
+        suppression,
+        config.assignment_op,
+        enabled_rules,
+        rules_without_fix,
+    );
     checker.minimum_r_version = config.minimum_r_version;
     for expr in expressions_vec {
         check_expression(&expr, &mut checker)?;
     }
 
-    // Some rules have a fix available in their implementation but do not have
-    // fix in the config, for instance because they are part of the "unfixable"
-    // arg or not part of the "fixable" arg in `jarl.toml`.
-    // When we get all the diagnostics with check_expression() above, we don't
-    // pay attention to whether the user wants to fix them or not. Adding this
-    // step here is a way to filter those fixes out before calling apply_fixes().
-    let rules_without_fix = checker
-        .rules
-        .enabled
-        .iter()
-        .filter(|x| x.has_no_fix())
-        .map(|x| x.name.clone())
-        .collect::<Vec<String>>();
-
+    // Filter out fixes for rules that shouldn't have fixes applied
     let diagnostics: Vec<Diagnostic> = checker
         .diagnostics
         .into_iter()
         .map(|mut x| {
             x.filename = file.to_path_buf();
-            if rules_without_fix.contains(&x.message.name) {
+            if checker.rules_without_fix.contains(&x.message.name) {
                 x.fix = Fix::empty();
             }
             // TODO: this should be removed once comments in nodes are better
