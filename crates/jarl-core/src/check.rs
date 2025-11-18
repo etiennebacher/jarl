@@ -9,6 +9,7 @@ use air_r_syntax::{
 };
 use anyhow::{Context, Result};
 use rayon::prelude::*;
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
@@ -103,6 +104,8 @@ pub struct Checker {
     // whether it is safe to fix, unsafe to fix, or doesn't have a fix, and
     // the minimum R version from which this rule is available.
     pub rules: RuleTable,
+    // HashSet of enabled rule names for O(1) lookup performance
+    enabled_rules: HashSet<String>,
     // The R version that is manually passed by the user in the CLI. Any rule
     // that has a minimum R version higher than this value will be deactivated.
     pub minimum_r_version: Option<(u32, u32, u32)>,
@@ -117,10 +120,16 @@ impl Checker {
         Self {
             diagnostics: vec![],
             rules: RuleTable::empty(),
+            enabled_rules: HashSet::new(),
             minimum_r_version: None,
             suppression,
             assignment_op,
         }
+    }
+
+    /// Update the enabled rules HashSet from the RuleTable
+    fn update_enabled_rules(&mut self) {
+        self.enabled_rules = self.rules.iter().map(|r| r.name.clone()).collect();
     }
 
     // This takes an Option<Diagnostic> because each lint rule reports a
@@ -131,8 +140,8 @@ impl Checker {
         }
     }
 
-    pub(crate) fn is_rule_enabled(&mut self, rule: &str) -> bool {
-        self.rules.enabled.iter().any(|r| r.name == rule)
+    pub(crate) fn is_rule_enabled(&self, rule: &str) -> bool {
+        self.enabled_rules.contains(rule)
     }
 
     /// Check if a rule should be skipped for the given node due to suppression comments
@@ -167,6 +176,7 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
 
     let mut checker = Checker::new(suppression, config.assignment_op);
     checker.rules = config.rules_to_apply.clone();
+    checker.update_enabled_rules();
     checker.minimum_r_version = config.minimum_r_version;
     for expr in expressions_vec {
         check_expression(&expr, &mut checker)?;
