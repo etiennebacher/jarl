@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
-use crate::lints::{all_nofix_rules, all_safe_rules, all_unsafe_rules};
+use crate::lints::{nofix_rules_set, safe_rules_set, unsafe_rules_set};
 use crate::location::Location;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -108,13 +108,13 @@ impl Diagnostic {
     // TODO: in these three functions, the first condition should be removed
     // once comments in nodes are better handled, #95.
     pub fn has_safe_fix(&self) -> bool {
-        !self.fix.to_skip && all_safe_rules().contains(&self.message.name)
+        !self.fix.to_skip && safe_rules_set().contains(&self.message.name)
     }
     pub fn has_unsafe_fix(&self) -> bool {
-        !self.fix.to_skip && all_unsafe_rules().contains(&self.message.name)
+        !self.fix.to_skip && unsafe_rules_set().contains(&self.message.name)
     }
     pub fn has_no_fix(&self) -> bool {
-        self.fix.to_skip || all_nofix_rules().contains(&self.message.name)
+        self.fix.to_skip || nofix_rules_set().contains(&self.message.name)
     }
 }
 

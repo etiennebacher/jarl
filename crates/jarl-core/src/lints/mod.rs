@@ -1,4 +1,6 @@
 use crate::rule_table::{FixStatus, RuleTable};
+use std::collections::HashSet;
+use std::sync::OnceLock;
 
 pub(crate) mod all_equal;
 pub(crate) mod any_duplicated;
@@ -70,26 +72,56 @@ pub fn all_rules_and_safety() -> RuleTable {
     rule_table
 }
 
+/// Cached set of safe rule names for O(1) lookup
+static SAFE_RULES: OnceLock<HashSet<String>> = OnceLock::new();
+
+/// Cached set of unsafe rule names for O(1) lookup
+static UNSAFE_RULES: OnceLock<HashSet<String>> = OnceLock::new();
+
+/// Cached set of no-fix rule names for O(1) lookup
+static NOFIX_RULES: OnceLock<HashSet<String>> = OnceLock::new();
+
+/// Get the cached set of safe rule names
+pub fn safe_rules_set() -> &'static HashSet<String> {
+    SAFE_RULES.get_or_init(|| {
+        all_rules_and_safety()
+            .iter()
+            .filter(|x| x.has_safe_fix())
+            .map(|x| x.name.clone())
+            .collect()
+    })
+}
+
+/// Get the cached set of unsafe rule names
+pub fn unsafe_rules_set() -> &'static HashSet<String> {
+    UNSAFE_RULES.get_or_init(|| {
+        all_rules_and_safety()
+            .iter()
+            .filter(|x| x.has_unsafe_fix())
+            .map(|x| x.name.clone())
+            .collect()
+    })
+}
+
+/// Get the cached set of no-fix rule names
+pub fn nofix_rules_set() -> &'static HashSet<String> {
+    NOFIX_RULES.get_or_init(|| {
+        all_rules_and_safety()
+            .iter()
+            .filter(|x| x.has_no_fix())
+            .map(|x| x.name.clone())
+            .collect()
+    })
+}
+
 pub fn all_safe_rules() -> Vec<String> {
-    all_rules_and_safety()
-        .iter()
-        .filter(|x| x.has_safe_fix())
-        .map(|x| x.name.clone())
-        .collect::<Vec<String>>()
+    safe_rules_set().iter().cloned().collect()
 }
 
 pub fn all_unsafe_rules() -> Vec<String> {
-    all_rules_and_safety()
-        .iter()
-        .filter(|x| x.has_unsafe_fix())
-        .map(|x| x.name.clone())
-        .collect::<Vec<String>>()
+    unsafe_rules_set().iter().cloned().collect()
 }
 
 pub fn all_nofix_rules() -> Vec<String> {
-    all_rules_and_safety()
-        .iter()
-        .filter(|x| x.has_no_fix())
-        .map(|x| x.name.clone())
-        .collect::<Vec<String>>()
+    nofix_rules_set().iter().cloned().collect()
 }
