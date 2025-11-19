@@ -9,6 +9,7 @@ use air_r_syntax::{
 };
 use anyhow::{Context, Result};
 use rayon::prelude::*;
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
@@ -103,6 +104,8 @@ pub struct Checker {
     // whether it is safe to fix, unsafe to fix, or doesn't have a fix, and
     // the minimum R version from which this rule is available.
     pub rules: RuleTable,
+    // Small HashSet of enabled rule names for O(1) lookup
+    pub enabled_rules: HashSet<String>,
     // The R version that is manually passed by the user in the CLI. Any rule
     // that has a minimum R version higher than this value will be deactivated.
     pub minimum_r_version: Option<(u32, u32, u32)>,
@@ -113,10 +116,15 @@ pub struct Checker {
 }
 
 impl Checker {
-    fn new(suppression: SuppressionManager, assignment_op: RSyntaxKind) -> Self {
+    fn new(
+        suppression: SuppressionManager,
+        assignment_op: RSyntaxKind,
+        enabled_rules: HashSet<String>,
+    ) -> Self {
         Self {
             diagnostics: vec![],
             rules: RuleTable::empty(),
+            enabled_rules,
             minimum_r_version: None,
             suppression,
             assignment_op,
@@ -132,7 +140,7 @@ impl Checker {
     }
 
     pub(crate) fn is_rule_enabled(&self, rule: &str) -> bool {
-        self.rules.enabled.iter().any(|r| r.name == rule)
+        self.enabled_rules.contains(rule)
     }
 
     /// Check if a rule should be skipped for the given node due to suppression comments
@@ -165,7 +173,14 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
         return Ok(vec![]);
     }
 
-    let mut checker = Checker::new(suppression, config.assignment_op);
+    // Build small HashSet of enabled rule names for O(1) lookup
+    let enabled_rules: HashSet<String> = config
+        .rules_to_apply
+        .iter()
+        .map(|r| r.name.clone())
+        .collect();
+
+    let mut checker = Checker::new(suppression, config.assignment_op, enabled_rules);
     checker.rules = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
     for expr in expressions_vec {
