@@ -2,134 +2,134 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://etiennebacher.github.io/jarl/using-jarl.html</loc>
-    <lastmod>2025-11-19T23:13:45.289Z</lastmod>
+    <lastmod>2025-11-19T23:15:36.259Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/any_duplicated.html</loc>
-    <lastmod>2025-11-19T23:15:06.730Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.431Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/duplicated_arguments.html</loc>
-    <lastmod>2025-11-19T23:15:06.730Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.432Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/sort.html</loc>
-    <lastmod>2025-11-19T23:15:06.732Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.433Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/true_false_symbol.html</loc>
-    <lastmod>2025-11-19T23:15:06.732Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.433Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/grepv.html</loc>
-    <lastmod>2025-11-19T23:15:06.731Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.432Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/matrix_apply.html</loc>
-    <lastmod>2025-11-19T23:15:06.731Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.433Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/length_levels.html</loc>
-    <lastmod>2025-11-19T23:15:06.731Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.432Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/numeric_leading_zero.html</loc>
-    <lastmod>2025-11-19T23:15:06.732Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.433Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/for_loop_index.html</loc>
-    <lastmod>2025-11-19T23:15:06.731Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.432Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/repeat.html</loc>
-    <lastmod>2025-11-19T23:15:06.732Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.433Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/lengths.html</loc>
-    <lastmod>2025-11-19T23:15:06.731Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.433Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/is_numeric.html</loc>
-    <lastmod>2025-11-19T23:15:06.731Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.432Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/which_grepl.html</loc>
-    <lastmod>2025-11-19T23:15:06.732Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.434Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/index.html</loc>
-    <lastmod>2025-11-19T23:15:10.161Z</lastmod>
+    <lastmod>2025-11-19T23:17:32.756Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/config.html</loc>
-    <lastmod>2025-11-19T23:13:45.249Z</lastmod>
+    <lastmod>2025-11-19T23:15:36.251Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules.html</loc>
-    <lastmod>2025-11-19T23:13:45.251Z</lastmod>
+    <lastmod>2025-11-19T23:15:36.253Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/integrations.html</loc>
-    <lastmod>2025-11-19T23:13:45.250Z</lastmod>
+    <lastmod>2025-11-19T23:15:36.252Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/editors.html</loc>
-    <lastmod>2025-11-19T23:13:45.250Z</lastmod>
+    <lastmod>2025-11-19T23:15:36.251Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/contributing.html</loc>
-    <lastmod>2025-11-19T23:13:45.249Z</lastmod>
+    <lastmod>2025-11-19T23:15:36.251Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/assignment.html</loc>
-    <lastmod>2025-11-19T23:15:06.730Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.431Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/comparison_negation.html</loc>
-    <lastmod>2025-11-19T23:15:06.730Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.432Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/equals_na.html</loc>
-    <lastmod>2025-11-19T23:15:06.730Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.432Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/download_file.html</loc>
-    <lastmod>2025-11-19T23:15:06.730Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.432Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/class_equals.html</loc>
-    <lastmod>2025-11-19T23:15:06.730Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.432Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/sample_int.html</loc>
-    <lastmod>2025-11-19T23:15:06.732Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.433Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/outer_negation.html</loc>
-    <lastmod>2025-11-19T23:15:06.732Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.433Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/all_equal.html</loc>
-    <lastmod>2025-11-19T23:15:06.729Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.431Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/length_test.html</loc>
-    <lastmod>2025-11-19T23:15:06.731Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.433Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/any_is_na.html</loc>
-    <lastmod>2025-11-19T23:15:06.730Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.431Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/redundant_equals.html</loc>
-    <lastmod>2025-11-19T23:15:06.732Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.433Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/coalesce.html</loc>
-    <lastmod>2025-11-19T23:15:06.730Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.432Z</lastmod>
   </url>
   <url>
     <loc>https://etiennebacher.github.io/jarl/rules/implicit_assignment.html</loc>
-    <lastmod>2025-11-19T23:15:06.731Z</lastmod>
+    <lastmod>2025-11-19T23:17:27.432Z</lastmod>
   </url>
 </urlset>
