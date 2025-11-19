@@ -31,11 +31,11 @@ pub struct ForLoopIndex;
 /// }
 /// ```
 impl Violation for ForLoopIndex {
-    fn name(&self) -> String {
-        "for_loop_index".to_string()
+    fn name(&self) -> &'static str {
+        "for_loop_index"
     }
-    fn body(&self) -> String {
-        "Don't re-use any sequence symbols as the index symbol in a for loop.".to_string()
+    fn body(&self) -> &'static str {
+        "Don't re-use any sequence symbols as the index symbol in a for loop."
     }
 }
 

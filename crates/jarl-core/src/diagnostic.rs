@@ -31,11 +31,11 @@ impl Fix {
 /// Details on the violated rule.
 pub trait Violation {
     /// Name of the rule.
-    fn name(&self) -> String;
+    fn name(&self) -> &'static str;
     /// Explanation of the rule.
-    fn body(&self) -> String;
+    fn body(&self) -> &'static str;
     /// Optional suggestion for how to fix the violation.
-    fn suggestion(&self) -> Option<String> {
+    fn suggestion(&self) -> Option<&'static str> {
         None
     }
 }
@@ -63,9 +63,9 @@ pub struct Diagnostic {
 impl<T: Violation> From<T> for ViolationData {
     fn from(value: T) -> Self {
         Self {
-            name: Violation::name(&value),
-            body: Violation::body(&value),
-            suggestion: Violation::suggestion(&value),
+            name: Violation::name(&value).to_string(),
+            body: Violation::body(&value).to_string(),
+            suggestion: Violation::suggestion(&value).map(|s| s.to_string()),
         }
     }
 }

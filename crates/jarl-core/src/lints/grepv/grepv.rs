@@ -35,14 +35,14 @@ pub struct Grepv;
 ///
 /// See `?grepv`
 impl Violation for Grepv {
-    fn name(&self) -> String {
-        "grepv".to_string()
+    fn name(&self) -> &'static str {
+        "grepv"
     }
-    fn body(&self) -> String {
-        "`grep(..., value = TRUE)` can be simplified.".to_string()
+    fn body(&self) -> &'static str {
+        "`grep(..., value = TRUE)` can be simplified."
     }
-    fn suggestion(&self) -> Option<String> {
-        Some("Use `grepv(...)` instead.".to_string())
+    fn suggestion(&self) -> Option<&'static str> {
+        Some("Use `grepv(...)` instead.")
     }
 }
 

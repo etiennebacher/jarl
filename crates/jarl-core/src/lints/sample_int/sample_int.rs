@@ -32,14 +32,14 @@ pub struct SampleInt;
 ///
 /// See `?sample`
 impl Violation for SampleInt {
-    fn name(&self) -> String {
-        "sample_int".to_string()
+    fn name(&self) -> &'static str {
+        "sample_int"
     }
-    fn body(&self) -> String {
-        "`sample(1:n, m, ...)` is less readable than `sample.int(n, m, ...)`.".to_string()
+    fn body(&self) -> &'static str {
+        "`sample(1:n, m, ...)` is less readable than `sample.int(n, m, ...)`."
     }
-    fn suggestion(&self) -> Option<String> {
-        Some("Use `sample.int(n, m, ...)` instead.".to_string())
+    fn suggestion(&self) -> Option<&'static str> {
+        Some("Use `sample.int(n, m, ...)` instead.")
     }
 }
 

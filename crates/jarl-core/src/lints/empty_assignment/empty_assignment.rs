@@ -5,11 +5,11 @@ use biome_rowan::AstNode;
 pub struct EmptyAssignment;
 
 impl Violation for EmptyAssignment {
-    fn name(&self) -> String {
-        "empty_assignment".to_string()
+    fn name(&self) -> &'static str {
+        "empty_assignment"
     }
-    fn body(&self) -> String {
-        "Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size.".to_string()
+    fn body(&self) -> &'static str {
+        "Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size."
     }
 }
 

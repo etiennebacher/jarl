@@ -28,14 +28,14 @@ pub struct LengthLevels;
 /// nlevels(x)
 /// ```
 impl Violation for LengthLevels {
-    fn name(&self) -> String {
-        "length_levels".to_string()
+    fn name(&self) -> &'static str {
+        "length_levels"
     }
-    fn body(&self) -> String {
-        "`length(levels(...))` is less readable than `nlevels(...)`.".to_string()
+    fn body(&self) -> &'static str {
+        "`length(levels(...))` is less readable than `nlevels(...)`."
     }
-    fn suggestion(&self) -> Option<String> {
-        Some("Use `nlevels(...)` instead.".to_string())
+    fn suggestion(&self) -> Option<&'static str> {
+        Some("Use `nlevels(...)` instead.")
     }
 }
 

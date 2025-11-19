@@ -35,14 +35,14 @@ pub struct Sort;
 ///
 /// See `?sort`
 impl Violation for Sort {
-    fn name(&self) -> String {
-        "sort".to_string()
+    fn name(&self) -> &'static str {
+        "sort"
     }
-    fn body(&self) -> String {
-        "`x[order(x)]` is inefficient.".to_string()
+    fn body(&self) -> &'static str {
+        "`x[order(x)]` is inefficient."
     }
-    fn suggestion(&self) -> Option<String> {
-        Some("Use `sort(x)` instead.".to_string())
+    fn suggestion(&self) -> Option<&'static str> {
+        Some("Use `sort(x)` instead.")
     }
 }
 

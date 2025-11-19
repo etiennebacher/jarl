@@ -33,14 +33,14 @@ pub struct WhichGrepl;
 ///
 /// See `?grep`
 impl Violation for WhichGrepl {
-    fn name(&self) -> String {
-        "which_grepl".to_string()
+    fn name(&self) -> &'static str {
+        "which_grepl"
     }
-    fn body(&self) -> String {
-        "`which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.".to_string()
+    fn body(&self) -> &'static str {
+        "`which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`."
     }
-    fn suggestion(&self) -> Option<String> {
-        Some("Use `grep(pattern, x)` instead.".to_string())
+    fn suggestion(&self) -> Option<&'static str> {
+        Some("Use `grep(pattern, x)` instead.")
     }
 }
 

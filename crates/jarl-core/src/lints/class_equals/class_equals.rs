@@ -54,14 +54,14 @@ pub struct ClassEquals;
 ///
 /// See `?inherits`
 impl Violation for ClassEquals {
-    fn name(&self) -> String {
-        "class_equals".to_string()
+    fn name(&self) -> &'static str {
+        "class_equals"
     }
-    fn body(&self) -> String {
-        "Comparing `class(x)` with `==` or `%in%` can be problematic.".to_string()
+    fn body(&self) -> &'static str {
+        "Comparing `class(x)` with `==` or `%in%` can be problematic."
     }
-    fn suggestion(&self) -> Option<String> {
-        Some("Use `inherits(x, 'class')` instead.".to_string())
+    fn suggestion(&self) -> Option<&'static str> {
+        Some("Use `inherits(x, 'class')` instead.")
     }
 }
 

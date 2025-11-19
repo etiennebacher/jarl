@@ -34,14 +34,14 @@ pub struct Lengths;
 ///
 /// See `?lengths`
 impl Violation for Lengths {
-    fn name(&self) -> String {
-        "lengths".to_string()
+    fn name(&self) -> &'static str {
+        "lengths"
     }
-    fn body(&self) -> String {
-        "Using `length()` on each element of a list is inefficient.".to_string()
+    fn body(&self) -> &'static str {
+        "Using `length()` on each element of a list is inefficient."
     }
-    fn suggestion(&self) -> Option<String> {
-        Some("Use `lengths()` instead.".to_string())
+    fn suggestion(&self) -> Option<&'static str> {
+        Some("Use `lengths()` instead.")
     }
 }
 

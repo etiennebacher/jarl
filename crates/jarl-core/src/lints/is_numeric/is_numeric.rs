@@ -31,14 +31,16 @@ pub struct IsNumeric;
 ///
 /// See `?is.numeric`
 impl Violation for IsNumeric {
-    fn name(&self) -> String {
-        "is_numeric".to_string()
+    fn name(&self) -> &'static str {
+        "is_numeric"
     }
-    fn body(&self) -> String {
-        "`is.numeric(x) || is.integer(x)` is redundant.".to_string()
+    fn body(&self) -> &'static str {
+        "`is.numeric(x) || is.integer(x)` is redundant."
     }
-    fn suggestion(&self) -> Option<String> {
-        Some("Use `is.numeric(x)` instead. Use `is.double(x)` to test for objects stored as 64-bit floating point".to_string())
+    fn suggestion(&self) -> Option<&'static str> {
+        Some(
+            "Use `is.numeric(x)` instead. Use `is.double(x)` to test for objects stored as 64-bit floating point",
+        )
     }
 }
 

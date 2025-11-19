@@ -34,14 +34,14 @@ pub struct AnyIsNa;
 ///
 /// See `?anyNA`
 impl Violation for AnyIsNa {
-    fn name(&self) -> String {
-        "any_is_na".to_string()
+    fn name(&self) -> &'static str {
+        "any_is_na"
     }
-    fn body(&self) -> String {
-        "`any(is.na(...))` is inefficient.".to_string()
+    fn body(&self) -> &'static str {
+        "`any(is.na(...))` is inefficient."
     }
-    fn suggestion(&self) -> Option<String> {
-        Some("Use `anyNA(...)` instead.".to_string())
+    fn suggestion(&self) -> Option<&'static str> {
+        Some("Use `anyNA(...)` instead.")
     }
 }
 

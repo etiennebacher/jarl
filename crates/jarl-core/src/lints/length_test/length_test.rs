@@ -30,11 +30,11 @@ pub struct LengthTest;
 /// length(x) == 1
 /// ```
 impl Violation for LengthTest {
-    fn name(&self) -> String {
-        "length_test".to_string()
+    fn name(&self) -> &'static str {
+        "length_test"
     }
-    fn body(&self) -> String {
-        "Checking the length of a logical vector is likely a mistake".to_string()
+    fn body(&self) -> &'static str {
+        "Checking the length of a logical vector is likely a mistake"
     }
 }
 

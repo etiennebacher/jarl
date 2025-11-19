@@ -30,14 +30,14 @@ pub struct Repeat;
 /// }
 /// ```
 impl Violation for Repeat {
-    fn name(&self) -> String {
-        "repeat".to_string()
+    fn name(&self) -> &'static str {
+        "repeat"
     }
-    fn body(&self) -> String {
-        "`while (TRUE)` is less clear than `repeat` for infinite loops.".to_string()
+    fn body(&self) -> &'static str {
+        "`while (TRUE)` is less clear than `repeat` for infinite loops."
     }
-    fn suggestion(&self) -> Option<String> {
-        Some("Use `repeat {}` instead.".to_string())
+    fn suggestion(&self) -> Option<&'static str> {
+        Some("Use `repeat {}` instead.")
     }
 }
 

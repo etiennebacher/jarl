@@ -32,14 +32,14 @@ pub struct EqualsNa;
 /// is.na(x)
 /// ```
 impl Violation for EqualsNa {
-    fn name(&self) -> String {
-        "equals_na".to_string()
+    fn name(&self) -> &'static str {
+        "equals_na"
     }
-    fn body(&self) -> String {
-        "Comparing to NA with `==`, `!=` or `%in%` is problematic.".to_string()
+    fn body(&self) -> &'static str {
+        "Comparing to NA with `==`, `!=` or `%in%` is problematic."
     }
-    fn suggestion(&self) -> Option<String> {
-        Some("Use `is.na()` instead.".to_string())
+    fn suggestion(&self) -> Option<&'static str> {
+        Some("Use `is.na()` instead.")
     }
 }
 

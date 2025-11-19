@@ -37,14 +37,14 @@ pub struct AnyDuplicated;
 ///
 /// See `?anyDuplicated`
 impl Violation for AnyDuplicated {
-    fn name(&self) -> String {
-        "any_duplicated".to_string()
+    fn name(&self) -> &'static str {
+        "any_duplicated"
     }
-    fn body(&self) -> String {
-        "`any(duplicated(...))` is inefficient.".to_string()
+    fn body(&self) -> &'static str {
+        "`any(duplicated(...))` is inefficient."
     }
-    fn suggestion(&self) -> Option<String> {
-        Some("Use `anyDuplicated(...) > 0` instead.".to_string())
+    fn suggestion(&self) -> Option<&'static str> {
+        Some("Use `anyDuplicated(...) > 0` instead.")
     }
 }
 

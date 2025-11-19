@@ -9,7 +9,6 @@ use air_r_syntax::{
 };
 use anyhow::{Context, Result};
 use rayon::prelude::*;
-use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
@@ -19,6 +18,7 @@ use crate::analyze;
 use crate::config::Config;
 use crate::diagnostic::*;
 use crate::fix::*;
+use crate::rule_table::RuleTable;
 use crate::utils::*;
 
 pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
@@ -99,10 +99,10 @@ pub fn lint_fix(path: &PathBuf, config: Arc<Config>) -> Result<Vec<Diagnostic>, 
 pub struct Checker {
     // The diagnostics to report (possibly empty).
     pub diagnostics: Vec<Diagnostic>,
-    // HashSet of enabled rule names for O(1) lookup performance
-    enabled_rules: HashSet<String>,
-    // Keep a reference to the full rule list for metadata (no-fix rules, etc.)
-    rules_without_fix: Vec<String>,
+    // A vector of `Rule`. A `rule` contains the name of the rule to apply,
+    // whether it is safe to fix, unsafe to fix, or doesn't have a fix, and
+    // the minimum R version from which this rule is available.
+    pub rules: RuleTable,
     // The R version that is manually passed by the user in the CLI. Any rule
     // that has a minimum R version higher than this value will be deactivated.
     pub minimum_r_version: Option<(u32, u32, u32)>,
@@ -113,16 +113,10 @@ pub struct Checker {
 }
 
 impl Checker {
-    fn new(
-        suppression: SuppressionManager,
-        assignment_op: RSyntaxKind,
-        enabled_rules: HashSet<String>,
-        rules_without_fix: Vec<String>,
-    ) -> Self {
+    fn new(suppression: SuppressionManager, assignment_op: RSyntaxKind) -> Self {
         Self {
             diagnostics: vec![],
-            enabled_rules,
-            rules_without_fix,
+            rules: RuleTable::empty(),
             minimum_r_version: None,
             suppression,
             assignment_op,
@@ -138,7 +132,7 @@ impl Checker {
     }
 
     pub(crate) fn is_rule_enabled(&self, rule: &str) -> bool {
-        self.enabled_rules.contains(rule)
+        self.rules.enabled.iter().any(|r| r.name == rule)
     }
 
     /// Check if a rule should be skipped for the given node due to suppression comments
@@ -171,39 +165,33 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
         return Ok(vec![]);
     }
 
-    // Build enabled rules HashSet directly from config without cloning RuleTable
-    let enabled_rules: HashSet<String> = config
-        .rules_to_apply
-        .iter()
-        .map(|r| r.name.clone())
-        .collect();
-
-    // Pre-compute rules without fix for later filtering
-    let rules_without_fix: Vec<String> = config
-        .rules_to_apply
-        .iter()
-        .filter(|x| x.has_no_fix())
-        .map(|x| x.name.clone())
-        .collect();
-
-    let mut checker = Checker::new(
-        suppression,
-        config.assignment_op,
-        enabled_rules,
-        rules_without_fix,
-    );
+    let mut checker = Checker::new(suppression, config.assignment_op);
+    checker.rules = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
     for expr in expressions_vec {
         check_expression(&expr, &mut checker)?;
     }
 
-    // Filter out fixes for rules that shouldn't have fixes applied
+    // Some rules have a fix available in their implementation but do not have
+    // fix in the config, for instance because they are part of the "unfixable"
+    // arg or not part of the "fixable" arg in `jarl.toml`.
+    // When we get all the diagnostics with check_expression() above, we don't
+    // pay attention to whether the user wants to fix them or not. Adding this
+    // step here is a way to filter those fixes out before calling apply_fixes().
+    let rules_without_fix = checker
+        .rules
+        .enabled
+        .iter()
+        .filter(|x| x.has_no_fix())
+        .map(|x| x.name.clone())
+        .collect::<Vec<String>>();
+
     let diagnostics: Vec<Diagnostic> = checker
         .diagnostics
         .into_iter()
         .map(|mut x| {
             x.filename = file.to_path_buf();
-            if checker.rules_without_fix.contains(&x.message.name) {
+            if rules_without_fix.contains(&x.message.name) {
                 x.fix = Fix::empty();
             }
             // TODO: this should be removed once comments in nodes are better

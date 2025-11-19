@@ -37,11 +37,11 @@ pub struct RedundantEquals;
 /// }
 /// ```
 impl Violation for RedundantEquals {
-    fn name(&self) -> String {
-        "redundant_equals".to_string()
+    fn name(&self) -> &'static str {
+        "redundant_equals"
     }
-    fn body(&self) -> String {
-        "Using == on a logical vector is redundant.".to_string()
+    fn body(&self) -> &'static str {
+        "Using == on a logical vector is redundant."
     }
 }
 

@@ -25,11 +25,11 @@ pub struct NumericLeadingZero;
 /// x <- 0.1
 /// ```
 impl Violation for NumericLeadingZero {
-    fn name(&self) -> String {
-        "numeric_leading_zero".to_string()
+    fn name(&self) -> &'static str {
+        "numeric_leading_zero"
     }
-    fn body(&self) -> String {
-        "Include the leading zero for fractional numeric constants.".to_string()
+    fn body(&self) -> &'static str {
+        "Include the leading zero for fractional numeric constants."
     }
 }
 
