@@ -18,7 +18,7 @@ use air_workspace::resolve::PathResolver;
 
 /// Default patterns to exclude from linting
 /// These match common R project files that should not be linted
-const DEFAULT_EXCLUDE_PATTERNS: &[&str] = &[
+pub const DEFAULT_EXCLUDE_PATTERNS: &[&str] = &[
     ".git/",
     "renv/",
     "revdep/",

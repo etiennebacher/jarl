@@ -17,6 +17,7 @@ pub mod document;
 pub mod lint;
 pub mod server;
 pub mod session;
+pub mod utils;
 
 #[allow(dead_code)]
 pub(crate) const SERVER_NAME: &str = "jarl";
