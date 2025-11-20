@@ -407,7 +407,6 @@ mod tests {
     fn test_exclusion_with_default_exclude() -> Result<(), Box<dyn std::error::Error>> {
         let directory = TempDir::new()?;
         let directory = directory.path();
-        std::fs::create_dir_all(&directory).unwrap();
 
         std::fs::write(
             directory.join("jarl.toml"),
