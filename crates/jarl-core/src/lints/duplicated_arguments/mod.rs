@@ -21,6 +21,11 @@ mod tests {
             None,
         );
         expect_no_lint("dt[i = 1]", "duplicated_arguments", None);
+        expect_no_lint(
+            "cli_format_each_inline(x = 'a', x = 'a')",
+            "duplicated_arguments",
+            None,
+        );
     }
 
     #[test]

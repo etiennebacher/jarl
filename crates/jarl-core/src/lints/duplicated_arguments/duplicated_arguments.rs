@@ -56,8 +56,10 @@ pub fn duplicated_arguments(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         }
     };
 
+    // https://github.com/etiennebacher/jarl/issues/172
+    let is_whitelisted_prefix = fun_name.starts_with("cli_");
     let whitelisted_funs = ["c", "mutate", "summarize", "transmute"];
-    if whitelisted_funs.contains(&fun_name.as_str()) {
+    if whitelisted_funs.contains(&fun_name.as_str()) || is_whitelisted_prefix {
         return Ok(None);
     }
 
