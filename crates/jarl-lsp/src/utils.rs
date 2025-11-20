@@ -32,7 +32,7 @@ pub fn matches_pattern(path: &str, pattern: &str) -> bool {
         // Glob pattern - use simple glob matching
         let filename = normalized_path
             .split('/')
-            .last()
+            .next_back()
             .unwrap_or(&normalized_path);
 
         // Split pattern by '*' to get literal parts
@@ -75,7 +75,7 @@ pub fn matches_pattern(path: &str, pattern: &str) -> bool {
         // Exact filename match - check if the filename component matches
         normalized_path
             .split('/')
-            .last()
+            .next_back()
             .map(|filename| filename == pattern)
             .unwrap_or(false)
     }
