@@ -98,6 +98,7 @@ for (i in seq_along(all_repos)) {
         file = "lint_comparison.md",
         append = TRUE
       )
+      break
     } else {
       next
     }
