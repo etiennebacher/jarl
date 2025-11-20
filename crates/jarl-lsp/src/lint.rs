@@ -6,12 +6,14 @@
 use anyhow::{Result, anyhow};
 use lsp_types::{Diagnostic, DiagnosticSeverity, Position, Range};
 use serde::{Deserialize, Serialize};
+use tempfile::TempDir;
 
 use std::path::Path;
 
 use crate::DIAGNOSTIC_SOURCE;
 use crate::document::PositionEncoding;
 use crate::session::DocumentSnapshot;
+use crate::utils::should_exclude_file_based_on_settings;
 
 use air_workspace::resolve::PathResolver;
 use jarl_core::discovery::{DiscoveredSettings, discover_r_file_paths, discover_settings};
@@ -73,27 +75,33 @@ fn run_jarl_linting(
         return Ok(Vec::new());
     }
 
+    // Discover settings from the actual file path.
+    let actual_file_path = vec![file_path.to_string_lossy().to_string()];
+    let mut resolver = PathResolver::new(Settings::default());
+    for DiscoveredSettings { directory, settings } in discover_settings(&actual_file_path)? {
+        resolver.add(&directory, settings);
+        tracing::debug!("Discovered settings from directory: {:?}", directory);
+    }
+
+    // Check if the file should be excluded based on settings in jarl.toml
+    // (`exclude` or `default-exclude`).
+    if should_exclude_file_based_on_settings(file_path, &resolver) {
+        tracing::debug!("Skipping linting for excluded file: {:?}", file_path);
+        return Ok(Vec::new());
+    }
+
     // TODO: we shoudln't have to write the content to a tempfile to then read
     // it and get diagnostic. The check function should be able to take the R
     // code as a string.
     // Write in-memory content to a temporary file for linting
-    let temp_dir = std::env::temp_dir();
+    let temp_dir = TempDir::new()?;
+    let temp_dir = temp_dir.path();
     let temp_file = temp_dir.join(format!("jarl_lsp_{}.R", std::process::id()));
 
     std::fs::write(&temp_file, content)
         .map_err(|e| anyhow!("Failed to write temporary file: {}", e))?;
     let temp_path_str = temp_file.to_string_lossy().to_string();
     let temp_path: Vec<String> = vec![temp_path_str];
-
-    // Discover settings from the actual file path, not the temp file path
-    // This ensures jarl.toml from the workspace is properly loaded
-    let actual_file_path = vec![file_path.to_string_lossy().to_string()];
-
-    let mut resolver = PathResolver::new(Settings::default());
-    for DiscoveredSettings { directory, settings } in discover_settings(&actual_file_path)? {
-        resolver.add(&directory, settings);
-        tracing::debug!("Discovered settings from directory: {:?}", directory);
-    }
 
     // Use temp path for discovering R file paths (just the temp file itself)
     let paths = discover_r_file_paths(&temp_path, &resolver, true)
@@ -393,5 +401,132 @@ mod tests {
         let pos = byte_offset_to_lsp_position(16, content, PositionEncoding::UTF8).unwrap();
         assert_eq!(pos.line, 2);
         assert_eq!(pos.character, 1);
+    }
+
+    #[test]
+    fn test_exclusion_with_default_exclude() -> Result<(), Box<dyn std::error::Error>> {
+        let directory = TempDir::new()?;
+        let directory = directory.path();
+        std::fs::create_dir_all(&directory).unwrap();
+
+        std::fs::write(
+            directory.join("jarl.toml"),
+            r#"
+    [lint]
+    "#,
+        )
+        .unwrap();
+
+        // Create a file that has violations but should be ignored
+        let file_path = directory.join("import-standalone-foo.R");
+        let content = "any(is.na(x))";
+        std::fs::write(&file_path, content).unwrap();
+
+        // Create snapshot for the renv file
+        let uri = lsp_types::Url::from_file_path(&file_path).unwrap();
+        let key = crate::document::DocumentKey::from(uri);
+        let document = crate::document::TextDocument::new(content.to_string(), 1);
+        let snapshot = DocumentSnapshot::new(
+            document,
+            key,
+            PositionEncoding::UTF8,
+            lsp_types::ClientCapabilities::default(),
+            None,
+        );
+
+        // Should return no diagnostics because file is excluded
+        let diagnostics = lint_document(&snapshot).unwrap();
+        assert!(
+            diagnostics.is_empty(),
+            "Expected no diagnostics but got: {:?}",
+            diagnostics
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_exclusion_disabled_default_exclude() -> Result<(), Box<dyn std::error::Error>> {
+        let directory = TempDir::new()?;
+        let directory = directory.path();
+
+        std::fs::write(
+            directory.join("jarl.toml"),
+            r#"
+    [lint]
+    default-exclude = false
+    "#,
+        )
+        .unwrap();
+
+        // Create a file that has violations and would be ignored if we had
+        // `default-exclude = true`.
+        let file_path = directory.join("import-standalone-hello-there.R");
+        println!("file_path: {:?}", file_path);
+        let content = "any(is.na(x))\n";
+        std::fs::write(&file_path, content).unwrap();
+
+        // Create snapshot for the renv file
+        let uri = lsp_types::Url::from_file_path(&file_path).unwrap();
+        let key = crate::document::DocumentKey::from(uri);
+        let document = crate::document::TextDocument::new(content.to_string(), 1);
+        let snapshot = DocumentSnapshot::new(
+            document,
+            key,
+            PositionEncoding::UTF8,
+            lsp_types::ClientCapabilities::default(),
+            None,
+        );
+
+        // Should return diagnostics because file is not excluded
+        let diagnostics = lint_document(&snapshot).unwrap();
+        assert!(
+            !diagnostics.is_empty(),
+            "Expected a diagnostic but didn't get any"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_exclusion_with_custom_exclude_pattern() -> Result<(), Box<dyn std::error::Error>> {
+        let directory = TempDir::new()?;
+        let directory = directory.path();
+
+        std::fs::write(
+            directory.join("jarl.toml"),
+            r#"
+    [lint]
+    exclude = ["generated-*"]
+    "#,
+        )
+        .unwrap();
+
+        // Create a file matching the custom exclude pattern
+        let file_path = directory.join("generated-code.R");
+        let content = "any(is.na())";
+        std::fs::write(&file_path, content).unwrap();
+
+        // Create snapshot for the generated file
+        let uri = lsp_types::Url::from_file_path(&file_path).unwrap();
+        let key = crate::document::DocumentKey::from(uri);
+        let document = crate::document::TextDocument::new(content.to_string(), 1);
+        let snapshot = DocumentSnapshot::new(
+            document,
+            key,
+            PositionEncoding::UTF8,
+            lsp_types::ClientCapabilities::default(),
+            None,
+        );
+
+        // Should return no diagnostics because file matches exclude pattern
+        let diagnostics = lint_document(&snapshot).unwrap();
+        assert!(
+            diagnostics.is_empty(),
+            "Expected no diagnostics for excluded generated file, but got: {:?}",
+            diagnostics
+        );
+
+        Ok(())
     }
 }
