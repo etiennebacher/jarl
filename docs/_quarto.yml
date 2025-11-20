@@ -42,6 +42,8 @@ website:
       href: integrations.md
     - text: Contributing
       href: contributing.md
+    - text: Changelog
+      href: changelog.md
   sidebar:
   - title: Rules
     style: floating

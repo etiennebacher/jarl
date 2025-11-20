@@ -3,6 +3,7 @@ if (!nzchar(Sys.getenv("QUARTO_PROJECT_RENDER_ALL"))) {
 }
 
 fs::file_copy("../README.md", "index.md", overwrite = TRUE)
+fs::file_copy("../CHANGELOG.md", "changelog.md", overwrite = TRUE)
 
 new_content <- readLines("index.md", warn = FALSE)
 new_content <- gsub(
