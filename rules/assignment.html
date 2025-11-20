@@ -379,12 +379,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h1>assignment</h1>
 <section id="what-it-does" class="level2">
 <h2 class="anchored" data-anchor-id="what-it-does">What it does</h2>
-<p>Checks for usage of <code>=</code> as assignment operator.</p>
+<p>Checks for consistency of assignment operator.</p>
 </section>
 <section id="why-is-this-bad" class="level2">
 <h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
-<p>This is not “bad” strictly speaking since in most cases using <code>=</code> and <code>&lt;-</code> is equivalent. Some very popular packages use <code>=</code> without problems.</p>
-<p>Nonetheless, <code>&lt;-</code> is more popular and this rule may be useful to avoid mixing both operators in a codebase.</p>
+<p>In most cases using <code>=</code> and <code>&lt;-</code> is equivalent. Some very popular packages use <code>=</code> without problems. This rule only ensures the consistency of the assignment operator in a project.</p>
+<p>Note that Jarl doesn’t force you to use <code>&lt;-</code> as assignment operator, it simply uses it as default. To use <code>=</code> as the preferred operator:</p>
+<ul>
+<li>in the CLI (temporary change), use <code>--assignment-op "="</code>;</li>
+<li>in <code>jarl.toml</code> (permanent change): set <code>assignment = "="</code>.</li>
+</ul>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
@@ -397,7 +401,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>See:</p>
 <ul>
 <li><a href="https://style.tidyverse.org/syntax.html#assignment-1" target="_blank">https://style.tidyverse.org/syntax.html#assignment-1</a></li>
-<li><a href="https://stackoverflow.com/a/1742550" target="_blank">https://stackoverflow.com/a/1742550</a></li>
 </ul>
 
 

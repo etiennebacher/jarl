@@ -817,7 +817,7 @@
     "href": "rules.html",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_z9qcvlcpl0gbsmn4k2fz",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_fxfk2m0dwl94qvm0977w",
     "crumbs": [
       "Rules"
     ]
@@ -827,7 +827,7 @@
     "href": "rules.html#overview",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_z9qcvlcpl0gbsmn4k2fz",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_fxfk2m0dwl94qvm0977w",
     "crumbs": [
       "Rules"
     ]
@@ -907,7 +907,7 @@
     "href": "rules/assignment.html",
     "title": "assignment",
     "section": "",
-    "text": "Checks for usage of = as assignment operator.\n\n\n\nThis is not “bad” strictly speaking since in most cases using = and &lt;- is equivalent. Some very popular packages use = without problems.\nNonetheless, &lt;- is more popular and this rule may be useful to avoid mixing both operators in a codebase.\n\n\n\nx = \"a\"\nUse instead:\nx &lt;- \"a\"\n\n\n\nSee:\n\nhttps://style.tidyverse.org/syntax.html#assignment-1\nhttps://stackoverflow.com/a/1742550",
+    "text": "Checks for consistency of assignment operator.\n\n\n\nIn most cases using = and &lt;- is equivalent. Some very popular packages use = without problems. This rule only ensures the consistency of the assignment operator in a project.\nNote that Jarl doesn’t force you to use &lt;- as assignment operator, it simply uses it as default. To use = as the preferred operator:\n\nin the CLI (temporary change), use --assignment-op \"=\";\nin jarl.toml (permanent change): set assignment = \"=\".\n\n\n\n\nx = \"a\"\nUse instead:\nx &lt;- \"a\"\n\n\n\nSee:\n\nhttps://style.tidyverse.org/syntax.html#assignment-1",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -919,7 +919,7 @@
     "href": "rules/assignment.html#what-it-does",
     "title": "assignment",
     "section": "",
-    "text": "Checks for usage of = as assignment operator.",
+    "text": "Checks for consistency of assignment operator.",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -931,7 +931,7 @@
     "href": "rules/assignment.html#why-is-this-bad",
     "title": "assignment",
     "section": "",
-    "text": "This is not “bad” strictly speaking since in most cases using = and &lt;- is equivalent. Some very popular packages use = without problems.\nNonetheless, &lt;- is more popular and this rule may be useful to avoid mixing both operators in a codebase.",
+    "text": "In most cases using = and &lt;- is equivalent. Some very popular packages use = without problems. This rule only ensures the consistency of the assignment operator in a project.\nNote that Jarl doesn’t force you to use &lt;- as assignment operator, it simply uses it as default. To use = as the preferred operator:\n\nin the CLI (temporary change), use --assignment-op \"=\";\nin jarl.toml (permanent change): set assignment = \"=\".",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -955,7 +955,7 @@
     "href": "rules/assignment.html#references",
     "title": "assignment",
     "section": "",
-    "text": "See:\n\nhttps://style.tidyverse.org/syntax.html#assignment-1\nhttps://stackoverflow.com/a/1742550",
+    "text": "See:\n\nhttps://style.tidyverse.org/syntax.html#assignment-1",
     "crumbs": [
       "Rules",
       "List of rules",
