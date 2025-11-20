@@ -21,6 +21,8 @@ all_repos <- setNames(
 
 cat("### Ecosystem checks\n\n", file = "lint_comparison.md")
 
+n_without_changes <- 0
+
 for (i in seq_along(all_repos)) {
   repos <- names(all_repos)[i]
   repos_sha <- all_repos[[i]]
@@ -84,6 +86,22 @@ for (i in seq_along(all_repos)) {
     !pr_results,
     on = .(name, filename, row, column)
   ]
+
+  if (nrow(new_lints) == 0 && nrow(deleted_lints) == 0) {
+    n_without_changes <- n_without_changes + 1
+
+    # If we are at the last repo and there were no changes anywhere, return
+    # early. Otherwise keep going.
+    if (n_without_changes == length(all_repos)) {
+      cat(
+        "✅ No new or removed violations",
+        file = "lint_comparison.md",
+        append = TRUE
+      )
+    } else {
+      next
+    }
+  }
 
   msg_header <- paste0(
     "<details><summary><a href=\"https://github.com/",

@@ -31,4 +31,6 @@ serde_json = "1.0"
 # Collections and utilities
 rustc-hash = "2.0"
 
+tempfile.workspace = true
+
 [dev-dependencies]
