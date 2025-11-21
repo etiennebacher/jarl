@@ -50,7 +50,7 @@ jobs:
           save-if: ${{ github.ref_name == 'main' }}
 
       - name: Prepare coverage
-        run: cargo llvm-cov clean --workspace --exclude xtask --exclude zed_jarl
+        run: cargo llvm-cov clean --workspace
 
       # This step is not in the Polars workflow but is necessary for the LSP
       # tests since they call the Jarl binary.
