@@ -50,7 +50,7 @@ jobs:
           save-if: ${{ github.ref_name == 'main' }}
 
       - name: Prepare coverage
-        run: cargo llvm-cov clean --workspace
+        run: cargo llvm-cov clean --workspace --exclude xtask --exclude zed-jarl
 
       # This step is not in the Polars workflow but is necessary for the LSP
       # tests since they call the Jarl binary.
@@ -58,10 +58,10 @@ jobs:
         run: cargo install --path crates/jarl --profile=dev --force
 
       - name: Run tests
-        run: cargo test
+        run: cargo test --workspace --exclude xtask --exclude zed-jarl
 
       - name: Report coverage
-        run: cargo llvm-cov report --lcov --output-path coverage-rust.lcov
+        run: cargo llvm-cov report --lcov --output-path coverage-rust.lcov --exclude xtask --exclude zed-jarl
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
