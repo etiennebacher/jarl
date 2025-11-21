@@ -69,3 +69,8 @@ This has to be specified in the `lsp` field:
   }
 }
 ```
+
+## RStudio
+
+Currently, Jarl cannot be integrated in RStudio to highlight code or quick fix actions in the editor.
+The only way to use Jarl in RStudio is via the Terminal.
