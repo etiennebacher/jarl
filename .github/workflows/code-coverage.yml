@@ -6,13 +6,13 @@ on:
   pull_request:
     paths:
       - '**.rs'
-      - .github/workflows/test-coverage.yml
+      - .github/workflows/code-coverage.yml
   push:
     branches:
       - main
     paths:
       - '**.rs'
-      - .github/workflows/test-coverage.yml
+      - .github/workflows/code-coverage.yml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
