@@ -176,6 +176,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#vs-code-positron" id="toc-vs-code-positron" class="nav-link active" data-scroll-target="#vs-code-positron">VS Code / Positron</a></li>
   <li><a href="#zed" id="toc-zed" class="nav-link" data-scroll-target="#zed">Zed</a></li>
   <li><a href="#rstudio" id="toc-rstudio" class="nav-link" data-scroll-target="#rstudio">RStudio</a></li>
+  <li><a href="#helix" id="toc-helix" class="nav-link" data-scroll-target="#helix">Helix</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/editors.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -269,6 +270,21 @@ Tip
 <section id="rstudio" class="level2">
 <h2 class="anchored" data-anchor-id="rstudio">RStudio</h2>
 <p>Currently, Jarl cannot be integrated in RStudio to highlight code or provide quick fix actions in the editor. The only way to use Jarl in RStudio is via the Terminal.</p>
+</section>
+<section id="helix" class="level2">
+<h2 class="anchored" data-anchor-id="helix">Helix</h2>
+<p>To use Jarl as language server in the Helix editor, you need first to add it to the <a href="https://docs.helix-editor.com/languages.html" target="_blank">language configuration file</a>, for instance <code>~/.config/helix/languages.toml</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[language-server.jarl]</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="dt">command</span> <span class="op">=</span> <span class="st">"jarl"</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="dt">args</span> <span class="op">=</span> <span class="op">[</span><span class="st">"server"</span><span class="op">]</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">[[language]]</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="dt">name</span> <span class="op">=</span> <span class="st">"r"</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="dt">language-servers</span> <span class="op">=</span> <span class="op">[</span><span class="st">"jarl"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Jarl should then be active in the editor, providing code highlighting and showing the message when the cursor is on the highlighted code:</p>
+<p><img src="img/helix_highlight.png" class="img-fluid" alt="R script showing several pieces of code that trigger rule violations, such as `any(is.na(x))`. This is displayed in the Helix editor. The code is underlined in yellow and the violation message appears next to the code."></p>
+<p>Helix also provides a code-action keybinding. When the cursor is on some code reported by Jarl and when the editor is in “Normal” mode, press “Space” then “a” to show the different code actions:</p>
+<p><img src="img/helix_quick_fix.png" class="img-fluid" alt="The same R script as before, but this time there is a list of three actions next to the highlighted piece of code: apply fix, ignore this rule, and ignore all rules."></p>
 
 
 </section>
