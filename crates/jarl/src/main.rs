@@ -9,6 +9,10 @@ use std::process::ExitCode;
 mod args;
 
 fn main() -> ExitCode {
+    // Enabled ANSI colors on Windows.
+    #[cfg(windows)]
+    assert!(colored::control::set_virtual_terminal(true).is_ok());
+
     let args = Args::parse();
 
     match run(args) {
