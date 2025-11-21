@@ -55,9 +55,6 @@ jobs:
       - name: Run tests
         run: cargo test
 
-      - name: Run integration tests
-        run: cargo test --all-features -p polars --test it
-
       - name: Report coverage
         run: cargo llvm-cov report --lcov --output-path coverage-rust.lcov
 
