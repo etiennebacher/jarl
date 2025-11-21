@@ -61,7 +61,7 @@ jobs:
         run: cargo test --workspace --exclude xtask --exclude zed_jarl
 
       - name: Report coverage
-        run: cargo llvm-cov report --lcov --output-path coverage-rust.lcov --exclude xtask --exclude zed_jarl
+        run: cargo llvm-cov report --lcov --output-path coverage-rust.lcov
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
