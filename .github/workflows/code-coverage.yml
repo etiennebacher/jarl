@@ -55,7 +55,7 @@ jobs:
       # This step is not in the Polars workflow but is necessary for the LSP
       # tests since they call the Jarl binary.
       - name: Install Jarl
-      - run: cargo install --path crates/jarl --profile=dev --force
+        run: cargo install --path crates/jarl --profile=dev --force
 
       - name: Run tests
         run: cargo test
