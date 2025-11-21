@@ -1,0 +1,88 @@
+# Adapted from https://github.com/pola-rs/polars/blob/main/.github/workflows/test-coverage.yml
+
+name: Code coverage
+
+on:
+  pull_request:
+    paths:
+      - '**.rs'
+      - .github/workflows/test-coverage.yml
+  push:
+    branches:
+      - main
+    paths:
+      - '**.rs'
+      - .github/workflows/test-coverage.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  RUSTFLAGS: '-C instrument-coverage --cfg=coverage --cfg=coverage_nightly --cfg=trybuild_no_target'
+  RUST_BACKTRACE: 1
+  LLVM_PROFILE_FILE: ${{ github.workspace }}/target/jarl-%p-%3m.profraw
+  CARGO_LLVM_COV: 1
+  CARGO_LLVM_COV_SHOW_ENV: 1
+  CARGO_LLVM_COV_TARGET_DIR: ${{ github.workspace }}/target
+
+jobs:
+  compute-coverage:
+    # Running under ubuntu doesn't seem to work:
+    # https://github.com/pola-rs/polars/issues/14255
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        run: rustup component add llvm-tools-preview
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.ref_name == 'main' }}
+
+      - name: Prepare coverage
+        run: cargo llvm-cov clean --workspace
+
+      - name: Run tests
+        run: cargo test
+
+      - name: Run integration tests
+        run: cargo test --all-features -p polars --test it
+
+      - name: Report coverage
+        run: cargo llvm-cov report --lcov --output-path coverage-rust.lcov
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-rust
+          path: coverage-rust.lcov
+
+  upload-coverage:
+    needs: [compute-coverage]
+    runs-on: ubuntu-latest
+
+    steps:
+      # Needed to fetch the Codecov config file
+      - uses: actions/checkout@v4
+
+      - name: Download coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage-rust.lcov
+          root_dir: ${{ github.workspace }}
