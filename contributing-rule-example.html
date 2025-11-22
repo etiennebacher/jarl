@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Rules – jarl</title>
+<title>Adding a new rule to Jarl – jarl</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -70,7 +70,7 @@ ul.task-list li input[type="checkbox"] {
 <link rel="stylesheet" href="styles.css">
 </head>
 
-<body class="nav-sidebar floating nav-fixed quarto-light">
+<body class="nav-fixed quarto-light">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -96,7 +96,7 @@ ul.task-list li input[type="checkbox"] {
 <span class="menu-text">Configuration</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link active" href="./rules.html" aria-current="page"> 
+    <a class="nav-link" href="./rules.html"> 
 <span class="menu-text">Rules</span></a>
   </li>  
   <li class="nav-item">
@@ -128,222 +128,32 @@ ul.task-list li input[type="checkbox"] {
 </div>
       </div> <!-- /container-fluid -->
     </nav>
-  <nav class="quarto-secondary-nav">
-    <div class="container-fluid d-flex">
-      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
-        <i class="bi bi-layout-text-sidebar-reverse"></i>
-      </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./rules.html">Rules</a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
-        </a>
-    </div>
-  </nav>
 </header>
 <!-- content -->
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
-    <div class="sidebar-menu-container"> 
-    <ul class="list-unstyled mt-1">
-        <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">Rules</span></a>
-  </div>
-</li>
-        <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
- <span class="menu-text">List of rules</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
-      </div>
-      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/all_equal.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">all_equal</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/any_duplicated.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">any_duplicated</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/any_is_na.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">any_is_na</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/assignment.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">assignment</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/class_equals.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">class_equals</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/coalesce.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">coalesce</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/comparison_negation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">comparison_negation</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/download_file.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">download_file</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/duplicated_arguments.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">duplicated_arguments</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/equals_na.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">equals_na</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/for_loop_index.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">for_loop_index</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/grepv.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">grepv</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/implicit_assignment.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">implicit_assignment</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/is_numeric.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">is_numeric</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/length_levels.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">length_levels</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/length_test.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">length_test</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/lengths.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">lengths</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/list2df.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">list2df</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/matrix_apply.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">matrix_apply</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/numeric_leading_zero.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">numeric_leading_zero</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/outer_negation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">outer_negation</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/redundant_equals.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">redundant_equals</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/repeat.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">repeat</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/sample_int.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">sample_int</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/sort.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">sort</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/true_false_symbol.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">true_false_symbol</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./rules/which_grepl.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">which_grepl</span></a>
-  </div>
-</li>
-      </ul>
-  </li>
-    </ul>
-    </div>
-</nav>
-<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
         <nav id="TOC" role="doc-toc" class="toc-active">
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">Overview</a></li>
+  <li><a href="#pre-work" id="toc-pre-work" class="nav-link active" data-scroll-target="#pre-work">Pre-work</a></li>
+  <li><a href="#adding-a-new-rule-basic-steps" id="toc-adding-a-new-rule-basic-steps" class="nav-link" data-scroll-target="#adding-a-new-rule-basic-steps">Adding a new rule: basic steps</a></li>
+  <li><a href="#proposing-your-changes" id="toc-proposing-your-changes" class="nav-link" data-scroll-target="#proposing-your-changes">Proposing your changes</a>
+  <ul class="collapse">
+  <li><a href="#pr-title" id="toc-pr-title" class="nav-link" data-scroll-target="#pr-title">PR title</a></li>
+  <li><a href="#pr-automated-comments" id="toc-pr-automated-comments" class="nav-link" data-scroll-target="#pr-automated-comments">PR automated comments</a></li>
+  </ul></li>
   </ul>
-<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/contributing-rule-example.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Rules</h1>
+<h1 class="title">Adding a new rule to Jarl</h1>
 </div>
 
 
@@ -360,106 +170,63 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="overview" class="level2">
-<h2 class="anchored" data-anchor-id="overview">Overview</h2>
-<p>All rules belong to at least one category:</p>
+<p>This page will explain how to implement a new rule in Jarl. Jarl is written in Rust, but this page will <em>not</em> explain how to set up or use Rust, this is an entirely different topic. To get started with Rust, check out the <a href="https://doc.rust-lang.org/stable/book/" target="_blank">Rust book</a>.</p>
+<section id="pre-work" class="level2">
+<h2 class="anchored" data-anchor-id="pre-work">Pre-work</h2>
+<ol type="1">
+<li><p>check the list of rules in <code>lintr</code>: https://lintr.r-lib.org/dev/reference/#individual-linters</p>
 <ul>
-<li>CORR: correctness, code that is outright wrong or useless.</li>
-<li>SUSP: suspicious, code that is most likely wrong or useless.</li>
-<li>PERF: performance, code that can be written to run faster.</li>
-<li>READ: readability, code is correct but can be written in a way that is easier to read.</li>
-</ul>
-<p>You can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.</p>
-<div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Comparison to <code>lintr</code>
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p><code>lintr</code> includes many rules related to code formatting, such as <a href="https://lintr.r-lib.org/dev/reference/brace_linter.html" target="_blank"><code>brace_linter</code></a>, <a href="https://lintr.r-lib.org/dev/reference/line_length_linter.html" target="_blank"><code>line_length_linter</code></a>, and <a href="https://lintr.r-lib.org/dev/reference/paren_body_linter.html" target="_blank"><code>paren_body_linter</code></a>, among others.</p>
-<p><strong>Supporting those rules is not an objective of Jarl.</strong> Instead, I recommend using the <a href="https://posit-dev.github.io/air/" target="_blank">Air formatter</a>.</p>
-</div>
-</div>
-<p>The column “Has fix” can take the following values:</p>
+<li>check they are not already implemented in Jarl: https://jarl.etiennebacher.com/rules</li>
+<li>rules that are only about formatting (spaces before parenthesis, newlines between arguments, etc.) are <strong>out of scope</strong> for Jarl;</li>
+<li>look for rules that require “pattern detection” only, meaning that they don’t need information about the rest of the code (or only very little). For example, <code>unreachable_code</code> is <strong>out of scope</strong> for now because we need a way to analyze the rest of the code to determine that some code cannot be reached (e.g.&nbsp;it comes right after a <code>return()</code> statement). <strong>If you are unsure about whether a rule can or should be implemented, open an issue first.</strong></li>
+</ul></li>
+<li><p>get familiar with the rule:</p>
 <ul>
-<li><p>✅ Safe fix</p></li>
-<li><p>❗ Unsafe fix</p></li>
-<li><p>❌ No fix</p></li>
+<li>you may know the most common cases of this rule, but there might be many corner cases making its implementation difficult. Take a look at the relevant test file in the <a href="" target="_blank"><code>lintr</code> test suite</a> to know more about those corner cases.</li>
+<li>Jarl uses <a href="" target="_blank">tree-sitter</a> under the hood to parse and navigate the Abstract Syntax Tree (AST) of the code. Having an idea of what this AST looks like is important when implementing the rule. I suggest you store one or two examples of code that violate this rule. If you have the Air extension installed, you can do the command “Air: View Syntax Tree” to display the AST next to the code.</li>
+</ul></li>
+<li><p>get up and running with Rust and Jarl:</p>
+<ul>
+<li>have Rust set up</li>
+<li>clone Jarl and do <code>cargo check</code> or <code>cargo test</code>. You will quickly know if your setup is ready.</li>
+</ul></li>
+</ol>
+<p>As an example for this entire tutorial, we will analyze <a href="https://github.com/etiennebacher/jarl/pull/182" target="_blank">PR #182</a>, which added the rule <a href="https://jarl.etiennebacher.com/rules/list2df" target="_blank"><code>list2df</code></a>.</p>
+</section>
+<section id="adding-a-new-rule-basic-steps" class="level2">
+<h2 class="anchored" data-anchor-id="adding-a-new-rule-basic-steps">Adding a new rule: basic steps</h2>
+<p>From now on, all file paths refer to the subfolder <code>crates/jarl-core</code>.</p>
+<p>Here’s a basic idea of the workflow to add a new rule:</p>
+<ol type="1">
+<li>add it to the general list of rules</li>
+<li>add it to the list of rules for the specific kind of node it targets (function calls, if conditions, for loops, etc.)</li>
+<li>implement the rule</li>
+<li>add tests</li>
+<li>run cargo clippy</li>
+<li>add it to the changelog</li>
+<li>add it to the website docs and update those docs</li>
+</ol>
+</section>
+<section id="proposing-your-changes" class="level2">
+<h2 class="anchored" data-anchor-id="proposing-your-changes">Proposing your changes</h2>
+<p>Once all of this is done, it is time to open a PR!</p>
+<p><em>Note: if you need some guidance, early feedback, or simply want to store your changes in a branch, you can also open an incomplete PR.</em></p>
+<section id="pr-title" class="level3">
+<h3 class="anchored" data-anchor-id="pr-title">PR title</h3>
+<p>[Find the link for PR titles like “feat:”, “fix:”, etc.]</p>
+</section>
+<section id="pr-automated-comments" class="level3">
+<h3 class="anchored" data-anchor-id="pr-automated-comments">PR automated comments</h3>
+<p>Once you have opened a PR, you will receive three automated comments after a few minutes:</p>
+<ul>
+<li>code coverage: this checks that all the lines you added are covered by some tests. Try to ensure this is at 100%.</li>
+<li>ecosystem checks: every time there is a change in <code>jarl-core</code>, Jarl is run on several R packages and the results are compared to the Jarl version on the main branch. You will have a comment indicating if your changes have revealed new violations or removed some violations in those repositories. Here, since we added a rule, we expect either no changes or more violations. New violations will be printed with a link to the lines of code that trigger them, so check a few to ensure those are not false positives.</li>
+<li>benchmark: this is usually irrelevant when adding a new rule, it is simply to ensure there’s no catastrophic performance degradation.</li>
 </ul>
-<div class="cell">
-<style type="text/css">
-.tabulator, .tabulator-header, .tabulator-col, .tabulator-row, .tabulator-cell, .tabulator-table {
-    background-color: transparent !important;
-}
-
-.tabulator-header-filter > input {
-    background-color: transparent !important;
-}
-</style>
-</div>
-<div class="cell">
-<div class="cell-output-display">
-<!-- preamble start -->
+<p>Congrats, and thanks for your contribution!</p>
 
 
-  
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>tinytable_mb0tw1v1f4bt5cl4pojw</title>
-    <link href="https://cdn.jsdelivr.net/npm/tabulator-tables@6.3/dist/css/tabulator.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/gh/vincentarelbundock/tinytable@main/inst/tabulator_tinytable.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css" rel="stylesheet">
-  
-  
-<!-- preamble end -->
-
-    <div class="container">
-      
-      <div id="tinytable_mb0tw1v1f4bt5cl4pojw" style="margin-left: auto; margin-right: auto;"></div>
-      
-      <br>
-    </div>
-
-    <!-- Luxon for date handling -->
-    <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
-
-    <!-- Tabulator JS -->
-    <script src="https://cdn.jsdelivr.net/npm/tabulator-tables@6.3/dist/js/tabulator.min.js"></script>
-
-    <!-- TinyTable custom formatters -->
-    <script src="https://cdn.jsdelivr.net/gh/vincentarelbundock/tinytable@main/inst/tinytable.js"></script>
-
-    <script>
-      document.addEventListener("DOMContentLoaded", function() {
-        const table_tinytable_mb0tw1v1f4bt5cl4pojw = TinyTable.createTabulator("#tinytable_mb0tw1v1f4bt5cl4pojw", {
-          data: [{"Rule_name":"all_equal","Group":"Suspicious","Has_fix":"❗","Conditions":"","_tinytable_row_index":1},{"Rule_name":"any_duplicated","Group":"Performance","Has_fix":"✅","Conditions":"","_tinytable_row_index":2},{"Rule_name":"any_is_na","Group":"Performance","Has_fix":"✅","Conditions":"","_tinytable_row_index":3},{"Rule_name":"assignment","Group":"Readability","Has_fix":"✅","Conditions":"","_tinytable_row_index":4},{"Rule_name":"class_equals","Group":"Suspicious","Has_fix":"❗","Conditions":"","_tinytable_row_index":5},{"Rule_name":"coalesce","Group":"Readability","Has_fix":"✅","Conditions":"R >= 4.4","_tinytable_row_index":6},{"Rule_name":"comparison_negation","Group":"Readability","Has_fix":"✅","Conditions":"","_tinytable_row_index":7},{"Rule_name":"download_file","Group":"Suspicious","Has_fix":"❌","Conditions":"","_tinytable_row_index":8},{"Rule_name":"duplicated_arguments","Group":"Suspicious","Has_fix":"❌","Conditions":"","_tinytable_row_index":9},{"Rule_name":"empty_assignment","Group":"Readability","Has_fix":"❌","Conditions":"","_tinytable_row_index":10},{"Rule_name":"equals_na","Group":"Correctness","Has_fix":"✅","Conditions":"","_tinytable_row_index":11},{"Rule_name":"for_loop_index","Group":"Readability","Has_fix":"❌","Conditions":"","_tinytable_row_index":12},{"Rule_name":"grepv","Group":"Readability","Has_fix":"✅","Conditions":"R >= 4.5","_tinytable_row_index":13},{"Rule_name":"implicit_assignment","Group":"Readability","Has_fix":"❌","Conditions":"","_tinytable_row_index":14},{"Rule_name":"is_numeric","Group":"Readability","Has_fix":"✅","Conditions":"","_tinytable_row_index":15},{"Rule_name":"length_levels","Group":"Readability","Has_fix":"✅","Conditions":"","_tinytable_row_index":16},{"Rule_name":"length_test","Group":"Correctness","Has_fix":"✅","Conditions":"","_tinytable_row_index":17},{"Rule_name":"lengths","Group":"Performance, readability","Has_fix":"✅","Conditions":"","_tinytable_row_index":18},{"Rule_name":"list2df","Group":"Performance, readability","Has_fix":"✅","Conditions":"R >= 4.0","_tinytable_row_index":19},{"Rule_name":"matrix_apply","Group":"Performance","Has_fix":"✅","Conditions":"","_tinytable_row_index":20},{"Rule_name":"numeric_leading_zero","Group":"Readability","Has_fix":"✅","Conditions":"","_tinytable_row_index":21},{"Rule_name":"outer_negation","Group":"Performance, readability","Has_fix":"✅","Conditions":"","_tinytable_row_index":22},{"Rule_name":"redundant_equals","Group":"Readability","Has_fix":"✅","Conditions":"","_tinytable_row_index":23},{"Rule_name":"repeat","Group":"Readability","Has_fix":"✅","Conditions":"","_tinytable_row_index":24},{"Rule_name":"sample_int","Group":"Readability","Has_fix":"✅","Conditions":"","_tinytable_row_index":25},{"Rule_name":"sort","Group":"Performance, readability","Has_fix":"✅","Conditions":"","_tinytable_row_index":26},{"Rule_name":"true_false_symbol","Group":"Readability","Has_fix":"❌","Conditions":"","_tinytable_row_index":27},{"Rule_name":"which_grepl","Group":"Performance, readability","Has_fix":"✅","Conditions":"","_tinytable_row_index":28}],
-          columns: [{"title":"Rule name","field":"Rule_name","headerFilter":"input","headerFilterPlaceholder":""},{"title":"Group","field":"Group","headerFilter":"input","headerFilterPlaceholder":""},{"title":"Has fix","field":"Has_fix","headerFilter":"input","headerFilterPlaceholder":""},{"title":"Conditions","field":"Conditions","headerFilter":"input","headerFilterPlaceholder":""}],
-          
-        layout: 'fitDataTable'
-      ,
-        });
-
-        
-
-        
-      });
-    </script>
-
-    
-
-<!-- postamble start -->
-  
-
-
-
-</div>
-</div>
-
-
+</section>
 </section>
 
 </main> <!-- /main -->
@@ -868,4 +635,4 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/contributing-rule-example.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
