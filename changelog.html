@@ -138,13 +138,20 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#changelog" id="toc-changelog" class="nav-link active" data-scroll-target="#changelog">Changelog</a></li>
-  <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section">0.1.1</a>
+  <li><a href="#changelog" id="toc-changelog" class="nav-link active" data-scroll-target="#changelog">Changelog</a>
+  <ul class="collapse">
+  <li><a href="#development" id="toc-development" class="nav-link" data-scroll-target="#development">Development</a>
   <ul class="collapse">
   <li><a href="#fixes" id="toc-fixes" class="nav-link" data-scroll-target="#fixes">Fixes</a></li>
   <li><a href="#documentation" id="toc-documentation" class="nav-link" data-scroll-target="#documentation">Documentation</a></li>
   </ul></li>
+  <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section">0.1.1</a>
+  <ul class="collapse">
+  <li><a href="#fixes-1" id="toc-fixes-1" class="nav-link" data-scroll-target="#fixes-1">Fixes</a></li>
+  <li><a href="#documentation-1" id="toc-documentation-1" class="nav-link" data-scroll-target="#documentation-1">Documentation</a></li>
+  </ul></li>
   <li><a href="#section-1" id="toc-section-1" class="nav-link" data-scroll-target="#section-1">0.1.0</a></li>
+  </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/changelog.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -156,28 +163,44 @@ ul.task-list li input[type="checkbox"] {
 
 <section id="changelog" class="level1">
 <h1>Changelog</h1>
+<section id="development" class="level2">
+<h2 class="anchored" data-anchor-id="development">Development</h2>
+<section id="fixes" class="level3">
+<h3 class="anchored" data-anchor-id="fixes">Fixes</h3>
+<ul>
+<li>(Hopefully) Fixed wrong printing of ANSI characters in multiple terminals on Windows (#179, thanks <span class="citation" data-cites="novica">@novica</span> for the report).</li>
+</ul>
 </section>
-<section id="section" class="level1">
-<h1>0.1.1</h1>
-<section id="fixes" class="level2">
-<h2 class="anchored" data-anchor-id="fixes">Fixes</h2>
+<section id="documentation" class="level3">
+<h3 class="anchored" data-anchor-id="documentation">Documentation</h3>
+<ul>
+<li>Added sections on RStudio and Helix to the <a href="https://jarl.etiennebacher.com/editors" target="_blank">Editors</a> page.</li>
+<li>Added installation instructions using Scoop on Windows.</li>
+</ul>
+</section>
+</section>
+<section id="section" class="level2">
+<h2 class="anchored" data-anchor-id="section">0.1.1</h2>
+<section id="fixes-1" class="level3">
+<h3 class="anchored" data-anchor-id="fixes-1">Fixes</h3>
 <ul>
 <li>Fix discovery of <code>jarl.toml</code> by the Jarl extension (#175, thanks <span class="citation" data-cites="DavisVaughan">@DavisVaughan</span> for the report).</li>
 <li>Rule <code>duplicated_argument</code> no longer reports <code>cli_</code> functions where multiple arguments have the same name (#176, thanks <span class="citation" data-cites="DavisVaughan">@DavisVaughan</span> for the report).</li>
 </ul>
 </section>
-<section id="documentation" class="level2">
-<h2 class="anchored" data-anchor-id="documentation">Documentation</h2>
+<section id="documentation-1" class="level3">
+<h3 class="anchored" data-anchor-id="documentation-1">Documentation</h3>
 <ul>
 <li>The docs of <code>assignment</code> rule now explain how to change the preferred assignment operator.</li>
 </ul>
 </section>
 </section>
-<section id="section-1" class="level1">
-<h1>0.1.0</h1>
+<section id="section-1" class="level2">
+<h2 class="anchored" data-anchor-id="section-1">0.1.0</h2>
 <p>First release (announced)</p>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->

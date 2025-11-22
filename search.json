@@ -817,7 +817,7 @@
     "href": "rules.html",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_pveuarwl60wpmyyb0bw3",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_dpn6spvnox1nulzkqa4g",
     "crumbs": [
       "Rules"
     ]
@@ -827,24 +827,38 @@
     "href": "rules.html#overview",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_pveuarwl60wpmyyb0bw3",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_dpn6spvnox1nulzkqa4g",
     "crumbs": [
       "Rules"
     ]
   },
   {
-    "objectID": "changelog.html#fixes",
-    "href": "changelog.html#fixes",
+    "objectID": "changelog.html",
+    "href": "changelog.html",
     "title": "Changelog",
-    "section": "Fixes",
-    "text": "Fixes\n\nFix discovery of jarl.toml by the Jarl extension (#175, thanks @DavisVaughan for the report).\nRule duplicated_argument no longer reports cli_ functions where multiple arguments have the same name (#176, thanks @DavisVaughan for the report)."
+    "section": "",
+    "text": "(Hopefully) Fixed wrong printing of ANSI characters in multiple terminals on Windows (#179, thanks @novica for the report).\n\n\n\n\n\nAdded sections on RStudio and Helix to the Editors page.\nAdded installation instructions using Scoop on Windows.\n\n\n\n\n\n\n\n\nFix discovery of jarl.toml by the Jarl extension (#175, thanks @DavisVaughan for the report).\nRule duplicated_argument no longer reports cli_ functions where multiple arguments have the same name (#176, thanks @DavisVaughan for the report).\n\n\n\n\n\nThe docs of assignment rule now explain how to change the preferred assignment operator.\n\n\n\n\n\nFirst release (announced)"
   },
   {
-    "objectID": "changelog.html#documentation",
-    "href": "changelog.html#documentation",
+    "objectID": "changelog.html#development",
+    "href": "changelog.html#development",
     "title": "Changelog",
-    "section": "Documentation",
-    "text": "Documentation\n\nThe docs of assignment rule now explain how to change the preferred assignment operator."
+    "section": "",
+    "text": "(Hopefully) Fixed wrong printing of ANSI characters in multiple terminals on Windows (#179, thanks @novica for the report).\n\n\n\n\n\nAdded sections on RStudio and Helix to the Editors page.\nAdded installation instructions using Scoop on Windows."
+  },
+  {
+    "objectID": "changelog.html#section",
+    "href": "changelog.html#section",
+    "title": "Changelog",
+    "section": "",
+    "text": "Fix discovery of jarl.toml by the Jarl extension (#175, thanks @DavisVaughan for the report).\nRule duplicated_argument no longer reports cli_ functions where multiple arguments have the same name (#176, thanks @DavisVaughan for the report).\n\n\n\n\n\nThe docs of assignment rule now explain how to change the preferred assignment operator."
+  },
+  {
+    "objectID": "changelog.html#section-1",
+    "href": "changelog.html#section-1",
+    "title": "Changelog",
+    "section": "",
+    "text": "First release (announced)"
   },
   {
     "objectID": "integrations.html",
