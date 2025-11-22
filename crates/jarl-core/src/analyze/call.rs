@@ -11,6 +11,7 @@ use crate::lints::grepv::grepv::grepv;
 use crate::lints::length_levels::length_levels::length_levels;
 use crate::lints::length_test::length_test::length_test;
 use crate::lints::lengths::lengths::lengths;
+use crate::lints::list2df::list2df::list2df;
 use crate::lints::matrix_apply::matrix_apply::matrix_apply;
 use crate::lints::outer_negation::outer_negation::outer_negation;
 use crate::lints::sample_int::sample_int::sample_int;
@@ -51,6 +52,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled("lengths") && !checker.should_skip_rule(node, "lengths") {
         checker.report_diagnostic(lengths(r_expr)?);
+    }
+    if checker.is_rule_enabled("list2df") && !checker.should_skip_rule(node, "list2df") {
+        checker.report_diagnostic(list2df(r_expr)?);
     }
     if checker.is_rule_enabled("matrix_apply") && !checker.should_skip_rule(node, "matrix_apply") {
         checker.report_diagnostic(matrix_apply(r_expr)?);
