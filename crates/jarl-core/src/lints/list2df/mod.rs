@@ -21,6 +21,11 @@ mod tests {
             "list2df",
             Some("4.0"),
         );
+
+        // Ensure that wrong calls are not reported
+        expect_no_lint("do.call(cbind.data.frame)", "list2df", Some("4.0"));
+        expect_no_lint("do.call(cbind.data.frame, args =)", "list2df", Some("4.0"));
+        expect_no_lint("do.call(what =, x)", "list2df", Some("4.0"));
     }
 
     #[test]
