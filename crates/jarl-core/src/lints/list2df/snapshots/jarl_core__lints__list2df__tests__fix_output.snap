@@ -1,0 +1,45 @@
+---
+source: crates/jarl-core/src/lints/list2df/mod.rs
+expression: "get_fixed_text(vec![\"do.call(cbind.data.frame, x)\",\n\"do.call('cbind.data.frame', x)\", \"do.call(\\\"cbind.data.frame\\\", x)\",\n\"do.call(args = x, what = cbind.data.frame)\",\n\"do.call(cbind.data.frame, args = x)\",\n\"do.call(cbind.data.frame, foo(bar(x)))\",], \"list2df\", Some(\"4.0\"))"
+---
+OLD:
+====
+do.call(cbind.data.frame, x)
+NEW:
+====
+list2DF(x)
+
+OLD:
+====
+do.call('cbind.data.frame', x)
+NEW:
+====
+list2DF(x)
+
+OLD:
+====
+do.call("cbind.data.frame", x)
+NEW:
+====
+list2DF(x)
+
+OLD:
+====
+do.call(args = x, what = cbind.data.frame)
+NEW:
+====
+list2DF(x)
+
+OLD:
+====
+do.call(cbind.data.frame, args = x)
+NEW:
+====
+list2DF(x)
+
+OLD:
+====
+do.call(cbind.data.frame, foo(bar(x)))
+NEW:
+====
+list2DF(foo(bar(x)))
