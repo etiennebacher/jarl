@@ -13,7 +13,7 @@ pub struct List2Df;
 ///
 /// The goal of `do.call(cbind.data.frame, x)` is to concatenate multiple lists
 /// elements of the same length into a `data.frame`. Since R 4.0.0, it is
-/// possible to do this with `list2DF()`, which is more efficient and easier
+/// possible to do this with `list2DF(x)`, which is more efficient and easier
 /// to read than `do.call(cbind.data.frame, x)`.
 ///
 /// This rule comes with a safe fix but is only enabled if the project
