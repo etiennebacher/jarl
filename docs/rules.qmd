@@ -62,6 +62,7 @@ dat <- as.data.frame(
     c("length_levels", "Readability", "✅", ""),
     c("length_test", "Correctness", "✅", ""),
     c("lengths", "Performance, readability", "✅", ""),
+    c("list2df", "Performance, readability", "✅", "R >= 4.0"),
     c("matrix_apply", "Performance", "✅", ""),
     c("numeric_leading_zero", "Readability", "✅", ""),
     c("outer_negation", "Performance, readability", "✅", ""),
