@@ -834,34 +834,6 @@
     "text": "Jarl can be used as a Github Action via setup-jarl. This action runs in a couple of seconds and will fail if there are any rule violations. It is possible to customize the arguments passed to Jarl in this action, such as the input paths.\nHere is an example YAML file:\non:\n  push:\n    branches: main\n  pull_request:\n\nname: jarl-check\n\npermissions: read-all\n\njobs:\n  jarl-check:\n    name: jarl-check\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: etiennebacher/setup-jarl@v0.1.0\nSee the setup-jarl repository for more examples."
   },
   {
-    "objectID": "contributing-rule-example.html",
-    "href": "contributing-rule-example.html",
-    "title": "Adding a new rule to Jarl",
-    "section": "",
-    "text": "This page will explain how to implement a new rule in Jarl. Jarl is written in Rust, but this page will not explain how to set up or use Rust, this is an entirely different topic. To get started with Rust, check out the Rust book."
-  },
-  {
-    "objectID": "contributing-rule-example.html#pre-work",
-    "href": "contributing-rule-example.html#pre-work",
-    "title": "Adding a new rule to Jarl",
-    "section": "Pre-work",
-    "text": "Pre-work\n\ncheck the list of rules in lintr: https://lintr.r-lib.org/dev/reference/#individual-linters\n\ncheck they are not already implemented in Jarl: https://jarl.etiennebacher.com/rules\nrules that are only about formatting (spaces before parenthesis, newlines between arguments, etc.) are out of scope for Jarl;\nlook for rules that require “pattern detection” only, meaning that they don’t need information about the rest of the code (or only very little). For example, unreachable_code is out of scope for now because we need a way to analyze the rest of the code to determine that some code cannot be reached (e.g. it comes right after a return() statement). If you are unsure about whether a rule can or should be implemented, open an issue first.\n\nget familiar with the rule:\n\nyou may know the most common cases of this rule, but there might be many corner cases making its implementation difficult. Take a look at the relevant test file in the lintr test suite to know more about those corner cases.\nJarl uses tree-sitter under the hood to parse and navigate the Abstract Syntax Tree (AST) of the code. Having an idea of what this AST looks like is important when implementing the rule. I suggest you store one or two examples of code that violate this rule. If you have the Air extension installed, you can do the command “Air: View Syntax Tree” to display the AST next to the code.\n\nget up and running with Rust and Jarl:\n\nhave Rust set up\nclone Jarl and do cargo check or cargo test. You will quickly know if your setup is ready.\n\n\nAs an example for this entire tutorial, we will analyze PR #182, which added the rule list2df."
-  },
-  {
-    "objectID": "contributing-rule-example.html#adding-a-new-rule-basic-steps",
-    "href": "contributing-rule-example.html#adding-a-new-rule-basic-steps",
-    "title": "Adding a new rule to Jarl",
-    "section": "Adding a new rule: basic steps",
-    "text": "Adding a new rule: basic steps\nFrom now on, all file paths refer to the subfolder crates/jarl-core.\nHere’s a basic idea of the workflow to add a new rule:\n\nadd it to the general list of rules\nadd it to the list of rules for the specific kind of node it targets (function calls, if conditions, for loops, etc.)\nimplement the rule\nadd tests\nrun cargo clippy\nadd it to the changelog\nadd it to the website docs and update those docs"
-  },
-  {
-    "objectID": "contributing-rule-example.html#proposing-your-changes",
-    "href": "contributing-rule-example.html#proposing-your-changes",
-    "title": "Adding a new rule to Jarl",
-    "section": "Proposing your changes",
-    "text": "Proposing your changes\nOnce all of this is done, it is time to open a PR!\nNote: if you need some guidance, early feedback, or simply want to store your changes in a branch, you can also open an incomplete PR.\n\nPR title\n[Find the link for PR titles like “feat:”, “fix:”, etc.]\n\n\nPR automated comments\nOnce you have opened a PR, you will receive three automated comments after a few minutes:\n\ncode coverage: this checks that all the lines you added are covered by some tests. Try to ensure this is at 100%.\necosystem checks: every time there is a change in jarl-core, Jarl is run on several R packages and the results are compared to the Jarl version on the main branch. You will have a comment indicating if your changes have revealed new violations or removed some violations in those repositories. Here, since we added a rule, we expect either no changes or more violations. New violations will be printed with a link to the lines of code that trigger them, so check a few to ensure those are not false positives.\nbenchmark: this is usually irrelevant when adding a new rule, it is simply to ensure there’s no catastrophic performance degradation.\n\nCongrats, and thanks for your contribution!"
-  },
-  {
     "objectID": "changelog.html",
     "href": "changelog.html",
     "title": "Changelog",
@@ -894,7 +866,7 @@
     "href": "rules.html",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_mb0tw1v1f4bt5cl4pojw",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_5ygb1r2vmhtsrljvv41g",
     "crumbs": [
       "Rules"
     ]
@@ -904,7 +876,7 @@
     "href": "rules.html#overview",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_mb0tw1v1f4bt5cl4pojw",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_5ygb1r2vmhtsrljvv41g",
     "crumbs": [
       "Rules"
     ]
