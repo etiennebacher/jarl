@@ -20,6 +20,7 @@ pub(crate) mod is_numeric;
 pub(crate) mod length_levels;
 pub(crate) mod length_test;
 pub(crate) mod lengths;
+pub(crate) mod list2df;
 pub(crate) mod matrix_apply;
 pub(crate) mod numeric_leading_zero;
 pub(crate) mod outer_negation;
@@ -60,6 +61,7 @@ pub fn all_rules_and_safety() -> RuleTable {
     rule_table.enable("length_levels", "READ", FixStatus::Safe, None);
     rule_table.enable("length_test", "CORR", FixStatus::Safe, None);
     rule_table.enable("lengths", "PERF,READ", FixStatus::Safe, None);
+    rule_table.enable("list2df", "PERF,READ", FixStatus::Safe, Some((4, 0, 0)));
     rule_table.enable("matrix_apply", "PERF", FixStatus::Safe, None);
     rule_table.enable("numeric_leading_zero", "READ", FixStatus::Safe, None);
     rule_table.enable("outer_negation", "PERF,READ", FixStatus::Safe, None);
