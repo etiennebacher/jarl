@@ -10,9 +10,7 @@ all_files <- list.files(
 )
 all_files_name <- basename(all_files)
 
-# repos_raw <- Sys.getenv("TEST_REPOS")
-repos_raw <- "lrberge/stringmagic@87b187d40c745ea1d8496f071aee7229985da23c
-wch/r-source@b5cf23a805f4305852f55c4148f2a302b06844b5"
+repos_raw <- Sys.getenv("TEST_REPOS")
 repo_lines <- strsplit(repos_raw, "\n")[[1]]
 repo_lines <- repo_lines[repo_lines != ""]
 repo_parts <- strsplit(repo_lines, "@")
