@@ -5,8 +5,7 @@ use biome_rowan::AstNode;
 /// ## What it does
 ///
 /// Checks for `1:length(...)`, `1:nrow(...)`, `1:ncol(...)`, `1:NROW(...)` and
-/// `1:NCOL(...)` expressions, or their usage in conjunction with `seq()` (e.g.,
-/// `seq(length(...))`, `seq(nrow(...))`, etc.).
+/// `1:NCOL(...)` expressions. See also [seq2](https://jarl.etiennebacher.com/rules/seq2).
 ///
 /// ## Why is this bad?
 ///

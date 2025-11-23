@@ -10,12 +10,6 @@ mod tests {
         expect_no_lint("2:length(x)", "seq", None);
         expect_no_lint("1:(length(x) || 1)", "seq", None);
 
-        // seq_len(...) or seq_along(...) expressions are fine
-        expect_no_lint("seq_len(x)", "seq", None);
-        expect_no_lint("seq_along(x)", "seq", None);
-        expect_no_lint("seq(2, length(x))", "seq", None);
-        expect_no_lint("seq(length(x), 2)", "seq", None);
-
         // TODO: would be nice to support that
         expect_no_lint("1:dim(x)[1]", "seq", None);
         expect_no_lint("1:dim(x)[[1]]", "seq", None);

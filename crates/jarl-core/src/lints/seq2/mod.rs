@@ -5,23 +5,37 @@ mod tests {
     use crate::utils_test::*;
 
     #[test]
+    fn test_no_lint_seq2() {
+        // seq_len(...) or seq_along(...) expressions are fine
+        expect_no_lint("seq_len(x)", "seq2", None);
+        expect_no_lint("seq_along(x)", "seq2", None);
+        expect_no_lint("seq(2, length(x))", "seq2", None);
+        expect_no_lint("seq(length(x), 2)", "seq2", None);
+        expect_no_lint("seq()", "seq2", None);
+    }
+
+    #[test]
     fn test_lint_seq2() {
         use insta::assert_snapshot;
 
-        let expected_message = "Use `seq2 {}` instead";
-        expect_lint("while (TRUE) { }", expected_message, "seq2", None);
-        expect_lint(
-            "for (i in 1:10) { while (TRUE) { if (i == 5) { break } } }",
-            expected_message,
-            "seq2",
-            None,
-        );
+        let expected_message = "can be wrong if the argument has length 0";
+
+        expect_lint("seq(length(x))", expected_message, "seq2", None);
+        expect_lint("seq(nrow(x))", expected_message, "seq2", None);
+        expect_lint("seq(ncol(x))", expected_message, "seq2", None);
+        expect_lint("seq(NROW(x))", expected_message, "seq2", None);
+        expect_lint("seq(NCOL(x))", expected_message, "seq2", None);
+
         assert_snapshot!(
             "fix_output",
             get_fixed_text(
                 vec![
-                    "while (TRUE) 1 + 1",
-                    "for (i in 1:10) { while (TRUE) { if (i == 5) { break } } }",
+                    "seq(length(x))",
+                    "seq(nrow(x))",
+                    "seq(ncol(x))",
+                    "seq(NROW(x))",
+                    "seq(NCOL(x))",
+                    "seq(length(foo(x)))"
                 ],
                 "seq2",
                 None
@@ -33,18 +47,19 @@ mod tests {
     fn test_seq2_with_comments_no_fix() {
         use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
+        expect_lint(
+            "seq(length(\n # a comment \nfoo(x)))",
+            "can be wrong if the argument has length 0",
+            "seq2",
+            None,
+        );
         assert_snapshot!(
             "no_fix_with_comments",
-            get_fixed_text(vec!["while (\n#a comment\nTRUE) { }\n",], "any_is_na", None)
+            get_fixed_text(
+                vec!["seq(length(\n # a comment \nfoo(x)))",],
+                "any_is_na",
+                None
+            )
         );
-    }
-
-    #[test]
-    fn test_no_lint_seq2() {
-        expect_no_lint("seq2 { }", "seq2", None);
-        expect_no_lint("while (FALSE) { }", "seq2", None);
-        expect_no_lint("while (i < 5) { }", "seq2", None);
-        expect_no_lint("while (j < 5) TRUE", "seq2", None);
-        expect_no_lint("while (TRUE && j < 5) { ... }", "seq2", None);
     }
 }
