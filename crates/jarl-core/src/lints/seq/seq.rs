@@ -99,7 +99,7 @@ pub fn seq(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let diagnostic = Diagnostic::new(
         ViolationData::new(
             "seq".to_string(),
-            format!("`1:{right_fun_name}(...)` can be wrong if the RHS is empty.").to_string(),
+            format!("`1:{right_fun_name}(...)` can be wrong if the RHS is empty or 0.").to_string(),
             Some(format!("Use `{suggestion}` instead.").to_string()),
         ),
         range,
