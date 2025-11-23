@@ -877,7 +877,7 @@
     "href": "rules.html",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_jaf50tp32jnhrmyzqaz5",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_xrm4cuduj6mf58jw15zw",
     "crumbs": [
       "Rules"
     ]
@@ -887,7 +887,7 @@
     "href": "rules.html#overview",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_jaf50tp32jnhrmyzqaz5",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_xrm4cuduj6mf58jw15zw",
     "crumbs": [
       "Rules"
     ]
@@ -974,14 +974,14 @@
     "href": "contributing.html",
     "title": "Contributing to Jarl",
     "section": "",
-    "text": "Jarl is written in Rust, so you must install the Rust toolchain.\nJarl relies on Insta to run snapshot tests. You can install it with:\ncargo install cargo-insta"
+    "text": "Jarl is written in Rust, so you must install the Rust toolchain.\nJarl relies on Insta to run snapshot tests. You can install it with:\ncargo install cargo-insta\nJarl uses just to quickly run several useful commands, such as just document or just lint (see the list of commands with just -l). This is not mandatory but convenient."
   },
   {
     "objectID": "contributing.html#tools",
     "href": "contributing.html#tools",
     "title": "Contributing to Jarl",
     "section": "",
-    "text": "Jarl is written in Rust, so you must install the Rust toolchain.\nJarl relies on Insta to run snapshot tests. You can install it with:\ncargo install cargo-insta"
+    "text": "Jarl is written in Rust, so you must install the Rust toolchain.\nJarl relies on Insta to run snapshot tests. You can install it with:\ncargo install cargo-insta\nJarl uses just to quickly run several useful commands, such as just document or just lint (see the list of commands with just -l). This is not mandatory but convenient."
   },
   {
     "objectID": "contributing.html#basic-structure-of-the-repository",

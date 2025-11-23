@@ -213,6 +213,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Jarl is written in Rust, so you must <a href="https://rust-lang.org/tools/install/" target="_blank">install the Rust toolchain</a>.</p>
 <p>Jarl relies on Insta to run snapshot tests. You can install it with:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install cargo-insta</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Jarl uses <a href="https://github.com/casey/just" target="_blank">just</a> to quickly run several useful commands, such as <code>just document</code> or <code>just lint</code> (see the list of commands with <code>just -l</code>). This is not mandatory but convenient.</p>
 </section>
 <section id="basic-structure-of-the-repository" class="level2">
 <h2 class="anchored" data-anchor-id="basic-structure-of-the-repository">Basic structure of the repository</h2>
