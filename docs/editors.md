@@ -102,7 +102,7 @@ When the cursor is on some code reported by Jarl and when the editor is in "Norm
 
 To use Jarl as an LSPin Neovim, you need to configure it with the [built-in Neovim LSP (vim.lsp.config)](https://neovim.io/doc/user/lsp.html#lsp-config) or through nvim-lspconfig. It is not yet avaliable through [Mason](https://github.com/williamboman/mason.nvim) or part of the nvim-lspconfig collection. Below is an example using the built-in system with Neovim 0.11+.
 
-Create an LSP config file at ~/.config/nvim/lsp/jarl.lua:
+Create an LSP config file at `~/.config/nvim/lsp/jarl.lua`:
 ```lua
 ---@type vim.lsp.Config
 return {
