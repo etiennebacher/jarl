@@ -115,7 +115,7 @@ return {
 }
 ```
 
-Then enable the server in your Neovim configuration (e.g. init.lua or lspconfig.lua):
+Then enable the server in your Neovim configuration (e.g. `init.lua` or `lspconfig.lua`):
 
 ```lua
 -- simply
