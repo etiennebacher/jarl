@@ -977,21 +977,21 @@
     "href": "changelog.html",
     "title": "Changelog",
     "section": "",
-    "text": "Add support for seq and seq2 rules (#187).\n\n\n\n\n\n\n\n\nAdd support for list2df rule (#179).\nAdd support for browser rule (#185, @jonocarroll).\nAdd support for system_file rule (#186).\n\n\n\n\n\n(Hopefully) Fixed wrong printing of ANSI characters in multiple terminals on Windows (#179, thanks @novica for the report).\n\n\n\n\n\nAdded sections on RStudio and Helix to the Editors page.\nAdded installation instructions using Scoop on Windows.\n\n\n\n\n\n\n\n\nFix discovery of jarl.toml by the Jarl extension (#175, thanks @DavisVaughan for the report).\nRule duplicated_argument no longer reports cli_ functions where multiple arguments have the same name (#176, thanks @DavisVaughan for the report).\n\n\n\n\n\nThe docs of assignment rule now explain how to change the preferred assignment operator.\n\n\n\n\n\nFirst release (announced)"
+    "text": "Added support for seq and seq2 rules (#187).\n\n\n\n\n\nAdded section on Neovim to the Editors page (#188, @bjyberg).\n\n\n\n\n\n\n\n\nAdded support for list2df rule (#179).\nAdded support for browser rule (#185, @jonocarroll).\nAdded support for system_file rule (#186).\n\n\n\n\n\n(Hopefully) Fixed wrong printing of ANSI characters in multiple terminals on Windows (#179, thanks @novica for the report).\n\n\n\n\n\nAdded sections on RStudio and Helix to the Editors page.\nAdded installation instructions using Scoop on Windows.\n\n\n\n\n\n\n\n\nFix discovery of jarl.toml by the Jarl extension (#175, thanks @DavisVaughan for the report).\nRule duplicated_argument no longer reports cli_ functions where multiple arguments have the same name (#176, thanks @DavisVaughan for the report).\n\n\n\n\n\nThe docs of assignment rule now explain how to change the preferred assignment operator.\n\n\n\n\n\nFirst release (announced)"
   },
   {
     "objectID": "changelog.html#development",
     "href": "changelog.html#development",
     "title": "Changelog",
     "section": "",
-    "text": "Add support for seq and seq2 rules (#187)."
+    "text": "Added support for seq and seq2 rules (#187).\n\n\n\n\n\nAdded section on Neovim to the Editors page (#188, @bjyberg)."
   },
   {
     "objectID": "changelog.html#section",
     "href": "changelog.html#section",
     "title": "Changelog",
     "section": "",
-    "text": "Add support for list2df rule (#179).\nAdd support for browser rule (#185, @jonocarroll).\nAdd support for system_file rule (#186).\n\n\n\n\n\n(Hopefully) Fixed wrong printing of ANSI characters in multiple terminals on Windows (#179, thanks @novica for the report).\n\n\n\n\n\nAdded sections on RStudio and Helix to the Editors page.\nAdded installation instructions using Scoop on Windows."
+    "text": "Added support for list2df rule (#179).\nAdded support for browser rule (#185, @jonocarroll).\nAdded support for system_file rule (#186).\n\n\n\n\n\n(Hopefully) Fixed wrong printing of ANSI characters in multiple terminals on Windows (#179, thanks @novica for the report).\n\n\n\n\n\nAdded sections on RStudio and Helix to the Editors page.\nAdded installation instructions using Scoop on Windows."
   },
   {
     "objectID": "changelog.html#section-1",
@@ -1012,7 +1012,7 @@
     "href": "rules.html",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_dk186t1mnsyp84kqb0bm",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_s2zd3mc843xj3saeydbw",
     "crumbs": [
       "Rules"
     ]
@@ -1022,7 +1022,7 @@
     "href": "rules.html#overview",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_dk186t1mnsyp84kqb0bm",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_s2zd3mc843xj3saeydbw",
     "crumbs": [
       "Rules"
     ]
