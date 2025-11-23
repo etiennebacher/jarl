@@ -77,5 +77,6 @@ website:
       - rules/repeat.md
       - rules/sample_int.md
       - rules/sort.md
+      - rules/system_file.md
       - rules/true_false_symbol.md
       - rules/which_grepl.md

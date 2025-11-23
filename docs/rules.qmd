@@ -71,6 +71,7 @@ dat <- as.data.frame(
     c("repeat", "Readability", "✅", ""),
     c("sample_int", "Readability", "✅", ""),
     c("sort", "Performance, readability", "✅", ""),
+    c("system_file", "Readability", "✅", ""),
     c("true_false_symbol", "Readability", "❌", ""),
     c("which_grepl", "Performance, readability", "✅", "")
   )

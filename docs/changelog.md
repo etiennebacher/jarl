@@ -6,6 +6,7 @@
 
 - Add support for `list2df` rule (#179).
 - Add support for `browser` rule (#185, @jonocarroll).
+- Add support for `system_file` rule (#186).
 
 ### Fixes
 
