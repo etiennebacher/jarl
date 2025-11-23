@@ -952,6 +952,13 @@
     "text": "Helix\nTo use Jarl as language server in the Helix editor, you need first to add it to the language configuration file, for instance ~/.config/helix/languages.toml:\n[language-server.jarl]\ncommand = \"jarl\"\nargs = [\"server\"]\n\n[[language]]\nname = \"r\"\nlanguage-servers = [\"jarl\"]\nJarl should then be active in the editor, providing code highlighting and showing the message when the cursor is on the highlighted code:\n\nHelix also provides a code-action keybinding. When the cursor is on some code reported by Jarl and when the editor is in “Normal” mode, press “Space” then “a” to show the different code actions:"
   },
   {
+    "objectID": "editors.html#neovim",
+    "href": "editors.html#neovim",
+    "title": "Editor support",
+    "section": "Neovim",
+    "text": "Neovim\nTo use Jarl as an LSP in Neovim, you need to configure it with the built-in Neovim LSP (vim.lsp.config) or through nvim-lspconfig. It is not yet available through Mason or part of the nvim-lspconfig collection. Below is an example using the built-in system with Neovim 0.11+.\nCreate an LSP config file at ~/.config/nvim/lsp/jarl.lua:\n---@type vim.lsp.Config\nreturn {\n  cmd = { 'jarl', 'server' },\n  filetypes = { 'r', 'rmd'},\n  -- root_markers = { '.git' },\n  root_dir = function(bufnr, on_dir)\n    on_dir(vim.fs.root(bufnr, '.git') or vim.uv.os_homedir())\n  end,\n}\nThen enable the server in your Neovim configuration (e.g. init.lua or lspconfig.lua):\n-- simply\nvim.lsp.enable 'jarl'\n-- or to pass custom config command\nvim.lsp.config('jarl', {})\nvim.lsp.enable 'jarl'\nThis enables the code-actions and diagnostics (somewhat - see below note).\n\n\n\n\n\n\n\n\nNote\n\n\n\nCurrently the diagnostics only seem to be passed to neovim when the buffer first opens. After that, the diagnostics are not updated until the file is saved and re-opened. The code actions still seem to update although the diagnostics do not show.\nIf you know how to solve this, please contribute to this issue or open a PR."
+  },
+  {
     "objectID": "integrations.html",
     "href": "integrations.html",
     "title": "Integrations",
@@ -1005,7 +1012,7 @@
     "href": "rules.html",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_nm98popglx3qy5ramgv6",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_dk186t1mnsyp84kqb0bm",
     "crumbs": [
       "Rules"
     ]
@@ -1015,7 +1022,7 @@
     "href": "rules.html#overview",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_nm98popglx3qy5ramgv6",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_dk186t1mnsyp84kqb0bm",
     "crumbs": [
       "Rules"
     ]

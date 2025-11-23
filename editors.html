@@ -177,6 +177,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#zed" id="toc-zed" class="nav-link" data-scroll-target="#zed">Zed</a></li>
   <li><a href="#rstudio" id="toc-rstudio" class="nav-link" data-scroll-target="#rstudio">RStudio</a></li>
   <li><a href="#helix" id="toc-helix" class="nav-link" data-scroll-target="#helix">Helix</a></li>
+  <li><a href="#neovim" id="toc-neovim" class="nav-link" data-scroll-target="#neovim">Neovim</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/editors.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -285,6 +286,43 @@ Tip
 <p><img src="img/helix_highlight.png" class="img-fluid" alt="R script showing several pieces of code that trigger rule violations, such as `any(is.na(x))`. This is displayed in the Helix editor. The code is underlined in yellow and the violation message appears next to the code."></p>
 <p>Helix also provides a code-action keybinding. When the cursor is on some code reported by Jarl and when the editor is in “Normal” mode, press “Space” then “a” to show the different code actions:</p>
 <p><img src="img/helix_quick_fix.png" class="img-fluid" alt="The same R script as before, but this time there is a list of three actions next to the highlighted piece of code: apply fix, ignore this rule, and ignore all rules."></p>
+</section>
+<section id="neovim" class="level2">
+<h2 class="anchored" data-anchor-id="neovim">Neovim</h2>
+<p>To use Jarl as an LSP in Neovim, you need to configure it with the <a href="https://neovim.io/doc/user/lsp.html#lsp-config" target="_blank">built-in Neovim LSP (vim.lsp.config)</a> or through nvim-lspconfig. It is not yet available through <a href="https://github.com/williamboman/mason.nvim" target="_blank">Mason</a> or part of the nvim-lspconfig collection. Below is an example using the built-in system with Neovim 0.11+.</p>
+<p>Create an LSP config file at <code>~/.config/nvim/lsp/jarl.lua</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode lua code-with-copy"><code class="sourceCode lua"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span><span class="an">@type</span><span class="co"> vim.lsp.Config</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> <span class="op">{</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">cmd</span> <span class="op">=</span> <span class="op">{</span> <span class="st">'jarl'</span><span class="op">,</span> <span class="st">'server'</span> <span class="op">},</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">filetypes</span> <span class="op">=</span> <span class="op">{</span> <span class="st">'r'</span><span class="op">,</span> <span class="st">'rmd'</span><span class="op">},</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- root_markers = { '.git' },</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="va">root_dir</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">bufnr</span><span class="op">,</span> <span class="va">on_dir</span><span class="op">)</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    on_dir<span class="op">(</span><span class="va">vim</span><span class="op">.</span><span class="va">fs</span><span class="op">.</span>root<span class="op">(</span><span class="va">bufnr</span><span class="op">,</span> <span class="st">'.git'</span><span class="op">)</span> <span class="kw">or</span> <span class="va">vim</span><span class="op">.</span><span class="va">uv</span><span class="op">.</span>os_homedir<span class="op">())</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span><span class="op">,</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Then enable the server in your Neovim configuration (e.g.&nbsp;<code>init.lua</code> or <code>lspconfig.lua</code>):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode lua code-with-copy"><code class="sourceCode lua"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- simply</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="va">vim</span><span class="op">.</span><span class="va">lsp</span><span class="op">.</span>enable <span class="st">'jarl'</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- or to pass custom config command</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="va">vim</span><span class="op">.</span><span class="va">lsp</span><span class="op">.</span>config<span class="op">(</span><span class="st">'jarl'</span><span class="op">,</span> <span class="op">{})</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="va">vim</span><span class="op">.</span><span class="va">lsp</span><span class="op">.</span>enable <span class="st">'jarl'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This enables the code-actions and diagnostics (somewhat - see below note).</p>
+<p><img src="img/nvim_diagnostic.png" class="img-fluid" alt="R script with multiple errors showing in-line indicating a rule violation."></p>
+<p><img src="img/nvim_quick_fix.png" class="img-fluid" alt="The same R script as before, but this time there is a list of three actions next to the piece of code: apply fix, ignore this rule, and ignore all rules."></p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Currently the diagnostics only seem to be passed to neovim when the buffer first opens. After that, the diagnostics are not updated until the file is saved and re-opened. The code actions still seem to update although the diagnostics do not show.</p>
+<p>If you know how to solve this, please contribute to <a href="https://github.com/etiennebacher/jarl/issues/138" target="_blank">this issue</a> or open a PR.</p>
+</div>
+</div>
 
 
 </section>
