@@ -56,6 +56,10 @@ pub fn seq2(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         .into_iter()
         .find(|x| x.clone().unwrap().name_clause().is_none());
 
+    if unnamed_arg.is_none() {
+        return Ok(None);
+    }
+
     let value = unnamed_arg.unwrap()?.value();
 
     if let Some(inner) = value
