@@ -1,0 +1,14 @@
+---
+source: crates/jarl-core/src/lints/seq/mod.rs
+expression: "get_fixed_text(vec![\"1:length(\\n # a comment \\nfoo(x))\",], \"any_is_na\", None)"
+---
+OLD:
+====
+1:length(
+ # a comment 
+foo(x))
+NEW:
+====
+1:length(
+ # a comment 
+foo(x))

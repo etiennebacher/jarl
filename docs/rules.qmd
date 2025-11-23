@@ -70,6 +70,8 @@ dat <- as.data.frame(
     c("redundant_equals", "Readability", "✅", ""),
     c("repeat", "Readability", "✅", ""),
     c("sample_int", "Readability", "✅", ""),
+    c("seq", "Suspicious", "✅", ""),
+    c("seq2", "Suspicious", "✅", ""),
     c("sort", "Performance, readability", "✅", ""),
     c("system_file", "Readability", "✅", ""),
     c("true_false_symbol", "Readability", "❌", ""),

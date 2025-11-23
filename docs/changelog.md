@@ -1,5 +1,11 @@
 # Changelog
 
+## Development
+
+### Features
+
+- Add support for `seq` and `seq2` rules (#187).
+
 ## 0.1.2
 
 ### Features

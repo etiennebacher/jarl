@@ -16,6 +16,7 @@ use crate::lints::list2df::list2df::list2df;
 use crate::lints::matrix_apply::matrix_apply::matrix_apply;
 use crate::lints::outer_negation::outer_negation::outer_negation;
 use crate::lints::sample_int::sample_int::sample_int;
+use crate::lints::seq2::seq2::seq2;
 use crate::lints::system_file::system_file::system_file;
 use crate::lints::which_grepl::which_grepl::which_grepl;
 
@@ -71,6 +72,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled("sample_int") && !checker.should_skip_rule(node, "sample_int") {
         checker.report_diagnostic(sample_int(r_expr)?);
+    }
+    if checker.is_rule_enabled("seq2") && !checker.should_skip_rule(node, "seq2") {
+        checker.report_diagnostic(seq2(r_expr)?);
     }
     if checker.is_rule_enabled("system_file") && !checker.should_skip_rule(node, "system_file") {
         checker.report_diagnostic(system_file(r_expr)?);
