@@ -129,6 +129,17 @@ Let's analyze this by blocks:
 * the `impl` block is where we define the name and the main message (`body`) that will be used in the output of Jarl. Note that there is also a `suggestion()` function which is not always necessary.
 * finally, we define the function where we parse the AST.
 
+::: {.callout-note collapse="true"}
+## About `impl Violation`
+
+If you explore other rules implementation, you might notice that the `impl Violation` block is sometimes missing.
+This is because in some cases, the message and/or the suggestion depend on the AST itself.
+For example, for the `assignment` rule, the message will contain recommend the use of `<-` or `=` depending on the user's settings.
+
+In this scenario, the name, body, and suggestion are defined at the very end, when we build the `Diagnostic`.
+:::
+
+
 Writing this function is the hard part, so let's focus on this.
 We start by extracting the important information from the `RCall` object.
 In this example, we need both the function name and the arguments:
@@ -138,15 +149,222 @@ let function = ast.function()?;
 let arguments = ast.arguments()?;
 ```
 
-Note that it is sometimes shorter to use
+Note that it is sometimes shorter to use the destructuring syntax, as follows:
 
-
-
+```rust
+let RCallFields { function, arguments } = ast.as_fields();
+let function = function?;
+let arguments = arguments?.items();
+```
 
 Usually, a rule implementation contains a lot of early returns, such as "if the function name is not 'do.call' then stop here".
+In this example, we want to focus on calls to `do.call()`, so we can stop early if this is not the function name:
+
+```rust
+if function.to_trimmed_text() != "do.call" {
+    return Ok(None);
+}
+```
+
+Past that point, the next step is to check that the arguments correspond to what we want to analyze.
+`do.call` has four arguments: `what`, `args`, `quote`, and `envir`.
+We are looking for patterns such as `do.call(cbind.data.frame, x)` so we want information on the first two arguments.
+We can use a helper function called `get_arg_by_name_then_position()`:
+
+```rust
+// Note that the arguments position is 1-indexed and not 0-indexed as is usually
+// the case in Rust.
+let what = get_arg_by_name_then_position(&arguments, "what", 1);
+let args = get_arg_by_name_then_position(&arguments, "args", 2);
+```
+
+This function returns an `Option` since the arguments we want to extract maybe do not exist in the code we parsed.
+We can now do more early checks:
+
+```rust
+// Ensure there's not more than two arguments, don't know how to handle
+// `quote` and `envir` in `do.call()`.
+if get_arg_by_position(&arguments, 3).is_some() {
+    return Ok(None);
+}
+
+if args.is_none() {
+    return Ok(None);
+}
+
+if let Some(what) = what && let Some(what_value) = what.value() {
+    let txt = what_value.to_trimmed_text();
+    // `do.call()` accepts quoted function names.
+    if txt != "cbind.data.frame"
+        && txt != "\"cbind.data.frame\""
+        && txt != "\'cbind.data.frame\'"
+    {
+        return Ok(None);
+    }
+} else {
+    return Ok(None);
+};
+```
+
+The block above ensures that we have a call to `do.call()` with two arguments only and that the argument `what` is one of `cbind.data.frame`, `"cbind.data.frame"`, or `'cbind.data.frame'` (because `do.call()` also accepts quoted function names).
+
+We now reach the last step, which is building the automatic fix.
+This requires getting the value of `args` because we want to use it in `list2DF()`:
+
+```rust
+// Safety: we checked above that args is not None.
+let args = args.unwrap().value();
+// Here, `args` can be None if the call is something like
+// `do.call(cbind.data.frame, args = )`. This is not valid R code, but we don't
+// want to panic if it is checked by Jarl.
+if args.is_none() {
+    return Ok(None);
+}
+let fix_content = args.unwrap();
+```
+
+And finally, we build the diagnostic:
+
+```rust
+let range = ast.syntax().text_trimmed_range();
+let diagnostic = Diagnostic::new(
+    List2Df,
+    range,
+    Fix {
+        content: format!("list2DF({})", fix_content.to_trimmed_text()),
+        start: range.start().into(),
+        end: range.end().into(),
+        to_skip: node_contains_comments(ast.syntax()),
+    },
+);
+
+Ok(Some(diagnostic))
+```
+
+All diagnostics contain a struct `Violation` (we defined ours just below the documentation), a range indicating where it is in the code, and a `Fix` (which may be `Fix::Empty()` if there is no automatic fix).
+
+At this point, if you have an R file with a couple of examples that should be reported (e.g. `test.R`), you can use `cargo run --bin jarl -- check test.R` (the rule in this example is only valid for R >= 4.0.0, so we also need `--min-r-version 4.1` for instance).
+
+### Add tests
+
+Tests for each rule are stored in `lints/<rule_name>/mod.rs`.
+It is important to test cases where we expect the rule that we just defined to be violated, *and* to test cases where we don't expect this violation.
+Looking at tests for `list2df`, there are three blocks:
+
+* first, we check cases where we don't expect rule violations:
+
+```rust
+#[test]
+fn test_no_lint_list2df() {
+    expect_no_lint("cbind.data.frame(x, x)", "list2df", Some("4.0"));
+    [...]
+
+    // Ignored if R version unknown or below 4.0.0
+    expect_no_lint("do.call(cbind.data.frame, x)", "list2df", Some("3.5"));
+    [...]
+
+    // Don't know how to handle additional comments
+    expect_no_lint(
+        "do.call(cbind.data.frame, x, quote = TRUE)",
+        "list2df",
+        Some("4.0"),
+    );
+
+    // Ensure that wrong calls are not reported
+    expect_no_lint("do.call(cbind.data.frame)", "list2df", Some("4.0"));
+    [...]
+}
+```
+
+* second, we check cases where we expect rule violations. We check first that the expected message is displayed, and then we check that the automated fix works correctly with a snapshot test:
+
+```rust
+#[test]
+fn test_lint_list2df() {
+    use insta::assert_snapshot;
+
+    let expected_message = "Use `list2DF(x)` instead";
+    expect_lint(
+        "do.call(cbind.data.frame, x)",
+        expected_message,
+        "list2df",
+        Some("4.0"),
+    );
+    [...]
+
+    assert_snapshot!(
+        "fix_output",
+        get_fixed_text(
+            vec![
+                "do.call(cbind.data.frame, x)",
+                [...]
+            ],
+            "list2df",
+            Some("4.0")
+        )
+    );
+}
+```
+
+* finally, if the rule has an automatic fix, we check that having a comment in the middle of the code in question does *not* modify this code. Handling comments in automatic fixes is difficult and is left as an objective for the future.
+
+```rust
+#[test]
+fn test_list2df_with_comments_no_fix() {
+    use insta::assert_snapshot;
+    // Should detect lint but skip fix when comments are present to avoid destroying them
+    expect_lint(
+        "do.call(\n # a comment\ncbind.data.frame, x)",
+        "Use `list2DF(x)` instead",
+        "list2df",
+        Some("4.0"),
+    );
+    assert_snapshot!(
+        "no_fix_with_comments",
+        get_fixed_text(
+            vec![
+                "# leading comment\ndo.call(cbind.data.frame, x)",
+                "do.call(\n # a comment\ncbind.data.frame, x)",
+                "do.call(cbind.data.frame, x) # trailing comment",
+            ],
+            "list2df",
+            Some("4.0")
+        )
+    );
+}
+```
+
+Since we have snapshot tests, we first need to run `cargo insta test` to generate the snapshots and then `cargo insta review` to review and validate them.
+After that, run `cargo test` to ensure that all tests pass.
 
 
+### All the rest
 
+<!-- TODO: add makefile for that -->
+
+The rule is implemented, all tests pass, perfect!
+We now need to document this change:
+
+* update `CHANGELOG.md`
+* update `docs/rules.md`
+* run `source("make_docs.R")`
+* run `cd docs && quarto render`
+
+And finally, ensure there are no lints and that the code is well formatted:
+
+```sh
+cargo clippy \
+    --all-targets \
+    --all-features \
+    --locked \
+    -- \
+    -D warnings \
+    -D clippy::dbg_macro
+```
+
+```sh
+cargo fmt
+```
 
 
 ## Proposing your changes
