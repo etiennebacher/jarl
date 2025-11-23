@@ -19,7 +19,7 @@ mod tests {
     fn test_lint_seq() {
         use insta::assert_snapshot;
 
-        let expected_message = "can be wrong if the RHS is empty";
+        let expected_message = "can be wrong if the RHS is 0";
 
         expect_lint("1:length(x)", expected_message, "seq", None);
         expect_lint("1:nrow(x)", expected_message, "seq", None);
@@ -63,7 +63,7 @@ mod tests {
         // Should detect lint but skip fix when comments are present to avoid destroying them
         expect_lint(
             "1:length(\n # a comment \nfoo(x))",
-            "can be wrong if the RHS is empty",
+            "can be wrong if the RHS is 0",
             "seq",
             None,
         );
