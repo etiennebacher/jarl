@@ -59,9 +59,6 @@ jobs:
           cp target/release/jarl target/release/jarl-pr
           echo "PR_JARL=$(pwd)/target/release/jarl-pr" >> $GITHUB_ENV
 
-      - name: Check PR jarl version
-        run: $PR_JARL --version
-
       - name: Build jarl binary from main branch
         run: |
           git fetch origin main
@@ -70,9 +67,6 @@ jobs:
 
       - name: Save main binary path
         run: echo "MAIN_JARL=$(pwd)/target/release/jarl" >> $GITHUB_ENV
-
-      - name: Check main jarl version
-        run: $MAIN_JARL --version
 
       - name: Clone all test repos
         run: |

@@ -87,22 +87,22 @@ for (i in seq_along(all_repos)) {
     on = .(name, filename, row, column)
   ]
 
-  # if (nrow(new_lints) == 0 && nrow(deleted_lints) == 0) {
-  #   n_without_changes <- n_without_changes + 1
+  if (nrow(new_lints) == 0 && nrow(deleted_lints) == 0) {
+    n_without_changes <- n_without_changes + 1
 
-  #   # If we are at the last repo and there were no changes anywhere, return
-  #   # early. Otherwise keep going.
-  #   if (n_without_changes == length(all_repos)) {
-  #     cat(
-  #       "✅ No new or removed violations",
-  #       file = "lint_comparison.md",
-  #       append = TRUE
-  #     )
-  #     break
-  #   } else {
-  #     next
-  #   }
-  # }
+    # If we are at the last repo and there were no changes anywhere, return
+    # early. Otherwise keep going.
+    if (n_without_changes == length(all_repos)) {
+      cat(
+        "✅ No new or removed violations",
+        file = "lint_comparison.md",
+        append = TRUE
+      )
+      break
+    } else {
+      next
+    }
+  }
 
   msg_header <- paste0(
     "<details><summary><a href=\"https://github.com/",
