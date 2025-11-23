@@ -8,6 +8,8 @@ mod tests {
     fn test_no_lint_system_file() {
         expect_no_lint("system.file('a', 'b', 'c')", "system_file", None);
         expect_no_lint("system.file(paste('a', 'b', 'c'))", "system_file", None);
+        expect_no_lint("system.file(file.path())", "system_file", None);
+        expect_no_lint("system.file(file.path(,))", "system_file", None);
         expect_no_lint("file.path('a', 'b', 'c')", "system_file", None);
     }
 

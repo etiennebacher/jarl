@@ -87,7 +87,19 @@ pub fn system_file(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         .arguments()?
         .items()
         .iter()
-        .filter(|x| x.is_ok())
+        .filter(|x| {
+            if let Ok(x) = x {
+                x.value().is_some()
+            } else {
+                false
+            }
+        });
+
+    if file_path_inner_content.clone().next().is_none() {
+        return Ok(None);
+    }
+
+    let file_path_inner_content = file_path_inner_content
         .map(|x| x.unwrap().to_trimmed_string())
         .collect::<Vec<String>>()
         .join(", ");
