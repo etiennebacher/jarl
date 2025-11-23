@@ -9,6 +9,7 @@ mod tests {
         expect_no_lint("1:10", "seq", None);
         expect_no_lint("2:length(x)", "seq", None);
         expect_no_lint("1:(length(x) || 1)", "seq", None);
+        expect_no_lint("1:foo(x)", "seq", None);
 
         // TODO: would be nice to support that
         expect_no_lint("1:dim(x)[1]", "seq", None);

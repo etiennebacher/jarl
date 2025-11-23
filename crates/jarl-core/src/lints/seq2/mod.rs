@@ -12,6 +12,7 @@ mod tests {
         expect_no_lint("seq(2, length(x))", "seq2", None);
         expect_no_lint("seq(length(x), 2)", "seq2", None);
         expect_no_lint("seq()", "seq2", None);
+        expect_no_lint("seq(foo(x))", "seq2", None);
     }
 
     #[test]
