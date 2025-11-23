@@ -76,6 +76,8 @@ website:
       - rules/redundant_equals.md
       - rules/repeat.md
       - rules/sample_int.md
+      - rules/seq.md
+      - rules/seq2.md
       - rules/sort.md
       - rules/system_file.md
       - rules/true_false_symbol.md
