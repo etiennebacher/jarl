@@ -48,6 +48,7 @@ dat <- as.data.frame(
     c("any_duplicated", "Performance", "✅", ""),
     c("any_is_na", "Performance", "✅", ""),
     c("assignment", "Readability", "✅", ""),
+    c("browser", "Correctness", "✅", ""),
     c("class_equals", "Suspicious", "❗", ""),
     c("coalesce", "Readability", "✅", "R >= 4.4"),
     c("comparison_negation", "Readability", "✅", ""),
