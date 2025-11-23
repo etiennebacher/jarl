@@ -340,31 +340,13 @@ After that, run `cargo test` to ensure that all tests pass.
 
 ### All the rest
 
-<!-- TODO: add makefile for that -->
-
 The rule is implemented, all tests pass, perfect!
 We now need to document this change:
 
 * update `CHANGELOG.md`
 * update `docs/rules.md`
-* run `source("make_docs.R")`
-* run `cd docs && quarto render`
 
-And finally, ensure there are no lints and that the code is well formatted:
-
-```sh
-cargo clippy \
-    --all-targets \
-    --all-features \
-    --locked \
-    -- \
-    -D warnings \
-    -D clippy::dbg_macro
-```
-
-```sh
-cargo fmt
-```
+If you have installed `just` as [recommended](https://jarl.etiennebacher.com/contributing#tools), you can now run `just document` to update the website and `just lint` to check that the code has no lints and is properly formatted.
 
 
 ## Proposing your changes
@@ -375,7 +357,8 @@ Once all of this is done, it is time to open a PR!
 
 ### PR title
 
-[Find the link for PR titles like "feat:", "fix:", etc.]
+Jarl follows [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary), meaning that your PR must start with "feat:", "fix:", or another appropriate name (see the linked documentation).
+In this case, the PR is titled "feat: Add `list2df_linter`".
 
 ### PR automated comments
 
