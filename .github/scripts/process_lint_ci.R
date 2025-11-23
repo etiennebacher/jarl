@@ -10,7 +10,9 @@ all_files <- list.files(
 )
 all_files_name <- basename(all_files)
 
-repos_raw <- Sys.getenv("TEST_REPOS")
+# repos_raw <- Sys.getenv("TEST_REPOS")
+repos_raw <- "lrberge/stringmagic@87b187d40c745ea1d8496f071aee7229985da23c
+wch/r-source@b5cf23a805f4305852f55c4148f2a302b06844b5"
 repo_lines <- strsplit(repos_raw, "\n")[[1]]
 repo_lines <- repo_lines[repo_lines != ""]
 repo_parts <- strsplit(repo_lines, "@")
@@ -87,22 +89,22 @@ for (i in seq_along(all_repos)) {
     on = .(name, filename, row, column)
   ]
 
-  if (nrow(new_lints) == 0 && nrow(deleted_lints) == 0) {
-    n_without_changes <- n_without_changes + 1
+  # if (nrow(new_lints) == 0 && nrow(deleted_lints) == 0) {
+  #   n_without_changes <- n_without_changes + 1
 
-    # If we are at the last repo and there were no changes anywhere, return
-    # early. Otherwise keep going.
-    if (n_without_changes == length(all_repos)) {
-      cat(
-        "✅ No new or removed violations",
-        file = "lint_comparison.md",
-        append = TRUE
-      )
-      break
-    } else {
-      next
-    }
-  }
+  #   # If we are at the last repo and there were no changes anywhere, return
+  #   # early. Otherwise keep going.
+  #   if (n_without_changes == length(all_repos)) {
+  #     cat(
+  #       "✅ No new or removed violations",
+  #       file = "lint_comparison.md",
+  #       append = TRUE
+  #     )
+  #     break
+  #   } else {
+  #     next
+  #   }
+  # }
 
   msg_header <- paste0(
     "<details><summary><a href=\"https://github.com/",
