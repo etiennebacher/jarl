@@ -1,0 +1,30 @@
+---
+source: crates/jarl-core/src/lints/list2df/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\ndo.call(cbind.data.frame, x)\",\n\"do.call(\\n # a comment\\ncbind.data.frame, x)\",\n\"do.call(cbind.data.frame, x) # trailing comment\",], \"list2df\", Some(\"4.0\"))"
+---
+OLD:
+====
+# leading comment
+do.call(cbind.data.frame, x)
+NEW:
+====
+# leading comment
+list2DF(x)
+
+OLD:
+====
+do.call(
+ # a comment
+cbind.data.frame, x)
+NEW:
+====
+do.call(
+ # a comment
+cbind.data.frame, x)
+
+OLD:
+====
+do.call(cbind.data.frame, x) # trailing comment
+NEW:
+====
+list2DF(x) # trailing comment

@@ -1,7 +1,9 @@
 name: Ecosystem check
 
 on:
-  pull_request:
+  # Need pull_request_target so that forks can also run this workflow
+  # https://github.com/thollander/actions-comment-pull-request/issues/237
+  pull_request_target:
     branches:
       - main
     paths:

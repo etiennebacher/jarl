@@ -51,7 +51,8 @@ jobs:
         run: source("docs/make_docs.R")
         shell: Rscript {0}
 
-      - name: Render Quarto Project
+      - name: Render and Publish Quarto Project (main branch)
+        if: github.event_name != 'pull_request'
         uses: quarto-dev/quarto-actions/publish@v2
         with:
           target: gh-pages

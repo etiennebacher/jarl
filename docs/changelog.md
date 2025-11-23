@@ -2,6 +2,11 @@
 
 ## Development
 
+### Features
+
+- Add support for `list2df` rule (#179).
+- Add support for `browser` rule (#185, @jonocarroll).
+
 ### Fixes
 
 - (Hopefully) Fixed wrong printing of ANSI characters in multiple terminals on Windows (#179, thanks @novica for the report).
