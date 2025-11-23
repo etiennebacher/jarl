@@ -11,6 +11,9 @@ Jarl relies on Insta to run snapshot tests. You can install it with:
 cargo install cargo-insta
 ```
 
+Jarl uses [just](https://github.com/casey/just) to quickly run several useful commands, such as `just document` or `just lint` (see the list of commands with `just -l`).
+This is not mandatory but convenient.
+
 ## Basic structure of the repository
 
 The folder `crates` contains several sub-crates.
