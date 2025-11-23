@@ -3,6 +3,7 @@ title: Adding a new rule to Jarl
 ---
 
 This page will explain how to implement a new rule in Jarl.
+It is recommended to read the [General information page](contributing.md) first to install the required tools.
 Jarl is written in Rust, but this page will *not* explain how to set up or use Rust, this is an entirely different topic.
 To get started with Rust, check out the [Rust book](https://doc.rust-lang.org/stable/book/).
 
@@ -12,25 +13,25 @@ To get started with Rust, check out the [Rust book](https://doc.rust-lang.org/st
 ### Find the rule
 
 So far, most (if not all) rules in Jarl come from [the list of rules available in `lintr`](https://lintr.r-lib.org/dev/reference/#individual-linters), so this is the first place to explore.
-If you want to add a rule that is not in `lintr`, please [open an issue]() first.
+If you want to add a rule that is not in `lintr`, please [open an issue](https://github.com/etiennebacher/jarl/issues/new/choose) first.
 
 Note that not all `lintr` rules are suitable for Jarl.
 In particular, rules that are only about formatting (spaces before parenthesis, newlines between arguments, etc.) are **out of scope** for Jarl.
 Moreover, you should look for rules that require "pattern detection" only, meaning that they don't need information about the rest of the code (or only very little).
-For example, [`unreachable_code`]() is **out of scope** for now because we need a way to analyze the rest of the code, which Jarl doesn't have so far.
+For example, [`unreachable_code`](https://lintr.r-lib.org/dev/reference/unreachable_code_linter.html) is **out of scope** for now because we need a way to analyze the rest of the code, which Jarl doesn't have so far.
 **If you are unsure about whether a rule can or should be implemented, open an issue first.**
 
 ### Get familiar with the rule
 
 You may know the most common cases of this rule, but there might exist many corner cases making its implementation difficult.
-Take a look at the relevant test file in the [`lintr` test suite]() to know more about those corner cases.
+Take a look at the relevant test file in the [`lintr` test suite](https://github.com/r-lib/lintr/tree/main/tests/testthat) to know more about those corner cases.
 
-Additionally, Jarl uses [tree-sitter]() under the hood to parse and navigate the Abstract Syntax Tree (AST) of the code.
+Additionally, Jarl uses [tree-sitter](https://tree-sitter.github.io/tree-sitter/) under the hood to parse and navigate the Abstract Syntax Tree (AST) of the code.
 Having an idea of what this AST looks like is important when implementing the rule.
 I suggest creating a small test R file containing one or two examples of code that violate this rule.
 If you have the Air extension installed, you can do the command "Air: View Syntax Tree" to display the AST next to the code.
 
-### Get up and running with Rust and Jarl:
+### Get up and running with Rust and Jarl
 
 You should have installed Rust and cloned Jarl.
 Do `cargo check` or `cargo test` to know if you are correctly set up.
@@ -69,7 +70,7 @@ pub(crate) mod list2df;
 
 rule_table.enable("list2df", "PERF,READ", FixStatus::Safe, Some((4, 0, 0)));
 ```
-This contains the rule name, the categories it belongs to (those are described above in the file), whether it has safe fix, unsafe fix, or no fix, and the optional R version from which it is available.
+This contains the rule name, the categories it belongs to (those are described above in the file), whether it has a safe fix, an unsafe fix, or no fix, and the optional R version from which it is available.
 
 The file to modify in the `analyze` folder will depend on the rule: here, we look for calls to `do.call()`.
 The arguments passed to the function are irrelevant, what matters is that this is a call, so we will modify the file `analyze/call.rs`:
@@ -157,7 +158,7 @@ let function = function?;
 let arguments = arguments?.items();
 ```
 
-Usually, a rule implementation contains a lot of early returns, such as "if the function name is not 'do.call' then stop here".
+Usually, a rule implementation contains a lot of early returns, such as "if the function name is not 'xyz' then stop here".
 In this example, we want to focus on calls to `do.call()`, so we can stop early if this is not the function name:
 
 ```rust
@@ -182,7 +183,7 @@ This function returns an `Option` since the arguments we want to extract maybe d
 We can now do more early checks:
 
 ```rust
-// Ensure there's not more than two arguments, don't know how to handle
+// Ensure there isn't more than two arguments, as we probably cannot discard
 // `quote` and `envir` in `do.call()`.
 if get_arg_by_position(&arguments, 3).is_some() {
     return Ok(None);
@@ -241,7 +242,7 @@ let diagnostic = Diagnostic::new(
 Ok(Some(diagnostic))
 ```
 
-All diagnostics contain a struct `Violation` (we defined ours just below the documentation), a range indicating where it is in the code, and a `Fix` (which may be `Fix::Empty()` if there is no automatic fix).
+All diagnostics contain a `Violation` (we defined the one for `List2Df` just below the documentation), a range indicating where it is located in the code, and a `Fix` (which may be `Fix::Empty()` if there is no automatic fix).
 
 At this point, if you have an R file with a couple of examples that should be reported (e.g. `test.R`), you can use `cargo run --bin jarl -- check test.R` (the rule in this example is only valid for R >= 4.0.0, so we also need `--min-r-version 4.1` for instance).
 

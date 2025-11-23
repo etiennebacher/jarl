@@ -41,7 +41,11 @@ website:
     - text: Integrations
       href: integrations.md
     - text: Contributing
-      href: contributing.md
+      menu:
+        - text: General information
+          href: contributing.md
+        - text: "Tutorial: add a new rule"
+          href: contributing-rule-example.md
     - text: Changelog
       href: changelog.md
   sidebar:
