@@ -419,3 +419,25 @@ expect_equal(foo(x), TRUE)
 
     Ok(())
 }
+
+#[test]
+fn test_extend_select_unknown_rule() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    let test_contents = "any(is.na(x))";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--extend-select")
+            .arg("FOO")
+            .run()
+            .normalize_os_executable_name()
+    );
+    Ok(())
+}

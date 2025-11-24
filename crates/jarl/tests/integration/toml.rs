@@ -1480,3 +1480,34 @@ expect_equal(foo(x), TRUE)
 
     Ok(())
 }
+
+#[test]
+fn test_toml_extend_select_unknown_rule() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // TOML that uses both select and extend-select
+    // select overrides defaults, extend-select adds to that selection
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+extend-select = ["FOO"]
+"#,
+    )?;
+
+    let test_path = "test.R";
+    let test_contents = "any(is.na(x))";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
