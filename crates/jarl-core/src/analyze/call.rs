@@ -8,6 +8,7 @@ use crate::lints::any_is_na::any_is_na::any_is_na;
 use crate::lints::browser::browser::browser;
 use crate::lints::download_file::download_file::download_file;
 use crate::lints::duplicated_arguments::duplicated_arguments::duplicated_arguments;
+use crate::lints::expect_true_false::expect_true_false::expect_true_false;
 use crate::lints::grepv::grepv::grepv;
 use crate::lints::length_levels::length_levels::length_levels;
 use crate::lints::length_test::length_test::length_test;
@@ -45,6 +46,11 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
         && !checker.should_skip_rule(node, "duplicated_arguments")
     {
         checker.report_diagnostic(duplicated_arguments(r_expr)?);
+    }
+    if checker.is_rule_enabled("expect_true_false")
+        && !checker.should_skip_rule(node, "expect_true_false")
+    {
+        checker.report_diagnostic(expect_true_false(r_expr)?);
     }
     if checker.is_rule_enabled("grepv") && !checker.should_skip_rule(node, "grepv") {
         checker.report_diagnostic(grepv(r_expr)?);

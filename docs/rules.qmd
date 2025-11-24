@@ -10,6 +10,7 @@ All rules belong to at least one category:
 -   SUSP: suspicious, code that is most likely wrong or useless.
 -   PERF: performance, code that can be written to run faster.
 -   READ: readability, code is correct but can be written in a way that is easier to read.
+-   TESTTHAT: rules for the `testthat` package. Disabled by default.
 
 You can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.
 
@@ -56,6 +57,7 @@ dat <- as.data.frame(
     c("duplicated_arguments", "Suspicious", "❌", ""),
     c("empty_assignment", "Readability", "❌", ""),
     c("equals_na", "Correctness", "✅", ""),
+    c("expect_true_false", "`testthat`", "✅", "Disabled by default"),
     c("for_loop_index", "Readability", "❌", ""),
     c("grepv", "Readability", "✅", "R >= 4.5"),
     c("implicit_assignment", "Readability", "❌", ""),

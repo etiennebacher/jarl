@@ -1,0 +1,45 @@
+---
+source: crates/jarl-core/src/lints/expect_true_false/mod.rs
+expression: "get_fixed_text(vec![\"expect_equal(foo(x), TRUE)\",\n\"expect_equal(foo(x), FALSE)\", \"expect_identical(foo(x), TRUE)\",\n\"expect_identical(foo(x), FALSE)\", \"expect_equal(TRUE, foo(x))\",\n\"expect_equal(FALSE, foo(x))\",], \"expect_true_false\", None,)"
+---
+OLD:
+====
+expect_equal(foo(x), TRUE)
+NEW:
+====
+expect_true(foo(x))
+
+OLD:
+====
+expect_equal(foo(x), FALSE)
+NEW:
+====
+expect_false(foo(x))
+
+OLD:
+====
+expect_identical(foo(x), TRUE)
+NEW:
+====
+expect_true(foo(x))
+
+OLD:
+====
+expect_identical(foo(x), FALSE)
+NEW:
+====
+expect_false(foo(x))
+
+OLD:
+====
+expect_equal(TRUE, foo(x))
+NEW:
+====
+expect_true(foo(x))
+
+OLD:
+====
+expect_equal(FALSE, foo(x))
+NEW:
+====
+expect_false(foo(x))

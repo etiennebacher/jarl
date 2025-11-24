@@ -14,6 +14,7 @@ pub(crate) mod download_file;
 pub(crate) mod duplicated_arguments;
 pub(crate) mod empty_assignment;
 pub(crate) mod equals_na;
+pub(crate) mod expect_true_false;
 pub(crate) mod for_loop_index;
 pub(crate) mod grepv;
 pub(crate) mod implicit_assignment;
@@ -35,7 +36,7 @@ pub(crate) mod system_file;
 pub(crate) mod true_false_symbol;
 pub(crate) mod which_grepl;
 
-pub static RULE_GROUPS: &[&str] = &["CORR", "PERF", "READ", "SUSP"];
+pub static RULE_GROUPS: &[&str] = &["CORR", "PERF", "READ", "SUSP", "TESTTHAT"];
 
 /// Rule groups that are selected by default when no selectors are provided
 pub static DEFAULT_SELECTORS: &[&str] = &["CORR", "PERF", "READ", "SUSP"];
@@ -62,6 +63,7 @@ pub fn all_rules_and_safety() -> RuleTable {
     rule_table.enable("duplicated_arguments", "SUSP", FixStatus::None, None);
     rule_table.enable("empty_assignment", "READ", FixStatus::Safe, None);
     rule_table.enable("equals_na", "CORR", FixStatus::Safe, None);
+    rule_table.enable("expect_true_false", "TESTTHAT", FixStatus::Safe, None);
     rule_table.enable("for_loop_index", "READ", FixStatus::None, None);
     rule_table.enable("grepv", "READ", FixStatus::Safe, Some((4, 5, 0)));
     rule_table.enable("implicit_assignment", "READ", FixStatus::None, None);

@@ -5,6 +5,7 @@
 ### Features
 
 - Added support for `seq` and `seq2` rules (#187).
+- Added support for `expect_true_false` rule. This is a bit experimental because it is the first rule that is not enabled by default (and doesn't have a minimum R version requirement) (#191).
 
 ### Documentation
 

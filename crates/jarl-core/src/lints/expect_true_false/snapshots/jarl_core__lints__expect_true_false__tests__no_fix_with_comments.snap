@@ -1,0 +1,28 @@
+---
+source: crates/jarl-core/src/lints/expect_true_false/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\nexpect_equal(x, TRUE)\",\n\"expect_equal(x, # comment\\nTRUE)\",\n\"expect_equal(x, TRUE) # trailing comment\",], \"expect_true_false\", None)"
+---
+OLD:
+====
+# leading comment
+expect_equal(x, TRUE)
+NEW:
+====
+# leading comment
+expect_true(x)
+
+OLD:
+====
+expect_equal(x, # comment
+TRUE)
+NEW:
+====
+expect_equal(x, # comment
+TRUE)
+
+OLD:
+====
+expect_equal(x, TRUE) # trailing comment
+NEW:
+====
+expect_true(x) # trailing comment
