@@ -340,7 +340,12 @@ fn replace_group_rules(rules_passed_by_user: &Vec<&str>, all_rules: &RuleTable) 
     for &rule_or_group in rules_passed_by_user {
         let trimmed = rule_or_group.trim();
 
-        if rule_groups_set.contains(trimmed) {
+        if trimmed == "ALL" {
+            // Special keyword to select all rules (including opt-in ones)
+            for rule in all_rules.iter() {
+                expanded_rules.push(rule.name.clone());
+            }
+        } else if rule_groups_set.contains(trimmed) {
             // This is a group name, expand it to all rules in that group
             for rule in all_rules.iter() {
                 if rule.categories.iter().any(|cat| cat == trimmed) {
