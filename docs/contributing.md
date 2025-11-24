@@ -74,3 +74,8 @@ Tests for this are stored in `crates/jarl-cli/tests/integration`.
 It is likely that you will need to edit one of the files instead of creating a new one.
 For example, adding an extra argument in `crates/jarl-core/toml.rs` would require adding tests in `crates/jarl-cli/tests/integration/toml.rs`.
 
+
+## PR title
+
+Jarl follows [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary), meaning that your PR must start with "feat:", "fix:", or another appropriate name (see the linked documentation).
+See the [list of previous PRs](https://github.com/etiennebacher/jarl/pulls?q=is%3Apr+is%3Aclosed+) for some examples.

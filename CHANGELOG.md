@@ -9,6 +9,7 @@
 ### Documentation
 
 - Added section on Neovim to the [Editors](https://jarl.etiennebacher.com/editors) page (#188, @bjyberg).
+- Added page "Tutorial: add a new rule" (#183).
 
 ## 0.1.2
 
