@@ -42,10 +42,10 @@ website:
       href: integrations.md
     - text: Contributing
       menu:
-        - text: General information
-          href: contributing.md
-        - text: "Tutorial: add a new rule"
-          href: contributing-rule-example.md
+      - text: General information
+        href: contributing.md
+      - text: 'Tutorial: add a new rule'
+        href: contributing-rule-example.md
     - text: Changelog
       href: changelog.md
   sidebar:
@@ -66,6 +66,7 @@ website:
       - rules/download_file.md
       - rules/duplicated_arguments.md
       - rules/equals_na.md
+      - rules/expect_true_false.md
       - rules/for_loop_index.md
       - rules/grepv.md
       - rules/implicit_assignment.md
