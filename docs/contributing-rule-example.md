@@ -211,6 +211,16 @@ let args = get_arg_by_name_then_position(&arguments, "args", 2);
 ```
 
 This function returns an `Option` since the arguments we want to extract maybe do not exist in the code we parsed.
+
+::: {.callout-note collapse="true"}
+## About helper functions
+
+In this example, we used `get_arg_by_name_then_position()`.
+There exist other helper functions located in `utils.rs`.
+For example, `get_nested_functions_content()` is very useful to get the content of nested functions.
+It is used in `any_is_na` (among other rules) to either get the content of `any(is.na(...))` or exit the function early.
+:::
+
 We can now do more early checks:
 
 ```rust
