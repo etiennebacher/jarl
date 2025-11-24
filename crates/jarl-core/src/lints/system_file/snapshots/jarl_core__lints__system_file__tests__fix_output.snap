@@ -1,0 +1,10 @@
+---
+source: crates/jarl-core/src/lints/system_file/mod.rs
+expression: "get_fixed_text(vec![\"system.file(file.path('path', 'to', 'data'), package = 'foo')\",],\n\"system_file\", None)"
+---
+OLD:
+====
+system.file(file.path('path', 'to', 'data'), package = 'foo')
+NEW:
+====
+system.file('path', 'to', 'data', package = 'foo')

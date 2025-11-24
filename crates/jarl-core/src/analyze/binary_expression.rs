@@ -9,6 +9,7 @@ use crate::lints::equals_na::equals_na::equals_na;
 use crate::lints::implicit_assignment::implicit_assignment::implicit_assignment;
 use crate::lints::is_numeric::is_numeric::is_numeric;
 use crate::lints::redundant_equals::redundant_equals::redundant_equals;
+use crate::lints::seq::seq::seq;
 
 pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> anyhow::Result<()> {
     let node = r_expr.syntax();
@@ -39,6 +40,9 @@ pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> a
         && !checker.should_skip_rule(node, "redundant_equals")
     {
         checker.report_diagnostic(redundant_equals(r_expr)?);
+    }
+    if checker.is_rule_enabled("seq") && !checker.should_skip_rule(node, "seq") {
+        checker.report_diagnostic(seq(r_expr)?);
     }
     Ok(())
 }

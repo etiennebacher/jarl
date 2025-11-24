@@ -4,8 +4,19 @@
 
 ### Features
 
-- Add support for `list2df` rule (#179).
-- Add support for `browser` rule (#185, @jonocarroll).
+- Added support for `seq` and `seq2` rules (#187).
+
+### Documentation
+
+- Added section on Neovim to the [Editors](https://jarl.etiennebacher.com/editors) page (#188, @bjyberg).
+
+## 0.1.2
+
+### Features
+
+- Added support for `list2df` rule (#179).
+- Added support for `browser` rule (#185, @jonocarroll).
+- Added support for `system_file` rule (#186).
 
 ### Fixes
 

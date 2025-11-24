@@ -1,0 +1,30 @@
+---
+source: crates/jarl-core/src/lints/system_file/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\nsystem.file(file.path('path', 'to', 'data'), package = 'foo')\",\n\"system.file(\\n # a comment\\nfile.path('path', 'to', 'data'), package = 'foo')\",\n\"system.file(file.path('path', 'to', 'data'), package = 'foo') # trailing comment\",],\n\"system_file\", None)"
+---
+OLD:
+====
+# leading comment
+system.file(file.path('path', 'to', 'data'), package = 'foo')
+NEW:
+====
+# leading comment
+system.file('path', 'to', 'data', package = 'foo')
+
+OLD:
+====
+system.file(
+ # a comment
+file.path('path', 'to', 'data'), package = 'foo')
+NEW:
+====
+system.file(
+ # a comment
+file.path('path', 'to', 'data'), package = 'foo')
+
+OLD:
+====
+system.file(file.path('path', 'to', 'data'), package = 'foo') # trailing comment
+NEW:
+====
+system.file('path', 'to', 'data', package = 'foo') # trailing comment
