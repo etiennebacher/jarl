@@ -3,8 +3,6 @@ use crate::utils::{get_arg_by_position, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
-pub struct ExpectTrueFalse;
-
 /// ## What it does
 ///
 /// Checks for usage of `expect_equal(x, TRUE)`, `expect_equal(x, FALSE)`,
@@ -31,14 +29,6 @@ pub struct ExpectTrueFalse;
 /// expect_true(is.numeric(x))
 /// expect_false(is.character(y))
 /// ```
-impl Violation for ExpectTrueFalse {
-    fn name(&self) -> String {
-        "expect_true_false".to_string()
-    }
-    fn body(&self) -> String {
-        "Use `expect_true()` or `expect_false()` instead of comparing with TRUE/FALSE.".to_string()
-    }
-}
 
 pub fn expect_true_false(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let function = ast.function()?;
@@ -96,14 +86,32 @@ pub fn expect_true_false(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     };
 
     let range = ast.syntax().text_trimmed_range();
-    let new_function = if is_true {
-        "expect_true"
+    let (new_function, msg, suggestion) = if is_true {
+        (
+            "expect_true",
+            format!(
+                "`{}(x, TRUE)` is not as clear as `expect_true(x)`.",
+                function_name
+            ),
+            "Use `expect_true(x)` instead.",
+        )
     } else {
-        "expect_false"
+        (
+            "expect_false",
+            format!(
+                "`{}(x, FALSE)` is not as clear as `expect_false(x)`.",
+                function_name
+            ),
+            "Use `expect_false(x)` instead.",
+        )
     };
 
     let diagnostic = Diagnostic::new(
-        ExpectTrueFalse,
+        ViolationData::new(
+            "expect_true_false".to_string(),
+            msg,
+            Some(suggestion.to_string()),
+        ),
         range,
         Fix {
             content: format!("{}({})", new_function, other_arg_text),
