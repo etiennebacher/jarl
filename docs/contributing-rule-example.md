@@ -31,6 +31,37 @@ Having an idea of what this AST looks like is important when implementing the ru
 I suggest creating a small test R file containing one or two examples of code that violate this rule.
 If you have the Air extension installed, you can do the command "Air: View Syntax Tree" to display the AST next to the code.
 
+For `list2df`, the code `do.call(cbind.data.frame, x)` gives this AST:
+
+```
+0: R_ROOT@0..29
+  0: (empty)
+  1: R_EXPRESSION_LIST@0..28
+    0: R_CALL@0..28
+      0: R_IDENTIFIER@0..7
+        0: IDENT@0..7 "do.call" [] []
+      1: R_CALL_ARGUMENTS@7..28
+        0: L_PAREN@7..8 "(" [] []
+        1: R_ARGUMENT_LIST@8..27
+          0: R_ARGUMENT@8..24
+            0: (empty)
+            1: R_IDENTIFIER@8..24
+              0: IDENT@8..24 "cbind.data.frame" [] []
+          1: COMMA@24..25 "," [] []
+          2: R_ARGUMENT@25..27
+            0: (empty)
+            1: R_IDENTIFIER@25..27
+              0: IDENT@25..27 "x" [Whitespace(" ")] []
+        2: R_PAREN@27..28 ")" [] []
+  2: EOF@28..29 "" [Newline("\n")] []
+```
+
+We can see that this is indeed a tree where each element can have "parents" and "children" nodes.
+It also shows that the textual representation of the code doesn't matter here: you could write `do.call(cbind.data.frame, x)` or `do.call ( cbind.data.frame   , x )` and the AST would be the same (with the exception of the numbers representing the location of each node in text).
+This representation is important to keep in mind when adding a new rule: Jarl only checks the text in very specific cases, for example when we want to get the function name to know if we should apply a rule or not.
+Most of the time, the `RSyntaxKind` (`R_CALL`, `R_IDENTIFIER`, etc.) is used.
+
+
 ### Get up and running with Rust and Jarl
 
 You should have installed Rust and cloned Jarl.
