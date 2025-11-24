@@ -313,3 +313,44 @@ any(is.na(x))
 
     Ok(())
 }
+
+#[test]
+fn test_select_all_keyword() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    let test_contents = "
+any(is.na(x))
+expect_equal(foo(x), TRUE)
+";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    // Using ALL should select all rules including opt-in ones like TESTTHAT
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--select-rules")
+            .arg("ALL")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    // ALL can be combined with ignore
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--select-rules")
+            .arg("ALL")
+            .arg("--ignore-rules")
+            .arg("TESTTHAT")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
