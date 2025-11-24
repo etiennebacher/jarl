@@ -309,20 +309,6 @@ Tip
 <p>This enables the code-actions and diagnostics (somewhat - see below note).</p>
 <p><img src="img/nvim_diagnostic.png" class="img-fluid" alt="R script with multiple errors showing in-line indicating a rule violation."></p>
 <p><img src="img/nvim_quick_fix.png" class="img-fluid" alt="The same R script as before, but this time there is a list of three actions next to the piece of code: apply fix, ignore this rule, and ignore all rules."></p>
-<div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-Note
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>Currently the diagnostics only seem to be passed to neovim when the buffer first opens. After that, the diagnostics are not updated until the file is saved and re-opened. The code actions still seem to update although the diagnostics do not show.</p>
-<p>If you know how to solve this, please contribute to <a href="https://github.com/etiennebacher/jarl/issues/138" target="_blank">this issue</a> or open a PR.</p>
-</div>
-</div>
 
 
 </section>
