@@ -6,63 +6,49 @@ mod tests {
 
     #[test]
     fn test_no_lint_expect_true_false() {
-        // expect_true is a scalar test; testing logical vectors with expect_equal is OK
-        expect_no_lint("expect_equal(x, c(TRUE, FALSE))", "expect_true_false", None);
-
-        // Not the functions we're looking for
         expect_no_lint("expect_equal(x, 1)", "expect_true_false", None);
         expect_no_lint("expect_equal(x, 'TRUE')", "expect_true_false", None);
-        expect_no_lint("some_other_function(x, TRUE)", "expect_true_false", None);
+        expect_no_lint("foo(x, TRUE)", "expect_true_false", None);
+
+        // expect_true cannot test logical vectors
+        expect_no_lint("expect_equal(x, c(TRUE, FALSE))", "expect_true_false", None);
     }
 
     #[test]
     fn test_lint_expect_true_false() {
-        let expected_message = "Use `expect_true()` or `expect_false()`";
+        use insta::assert_snapshot;
+        let expected_message = "not as clear as";
 
-        // expect_equal with TRUE
         expect_lint(
             "expect_equal(foo(x), TRUE)",
             expected_message,
             "expect_true_false",
             None,
         );
-
-        // expect_equal with TRUE as first argument
         expect_lint(
             "expect_equal(TRUE, foo(x))",
             expected_message,
             "expect_true_false",
             None,
         );
-
-        // expect_identical with FALSE
         expect_lint(
             "expect_identical(x, FALSE)",
             expected_message,
             "expect_true_false",
             None,
         );
-
-        // expect_identical with FALSE as first argument
         expect_lint(
             "expect_identical(FALSE, x)",
             expected_message,
             "expect_true_false",
             None,
         );
-
-        // expect_equal with FALSE
         expect_lint(
             "expect_equal(is.numeric(x), FALSE)",
             expected_message,
             "expect_true_false",
             None,
         );
-    }
-
-    #[test]
-    fn test_fix_expect_true_false() {
-        use insta::assert_snapshot;
 
         assert_snapshot!(
             "fix_output",
