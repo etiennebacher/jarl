@@ -29,7 +29,6 @@ use biome_rowan::AstNode;
 /// expect_true(is.numeric(x))
 /// expect_false(is.character(y))
 /// ```
-
 pub fn expect_true_false(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let function = ast.function()?;
     let function_name = function.to_trimmed_text();
