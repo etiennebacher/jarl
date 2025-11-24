@@ -142,10 +142,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="nav-link" href="./integrations.html"> 
 <span class="menu-text">Integrations</span></a>
   </li>  
-  <li class="nav-item">
-    <a class="nav-link active" href="./contributing.html" aria-current="page"> 
-<span class="menu-text">Contributing</span></a>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-contributing" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Contributing</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-contributing">    
+        <li>
+    <a class="dropdown-item" href="./contributing.html">
+ <span class="dropdown-text">General information</span></a>
   </li>  
+        <li>
+    <a class="dropdown-item" href="./contributing-rule-example.html">
+ <span class="dropdown-text">Tutorial: add a new rule</span></a>
+  </li>  
+    </ul>
+  </li>
   <li class="nav-item">
     <a class="nav-link" href="./changelog.html"> 
 <span class="menu-text">Changelog</span></a>
@@ -183,6 +194,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#useful-commands" id="toc-useful-commands" class="nav-link" data-scroll-target="#useful-commands">Useful commands</a></li>
   </ul></li>
   <li><a href="#integration-tests" id="toc-integration-tests" class="nav-link" data-scroll-target="#integration-tests">Integration tests</a></li>
+  <li><a href="#pr-title" id="toc-pr-title" class="nav-link" data-scroll-target="#pr-title">PR title</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/contributing.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -266,6 +278,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>When you add a new rule, it is usually sufficient to add tests in the directory of this rule only, e.g.&nbsp;in <code>crates/jarl-core/src/lints/any_duplicated</code>.</p>
 <p>However, in some cases you may affect the way users interact with Jarl as a whole, for instance by adding new command line arguments or arguments that can be set in <code>jarl.toml</code>. For those changes, it is important to check that the general behavior of Jarl is correct (check what happens when there are no R files, how TOML and CLI arguments interact, etc.).</p>
 <p>Tests for this are stored in <code>crates/jarl-cli/tests/integration</code>. It is likely that you will need to edit one of the files instead of creating a new one. For example, adding an extra argument in <code>crates/jarl-core/toml.rs</code> would require adding tests in <code>crates/jarl-cli/tests/integration/toml.rs</code>.</p>
+</section>
+<section id="pr-title" class="level2">
+<h2 class="anchored" data-anchor-id="pr-title">PR title</h2>
+<p>Jarl follows <a href="https://www.conventionalcommits.org/en/v1.0.0/#summary" target="_blank">conventional commits</a>, meaning that your PR must start with “feat:”, “fix:”, or another appropriate name (see the linked documentation). See the <a href="https://github.com/etiennebacher/jarl/pulls?q=is%3Apr+is%3Aclosed+" target="_blank">list of previous PRs</a> for some examples.</p>
 
 
 </section>

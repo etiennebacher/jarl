@@ -74,3 +74,8 @@ pre code {
   display: block;
   overflow-x: auto;
 }
+
+/* Background color of buttons in "Contributing" dropdown when they are clicked */
+ul.navbar-nav > li.nav-item.dropdown > ul.dropdown-menu.show > li > a.dropdown-item:active {
+  background: #303d64
+}

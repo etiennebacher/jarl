@@ -107,10 +107,21 @@ ul.task-list li input[type="checkbox"] {
     <a class="nav-link" href="./integrations.html"> 
 <span class="menu-text">Integrations</span></a>
   </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./contributing.html"> 
-<span class="menu-text">Contributing</span></a>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-contributing" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Contributing</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-contributing">    
+        <li>
+    <a class="dropdown-item" href="./contributing.html">
+ <span class="dropdown-text">General information</span></a>
   </li>  
+        <li>
+    <a class="dropdown-item" href="./contributing-rule-example.html">
+ <span class="dropdown-text">Tutorial: add a new rule</span></a>
+  </li>  
+    </ul>
+  </li>
   <li class="nav-item">
     <a class="nav-link active" href="./changelog.html" aria-current="page"> 
 <span class="menu-text">Changelog</span></a>
@@ -181,6 +192,7 @@ ul.task-list li input[type="checkbox"] {
 <h3 class="anchored" data-anchor-id="documentation">Documentation</h3>
 <ul>
 <li>Added section on Neovim to the <a href="https://jarl.etiennebacher.com/editors" target="_blank">Editors</a> page (#188, <span class="citation" data-cites="bjyberg">@bjyberg</span>).</li>
+<li>Added page “Tutorial: add a new rule” (#183).</li>
 </ul>
 </section>
 </section>
