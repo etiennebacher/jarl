@@ -19,6 +19,7 @@ Options:
       --allow-dirty                    Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
       --allow-no-vcs                   Apply fixes even if there is no version control system.
   -s, --select-rules <SELECT_RULES>    Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ]
+  -e, --extend-select <EXTEND_SELECT>  Like `--select-rules` but adds additional rules in addition to those already specified. [default: ]
   -i, --ignore-rules <IGNORE_RULES>    Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ]
   -w, --with-timing                    Show the time taken by the function.
   -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.

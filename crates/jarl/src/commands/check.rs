@@ -52,6 +52,7 @@ pub fn check() -> Result<ExitStatus> {
         unsafe_fixes: args.unsafe_fixes,
         fix_only: args.fix_only,
         select_rules: args.select_rules.clone(),
+        extend_select: args.extend_select.clone(),
         ignore_rules: args.ignore_rules.clone(),
         min_r_version: args.min_r_version.clone(),
         allow_dirty: args.allow_dirty,

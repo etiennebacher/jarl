@@ -1408,3 +1408,75 @@ fixable = ["any_is_na"]
 
     Ok(())
 }
+
+#[test]
+fn test_toml_extend_select() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // TOML that uses extend-select to add TESTTHAT rules to defaults
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+extend-select = ["TESTTHAT"]
+"#,
+    )?;
+
+    let test_path = "test.R";
+    let test_contents = "
+any(is.na(x))
+expect_equal(foo(x), TRUE)
+";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    // Should detect both default rules (any_is_na) and TESTTHAT rules (expect_true_false)
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_toml_extend_select_with_select() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // TOML that uses both select and extend-select
+    // select overrides defaults, extend-select adds to that selection
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+select = ["any_is_na"]
+extend-select = ["TESTTHAT"]
+"#,
+    )?;
+
+    let test_path = "test.R";
+    let test_contents = "
+any(is.na(x))
+any(duplicated(x))
+expect_equal(foo(x), TRUE)
+";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    // Should detect any_is_na (from select) and expect_true_false (from extend-select)
+    // but NOT any_duplicated (not in select or extend-select)
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}

@@ -128,6 +128,7 @@ fn run_jarl_linting(
         unsafe_fixes: false,
         fix_only: false,
         select_rules: "".to_string(),
+        extend_select: "".to_string(),
         ignore_rules: "".to_string(),
         min_r_version: None,
         allow_dirty: false,

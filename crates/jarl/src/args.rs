@@ -87,6 +87,13 @@ pub struct CheckCommand {
         short,
         long,
         default_value = "",
+        help = "Like `--select-rules` but adds additional rules in addition to those already specified."
+    )]
+    pub extend_select: String,
+    #[arg(
+        short,
+        long,
+        default_value = "",
         help = "Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as \"PERF\"."
     )]
     pub ignore_rules: String,

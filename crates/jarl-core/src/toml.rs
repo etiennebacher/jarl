@@ -80,6 +80,17 @@ pub struct LinterTomlOptions {
     /// 3. specify `min-r-version` in `jarl.toml`.
     pub select: Option<Vec<String>>,
 
+    /// # Additional rules to select
+    ///
+    /// This is a list of rule names to add on top of the existing selection.
+    /// This is useful in the case where you want to use the default set of
+    /// rules *and* some additional opt-in rules. In this scenario, you only
+    /// need to add `extend-select = ["OPT_IN_RULE"]` instead of writing all
+    /// default rule names.
+    ///
+    /// This has the same constraints as `select`.
+    pub extend_select: Option<Vec<String>>,
+
     /// # Rules to ignore
     ///
     /// If this is empty, then no rules are excluded. This field has higher
@@ -195,6 +206,7 @@ impl TomlOptions {
 
         let linter = LinterSettings {
             select: linter.select,
+            extend_select: linter.extend_select,
             ignore: linter.ignore,
             assignment: linter.assignment,
             exclude: linter.exclude,

@@ -13,6 +13,7 @@ pub struct Settings {
 #[derive(Debug)]
 pub struct LinterSettings {
     pub select: Option<Vec<String>>,
+    pub extend_select: Option<Vec<String>>,
     pub ignore: Option<Vec<String>>,
     pub assignment: Option<String>,
     pub exclude: Option<Vec<String>>,
@@ -28,6 +29,7 @@ impl Default for LinterSettings {
     fn default() -> Self {
         Self {
             select: None,
+            extend_select: None,
             ignore: None,
             assignment: None,
             exclude: None,
