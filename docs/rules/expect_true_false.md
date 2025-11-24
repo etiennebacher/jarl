@@ -25,4 +25,3 @@ Use instead:
 expect_true(is.numeric(x))
 expect_false(is.character(y))
 ```
-

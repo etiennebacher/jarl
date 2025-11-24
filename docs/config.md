@@ -37,6 +37,11 @@ Options:
 
           [default: ]
 
+  -e, --extend-select <EXTEND_SELECT>
+          Like `--select-rules` but adds additional rules in addition to those already specified.
+
+          [default: ]
+
   -i, --ignore-rules <IGNORE_RULES>
           Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF".
 
@@ -81,6 +86,7 @@ This file looks like this:
 ```toml
 [lint]
 select = []
+exend-select = []
 ignore = []
 exclude = []
 default-exclude = true
@@ -116,6 +122,22 @@ This has the same capabilities as `--select-rules`, so it is possible to pass ru
 ```toml
 [lint]
 select = ["PERF", "length_test"]
+```
+
+### `extend-select`
+
+Select some rules in addition to `select`.
+
+This is useful when you want to use the default set of rules *and* some additional opt-in rules.
+In this scenario, you only need to add `extend-select = ["OPT_IN_RULE"]` instead of writing all default rule names.
+
+This has the same constraints as `select`.
+
+```toml
+# Select all default rules and all `TESTTHAT` rules, which are disabled by
+# default.
+[lint]
+extend-select = ["TESTTHAT"]
 ```
 
 ### `ignore`
