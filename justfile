@@ -17,3 +17,7 @@ lint:
     -D clippy::dbg_macro
 
   cargo fmt
+
+# Generates the `jarl.schema.json`
+gen-schema:
+    cargo run -p xtask_codegen -- json-schema
