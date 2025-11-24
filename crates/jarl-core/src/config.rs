@@ -9,6 +9,15 @@ use air_workspace::resolve::PathResolver;
 use anyhow::Result;
 use std::{collections::HashSet, fs, path::PathBuf};
 
+/// Parsed rule selection from CLI or TOML configuration.
+/// Contains selected rules, extended rules, and ignored rules.
+#[derive(Debug)]
+pub struct RuleSelection {
+    pub selected: Option<HashSet<String>>,
+    pub extended: Option<HashSet<String>>,
+    pub ignored: HashSet<String>,
+}
+
 #[derive(Clone, Debug)]
 /// Arguments provided in the CLI.
 pub struct ArgsConfig {
@@ -162,11 +171,7 @@ pub fn parse_rules_cli(
     select_rules: &str,
     extend_select: &str,
     ignore_rules: &str,
-) -> Result<(
-    Option<HashSet<String>>,
-    Option<HashSet<String>>,
-    HashSet<String>,
-)> {
+) -> Result<RuleSelection> {
     let all_rules = all_rules_and_safety();
 
     let selected_rules: Option<HashSet<String>> = if select_rules.is_empty() {
@@ -232,25 +237,27 @@ pub fn parse_rules_cli(
         )
     };
 
-    Ok((selected_rules, extended_rules, ignored_rules))
+    Ok(RuleSelection {
+        selected: selected_rules,
+        extended: extended_rules,
+        ignored: ignored_rules,
+    })
 }
 
 /// Parse TOML configuration and return (selected_rules, ignored_rules).
 ///
 /// Returns None for selected_rules if no TOML select was specified (meaning use all rules).
 /// Returns empty set for ignored_rules if no TOML ignore was specified.
-pub fn parse_rules_toml(
-    toml_settings: Option<&Settings>,
-) -> Result<(
-    Option<HashSet<String>>,
-    Option<HashSet<String>>,
-    HashSet<String>,
-)> {
+pub fn parse_rules_toml(toml_settings: Option<&Settings>) -> Result<RuleSelection> {
     let all_rules = all_rules_and_safety();
 
     let Some(settings) = toml_settings else {
         // No TOML configuration found
-        return Ok((None, None, HashSet::new()));
+        return Ok(RuleSelection {
+            selected: None,
+            extended: None,
+            ignored: HashSet::new(),
+        });
     };
 
     let linter_settings = &settings.linter;
@@ -320,7 +327,11 @@ pub fn parse_rules_toml(
         HashSet::new()
     };
 
-    Ok((selected_rules, extended_rules, ignored_rules))
+    Ok(RuleSelection {
+        selected: selected_rules,
+        extended: extended_rules,
+        ignored: ignored_rules,
+    })
 }
 
 /// Parse fixable and unfixable rules from TOML configuration.
@@ -459,21 +470,14 @@ fn get_invalid_rules(
 /// - CLI select takes precedence over TOML select
 /// - CLI ignore and TOML ignore are combined (both applied)
 /// - If neither CLI nor TOML specify select, start with all rules
-fn reconcile_rules(
-    rules_cli: (
-        Option<HashSet<String>>,
-        Option<HashSet<String>>,
-        HashSet<String>,
-    ),
-    rules_toml: (
-        Option<HashSet<String>>,
-        Option<HashSet<String>>,
-        HashSet<String>,
-    ),
-) -> Result<RuleTable> {
+fn reconcile_rules(rules_cli: RuleSelection, rules_toml: RuleSelection) -> Result<RuleTable> {
     let all_rules = all_rules_and_safety();
-    let (cli_selected, cli_extended, cli_ignored) = rules_cli;
-    let (toml_selected, toml_extended, toml_ignored) = rules_toml;
+    let cli_selected = rules_cli.selected;
+    let cli_extended = rules_cli.extended;
+    let cli_ignored = rules_cli.ignored;
+    let toml_selected = rules_toml.selected;
+    let toml_extended = rules_toml.extended;
+    let toml_ignored = rules_toml.ignored;
 
     // Step 1: Determine base selection (CLI select takes precedence over TOML select)
     let base_selected: HashSet<String> = if let Some(cli_selected) = cli_selected {
