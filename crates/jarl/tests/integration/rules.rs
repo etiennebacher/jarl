@@ -315,6 +315,32 @@ any(is.na(x))
 }
 
 #[test]
+fn test_non_default_rule_groups_are_ignored() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    let test_contents = "
+any(is.na(x))
+expect_equal(foo(x), TRUE)
+";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    // The rule group TESTTHAT is disabled by default, so the second line is not
+    // reported.
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
 fn test_select_all_keyword() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();
