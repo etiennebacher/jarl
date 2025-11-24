@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_position, node_contains_comments};
+use crate::utils::{get_arg_by_name_then_position, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -41,46 +41,38 @@ pub fn expect_true_false(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 
     let args = ast.arguments()?.items();
 
-    // Get first and second arguments
-    let first_arg = get_arg_by_position(&args, 1);
-    let second_arg = get_arg_by_position(&args, 2);
+    // Get `object` and `expected` arguments
+    let object = get_arg_by_name_then_position(&args, "object", 1);
+    let expected = get_arg_by_name_then_position(&args, "expected", 2);
 
-    if first_arg.is_none() || second_arg.is_none() {
+    if object.is_none() || expected.is_none() {
         return Ok(None);
     }
 
-    let first_arg = first_arg.unwrap();
-    let second_arg = second_arg.unwrap();
+    let object_value = object.unwrap().value();
+    let expected_value = expected.unwrap().value();
 
-    let first_value = first_arg.value();
-    let second_value = second_arg.value();
-
-    if first_value.is_none() || second_value.is_none() {
+    if object_value.is_none() || expected_value.is_none() {
         return Ok(None);
     }
 
-    let first_text = first_value.unwrap().to_trimmed_text();
-    let second_text = second_value.unwrap().to_trimmed_text();
+    let object_text = object_value.unwrap().to_trimmed_text();
+    let expected_text = expected_value.unwrap().to_trimmed_text();
 
     // Check if either argument is TRUE or FALSE (but not a vector like c(TRUE, FALSE))
-    let first_is_true = first_text == "TRUE";
-    let first_is_false = first_text == "FALSE";
-    let second_is_true = second_text == "TRUE";
-    let second_is_false = second_text == "FALSE";
+    let object_is_true = object_text == "TRUE";
+    let object_is_false = object_text == "FALSE";
+    let expected_is_true = expected_text == "TRUE";
+    let expected_is_false = expected_text == "FALSE";
 
-    // Skip if this is a vector comparison (e.g., c(TRUE, FALSE))
-    if first_text.starts_with("c(") || second_text.starts_with("c(") {
-        return Ok(None);
-    }
-
-    let (is_true, other_arg_text) = if first_is_true {
-        (true, second_text)
-    } else if first_is_false {
-        (false, second_text)
-    } else if second_is_true {
-        (true, first_text)
-    } else if second_is_false {
-        (false, first_text)
+    let (is_true, other_arg_text) = if object_is_true {
+        (true, expected_text)
+    } else if object_is_false {
+        (false, expected_text)
+    } else if expected_is_true {
+        (true, object_text)
+    } else if expected_is_false {
+        (false, object_text)
     } else {
         return Ok(None);
     };

@@ -12,6 +12,7 @@ mod tests {
 
         // expect_true cannot test logical vectors
         expect_no_lint("expect_equal(x, c(TRUE, FALSE))", "expect_true_false", None);
+        expect_no_lint("expect_equal(c(TRUE, FALSE), x)", "expect_true_false", None);
     }
 
     #[test]
