@@ -275,6 +275,18 @@ Ok(Some(diagnostic))
 
 All diagnostics contain a `Violation` (we defined the one for `List2Df` just below the documentation), a range indicating where it is located in the code, and a `Fix` (which may be `Fix::Empty()` if there is no automatic fix).
 
+Finally, note that `Fix` has a field `to_skip: node_contains_comments(ast.syntax())`. This tells Jarl not to apply the automatic fix if the node in question contains a comment. Handling comments positions in automatic fixes is quite complicated so, for now, fixes are not applied if the node contains comment, e.g.:
+
+```r
+# This code wouldn't be automatically fixed because we don't know where the
+# comment inside should go.
+do.call(
+    cbind.data.frame,
+    # This is a comment to describe `x`.
+    x
+)
+```
+
 At this point, if you have an R file with a couple of examples that should be reported (e.g. `test.R`), you can use `cargo run --bin jarl -- check test.R` (the rule in this example is only valid for R >= 4.0.0, so we also need `--min-r-version 4.1` for instance).
 
 ### Add tests
