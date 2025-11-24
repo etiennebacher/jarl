@@ -97,3 +97,36 @@ Helix also provides a code-action keybinding.
 When the cursor is on some code reported by Jarl and when the editor is in "Normal" mode, press "Space" then "a" to show the different code actions:
 
 ![](img/helix_quick_fix.png){fig-alt="The same R script as before, but this time there is a list of three actions next to the highlighted piece of code: apply fix, ignore this rule, and ignore all rules."}
+
+## Neovim
+
+To use Jarl as an LSP in Neovim, you need to configure it with the [built-in Neovim LSP (vim.lsp.config)](https://neovim.io/doc/user/lsp.html#lsp-config) or through nvim-lspconfig. It is not yet available through [Mason](https://github.com/williamboman/mason.nvim) or part of the nvim-lspconfig collection. Below is an example using the built-in system with Neovim 0.11+.
+
+Create an LSP config file at `~/.config/nvim/lsp/jarl.lua`:
+```lua
+---@type vim.lsp.Config
+return {
+  cmd = { 'jarl', 'server' },
+  filetypes = { 'r', 'rmd'},
+  -- root_markers = { '.git' },
+  root_dir = function(bufnr, on_dir)
+    on_dir(vim.fs.root(bufnr, '.git') or vim.uv.os_homedir())
+  end,
+}
+```
+
+Then enable the server in your Neovim configuration (e.g. `init.lua` or `lspconfig.lua`):
+
+```lua
+-- simply
+vim.lsp.enable 'jarl'
+-- or to pass custom config command
+vim.lsp.config('jarl', {})
+vim.lsp.enable 'jarl'
+```
+
+This enables the code-actions and diagnostics (somewhat - see below note).
+
+![](img/nvim_diagnostic.png){fig-alt="R script with multiple errors showing in-line indicating a rule violation."}
+
+![](img/nvim_quick_fix.png){fig-alt="The same R script as before, but this time there is a list of three actions next to the piece of code: apply fix, ignore this rule, and ignore all rules."}

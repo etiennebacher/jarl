@@ -1,3 +1,6 @@
+_default:
+    just --list
+
 # Update the list of rules and the website
 document:
   Rscript -e 'source("docs/make_docs.R")'

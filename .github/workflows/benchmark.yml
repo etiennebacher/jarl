@@ -42,6 +42,10 @@ jobs:
     steps:
       - name: Checkout current PR branch
         uses: actions/checkout@v4
+        # Need to specify this otherwise using on: pull_request_target checks out
+        # the main branch.
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Install hyperfine
         run: sudo apt install hyperfine

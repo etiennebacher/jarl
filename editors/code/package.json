@@ -2,7 +2,7 @@
 	"name": "jarl-vscode",
 	"displayName": "Jarl",
 	"description": "Just Another R Linter",
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"publisher": "etiennebacher",
 	"license": "MIT",
 	"homepage": "https://github.com/etiennebacher/jarl",
