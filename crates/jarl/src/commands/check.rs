@@ -1,5 +1,5 @@
 use air_workspace::resolve::PathResolver;
-use jarl_core::discovery::{DiscoveredSettings, discover_r_file_paths, discover_settings};
+use jarl_core::discovery::{discover_r_file_paths, discover_settings};
 use jarl_core::{
     config::ArgsConfig, config::build_config, diagnostic::Diagnostic, settings::Settings,
 };
@@ -25,8 +25,16 @@ pub fn check() -> Result<ExitStatus> {
     };
 
     let mut resolver = PathResolver::new(Settings::default());
-    for DiscoveredSettings { directory, settings } in discover_settings(&args.files)? {
-        resolver.add(&directory, settings);
+
+    // Load discovered settings. If the user passed `--no-default-exclude`,
+    // override each discovered settings' `default_exclude` to `false` so the
+    // default patterns from `DEFAULT_EXCLUDE_PATTERNS` are not applied during
+    // discovery.
+    for mut ds in discover_settings(&args.files)? {
+        if args.no_default_exclude {
+            ds.settings.linter.default_exclude = Some(false);
+        }
+        resolver.add(&ds.directory, ds.settings);
     }
 
     let paths = discover_r_file_paths(&args.files, &resolver, true)

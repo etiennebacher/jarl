@@ -1,0 +1,28 @@
+---
+source: crates/jarl/tests/integration/no_default_exclude.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--no-default-exclude\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 1
+----- stdout -----
+warning: assignment
+ --> cpp11.R:2:1
+  |
+2 | x = 1
+  | --- Use `<-` for assignment.
+  |
+
+warning: assignment
+ --> cpp11.R:4:3
+  |
+4 | 3 -> z
+  |   ---- Use `<-` for assignment.
+  |
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+
+----- args -----
+check . --no-default-exclude

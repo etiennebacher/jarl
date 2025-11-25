@@ -14,6 +14,7 @@ mod help;
 mod helpers;
 mod jarl;
 mod min_r_version;
+mod no_default_exclude;
 mod output_format;
 mod rules;
 mod toml;
