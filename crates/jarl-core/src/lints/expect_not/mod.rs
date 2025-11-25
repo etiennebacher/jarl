@@ -18,10 +18,7 @@ mod tests {
 
         // Not the functions we're looking for
         expect_no_lint("some_other_function(!x)", "expect_not", None);
-
-        // No arguments
-        expect_no_lint("expect_true()", "expect_not", None);
-        expect_no_lint("expect_false()", "expect_not", None);
+        expect_no_lint("expect_true(~x)", "expect_not", None);
 
         // rlang "!!" and "!!!" operators should not be flagged
         expect_no_lint("expect_true(!!x)", "expect_not", None);
@@ -41,6 +38,7 @@ mod tests {
         expect_no_lint("expect_true(!!)", "expect_not", None);
         expect_no_lint("expect_true(!!!)", "expect_not", None);
         expect_no_lint("expect_true(object =)", "expect_not", None);
+        expect_no_lint("expect_true(~)", "expect_not", None);
     }
 
     #[test]
