@@ -1,4 +1,4 @@
-name: cargo-clippy
+name: Cargo clippy
 
 on:
   pull_request:
