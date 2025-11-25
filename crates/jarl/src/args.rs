@@ -116,6 +116,8 @@ pub struct CheckCommand {
         help = "Assignment operator to use, can be either `<-` or `=`."
     )]
     pub assignment_op: Option<String>,
+    #[arg(long, default_value = "false", help = "Do not exclude default paths.")]
+    pub no_default_exclude: bool,
 }
 
 #[derive(Clone, Debug, Parser)]
