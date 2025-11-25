@@ -15,7 +15,7 @@ use biome_rowan::AstNode;
 /// Note that Jarl doesn't force you to use `<-` as assignment operator, it
 /// simply uses it as default. To use `=` as the preferred operator:
 ///
-/// - in the CLI (temporary change), use `--assignment-op "="`;
+/// - in the CLI (temporary change), use `--assignment "="`;
 /// - in `jarl.toml` (permanent change): set `assignment = "="`.
 ///
 /// ## Example
@@ -36,7 +36,7 @@ use biome_rowan::AstNode;
 /// - [https://style.tidyverse.org/syntax.html#assignment-1](https://style.tidyverse.org/syntax.html#assignment-1)
 pub fn assignment(
     ast: &RBinaryExpression,
-    assignment_op: RSyntaxKind,
+    assignment: RSyntaxKind,
 ) -> anyhow::Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
@@ -44,7 +44,7 @@ pub fn assignment(
     let lhs = left?.into_syntax();
     let rhs = right?.into_syntax();
 
-    let operator_to_check = match assignment_op {
+    let operator_to_check = match assignment {
         RSyntaxKind::ASSIGN => RSyntaxKind::EQUAL,
         RSyntaxKind::EQUAL => RSyntaxKind::ASSIGN,
         _ => unreachable!(),
@@ -82,7 +82,7 @@ pub fn assignment(
                 operator.text_trimmed_range().start(),
                 rhs.text_trimmed_range().end(),
             );
-            let (message, fix) = match assignment_op {
+            let (message, fix) = match assignment {
                 RSyntaxKind::ASSIGN => {
                     let msg = "Use `<-` for assignment.";
                     let replacement = format!("{} <- {}", rhs.text_trimmed(), lhs.text_trimmed());

@@ -28,7 +28,7 @@ pub struct InitializationOptions {
     /// Log levels for dependencies
     pub dependency_log_levels: Option<String>,
     /// Assignment operator preference: "<-" or "="
-    pub assignment_operator: Option<String>,
+    pub assignmenterator: Option<String>,
 }
 
 /// Main session state for the LSP server
@@ -46,7 +46,7 @@ pub struct Session {
     /// Client for sending messages
     client: Client,
     /// Assignment operator preference from initialization
-    assignment_operator: Option<String>,
+    assignmenterator: Option<String>,
 }
 
 /// Immutable snapshot of a document and its context
@@ -60,7 +60,7 @@ pub struct DocumentSnapshot {
     /// Client capabilities
     client_capabilities: ClientCapabilities,
     /// Assignment operator preference
-    assignment_operator: Option<String>,
+    assignmenterator: Option<String>,
 }
 
 impl Session {
@@ -78,7 +78,7 @@ impl Session {
             shutdown_requested: false,
             workspace_roots,
             client,
-            assignment_operator: None,
+            assignmenterator: None,
         }
     }
 
@@ -95,10 +95,10 @@ impl Session {
                 Ok(options) => {
                     tracing::info!("Successfully parsed initialization options: {:?}", options);
                     tracing::info!(
-                        "Setting assignment_operator to: {:?}",
-                        options.assignment_operator
+                        "Setting assignmenterator to: {:?}",
+                        options.assignmenterator
                     );
-                    self.assignment_operator = options.assignment_operator.clone();
+                    self.assignmenterator = options.assignmenterator.clone();
                 }
                 Err(e) => {
                     tracing::warn!("Failed to parse initialization options: {:?}", e);
@@ -228,13 +228,13 @@ impl Session {
             key,
             position_encoding: self.position_encoding,
             client_capabilities: self.client_capabilities.clone(),
-            assignment_operator: self.assignment_operator.clone(),
+            assignmenterator: self.assignmenterator.clone(),
         })
     }
 
     /// Update the assignment operator preference
-    pub fn update_assignment_operator(&mut self, assignment_operator: Option<String>) {
-        self.assignment_operator = assignment_operator;
+    pub fn update_assignmenterator(&mut self, assignmenterator: Option<String>) {
+        self.assignmenterator = assignmenterator;
     }
 
     /// Get all open document URIs
@@ -293,14 +293,14 @@ impl DocumentSnapshot {
         key: DocumentKey,
         position_encoding: PositionEncoding,
         client_capabilities: ClientCapabilities,
-        assignment_operator: Option<String>,
+        assignmenterator: Option<String>,
     ) -> Self {
         Self {
             document,
             key,
             position_encoding,
             client_capabilities,
-            assignment_operator,
+            assignmenterator,
         }
     }
 
@@ -335,8 +335,8 @@ impl DocumentSnapshot {
     }
 
     /// Get the assignment operator preference
-    pub fn assignment_operator(&self) -> Option<&String> {
-        self.assignment_operator.as_ref()
+    pub fn assignmenterator(&self) -> Option<&String> {
+        self.assignmenterator.as_ref()
     }
 
     /// Get the client capabilities

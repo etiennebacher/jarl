@@ -1,6 +1,6 @@
 ---
 source: crates/jarl/tests/integration/rules.rs
-expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--ignore-rules\").arg(\"foo\").run().normalize_os_executable_name()"
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--ignore\").arg(\"foo\").run().normalize_os_executable_name()"
 ---
 success: false
 exit_code: 255
@@ -8,7 +8,7 @@ exit_code: 255
 
 ----- stderr -----
 jarl failed
-  Cause: Unknown rules in `--ignore-rules`: foo
+  Cause: Unknown rules in `--ignore`: foo
 
 ----- args -----
-check . --ignore-rules foo
+check . --ignore foo

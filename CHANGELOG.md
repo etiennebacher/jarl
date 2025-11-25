@@ -2,6 +2,13 @@
 
 ## Development
 
+### Breaking changes
+
+- For consistency between CLI arguments and `jarl.toml` arguments, the following CLI arguments are renamed (#199):
+  - `--select-rules` becomes `--select`
+  - `--ignore-rules` becomes `--ignore`
+  - `--assignment-op` becomes `--assignment`
+
 ### Features
 
 - Added support for `seq` and `seq2` rules (#187).

@@ -109,17 +109,17 @@ pub struct Checker {
     // Tracks comment-based suppression directives like `# nolint`
     pub suppression: SuppressionManager,
     // Which assignment operator is preferred?
-    pub assignment_op: RSyntaxKind,
+    pub assignment: RSyntaxKind,
 }
 
 impl Checker {
-    fn new(suppression: SuppressionManager, assignment_op: RSyntaxKind) -> Self {
+    fn new(suppression: SuppressionManager, assignment: RSyntaxKind) -> Self {
         Self {
             diagnostics: vec![],
             rules: RuleTable::empty(),
             minimum_r_version: None,
             suppression,
-            assignment_op,
+            assignment,
         }
     }
 
@@ -165,7 +165,7 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
         return Ok(vec![]);
     }
 
-    let mut checker = Checker::new(suppression, config.assignment_op);
+    let mut checker = Checker::new(suppression, config.assignment);
     checker.rules = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
     for expr in expressions_vec {

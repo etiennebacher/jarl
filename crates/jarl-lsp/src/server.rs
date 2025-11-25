@@ -379,20 +379,20 @@ impl Server {
                     // Try to get from nested jarl object
                     if let Some(jarl_settings) = settings_obj.get("jarl")
                         && let Some(jarl_obj) = jarl_settings.as_object()
-                        && let Some(assignment_op_value) = jarl_obj.get("assignmentOperator")
-                        && let Some(assignment_op) = assignment_op_value.as_str()
+                        && let Some(assignment_value) = jarl_obj.get("assignmentOperator")
+                        && let Some(assignment) = assignment_value.as_str()
                     {
-                        tracing::info!("Updating assignment operator to: {}", assignment_op);
-                        session.update_assignment_operator(Some(assignment_op.to_string()));
+                        tracing::info!("Updating assignment operator to: {}", assignment);
+                        session.update_assignmenterator(Some(assignment.to_string()));
                         updated = true;
                     }
                     // Also try direct access in case VS Code sends it at the top level
                     if !updated
-                        && let Some(assignment_op_value) = settings_obj.get("assignmentOperator")
-                        && let Some(assignment_op) = assignment_op_value.as_str()
+                        && let Some(assignment_value) = settings_obj.get("assignmentOperator")
+                        && let Some(assignment) = assignment_value.as_str()
                     {
-                        tracing::info!("Updating assignment operator to: {}", assignment_op);
-                        session.update_assignment_operator(Some(assignment_op.to_string()));
+                        tracing::info!("Updating assignment operator to: {}", assignment);
+                        session.update_assignmenterator(Some(assignment.to_string()));
                         updated = true;
                     }
                 }
@@ -875,7 +875,7 @@ mod tests {
             start: 0, // replace entire assignment
             end: 5,   // end of "x = 1"
             is_safe: true,
-            rule_name: "assignment_operator".to_string(),
+            rule_name: "assignmenterator".to_string(),
         };
 
         let diagnostic = create_test_diagnostic_with_fix(
@@ -948,7 +948,7 @@ mod tests {
     }
 
     #[test]
-    fn test_assignment_operator_quick_fix() {
+    fn test_assignmenterator_quick_fix() {
         let snapshot = create_test_snapshot("x = 1\n");
 
         let fix = DiagnosticFix {
@@ -956,7 +956,7 @@ mod tests {
             start: 0,
             end: 5, // "x = 1"
             is_safe: true,
-            rule_name: "assignment_operator".to_string(),
+            rule_name: "assignmenterator".to_string(),
         };
 
         let diagnostic = create_test_diagnostic_with_fix(
@@ -1058,7 +1058,7 @@ mod tests {
                 start,
                 end,
                 is_safe: true,
-                rule_name: "assignment_operator".to_string(),
+                rule_name: "assignmenterator".to_string(),
             };
 
             let range = Range::new(range_start, range_end);
@@ -1148,7 +1148,7 @@ mod tests {
             start: 0,
             end: content1.len(),
             is_safe: true,
-            rule_name: "assignment_operator".to_string(),
+            rule_name: "assignmenterator".to_string(),
         };
 
         let diagnostic1 = create_test_diagnostic_with_fix(
@@ -1172,7 +1172,7 @@ mod tests {
             start: 0,
             end: content2.len(),
             is_safe: true,
-            rule_name: "assignment_operator".to_string(),
+            rule_name: "assignmenterator".to_string(),
         };
 
         let diagnostic2 = create_test_diagnostic_with_fix(
@@ -1193,7 +1193,7 @@ mod tests {
             start: 0,
             end: content3.len(),
             is_safe: true,
-            rule_name: "assignment_operator".to_string(),
+            rule_name: "assignmenterator".to_string(),
         };
 
         let diagnostic3 = create_test_diagnostic_with_fix(
@@ -1274,7 +1274,7 @@ mod tests {
             start: 5, // byte position of "=" in UTF-8
             end: 6,
             is_safe: true,
-            rule_name: "assignment_operator".to_string(),
+            rule_name: "assignmenterator".to_string(),
         };
 
         // Test UTF-8 encoding
@@ -1344,7 +1344,7 @@ mod tests {
             start: 0,
             end: 5,
             is_safe: true,
-            rule_name: "assignment_operator".to_string(),
+            rule_name: "assignmenterator".to_string(),
         };
 
         let diagnostic = create_test_diagnostic_with_fix(
@@ -1360,7 +1360,7 @@ mod tests {
 
         assert_eq!(
             action.title,
-            "Ignore `assignment_operator` violation on this node."
+            "Ignore `assignmenterator` violation on this node."
         );
         assert_eq!(action.kind, Some(types::CodeActionKind::QUICKFIX));
         assert!(!action.is_preferred.unwrap_or(true));
@@ -1375,7 +1375,7 @@ mod tests {
             start: 0,
             end: 5,
             is_safe: true,
-            rule_name: "assignment_operator".to_string(),
+            rule_name: "assignmenterator".to_string(),
         };
 
         let diagnostic = create_test_diagnostic_with_fix(
@@ -1395,14 +1395,14 @@ mod tests {
 
     #[test]
     fn test_nolint_does_not_add_duplicate_rule() {
-        let snapshot = create_test_snapshot("# nolint: assignment_operator\nx = 1\n");
+        let snapshot = create_test_snapshot("# nolint: assignmenterator\nx = 1\n");
 
         let fix = DiagnosticFix {
             content: "x <- 1".to_string(),
             start: 30,
             end: 35,
             is_safe: true,
-            rule_name: "assignment_operator".to_string(),
+            rule_name: "assignmenterator".to_string(),
         };
 
         let diagnostic = create_test_diagnostic_with_fix(
@@ -1426,7 +1426,7 @@ mod tests {
             start: 9,
             end: 14,
             is_safe: true,
-            rule_name: "assignment_operator".to_string(),
+            rule_name: "assignmenterator".to_string(),
         };
 
         let diagnostic = create_test_diagnostic_with_fix(
@@ -1504,7 +1504,7 @@ mod tests {
             start: 0,
             end: 5,
             is_safe: true,
-            rule_name: "assignment_operator".to_string(),
+            rule_name: "assignmenterator".to_string(),
         };
 
         let diagnostic = create_test_diagnostic_with_fix(
@@ -1526,7 +1526,7 @@ mod tests {
             result.replace_range(start..end, &text_edit.new_text);
         }
 
-        assert_eq!(result, "# nolint: assignment_operator\nx = 1\ny = 2\n");
+        assert_eq!(result, "# nolint: assignmenterator\nx = 1\ny = 2\n");
     }
 
     #[test]
@@ -1540,7 +1540,7 @@ mod tests {
             start: 14,
             end: 19,
             is_safe: true,
-            rule_name: "assignment_operator".to_string(),
+            rule_name: "assignmenterator".to_string(),
         };
 
         let diagnostic = create_test_diagnostic_with_fix(
@@ -1562,7 +1562,7 @@ mod tests {
             result.replace_range(start..end, &text_edit.new_text);
         }
 
-        assert_eq!(result, "# nolint: foo, assignment_operator\nx = 1\ny = 2\n");
+        assert_eq!(result, "# nolint: foo, assignmenterator\nx = 1\ny = 2\n");
     }
 
     #[test]
@@ -1616,7 +1616,7 @@ mod tests {
             start: 19,
             end: 24,
             is_safe: true,
-            rule_name: "assignment_operator".to_string(),
+            rule_name: "assignmenterator".to_string(),
         };
 
         let diagnostic = create_test_diagnostic_with_fix(
@@ -1652,7 +1652,7 @@ mod tests {
             start: 18,
             end: 23,
             is_safe: true,
-            rule_name: "assignment_operator".to_string(),
+            rule_name: "assignmenterator".to_string(),
         };
 
         let diagnostic = create_test_diagnostic_with_fix(
@@ -1676,7 +1676,7 @@ mod tests {
 
         assert_eq!(
             result,
-            "  # nolint: foo, assignment_operator\n  x = 1\n  y = 2\n"
+            "  # nolint: foo, assignmenterator\n  x = 1\n  y = 2\n"
         );
     }
 
