@@ -74,7 +74,7 @@ Options:
 You can pass multiple options at once, for instance
 
 ```sh
-jarl check . --fix --select-rules any_is_na,class_equals
+jarl check . --fix --select any_is_na,class_equals
 ```
 
 ## With a config file
@@ -107,7 +107,7 @@ ignore = []
 ```
 then calling
 ```sh
-jarl check . --ignore-rules PERF
+jarl check . --ignore PERF
 ```
 
 will only apply the rule `length_test`.
@@ -117,7 +117,7 @@ will only apply the rule `length_test`.
 
 Select some rules by default.
 
-This has the same capabilities as `--select-rules`, so it is possible to pass rule names and names of groups of rules:
+This has the same capabilities as `--select`, so it is possible to pass rule names and names of groups of rules:
 
 ```toml
 [lint]
@@ -144,7 +144,7 @@ extend-select = ["TESTTHAT"]
 
 Ignore some rules by default.
 
-This has the same capabilities as `--ignore-rules`, so it is possible to pass rule names and names of groups of rules:
+This has the same capabilities as `--ignore`, so it is possible to pass rule names and names of groups of rules:
 
 ```toml
 [lint]
