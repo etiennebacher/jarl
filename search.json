@@ -366,1159 +366,111 @@
     ]
   },
   {
-    "objectID": "rules/outer_negation.html",
-    "href": "rules/outer_negation.html",
-    "title": "outer_negation",
+    "objectID": "rules/expect_null.html",
+    "href": "rules/expect_null.html",
+    "title": "expect_null",
     "section": "",
-    "text": "Checks for usage of all(!x) or any(!x).\n\n\n\nThose two patterns may be hard to read and understand, especially when the expression after ! is lengthy. Using !any(x) instead of all(!x) and !all(x) instead of any(!x) may be more readable.\nIn addition, using the ! operator outside the function call is more efficient since it only has to invert one value instead of all values inside the function call.\n\n\n\nany(!x)\nall(!x)\nUse instead:\n!all(x)\n!any(x)",
+    "text": "Checks for usage of expect_equal(x, NULL), expect_identical(x, NULL), and expect_true(is.null(x)).\n\n\n\nexpect_null() is more explicit and clearer in intent than comparing with expect_equal(), expect_identical(), or wrapping is.null() in expect_true(). It also provides better error messages when tests fail.\nThis rule is disabled by default. Select it either with the rule name \"expect_null\" or with the rule group \"TESTTHAT\".\n\n\n\nexpect_equal(x, NULL)\nexpect_identical(x, NULL)\nexpect_true(is.null(foo(x)))\nUse instead:\nexpect_null(x)\nexpect_null(x)\nexpect_null(foo(x))",
     "crumbs": [
       "Rules",
       "List of rules",
-      "outer_negation"
+      "expect_null"
     ]
   },
   {
-    "objectID": "rules/outer_negation.html#what-it-does",
-    "href": "rules/outer_negation.html#what-it-does",
-    "title": "outer_negation",
+    "objectID": "rules/expect_null.html#what-it-does",
+    "href": "rules/expect_null.html#what-it-does",
+    "title": "expect_null",
     "section": "",
-    "text": "Checks for usage of all(!x) or any(!x).",
+    "text": "Checks for usage of expect_equal(x, NULL), expect_identical(x, NULL), and expect_true(is.null(x)).",
     "crumbs": [
       "Rules",
       "List of rules",
-      "outer_negation"
+      "expect_null"
     ]
   },
   {
-    "objectID": "rules/outer_negation.html#why-is-this-bad",
-    "href": "rules/outer_negation.html#why-is-this-bad",
-    "title": "outer_negation",
+    "objectID": "rules/expect_null.html#why-is-this-bad",
+    "href": "rules/expect_null.html#why-is-this-bad",
+    "title": "expect_null",
     "section": "",
-    "text": "Those two patterns may be hard to read and understand, especially when the expression after ! is lengthy. Using !any(x) instead of all(!x) and !all(x) instead of any(!x) may be more readable.\nIn addition, using the ! operator outside the function call is more efficient since it only has to invert one value instead of all values inside the function call.",
+    "text": "expect_null() is more explicit and clearer in intent than comparing with expect_equal(), expect_identical(), or wrapping is.null() in expect_true(). It also provides better error messages when tests fail.\nThis rule is disabled by default. Select it either with the rule name \"expect_null\" or with the rule group \"TESTTHAT\".",
     "crumbs": [
       "Rules",
       "List of rules",
-      "outer_negation"
+      "expect_null"
     ]
   },
   {
-    "objectID": "rules/outer_negation.html#example",
-    "href": "rules/outer_negation.html#example",
-    "title": "outer_negation",
+    "objectID": "rules/expect_null.html#example",
+    "href": "rules/expect_null.html#example",
+    "title": "expect_null",
     "section": "",
-    "text": "any(!x)\nall(!x)\nUse instead:\n!all(x)\n!any(x)",
+    "text": "expect_equal(x, NULL)\nexpect_identical(x, NULL)\nexpect_true(is.null(foo(x)))\nUse instead:\nexpect_null(x)\nexpect_null(x)\nexpect_null(foo(x))",
     "crumbs": [
       "Rules",
       "List of rules",
-      "outer_negation"
+      "expect_null"
     ]
   },
   {
-    "objectID": "rules/length_levels.html",
-    "href": "rules/length_levels.html",
-    "title": "length_levels",
+    "objectID": "rules/system_file.html",
+    "href": "rules/system_file.html",
+    "title": "system_file",
     "section": "",
-    "text": "Check for length(levels(...)) and replace it with nlevels(...).\n\n\n\nlength(levels(...)) is harder to read nlevels(...).\nInternally, nlevels() calls length(levels(...)) so there are no performance gains.\n\n\n\nx &lt;- factor(1:3)\nlength(levels(x))\nUse instead:\nx &lt;- factor(1:3)\nnlevels(x)",
+    "text": "Checks for usage of system.file(file.path(...)) and replaces it with system.file(...).\n\n\n\nIn system.file(), all unnamed arguments are already passed to file.path() under the hood, so system.file(file.path(...)) is redundant and harder to read.\n\n\n\nsystem.file(file.path(\"my_dir\", \"my_sub_dir\"), package = \"foo\")\nUse instead:\nsystem.file(\"my_dir\", \"my_sub_dir\", package = \"foo\")\n\n\n\nSee ?system.file",
     "crumbs": [
       "Rules",
       "List of rules",
-      "length_levels"
+      "system_file"
     ]
   },
   {
-    "objectID": "rules/length_levels.html#what-it-does",
-    "href": "rules/length_levels.html#what-it-does",
-    "title": "length_levels",
+    "objectID": "rules/system_file.html#what-it-does",
+    "href": "rules/system_file.html#what-it-does",
+    "title": "system_file",
     "section": "",
-    "text": "Check for length(levels(...)) and replace it with nlevels(...).",
+    "text": "Checks for usage of system.file(file.path(...)) and replaces it with system.file(...).",
     "crumbs": [
       "Rules",
       "List of rules",
-      "length_levels"
+      "system_file"
     ]
   },
   {
-    "objectID": "rules/length_levels.html#why-is-this-bad",
-    "href": "rules/length_levels.html#why-is-this-bad",
-    "title": "length_levels",
+    "objectID": "rules/system_file.html#why-is-this-bad",
+    "href": "rules/system_file.html#why-is-this-bad",
+    "title": "system_file",
     "section": "",
-    "text": "length(levels(...)) is harder to read nlevels(...).\nInternally, nlevels() calls length(levels(...)) so there are no performance gains.",
+    "text": "In system.file(), all unnamed arguments are already passed to file.path() under the hood, so system.file(file.path(...)) is redundant and harder to read.",
     "crumbs": [
       "Rules",
       "List of rules",
-      "length_levels"
+      "system_file"
     ]
   },
   {
-    "objectID": "rules/length_levels.html#example",
-    "href": "rules/length_levels.html#example",
-    "title": "length_levels",
+    "objectID": "rules/system_file.html#example",
+    "href": "rules/system_file.html#example",
+    "title": "system_file",
     "section": "",
-    "text": "x &lt;- factor(1:3)\nlength(levels(x))\nUse instead:\nx &lt;- factor(1:3)\nnlevels(x)",
+    "text": "system.file(file.path(\"my_dir\", \"my_sub_dir\"), package = \"foo\")\nUse instead:\nsystem.file(\"my_dir\", \"my_sub_dir\", package = \"foo\")",
     "crumbs": [
       "Rules",
       "List of rules",
-      "length_levels"
+      "system_file"
     ]
   },
   {
-    "objectID": "rules/numeric_leading_zero.html",
-    "href": "rules/numeric_leading_zero.html",
-    "title": "numeric_leading_zero",
+    "objectID": "rules/system_file.html#references",
+    "href": "rules/system_file.html#references",
+    "title": "system_file",
     "section": "",
-    "text": "Checks for double or complex values with a decimal component and a leading ..\n\n\n\nWhile .1 and 0.1 mean the same thing, the latter is easier to read due to the small size of the . glyph.\n\n\n\nx &lt;- .1\nUse instead:\nx &lt;- 0.1",
+    "text": "See ?system.file",
     "crumbs": [
       "Rules",
       "List of rules",
-      "numeric_leading_zero"
-    ]
-  },
-  {
-    "objectID": "rules/numeric_leading_zero.html#what-it-does",
-    "href": "rules/numeric_leading_zero.html#what-it-does",
-    "title": "numeric_leading_zero",
-    "section": "",
-    "text": "Checks for double or complex values with a decimal component and a leading ..",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "numeric_leading_zero"
-    ]
-  },
-  {
-    "objectID": "rules/numeric_leading_zero.html#why-is-this-bad",
-    "href": "rules/numeric_leading_zero.html#why-is-this-bad",
-    "title": "numeric_leading_zero",
-    "section": "",
-    "text": "While .1 and 0.1 mean the same thing, the latter is easier to read due to the small size of the . glyph.",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "numeric_leading_zero"
-    ]
-  },
-  {
-    "objectID": "rules/numeric_leading_zero.html#example",
-    "href": "rules/numeric_leading_zero.html#example",
-    "title": "numeric_leading_zero",
-    "section": "",
-    "text": "x &lt;- .1\nUse instead:\nx &lt;- 0.1",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "numeric_leading_zero"
-    ]
-  },
-  {
-    "objectID": "rules/for_loop_index.html",
-    "href": "rules/for_loop_index.html",
-    "title": "for_loop_index",
-    "section": "",
-    "text": "Checks whether the index symbol in a for loop is already used anywhere in the sequence of the same for loop.\n\n\n\nfor (x in x) or for (x in foo(x)) are confusing to read and can lead to errors.\n\n\n\nx &lt;- c(1, 2, 3)\nfor (x in x) {\n  x + 1\n}\nUse instead:\nx &lt;- c(1, 2, 3)\nfor (xi in x) {\n  xi + 1\n}",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "for_loop_index"
-    ]
-  },
-  {
-    "objectID": "rules/for_loop_index.html#what-it-does",
-    "href": "rules/for_loop_index.html#what-it-does",
-    "title": "for_loop_index",
-    "section": "",
-    "text": "Checks whether the index symbol in a for loop is already used anywhere in the sequence of the same for loop.",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "for_loop_index"
-    ]
-  },
-  {
-    "objectID": "rules/for_loop_index.html#why-is-this-bad",
-    "href": "rules/for_loop_index.html#why-is-this-bad",
-    "title": "for_loop_index",
-    "section": "",
-    "text": "for (x in x) or for (x in foo(x)) are confusing to read and can lead to errors.",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "for_loop_index"
-    ]
-  },
-  {
-    "objectID": "rules/for_loop_index.html#example",
-    "href": "rules/for_loop_index.html#example",
-    "title": "for_loop_index",
-    "section": "",
-    "text": "x &lt;- c(1, 2, 3)\nfor (x in x) {\n  x + 1\n}\nUse instead:\nx &lt;- c(1, 2, 3)\nfor (xi in x) {\n  xi + 1\n}",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "for_loop_index"
-    ]
-  },
-  {
-    "objectID": "rules/download_file.html",
-    "href": "rules/download_file.html",
-    "title": "download_file",
-    "section": "",
-    "text": "Checks for usage of download.file() with mode = \"a\" or mode = \"w\".\n\n\n\nmode = \"a\" or mode = \"w\" can generate broken files on Windows. download.file() documentation recommends using mode = \"wb\" and mode = \"a\" instead. If method = \"curl\" or method = \"wget\", no mode should be provided as it will be ignored.\n\n\n\ndownload.file(x = my_url)\ndownload.file(x = my_url, mode = \"w\")\nUse instead:\ndownload.file(x = my_url, mode = \"wb\")\n\n\n\nSee ?download.file",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "download_file"
-    ]
-  },
-  {
-    "objectID": "rules/download_file.html#what-it-does",
-    "href": "rules/download_file.html#what-it-does",
-    "title": "download_file",
-    "section": "",
-    "text": "Checks for usage of download.file() with mode = \"a\" or mode = \"w\".",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "download_file"
-    ]
-  },
-  {
-    "objectID": "rules/download_file.html#why-is-this-bad",
-    "href": "rules/download_file.html#why-is-this-bad",
-    "title": "download_file",
-    "section": "",
-    "text": "mode = \"a\" or mode = \"w\" can generate broken files on Windows. download.file() documentation recommends using mode = \"wb\" and mode = \"a\" instead. If method = \"curl\" or method = \"wget\", no mode should be provided as it will be ignored.",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "download_file"
-    ]
-  },
-  {
-    "objectID": "rules/download_file.html#example",
-    "href": "rules/download_file.html#example",
-    "title": "download_file",
-    "section": "",
-    "text": "download.file(x = my_url)\ndownload.file(x = my_url, mode = \"w\")\nUse instead:\ndownload.file(x = my_url, mode = \"wb\")",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "download_file"
-    ]
-  },
-  {
-    "objectID": "rules/download_file.html#references",
-    "href": "rules/download_file.html#references",
-    "title": "download_file",
-    "section": "",
-    "text": "See ?download.file",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "download_file"
-    ]
-  },
-  {
-    "objectID": "rules/equals_na.html",
-    "href": "rules/equals_na.html",
-    "title": "equals_na",
-    "section": "",
-    "text": "Check for x == NA, x != NA and x %in% NA, and replaces those by is.na() calls.\n\n\n\nComparing a value to NA using == returns NA in many cases:\nx &lt;- c(1, 2, 3, NA)\nx == NA\nwhich is very likely not the expected output.\n\n\n\nx &lt;- c(1, 2, 3, NA)\nx == NA\nUse instead:\nx &lt;- c(1, 2, 3, NA)\nis.na(x)",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "equals_na"
-    ]
-  },
-  {
-    "objectID": "rules/equals_na.html#what-it-does",
-    "href": "rules/equals_na.html#what-it-does",
-    "title": "equals_na",
-    "section": "",
-    "text": "Check for x == NA, x != NA and x %in% NA, and replaces those by is.na() calls.",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "equals_na"
-    ]
-  },
-  {
-    "objectID": "rules/equals_na.html#why-is-this-bad",
-    "href": "rules/equals_na.html#why-is-this-bad",
-    "title": "equals_na",
-    "section": "",
-    "text": "Comparing a value to NA using == returns NA in many cases:\nx &lt;- c(1, 2, 3, NA)\nx == NA\nwhich is very likely not the expected output.",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "equals_na"
-    ]
-  },
-  {
-    "objectID": "rules/equals_na.html#example",
-    "href": "rules/equals_na.html#example",
-    "title": "equals_na",
-    "section": "",
-    "text": "x &lt;- c(1, 2, 3, NA)\nx == NA\nUse instead:\nx &lt;- c(1, 2, 3, NA)\nis.na(x)",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "equals_na"
-    ]
-  },
-  {
-    "objectID": "rules/comparison_negation.html",
-    "href": "rules/comparison_negation.html",
-    "title": "comparison_negation",
-    "section": "",
-    "text": "Checks for patterns similar to !(... &lt; ...).\n\n\n\nThis pattern may be hard to read and could be simplified by removing the ! operator and inverting the operator (e.g. &lt; would become &gt;=).\nThis rule has a safe fix.\n\n\n\n!(x &lt; y + 1)\n!(x == y + 1)\nUse instead:\nx &gt;= y + 1\nx != y + 1",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "comparison_negation"
-    ]
-  },
-  {
-    "objectID": "rules/comparison_negation.html#what-it-does",
-    "href": "rules/comparison_negation.html#what-it-does",
-    "title": "comparison_negation",
-    "section": "",
-    "text": "Checks for patterns similar to !(... &lt; ...).",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "comparison_negation"
-    ]
-  },
-  {
-    "objectID": "rules/comparison_negation.html#why-is-this-bad",
-    "href": "rules/comparison_negation.html#why-is-this-bad",
-    "title": "comparison_negation",
-    "section": "",
-    "text": "This pattern may be hard to read and could be simplified by removing the ! operator and inverting the operator (e.g. &lt; would become &gt;=).\nThis rule has a safe fix.",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "comparison_negation"
-    ]
-  },
-  {
-    "objectID": "rules/comparison_negation.html#example",
-    "href": "rules/comparison_negation.html#example",
-    "title": "comparison_negation",
-    "section": "",
-    "text": "!(x &lt; y + 1)\n!(x == y + 1)\nUse instead:\nx &gt;= y + 1\nx != y + 1",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "comparison_negation"
-    ]
-  },
-  {
-    "objectID": "rules/browser.html",
-    "href": "rules/browser.html",
-    "title": "browser",
-    "section": "",
-    "text": "Checks for lingering presence of browser() which should not be present in released code.\n\n\n\nbrowser() interrupts the execution of an expression and allows the inspection of the environment where browser() was called from. This is helpful while developing a function, but is not expected to be called by the user. Does not remove the call as it does not have a suitable replacement.\n\n\n\ndo_something &lt;- function(abc = 1) {\n   xyz &lt;- abc + 1\n   browser()      # This should be removed.\n   xyz\n}\n\n\n\nSee ?browser",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "browser"
-    ]
-  },
-  {
-    "objectID": "rules/browser.html#what-it-does",
-    "href": "rules/browser.html#what-it-does",
-    "title": "browser",
-    "section": "",
-    "text": "Checks for lingering presence of browser() which should not be present in released code.",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "browser"
-    ]
-  },
-  {
-    "objectID": "rules/browser.html#why-is-this-bad",
-    "href": "rules/browser.html#why-is-this-bad",
-    "title": "browser",
-    "section": "",
-    "text": "browser() interrupts the execution of an expression and allows the inspection of the environment where browser() was called from. This is helpful while developing a function, but is not expected to be called by the user. Does not remove the call as it does not have a suitable replacement.",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "browser"
-    ]
-  },
-  {
-    "objectID": "rules/browser.html#example",
-    "href": "rules/browser.html#example",
-    "title": "browser",
-    "section": "",
-    "text": "do_something &lt;- function(abc = 1) {\n   xyz &lt;- abc + 1\n   browser()      # This should be removed.\n   xyz\n}",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "browser"
-    ]
-  },
-  {
-    "objectID": "rules/browser.html#references",
-    "href": "rules/browser.html#references",
-    "title": "browser",
-    "section": "",
-    "text": "See ?browser",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "browser"
-    ]
-  },
-  {
-    "objectID": "rules/assignment.html",
-    "href": "rules/assignment.html",
-    "title": "assignment",
-    "section": "",
-    "text": "Checks for consistency of assignment operator.\n\n\n\nIn most cases using = and &lt;- is equivalent. Some very popular packages use = without problems. This rule only ensures the consistency of the assignment operator in a project.\nNote that Jarl doesn’t force you to use &lt;- as assignment operator, it simply uses it as default. To use = as the preferred operator:\n\nin the CLI (temporary change), use --assignment \"=\";\nin jarl.toml (permanent change): set assignment = \"=\".\n\n\n\n\nx = \"a\"\nUse instead:\nx &lt;- \"a\"\n\n\n\nSee:\n\nhttps://style.tidyverse.org/syntax.html#assignment-1",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "assignment"
-    ]
-  },
-  {
-    "objectID": "rules/assignment.html#what-it-does",
-    "href": "rules/assignment.html#what-it-does",
-    "title": "assignment",
-    "section": "",
-    "text": "Checks for consistency of assignment operator.",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "assignment"
-    ]
-  },
-  {
-    "objectID": "rules/assignment.html#why-is-this-bad",
-    "href": "rules/assignment.html#why-is-this-bad",
-    "title": "assignment",
-    "section": "",
-    "text": "In most cases using = and &lt;- is equivalent. Some very popular packages use = without problems. This rule only ensures the consistency of the assignment operator in a project.\nNote that Jarl doesn’t force you to use &lt;- as assignment operator, it simply uses it as default. To use = as the preferred operator:\n\nin the CLI (temporary change), use --assignment \"=\";\nin jarl.toml (permanent change): set assignment = \"=\".",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "assignment"
-    ]
-  },
-  {
-    "objectID": "rules/assignment.html#example",
-    "href": "rules/assignment.html#example",
-    "title": "assignment",
-    "section": "",
-    "text": "x = \"a\"\nUse instead:\nx &lt;- \"a\"",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "assignment"
-    ]
-  },
-  {
-    "objectID": "rules/assignment.html#references",
-    "href": "rules/assignment.html#references",
-    "title": "assignment",
-    "section": "",
-    "text": "See:\n\nhttps://style.tidyverse.org/syntax.html#assignment-1",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "assignment"
-    ]
-  },
-  {
-    "objectID": "rules/which_grepl.html",
-    "href": "rules/which_grepl.html",
-    "title": "which_grepl",
-    "section": "",
-    "text": "Checks for usage of which(grepl(...)) and replaces it with grep(...).\n\n\n\nwhich(grepl(...)) is harder to read and is less efficient than grep() since it requires two passes on the vector.\n\n\n\nx &lt;- c(\"hello\", \"there\")\nwhich(grepl(\"hell\", x))\nwhich(grepl(\"foo\", x))\nUse instead:\nx &lt;- c(\"hello\", \"there\")\ngrep(\"hell\", x)\ngrep(\"foo\", x)\n\n\n\nSee ?grep",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "which_grepl"
-    ]
-  },
-  {
-    "objectID": "rules/which_grepl.html#what-it-does",
-    "href": "rules/which_grepl.html#what-it-does",
-    "title": "which_grepl",
-    "section": "",
-    "text": "Checks for usage of which(grepl(...)) and replaces it with grep(...).",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "which_grepl"
-    ]
-  },
-  {
-    "objectID": "rules/which_grepl.html#why-is-this-bad",
-    "href": "rules/which_grepl.html#why-is-this-bad",
-    "title": "which_grepl",
-    "section": "",
-    "text": "which(grepl(...)) is harder to read and is less efficient than grep() since it requires two passes on the vector.",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "which_grepl"
-    ]
-  },
-  {
-    "objectID": "rules/which_grepl.html#example",
-    "href": "rules/which_grepl.html#example",
-    "title": "which_grepl",
-    "section": "",
-    "text": "x &lt;- c(\"hello\", \"there\")\nwhich(grepl(\"hell\", x))\nwhich(grepl(\"foo\", x))\nUse instead:\nx &lt;- c(\"hello\", \"there\")\ngrep(\"hell\", x)\ngrep(\"foo\", x)",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "which_grepl"
-    ]
-  },
-  {
-    "objectID": "rules/which_grepl.html#references",
-    "href": "rules/which_grepl.html#references",
-    "title": "which_grepl",
-    "section": "",
-    "text": "See ?grep",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "which_grepl"
-    ]
-  },
-  {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Jarl",
-    "section": "",
-    "text": "Just Another R Linter\nJarl is a fast linter for R: it does static code analysis to search for programming errors, bugs, and suspicious patterns of code.\nJarl is built on Air, a fast formatter for R written in Rust."
-  },
-  {
-    "objectID": "index.html#quick-start",
-    "href": "index.html#quick-start",
-    "title": "Jarl",
-    "section": "Quick start",
-    "text": "Quick start\nYou can use Jarl manually via the command line, or use extensions to have it integrated in your coding environment.\nThis shows how to use it in the terminal:\ntest.R:\nany(is.na(x))\n\nif (all.equal(x, y)) {\n  print(\"x and y are equal\")\n}\n# In the terminal:\n$ jarl check test.R\nwarning: any_is_na\n --&gt; test.R:1:1\n  |\n1 | any(is.na(x))\n  | ------------- `any(is.na(...))` is inefficient.\n  |\n  = help: Use `anyNA(...)` instead.\n\nwarning: all_equal\n --&gt; test.R:3:5\n  |\n3 | if (all.equal(x, y)) {\n  |     --------------- `all.equal()` can return a string instead of FALSE.\n  |\n  = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if\n    no tolerance is required.\n\nFound 2 errors.\n1 fixable with the `--fix` option (1 hidden fix can be enabled with the\n`--unsafe-fixes` option).\nUse --fix to automatically fix rule violations when possible:\n$ jarl check test.R --fix\ntest.R:\nanyNA(x)\n\nif (all.equal(x, y)) {\n  print(\"x and y are equal\")\n}"
-  },
-  {
-    "objectID": "index.html#installation",
-    "href": "index.html#installation",
-    "title": "Jarl",
-    "section": "Installation",
-    "text": "Installation\n\nBinaries\nEither get binaries from the Releases page or install Jarl from the existing installer scripts below.\nmacOS and Linux:\ncurl --proto '=https' --tlsv1.2 -LsSf \\\n  https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.sh | sh\nWindows:\npowershell Set-ExecutionPolicy Bypass -Scope Process -Force; `\n   iwr https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.ps1 | iex\nIf you use Scoop, you can also install or update Jarl with these commands:\nscoop bucket add r-bucket https://github.com/cderv/r-bucket.git\n\n# install\nscoop install jarl\n\n# update\nscoop update jarl\n\n\nFrom source\nAlternatively, if you have Rust installed, you can get the development version with:\ncargo install --git https://github.com/etiennebacher/jarl jarl --profile=release"
-  },
-  {
-    "objectID": "index.html#related-work",
-    "href": "index.html#related-work",
-    "title": "Jarl",
-    "section": "Related work",
-    "text": "Related work\nlintr is the most famous R linter. It provides dozens of rules related to performance, readibility, formatting, and more. Jarl is heavily influenced by lintr since most rule definitions come from it. However, lintr doesn’t provide automatic fixes for rule violations, which makes it harder to use. Its performance also noticeably degrades as the number of files and their length increase.\nflir is a relatively novel package. It uses ast-grep in the background to search and replace code patterns. It is therefore quite flexible and easy to extend by users who may want more custom rules. While both Jarl and ast-grep use tree-sitter in the background to parse R files, their structure is completely different. Jarl is faster and also easier to link to the Language Server Protocol, which enables its use via VS Code or Positron extensions for instance."
-  },
-  {
-    "objectID": "index.html#acknowledgements",
-    "href": "index.html#acknowledgements",
-    "title": "Jarl",
-    "section": "Acknowledgements",
-    "text": "Acknowledgements\n\nlintr authors and contributors: while the infrastructure is completely different, all the rule definitions and a large part of the tests are inspired or taken from lintr.\nDavis Vaughan and Lionel Henry, both for their work on Air and for their advices and answers to my questions during the development of Jarl.\nthe design of Jarl is heavily inspired by Ruff and Cargo clippy.\nR Consortium for funding part of the development of Jarl."
-  },
-  {
-    "objectID": "index.html#footnotes",
-    "href": "index.html#footnotes",
-    "title": "Jarl",
-    "section": "Footnotes",
-    "text": "Footnotes\n\n\nUsing 20 rules on the dplyr package (~25k lines of R code), Jarl took 0.131s, flir took 4.5s, and lintr took 18.5s (9s with caching enabled).↩︎"
-  },
-  {
-    "objectID": "config.html",
-    "href": "config.html",
-    "title": "Configuring Jarl",
-    "section": "",
-    "text": "Jarl comes with various options available directly from the command line. These can be listed with jarl check --help:\nCheck a set of files or directories\n\nUsage: jarl check [OPTIONS] &lt;FILES&gt;...\n\nArguments:\n  &lt;FILES&gt;...\n          List of files or directories to check or fix lints, for example `jarl check .`.\n\nOptions:\n  -f, --fix\n          Automatically fix issues detected by the linter.\n\n  -u, --unsafe-fixes\n          Include fixes that may not retain the original intent of the  code.\n\n      --fix-only\n          Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.\n\n      --allow-dirty\n          Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.\n\n      --allow-no-vcs\n          Apply fixes even if there is no version control system.\n\n  -s, --select &lt;SELECT&gt;\n          Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as \"PERF\".\n\n          [default: ]\n\n  -e, --extend-select &lt;EXTEND_SELECT&gt;\n          Like `--select` but adds additional rules in addition to those already specified.\n\n          [default: ]\n\n  -i, --ignore &lt;IGNORE&gt;\n          Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as \"PERF\".\n\n          [default: ]\n\n  -w, --with-timing\n          Show the time taken by the function.\n\n  -m, --min-r-version &lt;MIN_R_VERSION&gt;\n          The mimimum R version to be used by the linter. Some rules only work starting from a specific version.\n\n      --output-format &lt;OUTPUT_FORMAT&gt;\n          Output serialization format for violations.\n\n          Possible values:\n          - full:    Print diagnostics with full context using annotated code snippets\n          - concise: Print diagnostics in a concise format, one per line\n          - github:  Print diagnostics as GitHub format\n          - json:    Print diagnostics as JSON\n\n          [default: full]\n\n      --assignment &lt;ASSIGNMENT&gt;\n          Assignment operator to use, can be either `&lt;-` or `=`.\n\n  -h, --help\n          Print help (see a summary with '-h')\nYou can pass multiple options at once, for instance\njarl check . --fix --select any_is_na,class_equals"
-  },
-  {
-    "objectID": "config.html#with-the-command-line",
-    "href": "config.html#with-the-command-line",
-    "title": "Configuring Jarl",
-    "section": "",
-    "text": "Jarl comes with various options available directly from the command line. These can be listed with jarl check --help:\nCheck a set of files or directories\n\nUsage: jarl check [OPTIONS] &lt;FILES&gt;...\n\nArguments:\n  &lt;FILES&gt;...\n          List of files or directories to check or fix lints, for example `jarl check .`.\n\nOptions:\n  -f, --fix\n          Automatically fix issues detected by the linter.\n\n  -u, --unsafe-fixes\n          Include fixes that may not retain the original intent of the  code.\n\n      --fix-only\n          Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.\n\n      --allow-dirty\n          Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.\n\n      --allow-no-vcs\n          Apply fixes even if there is no version control system.\n\n  -s, --select &lt;SELECT&gt;\n          Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as \"PERF\".\n\n          [default: ]\n\n  -e, --extend-select &lt;EXTEND_SELECT&gt;\n          Like `--select` but adds additional rules in addition to those already specified.\n\n          [default: ]\n\n  -i, --ignore &lt;IGNORE&gt;\n          Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as \"PERF\".\n\n          [default: ]\n\n  -w, --with-timing\n          Show the time taken by the function.\n\n  -m, --min-r-version &lt;MIN_R_VERSION&gt;\n          The mimimum R version to be used by the linter. Some rules only work starting from a specific version.\n\n      --output-format &lt;OUTPUT_FORMAT&gt;\n          Output serialization format for violations.\n\n          Possible values:\n          - full:    Print diagnostics with full context using annotated code snippets\n          - concise: Print diagnostics in a concise format, one per line\n          - github:  Print diagnostics as GitHub format\n          - json:    Print diagnostics as JSON\n\n          [default: full]\n\n      --assignment &lt;ASSIGNMENT&gt;\n          Assignment operator to use, can be either `&lt;-` or `=`.\n\n  -h, --help\n          Print help (see a summary with '-h')\nYou can pass multiple options at once, for instance\njarl check . --fix --select any_is_na,class_equals"
-  },
-  {
-    "objectID": "config.html#with-a-config-file",
-    "href": "config.html#with-a-config-file",
-    "title": "Configuring Jarl",
-    "section": "With a config file",
-    "text": "With a config file\nTo avoid typing options every time and to ensure all uses of Jarl in a project are consistent, it is possible to store options in jarl.toml.\nThis file looks like this:\n[lint]\nselect = []\nexend-select = []\nignore = []\nexclude = []\ndefault-exclude = true\nassignment = \"&lt;-\"\nThese arguments are described below.\n\n\n\n\n\n\nNoteUsing CLI arguments and jarl.toml\n\n\n\nArguments in the command line always have the priority on those specified in jarl.toml. For example, if you have the following file:\n[lint]\nselect = [\"PERF\", \"length_test\"]\nignore = []\nthen calling\njarl check . --ignore PERF\nwill only apply the rule length_test.\n\n\n\nselect\nSelect some rules by default.\nThis has the same capabilities as --select, so it is possible to pass rule names and names of groups of rules:\n[lint]\nselect = [\"PERF\", \"length_test\"]\n\n\nextend-select\nSelect some rules in addition to select.\nThis is useful when you want to use the default set of rules and some additional opt-in rules. In this scenario, you only need to add extend-select = [\"OPT_IN_RULE\"] instead of writing all default rule names.\nThis has the same constraints as select.\n# Select all default rules and all `TESTTHAT` rules, which are disabled by\n# default.\n[lint]\nextend-select = [\"TESTTHAT\"]\n\n\nignore\nIgnore some rules by default.\nThis has the same capabilities as --ignore, so it is possible to pass rule names and names of groups of rules:\n[lint]\nignore = [\"PERF\", \"length_test\"]\n\n\nexclude\nFiles and/or directories that are not checked.\nThis takes a list relative paths to ignore:\n[lint]\nexclude = [\"excluded.R\", \"tests/\"]\nIt also supports glob patterns:\n[lint]\nexclude = [\"excluded-*.R\"]\n\n\ndefault-exclude\nThis takes a boolean argument indicating whether the default file exclude patterns are used.\nBy default, Jarl (just like the Air formatter) excludes a set of files and folders that are probably not worth checking, for instance because they are automatically generated by another program.\nThe complete list of default exclude patterns is:\n\n.git/\nrenv/\nrevdep/\ncpp11.R\nRcppExports.R\nextendr-wrappers.R\nimport-standalone-*.R\n\n[lint]\ndefault-exclude = true\n\n\nassignment\nThis takes a single value (\"&lt;-\" or \"=\") indicating the preferred assignment operator in the files to check. While \"&lt;-\" is recommended by several style guides, using \"=\" is equivalent in most cases and several popular projects use it.\nThis parameter is only useful if the assignment rule is active. If assignment = \"&lt;-\" (default), then any use of the \"=\" operator to assign values will be reported, and vice-versa.\n[lint]\nassignment = \"&lt;-\"\n\n\nfixable\nThis determines which rule violations will be fixed if --fix is passed. It takes a list of rule names or names or groups of rules, and defaults to all rules if this argument is not specified.\nIf a rule appears in both fixable and unfixable, unfixable takes precedence (i.e. violations of this rule will not be fixed).\n[lint]\n# Only fix violations of rules in the \"PERF\" group.\nfixable = [\"PERF\"]\n[lint]\n# Do not fix any violation.\nfixable = []\n\n\nunfixable\nThis determines which rule violations will be not fixed, even if --fix is passed. It takes a list of rule names or names or groups of rules, and defaults no rules if this argument is not specified.\nIf a rule appears in both fixable and unfixable, unfixable takes precedence (i.e. violations of this rule will not be fixed).\n[lint]\n# Fix all violations, except those for rules in the \"PERF\" group.\nunfixable = [\"PERF\"]\n[lint]\n# Fix all violations.\nunfixable = []"
-  },
-  {
-    "objectID": "rules.html",
-    "href": "rules.html",
-    "title": "Rules",
-    "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\nTESTTHAT: rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_67miyxvjv31r5m5zre46",
-    "crumbs": [
-      "Rules"
-    ]
-  },
-  {
-    "objectID": "rules.html#overview",
-    "href": "rules.html#overview",
-    "title": "Rules",
-    "section": "",
-    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\nTESTTHAT: rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_67miyxvjv31r5m5zre46",
-    "crumbs": [
-      "Rules"
-    ]
-  },
-  {
-    "objectID": "changelog.html",
-    "href": "changelog.html",
-    "title": "Changelog",
-    "section": "",
-    "text": "For consistency between CLI arguments and jarl.toml arguments, the following CLI arguments are renamed (#199):\n\n--select-rules becomes --select\n--ignore-rules becomes --ignore\n--assignment-op becomes --assignment\n\n\n\n\n\n\nAdded support for seq and seq2 rules (#187).\nAdded support for expect_true_false rule. This is a bit experimental because it is the first rule that is not enabled by default (and doesn’t have a minimum R version requirement) (#191).\nNew argument extend-select in jarl.toml and --extend-select in the CLI to select additional rules on top of the existing selection. This can be useful to select opt-in rules in addition to the default set of rules (#193).\n\n\n\n\n\nAdded section on Neovim to the Editors page (#188, @bjyberg).\nAdded page “Tutorial: add a new rule” (#183).\n\n\n\n\n\n\n\n\nAdded support for list2df rule (#179).\nAdded support for browser rule (#185, @jonocarroll).\nAdded support for system_file rule (#186).\n\n\n\n\n\n(Hopefully) Fixed wrong printing of ANSI characters in multiple terminals on Windows (#179, thanks @novica for the report).\n\n\n\n\n\nAdded sections on RStudio and Helix to the Editors page.\nAdded installation instructions using Scoop on Windows.\n\n\n\n\n\n\n\n\nFix discovery of jarl.toml by the Jarl extension (#175, thanks @DavisVaughan for the report).\nRule duplicated_argument no longer reports cli_ functions where multiple arguments have the same name (#176, thanks @DavisVaughan for the report).\n\n\n\n\n\nThe docs of assignment rule now explain how to change the preferred assignment operator.\n\n\n\n\n\nFirst release (announced)"
-  },
-  {
-    "objectID": "changelog.html#development",
-    "href": "changelog.html#development",
-    "title": "Changelog",
-    "section": "",
-    "text": "For consistency between CLI arguments and jarl.toml arguments, the following CLI arguments are renamed (#199):\n\n--select-rules becomes --select\n--ignore-rules becomes --ignore\n--assignment-op becomes --assignment\n\n\n\n\n\n\nAdded support for seq and seq2 rules (#187).\nAdded support for expect_true_false rule. This is a bit experimental because it is the first rule that is not enabled by default (and doesn’t have a minimum R version requirement) (#191).\nNew argument extend-select in jarl.toml and --extend-select in the CLI to select additional rules on top of the existing selection. This can be useful to select opt-in rules in addition to the default set of rules (#193).\n\n\n\n\n\nAdded section on Neovim to the Editors page (#188, @bjyberg).\nAdded page “Tutorial: add a new rule” (#183)."
-  },
-  {
-    "objectID": "changelog.html#section",
-    "href": "changelog.html#section",
-    "title": "Changelog",
-    "section": "",
-    "text": "Added support for list2df rule (#179).\nAdded support for browser rule (#185, @jonocarroll).\nAdded support for system_file rule (#186).\n\n\n\n\n\n(Hopefully) Fixed wrong printing of ANSI characters in multiple terminals on Windows (#179, thanks @novica for the report).\n\n\n\n\n\nAdded sections on RStudio and Helix to the Editors page.\nAdded installation instructions using Scoop on Windows."
-  },
-  {
-    "objectID": "changelog.html#section-1",
-    "href": "changelog.html#section-1",
-    "title": "Changelog",
-    "section": "",
-    "text": "Fix discovery of jarl.toml by the Jarl extension (#175, thanks @DavisVaughan for the report).\nRule duplicated_argument no longer reports cli_ functions where multiple arguments have the same name (#176, thanks @DavisVaughan for the report).\n\n\n\n\n\nThe docs of assignment rule now explain how to change the preferred assignment operator."
-  },
-  {
-    "objectID": "changelog.html#section-2",
-    "href": "changelog.html#section-2",
-    "title": "Changelog",
-    "section": "",
-    "text": "First release (announced)"
-  },
-  {
-    "objectID": "contributing-rule-example.html",
-    "href": "contributing-rule-example.html",
-    "title": "Adding a new rule to Jarl",
-    "section": "",
-    "text": "This page will explain how to implement a new rule in Jarl. It is recommended to read the General information page first to install the required tools. Jarl is written in Rust, but this page will not explain how to set up or use Rust, this is an entirely different topic. To get started with Rust, check out the Rust book."
-  },
-  {
-    "objectID": "contributing-rule-example.html#getting-ready",
-    "href": "contributing-rule-example.html#getting-ready",
-    "title": "Adding a new rule to Jarl",
-    "section": "Getting ready",
-    "text": "Getting ready\n\nFind the rule\nSo far, most (if not all) rules in Jarl come from the list of rules available in lintr, so this is the first place to explore. If you want to add a rule that is not in lintr, please open an issue first.\nNote that not all lintr rules are suitable for Jarl. In particular, rules that are only about formatting (spaces before parenthesis, newlines between arguments, etc.) are out of scope for Jarl. Moreover, you should look for rules that require “pattern detection” only, meaning that they don’t need information about the rest of the code (or only very little). For example, unreachable_code is out of scope for now because we need a way to analyze the rest of the code, which Jarl doesn’t have so far. If you are unsure about whether a rule can or should be implemented, open an issue first.\n\n\nGet familiar with the rule\nYou may know the most common cases of this rule, but there might exist many corner cases making its implementation difficult. Take a look at the relevant test file in the lintr test suite to know more about those corner cases.\nAdditionally, Jarl uses tree-sitter under the hood to parse and navigate the Abstract Syntax Tree (AST) of the code. Having an idea of what this AST looks like is important when implementing the rule. I suggest creating a small test R file containing one or two examples of code that violate this rule. If you have the Air extension installed, you can do the command “Air: View Syntax Tree” to display the AST next to the code.\nFor example, the code any(x &gt; 10) gives this AST:\n0: R_ROOT@0..12\n  0: (empty)\n  1: R_EXPRESSION_LIST@0..11\n    0: R_CALL@0..11\n      0: R_IDENTIFIER@0..3\n        0: IDENT@0..3 \"any\" [] []\n      1: R_CALL_ARGUMENTS@3..11\n        0: L_PAREN@3..4 \"(\" [] []\n        1: R_ARGUMENT_LIST@4..10\n          0: R_ARGUMENT@4..10\n            0: (empty)\n            1: R_BINARY_EXPRESSION@4..10\n              0: R_IDENTIFIER@4..5\n                0: IDENT@4..5 \"x\" [] []\n              1: GREATER_THAN@5..7 \"&gt;\" [Whitespace(\" \")] []\n              2: R_DOUBLE_VALUE@7..10\n                0: R_DOUBLE_LITERAL@7..10 \"10\" [Whitespace(\" \")] []\n        2: R_PAREN@10..11 \")\" [] []\n  2: EOF@11..12 \"\" [Newline(\"\\n\")] []\nWe can see that this is indeed a tree where each element can have “parents” and “children” nodes. It also shows that the textual representation of the code doesn’t matter here: you could write any(x &gt; 10) or any  ( x    &gt;    10) and the AST would be the same (with the exception of the numbers representing the location of each node in text). This representation is important to keep in mind when adding a new rule: Jarl only checks the text in very specific cases, for example when we want to get the function name to know if we should apply a rule or not. Most of the time, the RSyntaxKind (R_CALL, R_BINARY_EXPRESSION, R_IDENTIFIER, etc.) is used.\n\n\nGet up and running with Rust and Jarl\nYou should have installed Rust and cloned Jarl. Do cargo check or cargo test to know if you are correctly set up."
-  },
-  {
-    "objectID": "contributing-rule-example.html#adding-a-new-rule-basic-steps",
-    "href": "contributing-rule-example.html#adding-a-new-rule-basic-steps",
-    "title": "Adding a new rule to Jarl",
-    "section": "Adding a new rule: basic steps",
-    "text": "Adding a new rule: basic steps\nAs an example for this entire tutorial, we will analyze PR #182, which added the rule list2df. This PR adds a rule to replace calls like do.call(cbind.data.frame, x) by list2DF(x). Importantly, list2DF() was added in R 4.0.0. I encourage you to check this PR as you advance in this tutorial.\nHere’s a basic idea of the workflow to add a new rule:\n\nadd it to the general list of rules\nadd it to the list of rules for the specific kind of node it targets (function calls, if conditions, for loops, etc.)\nimplement the rule\nadd tests\ndocument the rule\nfinal polishing\n\nFrom now on, all file paths refer to the subfolder crates/jarl-core.\n\nAdd the new rule to the list of rules\nThere are two places to modify: lints/mod.rs and one file in the analyze folder.\nlints/mod.rs contains the list of all rules provided by Jarl. We can add a rule to the list:\npub(crate) mod list2df;\n\n...\n\nrule_table.enable(\"list2df\", \"PERF,READ\", FixStatus::Safe, Some((4, 0, 0)));\nThis contains the rule name, the categories it belongs to (those are described above in the file), whether it has a safe fix, an unsafe fix, or no fix, and the optional R version from which it is available.\nThe file to modify in the analyze folder will depend on the rule: here, we look for calls to do.call(). The arguments passed to the function are irrelevant, what matters is that this is a call, so we will modify the file analyze/call.rs:\nuse crate::lints::list2df::list2df::list2df;\n\n...\n\nif checker.is_rule_enabled(\"list2df\") && !checker.should_skip_rule(node, \"list2df\") {\n    checker.report_diagnostic(list2df(r_expr)?);\n}\n\n\nImplement the rule\nThis is the hard part of the process. It requires knowledge about the AST you want to parse and about the different functions available to us to navigate this AST. The rule definition must be located in lints/&lt;rule_name&gt;/&lt;rule_name&gt;.rs, so in this example in lints/list2df/list2df.rs.\nLet’s start with a skeleton of this file:\nuse crate::diagnostic::*;\nuse crate::utils::{get_arg_by_name_then_position, get_arg_by_position, node_contains_comments};\nuse air_r_syntax::*;\nuse biome_rowan::AstNode;\n\npub struct List2Df;\n\n/// ## What it does\n///\n/// Checks for usage of `do.call(cbind.data.frame, x)`.\n///\n/// [...]\nimpl Violation for List2Df {\n    fn name(&self) -&gt; String {\n        \"list2df\".to_string()\n    }\n    fn body(&self) -&gt; String {\n        \"`do.call(cbind.data.frame, x)` is inefficient and can be hard to read.\".to_string()\n    }\n    fn suggestion(&self) -&gt; Option&lt;String&gt; {\n        Some(\"Use `list2DF(x)` instead.\".to_string())\n    }\n}\n\npub fn list2df(ast: &RCall) -&gt; anyhow::Result&lt;Option&lt;Diagnostic&gt;&gt; {\n\n}\nLet’s analyze this by blocks:\n\nthe first lines import required crates and functions, and define a struct using the rule name (in TitleCase);\nthen there is some documentation (truncated here for conciseness);\nthe impl block is where we define the name and the main message (body) that will be used in the output of Jarl. Note that there is also a suggestion() function which is not always necessary.\nfinally, we define the function where we parse the AST.\n\n\n\n\n\n\n\nNoteAbout impl Violation\n\n\n\n\n\nIf you explore other rules implementation, you might notice that the impl Violation block is sometimes missing. This is because in some cases, the message and/or the suggestion depend on the AST itself. For example, for the assignment rule, the message will recommend the use of &lt;- or = depending on the user settings.\nIn this scenario, the name, body, and suggestion are defined at the very end, when we build the Diagnostic.\n\n\n\nWriting this function is the hard part, so let’s focus on this. We start by extracting the important information from the RCall object. In this example, we need both the function name and the arguments:\nlet function = ast.function()?;\nlet arguments = ast.arguments()?;\nNote that it is sometimes shorter to use the destructuring syntax, as follows:\nlet RCallFields { function, arguments } = ast.as_fields();\nlet function = function?;\nlet arguments = arguments?.items();\nUsually, a rule implementation contains a lot of early returns, such as “if the function name is not ‘xyz’ then stop here”. In this example, we want to focus on calls to do.call(), so we can stop early if this is not the function name:\nif function.to_trimmed_text() != \"do.call\" {\n    return Ok(None);\n}\nPast that point, the next step is to check that the arguments correspond to what we want to analyze. do.call has four arguments: what, args, quote, and envir. We are looking for patterns such as do.call(cbind.data.frame, x) so we want information on the first two arguments. We can use a helper function called get_arg_by_name_then_position():\n// Note that the arguments position is 1-indexed and not 0-indexed as is usually\n// the case in Rust.\nlet what = get_arg_by_name_then_position(&arguments, \"what\", 1);\nlet args = get_arg_by_name_then_position(&arguments, \"args\", 2);\nThis function returns an Option since the arguments we want to extract maybe do not exist in the code we parsed.\n\n\n\n\n\n\nNoteAbout helper functions\n\n\n\n\n\nIn this example, we used get_arg_by_name_then_position(). There exist other helper functions located in utils.rs. For example, get_nested_functions_content() is used in any_is_na (among other rules) to either get the content of any(is.na(...)) or exit the function early.\n\n\n\nWe can now do more early checks:\n// Ensure there isn't more than two arguments, as we probably cannot discard\n// `quote` and `envir` if they are specified in `do.call()`.\nif get_arg_by_position(&arguments, 3).is_some() {\n    return Ok(None);\n}\n\nif args.is_none() {\n    return Ok(None);\n}\n\n// Return early for calls such as `do.call(foo, x)`.\nif let Some(what) = what && let Some(what_value) = what.value() {\n    let txt = what_value.to_trimmed_text();\n    // `do.call()` accepts quoted function names.\n    if txt != \"cbind.data.frame\"\n        && txt != \"\\\"cbind.data.frame\\\"\"\n        && txt != \"\\'cbind.data.frame\\'\"\n    {\n        return Ok(None);\n    }\n} else {\n    return Ok(None);\n};\nThe block above ensures that we have a call to do.call() with two arguments only and that the argument what is one of cbind.data.frame, \"cbind.data.frame\", or 'cbind.data.frame' (because do.call() also accepts quoted function names).\nWe now reach the last step, which is building the automatic fix. This requires getting the value of args because we want to use it in list2DF():\n// Safety: we checked above that args is not None.\nlet args = args.unwrap().value();\n// Here, `args` can be None if the call is something like\n// `do.call(cbind.data.frame, args = )`. This is not valid R code, but we don't\n// want to panic if it is checked by Jarl.\nif args.is_none() {\n    return Ok(None);\n}\nlet fix_content = args.unwrap();\nAnd finally, we build the diagnostic:\nlet range = ast.syntax().text_trimmed_range();\nlet diagnostic = Diagnostic::new(\n    List2Df,\n    range,\n    Fix {\n        content: format!(\"list2DF({})\", fix_content.to_trimmed_text()),\n        start: range.start().into(),\n        end: range.end().into(),\n        to_skip: node_contains_comments(ast.syntax()),\n    },\n);\n\nOk(Some(diagnostic))\nAll diagnostics contain a Violation (we defined the one for List2Df just below the documentation), a range indicating where it is located in the code, and a Fix (which may be Fix::Empty() if there is no automatic fix).\nFinally, note that Fix has a field to_skip: node_contains_comments(ast.syntax()). This tells Jarl not to apply the automatic fix if the node in question contains a comment. Handling comments positions in automatic fixes is quite complicated so, for now, fixes are not applied if the node contains a comment, e.g.:\n# This code wouldn't be automatically fixed because we don't know where the\n# comment inside should go.\ndo.call(\n    cbind.data.frame,\n    # This is a comment to describe `x`.\n    x\n)\nAt this point, if you have an R file with a couple of examples that should be reported (e.g. test.R), you can use cargo run --bin jarl -- check test.R (the rule in this example is only valid for R &gt;= 4.0.0, so we also need --min-r-version 4.1 for instance).\n\n\nAdd tests\nTests for each rule are stored in lints/&lt;rule_name&gt;/mod.rs. It is important to test cases where we expect the rule that we just defined to be violated, and to test cases where we don’t expect this violation. Looking at tests for list2df, there are three blocks:\n\nfirst, we check cases where we don’t expect rule violations:\n\n#[test]\nfn test_no_lint_list2df() {\n    expect_no_lint(\"cbind.data.frame(x, x)\", \"list2df\", Some(\"4.0\"));\n    [...]\n\n    // Ignored if R version unknown or below 4.0.0\n    expect_no_lint(\"do.call(cbind.data.frame, x)\", \"list2df\", Some(\"3.5\"));\n    [...]\n\n    // Don't know how to handle additional comments\n    expect_no_lint(\n        \"do.call(cbind.data.frame, x, quote = TRUE)\",\n        \"list2df\",\n        Some(\"4.0\"),\n    );\n\n    // Ensure that wrong calls are not reported\n    expect_no_lint(\"do.call(cbind.data.frame)\", \"list2df\", Some(\"4.0\"));\n    [...]\n}\n\nsecond, we check cases where we expect rule violations. We check first that the expected message is displayed, and then we check that the automated fix works correctly with a snapshot test:\n\n#[test]\nfn test_lint_list2df() {\n    use insta::assert_snapshot;\n\n    let expected_message = \"Use `list2DF(x)` instead\";\n    expect_lint(\n        \"do.call(cbind.data.frame, x)\",\n        expected_message,\n        \"list2df\",\n        Some(\"4.0\"),\n    );\n    [...]\n\n    assert_snapshot!(\n        \"fix_output\",\n        get_fixed_text(\n            vec![\n                \"do.call(cbind.data.frame, x)\",\n                [...]\n            ],\n            \"list2df\",\n            Some(\"4.0\")\n        )\n    );\n}\n\nfinally, if the rule has an automatic fix, we check that having a comment in the middle of the code in question does not modify this code. Handling comments in automatic fixes is difficult and is left as an objective for the future.\n\n#[test]\nfn test_list2df_with_comments_no_fix() {\n    use insta::assert_snapshot;\n    // Should detect lint but skip fix when comments are present to avoid destroying them\n    expect_lint(\n        \"do.call(\\n # a comment\\ncbind.data.frame, x)\",\n        \"Use `list2DF(x)` instead\",\n        \"list2df\",\n        Some(\"4.0\"),\n    );\n    assert_snapshot!(\n        \"no_fix_with_comments\",\n        get_fixed_text(\n            vec![\n                \"# leading comment\\ndo.call(cbind.data.frame, x)\",\n                \"do.call(\\n # a comment\\ncbind.data.frame, x)\",\n                \"do.call(cbind.data.frame, x) # trailing comment\",\n            ],\n            \"list2df\",\n            Some(\"4.0\")\n        )\n    );\n}\nSince we have snapshot tests, we first need to run cargo insta test to generate the snapshots and then cargo insta review to review and validate them. After that, run cargo test to ensure that all tests pass.\n\n\nAll the rest\nThe rule is implemented, all tests pass, perfect! We now need to document this change:\n\nupdate CHANGELOG.md\nupdate docs/rules.md\n\nIf you have installed just as recommended, you can now run just document to update the website and just lint to check that the code has no lints and is properly formatted."
-  },
-  {
-    "objectID": "contributing-rule-example.html#proposing-your-changes",
-    "href": "contributing-rule-example.html#proposing-your-changes",
-    "title": "Adding a new rule to Jarl",
-    "section": "Proposing your changes",
-    "text": "Proposing your changes\nOnce all of this is done, it is time to open a PR!\nNote: if you need some guidance, early feedback, or simply want to store your changes in a branch, you can also open an incomplete PR.\n\nPR title\nJarl follows conventional commits, meaning that your PR must start with “feat:”, “fix:”, or another appropriate name (see the linked documentation). In this case, the PR is titled “feat: Add list2df_linter”.\n\n\nPR automated comments\nOnce you have opened a PR, you will receive three automated comments after a few minutes:\n\ncode coverage: this checks that all the lines you added are covered by some tests. Try to ensure this is at 100%.\necosystem checks: every time there is a change in jarl-core, Jarl is run on several R packages and the results are compared to the Jarl version on the main branch. There will be a comment indicating if your changes have revealed new violations or removed some violations in those repositories. Here, we added a rule so we expect either no changes or more violations. New violations will be printed with a link to the lines of code that trigger them, so check a few to ensure those are not false positives.\nbenchmark: this is usually irrelevant when adding a new rule, it is simply to ensure there is no catastrophic performance degradation.\n\nCongrats, and thanks for your contribution!"
-  },
-  {
-    "objectID": "integrations.html",
-    "href": "integrations.html",
-    "title": "Integrations",
-    "section": "",
-    "text": "Jarl can be used as a Github Action via setup-jarl. This action runs in a couple of seconds and will fail if there are any rule violations. It is possible to customize the arguments passed to Jarl in this action, such as the input paths.\nHere is an example YAML file:\non:\n  push:\n    branches: main\n  pull_request:\n\nname: jarl-check\n\npermissions: read-all\n\njobs:\n  jarl-check:\n    name: jarl-check\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: etiennebacher/setup-jarl@v0.1.0\nSee the setup-jarl repository for more examples."
-  },
-  {
-    "objectID": "integrations.html#github-actions",
-    "href": "integrations.html#github-actions",
-    "title": "Integrations",
-    "section": "",
-    "text": "Jarl can be used as a Github Action via setup-jarl. This action runs in a couple of seconds and will fail if there are any rule violations. It is possible to customize the arguments passed to Jarl in this action, such as the input paths.\nHere is an example YAML file:\non:\n  push:\n    branches: main\n  pull_request:\n\nname: jarl-check\n\npermissions: read-all\n\njobs:\n  jarl-check:\n    name: jarl-check\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: etiennebacher/setup-jarl@v0.1.0\nSee the setup-jarl repository for more examples."
-  },
-  {
-    "objectID": "editors.html",
-    "href": "editors.html",
-    "title": "Editor support",
-    "section": "",
-    "text": "Note\n\n\n\nVersion numbers of the Jarl extensions may differ from the version number of Jarl itself. This is made on purpose so that it is easier to make releases that are specific to each extension or to Jarl itself.\nTo get the version number of Jarl itself, use jarl --version."
-  },
-  {
-    "objectID": "editors.html#vs-code-positron",
-    "href": "editors.html#vs-code-positron",
-    "title": "Editor support",
-    "section": "VS Code / Positron",
-    "text": "VS Code / Positron\nBoth VS Code and Positron have access to the Jarl extension via the VS Marketplace and Open VSX.\nThis extension provides code higlights and quick fixes:\n\ncode highlights will underline pieces of code that violate any rule in your setup:\n\n\n\nquick fixes lightbulb icons will appear when the cursor is next to a highlighted piece of code. Clicking this icon will give you several options: apply the fix only for this piece of code, add a comment to ignore this specific violation, or add a comment to ignore all violations present in this piece of code. The screenshots below show the procedure to apply the fix:\n\n\n\n\nThis extension provides few options integrated in VS Code or Positron. One of them is “Assignment operator”, that indicates which of \"=\" or \"&lt;-\" is preferred in the files parsed by Jarl. This option can be set at the User or Workspace level by looking for “Jarl” in the IDE settings.\nIt is recommended to use jarl.toml if more configuration is needed.\n\n\n\n\n\n\nTip\n\n\n\nThe Tombi extension is useful to have suggestions and autocompletion when editing jarl.toml."
-  },
-  {
-    "objectID": "editors.html#zed",
-    "href": "editors.html#zed",
-    "title": "Editor support",
-    "section": "Zed",
-    "text": "Zed\nJarl is available in the list of Zed extensions. After installing it, you will need to update settings.json, in particular the field languages:\n\"languages\": {\n  \"Python\": {\n    [...]\n  },\n  \"R\": {\n    \"language_servers\": [\"jarl\"]\n  }\n}\nlanguage_servers accepts multiple values, so you may have \"language_servers\": [\"jarl\", \"air\"] for example.\nAs in Positron / VS Code, it is possible to pass a few options, such as assignmentOperator. This has to be specified in the lsp field:\n\"lsp\": {\n  \"jarl\": {\n    \"initialization_options\": {\n      \"assignmentOperator\": \"=\"\n    }\n  }\n}"
-  },
-  {
-    "objectID": "editors.html#rstudio",
-    "href": "editors.html#rstudio",
-    "title": "Editor support",
-    "section": "RStudio",
-    "text": "RStudio\nCurrently, Jarl cannot be integrated in RStudio to highlight code or provide quick fix actions in the editor. The only way to use Jarl in RStudio is via the Terminal."
-  },
-  {
-    "objectID": "editors.html#helix",
-    "href": "editors.html#helix",
-    "title": "Editor support",
-    "section": "Helix",
-    "text": "Helix\nTo use Jarl as language server in the Helix editor, you need first to add it to the language configuration file, for instance ~/.config/helix/languages.toml:\n[language-server.jarl]\ncommand = \"jarl\"\nargs = [\"server\"]\n\n[[language]]\nname = \"r\"\nlanguage-servers = [\"jarl\"]\nJarl should then be active in the editor, providing code highlighting and showing the message when the cursor is on the highlighted code:\n\nHelix also provides a code-action keybinding. When the cursor is on some code reported by Jarl and when the editor is in “Normal” mode, press “Space” then “a” to show the different code actions:"
-  },
-  {
-    "objectID": "editors.html#neovim",
-    "href": "editors.html#neovim",
-    "title": "Editor support",
-    "section": "Neovim",
-    "text": "Neovim\nTo use Jarl as an LSP in Neovim, you need to configure it with the built-in Neovim LSP (vim.lsp.config) or through nvim-lspconfig. It is not yet available through Mason or part of the nvim-lspconfig collection. Below is an example using the built-in system with Neovim 0.11+.\nCreate an LSP config file at ~/.config/nvim/lsp/jarl.lua:\n---@type vim.lsp.Config\nreturn {\n  cmd = { 'jarl', 'server' },\n  filetypes = { 'r', 'rmd'},\n  -- root_markers = { '.git' },\n  root_dir = function(bufnr, on_dir)\n    on_dir(vim.fs.root(bufnr, '.git') or vim.uv.os_homedir())\n  end,\n}\nThen enable the server in your Neovim configuration (e.g. init.lua or lspconfig.lua):\n-- simply\nvim.lsp.enable 'jarl'\n-- or to pass custom config command\nvim.lsp.config('jarl', {})\nvim.lsp.enable 'jarl'\nThis enables the code-actions and diagnostics (somewhat - see below note)."
-  },
-  {
-    "objectID": "contributing.html",
-    "href": "contributing.html",
-    "title": "Contributing to Jarl",
-    "section": "",
-    "text": "Jarl is written in Rust, so you must install the Rust toolchain.\nJarl relies on Insta to run snapshot tests. You can install it with:\ncargo install cargo-insta\nJarl uses just to quickly run several useful commands, such as just document or just lint (see the list of commands with just -l). This is not mandatory but convenient."
-  },
-  {
-    "objectID": "contributing.html#tools",
-    "href": "contributing.html#tools",
-    "title": "Contributing to Jarl",
-    "section": "",
-    "text": "Jarl is written in Rust, so you must install the Rust toolchain.\nJarl relies on Insta to run snapshot tests. You can install it with:\ncargo install cargo-insta\nJarl uses just to quickly run several useful commands, such as just document or just lint (see the list of commands with just -l). This is not mandatory but convenient."
-  },
-  {
-    "objectID": "contributing.html#basic-structure-of-the-repository",
-    "href": "contributing.html#basic-structure-of-the-repository",
-    "title": "Contributing to Jarl",
-    "section": "Basic structure of the repository",
-    "text": "Basic structure of the repository\nThe folder crates contains several sub-crates. At the time of writing (October 2025), there are three:\n\njarl contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.\njarl-core contains the “meat” of the linter. It is where the R code is parsed and checked, and where the rules are defined. This is probably the crate you will have to modify.\njarl-lsp contains the code to integrate the linter with the Language Server Protocol, which allows editors such as VS Code or Positron to highlight diagnostics and provide “Quick Fix” buttons for example."
-  },
-  {
-    "objectID": "contributing.html#adding-or-modifying-a-rule",
-    "href": "contributing.html#adding-or-modifying-a-rule",
-    "title": "Contributing to Jarl",
-    "section": "Adding or modifying a rule",
-    "text": "Adding or modifying a rule\nIn this section, all paths refer to files in crates/jarl-core.\n\nList of existing rules\nsrc/lints/mod.rs contains the existing list of rules. Each rule must have a name, belong to one or several categories (PERF, READ, etc.), a FixStatus indicating whether it has a fix and, if so, whether this fix is safe or unsafe, and an optional minimum required R version.\n\n\nLint definition\nsrc/lints contains the definition of the rules, along with their associated documentation and tests. It has one subfolder per rule and two mandatory files: &lt;rule_name&gt;.rs (which contains the definition and documentation) and mod.rs (which contains the tests).\nIf there are snapshot tests for this rule, then a subfolder snapshots will also be created. For example, the folder for the rule any_duplicated looks like this:\nsrc/lints/any_duplicated/\n├── any_duplicated.rs\n├── mod.rs\n└── snapshots\n    └── jarl__lints__any_duplicated__tests__fix_output.snap\n\n\nAdding a new rule\nAdding a new rule requires four main steps:\n\nAdd the new rule to the list in src/lints/mod.rs. In the same file, also add pub(crate) mod &lt;rulename&gt;;\nAdd a subfolder with the rule name in src/lints. Add the documentation and the code for the rule.\nAdd tests in src/lints/&lt;rulename&gt;/mod.rs\nAdd the rule in the src/analyze folder. This depends on the initial node in the AST. For instance, for the rule equals_na, we check the presence of code such as x == NA. Since the top node for this expression is a R_BINARY_EXPRESSION, this rule is ran in src/analyze/binary_expression.rs.\n\n\n\nUseful commands\n\ncargo run --bin jarl -- check demos/foo.R (or any other paths to check). The -- in the middle is required to use the CLI in development mode (i.e. without installing it with cargo install)\ncargo test to run all tests, including snapshot tests.\ncargo insta test and cargo insta review (if necessary) for snapshot tests only.\ncargo install --path crates/jarl --profile=release (or --profile=dev) to have a system-wide install and test the crate in other R projects."
-  },
-  {
-    "objectID": "contributing.html#integration-tests",
-    "href": "contributing.html#integration-tests",
-    "title": "Contributing to Jarl",
-    "section": "Integration tests",
-    "text": "Integration tests\nWhen you add a new rule, it is usually sufficient to add tests in the directory of this rule only, e.g. in crates/jarl-core/src/lints/any_duplicated.\nHowever, in some cases you may affect the way users interact with Jarl as a whole, for instance by adding new command line arguments or arguments that can be set in jarl.toml. For those changes, it is important to check that the general behavior of Jarl is correct (check what happens when there are no R files, how TOML and CLI arguments interact, etc.).\nTests for this are stored in crates/jarl-cli/tests/integration. It is likely that you will need to edit one of the files instead of creating a new one. For example, adding an extra argument in crates/jarl-core/toml.rs would require adding tests in crates/jarl-cli/tests/integration/toml.rs."
-  },
-  {
-    "objectID": "contributing.html#pr-title",
-    "href": "contributing.html#pr-title",
-    "title": "Contributing to Jarl",
-    "section": "PR title",
-    "text": "PR title\nJarl follows conventional commits, meaning that your PR must start with “feat:”, “fix:”, or another appropriate name (see the linked documentation). See the list of previous PRs for some examples."
-  },
-  {
-    "objectID": "rules/seq2.html",
-    "href": "rules/seq2.html",
-    "title": "seq2",
-    "section": "",
-    "text": "Checks for seq(length(...)), seq(nrow(...)), seq(ncol(...)), seq(NROW(...)), seq(NCOL(...)). See also seq.\n\n\n\nThose patterns are often used to generate sequences from 1 to a given number. However, when length(...) is 0, then this creates a sequence 1,0 which is often overlooked.\nThis rule comes with safe automatic fixes using seq_along() or seq_len().\n\n\n\nfor (i in seq(nrow(data))) {\n  print(\"hi\")\n}\n\nfor (i in seq(length(data))) {\n  print(\"hi\")\n}\nUse instead:\nfor (i in seq_len(nrow(data))) {\n  print(\"hi\")\n}\n\nfor (i in seq_along(data)) {\n  print(\"hi\")\n}",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "seq2"
-    ]
-  },
-  {
-    "objectID": "rules/seq2.html#what-it-does",
-    "href": "rules/seq2.html#what-it-does",
-    "title": "seq2",
-    "section": "",
-    "text": "Checks for seq(length(...)), seq(nrow(...)), seq(ncol(...)), seq(NROW(...)), seq(NCOL(...)). See also seq.",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "seq2"
-    ]
-  },
-  {
-    "objectID": "rules/seq2.html#why-is-this-bad",
-    "href": "rules/seq2.html#why-is-this-bad",
-    "title": "seq2",
-    "section": "",
-    "text": "Those patterns are often used to generate sequences from 1 to a given number. However, when length(...) is 0, then this creates a sequence 1,0 which is often overlooked.\nThis rule comes with safe automatic fixes using seq_along() or seq_len().",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "seq2"
-    ]
-  },
-  {
-    "objectID": "rules/seq2.html#example",
-    "href": "rules/seq2.html#example",
-    "title": "seq2",
-    "section": "",
-    "text": "for (i in seq(nrow(data))) {\n  print(\"hi\")\n}\n\nfor (i in seq(length(data))) {\n  print(\"hi\")\n}\nUse instead:\nfor (i in seq_len(nrow(data))) {\n  print(\"hi\")\n}\n\nfor (i in seq_along(data)) {\n  print(\"hi\")\n}",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "seq2"
-    ]
-  },
-  {
-    "objectID": "rules/list2df.html",
-    "href": "rules/list2df.html",
-    "title": "list2df",
-    "section": "",
-    "text": "Checks for usage of do.call(cbind.data.frame, x).\n\n\n\nThe goal of do.call(cbind.data.frame, x) is to concatenate multiple lists elements of the same length into a data.frame. Since R 4.0.0, it is possible to do this with list2DF(x), which is more efficient and easier to read than do.call(cbind.data.frame, x).\nThis rule comes with a safe fix but is only enabled if the project explicitly uses R &gt;= 4.0.0 (or if the argument --min-r-version is passed with a version &gt;= 4.0.0).\n\n\n\nx &lt;- list(a = 1:10, b = 11:20)\ndo.call(cbind.data.frame, x)\nUse instead:\nx &lt;- list(a = 1:10, b = 11:20)\nlist2DF(x)\n\n\n\nSee ?list2DF",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "list2df"
-    ]
-  },
-  {
-    "objectID": "rules/list2df.html#what-it-does",
-    "href": "rules/list2df.html#what-it-does",
-    "title": "list2df",
-    "section": "",
-    "text": "Checks for usage of do.call(cbind.data.frame, x).",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "list2df"
-    ]
-  },
-  {
-    "objectID": "rules/list2df.html#why-is-this-bad",
-    "href": "rules/list2df.html#why-is-this-bad",
-    "title": "list2df",
-    "section": "",
-    "text": "The goal of do.call(cbind.data.frame, x) is to concatenate multiple lists elements of the same length into a data.frame. Since R 4.0.0, it is possible to do this with list2DF(x), which is more efficient and easier to read than do.call(cbind.data.frame, x).\nThis rule comes with a safe fix but is only enabled if the project explicitly uses R &gt;= 4.0.0 (or if the argument --min-r-version is passed with a version &gt;= 4.0.0).",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "list2df"
-    ]
-  },
-  {
-    "objectID": "rules/list2df.html#example",
-    "href": "rules/list2df.html#example",
-    "title": "list2df",
-    "section": "",
-    "text": "x &lt;- list(a = 1:10, b = 11:20)\ndo.call(cbind.data.frame, x)\nUse instead:\nx &lt;- list(a = 1:10, b = 11:20)\nlist2DF(x)",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "list2df"
-    ]
-  },
-  {
-    "objectID": "rules/list2df.html#references",
-    "href": "rules/list2df.html#references",
-    "title": "list2df",
-    "section": "",
-    "text": "See ?list2DF",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "list2df"
-    ]
-  },
-  {
-    "objectID": "rules/is_numeric.html",
-    "href": "rules/is_numeric.html",
-    "title": "is_numeric",
-    "section": "",
-    "text": "Checks for usage of is.numeric(x) || is.integer(x).\n\n\n\nis.numeric(x) returns TRUE when x is double or integer. Therefore, testing is.numeric(x) || is.integer(x) is redundant and can be simplified.\n\n\n\nx &lt;- 1:3\nis.numeric(x) || is.integer(x)\nUse instead:\nx &lt;- 1:3\nis.numeric(x)\n\n\n\nSee ?is.numeric",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "is_numeric"
-    ]
-  },
-  {
-    "objectID": "rules/is_numeric.html#what-it-does",
-    "href": "rules/is_numeric.html#what-it-does",
-    "title": "is_numeric",
-    "section": "",
-    "text": "Checks for usage of is.numeric(x) || is.integer(x).",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "is_numeric"
-    ]
-  },
-  {
-    "objectID": "rules/is_numeric.html#why-is-this-bad",
-    "href": "rules/is_numeric.html#why-is-this-bad",
-    "title": "is_numeric",
-    "section": "",
-    "text": "is.numeric(x) returns TRUE when x is double or integer. Therefore, testing is.numeric(x) || is.integer(x) is redundant and can be simplified.",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "is_numeric"
-    ]
-  },
-  {
-    "objectID": "rules/is_numeric.html#example",
-    "href": "rules/is_numeric.html#example",
-    "title": "is_numeric",
-    "section": "",
-    "text": "x &lt;- 1:3\nis.numeric(x) || is.integer(x)\nUse instead:\nx &lt;- 1:3\nis.numeric(x)",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "is_numeric"
-    ]
-  },
-  {
-    "objectID": "rules/is_numeric.html#references",
-    "href": "rules/is_numeric.html#references",
-    "title": "is_numeric",
-    "section": "",
-    "text": "See ?is.numeric",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "is_numeric"
-    ]
-  },
-  {
-    "objectID": "rules/lengths.html",
-    "href": "rules/lengths.html",
-    "title": "lengths",
-    "section": "",
-    "text": "Checks for usage of length() in several functions that apply it to each element of a list, such as lapply(), vapply(), purrr::map(), etc., and replaces it with lengths().\n\n\n\nlengths() is faster and more memory-efficient than applying length() on each element of the list.\n\n\n\nx &lt;- list(a = 1, b = 2:3, c = 1:10)\nsapply(x, length)\nUse instead:\nx &lt;- list(a = 1, b = 2:3, c = 1:10)\nlengths(x)\n\n\n\nSee ?lengths",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "lengths"
-    ]
-  },
-  {
-    "objectID": "rules/lengths.html#what-it-does",
-    "href": "rules/lengths.html#what-it-does",
-    "title": "lengths",
-    "section": "",
-    "text": "Checks for usage of length() in several functions that apply it to each element of a list, such as lapply(), vapply(), purrr::map(), etc., and replaces it with lengths().",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "lengths"
-    ]
-  },
-  {
-    "objectID": "rules/lengths.html#why-is-this-bad",
-    "href": "rules/lengths.html#why-is-this-bad",
-    "title": "lengths",
-    "section": "",
-    "text": "lengths() is faster and more memory-efficient than applying length() on each element of the list.",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "lengths"
-    ]
-  },
-  {
-    "objectID": "rules/lengths.html#example",
-    "href": "rules/lengths.html#example",
-    "title": "lengths",
-    "section": "",
-    "text": "x &lt;- list(a = 1, b = 2:3, c = 1:10)\nsapply(x, length)\nUse instead:\nx &lt;- list(a = 1, b = 2:3, c = 1:10)\nlengths(x)",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "lengths"
-    ]
-  },
-  {
-    "objectID": "rules/lengths.html#references",
-    "href": "rules/lengths.html#references",
-    "title": "lengths",
-    "section": "",
-    "text": "See ?lengths",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "lengths"
-    ]
-  },
-  {
-    "objectID": "rules/repeat.html",
-    "href": "rules/repeat.html",
-    "title": "repeat",
-    "section": "",
-    "text": "Checks use of while (TRUE) and recommends the use of repeat instead.\n\n\n\nwhile (TRUE) is valid R code but repeat better expresses the intent of infinite loop.\n\n\n\nwhile (TRUE) {\n  # ...\n  break\n}\nUse instead:\nrepeat {\n  # ...\n  break\n}",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "repeat"
-    ]
-  },
-  {
-    "objectID": "rules/repeat.html#what-it-does",
-    "href": "rules/repeat.html#what-it-does",
-    "title": "repeat",
-    "section": "",
-    "text": "Checks use of while (TRUE) and recommends the use of repeat instead.",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "repeat"
-    ]
-  },
-  {
-    "objectID": "rules/repeat.html#why-is-this-bad",
-    "href": "rules/repeat.html#why-is-this-bad",
-    "title": "repeat",
-    "section": "",
-    "text": "while (TRUE) is valid R code but repeat better expresses the intent of infinite loop.",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "repeat"
-    ]
-  },
-  {
-    "objectID": "rules/repeat.html#example",
-    "href": "rules/repeat.html#example",
-    "title": "repeat",
-    "section": "",
-    "text": "while (TRUE) {\n  # ...\n  break\n}\nUse instead:\nrepeat {\n  # ...\n  break\n}",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "repeat"
-    ]
-  },
-  {
-    "objectID": "rules/seq.html",
-    "href": "rules/seq.html",
-    "title": "seq",
-    "section": "",
-    "text": "Checks for 1:length(...), 1:nrow(...), 1:ncol(...), 1:NROW(...) and 1:NCOL(...) expressions. See also seq2.\n\n\n\nThose patterns are often used to generate sequences from 1 to a given number. However, when the right-hand side of : is 0, then this creates a sequence 1,0 which is often overlooked.\nThis rule comes with safe automatic fixes using seq_along() or seq_len().\n\n\n\nfor (i in 1:nrow(data)) {\n  print(\"hi\")\n}\n\nfor (i in 1:length(data)) {\n  print(\"hi\")\n}\nUse instead:\nfor (i in seq_len(nrow(data))) {\n  print(\"hi\")\n}\n\nfor (i in seq_along(data)) {\n  print(\"hi\")\n}",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "seq"
-    ]
-  },
-  {
-    "objectID": "rules/seq.html#what-it-does",
-    "href": "rules/seq.html#what-it-does",
-    "title": "seq",
-    "section": "",
-    "text": "Checks for 1:length(...), 1:nrow(...), 1:ncol(...), 1:NROW(...) and 1:NCOL(...) expressions. See also seq2.",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "seq"
-    ]
-  },
-  {
-    "objectID": "rules/seq.html#why-is-this-bad",
-    "href": "rules/seq.html#why-is-this-bad",
-    "title": "seq",
-    "section": "",
-    "text": "Those patterns are often used to generate sequences from 1 to a given number. However, when the right-hand side of : is 0, then this creates a sequence 1,0 which is often overlooked.\nThis rule comes with safe automatic fixes using seq_along() or seq_len().",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "seq"
-    ]
-  },
-  {
-    "objectID": "rules/seq.html#example",
-    "href": "rules/seq.html#example",
-    "title": "seq",
-    "section": "",
-    "text": "for (i in 1:nrow(data)) {\n  print(\"hi\")\n}\n\nfor (i in 1:length(data)) {\n  print(\"hi\")\n}\nUse instead:\nfor (i in seq_len(nrow(data))) {\n  print(\"hi\")\n}\n\nfor (i in seq_along(data)) {\n  print(\"hi\")\n}",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "seq"
-    ]
-  },
-  {
-    "objectID": "rules/class_equals.html",
-    "href": "rules/class_equals.html",
-    "title": "class_equals",
-    "section": "",
-    "text": "Checks for usage of class(...) == \"some_class\" and class(...) %in% \"some_class\". The only cases that are flagged (and potentially fixed) are cases that:\n\nhappen in the condition part of an if () statement or of a while () statement,\nand are not nested in other calls.\n\nFor example, if (class(x) == \"foo\") would be reported, but not if (my_function(class(x) == \"foo\")).\n\n\n\nAn R object can have several classes. Therefore, class(...) == \"some_class\" would return a logical vector with as many values as the object has classes, which is rarely desirable.\nIt is better to use inherits(..., \"some_class\") instead. inherits() checks whether any of the object’s classes match the desired class.\nThe same rationale applies to class(...) %in% \"some_class\".\n\n\n\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nif (class(x) == \"lm\") {\n  # &lt;do something&gt;\n}\nUse instead:\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nif (inherits(x, \"lm\")) {\n  # &lt;do something&gt;\n}\n\n\n\nSee ?inherits",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "class_equals"
-    ]
-  },
-  {
-    "objectID": "rules/class_equals.html#what-it-does",
-    "href": "rules/class_equals.html#what-it-does",
-    "title": "class_equals",
-    "section": "",
-    "text": "Checks for usage of class(...) == \"some_class\" and class(...) %in% \"some_class\". The only cases that are flagged (and potentially fixed) are cases that:\n\nhappen in the condition part of an if () statement or of a while () statement,\nand are not nested in other calls.\n\nFor example, if (class(x) == \"foo\") would be reported, but not if (my_function(class(x) == \"foo\")).",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "class_equals"
-    ]
-  },
-  {
-    "objectID": "rules/class_equals.html#why-is-this-bad",
-    "href": "rules/class_equals.html#why-is-this-bad",
-    "title": "class_equals",
-    "section": "",
-    "text": "An R object can have several classes. Therefore, class(...) == \"some_class\" would return a logical vector with as many values as the object has classes, which is rarely desirable.\nIt is better to use inherits(..., \"some_class\") instead. inherits() checks whether any of the object’s classes match the desired class.\nThe same rationale applies to class(...) %in% \"some_class\".",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "class_equals"
-    ]
-  },
-  {
-    "objectID": "rules/class_equals.html#example",
-    "href": "rules/class_equals.html#example",
-    "title": "class_equals",
-    "section": "",
-    "text": "x &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nif (class(x) == \"lm\") {\n  # &lt;do something&gt;\n}\nUse instead:\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nif (inherits(x, \"lm\")) {\n  # &lt;do something&gt;\n}",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "class_equals"
-    ]
-  },
-  {
-    "objectID": "rules/class_equals.html#references",
-    "href": "rules/class_equals.html#references",
-    "title": "class_equals",
-    "section": "",
-    "text": "See ?inherits",
-    "crumbs": [
-      "Rules",
-      "List of rules",
-      "class_equals"
+      "system_file"
     ]
   },
   {
@@ -1582,63 +534,1159 @@
     ]
   },
   {
-    "objectID": "rules/system_file.html",
-    "href": "rules/system_file.html",
-    "title": "system_file",
+    "objectID": "rules/class_equals.html",
+    "href": "rules/class_equals.html",
+    "title": "class_equals",
     "section": "",
-    "text": "Checks for usage of system.file(file.path(...)) and replaces it with system.file(...).\n\n\n\nIn system.file(), all unnamed arguments are already passed to file.path() under the hood, so system.file(file.path(...)) is redundant and harder to read.\n\n\n\nsystem.file(file.path(\"my_dir\", \"my_sub_dir\"), package = \"foo\")\nUse instead:\nsystem.file(\"my_dir\", \"my_sub_dir\", package = \"foo\")\n\n\n\nSee ?system.file",
+    "text": "Checks for usage of class(...) == \"some_class\" and class(...) %in% \"some_class\". The only cases that are flagged (and potentially fixed) are cases that:\n\nhappen in the condition part of an if () statement or of a while () statement,\nand are not nested in other calls.\n\nFor example, if (class(x) == \"foo\") would be reported, but not if (my_function(class(x) == \"foo\")).\n\n\n\nAn R object can have several classes. Therefore, class(...) == \"some_class\" would return a logical vector with as many values as the object has classes, which is rarely desirable.\nIt is better to use inherits(..., \"some_class\") instead. inherits() checks whether any of the object’s classes match the desired class.\nThe same rationale applies to class(...) %in% \"some_class\".\n\n\n\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nif (class(x) == \"lm\") {\n  # &lt;do something&gt;\n}\nUse instead:\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nif (inherits(x, \"lm\")) {\n  # &lt;do something&gt;\n}\n\n\n\nSee ?inherits",
     "crumbs": [
       "Rules",
       "List of rules",
-      "system_file"
+      "class_equals"
     ]
   },
   {
-    "objectID": "rules/system_file.html#what-it-does",
-    "href": "rules/system_file.html#what-it-does",
-    "title": "system_file",
+    "objectID": "rules/class_equals.html#what-it-does",
+    "href": "rules/class_equals.html#what-it-does",
+    "title": "class_equals",
     "section": "",
-    "text": "Checks for usage of system.file(file.path(...)) and replaces it with system.file(...).",
+    "text": "Checks for usage of class(...) == \"some_class\" and class(...) %in% \"some_class\". The only cases that are flagged (and potentially fixed) are cases that:\n\nhappen in the condition part of an if () statement or of a while () statement,\nand are not nested in other calls.\n\nFor example, if (class(x) == \"foo\") would be reported, but not if (my_function(class(x) == \"foo\")).",
     "crumbs": [
       "Rules",
       "List of rules",
-      "system_file"
+      "class_equals"
     ]
   },
   {
-    "objectID": "rules/system_file.html#why-is-this-bad",
-    "href": "rules/system_file.html#why-is-this-bad",
-    "title": "system_file",
+    "objectID": "rules/class_equals.html#why-is-this-bad",
+    "href": "rules/class_equals.html#why-is-this-bad",
+    "title": "class_equals",
     "section": "",
-    "text": "In system.file(), all unnamed arguments are already passed to file.path() under the hood, so system.file(file.path(...)) is redundant and harder to read.",
+    "text": "An R object can have several classes. Therefore, class(...) == \"some_class\" would return a logical vector with as many values as the object has classes, which is rarely desirable.\nIt is better to use inherits(..., \"some_class\") instead. inherits() checks whether any of the object’s classes match the desired class.\nThe same rationale applies to class(...) %in% \"some_class\".",
     "crumbs": [
       "Rules",
       "List of rules",
-      "system_file"
+      "class_equals"
     ]
   },
   {
-    "objectID": "rules/system_file.html#example",
-    "href": "rules/system_file.html#example",
-    "title": "system_file",
+    "objectID": "rules/class_equals.html#example",
+    "href": "rules/class_equals.html#example",
+    "title": "class_equals",
     "section": "",
-    "text": "system.file(file.path(\"my_dir\", \"my_sub_dir\"), package = \"foo\")\nUse instead:\nsystem.file(\"my_dir\", \"my_sub_dir\", package = \"foo\")",
+    "text": "x &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nif (class(x) == \"lm\") {\n  # &lt;do something&gt;\n}\nUse instead:\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nif (inherits(x, \"lm\")) {\n  # &lt;do something&gt;\n}",
     "crumbs": [
       "Rules",
       "List of rules",
-      "system_file"
+      "class_equals"
     ]
   },
   {
-    "objectID": "rules/system_file.html#references",
-    "href": "rules/system_file.html#references",
-    "title": "system_file",
+    "objectID": "rules/class_equals.html#references",
+    "href": "rules/class_equals.html#references",
+    "title": "class_equals",
     "section": "",
-    "text": "See ?system.file",
+    "text": "See ?inherits",
     "crumbs": [
       "Rules",
       "List of rules",
-      "system_file"
+      "class_equals"
+    ]
+  },
+  {
+    "objectID": "rules/seq.html",
+    "href": "rules/seq.html",
+    "title": "seq",
+    "section": "",
+    "text": "Checks for 1:length(...), 1:nrow(...), 1:ncol(...), 1:NROW(...) and 1:NCOL(...) expressions. See also seq2.\n\n\n\nThose patterns are often used to generate sequences from 1 to a given number. However, when the right-hand side of : is 0, then this creates a sequence 1,0 which is often overlooked.\nThis rule comes with safe automatic fixes using seq_along() or seq_len().\n\n\n\nfor (i in 1:nrow(data)) {\n  print(\"hi\")\n}\n\nfor (i in 1:length(data)) {\n  print(\"hi\")\n}\nUse instead:\nfor (i in seq_len(nrow(data))) {\n  print(\"hi\")\n}\n\nfor (i in seq_along(data)) {\n  print(\"hi\")\n}",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "seq"
+    ]
+  },
+  {
+    "objectID": "rules/seq.html#what-it-does",
+    "href": "rules/seq.html#what-it-does",
+    "title": "seq",
+    "section": "",
+    "text": "Checks for 1:length(...), 1:nrow(...), 1:ncol(...), 1:NROW(...) and 1:NCOL(...) expressions. See also seq2.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "seq"
+    ]
+  },
+  {
+    "objectID": "rules/seq.html#why-is-this-bad",
+    "href": "rules/seq.html#why-is-this-bad",
+    "title": "seq",
+    "section": "",
+    "text": "Those patterns are often used to generate sequences from 1 to a given number. However, when the right-hand side of : is 0, then this creates a sequence 1,0 which is often overlooked.\nThis rule comes with safe automatic fixes using seq_along() or seq_len().",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "seq"
+    ]
+  },
+  {
+    "objectID": "rules/seq.html#example",
+    "href": "rules/seq.html#example",
+    "title": "seq",
+    "section": "",
+    "text": "for (i in 1:nrow(data)) {\n  print(\"hi\")\n}\n\nfor (i in 1:length(data)) {\n  print(\"hi\")\n}\nUse instead:\nfor (i in seq_len(nrow(data))) {\n  print(\"hi\")\n}\n\nfor (i in seq_along(data)) {\n  print(\"hi\")\n}",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "seq"
+    ]
+  },
+  {
+    "objectID": "rules/repeat.html",
+    "href": "rules/repeat.html",
+    "title": "repeat",
+    "section": "",
+    "text": "Checks use of while (TRUE) and recommends the use of repeat instead.\n\n\n\nwhile (TRUE) is valid R code but repeat better expresses the intent of infinite loop.\n\n\n\nwhile (TRUE) {\n  # ...\n  break\n}\nUse instead:\nrepeat {\n  # ...\n  break\n}",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "repeat"
+    ]
+  },
+  {
+    "objectID": "rules/repeat.html#what-it-does",
+    "href": "rules/repeat.html#what-it-does",
+    "title": "repeat",
+    "section": "",
+    "text": "Checks use of while (TRUE) and recommends the use of repeat instead.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "repeat"
+    ]
+  },
+  {
+    "objectID": "rules/repeat.html#why-is-this-bad",
+    "href": "rules/repeat.html#why-is-this-bad",
+    "title": "repeat",
+    "section": "",
+    "text": "while (TRUE) is valid R code but repeat better expresses the intent of infinite loop.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "repeat"
+    ]
+  },
+  {
+    "objectID": "rules/repeat.html#example",
+    "href": "rules/repeat.html#example",
+    "title": "repeat",
+    "section": "",
+    "text": "while (TRUE) {\n  # ...\n  break\n}\nUse instead:\nrepeat {\n  # ...\n  break\n}",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "repeat"
+    ]
+  },
+  {
+    "objectID": "rules/lengths.html",
+    "href": "rules/lengths.html",
+    "title": "lengths",
+    "section": "",
+    "text": "Checks for usage of length() in several functions that apply it to each element of a list, such as lapply(), vapply(), purrr::map(), etc., and replaces it with lengths().\n\n\n\nlengths() is faster and more memory-efficient than applying length() on each element of the list.\n\n\n\nx &lt;- list(a = 1, b = 2:3, c = 1:10)\nsapply(x, length)\nUse instead:\nx &lt;- list(a = 1, b = 2:3, c = 1:10)\nlengths(x)\n\n\n\nSee ?lengths",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "lengths"
+    ]
+  },
+  {
+    "objectID": "rules/lengths.html#what-it-does",
+    "href": "rules/lengths.html#what-it-does",
+    "title": "lengths",
+    "section": "",
+    "text": "Checks for usage of length() in several functions that apply it to each element of a list, such as lapply(), vapply(), purrr::map(), etc., and replaces it with lengths().",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "lengths"
+    ]
+  },
+  {
+    "objectID": "rules/lengths.html#why-is-this-bad",
+    "href": "rules/lengths.html#why-is-this-bad",
+    "title": "lengths",
+    "section": "",
+    "text": "lengths() is faster and more memory-efficient than applying length() on each element of the list.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "lengths"
+    ]
+  },
+  {
+    "objectID": "rules/lengths.html#example",
+    "href": "rules/lengths.html#example",
+    "title": "lengths",
+    "section": "",
+    "text": "x &lt;- list(a = 1, b = 2:3, c = 1:10)\nsapply(x, length)\nUse instead:\nx &lt;- list(a = 1, b = 2:3, c = 1:10)\nlengths(x)",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "lengths"
+    ]
+  },
+  {
+    "objectID": "rules/lengths.html#references",
+    "href": "rules/lengths.html#references",
+    "title": "lengths",
+    "section": "",
+    "text": "See ?lengths",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "lengths"
+    ]
+  },
+  {
+    "objectID": "rules/is_numeric.html",
+    "href": "rules/is_numeric.html",
+    "title": "is_numeric",
+    "section": "",
+    "text": "Checks for usage of is.numeric(x) || is.integer(x).\n\n\n\nis.numeric(x) returns TRUE when x is double or integer. Therefore, testing is.numeric(x) || is.integer(x) is redundant and can be simplified.\n\n\n\nx &lt;- 1:3\nis.numeric(x) || is.integer(x)\nUse instead:\nx &lt;- 1:3\nis.numeric(x)\n\n\n\nSee ?is.numeric",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "is_numeric"
+    ]
+  },
+  {
+    "objectID": "rules/is_numeric.html#what-it-does",
+    "href": "rules/is_numeric.html#what-it-does",
+    "title": "is_numeric",
+    "section": "",
+    "text": "Checks for usage of is.numeric(x) || is.integer(x).",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "is_numeric"
+    ]
+  },
+  {
+    "objectID": "rules/is_numeric.html#why-is-this-bad",
+    "href": "rules/is_numeric.html#why-is-this-bad",
+    "title": "is_numeric",
+    "section": "",
+    "text": "is.numeric(x) returns TRUE when x is double or integer. Therefore, testing is.numeric(x) || is.integer(x) is redundant and can be simplified.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "is_numeric"
+    ]
+  },
+  {
+    "objectID": "rules/is_numeric.html#example",
+    "href": "rules/is_numeric.html#example",
+    "title": "is_numeric",
+    "section": "",
+    "text": "x &lt;- 1:3\nis.numeric(x) || is.integer(x)\nUse instead:\nx &lt;- 1:3\nis.numeric(x)",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "is_numeric"
+    ]
+  },
+  {
+    "objectID": "rules/is_numeric.html#references",
+    "href": "rules/is_numeric.html#references",
+    "title": "is_numeric",
+    "section": "",
+    "text": "See ?is.numeric",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "is_numeric"
+    ]
+  },
+  {
+    "objectID": "rules/list2df.html",
+    "href": "rules/list2df.html",
+    "title": "list2df",
+    "section": "",
+    "text": "Checks for usage of do.call(cbind.data.frame, x).\n\n\n\nThe goal of do.call(cbind.data.frame, x) is to concatenate multiple lists elements of the same length into a data.frame. Since R 4.0.0, it is possible to do this with list2DF(x), which is more efficient and easier to read than do.call(cbind.data.frame, x).\nThis rule comes with a safe fix but is only enabled if the project explicitly uses R &gt;= 4.0.0 (or if the argument --min-r-version is passed with a version &gt;= 4.0.0).\n\n\n\nx &lt;- list(a = 1:10, b = 11:20)\ndo.call(cbind.data.frame, x)\nUse instead:\nx &lt;- list(a = 1:10, b = 11:20)\nlist2DF(x)\n\n\n\nSee ?list2DF",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "list2df"
+    ]
+  },
+  {
+    "objectID": "rules/list2df.html#what-it-does",
+    "href": "rules/list2df.html#what-it-does",
+    "title": "list2df",
+    "section": "",
+    "text": "Checks for usage of do.call(cbind.data.frame, x).",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "list2df"
+    ]
+  },
+  {
+    "objectID": "rules/list2df.html#why-is-this-bad",
+    "href": "rules/list2df.html#why-is-this-bad",
+    "title": "list2df",
+    "section": "",
+    "text": "The goal of do.call(cbind.data.frame, x) is to concatenate multiple lists elements of the same length into a data.frame. Since R 4.0.0, it is possible to do this with list2DF(x), which is more efficient and easier to read than do.call(cbind.data.frame, x).\nThis rule comes with a safe fix but is only enabled if the project explicitly uses R &gt;= 4.0.0 (or if the argument --min-r-version is passed with a version &gt;= 4.0.0).",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "list2df"
+    ]
+  },
+  {
+    "objectID": "rules/list2df.html#example",
+    "href": "rules/list2df.html#example",
+    "title": "list2df",
+    "section": "",
+    "text": "x &lt;- list(a = 1:10, b = 11:20)\ndo.call(cbind.data.frame, x)\nUse instead:\nx &lt;- list(a = 1:10, b = 11:20)\nlist2DF(x)",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "list2df"
+    ]
+  },
+  {
+    "objectID": "rules/list2df.html#references",
+    "href": "rules/list2df.html#references",
+    "title": "list2df",
+    "section": "",
+    "text": "See ?list2DF",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "list2df"
+    ]
+  },
+  {
+    "objectID": "rules/seq2.html",
+    "href": "rules/seq2.html",
+    "title": "seq2",
+    "section": "",
+    "text": "Checks for seq(length(...)), seq(nrow(...)), seq(ncol(...)), seq(NROW(...)), seq(NCOL(...)). See also seq.\n\n\n\nThose patterns are often used to generate sequences from 1 to a given number. However, when length(...) is 0, then this creates a sequence 1,0 which is often overlooked.\nThis rule comes with safe automatic fixes using seq_along() or seq_len().\n\n\n\nfor (i in seq(nrow(data))) {\n  print(\"hi\")\n}\n\nfor (i in seq(length(data))) {\n  print(\"hi\")\n}\nUse instead:\nfor (i in seq_len(nrow(data))) {\n  print(\"hi\")\n}\n\nfor (i in seq_along(data)) {\n  print(\"hi\")\n}",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "seq2"
+    ]
+  },
+  {
+    "objectID": "rules/seq2.html#what-it-does",
+    "href": "rules/seq2.html#what-it-does",
+    "title": "seq2",
+    "section": "",
+    "text": "Checks for seq(length(...)), seq(nrow(...)), seq(ncol(...)), seq(NROW(...)), seq(NCOL(...)). See also seq.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "seq2"
+    ]
+  },
+  {
+    "objectID": "rules/seq2.html#why-is-this-bad",
+    "href": "rules/seq2.html#why-is-this-bad",
+    "title": "seq2",
+    "section": "",
+    "text": "Those patterns are often used to generate sequences from 1 to a given number. However, when length(...) is 0, then this creates a sequence 1,0 which is often overlooked.\nThis rule comes with safe automatic fixes using seq_along() or seq_len().",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "seq2"
+    ]
+  },
+  {
+    "objectID": "rules/seq2.html#example",
+    "href": "rules/seq2.html#example",
+    "title": "seq2",
+    "section": "",
+    "text": "for (i in seq(nrow(data))) {\n  print(\"hi\")\n}\n\nfor (i in seq(length(data))) {\n  print(\"hi\")\n}\nUse instead:\nfor (i in seq_len(nrow(data))) {\n  print(\"hi\")\n}\n\nfor (i in seq_along(data)) {\n  print(\"hi\")\n}",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "seq2"
+    ]
+  },
+  {
+    "objectID": "contributing.html",
+    "href": "contributing.html",
+    "title": "Contributing to Jarl",
+    "section": "",
+    "text": "Jarl is written in Rust, so you must install the Rust toolchain.\nJarl relies on Insta to run snapshot tests. You can install it with:\ncargo install cargo-insta\nJarl uses just to quickly run several useful commands, such as just document or just lint (see the list of commands with just -l). This is not mandatory but convenient."
+  },
+  {
+    "objectID": "contributing.html#tools",
+    "href": "contributing.html#tools",
+    "title": "Contributing to Jarl",
+    "section": "",
+    "text": "Jarl is written in Rust, so you must install the Rust toolchain.\nJarl relies on Insta to run snapshot tests. You can install it with:\ncargo install cargo-insta\nJarl uses just to quickly run several useful commands, such as just document or just lint (see the list of commands with just -l). This is not mandatory but convenient."
+  },
+  {
+    "objectID": "contributing.html#basic-structure-of-the-repository",
+    "href": "contributing.html#basic-structure-of-the-repository",
+    "title": "Contributing to Jarl",
+    "section": "Basic structure of the repository",
+    "text": "Basic structure of the repository\nThe folder crates contains several sub-crates. At the time of writing (October 2025), there are three:\n\njarl contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.\njarl-core contains the “meat” of the linter. It is where the R code is parsed and checked, and where the rules are defined. This is probably the crate you will have to modify.\njarl-lsp contains the code to integrate the linter with the Language Server Protocol, which allows editors such as VS Code or Positron to highlight diagnostics and provide “Quick Fix” buttons for example."
+  },
+  {
+    "objectID": "contributing.html#adding-or-modifying-a-rule",
+    "href": "contributing.html#adding-or-modifying-a-rule",
+    "title": "Contributing to Jarl",
+    "section": "Adding or modifying a rule",
+    "text": "Adding or modifying a rule\nIn this section, all paths refer to files in crates/jarl-core.\n\nList of existing rules\nsrc/lints/mod.rs contains the existing list of rules. Each rule must have a name, belong to one or several categories (PERF, READ, etc.), a FixStatus indicating whether it has a fix and, if so, whether this fix is safe or unsafe, and an optional minimum required R version.\n\n\nLint definition\nsrc/lints contains the definition of the rules, along with their associated documentation and tests. It has one subfolder per rule and two mandatory files: &lt;rule_name&gt;.rs (which contains the definition and documentation) and mod.rs (which contains the tests).\nIf there are snapshot tests for this rule, then a subfolder snapshots will also be created. For example, the folder for the rule any_duplicated looks like this:\nsrc/lints/any_duplicated/\n├── any_duplicated.rs\n├── mod.rs\n└── snapshots\n    └── jarl__lints__any_duplicated__tests__fix_output.snap\n\n\nAdding a new rule\nAdding a new rule requires four main steps:\n\nAdd the new rule to the list in src/lints/mod.rs. In the same file, also add pub(crate) mod &lt;rulename&gt;;\nAdd a subfolder with the rule name in src/lints. Add the documentation and the code for the rule.\nAdd tests in src/lints/&lt;rulename&gt;/mod.rs\nAdd the rule in the src/analyze folder. This depends on the initial node in the AST. For instance, for the rule equals_na, we check the presence of code such as x == NA. Since the top node for this expression is a R_BINARY_EXPRESSION, this rule is ran in src/analyze/binary_expression.rs.\n\n\n\nUseful commands\n\ncargo run --bin jarl -- check demos/foo.R (or any other paths to check). The -- in the middle is required to use the CLI in development mode (i.e. without installing it with cargo install)\ncargo test to run all tests, including snapshot tests.\ncargo insta test and cargo insta review (if necessary) for snapshot tests only.\ncargo install --path crates/jarl --profile=release (or --profile=dev) to have a system-wide install and test the crate in other R projects."
+  },
+  {
+    "objectID": "contributing.html#integration-tests",
+    "href": "contributing.html#integration-tests",
+    "title": "Contributing to Jarl",
+    "section": "Integration tests",
+    "text": "Integration tests\nWhen you add a new rule, it is usually sufficient to add tests in the directory of this rule only, e.g. in crates/jarl-core/src/lints/any_duplicated.\nHowever, in some cases you may affect the way users interact with Jarl as a whole, for instance by adding new command line arguments or arguments that can be set in jarl.toml. For those changes, it is important to check that the general behavior of Jarl is correct (check what happens when there are no R files, how TOML and CLI arguments interact, etc.).\nTests for this are stored in crates/jarl-cli/tests/integration. It is likely that you will need to edit one of the files instead of creating a new one. For example, adding an extra argument in crates/jarl-core/toml.rs would require adding tests in crates/jarl-cli/tests/integration/toml.rs."
+  },
+  {
+    "objectID": "contributing.html#pr-title",
+    "href": "contributing.html#pr-title",
+    "title": "Contributing to Jarl",
+    "section": "PR title",
+    "text": "PR title\nJarl follows conventional commits, meaning that your PR must start with “feat:”, “fix:”, or another appropriate name (see the linked documentation). See the list of previous PRs for some examples."
+  },
+  {
+    "objectID": "editors.html",
+    "href": "editors.html",
+    "title": "Editor support",
+    "section": "",
+    "text": "Note\n\n\n\nVersion numbers of the Jarl extensions may differ from the version number of Jarl itself. This is made on purpose so that it is easier to make releases that are specific to each extension or to Jarl itself.\nTo get the version number of Jarl itself, use jarl --version."
+  },
+  {
+    "objectID": "editors.html#vs-code-positron",
+    "href": "editors.html#vs-code-positron",
+    "title": "Editor support",
+    "section": "VS Code / Positron",
+    "text": "VS Code / Positron\nBoth VS Code and Positron have access to the Jarl extension via the VS Marketplace and Open VSX.\nThis extension provides code higlights and quick fixes:\n\ncode highlights will underline pieces of code that violate any rule in your setup:\n\n\n\nquick fixes lightbulb icons will appear when the cursor is next to a highlighted piece of code. Clicking this icon will give you several options: apply the fix only for this piece of code, add a comment to ignore this specific violation, or add a comment to ignore all violations present in this piece of code. The screenshots below show the procedure to apply the fix:\n\n\n\n\nThis extension provides few options integrated in VS Code or Positron. One of them is “Assignment operator”, that indicates which of \"=\" or \"&lt;-\" is preferred in the files parsed by Jarl. This option can be set at the User or Workspace level by looking for “Jarl” in the IDE settings.\nIt is recommended to use jarl.toml if more configuration is needed.\n\n\n\n\n\n\nTip\n\n\n\nThe Tombi extension is useful to have suggestions and autocompletion when editing jarl.toml."
+  },
+  {
+    "objectID": "editors.html#zed",
+    "href": "editors.html#zed",
+    "title": "Editor support",
+    "section": "Zed",
+    "text": "Zed\nJarl is available in the list of Zed extensions. After installing it, you will need to update settings.json, in particular the field languages:\n\"languages\": {\n  \"Python\": {\n    [...]\n  },\n  \"R\": {\n    \"language_servers\": [\"jarl\"]\n  }\n}\nlanguage_servers accepts multiple values, so you may have \"language_servers\": [\"jarl\", \"air\"] for example.\nAs in Positron / VS Code, it is possible to pass a few options, such as assignmentOperator. This has to be specified in the lsp field:\n\"lsp\": {\n  \"jarl\": {\n    \"initialization_options\": {\n      \"assignmentOperator\": \"=\"\n    }\n  }\n}"
+  },
+  {
+    "objectID": "editors.html#rstudio",
+    "href": "editors.html#rstudio",
+    "title": "Editor support",
+    "section": "RStudio",
+    "text": "RStudio\nCurrently, Jarl cannot be integrated in RStudio to highlight code or provide quick fix actions in the editor. The only way to use Jarl in RStudio is via the Terminal."
+  },
+  {
+    "objectID": "editors.html#helix",
+    "href": "editors.html#helix",
+    "title": "Editor support",
+    "section": "Helix",
+    "text": "Helix\nTo use Jarl as language server in the Helix editor, you need first to add it to the language configuration file, for instance ~/.config/helix/languages.toml:\n[language-server.jarl]\ncommand = \"jarl\"\nargs = [\"server\"]\n\n[[language]]\nname = \"r\"\nlanguage-servers = [\"jarl\"]\nJarl should then be active in the editor, providing code highlighting and showing the message when the cursor is on the highlighted code:\n\nHelix also provides a code-action keybinding. When the cursor is on some code reported by Jarl and when the editor is in “Normal” mode, press “Space” then “a” to show the different code actions:"
+  },
+  {
+    "objectID": "editors.html#neovim",
+    "href": "editors.html#neovim",
+    "title": "Editor support",
+    "section": "Neovim",
+    "text": "Neovim\nTo use Jarl as an LSP in Neovim, you need to configure it with the built-in Neovim LSP (vim.lsp.config) or through nvim-lspconfig. It is not yet available through Mason or part of the nvim-lspconfig collection. Below is an example using the built-in system with Neovim 0.11+.\nCreate an LSP config file at ~/.config/nvim/lsp/jarl.lua:\n---@type vim.lsp.Config\nreturn {\n  cmd = { 'jarl', 'server' },\n  filetypes = { 'r', 'rmd'},\n  -- root_markers = { '.git' },\n  root_dir = function(bufnr, on_dir)\n    on_dir(vim.fs.root(bufnr, '.git') or vim.uv.os_homedir())\n  end,\n}\nThen enable the server in your Neovim configuration (e.g. init.lua or lspconfig.lua):\n-- simply\nvim.lsp.enable 'jarl'\n-- or to pass custom config command\nvim.lsp.config('jarl', {})\nvim.lsp.enable 'jarl'\nThis enables the code-actions and diagnostics (somewhat - see below note)."
+  },
+  {
+    "objectID": "integrations.html",
+    "href": "integrations.html",
+    "title": "Integrations",
+    "section": "",
+    "text": "Jarl can be used as a Github Action via setup-jarl. This action runs in a couple of seconds and will fail if there are any rule violations. It is possible to customize the arguments passed to Jarl in this action, such as the input paths.\nHere is an example YAML file:\non:\n  push:\n    branches: main\n  pull_request:\n\nname: jarl-check\n\npermissions: read-all\n\njobs:\n  jarl-check:\n    name: jarl-check\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: etiennebacher/setup-jarl@v0.1.0\nSee the setup-jarl repository for more examples."
+  },
+  {
+    "objectID": "integrations.html#github-actions",
+    "href": "integrations.html#github-actions",
+    "title": "Integrations",
+    "section": "",
+    "text": "Jarl can be used as a Github Action via setup-jarl. This action runs in a couple of seconds and will fail if there are any rule violations. It is possible to customize the arguments passed to Jarl in this action, such as the input paths.\nHere is an example YAML file:\non:\n  push:\n    branches: main\n  pull_request:\n\nname: jarl-check\n\npermissions: read-all\n\njobs:\n  jarl-check:\n    name: jarl-check\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: etiennebacher/setup-jarl@v0.1.0\nSee the setup-jarl repository for more examples."
+  },
+  {
+    "objectID": "contributing-rule-example.html",
+    "href": "contributing-rule-example.html",
+    "title": "Adding a new rule to Jarl",
+    "section": "",
+    "text": "This page will explain how to implement a new rule in Jarl. It is recommended to read the General information page first to install the required tools. Jarl is written in Rust, but this page will not explain how to set up or use Rust, this is an entirely different topic. To get started with Rust, check out the Rust book."
+  },
+  {
+    "objectID": "contributing-rule-example.html#getting-ready",
+    "href": "contributing-rule-example.html#getting-ready",
+    "title": "Adding a new rule to Jarl",
+    "section": "Getting ready",
+    "text": "Getting ready\n\nFind the rule\nSo far, most (if not all) rules in Jarl come from the list of rules available in lintr, so this is the first place to explore. If you want to add a rule that is not in lintr, please open an issue first.\nNote that not all lintr rules are suitable for Jarl. In particular, rules that are only about formatting (spaces before parenthesis, newlines between arguments, etc.) are out of scope for Jarl. Moreover, you should look for rules that require “pattern detection” only, meaning that they don’t need information about the rest of the code (or only very little). For example, unreachable_code is out of scope for now because we need a way to analyze the rest of the code, which Jarl doesn’t have so far. If you are unsure about whether a rule can or should be implemented, open an issue first.\n\n\nGet familiar with the rule\nYou may know the most common cases of this rule, but there might exist many corner cases making its implementation difficult. Take a look at the relevant test file in the lintr test suite to know more about those corner cases.\nAdditionally, Jarl uses tree-sitter under the hood to parse and navigate the Abstract Syntax Tree (AST) of the code. Having an idea of what this AST looks like is important when implementing the rule. I suggest creating a small test R file containing one or two examples of code that violate this rule. If you have the Air extension installed, you can do the command “Air: View Syntax Tree” to display the AST next to the code.\nFor example, the code any(x &gt; 10) gives this AST:\n0: R_ROOT@0..12\n  0: (empty)\n  1: R_EXPRESSION_LIST@0..11\n    0: R_CALL@0..11\n      0: R_IDENTIFIER@0..3\n        0: IDENT@0..3 \"any\" [] []\n      1: R_CALL_ARGUMENTS@3..11\n        0: L_PAREN@3..4 \"(\" [] []\n        1: R_ARGUMENT_LIST@4..10\n          0: R_ARGUMENT@4..10\n            0: (empty)\n            1: R_BINARY_EXPRESSION@4..10\n              0: R_IDENTIFIER@4..5\n                0: IDENT@4..5 \"x\" [] []\n              1: GREATER_THAN@5..7 \"&gt;\" [Whitespace(\" \")] []\n              2: R_DOUBLE_VALUE@7..10\n                0: R_DOUBLE_LITERAL@7..10 \"10\" [Whitespace(\" \")] []\n        2: R_PAREN@10..11 \")\" [] []\n  2: EOF@11..12 \"\" [Newline(\"\\n\")] []\nWe can see that this is indeed a tree where each element can have “parents” and “children” nodes. It also shows that the textual representation of the code doesn’t matter here: you could write any(x &gt; 10) or any  ( x    &gt;    10) and the AST would be the same (with the exception of the numbers representing the location of each node in text). This representation is important to keep in mind when adding a new rule: Jarl only checks the text in very specific cases, for example when we want to get the function name to know if we should apply a rule or not. Most of the time, the RSyntaxKind (R_CALL, R_BINARY_EXPRESSION, R_IDENTIFIER, etc.) is used.\n\n\nGet up and running with Rust and Jarl\nYou should have installed Rust and cloned Jarl. Do cargo check or cargo test to know if you are correctly set up."
+  },
+  {
+    "objectID": "contributing-rule-example.html#adding-a-new-rule-basic-steps",
+    "href": "contributing-rule-example.html#adding-a-new-rule-basic-steps",
+    "title": "Adding a new rule to Jarl",
+    "section": "Adding a new rule: basic steps",
+    "text": "Adding a new rule: basic steps\nAs an example for this entire tutorial, we will analyze PR #182, which added the rule list2df. This PR adds a rule to replace calls like do.call(cbind.data.frame, x) by list2DF(x). Importantly, list2DF() was added in R 4.0.0. I encourage you to check this PR as you advance in this tutorial.\nHere’s a basic idea of the workflow to add a new rule:\n\nadd it to the general list of rules\nadd it to the list of rules for the specific kind of node it targets (function calls, if conditions, for loops, etc.)\nimplement the rule\nadd tests\ndocument the rule\nfinal polishing\n\nFrom now on, all file paths refer to the subfolder crates/jarl-core.\n\nAdd the new rule to the list of rules\nThere are two places to modify: lints/mod.rs and one file in the analyze folder.\nlints/mod.rs contains the list of all rules provided by Jarl. We can add a rule to the list:\npub(crate) mod list2df;\n\n...\n\nrule_table.enable(\"list2df\", \"PERF,READ\", FixStatus::Safe, Some((4, 0, 0)));\nThis contains the rule name, the categories it belongs to (those are described above in the file), whether it has a safe fix, an unsafe fix, or no fix, and the optional R version from which it is available.\nThe file to modify in the analyze folder will depend on the rule: here, we look for calls to do.call(). The arguments passed to the function are irrelevant, what matters is that this is a call, so we will modify the file analyze/call.rs:\nuse crate::lints::list2df::list2df::list2df;\n\n...\n\nif checker.is_rule_enabled(\"list2df\") && !checker.should_skip_rule(node, \"list2df\") {\n    checker.report_diagnostic(list2df(r_expr)?);\n}\n\n\nImplement the rule\nThis is the hard part of the process. It requires knowledge about the AST you want to parse and about the different functions available to us to navigate this AST. The rule definition must be located in lints/&lt;rule_name&gt;/&lt;rule_name&gt;.rs, so in this example in lints/list2df/list2df.rs.\nLet’s start with a skeleton of this file:\nuse crate::diagnostic::*;\nuse crate::utils::{get_arg_by_name_then_position, get_arg_by_position, node_contains_comments};\nuse air_r_syntax::*;\nuse biome_rowan::AstNode;\n\npub struct List2Df;\n\n/// ## What it does\n///\n/// Checks for usage of `do.call(cbind.data.frame, x)`.\n///\n/// [...]\nimpl Violation for List2Df {\n    fn name(&self) -&gt; String {\n        \"list2df\".to_string()\n    }\n    fn body(&self) -&gt; String {\n        \"`do.call(cbind.data.frame, x)` is inefficient and can be hard to read.\".to_string()\n    }\n    fn suggestion(&self) -&gt; Option&lt;String&gt; {\n        Some(\"Use `list2DF(x)` instead.\".to_string())\n    }\n}\n\npub fn list2df(ast: &RCall) -&gt; anyhow::Result&lt;Option&lt;Diagnostic&gt;&gt; {\n\n}\nLet’s analyze this by blocks:\n\nthe first lines import required crates and functions, and define a struct using the rule name (in TitleCase);\nthen there is some documentation (truncated here for conciseness);\nthe impl block is where we define the name and the main message (body) that will be used in the output of Jarl. Note that there is also a suggestion() function which is not always necessary.\nfinally, we define the function where we parse the AST.\n\n\n\n\n\n\n\nNoteAbout impl Violation\n\n\n\n\n\nIf you explore other rules implementation, you might notice that the impl Violation block is sometimes missing. This is because in some cases, the message and/or the suggestion depend on the AST itself. For example, for the assignment rule, the message will recommend the use of &lt;- or = depending on the user settings.\nIn this scenario, the name, body, and suggestion are defined at the very end, when we build the Diagnostic.\n\n\n\nWriting this function is the hard part, so let’s focus on this. We start by extracting the important information from the RCall object. In this example, we need both the function name and the arguments:\nlet function = ast.function()?;\nlet arguments = ast.arguments()?;\nNote that it is sometimes shorter to use the destructuring syntax, as follows:\nlet RCallFields { function, arguments } = ast.as_fields();\nlet function = function?;\nlet arguments = arguments?.items();\nUsually, a rule implementation contains a lot of early returns, such as “if the function name is not ‘xyz’ then stop here”. In this example, we want to focus on calls to do.call(), so we can stop early if this is not the function name:\nif function.to_trimmed_text() != \"do.call\" {\n    return Ok(None);\n}\nPast that point, the next step is to check that the arguments correspond to what we want to analyze. do.call has four arguments: what, args, quote, and envir. We are looking for patterns such as do.call(cbind.data.frame, x) so we want information on the first two arguments. We can use a helper function called get_arg_by_name_then_position():\n// Note that the arguments position is 1-indexed and not 0-indexed as is usually\n// the case in Rust.\nlet what = get_arg_by_name_then_position(&arguments, \"what\", 1);\nlet args = get_arg_by_name_then_position(&arguments, \"args\", 2);\nThis function returns an Option since the arguments we want to extract maybe do not exist in the code we parsed.\n\n\n\n\n\n\nNoteAbout helper functions\n\n\n\n\n\nIn this example, we used get_arg_by_name_then_position(). There exist other helper functions located in utils.rs. For example, get_nested_functions_content() is used in any_is_na (among other rules) to either get the content of any(is.na(...)) or exit the function early.\n\n\n\nWe can now do more early checks:\n// Ensure there isn't more than two arguments, as we probably cannot discard\n// `quote` and `envir` if they are specified in `do.call()`.\nif get_arg_by_position(&arguments, 3).is_some() {\n    return Ok(None);\n}\n\nif args.is_none() {\n    return Ok(None);\n}\n\n// Return early for calls such as `do.call(foo, x)`.\nif let Some(what) = what && let Some(what_value) = what.value() {\n    let txt = what_value.to_trimmed_text();\n    // `do.call()` accepts quoted function names.\n    if txt != \"cbind.data.frame\"\n        && txt != \"\\\"cbind.data.frame\\\"\"\n        && txt != \"\\'cbind.data.frame\\'\"\n    {\n        return Ok(None);\n    }\n} else {\n    return Ok(None);\n};\nThe block above ensures that we have a call to do.call() with two arguments only and that the argument what is one of cbind.data.frame, \"cbind.data.frame\", or 'cbind.data.frame' (because do.call() also accepts quoted function names).\nWe now reach the last step, which is building the automatic fix. This requires getting the value of args because we want to use it in list2DF():\n// Safety: we checked above that args is not None.\nlet args = args.unwrap().value();\n// Here, `args` can be None if the call is something like\n// `do.call(cbind.data.frame, args = )`. This is not valid R code, but we don't\n// want to panic if it is checked by Jarl.\nif args.is_none() {\n    return Ok(None);\n}\nlet fix_content = args.unwrap();\nAnd finally, we build the diagnostic:\nlet range = ast.syntax().text_trimmed_range();\nlet diagnostic = Diagnostic::new(\n    List2Df,\n    range,\n    Fix {\n        content: format!(\"list2DF({})\", fix_content.to_trimmed_text()),\n        start: range.start().into(),\n        end: range.end().into(),\n        to_skip: node_contains_comments(ast.syntax()),\n    },\n);\n\nOk(Some(diagnostic))\nAll diagnostics contain a Violation (we defined the one for List2Df just below the documentation), a range indicating where it is located in the code, and a Fix (which may be Fix::Empty() if there is no automatic fix).\nFinally, note that Fix has a field to_skip: node_contains_comments(ast.syntax()). This tells Jarl not to apply the automatic fix if the node in question contains a comment. Handling comments positions in automatic fixes is quite complicated so, for now, fixes are not applied if the node contains a comment, e.g.:\n# This code wouldn't be automatically fixed because we don't know where the\n# comment inside should go.\ndo.call(\n    cbind.data.frame,\n    # This is a comment to describe `x`.\n    x\n)\nAt this point, if you have an R file with a couple of examples that should be reported (e.g. test.R), you can use cargo run --bin jarl -- check test.R (the rule in this example is only valid for R &gt;= 4.0.0, so we also need --min-r-version 4.1 for instance).\n\n\nAdd tests\nTests for each rule are stored in lints/&lt;rule_name&gt;/mod.rs. It is important to test cases where we expect the rule that we just defined to be violated, and to test cases where we don’t expect this violation. Looking at tests for list2df, there are three blocks:\n\nfirst, we check cases where we don’t expect rule violations:\n\n#[test]\nfn test_no_lint_list2df() {\n    expect_no_lint(\"cbind.data.frame(x, x)\", \"list2df\", Some(\"4.0\"));\n    [...]\n\n    // Ignored if R version unknown or below 4.0.0\n    expect_no_lint(\"do.call(cbind.data.frame, x)\", \"list2df\", Some(\"3.5\"));\n    [...]\n\n    // Don't know how to handle additional comments\n    expect_no_lint(\n        \"do.call(cbind.data.frame, x, quote = TRUE)\",\n        \"list2df\",\n        Some(\"4.0\"),\n    );\n\n    // Ensure that wrong calls are not reported\n    expect_no_lint(\"do.call(cbind.data.frame)\", \"list2df\", Some(\"4.0\"));\n    [...]\n}\n\nsecond, we check cases where we expect rule violations. We check first that the expected message is displayed, and then we check that the automated fix works correctly with a snapshot test:\n\n#[test]\nfn test_lint_list2df() {\n    use insta::assert_snapshot;\n\n    let expected_message = \"Use `list2DF(x)` instead\";\n    expect_lint(\n        \"do.call(cbind.data.frame, x)\",\n        expected_message,\n        \"list2df\",\n        Some(\"4.0\"),\n    );\n    [...]\n\n    assert_snapshot!(\n        \"fix_output\",\n        get_fixed_text(\n            vec![\n                \"do.call(cbind.data.frame, x)\",\n                [...]\n            ],\n            \"list2df\",\n            Some(\"4.0\")\n        )\n    );\n}\n\nfinally, if the rule has an automatic fix, we check that having a comment in the middle of the code in question does not modify this code. Handling comments in automatic fixes is difficult and is left as an objective for the future.\n\n#[test]\nfn test_list2df_with_comments_no_fix() {\n    use insta::assert_snapshot;\n    // Should detect lint but skip fix when comments are present to avoid destroying them\n    expect_lint(\n        \"do.call(\\n # a comment\\ncbind.data.frame, x)\",\n        \"Use `list2DF(x)` instead\",\n        \"list2df\",\n        Some(\"4.0\"),\n    );\n    assert_snapshot!(\n        \"no_fix_with_comments\",\n        get_fixed_text(\n            vec![\n                \"# leading comment\\ndo.call(cbind.data.frame, x)\",\n                \"do.call(\\n # a comment\\ncbind.data.frame, x)\",\n                \"do.call(cbind.data.frame, x) # trailing comment\",\n            ],\n            \"list2df\",\n            Some(\"4.0\")\n        )\n    );\n}\nSince we have snapshot tests, we first need to run cargo insta test to generate the snapshots and then cargo insta review to review and validate them. After that, run cargo test to ensure that all tests pass.\n\n\nAll the rest\nThe rule is implemented, all tests pass, perfect! We now need to document this change:\n\nupdate CHANGELOG.md\nupdate docs/rules.md\n\nIf you have installed just as recommended, you can now run just document to update the website and just lint to check that the code has no lints and is properly formatted."
+  },
+  {
+    "objectID": "contributing-rule-example.html#proposing-your-changes",
+    "href": "contributing-rule-example.html#proposing-your-changes",
+    "title": "Adding a new rule to Jarl",
+    "section": "Proposing your changes",
+    "text": "Proposing your changes\nOnce all of this is done, it is time to open a PR!\nNote: if you need some guidance, early feedback, or simply want to store your changes in a branch, you can also open an incomplete PR.\n\nPR title\nJarl follows conventional commits, meaning that your PR must start with “feat:”, “fix:”, or another appropriate name (see the linked documentation). In this case, the PR is titled “feat: Add list2df_linter”.\n\n\nPR automated comments\nOnce you have opened a PR, you will receive three automated comments after a few minutes:\n\ncode coverage: this checks that all the lines you added are covered by some tests. Try to ensure this is at 100%.\necosystem checks: every time there is a change in jarl-core, Jarl is run on several R packages and the results are compared to the Jarl version on the main branch. There will be a comment indicating if your changes have revealed new violations or removed some violations in those repositories. Here, we added a rule so we expect either no changes or more violations. New violations will be printed with a link to the lines of code that trigger them, so check a few to ensure those are not false positives.\nbenchmark: this is usually irrelevant when adding a new rule, it is simply to ensure there is no catastrophic performance degradation.\n\nCongrats, and thanks for your contribution!"
+  },
+  {
+    "objectID": "changelog.html",
+    "href": "changelog.html",
+    "title": "Changelog",
+    "section": "",
+    "text": "For consistency between CLI arguments and jarl.toml arguments, the following CLI arguments are renamed (#199):\n\n--select-rules becomes --select\n--ignore-rules becomes --ignore\n--assignment-op becomes --assignment\n\n\n\n\n\n\nNew argument extend-select in jarl.toml and --extend-select in the CLI to select additional rules on top of the existing selection. This can be useful to select opt-in rules in addition to the default set of rules (#193).\nAdded support for seq and seq2 rules (#187).\nAdded support for several rules related to testthat. Those rules are disabled by default and can be enabled by combining select or extend-select with the rule name or the TESTTHAT group rule name. Those rules are:\n\nexpect_null (#202)\nexpect_true_false (#191)\n\n\n\n\n\n\nAdded section on Neovim to the Editors page (#188, @bjyberg).\nAdded page “Tutorial: add a new rule” (#183).\n\n\n\n\n\n\n\n\nAdded support for list2df rule (#179).\nAdded support for browser rule (#185, @jonocarroll).\nAdded support for system_file rule (#186).\n\n\n\n\n\n(Hopefully) Fixed wrong printing of ANSI characters in multiple terminals on Windows (#179, thanks @novica for the report).\n\n\n\n\n\nAdded sections on RStudio and Helix to the Editors page.\nAdded installation instructions using Scoop on Windows.\n\n\n\n\n\n\n\n\nFix discovery of jarl.toml by the Jarl extension (#175, thanks @DavisVaughan for the report).\nRule duplicated_argument no longer reports cli_ functions where multiple arguments have the same name (#176, thanks @DavisVaughan for the report).\n\n\n\n\n\nThe docs of assignment rule now explain how to change the preferred assignment operator.\n\n\n\n\n\nFirst release (announced)"
+  },
+  {
+    "objectID": "changelog.html#development",
+    "href": "changelog.html#development",
+    "title": "Changelog",
+    "section": "",
+    "text": "For consistency between CLI arguments and jarl.toml arguments, the following CLI arguments are renamed (#199):\n\n--select-rules becomes --select\n--ignore-rules becomes --ignore\n--assignment-op becomes --assignment\n\n\n\n\n\n\nNew argument extend-select in jarl.toml and --extend-select in the CLI to select additional rules on top of the existing selection. This can be useful to select opt-in rules in addition to the default set of rules (#193).\nAdded support for seq and seq2 rules (#187).\nAdded support for several rules related to testthat. Those rules are disabled by default and can be enabled by combining select or extend-select with the rule name or the TESTTHAT group rule name. Those rules are:\n\nexpect_null (#202)\nexpect_true_false (#191)\n\n\n\n\n\n\nAdded section on Neovim to the Editors page (#188, @bjyberg).\nAdded page “Tutorial: add a new rule” (#183)."
+  },
+  {
+    "objectID": "changelog.html#section",
+    "href": "changelog.html#section",
+    "title": "Changelog",
+    "section": "",
+    "text": "Added support for list2df rule (#179).\nAdded support for browser rule (#185, @jonocarroll).\nAdded support for system_file rule (#186).\n\n\n\n\n\n(Hopefully) Fixed wrong printing of ANSI characters in multiple terminals on Windows (#179, thanks @novica for the report).\n\n\n\n\n\nAdded sections on RStudio and Helix to the Editors page.\nAdded installation instructions using Scoop on Windows."
+  },
+  {
+    "objectID": "changelog.html#section-1",
+    "href": "changelog.html#section-1",
+    "title": "Changelog",
+    "section": "",
+    "text": "Fix discovery of jarl.toml by the Jarl extension (#175, thanks @DavisVaughan for the report).\nRule duplicated_argument no longer reports cli_ functions where multiple arguments have the same name (#176, thanks @DavisVaughan for the report).\n\n\n\n\n\nThe docs of assignment rule now explain how to change the preferred assignment operator."
+  },
+  {
+    "objectID": "changelog.html#section-2",
+    "href": "changelog.html#section-2",
+    "title": "Changelog",
+    "section": "",
+    "text": "First release (announced)"
+  },
+  {
+    "objectID": "rules.html",
+    "href": "rules.html",
+    "title": "Rules",
+    "section": "",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\nTESTTHAT: rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_r8j9b4j9s0wy6ry4k7sv",
+    "crumbs": [
+      "Rules"
+    ]
+  },
+  {
+    "objectID": "rules.html#overview",
+    "href": "rules.html#overview",
+    "title": "Rules",
+    "section": "",
+    "text": "All rules belong to at least one category:\n\nCORR: correctness, code that is outright wrong or useless.\nSUSP: suspicious, code that is most likely wrong or useless.\nPERF: performance, code that can be written to run faster.\nREAD: readability, code is correct but can be written in a way that is easier to read.\nTESTTHAT: rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_r8j9b4j9s0wy6ry4k7sv",
+    "crumbs": [
+      "Rules"
+    ]
+  },
+  {
+    "objectID": "config.html",
+    "href": "config.html",
+    "title": "Configuring Jarl",
+    "section": "",
+    "text": "Jarl comes with various options available directly from the command line. These can be listed with jarl check --help:\nCheck a set of files or directories\n\nUsage: jarl check [OPTIONS] &lt;FILES&gt;...\n\nArguments:\n  &lt;FILES&gt;...\n          List of files or directories to check or fix lints, for example `jarl check .`.\n\nOptions:\n  -f, --fix\n          Automatically fix issues detected by the linter.\n\n  -u, --unsafe-fixes\n          Include fixes that may not retain the original intent of the  code.\n\n      --fix-only\n          Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.\n\n      --allow-dirty\n          Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.\n\n      --allow-no-vcs\n          Apply fixes even if there is no version control system.\n\n  -s, --select &lt;SELECT&gt;\n          Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as \"PERF\".\n\n          [default: ]\n\n  -e, --extend-select &lt;EXTEND_SELECT&gt;\n          Like `--select` but adds additional rules in addition to those already specified.\n\n          [default: ]\n\n  -i, --ignore &lt;IGNORE&gt;\n          Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as \"PERF\".\n\n          [default: ]\n\n  -w, --with-timing\n          Show the time taken by the function.\n\n  -m, --min-r-version &lt;MIN_R_VERSION&gt;\n          The mimimum R version to be used by the linter. Some rules only work starting from a specific version.\n\n      --output-format &lt;OUTPUT_FORMAT&gt;\n          Output serialization format for violations.\n\n          Possible values:\n          - full:    Print diagnostics with full context using annotated code snippets\n          - concise: Print diagnostics in a concise format, one per line\n          - github:  Print diagnostics as GitHub format\n          - json:    Print diagnostics as JSON\n\n          [default: full]\n\n      --assignment &lt;ASSIGNMENT&gt;\n          Assignment operator to use, can be either `&lt;-` or `=`.\n\n  -h, --help\n          Print help (see a summary with '-h')\nYou can pass multiple options at once, for instance\njarl check . --fix --select any_is_na,class_equals"
+  },
+  {
+    "objectID": "config.html#with-the-command-line",
+    "href": "config.html#with-the-command-line",
+    "title": "Configuring Jarl",
+    "section": "",
+    "text": "Jarl comes with various options available directly from the command line. These can be listed with jarl check --help:\nCheck a set of files or directories\n\nUsage: jarl check [OPTIONS] &lt;FILES&gt;...\n\nArguments:\n  &lt;FILES&gt;...\n          List of files or directories to check or fix lints, for example `jarl check .`.\n\nOptions:\n  -f, --fix\n          Automatically fix issues detected by the linter.\n\n  -u, --unsafe-fixes\n          Include fixes that may not retain the original intent of the  code.\n\n      --fix-only\n          Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.\n\n      --allow-dirty\n          Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.\n\n      --allow-no-vcs\n          Apply fixes even if there is no version control system.\n\n  -s, --select &lt;SELECT&gt;\n          Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as \"PERF\".\n\n          [default: ]\n\n  -e, --extend-select &lt;EXTEND_SELECT&gt;\n          Like `--select` but adds additional rules in addition to those already specified.\n\n          [default: ]\n\n  -i, --ignore &lt;IGNORE&gt;\n          Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as \"PERF\".\n\n          [default: ]\n\n  -w, --with-timing\n          Show the time taken by the function.\n\n  -m, --min-r-version &lt;MIN_R_VERSION&gt;\n          The mimimum R version to be used by the linter. Some rules only work starting from a specific version.\n\n      --output-format &lt;OUTPUT_FORMAT&gt;\n          Output serialization format for violations.\n\n          Possible values:\n          - full:    Print diagnostics with full context using annotated code snippets\n          - concise: Print diagnostics in a concise format, one per line\n          - github:  Print diagnostics as GitHub format\n          - json:    Print diagnostics as JSON\n\n          [default: full]\n\n      --assignment &lt;ASSIGNMENT&gt;\n          Assignment operator to use, can be either `&lt;-` or `=`.\n\n  -h, --help\n          Print help (see a summary with '-h')\nYou can pass multiple options at once, for instance\njarl check . --fix --select any_is_na,class_equals"
+  },
+  {
+    "objectID": "config.html#with-a-config-file",
+    "href": "config.html#with-a-config-file",
+    "title": "Configuring Jarl",
+    "section": "With a config file",
+    "text": "With a config file\nTo avoid typing options every time and to ensure all uses of Jarl in a project are consistent, it is possible to store options in jarl.toml.\nThis file looks like this:\n[lint]\nselect = []\nexend-select = []\nignore = []\nexclude = []\ndefault-exclude = true\nassignment = \"&lt;-\"\nThese arguments are described below.\n\n\n\n\n\n\nNoteUsing CLI arguments and jarl.toml\n\n\n\nArguments in the command line always have the priority on those specified in jarl.toml. For example, if you have the following file:\n[lint]\nselect = [\"PERF\", \"length_test\"]\nignore = []\nthen calling\njarl check . --ignore PERF\nwill only apply the rule length_test.\n\n\n\nselect\nSelect some rules by default.\nThis has the same capabilities as --select, so it is possible to pass rule names and names of groups of rules:\n[lint]\nselect = [\"PERF\", \"length_test\"]\n\n\nextend-select\nSelect some rules in addition to select.\nThis is useful when you want to use the default set of rules and some additional opt-in rules. In this scenario, you only need to add extend-select = [\"OPT_IN_RULE\"] instead of writing all default rule names.\nThis has the same constraints as select.\n# Select all default rules and all `TESTTHAT` rules, which are disabled by\n# default.\n[lint]\nextend-select = [\"TESTTHAT\"]\n\n\nignore\nIgnore some rules by default.\nThis has the same capabilities as --ignore, so it is possible to pass rule names and names of groups of rules:\n[lint]\nignore = [\"PERF\", \"length_test\"]\n\n\nexclude\nFiles and/or directories that are not checked.\nThis takes a list relative paths to ignore:\n[lint]\nexclude = [\"excluded.R\", \"tests/\"]\nIt also supports glob patterns:\n[lint]\nexclude = [\"excluded-*.R\"]\n\n\ndefault-exclude\nThis takes a boolean argument indicating whether the default file exclude patterns are used.\nBy default, Jarl (just like the Air formatter) excludes a set of files and folders that are probably not worth checking, for instance because they are automatically generated by another program.\nThe complete list of default exclude patterns is:\n\n.git/\nrenv/\nrevdep/\ncpp11.R\nRcppExports.R\nextendr-wrappers.R\nimport-standalone-*.R\n\n[lint]\ndefault-exclude = true\n\n\nassignment\nThis takes a single value (\"&lt;-\" or \"=\") indicating the preferred assignment operator in the files to check. While \"&lt;-\" is recommended by several style guides, using \"=\" is equivalent in most cases and several popular projects use it.\nThis parameter is only useful if the assignment rule is active. If assignment = \"&lt;-\" (default), then any use of the \"=\" operator to assign values will be reported, and vice-versa.\n[lint]\nassignment = \"&lt;-\"\n\n\nfixable\nThis determines which rule violations will be fixed if --fix is passed. It takes a list of rule names or names or groups of rules, and defaults to all rules if this argument is not specified.\nIf a rule appears in both fixable and unfixable, unfixable takes precedence (i.e. violations of this rule will not be fixed).\n[lint]\n# Only fix violations of rules in the \"PERF\" group.\nfixable = [\"PERF\"]\n[lint]\n# Do not fix any violation.\nfixable = []\n\n\nunfixable\nThis determines which rule violations will be not fixed, even if --fix is passed. It takes a list of rule names or names or groups of rules, and defaults no rules if this argument is not specified.\nIf a rule appears in both fixable and unfixable, unfixable takes precedence (i.e. violations of this rule will not be fixed).\n[lint]\n# Fix all violations, except those for rules in the \"PERF\" group.\nunfixable = [\"PERF\"]\n[lint]\n# Fix all violations.\nunfixable = []"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Jarl",
+    "section": "",
+    "text": "Just Another R Linter\nJarl is a fast linter for R: it does static code analysis to search for programming errors, bugs, and suspicious patterns of code.\nJarl is built on Air, a fast formatter for R written in Rust."
+  },
+  {
+    "objectID": "index.html#quick-start",
+    "href": "index.html#quick-start",
+    "title": "Jarl",
+    "section": "Quick start",
+    "text": "Quick start\nYou can use Jarl manually via the command line, or use extensions to have it integrated in your coding environment.\nThis shows how to use it in the terminal:\ntest.R:\nany(is.na(x))\n\nif (all.equal(x, y)) {\n  print(\"x and y are equal\")\n}\n# In the terminal:\n$ jarl check test.R\nwarning: any_is_na\n --&gt; test.R:1:1\n  |\n1 | any(is.na(x))\n  | ------------- `any(is.na(...))` is inefficient.\n  |\n  = help: Use `anyNA(...)` instead.\n\nwarning: all_equal\n --&gt; test.R:3:5\n  |\n3 | if (all.equal(x, y)) {\n  |     --------------- `all.equal()` can return a string instead of FALSE.\n  |\n  = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if\n    no tolerance is required.\n\nFound 2 errors.\n1 fixable with the `--fix` option (1 hidden fix can be enabled with the\n`--unsafe-fixes` option).\nUse --fix to automatically fix rule violations when possible:\n$ jarl check test.R --fix\ntest.R:\nanyNA(x)\n\nif (all.equal(x, y)) {\n  print(\"x and y are equal\")\n}"
+  },
+  {
+    "objectID": "index.html#installation",
+    "href": "index.html#installation",
+    "title": "Jarl",
+    "section": "Installation",
+    "text": "Installation\n\nBinaries\nEither get binaries from the Releases page or install Jarl from the existing installer scripts below.\nmacOS and Linux:\ncurl --proto '=https' --tlsv1.2 -LsSf \\\n  https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.sh | sh\nWindows:\npowershell Set-ExecutionPolicy Bypass -Scope Process -Force; `\n   iwr https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.ps1 | iex\nIf you use Scoop, you can also install or update Jarl with these commands:\nscoop bucket add r-bucket https://github.com/cderv/r-bucket.git\n\n# install\nscoop install jarl\n\n# update\nscoop update jarl\n\n\nFrom source\nAlternatively, if you have Rust installed, you can get the development version with:\ncargo install --git https://github.com/etiennebacher/jarl jarl --profile=release"
+  },
+  {
+    "objectID": "index.html#related-work",
+    "href": "index.html#related-work",
+    "title": "Jarl",
+    "section": "Related work",
+    "text": "Related work\nlintr is the most famous R linter. It provides dozens of rules related to performance, readibility, formatting, and more. Jarl is heavily influenced by lintr since most rule definitions come from it. However, lintr doesn’t provide automatic fixes for rule violations, which makes it harder to use. Its performance also noticeably degrades as the number of files and their length increase.\nflir is a relatively novel package. It uses ast-grep in the background to search and replace code patterns. It is therefore quite flexible and easy to extend by users who may want more custom rules. While both Jarl and ast-grep use tree-sitter in the background to parse R files, their structure is completely different. Jarl is faster and also easier to link to the Language Server Protocol, which enables its use via VS Code or Positron extensions for instance."
+  },
+  {
+    "objectID": "index.html#acknowledgements",
+    "href": "index.html#acknowledgements",
+    "title": "Jarl",
+    "section": "Acknowledgements",
+    "text": "Acknowledgements\n\nlintr authors and contributors: while the infrastructure is completely different, all the rule definitions and a large part of the tests are inspired or taken from lintr.\nDavis Vaughan and Lionel Henry, both for their work on Air and for their advices and answers to my questions during the development of Jarl.\nthe design of Jarl is heavily inspired by Ruff and Cargo clippy.\nR Consortium for funding part of the development of Jarl."
+  },
+  {
+    "objectID": "index.html#footnotes",
+    "href": "index.html#footnotes",
+    "title": "Jarl",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nUsing 20 rules on the dplyr package (~25k lines of R code), Jarl took 0.131s, flir took 4.5s, and lintr took 18.5s (9s with caching enabled).↩︎"
+  },
+  {
+    "objectID": "rules/which_grepl.html",
+    "href": "rules/which_grepl.html",
+    "title": "which_grepl",
+    "section": "",
+    "text": "Checks for usage of which(grepl(...)) and replaces it with grep(...).\n\n\n\nwhich(grepl(...)) is harder to read and is less efficient than grep() since it requires two passes on the vector.\n\n\n\nx &lt;- c(\"hello\", \"there\")\nwhich(grepl(\"hell\", x))\nwhich(grepl(\"foo\", x))\nUse instead:\nx &lt;- c(\"hello\", \"there\")\ngrep(\"hell\", x)\ngrep(\"foo\", x)\n\n\n\nSee ?grep",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "which_grepl"
+    ]
+  },
+  {
+    "objectID": "rules/which_grepl.html#what-it-does",
+    "href": "rules/which_grepl.html#what-it-does",
+    "title": "which_grepl",
+    "section": "",
+    "text": "Checks for usage of which(grepl(...)) and replaces it with grep(...).",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "which_grepl"
+    ]
+  },
+  {
+    "objectID": "rules/which_grepl.html#why-is-this-bad",
+    "href": "rules/which_grepl.html#why-is-this-bad",
+    "title": "which_grepl",
+    "section": "",
+    "text": "which(grepl(...)) is harder to read and is less efficient than grep() since it requires two passes on the vector.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "which_grepl"
+    ]
+  },
+  {
+    "objectID": "rules/which_grepl.html#example",
+    "href": "rules/which_grepl.html#example",
+    "title": "which_grepl",
+    "section": "",
+    "text": "x &lt;- c(\"hello\", \"there\")\nwhich(grepl(\"hell\", x))\nwhich(grepl(\"foo\", x))\nUse instead:\nx &lt;- c(\"hello\", \"there\")\ngrep(\"hell\", x)\ngrep(\"foo\", x)",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "which_grepl"
+    ]
+  },
+  {
+    "objectID": "rules/which_grepl.html#references",
+    "href": "rules/which_grepl.html#references",
+    "title": "which_grepl",
+    "section": "",
+    "text": "See ?grep",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "which_grepl"
+    ]
+  },
+  {
+    "objectID": "rules/assignment.html",
+    "href": "rules/assignment.html",
+    "title": "assignment",
+    "section": "",
+    "text": "Checks for consistency of assignment operator.\n\n\n\nIn most cases using = and &lt;- is equivalent. Some very popular packages use = without problems. This rule only ensures the consistency of the assignment operator in a project.\nNote that Jarl doesn’t force you to use &lt;- as assignment operator, it simply uses it as default. To use = as the preferred operator:\n\nin the CLI (temporary change), use --assignment \"=\";\nin jarl.toml (permanent change): set assignment = \"=\".\n\n\n\n\nx = \"a\"\nUse instead:\nx &lt;- \"a\"\n\n\n\nSee:\n\nhttps://style.tidyverse.org/syntax.html#assignment-1",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "assignment"
+    ]
+  },
+  {
+    "objectID": "rules/assignment.html#what-it-does",
+    "href": "rules/assignment.html#what-it-does",
+    "title": "assignment",
+    "section": "",
+    "text": "Checks for consistency of assignment operator.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "assignment"
+    ]
+  },
+  {
+    "objectID": "rules/assignment.html#why-is-this-bad",
+    "href": "rules/assignment.html#why-is-this-bad",
+    "title": "assignment",
+    "section": "",
+    "text": "In most cases using = and &lt;- is equivalent. Some very popular packages use = without problems. This rule only ensures the consistency of the assignment operator in a project.\nNote that Jarl doesn’t force you to use &lt;- as assignment operator, it simply uses it as default. To use = as the preferred operator:\n\nin the CLI (temporary change), use --assignment \"=\";\nin jarl.toml (permanent change): set assignment = \"=\".",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "assignment"
+    ]
+  },
+  {
+    "objectID": "rules/assignment.html#example",
+    "href": "rules/assignment.html#example",
+    "title": "assignment",
+    "section": "",
+    "text": "x = \"a\"\nUse instead:\nx &lt;- \"a\"",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "assignment"
+    ]
+  },
+  {
+    "objectID": "rules/assignment.html#references",
+    "href": "rules/assignment.html#references",
+    "title": "assignment",
+    "section": "",
+    "text": "See:\n\nhttps://style.tidyverse.org/syntax.html#assignment-1",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "assignment"
+    ]
+  },
+  {
+    "objectID": "rules/browser.html",
+    "href": "rules/browser.html",
+    "title": "browser",
+    "section": "",
+    "text": "Checks for lingering presence of browser() which should not be present in released code.\n\n\n\nbrowser() interrupts the execution of an expression and allows the inspection of the environment where browser() was called from. This is helpful while developing a function, but is not expected to be called by the user. Does not remove the call as it does not have a suitable replacement.\n\n\n\ndo_something &lt;- function(abc = 1) {\n   xyz &lt;- abc + 1\n   browser()      # This should be removed.\n   xyz\n}\n\n\n\nSee ?browser",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "browser"
+    ]
+  },
+  {
+    "objectID": "rules/browser.html#what-it-does",
+    "href": "rules/browser.html#what-it-does",
+    "title": "browser",
+    "section": "",
+    "text": "Checks for lingering presence of browser() which should not be present in released code.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "browser"
+    ]
+  },
+  {
+    "objectID": "rules/browser.html#why-is-this-bad",
+    "href": "rules/browser.html#why-is-this-bad",
+    "title": "browser",
+    "section": "",
+    "text": "browser() interrupts the execution of an expression and allows the inspection of the environment where browser() was called from. This is helpful while developing a function, but is not expected to be called by the user. Does not remove the call as it does not have a suitable replacement.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "browser"
+    ]
+  },
+  {
+    "objectID": "rules/browser.html#example",
+    "href": "rules/browser.html#example",
+    "title": "browser",
+    "section": "",
+    "text": "do_something &lt;- function(abc = 1) {\n   xyz &lt;- abc + 1\n   browser()      # This should be removed.\n   xyz\n}",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "browser"
+    ]
+  },
+  {
+    "objectID": "rules/browser.html#references",
+    "href": "rules/browser.html#references",
+    "title": "browser",
+    "section": "",
+    "text": "See ?browser",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "browser"
+    ]
+  },
+  {
+    "objectID": "rules/comparison_negation.html",
+    "href": "rules/comparison_negation.html",
+    "title": "comparison_negation",
+    "section": "",
+    "text": "Checks for patterns similar to !(... &lt; ...).\n\n\n\nThis pattern may be hard to read and could be simplified by removing the ! operator and inverting the operator (e.g. &lt; would become &gt;=).\nThis rule has a safe fix.\n\n\n\n!(x &lt; y + 1)\n!(x == y + 1)\nUse instead:\nx &gt;= y + 1\nx != y + 1",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "comparison_negation"
+    ]
+  },
+  {
+    "objectID": "rules/comparison_negation.html#what-it-does",
+    "href": "rules/comparison_negation.html#what-it-does",
+    "title": "comparison_negation",
+    "section": "",
+    "text": "Checks for patterns similar to !(... &lt; ...).",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "comparison_negation"
+    ]
+  },
+  {
+    "objectID": "rules/comparison_negation.html#why-is-this-bad",
+    "href": "rules/comparison_negation.html#why-is-this-bad",
+    "title": "comparison_negation",
+    "section": "",
+    "text": "This pattern may be hard to read and could be simplified by removing the ! operator and inverting the operator (e.g. &lt; would become &gt;=).\nThis rule has a safe fix.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "comparison_negation"
+    ]
+  },
+  {
+    "objectID": "rules/comparison_negation.html#example",
+    "href": "rules/comparison_negation.html#example",
+    "title": "comparison_negation",
+    "section": "",
+    "text": "!(x &lt; y + 1)\n!(x == y + 1)\nUse instead:\nx &gt;= y + 1\nx != y + 1",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "comparison_negation"
+    ]
+  },
+  {
+    "objectID": "rules/equals_na.html",
+    "href": "rules/equals_na.html",
+    "title": "equals_na",
+    "section": "",
+    "text": "Check for x == NA, x != NA and x %in% NA, and replaces those by is.na() calls.\n\n\n\nComparing a value to NA using == returns NA in many cases:\nx &lt;- c(1, 2, 3, NA)\nx == NA\nwhich is very likely not the expected output.\n\n\n\nx &lt;- c(1, 2, 3, NA)\nx == NA\nUse instead:\nx &lt;- c(1, 2, 3, NA)\nis.na(x)",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "equals_na"
+    ]
+  },
+  {
+    "objectID": "rules/equals_na.html#what-it-does",
+    "href": "rules/equals_na.html#what-it-does",
+    "title": "equals_na",
+    "section": "",
+    "text": "Check for x == NA, x != NA and x %in% NA, and replaces those by is.na() calls.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "equals_na"
+    ]
+  },
+  {
+    "objectID": "rules/equals_na.html#why-is-this-bad",
+    "href": "rules/equals_na.html#why-is-this-bad",
+    "title": "equals_na",
+    "section": "",
+    "text": "Comparing a value to NA using == returns NA in many cases:\nx &lt;- c(1, 2, 3, NA)\nx == NA\nwhich is very likely not the expected output.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "equals_na"
+    ]
+  },
+  {
+    "objectID": "rules/equals_na.html#example",
+    "href": "rules/equals_na.html#example",
+    "title": "equals_na",
+    "section": "",
+    "text": "x &lt;- c(1, 2, 3, NA)\nx == NA\nUse instead:\nx &lt;- c(1, 2, 3, NA)\nis.na(x)",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "equals_na"
+    ]
+  },
+  {
+    "objectID": "rules/download_file.html",
+    "href": "rules/download_file.html",
+    "title": "download_file",
+    "section": "",
+    "text": "Checks for usage of download.file() with mode = \"a\" or mode = \"w\".\n\n\n\nmode = \"a\" or mode = \"w\" can generate broken files on Windows. download.file() documentation recommends using mode = \"wb\" and mode = \"a\" instead. If method = \"curl\" or method = \"wget\", no mode should be provided as it will be ignored.\n\n\n\ndownload.file(x = my_url)\ndownload.file(x = my_url, mode = \"w\")\nUse instead:\ndownload.file(x = my_url, mode = \"wb\")\n\n\n\nSee ?download.file",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "download_file"
+    ]
+  },
+  {
+    "objectID": "rules/download_file.html#what-it-does",
+    "href": "rules/download_file.html#what-it-does",
+    "title": "download_file",
+    "section": "",
+    "text": "Checks for usage of download.file() with mode = \"a\" or mode = \"w\".",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "download_file"
+    ]
+  },
+  {
+    "objectID": "rules/download_file.html#why-is-this-bad",
+    "href": "rules/download_file.html#why-is-this-bad",
+    "title": "download_file",
+    "section": "",
+    "text": "mode = \"a\" or mode = \"w\" can generate broken files on Windows. download.file() documentation recommends using mode = \"wb\" and mode = \"a\" instead. If method = \"curl\" or method = \"wget\", no mode should be provided as it will be ignored.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "download_file"
+    ]
+  },
+  {
+    "objectID": "rules/download_file.html#example",
+    "href": "rules/download_file.html#example",
+    "title": "download_file",
+    "section": "",
+    "text": "download.file(x = my_url)\ndownload.file(x = my_url, mode = \"w\")\nUse instead:\ndownload.file(x = my_url, mode = \"wb\")",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "download_file"
+    ]
+  },
+  {
+    "objectID": "rules/download_file.html#references",
+    "href": "rules/download_file.html#references",
+    "title": "download_file",
+    "section": "",
+    "text": "See ?download.file",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "download_file"
+    ]
+  },
+  {
+    "objectID": "rules/for_loop_index.html",
+    "href": "rules/for_loop_index.html",
+    "title": "for_loop_index",
+    "section": "",
+    "text": "Checks whether the index symbol in a for loop is already used anywhere in the sequence of the same for loop.\n\n\n\nfor (x in x) or for (x in foo(x)) are confusing to read and can lead to errors.\n\n\n\nx &lt;- c(1, 2, 3)\nfor (x in x) {\n  x + 1\n}\nUse instead:\nx &lt;- c(1, 2, 3)\nfor (xi in x) {\n  xi + 1\n}",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "for_loop_index"
+    ]
+  },
+  {
+    "objectID": "rules/for_loop_index.html#what-it-does",
+    "href": "rules/for_loop_index.html#what-it-does",
+    "title": "for_loop_index",
+    "section": "",
+    "text": "Checks whether the index symbol in a for loop is already used anywhere in the sequence of the same for loop.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "for_loop_index"
+    ]
+  },
+  {
+    "objectID": "rules/for_loop_index.html#why-is-this-bad",
+    "href": "rules/for_loop_index.html#why-is-this-bad",
+    "title": "for_loop_index",
+    "section": "",
+    "text": "for (x in x) or for (x in foo(x)) are confusing to read and can lead to errors.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "for_loop_index"
+    ]
+  },
+  {
+    "objectID": "rules/for_loop_index.html#example",
+    "href": "rules/for_loop_index.html#example",
+    "title": "for_loop_index",
+    "section": "",
+    "text": "x &lt;- c(1, 2, 3)\nfor (x in x) {\n  x + 1\n}\nUse instead:\nx &lt;- c(1, 2, 3)\nfor (xi in x) {\n  xi + 1\n}",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "for_loop_index"
+    ]
+  },
+  {
+    "objectID": "rules/numeric_leading_zero.html",
+    "href": "rules/numeric_leading_zero.html",
+    "title": "numeric_leading_zero",
+    "section": "",
+    "text": "Checks for double or complex values with a decimal component and a leading ..\n\n\n\nWhile .1 and 0.1 mean the same thing, the latter is easier to read due to the small size of the . glyph.\n\n\n\nx &lt;- .1\nUse instead:\nx &lt;- 0.1",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "numeric_leading_zero"
+    ]
+  },
+  {
+    "objectID": "rules/numeric_leading_zero.html#what-it-does",
+    "href": "rules/numeric_leading_zero.html#what-it-does",
+    "title": "numeric_leading_zero",
+    "section": "",
+    "text": "Checks for double or complex values with a decimal component and a leading ..",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "numeric_leading_zero"
+    ]
+  },
+  {
+    "objectID": "rules/numeric_leading_zero.html#why-is-this-bad",
+    "href": "rules/numeric_leading_zero.html#why-is-this-bad",
+    "title": "numeric_leading_zero",
+    "section": "",
+    "text": "While .1 and 0.1 mean the same thing, the latter is easier to read due to the small size of the . glyph.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "numeric_leading_zero"
+    ]
+  },
+  {
+    "objectID": "rules/numeric_leading_zero.html#example",
+    "href": "rules/numeric_leading_zero.html#example",
+    "title": "numeric_leading_zero",
+    "section": "",
+    "text": "x &lt;- .1\nUse instead:\nx &lt;- 0.1",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "numeric_leading_zero"
+    ]
+  },
+  {
+    "objectID": "rules/length_levels.html",
+    "href": "rules/length_levels.html",
+    "title": "length_levels",
+    "section": "",
+    "text": "Check for length(levels(...)) and replace it with nlevels(...).\n\n\n\nlength(levels(...)) is harder to read nlevels(...).\nInternally, nlevels() calls length(levels(...)) so there are no performance gains.\n\n\n\nx &lt;- factor(1:3)\nlength(levels(x))\nUse instead:\nx &lt;- factor(1:3)\nnlevels(x)",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "length_levels"
+    ]
+  },
+  {
+    "objectID": "rules/length_levels.html#what-it-does",
+    "href": "rules/length_levels.html#what-it-does",
+    "title": "length_levels",
+    "section": "",
+    "text": "Check for length(levels(...)) and replace it with nlevels(...).",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "length_levels"
+    ]
+  },
+  {
+    "objectID": "rules/length_levels.html#why-is-this-bad",
+    "href": "rules/length_levels.html#why-is-this-bad",
+    "title": "length_levels",
+    "section": "",
+    "text": "length(levels(...)) is harder to read nlevels(...).\nInternally, nlevels() calls length(levels(...)) so there are no performance gains.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "length_levels"
+    ]
+  },
+  {
+    "objectID": "rules/length_levels.html#example",
+    "href": "rules/length_levels.html#example",
+    "title": "length_levels",
+    "section": "",
+    "text": "x &lt;- factor(1:3)\nlength(levels(x))\nUse instead:\nx &lt;- factor(1:3)\nnlevels(x)",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "length_levels"
+    ]
+  },
+  {
+    "objectID": "rules/outer_negation.html",
+    "href": "rules/outer_negation.html",
+    "title": "outer_negation",
+    "section": "",
+    "text": "Checks for usage of all(!x) or any(!x).\n\n\n\nThose two patterns may be hard to read and understand, especially when the expression after ! is lengthy. Using !any(x) instead of all(!x) and !all(x) instead of any(!x) may be more readable.\nIn addition, using the ! operator outside the function call is more efficient since it only has to invert one value instead of all values inside the function call.\n\n\n\nany(!x)\nall(!x)\nUse instead:\n!all(x)\n!any(x)",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "outer_negation"
+    ]
+  },
+  {
+    "objectID": "rules/outer_negation.html#what-it-does",
+    "href": "rules/outer_negation.html#what-it-does",
+    "title": "outer_negation",
+    "section": "",
+    "text": "Checks for usage of all(!x) or any(!x).",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "outer_negation"
+    ]
+  },
+  {
+    "objectID": "rules/outer_negation.html#why-is-this-bad",
+    "href": "rules/outer_negation.html#why-is-this-bad",
+    "title": "outer_negation",
+    "section": "",
+    "text": "Those two patterns may be hard to read and understand, especially when the expression after ! is lengthy. Using !any(x) instead of all(!x) and !all(x) instead of any(!x) may be more readable.\nIn addition, using the ! operator outside the function call is more efficient since it only has to invert one value instead of all values inside the function call.",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "outer_negation"
+    ]
+  },
+  {
+    "objectID": "rules/outer_negation.html#example",
+    "href": "rules/outer_negation.html#example",
+    "title": "outer_negation",
+    "section": "",
+    "text": "any(!x)\nall(!x)\nUse instead:\n!all(x)\n!any(x)",
+    "crumbs": [
+      "Rules",
+      "List of rules",
+      "outer_negation"
     ]
   },
   {
