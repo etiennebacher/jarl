@@ -46,23 +46,24 @@ pub fn seq(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
 
     let left = ast.left()?;
     let right = ast.right()?;
-    let right = right.as_r_call();
+
+    let Some(right_call) = right.as_r_call() else {
+        return Ok(None);
+    };
 
     let left_is_literal_one = left.to_trimmed_text() == "1" || left.to_trimmed_text() == "1L";
-    let right_is_function = right.is_some();
 
-    if !left_is_literal_one || !right_is_function {
+    if !left_is_literal_one {
         return Ok(None);
     }
 
-    let right_fun = right.unwrap().function()?;
+    let right_fun = right_call.function()?;
     let right_fun_name = right_fun.to_trimmed_string();
     if !["length", "nrow", "ncol", "NROW", "NCOL"].contains(&right_fun_name.as_str()) {
         return Ok(None);
     }
 
-    let right_fun_content = right
-        .unwrap()
+    let right_fun_content = right_call
         .arguments()?
         .items()
         .into_iter()

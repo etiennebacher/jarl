@@ -73,32 +73,32 @@ pub fn matrix_apply(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    let x = match x.and_then(|arg| arg.value()) {
-        Some(x_inner) => x_inner.to_trimmed_string(),
-        None => return Ok(None),
+    let Some(x_value) = x.and_then(|arg| arg.value()) else {
+        return Ok(None);
     };
-    let fun = match fun.and_then(|arg| arg.value()) {
-        Some(x) => x.to_trimmed_string(),
-        None => return Ok(None),
+    let x = x_value.to_trimmed_string();
+
+    let Some(fun_value) = fun.and_then(|arg| arg.value()) else {
+        return Ok(None);
     };
+    let fun = fun_value.to_trimmed_string();
 
     if fun != "mean" && fun != "sum" {
         return Ok(None);
     }
 
     // MARGIN could be c(1, 2), in which case we don't know what to do.
-    let margin = match margin.and_then(|arg| arg.value()) {
-        Some(x) => {
-            let x = x.to_trimmed_string();
-            if x == "1" || x == "1L" {
-                "1"
-            } else if x == "2" || x == "2L" {
-                "2"
-            } else {
-                return Ok(None);
-            }
-        }
-        None => return Ok(None),
+    let Some(margin_value) = margin.and_then(|arg| arg.value()) else {
+        return Ok(None);
+    };
+
+    let margin_text = margin_value.to_trimmed_string();
+    let margin = if margin_text == "1" || margin_text == "1L" {
+        "1"
+    } else if margin_text == "2" || margin_text == "2L" {
+        "2"
+    } else {
+        return Ok(None);
     };
 
     let fun = fun.as_str();

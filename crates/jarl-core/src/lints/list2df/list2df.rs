@@ -67,31 +67,28 @@ pub fn list2df(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    if args.is_none() {
-        return Ok(None);
-    }
-
-    if let Some(what) = what
-        && let Some(what_value) = what.value()
-    {
-        let txt = what_value.to_trimmed_text();
-        // `do.call()` accepts quoted function names.
-        if txt != "cbind.data.frame"
-            && txt != "\"cbind.data.frame\""
-            && txt != "\'cbind.data.frame\'"
-        {
-            return Ok(None);
-        }
-    } else {
+    let Some(args) = args else {
         return Ok(None);
     };
 
-    // Safety: we checked above that args is not None.
-    let args = args.unwrap().value();
-    if args.is_none() {
+    let Some(what) = what else {
+        return Ok(None);
+    };
+
+    let Some(what_value) = what.value() else {
+        return Ok(None);
+    };
+
+    let txt = what_value.to_trimmed_text();
+    // `do.call()` accepts quoted function names.
+    if txt != "cbind.data.frame" && txt != "\"cbind.data.frame\"" && txt != "\'cbind.data.frame\'" {
         return Ok(None);
     }
-    let fix_content = args.unwrap();
+
+    let Some(args_value) = args.value() else {
+        return Ok(None);
+    };
+    let fix_content = args_value;
 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(

@@ -49,18 +49,17 @@ pub fn outer_negation(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let args = ast.arguments()?.items();
 
     // Only check calls with exactly one argument
-    let first_arg = match get_arg_by_position(&args, 1) {
-        Some(arg) => arg,
-        None => return Ok(None),
+    let Some(first_arg) = get_arg_by_position(&args, 1) else {
+        return Ok(None);
     };
 
     // Ensure there's not more than one argument (e.g. skip `any(!x, y)`).
     if get_arg_by_position(&args, 2).is_some() {
         return Ok(None);
     }
-    let arg_value = match first_arg.value() {
-        Some(val) => val,
-        None => return Ok(None),
+
+    let Some(arg_value) = first_arg.value() else {
+        return Ok(None);
     };
     // Check if the argument is a unary expression (negation)
     if arg_value.syntax().kind() != RSyntaxKind::R_UNARY_EXPRESSION {

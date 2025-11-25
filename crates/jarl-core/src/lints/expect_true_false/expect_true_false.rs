@@ -41,22 +41,22 @@ pub fn expect_true_false(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let args = ast.arguments()?.items();
 
     // Get `object` and `expected` arguments
-    let object = get_arg_by_name_then_position(&args, "object", 1);
-    let expected = get_arg_by_name_then_position(&args, "expected", 2);
-
-    if object.is_none() || expected.is_none() {
+    let Some(object) = get_arg_by_name_then_position(&args, "object", 1) else {
         return Ok(None);
-    }
-
-    let object_value = object.unwrap().value();
-    let expected_value = expected.unwrap().value();
-
-    if object_value.is_none() || expected_value.is_none() {
+    };
+    let Some(expected) = get_arg_by_name_then_position(&args, "expected", 2) else {
         return Ok(None);
-    }
+    };
 
-    let object_text = object_value.unwrap().to_trimmed_text();
-    let expected_text = expected_value.unwrap().to_trimmed_text();
+    let Some(object_value) = object.value() else {
+        return Ok(None);
+    };
+    let Some(expected_value) = expected.value() else {
+        return Ok(None);
+    };
+
+    let object_text = object_value.to_trimmed_text();
+    let expected_text = expected_value.to_trimmed_text();
 
     // Check if either argument is TRUE or FALSE (but not a vector like c(TRUE, FALSE))
     let object_is_true = object_text == "TRUE";

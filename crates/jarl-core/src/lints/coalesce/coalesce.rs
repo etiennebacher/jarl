@@ -131,11 +131,9 @@ pub fn coalesce(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
         }
 
         let function = condition.argument()?;
-        let call = function.as_r_call();
-        if call.is_none() {
+        let Some(call) = function.as_r_call() else {
             return Ok(None);
-        }
-        let call = call.unwrap();
+        };
         let function = call.function()?;
 
         let fn_name = get_function_name(function);
