@@ -153,6 +153,7 @@ ul.task-list li input[type="checkbox"] {
   <ul class="collapse">
   <li><a href="#development" id="toc-development" class="nav-link" data-scroll-target="#development">Development</a>
   <ul class="collapse">
+  <li><a href="#breaking-changes" id="toc-breaking-changes" class="nav-link" data-scroll-target="#breaking-changes">Breaking changes</a></li>
   <li><a href="#features" id="toc-features" class="nav-link" data-scroll-target="#features">Features</a></li>
   <li><a href="#documentation" id="toc-documentation" class="nav-link" data-scroll-target="#documentation">Documentation</a></li>
   </ul></li>
@@ -182,6 +183,17 @@ ul.task-list li input[type="checkbox"] {
 <h1>Changelog</h1>
 <section id="development" class="level2">
 <h2 class="anchored" data-anchor-id="development">Development</h2>
+<section id="breaking-changes" class="level3">
+<h3 class="anchored" data-anchor-id="breaking-changes">Breaking changes</h3>
+<ul>
+<li>For consistency between CLI arguments and <code>jarl.toml</code> arguments, the following CLI arguments are renamed (#199):
+<ul>
+<li><code>--select-rules</code> becomes <code>--select</code></li>
+<li><code>--ignore-rules</code> becomes <code>--ignore</code></li>
+<li><code>--assignment-op</code> becomes <code>--assignment</code></li>
+</ul></li>
+</ul>
+</section>
 <section id="features" class="level3">
 <h3 class="anchored" data-anchor-id="features">Features</h3>
 <ul>

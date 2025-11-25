@@ -243,9 +243,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="selecting-and-ignoring-rules" class="level2">
 <h2 class="anchored" data-anchor-id="selecting-and-ignoring-rules">Selecting and ignoring rules</h2>
-<p>We can apply a subset of rules using the <code>--select-rules</code> and <code>--ignore-rules</code> parameters:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--select-rules</span> any_is_na,is_numeric,length_levels</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--ignore-rules</span> any_duplicated,matrix_apply</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>We can apply a subset of rules using the <code>--select</code> and <code>--ignore</code> parameters:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--select</span> any_is_na,is_numeric,length_levels</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--ignore</span> any_duplicated,matrix_apply</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <!-- TODO: mention the groups of linters when https://github.com/etiennebacher/jarl/issues/108 is done -->
 </section>
 <section id="ignoring-diagnostics" class="level2">
