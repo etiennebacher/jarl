@@ -1,0 +1,31 @@
+---
+source: crates/jarl-core/src/lints/expect_null/mod.rs
+expression: "get_fixed_text(vec![\"expect_equal(x, NULL)\", \"expect_identical(x, NULL)\",\n\"expect_equal(NULL, x)\", \"expect_true(is.null(foo(x)))\",], \"expect_null\",\nNone,)"
+---
+OLD:
+====
+expect_equal(x, NULL)
+NEW:
+====
+expect_null(x)
+
+OLD:
+====
+expect_identical(x, NULL)
+NEW:
+====
+expect_null(x)
+
+OLD:
+====
+expect_equal(NULL, x)
+NEW:
+====
+expect_null(x)
+
+OLD:
+====
+expect_true(is.null(foo(x)))
+NEW:
+====
+expect_null(foo(x))

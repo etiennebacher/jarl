@@ -66,6 +66,7 @@ website:
       - rules/download_file.md
       - rules/duplicated_arguments.md
       - rules/equals_na.md
+      - rules/expect_null.md
       - rules/expect_true_false.md
       - rules/for_loop_index.md
       - rules/grepv.md

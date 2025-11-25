@@ -11,9 +11,11 @@
 
 ### Features
 
-- Added support for `seq` and `seq2` rules (#187).
-- Added support for `expect_true_false` rule. This is a bit experimental because it is the first rule that is not enabled by default (and doesn't have a minimum R version requirement) (#191).
 - New argument `extend-select` in `jarl.toml` and `--extend-select` in the CLI to select additional rules on top of the existing selection. This can be useful to select opt-in rules in addition to the default set of rules (#193).
+- Added support for `seq` and `seq2` rules (#187).
+- Added support for several rules related to `testthat`. Those rules are disabled by default and can be enabled by combining `select` or `extend-select` with the rule name or the `TESTTHAT` group rule name. Those rules are:
+  - `expect_null` (#202)
+  - `expect_true_false` (#191)
 
 ### Documentation
 

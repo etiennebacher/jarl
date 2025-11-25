@@ -14,6 +14,7 @@ pub(crate) mod download_file;
 pub(crate) mod duplicated_arguments;
 pub(crate) mod empty_assignment;
 pub(crate) mod equals_na;
+pub(crate) mod expect_null;
 pub(crate) mod expect_true_false;
 pub(crate) mod for_loop_index;
 pub(crate) mod grepv;
@@ -63,6 +64,7 @@ pub fn all_rules_and_safety() -> RuleTable {
     rule_table.enable("duplicated_arguments", "SUSP", FixStatus::None, None);
     rule_table.enable("empty_assignment", "READ", FixStatus::Safe, None);
     rule_table.enable("equals_na", "CORR", FixStatus::Safe, None);
+    rule_table.enable("expect_null", "TESTTHAT", FixStatus::Safe, None);
     rule_table.enable("expect_true_false", "TESTTHAT", FixStatus::Safe, None);
     rule_table.enable("for_loop_index", "READ", FixStatus::None, None);
     rule_table.enable("grepv", "READ", FixStatus::Safe, Some((4, 5, 0)));
