@@ -1,0 +1,28 @@
+---
+source: crates/jarl-core/src/lints/expect_not/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\nexpect_true(!x)\",\n\"expect_false(# comment\\n!x)\", \"expect_true(!x) # trailing comment\",],\n\"expect_not\", None)"
+---
+OLD:
+====
+# leading comment
+expect_true(!x)
+NEW:
+====
+# leading comment
+expect_false(x)
+
+OLD:
+====
+expect_false(# comment
+!x)
+NEW:
+====
+expect_false(# comment
+!x)
+
+OLD:
+====
+expect_true(!x) # trailing comment
+NEW:
+====
+expect_false(x) # trailing comment
