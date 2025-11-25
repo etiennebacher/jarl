@@ -18,6 +18,18 @@ mod tests {
         // Not the functions we're looking for
         expect_no_lint("expect_equal(x, 1)", "expect_null", None);
         expect_no_lint("some_other_function(x, NULL)", "expect_null", None);
+        expect_no_lint("expect_true(foo(x))", "expect_null", None);
+
+        // Wrong code but no panic
+        expect_no_lint("expect_equal(object =, NULL)", "expect_null", None);
+        expect_no_lint("expect_equal(x, expected =)", "expect_null", None);
+        expect_no_lint("expect_equal(object = x)", "expect_null", None);
+
+        expect_no_lint("expect_true(object =)", "expect_null", None);
+        expect_no_lint("expect_true(is.null())", "expect_null", None);
+
+        // TODO: https://github.com/etiennebacher/jarl/issues/203
+        // expect_no_lint("expect_equal(expected = NULL)", "expect_null", None);
     }
 
     #[test]
