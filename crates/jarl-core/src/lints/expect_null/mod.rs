@@ -8,6 +8,8 @@ mod tests {
     fn test_no_lint_expect_null() {
         expect_no_lint("expect_true(!is.null(x))", "expect_null", None);
         expect_no_lint("testthat::expect_true(!is.null(x))", "expect_null", None);
+        expect_no_lint("expect_equal()", "expect_null", None);
+        expect_no_lint("expect_true()", "expect_null", None);
 
         // length-0 could be NULL, but could be integer() or list(), so let it pass
         expect_no_lint("expect_length(x, 0L)", "expect_null", None);
@@ -27,6 +29,7 @@ mod tests {
 
         expect_no_lint("expect_true(object =)", "expect_null", None);
         expect_no_lint("expect_true(is.null())", "expect_null", None);
+        expect_no_lint("expect_true(is.null(x =))", "expect_null", None);
 
         // TODO: https://github.com/etiennebacher/jarl/issues/203
         // expect_no_lint("expect_equal(expected = NULL)", "expect_null", None);
