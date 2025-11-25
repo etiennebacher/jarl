@@ -348,7 +348,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div id="callout-1" class="callout-1-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>If you explore other rules implementation, you might notice that the <code>impl Violation</code> block is sometimes missing. This is because in some cases, the message and/or the suggestion depend on the AST itself. For example, for the <code>assignment</code> rule, the message will contain recommend the use of <code>&lt;-</code> or <code>=</code> depending on the user’s settings.</p>
+<p>If you explore other rules implementation, you might notice that the <code>impl Violation</code> block is sometimes missing. This is because in some cases, the message and/or the suggestion depend on the AST itself. For example, for the <code>assignment</code> rule, the message will recommend the use of <code>&lt;-</code> or <code>=</code> depending on the user settings.</p>
 <p>In this scenario, the name, body, and suggestion are defined at the very end, when we build the <code>Diagnostic</code>.</p>
 </div>
 </div>
@@ -382,13 +382,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div id="callout-2" class="callout-2-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>In this example, we used <code>get_arg_by_name_then_position()</code>. There exist other helper functions located in <code>utils.rs</code>. For example, <code>get_nested_functions_content()</code> is very useful to get the content of nested functions. It is used in <code>any_is_na</code> (among other rules) to either get the content of <code>any(is.na(...))</code> or exit the function early.</p>
+<p>In this example, we used <code>get_arg_by_name_then_position()</code>. There exist other helper functions located in <code>utils.rs</code>. For example, <code>get_nested_functions_content()</code> is used in <code>any_is_na</code> (among other rules) to either get the content of <code>any(is.na(...))</code> or exit the function early.</p>
 </div>
 </div>
 </div>
 <p>We can now do more early checks:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Ensure there isn't more than two arguments, as we probably cannot discard</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co">// `quote` and `envir` in `do.call()`.</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co">// `quote` and `envir` if they are specified in `do.call()`.</span></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> get_arg_by_position(<span class="op">&amp;</span>arguments<span class="op">,</span> <span class="dv">3</span>)<span class="op">.</span>is_some() <span class="op">{</span></span>
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="cn">Ok</span>(<span class="cn">None</span>)<span class="op">;</span></span>
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
@@ -397,18 +397,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="cn">Ok</span>(<span class="cn">None</span>)<span class="op">;</span></span>
 <span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
 <span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">let</span> <span class="cn">Some</span>(what) <span class="op">=</span> what <span class="op">&amp;&amp;</span> <span class="kw">let</span> <span class="cn">Some</span>(what_value) <span class="op">=</span> what<span class="op">.</span>value() <span class="op">{</span></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> txt <span class="op">=</span> what_value<span class="op">.</span>to_trimmed_text()<span class="op">;</span></span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">// `do.call()` accepts quoted function names.</span></span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> txt <span class="op">!=</span> <span class="st">"cbind.data.frame"</span></span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>        <span class="op">&amp;&amp;</span> txt <span class="op">!=</span> <span class="st">"</span><span class="sc">\"</span><span class="st">cbind.data.frame</span><span class="sc">\"</span><span class="st">"</span></span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">&amp;&amp;</span> txt <span class="op">!=</span> <span class="st">"</span><span class="sc">\'</span><span class="st">cbind.data.frame</span><span class="sc">\'</span><span class="st">"</span></span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="cn">Ok</span>(<span class="cn">None</span>)<span class="op">;</span></span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> <span class="cf">else</span> <span class="op">{</span></span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="cn">Ok</span>(<span class="cn">None</span>)<span class="op">;</span></span>
-<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="co">// Return early for calls such as `do.call(foo, x)`.</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">let</span> <span class="cn">Some</span>(what) <span class="op">=</span> what <span class="op">&amp;&amp;</span> <span class="kw">let</span> <span class="cn">Some</span>(what_value) <span class="op">=</span> what<span class="op">.</span>value() <span class="op">{</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> txt <span class="op">=</span> what_value<span class="op">.</span>to_trimmed_text()<span class="op">;</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    <span class="co">// `do.call()` accepts quoted function names.</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> txt <span class="op">!=</span> <span class="st">"cbind.data.frame"</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">&amp;&amp;</span> txt <span class="op">!=</span> <span class="st">"</span><span class="sc">\"</span><span class="st">cbind.data.frame</span><span class="sc">\"</span><span class="st">"</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>        <span class="op">&amp;&amp;</span> txt <span class="op">!=</span> <span class="st">"</span><span class="sc">\'</span><span class="st">cbind.data.frame</span><span class="sc">\'</span><span class="st">"</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="cn">Ok</span>(<span class="cn">None</span>)<span class="op">;</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span> <span class="cf">else</span> <span class="op">{</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="cn">Ok</span>(<span class="cn">None</span>)<span class="op">;</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>The block above ensures that we have a call to <code>do.call()</code> with two arguments only and that the argument <code>what</code> is one of <code>cbind.data.frame</code>, <code>"cbind.data.frame"</code>, or <code>'cbind.data.frame'</code> (because <code>do.call()</code> also accepts quoted function names).</p>
 <p>We now reach the last step, which is building the automatic fix. This requires getting the value of <code>args</code> because we want to use it in <code>list2DF()</code>:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Safety: we checked above that args is not None.</span></span>
@@ -435,7 +436,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="cn">Ok</span>(<span class="cn">Some</span>(diagnostic))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>All diagnostics contain a <code>Violation</code> (we defined the one for <code>List2Df</code> just below the documentation), a range indicating where it is located in the code, and a <code>Fix</code> (which may be <code>Fix::Empty()</code> if there is no automatic fix).</p>
-<p>Finally, note that <code>Fix</code> has a field <code>to_skip: node_contains_comments(ast.syntax())</code>. This tells Jarl not to apply the automatic fix if the node in question contains a comment. Handling comments positions in automatic fixes is quite complicated so, for now, fixes are not applied if the node contains comment, e.g.:</p>
+<p>Finally, note that <code>Fix</code> has a field <code>to_skip: node_contains_comments(ast.syntax())</code>. This tells Jarl not to apply the automatic fix if the node in question contains a comment. Handling comments positions in automatic fixes is quite complicated so, for now, fixes are not applied if the node contains a comment, e.g.:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># This code wouldn't be automatically fixed because we don't know where the</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co"># comment inside should go.</span></span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">do.call</span>(</span>
@@ -550,8 +551,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Once you have opened a PR, you will receive three automated comments after a few minutes:</p>
 <ul>
 <li>code coverage: this checks that all the lines you added are covered by some tests. Try to ensure this is at 100%.</li>
-<li>ecosystem checks: every time there is a change in <code>jarl-core</code>, Jarl is run on several R packages and the results are compared to the Jarl version on the main branch. You will have a comment indicating if your changes have revealed new violations or removed some violations in those repositories. Here, since we added a rule, we expect either no changes or more violations. New violations will be printed with a link to the lines of code that trigger them, so check a few to ensure those are not false positives.</li>
-<li>benchmark: this is usually irrelevant when adding a new rule, it is simply to ensure there’s no catastrophic performance degradation.</li>
+<li>ecosystem checks: every time there is a change in <code>jarl-core</code>, Jarl is run on several R packages and the results are compared to the Jarl version on the main branch. There will be a comment indicating if your changes have revealed new violations or removed some violations in those repositories. Here, we added a rule so we expect either no changes or more violations. New violations will be printed with a link to the lines of code that trigger them, so check a few to ensure those are not false positives.</li>
+<li>benchmark: this is usually irrelevant when adding a new rule, it is simply to ensure there is no catastrophic performance degradation.</li>
 </ul>
 <p>Congrats, and thanks for your contribution!</p>
 
