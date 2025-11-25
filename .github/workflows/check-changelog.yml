@@ -1,0 +1,82 @@
+name: Check changelog presence
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if changelog update is needed
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prTitle = context.payload.pull_request.title;
+            const prNumber = context.payload.pull_request.number;
+
+            // Check if PR title starts with "feat:", "feat!:", "fix:", or "fix!:"
+            const needsChangelog = /^(feat|fix)!?:/i.test(prTitle);
+
+            if (!needsChangelog) {
+              console.log('PR title does not start with "feat" or "fix", skipping changelog check');
+              return;
+            }
+
+            console.log('PR requires changelog update, checking if changelog was modified...');
+
+            // Get list of files changed in the PR
+            const files = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            // Check if docs/changelog.md was modified
+            const changelogModified = files.data.some(
+              file => file.filename === 'docs/changelog.md'
+            );
+
+            const labelName = 'forgot-changelog';
+
+            // Get current labels on the PR
+            const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const hasLabel = currentLabels.some(label => label.name === labelName);
+
+            if (!changelogModified && !hasLabel) {
+              // Changelog not modified, add the label
+              console.log('Changelog not modified, adding label');
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                labels: [labelName],
+              });
+            } else if (changelogModified && hasLabel) {
+              // Changelog was modified, remove the label if it exists
+              console.log('Changelog modified, removing label');
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                name: labelName,
+              });
+            } else if (changelogModified) {
+              console.log('Changelog modified, all good!');
+            } else {
+              console.log('Label already present');
+            }
+
+            // Fail the check if changelog is missing
+            if (!changelogModified) {
+              core.setFailed('Changelog update required for feat/fix PR. Please update docs/changelog.md');
+            }
