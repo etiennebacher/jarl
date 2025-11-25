@@ -51,13 +51,13 @@ pub fn check() -> Result<ExitStatus> {
         fix: args.fix,
         unsafe_fixes: args.unsafe_fixes,
         fix_only: args.fix_only,
-        select_rules: args.select_rules.clone(),
+        select: args.select.clone(),
         extend_select: args.extend_select.clone(),
-        ignore_rules: args.ignore_rules.clone(),
+        ignore: args.ignore.clone(),
         min_r_version: args.min_r_version.clone(),
         allow_dirty: args.allow_dirty,
         allow_no_vcs: args.allow_no_vcs,
-        assignment_op: args.assignment_op,
+        assignment: args.assignment,
     };
 
     let config = build_config(&check_config, &resolver, paths)?;

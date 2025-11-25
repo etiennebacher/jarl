@@ -12,7 +12,7 @@ assignment operator in a project.
 Note that Jarl doesn't force you to use `<-` as assignment operator, it
 simply uses it as default. To use `=` as the preferred operator:
 
-- in the CLI (temporary change), use `--assignment-op "="`;
+- in the CLI (temporary change), use `--assignment "="`;
 - in `jarl.toml` (permanent change): set `assignment = "="`.
 
 ## Example

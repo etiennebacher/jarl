@@ -30,11 +30,11 @@ pub struct ArgsConfig {
     /// Did the user pass the --fix-only flag?
     pub fix_only: bool,
     /// Names of rules to use. A single string with commas between rule names.
-    pub select_rules: String,
+    pub select: String,
     /// Additional rules to add to the selection. A single string with commas between rule names.
     pub extend_select: String,
     /// Names of rules to ignore. A single string with commas between rule names.
-    pub ignore_rules: String,
+    pub ignore: String,
     /// The minimum R version used in the project. Used to disable some rules
     /// that require functions that are not available in all R versions, e.g.
     /// grepv() introduced in R 4.5.0.
@@ -44,7 +44,7 @@ pub struct ArgsConfig {
     /// Apply fixes even if there is no version control system?
     pub allow_no_vcs: bool,
     /// Which assignment operator to use? Can be `"<-"` or `"="`.
-    pub assignment_op: Option<String>,
+    pub assignment: Option<String>,
 }
 
 #[derive(Clone)]
@@ -73,7 +73,7 @@ pub struct Config {
     pub allow_no_vcs: bool,
     /// Which assignment operator to use? Can be `RSyntaxKind::ASSIGN` or
     /// `RSyntaxKind::EQUAL`.
-    pub assignment_op: RSyntaxKind,
+    pub assignment: RSyntaxKind,
 }
 
 pub fn build_config(
@@ -103,9 +103,9 @@ pub fn build_config(
     let minimum_r_version = determine_minimum_r_version(check_config, &paths)?;
 
     let rules_cli = parse_rules_cli(
-        &check_config.select_rules,
+        &check_config.select,
         &check_config.extend_select,
-        &check_config.ignore_rules,
+        &check_config.ignore,
     )?;
     let rules_toml = parse_rules_toml(toml_settings)?;
     let rules = reconcile_rules(rules_cli, rules_toml)?;
@@ -148,7 +148,7 @@ pub fn build_config(
         rules_to_apply
     };
 
-    let assignment_op = parse_assignment(check_config, toml_settings)?;
+    let assignment = parse_assignment(check_config, toml_settings)?;
 
     Ok(Config {
         paths,
@@ -159,30 +159,26 @@ pub fn build_config(
         minimum_r_version,
         allow_dirty: check_config.allow_dirty,
         allow_no_vcs: check_config.allow_no_vcs,
-        assignment_op,
+        assignment,
     })
 }
 
 /// Parse CLI rule arguments and return (selected_rules, ignored_rules).
 ///
-/// Returns None for selected_rules if no --select-rules was specified.
-/// Returns empty set for ignored_rules if no --ignore-rules was specified.
-pub fn parse_rules_cli(
-    select_rules: &str,
-    extend_select: &str,
-    ignore_rules: &str,
-) -> Result<RuleSelection> {
+/// Returns None for selected_rules if no --select was specified.
+/// Returns empty set for ignored_rules if no --ignore was specified.
+pub fn parse_rules_cli(select: &str, extend_select: &str, ignore: &str) -> Result<RuleSelection> {
     let all_rules = all_rules_and_safety();
 
-    let selected_rules: Option<HashSet<String>> = if select_rules.is_empty() {
+    let selected_rules: Option<HashSet<String>> = if select.is_empty() {
         None
     } else {
-        let passed_by_user = select_rules.split(",").collect::<Vec<&str>>();
+        let passed_by_user = select.split(",").collect::<Vec<&str>>();
         let expanded_rules = replace_group_rules(&passed_by_user, &all_rules);
         let invalid_rules = get_invalid_rules(&all_rules, &expanded_rules);
         if let Some(invalid_rules) = invalid_rules {
             return Err(anyhow::anyhow!(
-                "Unknown rules in `--select-rules`: {}",
+                "Unknown rules in `--select`: {}",
                 invalid_rules.join(", ")
             ));
         }
@@ -216,15 +212,15 @@ pub fn parse_rules_cli(
         ))
     };
 
-    let ignored_rules: HashSet<String> = if ignore_rules.is_empty() {
+    let ignored_rules: HashSet<String> = if ignore.is_empty() {
         HashSet::new()
     } else {
-        let passed_by_user = ignore_rules.split(",").collect::<Vec<&str>>();
+        let passed_by_user = ignore.split(",").collect::<Vec<&str>>();
         let expanded_rules = replace_group_rules(&passed_by_user, &all_rules);
         let invalid_rules = get_invalid_rules(&all_rules, &expanded_rules);
         if let Some(invalid_rules) = invalid_rules {
             return Err(anyhow::anyhow!(
-                "Unknown rules in `--ignore-rules`: {}",
+                "Unknown rules in `--ignore`: {}",
                 invalid_rules.join(", ")
             ));
         }
@@ -263,26 +259,25 @@ pub fn parse_rules_toml(toml_settings: Option<&Settings>) -> Result<RuleSelectio
     let linter_settings = &settings.linter;
 
     // Handle select rules from TOML
-    let selected_rules: Option<HashSet<String>> =
-        if let Some(select_rules) = &linter_settings.select {
-            let passed_by_user = select_rules.iter().map(|s| s.as_str()).collect();
-            let expanded_rules = replace_group_rules(&passed_by_user, &all_rules);
-            let invalid_rules = get_invalid_rules(&all_rules, &expanded_rules);
-            if let Some(invalid_rules) = invalid_rules {
-                return Err(anyhow::anyhow!(
-                    "Unknown rules in field `select` in 'jarl.toml': {}",
-                    invalid_rules.join(", ")
-                ));
-            }
-            Some(HashSet::from_iter(
-                all_rules
-                    .iter()
-                    .filter(|r| expanded_rules.contains(&r.name))
-                    .map(|x| x.name.clone()),
-            ))
-        } else {
-            None
-        };
+    let selected_rules: Option<HashSet<String>> = if let Some(select) = &linter_settings.select {
+        let passed_by_user = select.iter().map(|s| s.as_str()).collect();
+        let expanded_rules = replace_group_rules(&passed_by_user, &all_rules);
+        let invalid_rules = get_invalid_rules(&all_rules, &expanded_rules);
+        if let Some(invalid_rules) = invalid_rules {
+            return Err(anyhow::anyhow!(
+                "Unknown rules in field `select` in 'jarl.toml': {}",
+                invalid_rules.join(", ")
+            ));
+        }
+        Some(HashSet::from_iter(
+            all_rules
+                .iter()
+                .filter(|r| expanded_rules.contains(&r.name))
+                .map(|x| x.name.clone()),
+        ))
+    } else {
+        None
+    };
 
     // Handle extend-select rules from TOML
     let extended_rules: Option<HashSet<String>> =
@@ -307,8 +302,8 @@ pub fn parse_rules_toml(toml_settings: Option<&Settings>) -> Result<RuleSelectio
         };
 
     // Handle ignore rules from TOML
-    let ignored_rules: HashSet<String> = if let Some(ignore_rules) = &linter_settings.ignore {
-        let passed_by_user = ignore_rules.iter().map(|s| s.as_str()).collect();
+    let ignored_rules: HashSet<String> = if let Some(ignore) = &linter_settings.ignore {
+        let passed_by_user = ignore.iter().map(|s| s.as_str()).collect();
         let expanded_rules = replace_group_rules(&passed_by_user, &all_rules);
         let invalid_rules = get_invalid_rules(&all_rules, &expanded_rules);
         if let Some(invalid_rules) = invalid_rules {
@@ -680,8 +675,8 @@ fn parse_assignment(
 ) -> Result<RSyntaxKind> {
     let out: RSyntaxKind;
 
-    if let Some(assignment_op) = &check_config.assignment_op {
-        match assignment_op.as_str() {
+    if let Some(assignment) = &check_config.assignment {
+        match assignment.as_str() {
             "<-" => {
                 out = RSyntaxKind::ASSIGN;
             }
@@ -690,15 +685,15 @@ fn parse_assignment(
             }
             _ => {
                 return Err(anyhow::anyhow!(
-                    "Invalid value in `--assignment-op`: {}",
-                    assignment_op
+                    "Invalid value in `--assignment`: {}",
+                    assignment
                 ));
             }
         }
     } else if let Some(settings) = toml_settings {
-        let assignment_op = &settings.linter.assignment;
-        if let Some(assignment_op) = assignment_op {
-            match assignment_op.as_str() {
+        let assignment = &settings.linter.assignment;
+        if let Some(assignment) = assignment {
+            match assignment.as_str() {
                 "<-" => {
                     out = RSyntaxKind::ASSIGN;
                 }
@@ -707,8 +702,8 @@ fn parse_assignment(
                 }
                 _ => {
                     return Err(anyhow::anyhow!(
-                        "Invalid value in `--assignment-op`: {}",
-                        assignment_op
+                        "Invalid value in `--assignment`: {}",
+                        assignment
                     ));
                 }
             }

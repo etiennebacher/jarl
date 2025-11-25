@@ -15,7 +15,7 @@ pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> a
     let node = r_expr.syntax();
 
     if checker.is_rule_enabled("assignment") && !checker.should_skip_rule(node, "assignment") {
-        checker.report_diagnostic(assignment(r_expr, checker.assignment_op)?);
+        checker.report_diagnostic(assignment(r_expr, checker.assignment)?);
     }
     if checker.is_rule_enabled("class_equals") && !checker.should_skip_rule(node, "class_equals") {
         checker.report_diagnostic(class_equals(r_expr)?);

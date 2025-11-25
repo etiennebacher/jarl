@@ -41,10 +41,10 @@ pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<Vec<Diagnostic>> {
     let content = snapshot.content();
     let file_path = snapshot.file_path();
     let encoding = snapshot.position_encoding();
-    let assignment_operator = snapshot.assignment_operator();
+    let assignment = snapshot.assignment();
 
     // Run the actual linting
-    let jarl_diagnostics = run_jarl_linting(content, file_path.as_deref(), assignment_operator)?;
+    let jarl_diagnostics = run_jarl_linting(content, file_path.as_deref(), assignment)?;
 
     // Convert to LSP diagnostics with fix information
     let mut lsp_diagnostics = Vec::new();
@@ -60,7 +60,7 @@ pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<Vec<Diagnostic>> {
 fn run_jarl_linting(
     content: &str,
     file_path: Option<&Path>,
-    lsp_assignment_operator: Option<&String>,
+    lsp_assignment: Option<&String>,
 ) -> Result<Vec<JarlDiagnostic>> {
     let file_path = match file_path {
         Some(path) => path,
@@ -116,10 +116,10 @@ fn run_jarl_linting(
         .iter()
         .any(|item| item.value().linter.assignment.is_some());
 
-    let assignment_operator = if toml_has_assignment {
+    let assignment = if toml_has_assignment {
         None
     } else {
-        lsp_assignment_operator.cloned()
+        lsp_assignment.cloned()
     };
 
     let check_config = ArgsConfig {
@@ -127,13 +127,13 @@ fn run_jarl_linting(
         fix: false,
         unsafe_fixes: false,
         fix_only: false,
-        select_rules: "".to_string(),
+        select: "".to_string(),
         extend_select: "".to_string(),
-        ignore_rules: "".to_string(),
+        ignore: "".to_string(),
         min_r_version: None,
         allow_dirty: false,
         allow_no_vcs: false,
-        assignment_op: assignment_operator,
+        assignment,
     };
 
     let config = build_config(&check_config, &resolver, paths)?;

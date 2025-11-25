@@ -141,7 +141,7 @@ ignore = [""]
 }
 
 #[test]
-fn test_toml_select_rules() -> anyhow::Result<()> {
+fn test_toml_select() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();
 
@@ -171,7 +171,7 @@ select = ["any_is_na"]
 }
 
 #[test]
-fn test_toml_select_rules_with_group() -> anyhow::Result<()> {
+fn test_toml_select_with_group() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();
 
@@ -205,7 +205,7 @@ any(duplicated(x))
 }
 
 #[test]
-fn test_toml_ignore_rules() -> anyhow::Result<()> {
+fn test_toml_ignore() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();
 
@@ -298,7 +298,7 @@ length(levels(x))"#;
             .current_dir(directory)
             .arg("check")
             .arg(".")
-            .arg("--select-rules")
+            .arg("--select")
             .arg("any_duplicated,length_levels")
             .run()
             .normalize_os_executable_name()
@@ -335,7 +335,7 @@ length(levels(x))"#;
             .current_dir(directory)
             .arg("check")
             .arg(".")
-            .arg("--ignore-rules")
+            .arg("--ignore")
             .arg("any_is_na")
             .run()
             .normalize_os_executable_name()
@@ -372,9 +372,9 @@ length(levels(x))"#;
             .current_dir(directory)
             .arg("check")
             .arg(".")
-            .arg("--select-rules")
+            .arg("--select")
             .arg("length_levels,any_duplicated")
-            .arg("--ignore-rules")
+            .arg("--ignore")
             .arg("length_levels")
             .run()
             .normalize_os_executable_name()

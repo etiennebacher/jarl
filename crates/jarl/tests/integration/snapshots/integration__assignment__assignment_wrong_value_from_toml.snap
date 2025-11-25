@@ -1,5 +1,5 @@
 ---
-source: crates/jarl/tests/integration/assignment_op.rs
+source: crates/jarl/tests/integration/assignment.rs
 expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name().normalize_temp_paths()"
 ---
 success: false
@@ -8,13 +8,7 @@ exit_code: 255
 
 ----- stderr -----
 jarl failed
-  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-TOML parse error at line 3, column 14
-  |
-3 | assignment = 1
-  |              ^
-invalid type: integer `1`, expected a string
-
+  Cause: Invalid value in `--assignment`: foo
 
 ----- args -----
 check .

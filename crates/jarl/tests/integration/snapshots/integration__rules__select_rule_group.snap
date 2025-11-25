@@ -1,6 +1,6 @@
 ---
 source: crates/jarl/tests/integration/rules.rs
-expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--select-rules\").arg(\"SUSP\").run().normalize_os_executable_name()"
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--select\").arg(\"SUSP\").run().normalize_os_executable_name()"
 ---
 success: false
 exit_code: 1
@@ -19,4 +19,4 @@ Found 1 error.
 ----- stderr -----
 
 ----- args -----
-check . --select-rules SUSP
+check . --select SUSP
