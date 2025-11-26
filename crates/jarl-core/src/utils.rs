@@ -8,6 +8,25 @@ use anyhow::{Result, anyhow};
 use biome_rowan::AstNode;
 use biome_rowan::AstSeparatedList;
 
+/// Macro to unwrap an Option or return Ok(None) early.
+///
+/// This is a common pattern in lint rules where we want to return early
+/// if a value is None without creating an error.
+///
+/// # Example
+/// ```ignore
+/// let x = unwrap_or_return_none!(some_optional_value);
+/// ```
+#[macro_export]
+macro_rules! unwrap_or_return_none {
+    ($expr:expr) => {
+        match $expr {
+            Some(v) => v,
+            None => return Ok(None),
+        }
+    };
+}
+
 /// Find the positions of the new line characters in the given AST.
 pub fn find_new_lines(ast: &RSyntaxNode) -> Result<Vec<usize>> {
     match ast.first_child() {

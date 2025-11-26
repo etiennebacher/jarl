@@ -47,9 +47,7 @@ pub fn expect_not(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let args = ast.arguments()?.items();
 
     // Get the first argument (object)
-    let Some(object) = get_arg_by_name_then_position(&args, "object", 1) else {
-        return Ok(None);
-    };
+    let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
 
     // Skip if there are multiple arguments (e.g., expect_true(!x, label = "test"))
     // Only lint when there's exactly one argument
@@ -57,25 +55,19 @@ pub fn expect_not(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    let Some(object_value) = object.value() else {
-        return Ok(None);
-    };
+    let object_value = unwrap_or_return_none!(object.value());
 
     // Check if it's a unary expression (negation)
-    let Some(unary_expr) = object_value.as_r_unary_expression() else {
-        return Ok(None);
-    };
-    let Ok(operator) = unary_expr.operator() else {
-        return Ok(None);
-    };
+    let unary_expr = unwrap_or_return_none!(object_value.as_r_unary_expression());
+
+    // Get the operator
+    let operator = unwrap_or_return_none!(unary_expr.operator().ok());
     if operator.kind() != RSyntaxKind::BANG {
         return Ok(None);
     }
 
     // Get the argument after the negation
-    let Ok(argument) = unary_expr.argument() else {
-        return Ok(None);
-    };
+    let argument = unwrap_or_return_none!(unary_expr.argument().ok());
 
     // Check for rlang bang-bang (!!, !!!) - we should skip these
     if let Some(inner_unary) = argument.as_r_unary_expression()

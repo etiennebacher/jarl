@@ -49,18 +49,14 @@ pub fn outer_negation(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let args = ast.arguments()?.items();
 
     // Only check calls with exactly one argument
-    let Some(first_arg) = get_arg_by_position(&args, 1) else {
-        return Ok(None);
-    };
+    let first_arg = unwrap_or_return_none!(get_arg_by_position(&args, 1));
 
     // Ensure there's not more than one argument (e.g. skip `any(!x, y)`).
     if get_arg_by_position(&args, 2).is_some() {
         return Ok(None);
     }
 
-    let Some(arg_value) = first_arg.value() else {
-        return Ok(None);
-    };
+    let arg_value = unwrap_or_return_none!(first_arg.value());
     // Check if the argument is a unary expression (negation)
     if arg_value.syntax().kind() != RSyntaxKind::R_UNARY_EXPRESSION {
         return Ok(None);
@@ -73,9 +69,7 @@ pub fn outer_negation(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         .children()
         .find(|child| child.kind() != RSyntaxKind::BANG);
 
-    let Some(expr) = negated_expr else {
-        return Ok(None);
-    };
+    let expr = unwrap_or_return_none!(negated_expr);
 
     // It looks like the first (and only) child of R_UNARY_EXPRESSION is what
     // comes after "!". So we don't need to check that this is indeed using the
