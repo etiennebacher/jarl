@@ -84,7 +84,6 @@ pub fn expect_length(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         // `expected` also isn't `length(...)` we stop.
         let exp_fn = expected_call.function()?;
         if exp_fn.to_trimmed_text() == "length" {
-            // Pattern 2: expect_equal(n, length(x))
             (expected_call, object_value)
         } else {
             return Ok(None);
