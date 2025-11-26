@@ -66,14 +66,10 @@ pub fn sort(ast: &RSubset) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    let Some(arg_value) = arg.value() else {
-        return Ok(None);
-    };
+    let arg_value = unwrap_or_return_none!(arg.value());
 
     // Ensure we have something like `x[order(...)]`.
-    let Some(arg_value) = arg_value.as_r_call() else {
-        return Ok(None);
-    };
+    let arg_value = unwrap_or_return_none!(arg_value.as_r_call());
     let function = arg_value.function()?;
     let arg_inner = arg_value.arguments()?;
     if function.to_trimmed_text() != "order" {

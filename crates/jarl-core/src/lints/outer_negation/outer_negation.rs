@@ -69,9 +69,7 @@ pub fn outer_negation(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         .children()
         .find(|child| child.kind() != RSyntaxKind::BANG);
 
-    let Some(expr) = negated_expr else {
-        return Ok(None);
-    };
+    let expr = unwrap_or_return_none!(negated_expr);
 
     // It looks like the first (and only) child of R_UNARY_EXPRESSION is what
     // comes after "!". So we don't need to check that this is indeed using the
