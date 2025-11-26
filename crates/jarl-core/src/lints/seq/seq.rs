@@ -47,9 +47,7 @@ pub fn seq(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let left = ast.left()?;
     let right = ast.right()?;
 
-    let Some(right_call) = right.as_r_call() else {
-        return Ok(None);
-    };
+    let right_call = unwrap_or_return_none!(right.as_r_call());
 
     let left_is_literal_one = left.to_trimmed_text() == "1" || left.to_trimmed_text() == "1L";
 

@@ -41,19 +41,11 @@ pub fn expect_true_false(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let args = ast.arguments()?.items();
 
     // Get `object` and `expected` arguments
-    let Some(object) = get_arg_by_name_then_position(&args, "object", 1) else {
-        return Ok(None);
-    };
-    let Some(expected) = get_arg_by_name_then_position(&args, "expected", 2) else {
-        return Ok(None);
-    };
+    let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
+    let expected = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "expected", 2));
 
-    let Some(object_value) = object.value() else {
-        return Ok(None);
-    };
-    let Some(expected_value) = expected.value() else {
-        return Ok(None);
-    };
+    let object_value = unwrap_or_return_none!(object.value());
+    let expected_value = unwrap_or_return_none!(expected.value());
 
     let object_text = object_value.to_trimmed_text();
     let expected_text = expected_value.to_trimmed_text();

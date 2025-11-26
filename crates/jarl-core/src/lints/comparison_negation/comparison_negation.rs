@@ -35,14 +35,10 @@ pub fn comparison_negation(ast: &RUnaryExpression) -> anyhow::Result<Option<Diag
 
     let argument = ast.argument()?;
 
-    let Some(paren_expr) = argument.as_r_parenthesized_expression() else {
-        return Ok(None);
-    };
+    let paren_expr = unwrap_or_return_none!(argument.as_r_parenthesized_expression());
 
     let body = paren_expr.body()?;
-    let Some(binary_expression) = body.as_r_binary_expression() else {
-        return Ok(None);
-    };
+    let binary_expression = unwrap_or_return_none!(body.as_r_binary_expression());
     let operator = binary_expression.operator()?;
     let operator_kind = operator.kind();
     let left = binary_expression.left()?;
