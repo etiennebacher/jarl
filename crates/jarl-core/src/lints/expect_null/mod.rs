@@ -31,8 +31,7 @@ mod tests {
         expect_no_lint("expect_true(is.null())", "expect_null", None);
         expect_no_lint("expect_true(is.null(x =))", "expect_null", None);
 
-        // TODO: https://github.com/etiennebacher/jarl/issues/203
-        // expect_no_lint("expect_equal(expected = NULL)", "expect_null", None);
+        expect_no_lint("expect_equal(expected = NULL)", "expect_null", None);
     }
 
     #[test]
