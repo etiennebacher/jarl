@@ -4,7 +4,7 @@ use clap::ValueEnum;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::io::Write;
+use std::io::{BufWriter, Write};
 
 use jarl_core::diagnostic::Diagnostic;
 
@@ -42,6 +42,7 @@ impl Emitter for ConciseEmitter {
         diagnostics: &[&Diagnostic],
         errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
+        let mut writer = BufWriter::new(writer);
         let mut total_diagnostics = 0;
         let mut n_diagnostic_with_fixes = 0usize;
         let mut n_diagnostic_with_unsafe_fixes = 0usize;
@@ -138,7 +139,9 @@ impl Emitter for JsonEmitter {
         diagnostics: &[&Diagnostic],
         _errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
-        serde_json::to_writer_pretty(writer, diagnostics)?;
+        let mut writer = BufWriter::new(writer);
+        serde_json::to_writer_pretty(&mut writer, diagnostics)?;
+        writer.flush()?;
         Ok(())
     }
 }
@@ -152,6 +155,7 @@ impl Emitter for GithubEmitter {
         diagnostics: &[&Diagnostic],
         _errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
+        let mut writer = BufWriter::new(writer);
         for diagnostic in diagnostics {
             let (row, col) = match diagnostic.location {
                 Some(loc) => (loc.row(), loc.column() + 1), // Convert to 1-based for display
@@ -184,6 +188,7 @@ impl Emitter for GithubEmitter {
             writeln!(writer, "[{}] {}", diagnostic.message.name, message)?;
         }
 
+        writer.flush()?;
         Ok(())
     }
 }
@@ -197,6 +202,7 @@ impl Emitter for FullEmitter {
         diagnostics: &[&Diagnostic],
         errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
+        let mut writer = BufWriter::new(writer);
         // Use plain renderer when NO_COLOR is set or in snapshots
         let renderer = if std::env::var("NO_COLOR").is_ok() {
             Renderer::plain()
