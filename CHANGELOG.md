@@ -20,7 +20,7 @@
 
 ### Fixes
 
-- `implicit_assignment` no longer reports cases inside `quote()` (#208).
+- `implicit_assignment` no longer reports cases inside `quote()` (#209).
 
 ### Documentation
 
