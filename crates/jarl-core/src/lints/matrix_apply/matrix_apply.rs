@@ -73,14 +73,10 @@ pub fn matrix_apply(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    let Some(x_value) = x.and_then(|arg| arg.value()) else {
-        return Ok(None);
-    };
+    let x_value = unwrap_or_return_none!(x.and_then(|arg| arg.value()));
     let x = x_value.to_trimmed_string();
 
-    let Some(fun_value) = fun.and_then(|arg| arg.value()) else {
-        return Ok(None);
-    };
+    let fun_value = unwrap_or_return_none!(fun.and_then(|arg| arg.value()));
     let fun = fun_value.to_trimmed_string();
 
     if fun != "mean" && fun != "sum" {
@@ -88,9 +84,7 @@ pub fn matrix_apply(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     }
 
     // MARGIN could be c(1, 2), in which case we don't know what to do.
-    let Some(margin_value) = margin.and_then(|arg| arg.value()) else {
-        return Ok(None);
-    };
+    let margin_value = unwrap_or_return_none!(margin.and_then(|arg| arg.value()));
 
     let margin_text = margin_value.to_trimmed_string();
     let margin = if margin_text == "1" || margin_text == "1L" {

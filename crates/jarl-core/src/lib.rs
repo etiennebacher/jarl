@@ -6,6 +6,9 @@
 //! - Configuration management
 //! - File discovery and processing
 
+#[macro_use]
+pub mod utils;
+
 pub mod analyze;
 pub mod check;
 pub mod config;
@@ -22,7 +25,6 @@ pub mod rule_table;
 pub mod settings;
 pub mod suppression;
 pub mod toml;
-pub mod utils;
 pub mod vcs;
 
 #[cfg(test)]
