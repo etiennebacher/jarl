@@ -18,6 +18,10 @@
   - `expect_null` (#202)
   - `expect_true_false` (#191)
 
+### Fixes
+
+- `implicit_assignment` no longer reports cases inside `quote()` (#208).
+
 ### Documentation
 
 - Added section on Neovim to the [Editors](https://jarl.etiennebacher.com/editors) page (#188, @bjyberg).
