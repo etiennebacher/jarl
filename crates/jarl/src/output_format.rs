@@ -60,6 +60,9 @@ impl Emitter for ConciseEmitter {
             }
         }
 
+        // Cache relativized paths to avoid repeated filesystem operations
+        let mut path_cache = std::collections::HashMap::new();
+
         // Then, print the diagnostics.
         for diagnostic in diagnostics {
             let (row, col) = match diagnostic.location {
@@ -68,6 +71,12 @@ impl Emitter for ConciseEmitter {
                     unreachable!("Row/col locations must have been parsed successfully before.")
                 }
             };
+
+            // Get or compute relativized path
+            let relative_path = path_cache
+                .entry(&diagnostic.filename)
+                .or_insert_with(|| relativize_path(diagnostic.filename.clone()));
+
             let message = if let Some(suggestion) = &diagnostic.message.suggestion {
                 format!("{} {}", diagnostic.message.body, suggestion)
             } else {
@@ -76,7 +85,7 @@ impl Emitter for ConciseEmitter {
             writeln!(
                 writer,
                 "{} [{}:{}] {} {}",
-                relativize_path(diagnostic.filename.clone()).white(),
+                relative_path.white(),
                 row,
                 col,
                 diagnostic.message.name.red(),
@@ -243,6 +252,30 @@ impl Emitter for FullEmitter {
                 .push(diagnostic);
         }
 
+        // Cache file contents and relativized paths
+        let mut file_cache: std::collections::HashMap<&std::path::Path, String> =
+            std::collections::HashMap::new();
+        let mut path_cache = std::collections::HashMap::new();
+
+        // Pre-load all files into cache
+        for diagnostic in diagnostics {
+            if !file_cache.contains_key(diagnostic.filename.as_path()) {
+                match fs::read_to_string(&diagnostic.filename) {
+                    Ok(content) => {
+                        file_cache.insert(diagnostic.filename.as_path(), content);
+                    }
+                    Err(err) => {
+                        writer.flush()?; // Flush before writing to stderr
+                        eprintln!(
+                            "Warning: Could not read source file {}: {}",
+                            diagnostic.filename.display(),
+                            err
+                        );
+                    }
+                }
+            }
+        }
+
         // Process each file's diagnostics
         for diagnostic in diagnostics {
             let (_row, _col) = match diagnostic.location {
@@ -252,29 +285,23 @@ impl Emitter for FullEmitter {
                 }
             };
 
-            // Read the source file
-            let source = match fs::read_to_string(&diagnostic.filename) {
-                Ok(content) => content,
-                Err(e) => {
-                    eprintln!(
-                        "Warning: Could not read source file {}: {}",
-                        diagnostic.filename.display(),
-                        e
-                    );
-                    continue;
-                }
+            // Get the source file from cache
+            let Some(source) = file_cache.get(diagnostic.filename.as_path()) else {
+                continue; // Skip if file couldn't be read
             };
 
             // Calculate the byte offset from TextRange
             let start_offset = diagnostic.range.start().into();
             let end_offset = diagnostic.range.end().into();
 
-            // Create the snippet with annotate-snippets
-            let file_path = relativize_path(diagnostic.filename.clone());
+            // Get or compute relativized path
+            let file_path = path_cache
+                .entry(&diagnostic.filename)
+                .or_insert_with(|| relativize_path(diagnostic.filename.clone()));
 
             // Build the message with snippet
-            let snippet = Snippet::source(&source)
-                .origin(&file_path)
+            let snippet = Snippet::source(source)
+                .origin(file_path)
                 .fold(true)
                 .annotation(
                     Level::Warning
