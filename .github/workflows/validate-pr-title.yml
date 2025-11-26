@@ -12,6 +12,17 @@ jobs:
   labeler:
     runs-on: ubuntu-latest
     steps:
+      - name: Check for trailing spaces in PR title
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = context.payload.pull_request.title;
+            if (title.endsWith(' ')) {
+              core.setFailed('❌ PR title has trailing spaces. Please remove any spaces at the end of the title.');
+            } else if (title.startsWith(' ')) {
+              core.setFailed('❌ PR title has leading spaces. Please remove any spaces at the beginning of the title.');
+            }
+
       - name: Check pull request title
         uses: thehanimo/pr-title-checker@v1.4.2
         with:
