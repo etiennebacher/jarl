@@ -58,8 +58,8 @@ pub fn list2df(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    let what = get_arg_by_name_then_position(&arguments, "what", 1);
-    let args = get_arg_by_name_then_position(&arguments, "args", 2);
+    let what = unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "what", 1));
+    let args = unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "args", 2));
 
     // Ensure there's not more than two arguments, don't know how to handle
     // `quote` and `envir` in `do.call()`.
@@ -67,10 +67,7 @@ pub fn list2df(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    let args = unwrap_or_return_none!(args);
-    let what = unwrap_or_return_none!(what);
     let what_value = unwrap_or_return_none!(what.value());
-
     let txt = what_value.to_trimmed_text();
     // `do.call()` accepts quoted function names.
     if txt != "cbind.data.frame" && txt != "\"cbind.data.frame\"" && txt != "\'cbind.data.frame\'" {

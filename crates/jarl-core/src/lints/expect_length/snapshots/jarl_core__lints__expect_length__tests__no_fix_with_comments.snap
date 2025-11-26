@@ -1,0 +1,28 @@
+---
+source: crates/jarl-core/src/lints/expect_length/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\nexpect_equal(length(x), 2L)\",\n\"expect_equal(# comment\\nlength(x), 2L)\",\n\"expect_equal(length(x), 2L) # trailing comment\",], \"expect_length\", None)"
+---
+OLD:
+====
+# leading comment
+expect_equal(length(x), 2L)
+NEW:
+====
+# leading comment
+expect_length(x, 2L)
+
+OLD:
+====
+expect_equal(# comment
+length(x), 2L)
+NEW:
+====
+expect_equal(# comment
+length(x), 2L)
+
+OLD:
+====
+expect_equal(length(x), 2L) # trailing comment
+NEW:
+====
+expect_length(x, 2L) # trailing comment

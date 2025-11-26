@@ -199,16 +199,24 @@ if function.to_trimmed_text() != "do.call" {
 Past that point, the next step is to check that the arguments correspond to what we want to analyze.
 `do.call` has four arguments: `what`, `args`, `quote`, and `envir`.
 We are looking for patterns such as `do.call(cbind.data.frame, x)` so we want information on the first two arguments.
-We can use a helper function called `get_arg_by_name_then_position()`:
+We can use a helper function called `get_arg_by_name_then_position()`, combined with the macro `unwrap_or_return_none!`:
 
 ```rust
 // Note that the arguments position is 1-indexed and not 0-indexed as is usually
 // the case in Rust.
-let what = get_arg_by_name_then_position(&arguments, "what", 1);
-let args = get_arg_by_name_then_position(&arguments, "args", 2);
+let what = unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "what", 1));
+let args = unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "args", 2));
 ```
 
-This function returns an `Option` since the arguments we want to extract maybe do not exist in the code we parsed.
+`get_arg_by_name_then_position()` returns an `Option` since the arguments we want to extract maybe do not exist in the code we parsed.
+The macro `unwrap_or_return_none!()` makes the code slightly more readable.
+It replaces the more verbose `let-some` pattern:
+
+```rust
+let Some(what) = get_arg_by_name_then_position(&arguments, "what", 1) else {
+    return Ok(None);
+};
+```
 
 ::: {.callout-note collapse="true"}
 ## About helper functions
@@ -227,23 +235,12 @@ if get_arg_by_position(&arguments, 3).is_some() {
     return Ok(None);
 }
 
-if args.is_none() {
+let what_value = unwrap_or_return_none!(what.value());
+let txt = what_value.to_trimmed_text();
+// `do.call()` accepts quoted function names.
+if txt != "cbind.data.frame" && txt != "\"cbind.data.frame\"" && txt != "\'cbind.data.frame\'" {
     return Ok(None);
 }
-
-// Return early for calls such as `do.call(foo, x)`.
-if let Some(what) = what && let Some(what_value) = what.value() {
-    let txt = what_value.to_trimmed_text();
-    // `do.call()` accepts quoted function names.
-    if txt != "cbind.data.frame"
-        && txt != "\"cbind.data.frame\""
-        && txt != "\'cbind.data.frame\'"
-    {
-        return Ok(None);
-    }
-} else {
-    return Ok(None);
-};
 ```
 
 The block above ensures that we have a call to `do.call()` with two arguments only and that the argument `what` is one of `cbind.data.frame`, `"cbind.data.frame"`, or `'cbind.data.frame'` (because `do.call()` also accepts quoted function names).
@@ -252,15 +249,8 @@ We now reach the last step, which is building the automatic fix.
 This requires getting the value of `args` because we want to use it in `list2DF()`:
 
 ```rust
-// Safety: we checked above that args is not None.
-let args = args.unwrap().value();
-// Here, `args` can be None if the call is something like
-// `do.call(cbind.data.frame, args = )`. This is not valid R code, but we don't
-// want to panic if it is checked by Jarl.
-if args.is_none() {
-    return Ok(None);
-}
-let fix_content = args.unwrap();
+let args_value = unwrap_or_return_none!(args.value());
+let fix_content = args_value;
 ```
 
 And finally, we build the diagnostic:
