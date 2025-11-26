@@ -99,10 +99,10 @@ jobs:
             repo_dir=$(echo "$repo_name" | tr '/' '_')
 
             # Run main
-            (cd "$repo_dir" && hyperfine --warmup 5 --min-runs 50 '$MAIN_JARL check . > /dev/null' --ignore-failure  --export-json ../../results_bench/${repo_dir}_main.json) || true
+            (cd "$repo_dir" && hyperfine --warmup 5 --min-runs 50 '$MAIN_JARL check .' --ignore-failure  --export-json ../../results_bench/${repo_dir}_main.json) || true
 
             # Run PR
-            (cd "$repo_dir" && hyperfine --warmup 5 --min-runs 50 '$PR_JARL check . > /dev/null' --ignore-failure  --export-json ../../results_bench/${repo_dir}_pr.json) || true
+            (cd "$repo_dir" && hyperfine --warmup 5 --min-runs 50 '$PR_JARL check .' --ignore-failure  --export-json ../../results_bench/${repo_dir}_pr.json) || true
           done
 
       - name: Upload all result JSONs
