@@ -70,13 +70,12 @@ pub fn expect_not(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let argument = unwrap_or_return_none!(unary_expr.argument().ok());
 
     // Check for rlang bang-bang (!!, !!!) - we should skip these
-    if let Some(inner_unary) = argument.as_r_unary_expression() {
-        if let Ok(inner_op) = inner_unary.operator() {
-            if inner_op.kind() == RSyntaxKind::BANG {
-                // This is !! or !!!, skip it
-                return Ok(None);
-            }
-        }
+    if let Some(inner_unary) = argument.as_r_unary_expression()
+        && let Ok(inner_op) = inner_unary.operator()
+        && inner_op.kind() == RSyntaxKind::BANG
+    {
+        // This is !! or !!!, skip it
+        return Ok(None);
     }
 
     // Strip outer parentheses if present: !(x && y) -> x && y
