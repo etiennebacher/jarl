@@ -57,6 +57,7 @@ dat <- as.data.frame(
     c("duplicated_arguments", "Suspicious", "❌", ""),
     c("empty_assignment", "Readability", "❌", ""),
     c("equals_na", "Correctness", "✅", ""),
+    c("expect_length", "`testthat`", "✅", "Disabled by default"),
     c("expect_not", "`testthat`", "✅", "Disabled by default"),
     c("expect_null", "`testthat`", "✅", "Disabled by default"),
     c("expect_true_false", "`testthat`", "✅", "Disabled by default"),

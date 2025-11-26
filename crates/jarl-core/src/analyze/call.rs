@@ -8,6 +8,7 @@ use crate::lints::any_is_na::any_is_na::any_is_na;
 use crate::lints::browser::browser::browser;
 use crate::lints::download_file::download_file::download_file;
 use crate::lints::duplicated_arguments::duplicated_arguments::duplicated_arguments;
+use crate::lints::expect_length::expect_length::expect_length;
 use crate::lints::expect_not::expect_not::expect_not;
 use crate::lints::expect_null::expect_null::expect_null;
 use crate::lints::expect_true_false::expect_true_false::expect_true_false;
@@ -48,6 +49,10 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
         && !checker.should_skip_rule(node, "duplicated_arguments")
     {
         checker.report_diagnostic(duplicated_arguments(r_expr)?);
+    }
+    if checker.is_rule_enabled("expect_length") && !checker.should_skip_rule(node, "expect_length")
+    {
+        checker.report_diagnostic(expect_length(r_expr)?);
     }
     if checker.is_rule_enabled("expect_not") && !checker.should_skip_rule(node, "expect_not") {
         checker.report_diagnostic(expect_not(r_expr)?);
