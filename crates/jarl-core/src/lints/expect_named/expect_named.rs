@@ -7,7 +7,7 @@ use biome_rowan::AstNode;
 ///
 /// Checks for usage of `expect_equal(names(x), n)` and `expect_identical(names(x), n)`.
 ///
-/// ## Why is this bad
+/// ## Why is this bad?
 ///
 /// `expect_named(x, n)` is more explicit and clearer in intent than using
 /// `expect_equal()` or `expect_identical()` with `names()`. It also provides
@@ -118,7 +118,7 @@ pub fn expect_named(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         ViolationData::new(
             "expect_named".to_string(),
             format!(
-                "`expect_named(x, n)` is better than `{}(names(x), n)`",
+                "`expect_named(x, n)` is better than `{}(names(x), n)`.",
                 function_name
             ),
             Some("Use `expect_named(x, n)` instead.".to_string()),

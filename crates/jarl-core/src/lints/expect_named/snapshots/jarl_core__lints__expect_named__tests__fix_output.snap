@@ -1,0 +1,38 @@
+---
+source: crates/jarl-core/src/lints/expect_named/mod.rs
+expression: "get_fixed_text(vec![\"expect_equal(names(x), 'a')\",\n\"expect_equal(names(x), c('a', 'b'))\", \"expect_identical(names(x), 'a')\",\n\"expect_equal('a', names(x))\", \"expect_equal(foo(x), names(x))\"],\n\"expect_named\", None,)"
+---
+OLD:
+====
+expect_equal(names(x), 'a')
+NEW:
+====
+expect_named(x, 'a')
+
+OLD:
+====
+expect_equal(names(x), c('a', 'b'))
+NEW:
+====
+expect_named(x, c('a', 'b'))
+
+OLD:
+====
+expect_identical(names(x), 'a')
+NEW:
+====
+expect_named(x, 'a')
+
+OLD:
+====
+expect_equal('a', names(x))
+NEW:
+====
+expect_named(x, 'a')
+
+OLD:
+====
+expect_equal(foo(x), names(x))
+NEW:
+====
+expect_named(x, foo(x))

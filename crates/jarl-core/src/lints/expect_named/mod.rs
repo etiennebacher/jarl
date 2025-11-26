@@ -32,16 +32,9 @@ mod tests {
     }
 
     #[test]
-    fn test_expect_equal_names_null_not_linted() {
-        // expect_equal(names(x), NULL) should be caught by expect_null linter, not expect_named
-        expect_no_lint("expect_equal(names(xs), NULL)", "expect_named", None);
-        expect_no_lint("expect_identical(names(xs), NULL)", "expect_named", None);
-    }
-
-    #[test]
     fn test_lint_expect_named() {
         use insta::assert_snapshot;
-        let lint_msg = "expect_named(x, n) is better than";
+        let lint_msg = "`expect_named(x, n)` is better than";
 
         expect_lint(
             "expect_equal(names(x), 'a')",
@@ -49,10 +42,32 @@ mod tests {
             "expect_named",
             None,
         );
-
-        // yoda test case
+        expect_lint(
+            "expect_equal(names(x), c('a', 'b'))",
+            lint_msg,
+            "expect_named",
+            None,
+        );
+        expect_lint(
+            "expect_identical(names(x), 'a')",
+            lint_msg,
+            "expect_named",
+            None,
+        );
         expect_lint(
             "expect_equal('a', names(x))",
+            lint_msg,
+            "expect_named",
+            None,
+        );
+        expect_lint(
+            "expect_equal(foo(x), names(x))",
+            lint_msg,
+            "expect_named",
+            None,
+        );
+        expect_lint(
+            "expect_equal(names(x), NULL)",
             lint_msg,
             "expect_named",
             None,
@@ -61,7 +76,13 @@ mod tests {
         assert_snapshot!(
             "fix_output",
             get_fixed_text(
-                vec!["expect_equal(names(x), 'a')", "expect_equal('a', names(x))",],
+                vec![
+                    "expect_equal(names(x), 'a')",
+                    "expect_equal(names(x), c('a', 'b'))",
+                    "expect_identical(names(x), 'a')",
+                    "expect_equal('a', names(x))",
+                    "expect_equal(foo(x), names(x))"
+                ],
                 "expect_named",
                 None,
             )
@@ -69,21 +90,15 @@ mod tests {
     }
 
     #[test]
-    fn test_lint_expect_named_identical() {
-        let lint_msg = "expect_named(x, n) is better than expect_identical(names(x), n)";
-
-        expect_lint(
-            "expect_identical(names(x), 'a')",
-            lint_msg,
-            "expect_named",
-            None,
-        );
-    }
-
-    #[test]
     fn test_expect_named_with_comments_no_fix() {
         use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present
+        expect_lint(
+            "expect_equal(# comment\nnames(x), 'a')",
+            "`expect_named(x, n)` is better than",
+            "expect_named",
+            None,
+        );
         assert_snapshot!(
             "no_fix_with_comments",
             get_fixed_text(

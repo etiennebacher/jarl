@@ -1,0 +1,28 @@
+---
+source: crates/jarl-core/src/lints/expect_named/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\nexpect_equal(names(x), 'a')\",\n\"expect_equal(# comment\\nnames(x), 'a')\",\n\"expect_equal(names(x), 'a') # trailing comment\",], \"expect_named\", None)"
+---
+OLD:
+====
+# leading comment
+expect_equal(names(x), 'a')
+NEW:
+====
+# leading comment
+expect_named(x, 'a')
+
+OLD:
+====
+expect_equal(# comment
+names(x), 'a')
+NEW:
+====
+expect_equal(# comment
+names(x), 'a')
+
+OLD:
+====
+expect_equal(names(x), 'a') # trailing comment
+NEW:
+====
+expect_named(x, 'a') # trailing comment
