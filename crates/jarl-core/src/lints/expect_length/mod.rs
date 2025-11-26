@@ -20,12 +20,13 @@ mod tests {
             "expect_length",
             None,
         );
-        expect_no_lint("expect_equal(length(x), length(y))", "expect_length", None);
         expect_no_lint(
             "expect_equal(length(x), n, expected.label = 'target size')",
             "expect_length",
             None,
         );
+        expect_no_lint("expect_equal(length(x), length(y))", "expect_length", None);
+        expect_no_lint("expect_equal(foo(x), bar(y))", "expect_length", None);
 
         // Not the functions we're looking for
         expect_no_lint("expect_equal(x, 1)", "expect_length", None);
@@ -66,6 +67,12 @@ mod tests {
             "expect_length",
             None,
         );
+        expect_lint(
+            "expect_equal(foo(y), length(x))",
+            lint_msg,
+            "expect_length",
+            None,
+        );
 
         assert_snapshot!(
             "fix_output",
@@ -74,6 +81,7 @@ mod tests {
                     "expect_equal(length(x), 2L)",
                     "expect_equal(2, length(x))",
                     "expect_equal(length(x), foo(y))",
+                    "expect_equal(foo(y), length(x))",
                 ],
                 "expect_length",
                 None,

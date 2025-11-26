@@ -118,10 +118,10 @@ pub fn expect_length(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         ViolationData::new(
             "expect_length".to_string(),
             format!(
-                "`expect_length(x, n)` is better than {}(length(x), n)",
+                "`expect_length(x, n)` is better than `{}(length(x), n)`.",
                 function_name
             ),
-            Some("Use `expect_length(x, n)` instead".to_string()),
+            Some("Use `expect_length(x, n)` instead.".to_string()),
         ),
         range,
         Fix {
