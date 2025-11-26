@@ -49,6 +49,7 @@ impl Emitter for ConciseEmitter {
 
         // First, print all parsing errors
         if !errors.is_empty() {
+            writer.flush()?; // Flush before writing to stderr
             for (_path, err) in errors {
                 let root_cause = err.chain().last().unwrap();
                 if root_cause.is::<jarl_core::error::ParseError>() {
@@ -90,6 +91,8 @@ impl Emitter for ConciseEmitter {
             }
             total_diagnostics += 1;
         }
+
+        writer.flush()?; // Ensure all diagnostics are written before summary
 
         // Finally, print the info about the number of errors found and how
         // many can be fixed.
@@ -215,6 +218,7 @@ impl Emitter for FullEmitter {
 
         // First, print all parsing errors
         if !errors.is_empty() {
+            writer.flush()?; // Flush before writing to stderr
             for (_path, err) in errors {
                 let root_cause = err.chain().last().unwrap();
                 if root_cause.is::<jarl_core::error::ParseError>() {
@@ -299,6 +303,8 @@ impl Emitter for FullEmitter {
             }
             total_diagnostics += 1;
         }
+
+        writer.flush()?; // Ensure all diagnostics are written before summary
 
         // Finally, print the info about the number of errors found and how
         // many can be fixed.
