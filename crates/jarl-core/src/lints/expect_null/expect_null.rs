@@ -51,19 +51,11 @@ pub fn expect_null(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 fn check_expect_equal_null(ast: &RCall, function_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     let args = ast.arguments()?.items();
 
-    let Some(object) = get_arg_by_name_then_position(&args, "object", 1) else {
-        return Ok(None);
-    };
-    let Some(expected) = get_arg_by_name_then_position(&args, "expected", 2) else {
-        return Ok(None);
-    };
+    let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
+    let expected = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "expected", 2));
 
-    let Some(object_value) = object.value() else {
-        return Ok(None);
-    };
-    let Some(expected_value) = expected.value() else {
-        return Ok(None);
-    };
+    let object_value = unwrap_or_return_none!(object.value());
+    let expected_value = unwrap_or_return_none!(expected.value());
 
     let object_kind = object_value.syntax().kind();
     let expected_kind = expected_value.syntax().kind();
@@ -101,18 +93,11 @@ fn check_expect_equal_null(ast: &RCall, function_name: &str) -> anyhow::Result<O
 fn check_expect_true_is_null(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let args = ast.arguments()?.items();
 
-    let Some(object) = get_arg_by_name_then_position(&args, "object", 1) else {
-        return Ok(None);
-    };
-
-    let Some(object_value) = object.value() else {
-        return Ok(None);
-    };
+    let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
+    let object_value = unwrap_or_return_none!(object.value());
 
     // Check if it's a call to `is.null()`
-    let Some(call) = object_value.as_r_call() else {
-        return Ok(None);
-    };
+    let call = unwrap_or_return_none!(object_value.as_r_call());
     let function = call.function()?;
     let function_name = function.to_trimmed_text();
     if function_name != "is.null" {
@@ -121,14 +106,8 @@ fn check_expect_true_is_null(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> 
 
     // Get the argument to `is.null()`
     let inner_args = call.arguments()?.items();
-    let Some(inner_arg) = get_arg_by_name_then_position(&inner_args, "x", 1) else {
-        return Ok(None);
-    };
-
-    let Some(inner_value) = inner_arg.value() else {
-        return Ok(None);
-    };
-
+    let inner_arg = unwrap_or_return_none!(get_arg_by_name_then_position(&inner_args, "x", 1));
+    let inner_value = unwrap_or_return_none!(inner_arg.value());
     let inner_text = inner_value.to_trimmed_text();
 
     let range = ast.syntax().text_trimmed_range();

@@ -67,17 +67,9 @@ pub fn list2df(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    let Some(args) = args else {
-        return Ok(None);
-    };
-
-    let Some(what) = what else {
-        return Ok(None);
-    };
-
-    let Some(what_value) = what.value() else {
-        return Ok(None);
-    };
+    let args = unwrap_or_return_none!(args);
+    let what = unwrap_or_return_none!(what);
+    let what_value = unwrap_or_return_none!(what.value());
 
     let txt = what_value.to_trimmed_text();
     // `do.call()` accepts quoted function names.
@@ -85,9 +77,7 @@ pub fn list2df(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    let Some(args_value) = args.value() else {
-        return Ok(None);
-    };
+    let args_value = unwrap_or_return_none!(args.value());
     let fix_content = args_value;
 
     let range = ast.syntax().text_trimmed_range();

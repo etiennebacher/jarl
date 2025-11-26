@@ -75,13 +75,8 @@ pub fn system_file(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     }
 
     // Safety: at this point we know file_path has length 1.
-    let Some(file_path_value) = file_path.first().unwrap().value() else {
-        return Ok(None);
-    };
-
-    let Some(file_path_call) = file_path_value.as_r_call() else {
-        return Ok(None);
-    };
+    let file_path_value = unwrap_or_return_none!(file_path.first().unwrap().value());
+    let file_path_call = unwrap_or_return_none!(file_path_value.as_r_call());
 
     let file_path_inner_content = file_path_call.arguments()?.items().iter().filter(|x| {
         if let Ok(x) = x {
@@ -91,9 +86,7 @@ pub fn system_file(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         }
     });
 
-    let Some(_) = file_path_inner_content.clone().next() else {
-        return Ok(None);
-    };
+    let _ = unwrap_or_return_none!(file_path_inner_content.clone().next());
 
     let file_path_inner_content = file_path_inner_content
         .map(|x| x.unwrap().to_trimmed_string())
