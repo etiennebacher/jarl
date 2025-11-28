@@ -54,7 +54,7 @@ pub fn check_version_control(paths: &[String], config: &Config) -> Result<()> {
                     .to_string();
                 repo_to_paths
                     .entry(repo_path)
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(path.clone());
             }
             Err(_) => {
