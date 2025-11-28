@@ -1,0 +1,14 @@
+---
+source: crates/jarl/tests/integration/allow_no_vcs.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--fix\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+Error: `jarl check --fix` can potentially perform destructive changes but no Version Control System (e.g. Git) was found on this project, so no fixes were applied. 
+Add `--allow-no-vcs` to the call to apply the fixes.
+
+----- args -----
+check . --fix

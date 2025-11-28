@@ -27,11 +27,10 @@ pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Err
     // error for the others, but I'd rather be on the safe side and force the
     // user to deal with that before applying any fixes.
     if (config.apply_fixes || config.apply_unsafe_fixes) && !config.paths.is_empty() {
-        for path in &config.paths {
-            let path_str = relativize_path(path);
-            if let Err(e) = check_version_control(&path_str, &config) {
-                return vec![(path_str, Err(e))];
-            }
+        let path_strings: Vec<String> = config.paths.iter().map(|p| relativize_path(p)).collect();
+        if let Err(e) = check_version_control(&path_strings, &config) {
+            let first_path = path_strings.first().unwrap().clone();
+            return vec![(first_path, Err(e))];
         }
     }
 
