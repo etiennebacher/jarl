@@ -10,13 +10,18 @@ fn test_no_default_exclude() -> anyhow::Result<()> {
     let directory = directory.path();
 
     let test_path = "cpp11.R";
-    let test_contents = "
-x = 1
-y <- 2
-3 -> z
-";
-    std::fs::create_dir_all(directory.join("demos"))?;
+    let test_contents = "x = 1";
+
     std::fs::write(directory.join(test_path), test_contents)?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
 
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
@@ -28,5 +33,33 @@ y <- 2
             .normalize_os_executable_name()
     );
 
+    Ok(())
+}
+#[test]
+fn test_no_default_exclude_overrides_toml() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "cpp11.R";
+    let test_contents = "x = 1";
+
+    std::fs::write(directory.join(test_path), test_contents)?;
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+default-exclude = true
+"#,
+    )?;
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--no-default-exclude")
+            .arg("=")
+            .run()
+            .normalize_os_executable_name()
+    );
     Ok(())
 }

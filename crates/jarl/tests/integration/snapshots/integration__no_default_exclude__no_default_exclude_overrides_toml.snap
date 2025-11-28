@@ -1,6 +1,6 @@
 ---
 source: crates/jarl/tests/integration/no_default_exclude.rs
-expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name()"
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--no-default-exclude\").arg(\"=\").run().normalize_os_executable_name()"
 ---
 success: false
 exit_code: 1
@@ -18,4 +18,4 @@ Found 1 error.
 ----- stderr -----
 
 ----- args -----
-check .
+check . --no-default-exclude =

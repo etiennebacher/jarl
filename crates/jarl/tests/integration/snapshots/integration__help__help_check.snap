@@ -59,6 +59,9 @@ Options:
       --assignment-op <ASSIGNMENT_OP>
           Assignment operator to use, can be either `<-` or `=`.
 
+      --no-default-exclude
+          Do not apply the default set of file patterns that should be excluded.
+
   -h, --help
           Print help (see a summary with '-h')
 
