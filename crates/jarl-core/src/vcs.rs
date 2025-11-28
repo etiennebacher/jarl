@@ -1,20 +1,7 @@
 use crate::config::Config;
 use anyhow::{Result, bail};
-use std::path::Path;
-
-pub struct GitRepo;
-
-impl GitRepo {
-    pub fn init(path: &Path) -> Result<GitRepo> {
-        git2::Repository::init(path)?;
-        Ok(GitRepo)
-    }
-    pub fn discover(path: &Path) -> Result<git2::Repository, git2::Error> {
-        git2::Repository::discover(path)
-    }
-}
-
 use std::collections::HashMap;
+use std::path::Path;
 
 /// Check version control status once for multiple paths.
 ///
@@ -25,16 +12,12 @@ use std::collections::HashMap;
 ///
 /// Therefore, we cannot just take the first path, check if it's covered by VCS
 /// and then get the statuses of all our paths in this repo. We have to loop
-/// through files. This doesn't necessarily result in a big perf hit: what takes
+/// through paths. This doesn't necessarily result in a big perf hit: what takes
 /// time is to get the statuses of the paths, so we limit the calls to statuses
 /// by grouping files per repo first. Then, we go through the repos to get the
-/// statuses.
+/// statuses (only once per repo).
 pub fn check_version_control(paths: &[String], config: &Config) -> Result<()> {
     if config.allow_no_vcs {
-        return Ok(());
-    }
-
-    if paths.is_empty() {
         return Ok(());
     }
 
