@@ -1,5 +1,5 @@
 //
-// Adapted from Ark
+// Adapted from Air
 // https://github.com/posit-dev/air/blob/affa92cd514525c4bab6c8c2ca251ea19414b89f/crates/workspace/src/discovery.rs
 //
 // MIT License - Posit PBC
@@ -34,14 +34,14 @@ pub struct DiscoveredSettings {
     pub settings: Settings,
 }
 
-/// This is the core function for walking a set of `paths` looking for `air.toml`s.
+/// This is the core function for walking a set of `paths` looking for `jarl.toml`s.
 ///
 /// You typically follow this function up by loading the set of returned path into a
 /// [crate::resolve::PathResolver].
 ///
 /// For each `path`, we:
-/// - Walk up its ancestors, looking for an `air.toml`
-/// - TODO(hierarchical): Walk down its children, looking for nested `air.toml`s
+/// - Walk up its ancestors, looking for an `jarl.toml`
+/// - TODO(hierarchical): Walk down its children, looking for nested `jarl.toml`s
 pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<DiscoveredSettings>> {
     let paths: Vec<PathBuf> = paths.iter().map(fs::normalize_path).collect();
 
@@ -67,14 +67,14 @@ pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<Disc
         }
     }
 
-    // TODO(hierarchical): Also iterate into the directories and collect `air.toml`
+    // TODO(hierarchical): Also iterate into the directories and collect `jarl.toml`
     // found nested withing the directories for hierarchical support
 
     Ok(discovered_settings)
 }
 
-/// Parse [Settings] from a given `air.toml`
-// TODO(hierarchical): Allow for an `extends` option in `air.toml`, which will make things
+/// Parse [Settings] from a given `jarl.toml`
+// TODO(hierarchical): Allow for an `extends` option in `jarl.toml`, which will make things
 // more complex, but will be very useful once we support hierarchical configuration as a
 // way of "inheriting" most top level configuration while slightly tweaking it in a nested directory.
 fn parse_settings(toml: &Path, root_directory: &Path) -> anyhow::Result<Settings> {
