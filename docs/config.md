@@ -61,6 +61,9 @@ Options:
 
       --assignment-op <ASSIGNMENT_OP>
           Assignment operator to use, can be either `<-` or `=`.
+          
+      --no-default-exclude
+          Do not apply the default set of file patterns that should be excluded.
 
   -h, --help
           Print help (see a summary with '-h')
@@ -90,16 +93,20 @@ assignment = "<-"
 These arguments are described below.
 
 ::: {.callout-note}
+
 ## Using CLI arguments and `jarl.toml`
 
 Arguments in the command line always have the priority on those specified in `jarl.toml`.
 For example, if you have the following file:
+
 ```toml
 [lint]
 select = ["PERF", "length_test"]
 ignore = []
 ```
+
 then calling
+
 ```sh
 jarl check . --ignore-rules PERF
 ```
@@ -218,5 +225,3 @@ unfixable = ["PERF"]
 # Fix all violations.
 unfixable = []
 ```
-
-
