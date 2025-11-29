@@ -104,7 +104,7 @@ fn run_jarl_linting(
     let temp_path: Vec<String> = vec![temp_path_str];
 
     // Use temp path for discovering R file paths (just the temp file itself)
-    let paths = discover_r_file_paths(&temp_path, &resolver, true)
+    let paths = discover_r_file_paths(&temp_path, &resolver, true, true)
         .into_iter()
         .filter_map(Result::ok)
         .collect::<Vec<_>>();
