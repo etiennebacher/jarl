@@ -1,5 +1,11 @@
 # Changelog
 
+## Development
+
+### Features
+
+- `--output-format json` now contains two fields `diagnostics` and `errors` (#219).
+
 ## 0.2.1
 
 ### Other
