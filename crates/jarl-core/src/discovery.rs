@@ -94,6 +94,7 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
     paths: &[P],
     resolver: &PathResolver<Settings>,
     use_linter_settings: bool,
+    no_default_exclude: bool,
 ) -> DiscoveredFiles {
     let paths: Vec<PathBuf> = paths.iter().map(fs::normalize_path).collect();
 
@@ -126,8 +127,13 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
         let settings = settings_item.value();
         let root = settings_item.path();
 
-        // Check if default_exclude is disabled (true by default)
-        let use_default_exclude = settings.linter.default_exclude.unwrap_or(true);
+        // If the CLI requested "no default exclude", that always disables the DEFAULT_EXCLUDE_PATTERNS.
+        // Otherwise use the TOML value if present, or true if absent.
+        let use_default_exclude = if no_default_exclude {
+            false
+        } else {
+            settings.linter.default_exclude.unwrap_or(true)
+        };
 
         // Build custom ignore patterns
         let mut patterns = Vec::new();
