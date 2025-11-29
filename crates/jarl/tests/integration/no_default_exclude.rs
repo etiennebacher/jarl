@@ -57,7 +57,6 @@ default-exclude = true
             .arg("check")
             .arg(".")
             .arg("--no-default-exclude")
-            .arg("=")
             .run()
             .normalize_os_executable_name()
     );
