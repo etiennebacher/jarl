@@ -5,52 +5,55 @@ expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"chec
 success: false
 exit_code: 1
 ----- stdout -----
-[
-  {
-    "message": {
-      "name": "any_is_na",
-      "body": "`any(is.na(...))` is inefficient.",
-      "suggestion": "Use `anyNA(...)` instead."
+{
+  "diagnostics": [
+    {
+      "message": {
+        "name": "any_is_na",
+        "body": "`any(is.na(...))` is inefficient.",
+        "suggestion": "Use `anyNA(...)` instead."
+      },
+      "filename": "test.R",
+      "range": [
+        0,
+        13
+      ],
+      "location": {
+        "row": 1,
+        "column": 0
+      },
+      "fix": {
+        "content": "anyNA(x)",
+        "start": 0,
+        "end": 13,
+        "to_skip": false
+      }
     },
-    "filename": "test.R",
-    "range": [
-      0,
-      13
-    ],
-    "location": {
-      "row": 1,
-      "column": 0
-    },
-    "fix": {
-      "content": "anyNA(x)",
-      "start": 0,
-      "end": 13,
-      "to_skip": false
+    {
+      "message": {
+        "name": "any_duplicated",
+        "body": "`any(duplicated(...))` is inefficient.",
+        "suggestion": "Use `anyDuplicated(...) > 0` instead."
+      },
+      "filename": "test2.R",
+      "range": [
+        0,
+        18
+      ],
+      "location": {
+        "row": 1,
+        "column": 0
+      },
+      "fix": {
+        "content": "anyDuplicated(x) > 0",
+        "start": 0,
+        "end": 18,
+        "to_skip": false
+      }
     }
-  },
-  {
-    "message": {
-      "name": "any_duplicated",
-      "body": "`any(duplicated(...))` is inefficient.",
-      "suggestion": "Use `anyDuplicated(...) > 0` instead."
-    },
-    "filename": "test2.R",
-    "range": [
-      0,
-      18
-    ],
-    "location": {
-      "row": 1,
-      "column": 0
-    },
-    "fix": {
-      "content": "anyDuplicated(x) > 0",
-      "start": 0,
-      "end": 18,
-      "to_skip": false
-    }
-  }
-]
+  ],
+  "errors": []
+}
 ----- stderr -----
 
 ----- args -----

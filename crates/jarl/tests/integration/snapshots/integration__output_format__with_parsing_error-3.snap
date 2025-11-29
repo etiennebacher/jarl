@@ -5,30 +5,38 @@ expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"chec
 success: false
 exit_code: 255
 ----- stdout -----
-[
-  {
-    "message": {
-      "name": "any_is_na",
-      "body": "`any(is.na(...))` is inefficient.",
-      "suggestion": "Use `anyNA(...)` instead."
-    },
-    "filename": "test.R",
-    "range": [
-      0,
-      13
-    ],
-    "location": {
-      "row": 1,
-      "column": 0
-    },
-    "fix": {
-      "content": "anyNA(x)",
-      "start": 0,
-      "end": 13,
-      "to_skip": false
+{
+  "diagnostics": [
+    {
+      "message": {
+        "name": "any_is_na",
+        "body": "`any(is.na(...))` is inefficient.",
+        "suggestion": "Use `anyNA(...)` instead."
+      },
+      "filename": "test.R",
+      "range": [
+        0,
+        13
+      ],
+      "location": {
+        "row": 1,
+        "column": 0
+      },
+      "fix": {
+        "content": "anyNA(x)",
+        "start": 0,
+        "end": 13,
+        "to_skip": false
+      }
     }
-  }
-]
+  ],
+  "errors": [
+    {
+      "file": "test2.R",
+      "error": "Failed to get checks for file: test2.R: Failed to parse test2.R due to syntax errors."
+    }
+  ]
+}
 ----- stderr -----
 
 ----- args -----

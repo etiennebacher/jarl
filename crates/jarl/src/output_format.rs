@@ -8,6 +8,18 @@ use std::io::{BufWriter, Write};
 
 use jarl_core::diagnostic::Diagnostic;
 
+#[derive(Debug, Serialize)]
+struct JsonOutput<'a> {
+    diagnostics: Vec<&'a Diagnostic>,
+    errors: Vec<JsonError>,
+}
+
+#[derive(Debug, Serialize)]
+struct JsonError {
+    file: String,
+    error: String,
+}
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, ValueEnum, Serialize, Deserialize)]
 pub enum OutputFormat {
     #[default]
@@ -149,10 +161,22 @@ impl Emitter for JsonEmitter {
         &self,
         writer: &mut W,
         diagnostics: &[&Diagnostic],
-        _errors: &[(String, anyhow::Error)],
+        errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
-        serde_json::to_writer_pretty(&mut writer, diagnostics)?;
+
+        // Convert errors to a serializable format
+        let json_errors: Vec<JsonError> = errors
+            .iter()
+            .map(|(path, err)| JsonError { file: path.clone(), error: format!("{:#}", err) })
+            .collect();
+
+        let output = JsonOutput {
+            diagnostics: diagnostics.to_vec(),
+            errors: json_errors,
+        };
+
+        serde_json::to_writer_pretty(&mut writer, &output)?;
         writer.flush()?;
         Ok(())
     }
