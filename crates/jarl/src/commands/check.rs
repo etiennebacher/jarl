@@ -37,10 +37,15 @@ pub fn check() -> Result<ExitStatus> {
         resolver.add(&ds.directory, ds.settings);
     }
 
-    let paths = discover_r_file_paths(&args.files, &resolver, true)
-        .into_iter()
-        .filter_map(Result::ok)
-        .collect::<Vec<_>>();
+    let paths = discover_r_file_paths(
+        &args.files,
+        &resolver,
+        true,
+        if args.no_default_exclude { true } else { false },
+    )
+    .into_iter()
+    .filter_map(Result::ok)
+    .collect::<Vec<_>>();
 
     if paths.is_empty() {
         println!(
