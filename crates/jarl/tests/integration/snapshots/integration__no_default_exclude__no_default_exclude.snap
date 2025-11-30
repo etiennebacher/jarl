@@ -2,18 +2,10 @@
 source: crates/jarl/tests/integration/no_default_exclude.rs
 expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name()"
 ---
-success: false
-exit_code: 1
+success: true
+exit_code: 0
 ----- stdout -----
-warning: assignment
- --> cpp11.R:1:1
-  |
-1 | x = 1
-  | --- Use `<-` for assignment.
-  |
-
-Found 1 error.
-1 fixable with the `--fix` option.
+Warning: No R files found under the given path(s).
 
 ----- stderr -----
 
