@@ -27,6 +27,12 @@ mod tests {
             None,
         );
         expect_lint(
+            "testthat::expect_equal(foo(x), TRUE)",
+            expected_message,
+            "expect_true_false",
+            None,
+        );
+        expect_lint(
             "expect_equal(TRUE, foo(x))",
             expected_message,
             "expect_true_false",
@@ -61,6 +67,7 @@ mod tests {
                     "expect_identical(foo(x), FALSE)",
                     "expect_equal(TRUE, foo(x))",
                     "expect_equal(FALSE, foo(x))",
+                    "testthat::expect_equal(x, TRUE)",
                 ],
                 "expect_true_false",
                 None,

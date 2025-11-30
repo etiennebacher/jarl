@@ -1,5 +1,7 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name_then_position, get_arg_by_position, node_contains_comments};
+use crate::utils::{
+    get_arg_by_name_then_position, get_arg_by_position, get_function_name, node_contains_comments,
+};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -52,9 +54,10 @@ pub fn list2df(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
 
     let function = function?;
+    let fn_name = get_function_name(function);
     let arguments = arguments?.items();
 
-    if function.to_trimmed_text() != "do.call" {
+    if fn_name != "do.call" {
         return Ok(None);
     }
 

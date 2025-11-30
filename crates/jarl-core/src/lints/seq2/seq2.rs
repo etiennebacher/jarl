@@ -1,4 +1,7 @@
-use crate::{diagnostic::*, utils::node_contains_comments};
+use crate::{
+    diagnostic::*,
+    utils::{get_function_name, node_contains_comments},
+};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
@@ -39,7 +42,7 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// ```
 pub fn seq2(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let function = ast.function()?;
-    let outer_fn_name = function.to_trimmed_string();
+    let outer_fn_name = get_function_name(function);
 
     if outer_fn_name != "seq" {
         return Ok(None);
@@ -66,7 +69,7 @@ pub fn seq2(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         let RCallFields { function, arguments } = inner_call.as_fields();
 
         let function = function?;
-        let inner_fn_name = function.to_trimmed_string();
+        let inner_fn_name = get_function_name(function);
 
         if !["length", "nrow", "ncol", "NROW", "NCOL"].contains(&inner_fn_name.as_str()) {
             return Ok(None);

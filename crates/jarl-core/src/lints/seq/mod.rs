@@ -28,6 +28,8 @@ mod tests {
         expect_lint("1:NROW(x)", expected_message, "seq", None);
         expect_lint("1:NCOL(x)", expected_message, "seq", None);
 
+        expect_lint("1:base::length(x)", expected_message, "seq", None);
+
         // Same with 1L
         expect_lint("1L:length(x)", expected_message, "seq", None);
         expect_lint("1L:nrow(x)", expected_message, "seq", None);

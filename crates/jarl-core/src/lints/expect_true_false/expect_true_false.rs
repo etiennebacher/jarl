@@ -1,5 +1,8 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name_then_position, node_contains_comments};
+use crate::utils::{
+    get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
+    node_contains_comments,
+};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -31,7 +34,7 @@ use biome_rowan::AstNode;
 /// ```
 pub fn expect_true_false(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let function = ast.function()?;
-    let function_name = function.to_trimmed_text();
+    let function_name = get_function_name(function.clone());
 
     // Check if this is expect_equal or expect_identical
     if function_name != "expect_equal" && function_name != "expect_identical" {
@@ -68,7 +71,6 @@ pub fn expect_true_false(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     };
 
-    let range = ast.syntax().text_trimmed_range();
     let (new_function, msg, suggestion) = if is_true {
         (
             "expect_true",
@@ -89,6 +91,9 @@ pub fn expect_true_false(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         )
     };
 
+    // Preserve namespace prefix if present
+    let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();
+    let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
             "expect_true_false".to_string(),
@@ -97,7 +102,7 @@ pub fn expect_true_false(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         ),
         range,
         Fix {
-            content: format!("{}({})", new_function, other_arg_text),
+            content: format!("{}{}({})", namespace_prefix, new_function, other_arg_text),
             start: range.start().into(),
             end: range.end().into(),
             to_skip: node_contains_comments(ast.syntax()),

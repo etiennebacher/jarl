@@ -37,6 +37,12 @@ mod tests {
         let expected_message = "can cause portability issues";
         expect_lint("download.file(x)", expected_message, "download_file", None);
         expect_lint(
+            "utils::download.file(x)",
+            expected_message,
+            "download_file",
+            None,
+        );
+        expect_lint(
             "download.file(x, mode = 'a')",
             expected_message,
             "download_file",

@@ -46,6 +46,12 @@ mod tests {
             None,
         );
         expect_lint(
+            "testthat::expect_equal(x, NULL)",
+            expected_message,
+            "expect_null",
+            None,
+        );
+        expect_lint(
             "expect_identical(x, NULL)",
             expected_message,
             "expect_null",
@@ -72,9 +78,10 @@ mod tests {
                     "expect_identical(x, NULL)",
                     "expect_equal(NULL, x)",
                     "expect_true(is.null(foo(x)))",
+                    "testthat::expect_true(base::is.null(x))",
                 ],
                 "expect_null",
-                None,
+                None
             )
         );
     }

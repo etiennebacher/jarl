@@ -50,6 +50,12 @@ mod tests {
             None,
         );
         expect_lint(
+            "testthat::expect_equal(length(x), 2)",
+            lint_msg,
+            "expect_length",
+            None,
+        );
+        expect_lint(
             "expect_identical(length(x), 2)",
             lint_msg,
             "expect_length",
@@ -82,6 +88,7 @@ mod tests {
                     "expect_equal(2, length(x))",
                     "expect_equal(length(x), foo(y))",
                     "expect_equal(foo(y), length(x))",
+                    "testthat::expect_equal(base::length(x), 2)",
                 ],
                 "expect_length",
                 None,

@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/expect_not/mod.rs
-expression: "get_fixed_text(vec![\"expect_true(!x)\", \"expect_false(!foo(x))\",\n\"expect_true(!(x && y))\", \"expect_true(!(x && (y || foo(x))))\",\n\"expect_false(!is.na(x))\",], \"expect_not\", None,)"
+expression: "get_fixed_text(vec![\"expect_true(!x)\", \"testthat::expect_true(!x)\",\n\"expect_false(!foo(x))\", \"expect_true(!(x && y))\",\n\"expect_true(!(x && (y || foo(x))))\", \"expect_false(!is.na(x))\",],\n\"expect_not\", None,)"
 ---
 OLD:
 ====
@@ -8,6 +8,13 @@ expect_true(!x)
 NEW:
 ====
 expect_false(x)
+
+OLD:
+====
+testthat::expect_true(!x)
+NEW:
+====
+testthat::expect_false(x)
 
 OLD:
 ====

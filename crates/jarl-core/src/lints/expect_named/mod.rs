@@ -80,6 +80,7 @@ mod tests {
             get_fixed_text(
                 vec![
                     "expect_equal(names(x), 'a')",
+                    "testthat::expect_equal(names(x), 'a')",
                     "expect_equal(names(x), c('a', 'b'))",
                     "expect_identical(names(x), 'a')",
                 ],

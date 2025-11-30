@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name, get_unnamed_args, node_contains_comments};
+use crate::utils::{get_arg_by_name, get_function_name, get_unnamed_args, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -71,8 +71,9 @@ pub fn sort(ast: &RSubset) -> anyhow::Result<Option<Diagnostic>> {
     // Ensure we have something like `x[order(...)]`.
     let arg_value = unwrap_or_return_none!(arg_value.as_r_call());
     let function = arg_value.function()?;
+    let fn_name = get_function_name(function);
     let arg_inner = arg_value.arguments()?;
-    if function.to_trimmed_text() != "order" {
+    if fn_name != "order" {
         return Ok(None);
     }
 

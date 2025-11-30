@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/expect_length/mod.rs
-expression: "get_fixed_text(vec![\"expect_equal(length(x), 2L)\",\n\"expect_equal(2, length(x))\", \"expect_equal(length(x), foo(y))\",\n\"expect_equal(foo(y), length(x))\",], \"expect_length\", None,)"
+expression: "get_fixed_text(vec![\"expect_equal(length(x), 2L)\",\n\"expect_equal(2, length(x))\", \"expect_equal(length(x), foo(y))\",\n\"expect_equal(foo(y), length(x))\",\n\"testthat::expect_equal(base::length(x), 2)\",], \"expect_length\", None,)"
 ---
 OLD:
 ====
@@ -29,3 +29,10 @@ expect_equal(foo(y), length(x))
 NEW:
 ====
 expect_length(x, foo(y))
+
+OLD:
+====
+testthat::expect_equal(base::length(x), 2)
+NEW:
+====
+testthat::expect_length(x, 2)
