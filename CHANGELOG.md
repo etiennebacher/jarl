@@ -6,6 +6,12 @@
 
 - `--output-format json` now contains two fields `diagnostics` and `errors` (#219).
 
+### Changes
+
+- `expect_named` no longer reports cases like `expect_equal(x, names(y))` because
+  rewriting those as `expect_named(y, x)` would potentially change the intent of
+  the test and the way it is read (#220).
+
 ## 0.2.1
 
 ### Other

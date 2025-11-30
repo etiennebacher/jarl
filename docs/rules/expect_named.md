@@ -17,12 +17,10 @@ This rule is **disabled by default**. Select it either with the rule name
 ```r
 expect_equal(names(x), "a")
 expect_identical(names(x), c("a", "b"))
-expect_equal("a", names(x))
 ```
 
 Use instead:
 ```r
 expect_named(x, "a")
 expect_named(x, c("a", "b"))
-expect_named(x, "a")
 ```
