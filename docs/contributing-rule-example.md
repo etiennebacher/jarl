@@ -191,15 +191,28 @@ Usually, a rule implementation contains a lot of early returns, such as "if the 
 In this example, we want to focus on calls to `do.call()`, so we can stop early if this is not the function name:
 
 ```rust
-if function.to_trimmed_text() != "do.call" {
+let fn_name = get_function_name(function);
+
+if fn_name != "do.call" {
     return Ok(None);
 }
 ```
 
+`get_function_name()` is a helper function to extract the function name of `AnyRExpression`.
+Indeed, `function` could be `foo()`, but it could also be `bar::foo()`, or `bar$foo()` if we were working with `R6` for instance.
+`get_function_name()` helps us by returning `"foo"` in all those cases.
+
+::: {.callout-note collapse="true"}
+## About helper functions
+
+We used `get_function_name()` above, but there exist other helper functions located in `utils.rs`.
+Below, we use `get_arg_by_name_then_position()` for instance.
+:::
+
 Past that point, the next step is to check that the arguments correspond to what we want to analyze.
 `do.call` has four arguments: `what`, `args`, `quote`, and `envir`.
 We are looking for patterns such as `do.call(cbind.data.frame, x)` so we want information on the first two arguments.
-We can use a helper function called `get_arg_by_name_then_position()`, combined with the macro `unwrap_or_return_none!`:
+We can use another helper function called `get_arg_by_name_then_position()`, combined with the macro `unwrap_or_return_none!`:
 
 ```rust
 // Note that the arguments position is 1-indexed and not 0-indexed as is usually
@@ -217,14 +230,6 @@ let Some(what) = get_arg_by_name_then_position(&arguments, "what", 1) else {
     return Ok(None);
 };
 ```
-
-::: {.callout-note collapse="true"}
-## About helper functions
-
-In this example, we used `get_arg_by_name_then_position()`.
-There exist other helper functions located in `utils.rs`.
-For example, `get_nested_functions_content()` is used in `any_is_na` (among other rules) to either get the content of `any(is.na(...))` or exit the function early.
-:::
 
 We can now do more early checks:
 
