@@ -93,7 +93,6 @@ assignment = "<-"
 These arguments are described below.
 
 ::: {.callout-note}
-
 ## Using CLI arguments and `jarl.toml`
 
 Arguments in the command line always have the priority on those specified in `jarl.toml`.
