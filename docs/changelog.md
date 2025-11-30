@@ -8,6 +8,12 @@
 - Better support for namespaced function calls, both when reporting violations
   and when fixing them (#221).
 
+### Changes
+
+- `expect_named` no longer reports cases like `expect_equal(x, names(y))` because
+  rewriting those as `expect_named(y, x)` would potentially change the intent of
+  the test and the way it is read (#220).
+
 ## 0.2.1
 
 ### Other

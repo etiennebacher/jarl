@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/expect_named/mod.rs
-expression: "get_fixed_text(vec![\"expect_equal(names(x), 'a')\",\n\"expect_equal(names(x), c('a', 'b'))\", \"expect_identical(names(x), 'a')\",\n\"expect_equal('a', names(x))\", \"expect_equal(foo(x), names(x))\",\n\"testthat::expect_equal(names(x), 'a')\"], \"expect_named\", None,)"
+expression: "get_fixed_text(vec![\"expect_equal(names(x), 'a')\",\n\"testthat::expect_equal(names(x), 'a')\",\n\"expect_equal(names(x), c('a', 'b'))\", \"expect_identical(names(x), 'a')\",],\n\"expect_named\", None,)"
 ---
 OLD:
 ====
@@ -8,6 +8,13 @@ expect_equal(names(x), 'a')
 NEW:
 ====
 expect_named(x, 'a')
+
+OLD:
+====
+testthat::expect_equal(names(x), 'a')
+NEW:
+====
+testthat::expect_named(x, 'a')
 
 OLD:
 ====
@@ -22,24 +29,3 @@ expect_identical(names(x), 'a')
 NEW:
 ====
 expect_named(x, 'a')
-
-OLD:
-====
-expect_equal('a', names(x))
-NEW:
-====
-expect_named(x, 'a')
-
-OLD:
-====
-expect_equal(foo(x), names(x))
-NEW:
-====
-expect_named(x, foo(x))
-
-OLD:
-====
-testthat::expect_equal(names(x), 'a')
-NEW:
-====
-testthat::expect_named(x, 'a')

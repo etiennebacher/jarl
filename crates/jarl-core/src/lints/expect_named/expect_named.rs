@@ -24,14 +24,12 @@ use biome_rowan::AstNode;
 /// ```r
 /// expect_equal(names(x), "a")
 /// expect_identical(names(x), c("a", "b"))
-/// expect_equal("a", names(x))
 /// ```
 ///
 /// Use instead:
 /// ```r
 /// expect_named(x, "a")
 /// expect_named(x, c("a", "b"))
-/// expect_named(x, "a")
 /// ```
 pub fn expect_named(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let function = ast.function()?;
@@ -50,46 +48,15 @@ pub fn expect_named(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let object_value = unwrap_or_return_none!(object.value());
     let expected_value = unwrap_or_return_none!(expected.value());
 
-    // Check for two patterns:
-    // 1. expect_equal(names(x), n)
-    // 2. expect_equal(n, names(x))
+    // Only check for pattern: expect_equal(names(x), n)
 
     let (names_arg, other_arg) = if let Some(object_call) = object_value.as_r_call() {
         let obj_fn = object_call.function()?;
         let obj_fn_name = get_function_name(obj_fn);
 
-        // If we're here, the first object is a call, with two options:
-        // - the call is `names(...)`, great.
-        // - the call is `foo(...)` and we have to check the value of `expected`
-        //   because it could be that the general call is
-        //   `expect_equal(foo(x), names(y))`, which we want to report.
+        // Only report if names() is in the object (first) argument
         if obj_fn_name == "names" {
             (object_call, expected_value)
-        } else if obj_fn_name == "colnames"
-            || obj_fn_name == "rownames"
-            || obj_fn_name == "dimnames"
-        {
-            return Ok(None);
-        } else if let Some(expected_call) = expected_value.as_r_call() {
-            let exp_fn = expected_call.function()?;
-            let exp_fn_name = get_function_name(exp_fn);
-
-            if exp_fn_name == "names" {
-                (expected_call, object_value)
-            } else {
-                return Ok(None);
-            }
-        } else {
-            return Ok(None);
-        }
-    } else if let Some(expected_call) = expected_value.as_r_call() {
-        let exp_fn = expected_call.function()?;
-        let exp_fn_name = get_function_name(exp_fn);
-
-        // If we're here, it means that the `object` isn't `length(...)`, so if
-        // `expected` also isn't `length(...)` we stop.
-        if exp_fn_name == "names" {
-            (expected_call, object_value)
         } else {
             return Ok(None);
         }

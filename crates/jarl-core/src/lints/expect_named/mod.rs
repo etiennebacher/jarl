@@ -13,12 +13,25 @@ mod tests {
 
         expect_no_lint("expect_equal(nrow(x), 4L)", "expect_named", None);
         expect_no_lint("testthat::expect_equal(nrow(x), 4L)", "expect_named", None);
-
-        // only check the first argument. yoda tests in the second argument will be
-        //   missed, but there are legitimate uses of names() in argument 2
         expect_no_lint("expect_equal(colnames(x), names(y))", "expect_named", None);
 
-        // more readable than expect_named(x, names(y))
+        // Those are reported in `lintr` and `flir` but I'm actualy not convinced
+        // they should.
+        //
+        // This example:
+        //   expect_equal(x, names(iris))
+        //
+        // doesn't read in the same way as the rewritten one:
+        //   expect_named(iris, x)
+        //
+        // The second one gives the impression that we're testing `iris` when
+        // we really want to test `x`.
+        expect_no_lint("expect_equal(y, names(x))", "expect_named", None);
+        expect_no_lint("expect_equal(y, names(x))", "expect_named", None);
+        expect_no_lint("expect_equal(foo(y), names(x))", "expect_named", None);
+        expect_no_lint("expect_equal(expected = names(y), x)", "expect_named", None);
+
+        // More readable than expect_named(x, names(y))
         expect_no_lint("expect_equal(names(x), names(y))", "expect_named", None);
 
         // Not the functions we're looking for
@@ -54,18 +67,7 @@ mod tests {
             "expect_named",
             None,
         );
-        expect_lint(
-            "expect_equal('a', names(x))",
-            lint_msg,
-            "expect_named",
-            None,
-        );
-        expect_lint(
-            "expect_equal(foo(x), names(x))",
-            lint_msg,
-            "expect_named",
-            None,
-        );
+
         expect_lint(
             "expect_equal(names(x), NULL)",
             lint_msg,
@@ -78,11 +80,9 @@ mod tests {
             get_fixed_text(
                 vec![
                     "expect_equal(names(x), 'a')",
+                    "testthat::expect_equal(names(x), 'a')",
                     "expect_equal(names(x), c('a', 'b'))",
                     "expect_identical(names(x), 'a')",
-                    "expect_equal('a', names(x))",
-                    "expect_equal(foo(x), names(x))",
-                    "testthat::expect_equal(names(x), 'a')"
                 ],
                 "expect_named",
                 None,
