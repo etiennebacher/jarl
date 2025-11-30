@@ -54,11 +54,6 @@ pub fn expect_named(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         // Only report if names() is in the object (first) argument
         if obj_fn_name == "names" {
             (object_call, expected_value)
-        } else if obj_fn_name == "colnames"
-            || obj_fn_name == "rownames"
-            || obj_fn_name == "dimnames"
-        {
-            return Ok(None);
         } else {
             return Ok(None);
         }
