@@ -154,6 +154,7 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#development" id="toc-development" class="nav-link" data-scroll-target="#development">Development</a>
   <ul class="collapse">
   <li><a href="#features" id="toc-features" class="nav-link" data-scroll-target="#features">Features</a></li>
+  <li><a href="#changes" id="toc-changes" class="nav-link" data-scroll-target="#changes">Changes</a></li>
   </ul></li>
   <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section">0.2.1</a>
   <ul class="collapse">
@@ -196,6 +197,12 @@ ul.task-list li input[type="checkbox"] {
 <h3 class="anchored" data-anchor-id="features">Features</h3>
 <ul>
 <li><code>--output-format json</code> now contains two fields <code>diagnostics</code> and <code>errors</code> (#219).</li>
+</ul>
+</section>
+<section id="changes" class="level3">
+<h3 class="anchored" data-anchor-id="changes">Changes</h3>
+<ul>
+<li><code>expect_named</code> no longer reports cases like <code>expect_equal(x, names(y))</code> because rewriting those as <code>expect_named(y, x)</code> would potentially change the intent of the test and the way it is read (#220).</li>
 </ul>
 </section>
 </section>
