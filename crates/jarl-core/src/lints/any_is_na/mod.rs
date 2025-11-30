@@ -59,4 +59,10 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn test_lint_any_is_na_with_namespace() {
+        let expected_message = "`any(is.na(...))` is inefficient";
+        expect_lint("base::any(is.na(x))", expected_message, "any_is_na", None);
+    }
 }

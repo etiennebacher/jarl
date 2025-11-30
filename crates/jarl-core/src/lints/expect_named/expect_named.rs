@@ -1,5 +1,8 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name_then_position, node_contains_comments};
+use crate::utils::{
+    get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
+    node_contains_comments,
+};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -32,7 +35,7 @@ use biome_rowan::AstNode;
 /// ```
 pub fn expect_named(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let function = ast.function()?;
-    let function_name = function.to_trimmed_text();
+    let function_name = get_function_name(function.clone());
 
     // Only check expect_equal and expect_identical
     if function_name != "expect_equal" && function_name != "expect_identical" {
@@ -53,7 +56,7 @@ pub fn expect_named(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 
     let (names_arg, other_arg) = if let Some(object_call) = object_value.as_r_call() {
         let obj_fn = object_call.function()?;
-        let obj_fn_name = obj_fn.to_trimmed_text();
+        let obj_fn_name = get_function_name(obj_fn);
 
         // If we're here, the first object is a call, with two options:
         // - the call is `names(...)`, great.
@@ -69,7 +72,7 @@ pub fn expect_named(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             return Ok(None);
         } else if let Some(expected_call) = expected_value.as_r_call() {
             let exp_fn = expected_call.function()?;
-            let exp_fn_name = exp_fn.to_trimmed_text();
+            let exp_fn_name = get_function_name(exp_fn);
 
             if exp_fn_name == "names" {
                 (expected_call, object_value)
@@ -81,7 +84,7 @@ pub fn expect_named(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         }
     } else if let Some(expected_call) = expected_value.as_r_call() {
         let exp_fn = expected_call.function()?;
-        let exp_fn_name = exp_fn.to_trimmed_text();
+        let exp_fn_name = get_function_name(exp_fn);
 
         // If we're here, it means that the `object` isn't `length(...)`, so if
         // `expected` also isn't `length(...)` we stop.
@@ -98,7 +101,7 @@ pub fn expect_named(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     // e.g., expect_equal(names(x), names(y))
     if let Some(other_call) = other_arg.as_r_call() {
         let other_fn = other_call.function()?;
-        let other_fn_name = other_fn.to_trimmed_text();
+        let other_fn_name = get_function_name(other_fn);
 
         if other_fn_name == "names" {
             return Ok(None);
@@ -113,6 +116,9 @@ pub fn expect_named(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let x_text = names_x_value.to_trimmed_text();
     let n_text = other_arg.to_trimmed_text();
 
+    // Preserve namespace prefix if present
+    let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();
+
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
@@ -125,7 +131,7 @@ pub fn expect_named(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         ),
         range,
         Fix {
-            content: format!("expect_named({}, {})", x_text, n_text),
+            content: format!("{}expect_named({}, {})", namespace_prefix, x_text, n_text),
             start: range.start().into(),
             end: range.end().into(),
             to_skip: node_contains_comments(ast.syntax()),

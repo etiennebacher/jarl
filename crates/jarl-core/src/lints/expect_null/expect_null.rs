@@ -1,5 +1,8 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name_then_position, node_contains_comments};
+use crate::utils::{
+    get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
+    node_contains_comments,
+};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -33,7 +36,7 @@ use biome_rowan::AstNode;
 /// ```
 pub fn expect_null(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let function = ast.function()?;
-    let function_name = function.to_trimmed_text();
+    let function_name = get_function_name(function);
 
     // Case 1: expect_equal(x, NULL) or expect_identical(x, NULL)
     if function_name == "expect_equal" || function_name == "expect_identical" {
@@ -68,6 +71,10 @@ fn check_expect_equal_null(ast: &RCall, function_name: &str) -> anyhow::Result<O
         return Ok(None);
     };
 
+    // Preserve namespace prefix if present
+    let function = ast.function()?;
+    let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();
+
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
@@ -80,7 +87,7 @@ fn check_expect_equal_null(ast: &RCall, function_name: &str) -> anyhow::Result<O
         ),
         range,
         Fix {
-            content: format!("expect_null({})", other_arg_text),
+            content: format!("{}expect_null({})", namespace_prefix, other_arg_text),
             start: range.start().into(),
             end: range.end().into(),
             to_skip: node_contains_comments(ast.syntax()),
@@ -99,7 +106,7 @@ fn check_expect_true_is_null(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> 
     // Check if it's a call to `is.null()`
     let call = unwrap_or_return_none!(object_value.as_r_call());
     let function = call.function()?;
-    let function_name = function.to_trimmed_text();
+    let function_name = get_function_name(function);
     if function_name != "is.null" {
         return Ok(None);
     }
@@ -110,6 +117,10 @@ fn check_expect_true_is_null(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> 
     let inner_value = unwrap_or_return_none!(inner_arg.value());
     let inner_text = inner_value.to_trimmed_text();
 
+    // Preserve namespace prefix if present
+    let outer_function = ast.function()?;
+    let namespace_prefix = get_function_namespace_prefix(outer_function).unwrap_or_default();
+
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
@@ -119,7 +130,7 @@ fn check_expect_true_is_null(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> 
         ),
         range,
         Fix {
-            content: format!("expect_null({})", inner_text),
+            content: format!("{}expect_null({})", namespace_prefix, inner_text),
             start: range.start().into(),
             end: range.end().into(),
             to_skip: node_contains_comments(ast.syntax()),

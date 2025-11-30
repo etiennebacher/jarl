@@ -86,4 +86,14 @@ mod tests {
             None,
         );
     }
+
+    #[test]
+    fn test_lint_download_file_with_namespace() {
+        expect_lint(
+            "utils::download.file(x, mode = 'w')",
+            "`download.file()` with `mode = 'w'`",
+            "download_file",
+            None,
+        );
+    }
 }

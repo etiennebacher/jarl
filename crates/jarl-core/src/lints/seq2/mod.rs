@@ -63,4 +63,10 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn test_lint_seq2_with_namespace() {
+        let expected_message = "`seq(length(...))` can be wrong";
+        expect_lint("base::seq(base::length(x))", expected_message, "seq2", None);
+    }
 }

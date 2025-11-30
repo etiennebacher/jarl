@@ -105,4 +105,15 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn test_lint_matrix_apply_with_namespace() {
+        let expected_message = "`apply(x, 1, mean)` is inefficient";
+        expect_lint(
+            "base::apply(dat, 1, mean)",
+            expected_message,
+            "matrix_apply",
+            None,
+        );
+    }
 }

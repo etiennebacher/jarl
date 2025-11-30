@@ -81,7 +81,8 @@ mod tests {
                     "expect_equal(names(x), c('a', 'b'))",
                     "expect_identical(names(x), 'a')",
                     "expect_equal('a', names(x))",
-                    "expect_equal(foo(x), names(x))"
+                    "expect_equal(foo(x), names(x))",
+                    "testthat::expect_equal(names(x), 'a')"
                 ],
                 "expect_named",
                 None,

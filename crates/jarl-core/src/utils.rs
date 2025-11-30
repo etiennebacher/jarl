@@ -217,71 +217,65 @@ pub fn drop_arg_by_name_or_position(
 /// - self$fun() -> "fun"
 /// - return() -> "return"
 pub fn get_function_name(function: AnyRExpression) -> String {
-    let fn_name = if let Some(ns_expr) = function.as_r_namespace_expression() {
-        if let Ok(expr) = ns_expr.right() {
-            if let Some(id) = expr.as_r_identifier() {
-                if let Ok(token) = id.name_token() {
-                    let trimmed = token.token_text_trimmed();
-                    Some(trimmed.text().to_string())
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    } else if let Some(extract_expr) = function.as_r_extract_expression() {
+    // Try namespace expression (foo::bar)
+    if let Some(ns_expr) = function.as_r_namespace_expression()
+        && let Ok(expr) = ns_expr.right()
+        && let Some(id) = expr.as_r_identifier()
+        && let Ok(token) = id.name_token()
+    {
+        return token.token_text_trimmed().text().to_string();
+    }
+
+    // Try extract expression (self$foo)
+    if let Some(extract_expr) = function.as_r_extract_expression() {
         let RExtractExpressionFields { left, right, operator } = extract_expr.as_fields();
 
-        if let Ok(left) = left
-            && let Ok(right) = right
-            && let Ok(operator) = operator
+        if let (Ok(left), Ok(right), Ok(operator)) = (left, right, operator)
+            && let (Some(left_id), Some(right_id)) =
+                (left.as_r_identifier(), right.as_r_identifier())
+            && let (Ok(left_token), Ok(right_token)) = (left_id.name_token(), right_id.name_token())
         {
-            if let Some(left_id) = left.as_r_identifier()
-                && let Some(right_id) = right.as_r_identifier()
-            {
-                if let Ok(left_token) = left_id.name_token()
-                    && let Ok(right_token) = right_id.name_token()
-                {
-                    let left_trimmed = left_token.token_text_trimmed();
-                    let right_trimmed = right_token.token_text_trimmed();
-                    Some(
-                        [
-                            left_trimmed.text().to_string(),
-                            operator.text_trimmed().to_string(),
-                            right_trimmed.text().to_string(),
-                        ]
-                        .join(""),
-                    )
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        } else {
-            None
+            return format!(
+                "{}{}{}",
+                left_token.token_text_trimmed().text(),
+                operator.text_trimmed(),
+                right_token.token_text_trimmed().text()
+            );
         }
-    } else if function.as_r_return_expression().is_some() {
-        Some("return".to_string())
-    } else if let Some(id) = function.as_r_identifier() {
-        if let Ok(token) = id.name_token() {
-            let trimmed = token.token_text_trimmed();
-            Some(trimmed.text().to_string())
-        } else {
-            None
-        }
-    } else {
-        None
-    };
+    }
 
-    // TODO: self$foo() is handled but not in a recursive way so self$bar$foo()
-    // errors for instance.
-    // Those function names shouldn't trigger lint rules so fixing this is not
-    // urgent.
-    fn_name.unwrap_or("".to_string())
+    // Try return expression
+    if function.as_r_return_expression().is_some() {
+        return "return".to_string();
+    }
+
+    // Try simple identifier
+    if let Some(id) = function.as_r_identifier()
+        && let Ok(token) = id.name_token()
+    {
+        return token.token_text_trimmed().text().to_string();
+    }
+
+    String::new()
+}
+
+/// Extracts the namespace prefix from a function expression if present.
+/// Returns Some("namespace::") if the function has a namespace, None otherwise.
+///
+/// Examples:
+/// - `base::length` returns Some("base::")
+/// - `length` returns None
+/// - `pkg::fun` returns Some("pkg::")
+pub fn get_function_namespace_prefix(function: AnyRExpression) -> Option<String> {
+    if let Some(ns_expr) = function.as_r_namespace_expression()
+        && let Ok(left) = ns_expr.left()
+        && let Some(id) = left.as_r_identifier()
+        && let Ok(token) = id.name_token()
+    {
+        let namespace = token.token_text_trimmed().text().to_string();
+        return Some(format!("{}::", namespace));
+    }
+    None
 }
 
 // Checks if an Rcall corresponds to a nested function of the form

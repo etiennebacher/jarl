@@ -48,6 +48,12 @@ mod tests {
 
         expect_lint("expect_true(!x)", expected_message, "expect_not", None);
         expect_lint(
+            "testthat::expect_true(!x)",
+            expected_message,
+            "expect_not",
+            None,
+        );
+        expect_lint(
             "expect_false(!foo(x))",
             expected_message,
             "expect_not",
@@ -71,6 +77,7 @@ mod tests {
             get_fixed_text(
                 vec![
                     "expect_true(!x)",
+                    "testthat::expect_true(!x)",
                     "expect_false(!foo(x))",
                     "expect_true(!(x && y))",
                     "expect_true(!(x && (y || foo(x))))",

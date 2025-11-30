@@ -35,4 +35,10 @@ mod tests {
             None,
         );
     }
+
+    #[test]
+    fn test_lint_browser_with_namespace() {
+        let expected_message = "Calls to `browser()` should be removed.";
+        expect_lint("utils::browser()", expected_message, "browser", None);
+    }
 }

@@ -1,4 +1,7 @@
-use crate::{diagnostic::*, utils::node_contains_comments};
+use crate::{
+    diagnostic::*,
+    utils::{get_function_name, node_contains_comments},
+};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -56,7 +59,7 @@ pub fn seq(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     }
 
     let right_fun = right_call.function()?;
-    let right_fun_name = right_fun.to_trimmed_string();
+    let right_fun_name = get_function_name(right_fun);
     if !["length", "nrow", "ncol", "NROW", "NCOL"].contains(&right_fun_name.as_str()) {
         return Ok(None);
     }

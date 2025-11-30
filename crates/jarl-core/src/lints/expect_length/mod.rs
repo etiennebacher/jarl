@@ -82,6 +82,7 @@ mod tests {
                     "expect_equal(2, length(x))",
                     "expect_equal(length(x), foo(y))",
                     "expect_equal(foo(y), length(x))",
+                    "testthat::expect_equal(base::length(x), 2)",
                 ],
                 "expect_length",
                 None,
@@ -110,6 +111,17 @@ mod tests {
                 "expect_length",
                 None
             )
+        );
+    }
+
+    #[test]
+    fn test_lint_expect_length_with_namespace() {
+        let expected_message = "`expect_length(x, n)` is better than";
+        expect_lint(
+            "testthat::expect_equal(base::length(x), 2)",
+            expected_message,
+            "expect_length",
+            None,
         );
     }
 }

@@ -113,4 +113,15 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn test_lint_class_equals_with_namespace() {
+        let expected_message = "Comparing `class(x)` with";
+        expect_lint(
+            "if (base::class(x) == 'foo') TRUE",
+            expected_message,
+            "class_equals",
+            None,
+        );
+    }
 }

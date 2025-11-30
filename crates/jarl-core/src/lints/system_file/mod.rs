@@ -24,6 +24,12 @@ mod tests {
             "system_file",
             None,
         );
+        expect_lint(
+            "base::system.file(file.path('path', 'to', 'data'), package = 'foo')",
+            expected_message,
+            "system_file",
+            None,
+        );
 
         assert_snapshot!(
             "fix_output",

@@ -1,5 +1,8 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name_then_position, node_contains_comments};
+use crate::utils::{
+    get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
+    node_contains_comments,
+};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
@@ -37,7 +40,7 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// ```
 pub fn expect_not(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let function = ast.function()?;
-    let function_name = function.to_trimmed_text();
+    let function_name = get_function_name(function.clone());
 
     // Only check expect_true and expect_false
     if function_name != "expect_true" && function_name != "expect_false" {
@@ -96,6 +99,9 @@ pub fn expect_not(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         ("expect_false", "expect_true")
     };
 
+    // Preserve namespace prefix if present
+    let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();
+
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
@@ -108,7 +114,7 @@ pub fn expect_not(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         ),
         range,
         Fix {
-            content: format!("{}({})", replacement_fn, inner_text),
+            content: format!("{}{}({})", namespace_prefix, replacement_fn, inner_text),
             start: range.start().into(),
             end: range.end().into(),
             to_skip: node_contains_comments(ast.syntax()),

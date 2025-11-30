@@ -1,6 +1,7 @@
 use crate::diagnostic::*;
 use crate::utils::{
-    drop_arg_by_name_or_position, get_arg_by_name_then_position, node_contains_comments,
+    drop_arg_by_name_or_position, get_arg_by_name_then_position, get_function_name,
+    node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -47,9 +48,10 @@ pub fn sample_int(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
 
     let function = function?;
+    let fn_name = get_function_name(function);
     let args = arguments?.items();
 
-    if function.to_trimmed_text() != "sample" {
+    if fn_name != "sample" {
         return Ok(None);
     }
 
