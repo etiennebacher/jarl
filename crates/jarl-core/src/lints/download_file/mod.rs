@@ -37,6 +37,12 @@ mod tests {
         let expected_message = "can cause portability issues";
         expect_lint("download.file(x)", expected_message, "download_file", None);
         expect_lint(
+            "utils::download.file(x)",
+            expected_message,
+            "download_file",
+            None,
+        );
+        expect_lint(
             "download.file(x, mode = 'a')",
             expected_message,
             "download_file",
@@ -82,16 +88,6 @@ mod tests {
         expect_lint(
             "download.file(x, y, z, method = 'foo', 'w')",
             expected_message,
-            "download_file",
-            None,
-        );
-    }
-
-    #[test]
-    fn test_lint_download_file_with_namespace() {
-        expect_lint(
-            "utils::download.file(x, mode = 'w')",
-            "`download.file()` with `mode = 'w'`",
             "download_file",
             None,
         );

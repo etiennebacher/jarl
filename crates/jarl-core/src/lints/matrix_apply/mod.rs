@@ -30,6 +30,12 @@ mod tests {
         let expected_message = "is inefficient";
         expect_lint("apply(x, 1, sum)", expected_message, "matrix_apply", None);
         expect_lint(
+            "base::apply(x, 1, sum)",
+            expected_message,
+            "matrix_apply",
+            None,
+        );
+        expect_lint(
             "apply(x, MARGIN = 1, FUN = sum)",
             expected_message,
             "matrix_apply",
@@ -103,17 +109,6 @@ mod tests {
                 "matrix_apply",
                 None
             )
-        );
-    }
-
-    #[test]
-    fn test_lint_matrix_apply_with_namespace() {
-        let expected_message = "`apply(x, 1, mean)` is inefficient";
-        expect_lint(
-            "base::apply(dat, 1, mean)",
-            expected_message,
-            "matrix_apply",
-            None,
         );
     }
 }

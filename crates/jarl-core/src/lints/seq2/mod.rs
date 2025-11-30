@@ -22,6 +22,7 @@ mod tests {
         let expected_message = "can be wrong if the argument has length 0";
 
         expect_lint("seq(length(x))", expected_message, "seq2", None);
+        expect_lint("base::seq(base::length(x))", expected_message, "seq2", None);
         expect_lint("seq(nrow(x))", expected_message, "seq2", None);
         expect_lint("seq(ncol(x))", expected_message, "seq2", None);
         expect_lint("seq(NROW(x))", expected_message, "seq2", None);
@@ -62,11 +63,5 @@ mod tests {
                 None
             )
         );
-    }
-
-    #[test]
-    fn test_lint_seq2_with_namespace() {
-        let expected_message = "`seq(length(...))` can be wrong";
-        expect_lint("base::seq(base::length(x))", expected_message, "seq2", None);
     }
 }
