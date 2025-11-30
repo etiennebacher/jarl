@@ -13,7 +13,6 @@ mod tests {
 
         expect_no_lint("expect_equal(nrow(x), 4L)", "expect_named", None);
         expect_no_lint("testthat::expect_equal(nrow(x), 4L)", "expect_named", None);
-
         expect_no_lint("expect_equal(colnames(x), names(y))", "expect_named", None);
 
         // Those are reported in `lintr` and `flir` but I'm actualy not convinced
@@ -30,8 +29,9 @@ mod tests {
         expect_no_lint("expect_equal(y, names(x))", "expect_named", None);
         expect_no_lint("expect_equal(y, names(x))", "expect_named", None);
         expect_no_lint("expect_equal(foo(y), names(x))", "expect_named", None);
+        expect_no_lint("expect_equal(expected = names(y), x)", "expect_named", None);
 
-        // more readable than expect_named(x, names(y))
+        // More readable than expect_named(x, names(y))
         expect_no_lint("expect_equal(names(x), names(y))", "expect_named", None);
 
         // Not the functions we're looking for
