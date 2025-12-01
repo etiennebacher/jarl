@@ -62,8 +62,8 @@ for (i in seq_along(all_repos)) {
     rbindlist()
 
   if (repos == "tidyverse/dplyr") {
-    print(main_results)
-    print(pr_results)
+    print(main_results[filename == "R/import-standalone-types-check.R"])
+    print(pr_results[filename == "R/import-standalone-types-check.R"])
   }
 
   if (identical(dim(main_results), c(0L, 0L))) {
