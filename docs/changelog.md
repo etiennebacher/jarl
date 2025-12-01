@@ -2,6 +2,13 @@
 
 ## Development
 
+### Breaking changes
+
+Now when running `jarl` by default it will exclude the files defined in the
+default file exclude patterns. A new cli argument `--no-default-exclude` in
+the CLI can be used to check those files as well. The argument overrides the
+`default-exclude=true` option when set in `jarl.toml`. (#178)
+
 ### Features
 
 - `--output-format json` now contains two fields `diagnostics` and `errors` (#219).
