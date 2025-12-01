@@ -61,6 +61,11 @@ for (i in seq_along(all_repos)) {
   }) |>
     rbindlist()
 
+  if (repos == "tidyverse/dplyr") {
+    print(main_results)
+    print(pr_results)
+  }
+
   if (identical(dim(main_results), c(0L, 0L))) {
     main_results <- data.table(
       name = character(0),
