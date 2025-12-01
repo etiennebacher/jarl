@@ -4,10 +4,13 @@
 
 ### Breaking changes
 
-Now when running `jarl` by default it will exclude the files defined in the
-default file exclude patterns. A new cli argument `--no-default-exclude` in
-the CLI can be used to check those files as well. The argument overrides the
-`default-exclude=true` option when set in `jarl.toml`. (#178)
+- Jarl now excludes by default file paths matching the following patterns:
+  `.git/`, `renv/`, `revdep/`, `cpp11.R`, `RcppExports.R`, `extendr-wrappers.R`,
+  and `import-standalone-*.R`.
+
+  A new CLI argument `--no-default-exclude` can be used to check those files as
+  well. This argument overrides the `default-exclude = true` option when set in
+  `jarl.toml` (#178, @novica).
 
 ### Features
 
