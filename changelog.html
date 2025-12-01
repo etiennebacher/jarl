@@ -196,7 +196,10 @@ ul.task-list li input[type="checkbox"] {
 <h2 class="anchored" data-anchor-id="development">Development</h2>
 <section id="breaking-changes" class="level3">
 <h3 class="anchored" data-anchor-id="breaking-changes">Breaking changes</h3>
-<p>Now when running <code>jarl</code> by default it will exclude the files defined in the default file exclude patterns. A new cli argument <code>--no-default-exclude</code> in the CLI can be used to check those files as well. The argument overrides the <code>default-exclude=true</code> option when set in <code>jarl.toml</code>. (#178)</p>
+<ul>
+<li><p>Jarl now excludes by default file paths matching the following patterns: <code>.git/</code>, <code>renv/</code>, <code>revdep/</code>, <code>cpp11.R</code>, <code>RcppExports.R</code>, <code>extendr-wrappers.R</code>, and <code>import-standalone-*.R</code>.</p>
+<p>A new CLI argument <code>--no-default-exclude</code> can be used to check those files as well. This argument overrides the <code>default-exclude = true</code> option when set in <code>jarl.toml</code> (#178, <span class="citation" data-cites="novica">@novica</span>).</p></li>
+</ul>
 </section>
 <section id="features" class="level3">
 <h3 class="anchored" data-anchor-id="features">Features</h3>
