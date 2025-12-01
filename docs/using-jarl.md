@@ -40,11 +40,11 @@ To apply the unsafe fixes, use `--unsafe-fixes`, e.g. `jarl check . --fix --unsa
 
 ## Selecting and ignoring rules
 
-We can apply a subset of rules using the `--select-rules` and `--ignore-rules` parameters:
+We can apply a subset of rules using the `--select` and `--ignore` parameters:
 
 ```sh
-jarl check . --select-rules any_is_na,is_numeric,length_levels
-jarl check . --ignore-rules any_duplicated,matrix_apply
+jarl check . --select any_is_na,is_numeric,length_levels
+jarl check . --ignore any_duplicated,matrix_apply
 ```
 
 <!-- TODO: mention the groups of linters when https://github.com/etiennebacher/jarl/issues/108 is done -->

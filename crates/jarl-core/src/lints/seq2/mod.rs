@@ -22,6 +22,7 @@ mod tests {
         let expected_message = "can be wrong if the argument has length 0";
 
         expect_lint("seq(length(x))", expected_message, "seq2", None);
+        expect_lint("base::seq(base::length(x))", expected_message, "seq2", None);
         expect_lint("seq(nrow(x))", expected_message, "seq2", None);
         expect_lint("seq(ncol(x))", expected_message, "seq2", None);
         expect_lint("seq(NROW(x))", expected_message, "seq2", None);

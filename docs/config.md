@@ -32,12 +32,17 @@ Options:
       --allow-no-vcs
           Apply fixes even if there is no version control system.
 
-  -s, --select-rules <SELECT_RULES>
+  -s, --select <SELECT>
           Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF".
 
           [default: ]
 
-  -i, --ignore-rules <IGNORE_RULES>
+  -e, --extend-select <EXTEND_SELECT>
+          Like `--select` but adds additional rules in addition to those already specified.
+
+          [default: ]
+
+  -i, --ignore <IGNORE>
           Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF".
 
           [default: ]
@@ -59,7 +64,7 @@ Options:
 
           [default: full]
 
-      --assignment-op <ASSIGNMENT_OP>
+      --assignment <ASSIGNMENT>
           Assignment operator to use, can be either `<-` or `=`.
           
       --no-default-exclude
@@ -72,7 +77,7 @@ Options:
 You can pass multiple options at once, for instance
 
 ```sh
-jarl check . --fix --select-rules any_is_na,class_equals
+jarl check . --fix --select any_is_na,class_equals
 ```
 
 ## With a config file
@@ -84,6 +89,7 @@ This file looks like this:
 ```toml
 [lint]
 select = []
+extend-select = []
 ignore = []
 exclude = []
 default-exclude = true
@@ -107,7 +113,7 @@ ignore = []
 then calling
 
 ```sh
-jarl check . --ignore-rules PERF
+jarl check . --ignore PERF
 ```
 
 will only apply the rule `length_test`.
@@ -117,18 +123,34 @@ will only apply the rule `length_test`.
 
 Select some rules by default.
 
-This has the same capabilities as `--select-rules`, so it is possible to pass rule names and names of groups of rules:
+This has the same capabilities as `--select`, so it is possible to pass rule names and names of groups of rules:
 
 ```toml
 [lint]
 select = ["PERF", "length_test"]
 ```
 
+### `extend-select`
+
+Select some rules in addition to `select`.
+
+This is useful when you want to use the default set of rules *and* some additional opt-in rules.
+In this scenario, you only need to add `extend-select = ["OPT_IN_RULE"]` instead of writing all default rule names.
+
+This has the same constraints as `select`.
+
+```toml
+# Select all default rules and all `TESTTHAT` rules, which are disabled by
+# default.
+[lint]
+extend-select = ["TESTTHAT"]
+```
+
 ### `ignore`
 
 Ignore some rules by default.
 
-This has the same capabilities as `--ignore-rules`, so it is possible to pass rule names and names of groups of rules:
+This has the same capabilities as `--ignore`, so it is possible to pass rule names and names of groups of rules:
 
 ```toml
 [lint]

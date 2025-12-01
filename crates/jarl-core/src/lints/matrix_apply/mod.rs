@@ -30,6 +30,12 @@ mod tests {
         let expected_message = "is inefficient";
         expect_lint("apply(x, 1, sum)", expected_message, "matrix_apply", None);
         expect_lint(
+            "base::apply(x, 1, sum)",
+            expected_message,
+            "matrix_apply",
+            None,
+        );
+        expect_lint(
             "apply(x, MARGIN = 1, FUN = sum)",
             expected_message,
             "matrix_apply",

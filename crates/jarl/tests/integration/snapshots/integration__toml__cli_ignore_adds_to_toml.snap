@@ -1,6 +1,6 @@
 ---
 source: crates/jarl/tests/integration/toml.rs
-expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--ignore-rules\").arg(\"any_is_na\").run().normalize_os_executable_name().normalize_temp_paths()"
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--ignore\").arg(\"any_is_na\").run().normalize_os_executable_name().normalize_temp_paths()"
 ---
 success: false
 exit_code: 1
@@ -19,4 +19,4 @@ Found 1 error.
 ----- stderr -----
 
 ----- args -----
-check . --ignore-rules any_is_na
+check . --ignore any_is_na

@@ -1,0 +1,14 @@
+---
+source: crates/jarl/tests/integration/toml.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `extend-select` in 'jarl.toml': FOO
+
+----- args -----
+check .

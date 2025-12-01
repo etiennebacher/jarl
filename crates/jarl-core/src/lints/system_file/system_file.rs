@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{get_named_args, get_unnamed_args, node_contains_comments};
+use crate::utils::{get_function_name, get_named_args, get_unnamed_args, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 pub struct SystemFile;
@@ -43,9 +43,10 @@ impl Violation for SystemFile {
 
 pub fn system_file(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let function = ast.function()?;
+    let fn_name = get_function_name(function);
     let arguments = ast.arguments()?;
 
-    if function.to_trimmed_text() != "system.file" {
+    if fn_name != "system.file" {
         return Ok(None);
     }
 
@@ -75,29 +76,18 @@ pub fn system_file(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     }
 
     // Safety: at this point we know file_path has length 1.
-    let file_path_value = file_path.first().unwrap().value();
-    if file_path_value.is_none() {
-        return Ok(None);
-    };
+    let file_path_value = unwrap_or_return_none!(file_path.first().unwrap().value());
+    let file_path_call = unwrap_or_return_none!(file_path_value.as_r_call());
 
-    let file_path_inner_content = file_path_value
-        .unwrap()
-        .as_r_call()
-        .unwrap()
-        .arguments()?
-        .items()
-        .iter()
-        .filter(|x| {
-            if let Ok(x) = x {
-                x.value().is_some()
-            } else {
-                false
-            }
-        });
+    let file_path_inner_content = file_path_call.arguments()?.items().iter().filter(|x| {
+        if let Ok(x) = x {
+            x.value().is_some()
+        } else {
+            false
+        }
+    });
 
-    if file_path_inner_content.clone().next().is_none() {
-        return Ok(None);
-    }
+    let _ = unwrap_or_return_none!(file_path_inner_content.clone().next());
 
     let file_path_inner_content = file_path_inner_content
         .map(|x| x.unwrap().to_trimmed_string())

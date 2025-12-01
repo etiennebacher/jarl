@@ -27,11 +27,10 @@ pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Err
     // error for the others, but I'd rather be on the safe side and force the
     // user to deal with that before applying any fixes.
     if (config.apply_fixes || config.apply_unsafe_fixes) && !config.paths.is_empty() {
-        for path in &config.paths {
-            let path_str = relativize_path(path);
-            if let Err(e) = check_version_control(&path_str, &config) {
-                return vec![(path_str, Err(e))];
-            }
+        let path_strings: Vec<String> = config.paths.iter().map(relativize_path).collect();
+        if let Err(e) = check_version_control(&path_strings, &config) {
+            let first_path = path_strings.first().unwrap().clone();
+            return vec![(first_path, Err(e))];
         }
     }
 
@@ -109,17 +108,17 @@ pub struct Checker {
     // Tracks comment-based suppression directives like `# nolint`
     pub suppression: SuppressionManager,
     // Which assignment operator is preferred?
-    pub assignment_op: RSyntaxKind,
+    pub assignment: RSyntaxKind,
 }
 
 impl Checker {
-    fn new(suppression: SuppressionManager, assignment_op: RSyntaxKind) -> Self {
+    fn new(suppression: SuppressionManager, assignment: RSyntaxKind) -> Self {
         Self {
             diagnostics: vec![],
             rules: RuleTable::empty(),
             minimum_r_version: None,
             suppression,
-            assignment_op,
+            assignment,
         }
     }
 
@@ -165,7 +164,7 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
         return Ok(vec![]);
     }
 
-    let mut checker = Checker::new(suppression, config.assignment_op);
+    let mut checker = Checker::new(suppression, config.assignment);
     checker.rules = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
     for expr in expressions_vec {

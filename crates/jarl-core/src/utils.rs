@@ -8,6 +8,25 @@ use anyhow::{Result, anyhow};
 use biome_rowan::AstNode;
 use biome_rowan::AstSeparatedList;
 
+/// Macro to unwrap an Option or return Ok(None) early.
+///
+/// This is a common pattern in lint rules where we want to return early
+/// if a value is None without creating an error.
+///
+/// # Example
+/// ```ignore
+/// let x = unwrap_or_return_none!(some_optional_value);
+/// ```
+#[macro_export]
+macro_rules! unwrap_or_return_none {
+    ($expr:expr) => {
+        match $expr {
+            Some(v) => v,
+            None => return Ok(None),
+        }
+    };
+}
+
 /// Find the positions of the new line characters in the given AST.
 pub fn find_new_lines(ast: &RSyntaxNode) -> Result<Vec<usize>> {
     match ast.first_child() {
@@ -117,9 +136,15 @@ pub fn get_arg_by_position(args: &RArgumentList, pos: usize) -> Option<RArgument
     args.iter().nth(pos - 1).map(|x| x.unwrap())
 }
 
+/// Takes a list of arguments and tries to extract the unnamed one in position `pos`.
+/// Argument `pos` is 1-indexed.
+pub fn get_unnamed_arg_by_position(args: &RArgumentList, pos: usize) -> Option<RArgument> {
+    get_unnamed_args(args).into_iter().nth(pos - 1)
+}
+
 /// Takes a list of arguments and first tries to extract the one named `name`.
 /// If it doesn't find any argument with this name, it tries to get the
-/// argument in position `pos`.
+/// unnamed argument in position `pos`.
 /// Returns None if this second attempt also fails.
 /// Argument `pos` is 1-indexed.
 pub fn get_arg_by_name_then_position(
@@ -129,7 +154,7 @@ pub fn get_arg_by_name_then_position(
 ) -> Option<RArgument> {
     match get_arg_by_name(args, name) {
         Some(by_name) => Some(by_name),
-        _ => get_arg_by_position(args, pos),
+        _ => get_unnamed_arg_by_position(args, pos),
     }
 }
 
@@ -192,71 +217,65 @@ pub fn drop_arg_by_name_or_position(
 /// - self$fun() -> "fun"
 /// - return() -> "return"
 pub fn get_function_name(function: AnyRExpression) -> String {
-    let fn_name = if let Some(ns_expr) = function.as_r_namespace_expression() {
-        if let Ok(expr) = ns_expr.right() {
-            if let Some(id) = expr.as_r_identifier() {
-                if let Ok(token) = id.name_token() {
-                    let trimmed = token.token_text_trimmed();
-                    Some(trimmed.text().to_string())
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    } else if let Some(extract_expr) = function.as_r_extract_expression() {
+    // Try namespace expression (foo::bar)
+    if let Some(ns_expr) = function.as_r_namespace_expression()
+        && let Ok(expr) = ns_expr.right()
+        && let Some(id) = expr.as_r_identifier()
+        && let Ok(token) = id.name_token()
+    {
+        return token.token_text_trimmed().text().to_string();
+    }
+
+    // Try extract expression (self$foo)
+    if let Some(extract_expr) = function.as_r_extract_expression() {
         let RExtractExpressionFields { left, right, operator } = extract_expr.as_fields();
 
-        if let Ok(left) = left
-            && let Ok(right) = right
-            && let Ok(operator) = operator
+        if let (Ok(left), Ok(right), Ok(operator)) = (left, right, operator)
+            && let (Some(left_id), Some(right_id)) =
+                (left.as_r_identifier(), right.as_r_identifier())
+            && let (Ok(left_token), Ok(right_token)) = (left_id.name_token(), right_id.name_token())
         {
-            if let Some(left_id) = left.as_r_identifier()
-                && let Some(right_id) = right.as_r_identifier()
-            {
-                if let Ok(left_token) = left_id.name_token()
-                    && let Ok(right_token) = right_id.name_token()
-                {
-                    let left_trimmed = left_token.token_text_trimmed();
-                    let right_trimmed = right_token.token_text_trimmed();
-                    Some(
-                        [
-                            left_trimmed.text().to_string(),
-                            operator.text_trimmed().to_string(),
-                            right_trimmed.text().to_string(),
-                        ]
-                        .join(""),
-                    )
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        } else {
-            None
+            return format!(
+                "{}{}{}",
+                left_token.token_text_trimmed().text(),
+                operator.text_trimmed(),
+                right_token.token_text_trimmed().text()
+            );
         }
-    } else if function.as_r_return_expression().is_some() {
-        Some("return".to_string())
-    } else if let Some(id) = function.as_r_identifier() {
-        if let Ok(token) = id.name_token() {
-            let trimmed = token.token_text_trimmed();
-            Some(trimmed.text().to_string())
-        } else {
-            None
-        }
-    } else {
-        None
-    };
+    }
 
-    // TODO: self$foo() is handled but not in a recursive way so self$bar$foo()
-    // errors for instance.
-    // Those function names shouldn't trigger lint rules so fixing this is not
-    // urgent.
-    fn_name.unwrap_or("".to_string())
+    // Try return expression
+    if function.as_r_return_expression().is_some() {
+        return "return".to_string();
+    }
+
+    // Try simple identifier
+    if let Some(id) = function.as_r_identifier()
+        && let Ok(token) = id.name_token()
+    {
+        return token.token_text_trimmed().text().to_string();
+    }
+
+    String::new()
+}
+
+/// Extracts the namespace prefix from a function expression if present.
+/// Returns Some("namespace::") if the function has a namespace, None otherwise.
+///
+/// Examples:
+/// - `base::length` returns Some("base::")
+/// - `length` returns None
+/// - `pkg::fun` returns Some("pkg::")
+pub fn get_function_namespace_prefix(function: AnyRExpression) -> Option<String> {
+    if let Some(ns_expr) = function.as_r_namespace_expression()
+        && let Ok(left) = ns_expr.left()
+        && let Some(id) = left.as_r_identifier()
+        && let Ok(token) = id.name_token()
+    {
+        let namespace = token.token_text_trimmed().text().to_string();
+        return Some(format!("{}::", namespace));
+    }
+    None
 }
 
 // Checks if an Rcall corresponds to a nested function of the form

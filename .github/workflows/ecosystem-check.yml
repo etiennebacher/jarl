@@ -13,7 +13,7 @@ on:
       - "!crates/jarl-lsp/**"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 permissions:
@@ -89,10 +89,10 @@ jobs:
             repo_dir=$(echo "$repo_name" | tr '/' '_')
 
             # Run main
-            (cd "$repo_dir" && $MAIN_JARL check . --output-format json) > "../results/${repo_dir}_main.json" || true
+            (cd "$repo_dir" && $MAIN_JARL check . --select ALL --output-format json) > "../results/${repo_dir}_main.json" || true
 
             # Run PR
-            (cd "$repo_dir" && $PR_JARL check . --output-format json) > "../results/${repo_dir}_pr.json" || true
+            (cd "$repo_dir" && $PR_JARL check . --select ALL --output-format json) > "../results/${repo_dir}_pr.json" || true
           done
 
       - name: Upload all result JSONs

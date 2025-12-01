@@ -1,22 +1,22 @@
 ---
-source: crates/jarl/tests/integration/assignment_op.rs
+source: crates/jarl/tests/integration/assignment.rs
 expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name()"
 ---
 success: false
 exit_code: 1
 ----- stdout -----
 warning: assignment
- --> test.R:2:1
+ --> test.R:3:1
   |
-2 | x = 1
-  | --- Use `<-` for assignment.
+3 | y <- 2
+  | ---- Use `=` for assignment.
   |
 
 warning: assignment
  --> test.R:4:3
   |
 4 | 3 -> z
-  |   ---- Use `<-` for assignment.
+  |   ---- Use `=` for assignment.
   |
 
 Found 2 errors.

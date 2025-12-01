@@ -1,5 +1,7 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name, get_arg_by_name_then_position, node_contains_comments};
+use crate::utils::{
+    get_arg_by_name, get_arg_by_name_then_position, get_function_name, node_contains_comments,
+};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 use biome_rowan::AstSeparatedList;
@@ -53,7 +55,9 @@ use biome_rowan::AstSeparatedList;
 /// See `?colSums`
 pub fn matrix_apply(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let function = ast.function()?;
-    if function.to_trimmed_string() != "apply" {
+    let fn_name = get_function_name(function);
+
+    if fn_name != "apply" {
         return Ok(None);
     }
 
@@ -73,32 +77,26 @@ pub fn matrix_apply(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    let x = match x.and_then(|arg| arg.value()) {
-        Some(x_inner) => x_inner.to_trimmed_string(),
-        None => return Ok(None),
-    };
-    let fun = match fun.and_then(|arg| arg.value()) {
-        Some(x) => x.to_trimmed_string(),
-        None => return Ok(None),
-    };
+    let x_value = unwrap_or_return_none!(x.and_then(|arg| arg.value()));
+    let x = x_value.to_trimmed_string();
+
+    let fun_value = unwrap_or_return_none!(fun.and_then(|arg| arg.value()));
+    let fun = fun_value.to_trimmed_string();
 
     if fun != "mean" && fun != "sum" {
         return Ok(None);
     }
 
     // MARGIN could be c(1, 2), in which case we don't know what to do.
-    let margin = match margin.and_then(|arg| arg.value()) {
-        Some(x) => {
-            let x = x.to_trimmed_string();
-            if x == "1" || x == "1L" {
-                "1"
-            } else if x == "2" || x == "2L" {
-                "2"
-            } else {
-                return Ok(None);
-            }
-        }
-        None => return Ok(None),
+    let margin_value = unwrap_or_return_none!(margin.and_then(|arg| arg.value()));
+
+    let margin_text = margin_value.to_trimmed_string();
+    let margin = if margin_text == "1" || margin_text == "1L" {
+        "1"
+    } else if margin_text == "2" || margin_text == "2L" {
+        "2"
+    } else {
+        return Ok(None);
     };
 
     let fun = fun.as_str();

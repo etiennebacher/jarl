@@ -54,12 +54,8 @@ pub fn is_numeric(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>>
     };
 
     // Early returns: LHS or RHS are not functions
-    let Some(left) = left.as_r_call() else {
-        return Ok(None);
-    };
-    let Some(right) = right.as_r_call() else {
-        return Ok(None);
-    };
+    let left = unwrap_or_return_none!(left.as_r_call());
+    let right = unwrap_or_return_none!(right.as_r_call());
 
     let RCallFields { function: fun_left, arguments: arg_left } = left.as_fields();
     let fun_left = fun_left?;

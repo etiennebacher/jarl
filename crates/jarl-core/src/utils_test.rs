@@ -21,12 +21,13 @@ pub fn has_lint(text: &str, msg: &str, rule: &str, min_r_version: Option<&str>) 
         fix: false,
         unsafe_fixes: false,
         fix_only: false,
-        select_rules: rule.to_string(),
-        ignore_rules: String::new(),
+        select: rule.to_string(),
+        extend_select: String::new(),
+        ignore: String::new(),
         min_r_version: min_r_version.map(|s| s.to_string()),
         allow_dirty: false,
         allow_no_vcs: true,
-        assignment_op: None,
+        assignment: None,
     };
 
     let mut resolver = PathResolver::new(Settings::default());
@@ -81,12 +82,13 @@ pub fn has_no_lint(text: &str, rule: &str, min_r_version: Option<&str>) -> bool 
         fix: false,
         unsafe_fixes: false,
         fix_only: false,
-        select_rules: rule.to_string(),
-        ignore_rules: String::new(),
+        select: rule.to_string(),
+        extend_select: String::new(),
+        ignore: String::new(),
         min_r_version: min_r_version.map(|s| s.to_string()),
         allow_dirty: false,
         allow_no_vcs: true,
-        assignment_op: None,
+        assignment: None,
     };
 
     let mut resolver = PathResolver::new(Settings::default());
@@ -138,12 +140,13 @@ pub fn apply_fixes(
         fix: true,
         unsafe_fixes,
         fix_only: false,
-        select_rules: rule.to_string(),
-        ignore_rules: String::new(),
+        select: rule.to_string(),
+        extend_select: String::new(),
+        ignore: String::new(),
         min_r_version: min_r_version.map(|s| s.to_string()),
         allow_dirty: false,
         allow_no_vcs: true,
-        assignment_op: None,
+        assignment: None,
     };
 
     let mut resolver = PathResolver::new(Settings::default());
@@ -183,12 +186,13 @@ pub fn check_code(text: &str, rule: &str, min_r_version: Option<&str>) -> Vec<Di
         fix: false,
         unsafe_fixes: false,
         fix_only: false,
-        select_rules: rule.to_string(),
-        ignore_rules: String::new(),
+        select: rule.to_string(),
+        extend_select: String::new(),
+        ignore: String::new(),
         min_r_version: min_r_version.map(|s| s.to_string()),
         allow_dirty: false,
         allow_no_vcs: true,
-        assignment_op: None,
+        assignment: None,
     };
 
     let mut resolver = PathResolver::new(Settings::default());

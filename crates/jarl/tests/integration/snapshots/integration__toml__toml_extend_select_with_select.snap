@@ -1,0 +1,30 @@
+---
+source: crates/jarl/tests/integration/toml.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:2:1
+  |
+2 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: expect_true_false
+ --> test.R:4:1
+  |
+4 | expect_equal(foo(x), TRUE)
+  | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
+  |
+  = help: Use `expect_true(x)` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+
+----- args -----
+check .

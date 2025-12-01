@@ -46,6 +46,17 @@
             "type": "string"
           }
         },
+        "extend-select": {
+          "title": "Additional rules to select",
+          "description": "This is a list of rule names to add on top of the existing selection.\nThis is useful in the case where you want to use the default set of\nrules *and* some additional opt-in rules. In this scenario, you only\nneed to add `extend-select = [\"OPT_IN_RULE\"]` instead of writing all\ndefault rule names.\n\nThis has the same constraints as `select`.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
         "fixable": {
           "title": "Rule violations to always fix",
           "description": "A list of rules for which violations will be fixed if possible. By\ndefault, all rules are considered fixable.\nThis only matters if you pass `--fix` in the CLI.",

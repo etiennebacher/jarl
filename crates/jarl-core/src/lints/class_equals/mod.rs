@@ -5,6 +5,23 @@ mod tests {
     use crate::utils_test::*;
 
     #[test]
+    fn test_no_lint_class_equals() {
+        expect_no_lint("class(x) <- 'character'", "class_equals", None);
+        expect_no_lint(
+            "identical(class(x), c('glue', 'character'))",
+            "class_equals",
+            None,
+        );
+        expect_no_lint("all(sup %in% class(model))", "class_equals", None);
+
+        // We cannot infer the use that will be made of this output, so we can't
+        // report it:
+        expect_no_lint("is_regression <- class(x) == 'lm'", "class_equals", None);
+        expect_no_lint("is_regression <- 'lm' == class(x)", "class_equals", None);
+        expect_no_lint("is_regression <- \"lm\" == class(x)", "class_equals", None);
+    }
+
+    #[test]
     fn test_lint_class_equals() {
         use insta::assert_snapshot;
 
@@ -12,6 +29,12 @@ mod tests {
 
         expect_lint(
             "if (class(x) == 'character') 1",
+            expected_message,
+            "class_equals",
+            None,
+        );
+        expect_lint(
+            "if (base::class(x) == 'character') 1",
             expected_message,
             "class_equals",
             None,
@@ -77,23 +100,6 @@ mod tests {
                 None
             )
         );
-    }
-
-    #[test]
-    fn test_no_lint_class_equals() {
-        expect_no_lint("class(x) <- 'character'", "class_equals", None);
-        expect_no_lint(
-            "identical(class(x), c('glue', 'character'))",
-            "class_equals",
-            None,
-        );
-        expect_no_lint("all(sup %in% class(model))", "class_equals", None);
-
-        // We cannot infer the use that will be made of this output, so we can't
-        // report it:
-        expect_no_lint("is_regression <- class(x) == 'lm'", "class_equals", None);
-        expect_no_lint("is_regression <- 'lm' == class(x)", "class_equals", None);
-        expect_no_lint("is_regression <- \"lm\" == class(x)", "class_equals", None);
     }
 
     #[test]

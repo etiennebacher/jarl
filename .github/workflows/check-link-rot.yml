@@ -1,4 +1,4 @@
-name: check-link-rot
+name: Check links
 
 on:
   push:

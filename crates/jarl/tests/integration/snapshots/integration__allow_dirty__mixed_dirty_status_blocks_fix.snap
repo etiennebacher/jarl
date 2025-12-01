@@ -1,0 +1,18 @@
+---
+source: crates/jarl/tests/integration/allow_dirty.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--fix\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+Error: `jarl check --fix` can potentially perform destructive changes but the working directory of this project has uncommitted changes, so no fixes were applied. 
+To apply the fixes, either add `--allow-dirty` to the call, or commit the changes to these files:
+
+  * test.R (dirty)
+
+
+
+----- args -----
+check . --fix

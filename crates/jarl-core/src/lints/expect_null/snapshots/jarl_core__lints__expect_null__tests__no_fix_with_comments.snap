@@ -1,0 +1,28 @@
+---
+source: crates/jarl-core/src/lints/expect_null/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\nexpect_equal(x, NULL)\",\n\"expect_equal(x, # comment\\nNULL)\",\n\"expect_equal(x, NULL) # trailing comment\",], \"expect_null\", None)"
+---
+OLD:
+====
+# leading comment
+expect_equal(x, NULL)
+NEW:
+====
+# leading comment
+expect_null(x)
+
+OLD:
+====
+expect_equal(x, # comment
+NULL)
+NEW:
+====
+expect_equal(x, # comment
+NULL)
+
+OLD:
+====
+expect_equal(x, NULL) # trailing comment
+NEW:
+====
+expect_null(x) # trailing comment

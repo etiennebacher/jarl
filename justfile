@@ -17,3 +17,17 @@ lint:
     -D clippy::dbg_macro
 
   cargo fmt
+
+# Apply fixes reported by `just lint`
+lint-fix:
+  cargo clippy \
+    --all-targets \
+    --all-features \
+    --locked \
+    --fix --allow-dirty
+
+  cargo fmt
+
+# Generates the `jarl.schema.json`
+gen-schema:
+    cargo run -p xtask_codegen -- json-schema

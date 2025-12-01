@@ -34,19 +34,11 @@ pub fn comparison_negation(ast: &RUnaryExpression) -> anyhow::Result<Option<Diag
     }
 
     let argument = ast.argument()?;
-    let argument = argument.as_r_parenthesized_expression();
-    if argument.is_none() {
-        return Ok(None);
-    }
-    // Safety: can unwrap() here, we returned early if it's None.
-    let binary_expression = argument.unwrap();
-    let binary_expression = binary_expression.body()?;
-    let binary_expression = binary_expression.as_r_binary_expression();
-    if binary_expression.is_none() {
-        return Ok(None);
-    }
-    // Safety: can unwrap() here, we returned early if it's None.
-    let binary_expression = binary_expression.unwrap();
+
+    let paren_expr = unwrap_or_return_none!(argument.as_r_parenthesized_expression());
+
+    let body = paren_expr.body()?;
+    let binary_expression = unwrap_or_return_none!(body.as_r_binary_expression());
     let operator = binary_expression.operator()?;
     let operator_kind = operator.kind();
     let left = binary_expression.left()?;

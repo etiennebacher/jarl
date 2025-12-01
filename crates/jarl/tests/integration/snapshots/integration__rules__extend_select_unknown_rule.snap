@@ -1,0 +1,14 @@
+---
+source: crates/jarl/tests/integration/rules.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--extend-select\").arg(\"FOO\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in `--extend-select`: FOO
+
+----- args -----
+check . --extend-select FOO

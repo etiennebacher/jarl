@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::utils::get_function_name;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -79,12 +80,15 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
     if ancestor_is_arg {
         for ancestor in ast.syntax().ancestors() {
             if RCall::can_cast(ancestor.kind()) {
-                let function_name = RCall::cast(ancestor).unwrap().function()?.to_trimmed_text();
+                let call = RCall::cast(ancestor).unwrap();
+                let function = call.function()?;
+                let function_name = get_function_name(function);
                 if [
                     "expect_error",
                     "expect_warning",
                     "expect_message",
                     "expect_snapshot",
+                    "quote",
                     "suppressMessages",
                     "suppressWarnings",
                 ]

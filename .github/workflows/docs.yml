@@ -19,7 +19,7 @@ on:
       - crates/**/Cargo.toml
   workflow_dispatch:
 
-name: docs
+name: Docs
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}

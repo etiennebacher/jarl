@@ -82,14 +82,21 @@ pub struct CheckCommand {
         default_value = "",
         help = "Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as \"PERF\"."
     )]
-    pub select_rules: String,
+    pub select: String,
+    #[arg(
+        short,
+        long,
+        default_value = "",
+        help = "Like `--select` but adds additional rules in addition to those already specified."
+    )]
+    pub extend_select: String,
     #[arg(
         short,
         long,
         default_value = "",
         help = "Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as \"PERF\"."
     )]
-    pub ignore_rules: String,
+    pub ignore: String,
     #[arg(
         short,
         long,
@@ -115,14 +122,13 @@ pub struct CheckCommand {
         value_enum,
         help = "Assignment operator to use, can be either `<-` or `=`."
     )]
-    pub assignment_op: Option<String>,
+    pub assignment: Option<String>,
     #[arg(
         long,
         default_value = "false",
         help = "Do not apply the default set of file patterns that should be excluded."
     )]
     pub no_default_exclude: bool,
-}
 
 #[derive(Clone, Debug, Parser)]
 pub(crate) struct ServerCommand {}

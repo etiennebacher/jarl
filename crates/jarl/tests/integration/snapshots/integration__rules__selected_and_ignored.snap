@@ -1,6 +1,6 @@
 ---
 source: crates/jarl/tests/integration/rules.rs
-expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--select-rules\").arg(\"any_is_na\").arg(\"--ignore-rules\").arg(\"any_is_na\").run().normalize_os_executable_name()"
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--select\").arg(\"any_is_na\").arg(\"--ignore\").arg(\"any_is_na\").run().normalize_os_executable_name()"
 ---
 success: true
 exit_code: 0
@@ -10,4 +10,4 @@ All checks passed!
 ----- stderr -----
 
 ----- args -----
-check . --select-rules any_is_na --ignore-rules any_is_na
+check . --select any_is_na --ignore any_is_na

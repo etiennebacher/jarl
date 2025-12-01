@@ -4,11 +4,50 @@
 
 ### Features
 
+- `--output-format json` now contains two fields `diagnostics` and `errors` (#219).
+- Better support for namespaced function calls, both when reporting violations
+  and when fixing them (#221).
+
+### Changes
+
+- `expect_named` no longer reports cases like `expect_equal(x, names(y))` because
+  rewriting those as `expect_named(y, x)` would potentially change the intent of
+  the test and the way it is read (#220).
+
+## 0.2.1
+
+### Other
+
+- Important performance improvement when using `--fix`, in particular in projects with many R files (#217).
+
+## 0.2.0
+
+### Breaking changes
+
+- For consistency between CLI arguments and `jarl.toml` arguments, the following CLI arguments are renamed (#199):
+  - `--select-rules` becomes `--select`
+  - `--ignore-rules` becomes `--ignore`
+  - `--assignment-op` becomes `--assignment`
+
+### Features
+
+- New argument `extend-select` in `jarl.toml` and `--extend-select` in the CLI to select additional rules on top of the existing selection. This can be useful to select opt-in rules in addition to the default set of rules (#193).
 - Added support for `seq` and `seq2` rules (#187).
+- Added support for several rules related to `testthat`. Those rules are disabled by default and can be enabled by combining `select` or `extend-select` with the rule name or the `TESTTHAT` group rule name. Those rules are:
+  - `expect_length` (#211)
+  - `expect_named` (#212)
+  - `expect_not` (#204)
+  - `expect_null` (#202)
+  - `expect_true_false` (#191)
+
+### Fixes
+
+- `implicit_assignment` no longer reports cases inside `quote()` (#209).
 
 ### Documentation
 
 - Added section on Neovim to the [Editors](https://jarl.etiennebacher.com/editors) page (#188, @bjyberg).
+- Added page "Tutorial: add a new rule" (#183).
 
 ## 0.1.2
 

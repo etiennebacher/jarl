@@ -32,12 +32,12 @@ for (i in seq_along(all_repos)) {
     "results/",
     gsub("/", "_", repos),
     "_main.json"
-  ))
+  ))[["diagnostics"]]
   pr_results_json <- jsonlite::read_json(paste0(
     "results/",
     gsub("/", "_", repos),
     "_pr.json"
-  ))
+  ))[["diagnostics"]]
 
   main_results <- lapply(main_results_json, \(x) {
     data.table(

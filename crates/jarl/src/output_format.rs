@@ -4,9 +4,21 @@ use clap::ValueEnum;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::io::Write;
+use std::io::{BufWriter, Write};
 
 use jarl_core::diagnostic::Diagnostic;
+
+#[derive(Debug, Serialize)]
+struct JsonOutput<'a> {
+    diagnostics: Vec<&'a Diagnostic>,
+    errors: Vec<JsonError>,
+}
+
+#[derive(Debug, Serialize)]
+struct JsonError {
+    file: String,
+    error: String,
+}
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, ValueEnum, Serialize, Deserialize)]
 pub enum OutputFormat {
@@ -42,12 +54,14 @@ impl Emitter for ConciseEmitter {
         diagnostics: &[&Diagnostic],
         errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
+        let mut writer = BufWriter::new(writer);
         let mut total_diagnostics = 0;
         let mut n_diagnostic_with_fixes = 0usize;
         let mut n_diagnostic_with_unsafe_fixes = 0usize;
 
         // First, print all parsing errors
         if !errors.is_empty() {
+            writer.flush()?; // Flush before writing to stderr
             for (_path, err) in errors {
                 let root_cause = err.chain().last().unwrap();
                 if root_cause.is::<jarl_core::error::ParseError>() {
@@ -58,6 +72,9 @@ impl Emitter for ConciseEmitter {
             }
         }
 
+        // Cache relativized paths to avoid repeated filesystem operations
+        let mut path_cache = std::collections::HashMap::new();
+
         // Then, print the diagnostics.
         for diagnostic in diagnostics {
             let (row, col) = match diagnostic.location {
@@ -66,6 +83,12 @@ impl Emitter for ConciseEmitter {
                     unreachable!("Row/col locations must have been parsed successfully before.")
                 }
             };
+
+            // Get or compute relativized path
+            let relative_path = path_cache
+                .entry(&diagnostic.filename)
+                .or_insert_with(|| relativize_path(diagnostic.filename.clone()));
+
             let message = if let Some(suggestion) = &diagnostic.message.suggestion {
                 format!("{} {}", diagnostic.message.body, suggestion)
             } else {
@@ -74,7 +97,7 @@ impl Emitter for ConciseEmitter {
             writeln!(
                 writer,
                 "{} [{}:{}] {} {}",
-                relativize_path(diagnostic.filename.clone()).white(),
+                relative_path.white(),
                 row,
                 col,
                 diagnostic.message.name.red(),
@@ -89,6 +112,8 @@ impl Emitter for ConciseEmitter {
             }
             total_diagnostics += 1;
         }
+
+        writer.flush()?; // Ensure all diagnostics are written before summary
 
         // Finally, print the info about the number of errors found and how
         // many can be fixed.
@@ -136,9 +161,23 @@ impl Emitter for JsonEmitter {
         &self,
         writer: &mut W,
         diagnostics: &[&Diagnostic],
-        _errors: &[(String, anyhow::Error)],
+        errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
-        serde_json::to_writer_pretty(writer, diagnostics)?;
+        let mut writer = BufWriter::new(writer);
+
+        // Convert errors to a serializable format
+        let json_errors: Vec<JsonError> = errors
+            .iter()
+            .map(|(path, err)| JsonError { file: path.clone(), error: format!("{:#}", err) })
+            .collect();
+
+        let output = JsonOutput {
+            diagnostics: diagnostics.to_vec(),
+            errors: json_errors,
+        };
+
+        serde_json::to_writer_pretty(&mut writer, &output)?;
+        writer.flush()?;
         Ok(())
     }
 }
@@ -152,6 +191,7 @@ impl Emitter for GithubEmitter {
         diagnostics: &[&Diagnostic],
         _errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
+        let mut writer = BufWriter::new(writer);
         for diagnostic in diagnostics {
             let (row, col) = match diagnostic.location {
                 Some(loc) => (loc.row(), loc.column() + 1), // Convert to 1-based for display
@@ -184,6 +224,7 @@ impl Emitter for GithubEmitter {
             writeln!(writer, "[{}] {}", diagnostic.message.name, message)?;
         }
 
+        writer.flush()?;
         Ok(())
     }
 }
@@ -197,6 +238,7 @@ impl Emitter for FullEmitter {
         diagnostics: &[&Diagnostic],
         errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
+        let mut writer = BufWriter::new(writer);
         // Use plain renderer when NO_COLOR is set or in snapshots
         let renderer = if std::env::var("NO_COLOR").is_ok() {
             Renderer::plain()
@@ -209,6 +251,7 @@ impl Emitter for FullEmitter {
 
         // First, print all parsing errors
         if !errors.is_empty() {
+            writer.flush()?; // Flush before writing to stderr
             for (_path, err) in errors {
                 let root_cause = err.chain().last().unwrap();
                 if root_cause.is::<jarl_core::error::ParseError>() {
@@ -233,6 +276,30 @@ impl Emitter for FullEmitter {
                 .push(diagnostic);
         }
 
+        // Cache file contents and relativized paths
+        let mut file_cache: std::collections::HashMap<&std::path::Path, String> =
+            std::collections::HashMap::new();
+        let mut path_cache = std::collections::HashMap::new();
+
+        // Pre-load all files into cache
+        for diagnostic in diagnostics {
+            if !file_cache.contains_key(diagnostic.filename.as_path()) {
+                match fs::read_to_string(&diagnostic.filename) {
+                    Ok(content) => {
+                        file_cache.insert(diagnostic.filename.as_path(), content);
+                    }
+                    Err(err) => {
+                        writer.flush()?; // Flush before writing to stderr
+                        eprintln!(
+                            "Warning: Could not read source file {}: {}",
+                            diagnostic.filename.display(),
+                            err
+                        );
+                    }
+                }
+            }
+        }
+
         // Process each file's diagnostics
         for diagnostic in diagnostics {
             let (_row, _col) = match diagnostic.location {
@@ -242,29 +309,23 @@ impl Emitter for FullEmitter {
                 }
             };
 
-            // Read the source file
-            let source = match fs::read_to_string(&diagnostic.filename) {
-                Ok(content) => content,
-                Err(e) => {
-                    eprintln!(
-                        "Warning: Could not read source file {}: {}",
-                        diagnostic.filename.display(),
-                        e
-                    );
-                    continue;
-                }
+            // Get the source file from cache
+            let Some(source) = file_cache.get(diagnostic.filename.as_path()) else {
+                continue; // Skip if file couldn't be read
             };
 
             // Calculate the byte offset from TextRange
             let start_offset = diagnostic.range.start().into();
             let end_offset = diagnostic.range.end().into();
 
-            // Create the snippet with annotate-snippets
-            let file_path = relativize_path(diagnostic.filename.clone());
+            // Get or compute relativized path
+            let file_path = path_cache
+                .entry(&diagnostic.filename)
+                .or_insert_with(|| relativize_path(diagnostic.filename.clone()));
 
             // Build the message with snippet
-            let snippet = Snippet::source(&source)
-                .origin(&file_path)
+            let snippet = Snippet::source(source)
+                .origin(file_path)
                 .fold(true)
                 .annotation(
                     Level::Warning
@@ -293,6 +354,8 @@ impl Emitter for FullEmitter {
             }
             total_diagnostics += 1;
         }
+
+        writer.flush()?; // Ensure all diagnostics are written before summary
 
         // Finally, print the info about the number of errors found and how
         // many can be fixed.

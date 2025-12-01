@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_position, node_contains_comments};
+use crate::utils::{get_arg_by_position, get_function_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -119,7 +119,9 @@ pub fn class_equals(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic
 
     // Return early if left is neither a function call nor a string.
     if let Some(left) = left.as_r_call() {
-        if left.function()?.to_trimmed_text() != "class" {
+        let left_fn = left.function()?;
+        let left_fn_name = get_function_name(left_fn);
+        if left_fn_name != "class" {
             return Ok(None);
         }
         left_is_class = true;
@@ -134,7 +136,9 @@ pub fn class_equals(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic
 
     // Return early if right is neither a function call nor a string.
     if let Some(right) = right.as_r_call() {
-        if right.function()?.to_trimmed_text() != "class" {
+        let right_fn = right.function()?;
+        let right_fn_name = get_function_name(right_fn);
+        if right_fn_name != "class" {
             return Ok(None);
         }
         right_is_class = true;

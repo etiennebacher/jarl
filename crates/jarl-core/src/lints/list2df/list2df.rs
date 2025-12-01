@@ -1,5 +1,7 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name_then_position, get_arg_by_position, node_contains_comments};
+use crate::utils::{
+    get_arg_by_name_then_position, get_arg_by_position, get_function_name, node_contains_comments,
+};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -52,14 +54,15 @@ pub fn list2df(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
 
     let function = function?;
+    let fn_name = get_function_name(function);
     let arguments = arguments?.items();
 
-    if function.to_trimmed_text() != "do.call" {
+    if fn_name != "do.call" {
         return Ok(None);
     }
 
-    let what = get_arg_by_name_then_position(&arguments, "what", 1);
-    let args = get_arg_by_name_then_position(&arguments, "args", 2);
+    let what = unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "what", 1));
+    let args = unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "args", 2));
 
     // Ensure there's not more than two arguments, don't know how to handle
     // `quote` and `envir` in `do.call()`.
@@ -67,31 +70,15 @@ pub fn list2df(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    if args.is_none() {
+    let what_value = unwrap_or_return_none!(what.value());
+    let txt = what_value.to_trimmed_text();
+    // `do.call()` accepts quoted function names.
+    if txt != "cbind.data.frame" && txt != "\"cbind.data.frame\"" && txt != "\'cbind.data.frame\'" {
         return Ok(None);
     }
 
-    if let Some(what) = what
-        && let Some(what_value) = what.value()
-    {
-        let txt = what_value.to_trimmed_text();
-        // `do.call()` accepts quoted function names.
-        if txt != "cbind.data.frame"
-            && txt != "\"cbind.data.frame\""
-            && txt != "\'cbind.data.frame\'"
-        {
-            return Ok(None);
-        }
-    } else {
-        return Ok(None);
-    };
-
-    // Safety: we checked above that args is not None.
-    let args = args.unwrap().value();
-    if args.is_none() {
-        return Ok(None);
-    }
-    let fix_content = args.unwrap();
+    let args_value = unwrap_or_return_none!(args.value());
+    let fix_content = args_value;
 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
