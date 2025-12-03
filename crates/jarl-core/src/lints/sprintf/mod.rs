@@ -34,6 +34,9 @@ mod tests {
             None,
         );
         expect_no_lint("sprintf(\"% *s\", 3, \"  \")", "sprintf", None);
+
+        // Don't know how to handle pipes for now
+        expect_no_lint("'abc' |> sprintf('%s', x = _)", "sprintf", None);
     }
 
     #[test]

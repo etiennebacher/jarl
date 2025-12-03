@@ -56,6 +56,13 @@ pub fn sprintf(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
+    // Don't know how to handle pipes for now.
+    if let Some(prev_sibling) = ast.syntax().prev_sibling_or_token()
+        && prev_sibling.kind() == RSyntaxKind::PIPE
+    {
+        return Ok(None);
+    }
+
     let args = ast.arguments()?.items();
 
     let fmt = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "fmt", 1));
