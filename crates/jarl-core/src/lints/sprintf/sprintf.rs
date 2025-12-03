@@ -97,7 +97,7 @@ pub fn sprintf(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             ),
             range,
             Fix {
-                content: format!("{}", fmt_text),
+                content: parse_result.output_string,
                 start: range.start().into(),
                 end: range.end().into(),
                 to_skip: node_contains_comments(ast.syntax()),
@@ -157,6 +157,9 @@ struct SprintfParseResult {
     has_positional: bool,
     // Find the highest index, e.g. `'hello %1s %1$s %2$s'` returns 2.
     max_position: usize,
+    // Output string: only here for the special case of "%%", which is converted
+    // to "%" in the case of constant strings.
+    output_string: String,
 }
 
 // Parse sprintf format string in one pass
@@ -169,6 +172,7 @@ fn parse_sprintf_format(s: &str) -> SprintfParseResult {
     let mut invalid_positions = Vec::new();
     let mut has_positional = false;
     let mut max_position = 0;
+    let mut output_string = String::new();
 
     let chars: Vec<char> = s.chars().collect();
     let mut i = 0;
@@ -191,6 +195,7 @@ fn parse_sprintf_format(s: &str) -> SprintfParseResult {
 
             // Check for %% (literal %)
             if chars[i] == '%' {
+                output_string.push('%');
                 i += 1;
                 continue;
             }
@@ -233,6 +238,7 @@ fn parse_sprintf_format(s: &str) -> SprintfParseResult {
                 invalid_positions.push(percent_pos);
             }
         } else {
+            output_string.push(chars[i]);
             i += 1;
         }
     }
@@ -242,5 +248,6 @@ fn parse_sprintf_format(s: &str) -> SprintfParseResult {
         invalid_positions,
         has_positional,
         max_position,
+        output_string,
     }
 }

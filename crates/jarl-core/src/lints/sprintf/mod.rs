@@ -40,7 +40,16 @@ mod tests {
 
         assert_snapshot!(
             "fix_output",
-            get_fixed_text(vec!["sprintf('a')", "sprintf(\"a\")",], "sprintf", None)
+            get_fixed_text(
+                vec![
+                    "sprintf('a')",
+                    "sprintf(\"a\")",
+                    "sprintf('%%')",
+                    "sprintf('hello %%')",
+                ],
+                "sprintf",
+                None
+            )
         );
     }
 
