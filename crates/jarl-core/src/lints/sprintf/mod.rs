@@ -26,6 +26,14 @@ mod tests {
         expect_no_lint("sprintf('hello %1$s %s', '1')", "sprintf", None);
         // Whitespace between "%" and special char is allowed.
         expect_no_lint("sprintf('%   s', 1)", "sprintf", None);
+
+        // Found in lrberge/stringmagic
+        expect_no_lint(
+            "sprintf(\"%s%.*s\", \"abc\", 1, \"0000000000000000\")",
+            "sprintf",
+            None,
+        );
+        expect_no_lint("sprintf(\"% *s\", 3, \"  \")", "sprintf", None);
     }
 
     #[test]
