@@ -11,12 +11,17 @@ mod tests {
         expect_no_lint("sprintf('hello %d', x + 1)", "sprintf", None);
         expect_no_lint("sprintf('hello %d', f(x))", "sprintf", None);
         expect_no_lint("sprintf('hello %1$s %1$s', x)", "sprintf", None);
-        expect_no_lint("sprintf('hello %1$s %1$s %2$d', x, y)", "sprintf", None);
+        expect_no_lint("sprintf('hello %2$d %1$s %1$s', x, y)", "sprintf", None);
+        expect_no_lint("sprintf('%05.1f', pi)", "sprintf", None);
+
+        // Allow multi-digit index
         expect_no_lint(
-            "sprintf('hello %1$s %1$s %2$d %3$s', x, y, 1.5)",
+            "sprintf('hello %1$s %2$s %3$s %4$s %5$s %6$s %7$s %8$s %9$s %10$s', x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)",
             "sprintf",
             None,
         );
+        // Mix of indexed and non-indexed special chars
+        expect_no_lint("sprintf('hello %1$s %s', '1')", "sprintf", None);
         // Whitespace between "%" and special char is allowed.
         expect_no_lint("sprintf('%   s', 1)", "sprintf", None);
     }
@@ -29,6 +34,9 @@ mod tests {
 
         expect_lint("sprintf('a')", expected_message, "sprintf", None);
         expect_lint("sprintf(\"a\")", expected_message, "sprintf", None);
+        // "%%" is used to escape the "%" symbol
+        expect_lint("sprintf('%%')", expected_message, "sprintf", None);
+        expect_lint("sprintf('%%', '')", expected_message, "sprintf", None);
 
         assert_snapshot!(
             "fix_output",
@@ -45,6 +53,13 @@ mod tests {
 
         expect_lint("sprintf('%a')", expected_message, "sprintf", None);
         expect_lint("sprintf('%a %s', 1)", expected_message, "sprintf", None);
+        // Mix of indexed and non-indexed special chars
+        expect_lint(
+            "sprintf('hello %1$s %s', '1', '2')",
+            expected_message,
+            "sprintf",
+            None,
+        );
 
         // No fixes because this pattern generates an error at runtime. User
         // needs to fix it.

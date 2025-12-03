@@ -73,8 +73,26 @@ pub fn sprintf(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     };
 
-    // Constant string, e.g. `sprintf("abc")`
-    if !fmt_text.contains("%") {
+    // Parse format string once
+    let parse_result = parse_sprintf_format(&fmt_text);
+
+    // Check for invalid patterns first
+    if !parse_result.invalid_positions.is_empty() {
+        let range = ast.syntax().text_trimmed_range();
+        let diagnostic = Diagnostic::new(
+            ViolationData::new(
+                "sprintf".to_string(),
+                "`sprintf()` contains some invalid `%`.".to_string(),
+                None,
+            ),
+            range,
+            Fix::empty(),
+        );
+        return Ok(Some(diagnostic));
+    }
+
+    // Check if it's a constant string (no valid specifiers)
+    if parse_result.n_unique_special_chars == 0 {
         let range = ast.syntax().text_trimmed_range();
         let diagnostic = Diagnostic::new(
             ViolationData::new(
@@ -91,25 +109,8 @@ pub fn sprintf(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             },
         );
         return Ok(Some(diagnostic));
-    };
-
-    // Unknown characters following `%`, e.g. `sprintf("%y", "abc")`
-    let invalid_percents = find_invalid_percent(&fmt_text);
-    if invalid_percents.len() > 0 {
-        let range = ast.syntax().text_trimmed_range();
-        let diagnostic = Diagnostic::new(
-            ViolationData::new(
-                "sprintf".to_string(),
-                "`sprintf()` contains some invalid `%`.".to_string(),
-                None,
-            ),
-            range,
-            Fix::empty(),
-        );
-        return Ok(Some(diagnostic));
     }
 
-    let specs = parse_format_specifiers(&fmt_text);
     let dots = get_unnamed_args(&args);
     let len_dots = if fmt.name_clause().is_some() {
         dots.len()
@@ -117,12 +118,12 @@ pub fn sprintf(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         dots.len() - 1
     };
 
-    // If any specifier uses positional references, find max position
+    // If any specifier uses positional references, use max position
     // Otherwise, count the number of specifiers
-    let expected_args = if specs.iter().any(|s| s.position.is_some()) {
-        specs.iter().filter_map(|s| s.position).max().unwrap_or(0)
+    let expected_args = if parse_result.has_positional {
+        parse_result.max_position
     } else {
-        specs.len()
+        parse_result.n_unique_special_chars
     };
 
     if expected_args != len_dots {
@@ -146,57 +147,51 @@ pub fn sprintf(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     Ok(None)
 }
 
-pub static SPRINTF_SPECIAL_CHARS: &[&str] = &[
-    "d", "i", "o", "x", "X", "f", "e", "E", "g", "G", "a", "A", "s", "%", "m", ".", "n", "-", "+",
-    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "#",
+pub static SPRINTF_TYPE_CHARS: &[char] = &[
+    'd', 'i', 'o', 'x', 'X', 'f', 'e', 'E', 'g', 'G', 'a', 'A', 's',
 ];
 
-struct FormatSpec {
-    position: Option<usize>, // Some(1) for %1$s, None for %s
+// Store all the necessary info regarding special characters starting with "%"
+// in the `fmt` arg.
+struct SprintfParseResult {
+    // Count unique special chars, e.g. `'hello %1$s %1$s'` returns 1.
+    n_unique_special_chars: usize,
+    // Count invalid special chars, e.g. `'hello %s %y'` returns 1.
+    invalid_positions: Vec<usize>,
+    // Check if any special char has an index, e.g. `'hello %s %1$s'` returns true.
+    has_positional: bool,
+    // Find the highest index, e.g. `'hello %1s %1$s %2$s'` returns 2.
+    max_position: usize,
 }
 
-fn find_invalid_percent(s: &str) -> Vec<usize> {
-    let mut invalid = Vec::new();
-    let chars: Vec<char> = s.chars().collect();
+// Parse sprintf format string in one pass
+// Handles:
+// - %% (literal %)
+// - %1$s (positional specifiers)
+// - Invalid patterns
+fn parse_sprintf_format(s: &str) -> SprintfParseResult {
+    let mut n_unique_special_chars = 0;
+    let mut invalid_positions = Vec::new();
+    let mut has_positional = false;
+    let mut max_position = 0;
 
-    for (i, &ch) in chars.iter().enumerate() {
-        if ch == '%' {
-            // Skip whitespace after %
-            let mut j = i + 1;
-            while j < chars.len() && chars[j].is_whitespace() {
-                j += 1;
-            }
-            // Check if next non-whitespace belongs to the list of special characters
-            if j >= chars.len() || !SPRINTF_SPECIAL_CHARS.contains(&chars[j].to_string().as_str()) {
-                invalid.push(i);
-            }
-        }
-    }
-    invalid
-}
-
-// This is more complicated than just checking the allowed characters after
-// "%" because it is possible to add an index after "%" to refer to the argument
-// position. For example, this is valid although the number of special characters
-// and the number of arguments are not the same:
-//
-// sprintf('hello %1$s %1$s %2$d', x, y)
-//
-fn parse_format_specifiers(s: &str) -> Vec<FormatSpec> {
-    let mut specs = Vec::new();
     let chars: Vec<char> = s.chars().collect();
     let mut i = 0;
 
     while i < chars.len() {
         if chars[i] == '%' {
+            let percent_pos = i;
             i += 1;
+
             // Skip whitespace
             while i < chars.len() && chars[i].is_whitespace() {
                 i += 1;
             }
 
             if i >= chars.len() {
-                break;
+                // % at end of string with no type
+                invalid_positions.push(percent_pos);
+                continue;
             }
 
             // Check for %% (literal %)
@@ -206,14 +201,16 @@ fn parse_format_specifiers(s: &str) -> Vec<FormatSpec> {
             }
 
             // Parse optional position (e.g., "1$" in "%1$s")
-            let mut position = None;
             let start = i;
             while i < chars.len() && chars[i].is_ascii_digit() {
                 i += 1;
             }
             if i < chars.len() && chars[i] == '$' {
                 if let Ok(pos) = chars[start..i].iter().collect::<String>().parse::<usize>() {
-                    position = Some(pos);
+                    has_positional = true;
+                    if pos > max_position {
+                        max_position = pos;
+                    }
                     i += 1; // Skip the '$'
                 }
             } else {
@@ -233,14 +230,22 @@ fn parse_format_specifiers(s: &str) -> Vec<FormatSpec> {
             }
 
             // Check if we have a valid type specifier
-            if i < chars.len() && SPRINTF_SPECIAL_CHARS.contains(&chars[i].to_string().as_str()) {
-                specs.push(FormatSpec { position });
+            if i < chars.len() && SPRINTF_TYPE_CHARS.contains(&chars[i]) {
+                n_unique_special_chars += 1;
+                i += 1;
+            } else {
+                // Invalid format specifier
+                invalid_positions.push(percent_pos);
             }
-
-            i += 1;
         } else {
             i += 1;
         }
     }
-    specs
+
+    SprintfParseResult {
+        n_unique_special_chars,
+        invalid_positions,
+        has_positional,
+        max_position,
+    }
 }
