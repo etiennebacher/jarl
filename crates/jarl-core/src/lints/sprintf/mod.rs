@@ -6,7 +6,9 @@ mod tests {
 
     #[test]
     fn test_no_lint_sprintf() {
+        expect_no_lint("sprintf(1)", "sprintf", None);
         expect_no_lint("sprintf('hello %d', 1)", "sprintf", None);
+        expect_no_lint("sprintf(fmt = 'hello %d', 1)", "sprintf", None);
         expect_no_lint("sprintf('hello %d', x)", "sprintf", None);
         expect_no_lint("sprintf('hello %d', x + 1)", "sprintf", None);
         expect_no_lint("sprintf('hello %d', f(x))", "sprintf", None);
@@ -90,6 +92,7 @@ mod tests {
 
         expect_lint("sprintf('%y', 'a')", expected_message, "sprintf", None);
         expect_lint("sprintf('%', 'a')", expected_message, "sprintf", None);
+        expect_lint("sprintf('1%', 'a')", expected_message, "sprintf", None);
         expect_lint("sprintf('%s%', 'a')", expected_message, "sprintf", None);
 
         // No fixes because this pattern generates an error at runtime. User
