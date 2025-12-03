@@ -125,7 +125,7 @@ pub fn sprintf(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let expected_args = if parse_result.has_positional {
         parse_result.max_position
     } else {
-        parse_result.all_args_consumed.iter().map(|s| s).sum()
+        parse_result.all_args_consumed.iter().sum()
     };
 
     if expected_args != len_dots {
