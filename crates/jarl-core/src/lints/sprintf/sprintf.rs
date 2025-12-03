@@ -87,7 +87,7 @@ pub fn sprintf(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     }
 
     // Check if it's a constant string (no valid specifiers)
-    if parse_result.specs.is_empty() {
+    if parse_result.n_unique_special_chars == 0 {
         let range = ast.syntax().text_trimmed_range();
         let diagnostic = Diagnostic::new(
             ViolationData::new(
@@ -118,7 +118,7 @@ pub fn sprintf(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let expected_args = if parse_result.has_positional {
         parse_result.max_position
     } else {
-        parse_result.specs.iter().map(|s| s.args_consumed).sum()
+        parse_result.all_args_consumed.iter().map(|s| s).sum()
     };
 
     if expected_args != len_dots {
@@ -146,15 +146,13 @@ pub static SPRINTF_TYPE_CHARS: &[char] = &[
     'd', 'i', 'o', 'x', 'X', 'f', 'e', 'E', 'g', 'G', 'a', 'A', 's',
 ];
 
-struct FormatSpec {
-    position: Option<usize>, // Some(1) for %1$s, None for %s
-    args_consumed: usize,    // Number of args consumed (1 + * for width + * for precision)
-}
-
 // Store all the necessary info regarding special characters starting with "%"
 // in the `fmt` arg.
 struct SprintfParseResult {
-    specs: Vec<FormatSpec>,
+    // Count unique special chars, e.g. `'hello %1$s %1$s'` returns 1.
+    n_unique_special_chars: usize,
+    // Number of args consumed (1 + * for width + * for precision)
+    all_args_consumed: Vec<usize>,
     // Count invalid special chars, e.g. `'hello %s %y'` returns 1.
     invalid_positions: Vec<usize>,
     // Check if any special char has an index, e.g. `'hello %s %1$s'` returns true.
@@ -172,7 +170,8 @@ struct SprintfParseResult {
 // - %1$s (positional specifiers)
 // - Invalid patterns
 fn parse_sprintf_format(s: &str) -> SprintfParseResult {
-    let mut specs = Vec::new();
+    let mut n_unique_special_chars = 0;
+    let mut all_args_consumed: Vec<usize> = vec![];
     let mut invalid_positions = Vec::new();
     let mut has_positional = false;
     let mut max_position = 0;
@@ -204,7 +203,6 @@ fn parse_sprintf_format(s: &str) -> SprintfParseResult {
                 continue;
             }
 
-            let mut position = None;
             let mut args_consumed = 1; // At least 1 for the value itself
 
             // Parse optional position (e.g., "1$" in "%1$s")
@@ -214,7 +212,6 @@ fn parse_sprintf_format(s: &str) -> SprintfParseResult {
             }
             if i < chars.len() && chars[i] == '$' {
                 if let Ok(pos) = chars[start..i].iter().collect::<String>().parse::<usize>() {
-                    position = Some(pos);
                     has_positional = true;
                     if pos > max_position {
                         max_position = pos;
@@ -261,7 +258,8 @@ fn parse_sprintf_format(s: &str) -> SprintfParseResult {
 
             // Check if we have a valid type specifier
             if i < chars.len() && SPRINTF_TYPE_CHARS.contains(&chars[i]) {
-                specs.push(FormatSpec { position, args_consumed });
+                n_unique_special_chars += 1;
+                all_args_consumed.push(args_consumed);
                 i += 1;
             } else {
                 // Invalid format specifier
@@ -274,7 +272,8 @@ fn parse_sprintf_format(s: &str) -> SprintfParseResult {
     }
 
     SprintfParseResult {
-        specs,
+        n_unique_special_chars,
+        all_args_consumed,
         invalid_positions,
         has_positional,
         max_position,
