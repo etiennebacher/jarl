@@ -1,0 +1,30 @@
+---
+source: crates/jarl-core/src/lints/sprintf/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\nsprintf('a')\",\n\"sprintf(\\n # a comment \\n'a')\", \"sprintf('a') # trailing comment\",],\n\"sprintf\", None)"
+---
+OLD:
+====
+# leading comment
+sprintf('a')
+NEW:
+====
+# leading comment
+'a'
+
+OLD:
+====
+sprintf(
+ # a comment 
+'a')
+NEW:
+====
+sprintf(
+ # a comment 
+'a')
+
+OLD:
+====
+sprintf('a') # trailing comment
+NEW:
+====
+'a' # trailing comment
