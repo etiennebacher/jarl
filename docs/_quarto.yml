@@ -88,6 +88,7 @@ website:
       - rules/seq.md
       - rules/seq2.md
       - rules/sort.md
+      - rules/sprintf.md
       - rules/system_file.md
       - rules/true_false_symbol.md
       - rules/which_grepl.md

@@ -89,8 +89,8 @@ pub fn all_rules_and_safety() -> RuleTable {
     rule_table.enable("sample_int", "READ", FixStatus::Safe, None);
     rule_table.enable("seq", "SUSP", FixStatus::Safe, None);
     rule_table.enable("seq2", "SUSP", FixStatus::Safe, None);
-    rule_table.enable("sprintf", "SUSP", FixStatus::Safe, None);
     rule_table.enable("sort", "PERF,READ", FixStatus::Safe, None);
+    rule_table.enable("sprintf", "SUSP", FixStatus::Safe, None);
     rule_table.enable("true_false_symbol", "READ", FixStatus::None, None);
     rule_table.enable("which_grepl", "PERF,READ", FixStatus::Safe, None);
     rule_table.enable("system_file", "READ", FixStatus::Safe, None);

@@ -17,6 +17,7 @@
 - `--output-format json` now contains two fields `diagnostics` and `errors` (#219).
 - Better support for namespaced function calls, both when reporting violations
   and when fixing them (#221).
+- Added support for `sprintf` rule (#224).
 
 ### Changes
 
