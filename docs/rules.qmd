@@ -80,6 +80,7 @@ dat <- as.data.frame(
     c("seq2", "Suspicious", "✅", ""),
     c("sort", "Performance, readability", "✅", ""),
     c("sprintf", "Correctness, suspicious", "✅", ""),
+    c("string_boundary", "Performance, readability", "✅", ""),
     c("system_file", "Readability", "✅", ""),
     c("true_false_symbol", "Readability", "❌", ""),
     c("which_grepl", "Performance, readability", "✅", "")
