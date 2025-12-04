@@ -151,18 +151,18 @@ fn is_literal_one(expr: &AnyRExpression) -> bool {
     // Check if it's an AnyRValue (numeric literal)
     if let Some(r_value) = expr.as_any_r_value() {
         // Check for integer value
-        if let Some(int) = r_value.as_r_integer_value() {
-            if let Ok(token) = int.value_token() {
-                let text = token.text_trimmed();
-                return text == "1" || text == "1L" || text == "1l";
-            }
+        if let Some(int) = r_value.as_r_integer_value()
+            && let Ok(token) = int.value_token()
+        {
+            let text = token.text_trimmed();
+            return text == "1" || text == "1L" || text == "1l";
         }
         // Check for double value
-        if let Some(double) = r_value.as_r_double_value() {
-            if let Ok(token) = double.value_token() {
-                let text = token.text_trimmed();
-                return text == "1" || text == "1.0" || text == "1.";
-            }
+        if let Some(double) = r_value.as_r_double_value()
+            && let Ok(token) = double.value_token()
+        {
+            let text = token.text_trimmed();
+            return text == "1" || text == "1.0" || text == "1.";
         }
     }
     false
