@@ -59,6 +59,13 @@ mod tests {
             "string_boundary",
             None,
         );
+        // != operator also works
+        expect_lint(
+            "substr(x, 1L, end) != 'ab'",
+            "Using `substr()` to detect an initial substring",
+            "string_boundary",
+            None,
+        );
         expect_lint(
             "substring(x, nchar(x) - 4L, nchar(x)) == 'abcde'",
             "Using `substring()` to detect a terminal substring",
