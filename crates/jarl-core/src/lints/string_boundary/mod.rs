@@ -29,6 +29,21 @@ mod tests {
             "string_boundary",
             None,
         );
+        // Unknown function in stop
+        expect_no_lint("substring(x, 2, foo(x)) == 'abcd'", "string_boundary", None);
+        // Wrong nchar() call
+        expect_no_lint(
+            "substring(x, 2, nchar(x, y)) == 'abcd'",
+            "string_boundary",
+            None,
+        );
+        expect_no_lint(
+            "substring(x, 2, nchar(x,)) == 'abcd'",
+            "string_boundary",
+            None,
+        );
+        // Unknown object in `stop`
+        expect_no_lint("substring(x, 2, y) == 'abcd'", "string_boundary", None);
 
         // _close_ to equivalent, but not so in general -- e.g.
         //   substring(s <- "abcdefg", 2L) == "efg" is not TRUE, but endsWith(s, "efg")
@@ -67,6 +82,20 @@ mod tests {
             None,
         );
         expect_lint(
+            "substr(x, 3, nchar(x)) != 'ab'",
+            "Using `substr()` to detect a terminal substring",
+            "string_boundary",
+            None,
+        );
+        // Works in the other direction
+        expect_lint(
+            "'ab' == substr(x, 1L, end)",
+            "Using `substr()` to detect an initial substring",
+            "string_boundary",
+            None,
+        );
+
+        expect_lint(
             "substring(x, nchar(x) - 4L, nchar(x)) == 'abcde'",
             "Using `substring()` to detect a terminal substring",
             "string_boundary",
@@ -102,6 +131,8 @@ mod tests {
                     "substr(x, 1L, 2L) == 'ab'",
                     "substr(x, 1L, end) == 'ab'",
                     "substr(x, 1L, end) != 'ab'",
+                    "substr(x, 3, nchar(x)) != 'ab'",
+                    "'ab' == substr(x, 1L, end)",
                     "substring(x, nchar(x) - 4L, nchar(x)) == 'abcde'",
                     "substring(x, start, nchar(x)) == 'abcde'",
                     "substring(colnames(x), start, nchar(colnames(x))) == 'abc'",
