@@ -1,0 +1,59 @@
+---
+source: crates/jarl-core/src/lints/string_boundary/mod.rs
+expression: "get_fixed_text(vec![\"substr(x, 1, 2) == 'ab'\", \"substr(x, 1L, 2L) == 'ab'\",\n\"substr(x, 1L, end) == 'ab'\", \"substr(x, 1L, end) != 'ab'\",\n\"substring(x, nchar(x) - 4L, nchar(x)) == 'abcde'\",\n\"substring(x, start, nchar(x)) == 'abcde'\",\n\"substring(colnames(x), start, nchar(colnames(x))) == 'abc'\",\n\"substr(c('abc', 'def'), 1, 1) == c('a', 'a')\",], \"string_boundary\", None)"
+---
+OLD:
+====
+substr(x, 1, 2) == 'ab'
+NEW:
+====
+startsWith(x, 'ab')
+
+OLD:
+====
+substr(x, 1L, 2L) == 'ab'
+NEW:
+====
+startsWith(x, 'ab')
+
+OLD:
+====
+substr(x, 1L, end) == 'ab'
+NEW:
+====
+startsWith(x, 'ab')
+
+OLD:
+====
+substr(x, 1L, end) != 'ab'
+NEW:
+====
+!startsWith(x, 'ab')
+
+OLD:
+====
+substring(x, nchar(x) - 4L, nchar(x)) == 'abcde'
+NEW:
+====
+endsWith(x, 'abcde')
+
+OLD:
+====
+substring(x, start, nchar(x)) == 'abcde'
+NEW:
+====
+endsWith(x, 'abcde')
+
+OLD:
+====
+substring(colnames(x), start, nchar(colnames(x))) == 'abc'
+NEW:
+====
+endsWith(colnames(x), 'abc')
+
+OLD:
+====
+substr(c('abc', 'def'), 1, 1) == c('a', 'a')
+NEW:
+====
+startsWith(c('abc', 'def'), c('a', 'a'))
