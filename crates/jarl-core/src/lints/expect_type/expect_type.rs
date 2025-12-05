@@ -179,10 +179,10 @@ fn check_expect_true_is_type(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> 
 }
 
 fn is_typeof_call(expr: &AnyRExpression) -> bool {
-    if let Some(call) = expr.as_r_call() {
-        if let Ok(function) = call.function() {
-            return get_function_name(function) == "typeof";
-        }
+    if let Some(call) = expr.as_r_call()
+        && let Ok(function) = call.function()
+    {
+        return get_function_name(function) == "typeof";
     }
     false
 }
