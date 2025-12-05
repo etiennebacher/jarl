@@ -20,6 +20,7 @@
 - Added support for `sprintf` rule (#224).
 - Added support for `string_boundary` rule (#225).
 - Added support for `expect_type` rule (#226).
+- Added support for `fixed_regex` rule (#227).
 
 ### Changes
 
