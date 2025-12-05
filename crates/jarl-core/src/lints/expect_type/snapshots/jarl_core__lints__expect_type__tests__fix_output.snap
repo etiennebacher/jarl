@@ -1,0 +1,45 @@
+---
+source: crates/jarl-core/src/lints/expect_type/mod.rs
+expression: "get_fixed_text(vec![\"expect_equal(typeof(x), 'double')\",\n\"testthat::expect_identical(typeof(x), 'language')\",\n\"expect_true(is.complex(foo(x)))\", \"expect_equal('integer', typeof(x))\",\n\"expect_true(is.character(y))\", \"testthat::expect_equal(typeof(z), 'list')\",],\n\"expect_type\", None)"
+---
+OLD:
+====
+expect_equal(typeof(x), 'double')
+NEW:
+====
+expect_type(x, 'double')
+
+OLD:
+====
+testthat::expect_identical(typeof(x), 'language')
+NEW:
+====
+testthat::expect_type(x, 'language')
+
+OLD:
+====
+expect_true(is.complex(foo(x)))
+NEW:
+====
+expect_type(foo(x), "complex")
+
+OLD:
+====
+expect_equal('integer', typeof(x))
+NEW:
+====
+expect_type(x, 'integer')
+
+OLD:
+====
+expect_true(is.character(y))
+NEW:
+====
+expect_type(y, "character")
+
+OLD:
+====
+testthat::expect_equal(typeof(z), 'list')
+NEW:
+====
+testthat::expect_type(z, 'list')

@@ -13,6 +13,7 @@ use crate::lints::expect_named::expect_named::expect_named;
 use crate::lints::expect_not::expect_not::expect_not;
 use crate::lints::expect_null::expect_null::expect_null;
 use crate::lints::expect_true_false::expect_true_false::expect_true_false;
+use crate::lints::expect_type::expect_type::expect_type;
 use crate::lints::grepv::grepv::grepv;
 use crate::lints::length_levels::length_levels::length_levels;
 use crate::lints::length_test::length_test::length_test;
@@ -64,6 +65,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled("expect_null") && !checker.should_skip_rule(node, "expect_null") {
         checker.report_diagnostic(expect_null(r_expr)?);
+    }
+    if checker.is_rule_enabled("expect_type") && !checker.should_skip_rule(node, "expect_type") {
+        checker.report_diagnostic(expect_type(r_expr)?);
     }
     if checker.is_rule_enabled("expect_true_false")
         && !checker.should_skip_rule(node, "expect_true_false")

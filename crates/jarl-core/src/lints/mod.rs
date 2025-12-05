@@ -19,6 +19,7 @@ pub(crate) mod expect_named;
 pub(crate) mod expect_not;
 pub(crate) mod expect_null;
 pub(crate) mod expect_true_false;
+pub(crate) mod expect_type;
 pub(crate) mod for_loop_index;
 pub(crate) mod grepv;
 pub(crate) mod implicit_assignment;
@@ -73,6 +74,7 @@ pub fn all_rules_and_safety() -> RuleTable {
     rule_table.enable("expect_named", "TESTTHAT", FixStatus::Safe, None);
     rule_table.enable("expect_not", "TESTTHAT", FixStatus::Safe, None);
     rule_table.enable("expect_null", "TESTTHAT", FixStatus::Safe, None);
+    rule_table.enable("expect_type", "TESTTHAT", FixStatus::Safe, None);
     rule_table.enable("expect_true_false", "TESTTHAT", FixStatus::Safe, None);
     rule_table.enable("for_loop_index", "READ", FixStatus::None, None);
     rule_table.enable("grepv", "READ", FixStatus::Safe, Some((4, 5, 0)));
