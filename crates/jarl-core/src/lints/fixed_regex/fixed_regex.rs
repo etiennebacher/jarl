@@ -62,13 +62,12 @@ pub fn fixed_regex(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     };
 
     // Check if fixed is already set to TRUE
-    if let Some(fixed_arg) = get_arg_by_name_then_position(&args, "fixed", fixed_position) {
-        if let Some(value) = fixed_arg.value()
-            && value.syntax().text_trimmed() == "TRUE"
-        {
-            // fixed = TRUE is already set, no need to lint
-            return Ok(None);
-        }
+    if let Some(fixed_arg) = get_arg_by_name_then_position(&args, "fixed", fixed_position)
+        && let Some(value) = fixed_arg.value()
+        && value.syntax().text_trimmed() == "TRUE"
+    {
+        // fixed = TRUE is already set, no need to lint
+        return Ok(None);
     }
 
     // Check if ignore.case is set to TRUE (implies regex interpretation)
@@ -79,13 +78,11 @@ pub fn fixed_regex(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     };
     if let Some(ignore_case_arg) =
         get_arg_by_name_then_position(&args, "ignore.case", ignore_case_position)
+        && let Some(value) = ignore_case_arg.value()
+        && value.syntax().text_trimmed() == "TRUE"
     {
-        if let Some(value) = ignore_case_arg.value()
-            && value.syntax().text_trimmed() == "TRUE"
-        {
-            // ignore.case = TRUE implies regex interpretation is needed
-            return Ok(None);
-        }
+        // ignore.case = TRUE implies regex interpretation is needed
+        return Ok(None);
     }
 
     // Get the pattern argument (first argument for all functions)
@@ -146,9 +143,9 @@ pub fn fixed_regex(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 /// Check if a pattern string contains no unescaped regex special characters
 fn is_fixed_pattern(pattern: &str) -> bool {
     const REGEX_CHARS: &[char] = &['.', '*', '+', '?', '[', '{', '(', ')', '|', '^', '$', '\\'];
-    let mut chars = pattern.chars().peekable();
+    let chars = pattern.chars().peekable();
 
-    while let Some(c) = chars.next() {
+    for c in chars {
         // Unescaped character - check if it's a regex metacharacter
         if REGEX_CHARS.contains(&c) {
             return false;
