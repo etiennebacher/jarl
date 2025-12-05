@@ -10,7 +10,7 @@ fn test_min_r_version_from_cli_only() -> anyhow::Result<()> {
     let directory = directory.path();
 
     let test_path = "test.R";
-    let test_contents = "grep('a', x, value = TRUE)";
+    let test_contents = "grep('a.*', x, value = TRUE)";
     std::fs::write(directory.join(test_path), test_contents)?;
 
     // grepv() rule only exists for R >= 4.5.
@@ -59,7 +59,7 @@ fn test_min_r_version_from_description_only() -> anyhow::Result<()> {
     let directory = directory.path();
 
     let test_path = "test.R";
-    let test_contents = "grep('a', x, value = TRUE)";
+    let test_contents = "grep('a.*', x, value = TRUE)";
     std::fs::write(directory.join(test_path), test_contents)?;
 
     // grepv() rule only exists for R >= 4.5.0

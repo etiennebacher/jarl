@@ -14,6 +14,7 @@ use crate::lints::expect_not::expect_not::expect_not;
 use crate::lints::expect_null::expect_null::expect_null;
 use crate::lints::expect_true_false::expect_true_false::expect_true_false;
 use crate::lints::expect_type::expect_type::expect_type;
+use crate::lints::fixed_regex::fixed_regex::fixed_regex;
 use crate::lints::grepv::grepv::grepv;
 use crate::lints::length_levels::length_levels::length_levels;
 use crate::lints::length_test::length_test::length_test;
@@ -73,6 +74,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
         && !checker.should_skip_rule(node, "expect_true_false")
     {
         checker.report_diagnostic(expect_true_false(r_expr)?);
+    }
+    if checker.is_rule_enabled("fixed_regex") && !checker.should_skip_rule(node, "fixed_regex") {
+        checker.report_diagnostic(fixed_regex(r_expr)?);
     }
     if checker.is_rule_enabled("grepv") && !checker.should_skip_rule(node, "grepv") {
         checker.report_diagnostic(grepv(r_expr)?);
