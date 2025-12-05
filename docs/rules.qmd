@@ -62,6 +62,7 @@ dat <- as.data.frame(
     c("expect_not", "`testthat`", "✅", "Disabled by default"),
     c("expect_null", "`testthat`", "✅", "Disabled by default"),
     c("expect_true_false", "`testthat`", "✅", "Disabled by default"),
+    c("expect_type", "`testthat`", "✅", "Disabled by default"),
     c("for_loop_index", "Readability", "❌", ""),
     c("grepv", "Readability", "✅", "R >= 4.5"),
     c("implicit_assignment", "Readability", "❌", ""),

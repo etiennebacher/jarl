@@ -19,6 +19,7 @@
   and when fixing them (#221).
 - Added support for `sprintf` rule (#224).
 - Added support for `string_boundary` rule (#225).
+- Added support for `expect_type` rule (#226).
 
 ### Changes
 
