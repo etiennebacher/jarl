@@ -1,0 +1,80 @@
+---
+source: crates/jarl-core/src/lints/fixed_regex/mod.rs
+expression: "get_fixed_text(vec![\"grepl('abcdefg', x)\", \"grep('abcdefg', x)\",\n\"regexec('abcdefg', x)\", \"regexpr('abcdefg', x)\", \"gsub('abcdefg', 'a', x)\",\n\"sub('abcdefg', 'a', x)\", \"gregexpr('abcdefg', x)\", \"gregexpr('a-z', y)\",\n\"gregexpr('a-z', y, fixed = FALSE)\",\n\"gregexpr('a-z', y, fixed = FALSE, ignore.case = FALSE)\",\n\"gregexpr(pattern = 'a-z', y)\",], \"fixed_regex\", None)"
+---
+OLD:
+====
+grepl('abcdefg', x)
+NEW:
+====
+grepl('abcdefg', x, fixed = TRUE)
+
+OLD:
+====
+grep('abcdefg', x)
+NEW:
+====
+grep('abcdefg', x, fixed = TRUE)
+
+OLD:
+====
+regexec('abcdefg', x)
+NEW:
+====
+regexec('abcdefg', x, fixed = TRUE)
+
+OLD:
+====
+regexpr('abcdefg', x)
+NEW:
+====
+regexpr('abcdefg', x, fixed = TRUE)
+
+OLD:
+====
+gsub('abcdefg', 'a', x)
+NEW:
+====
+gsub('abcdefg', 'a', x, fixed = TRUE)
+
+OLD:
+====
+sub('abcdefg', 'a', x)
+NEW:
+====
+sub('abcdefg', 'a', x, fixed = TRUE)
+
+OLD:
+====
+gregexpr('abcdefg', x)
+NEW:
+====
+gregexpr('abcdefg', x, fixed = TRUE)
+
+OLD:
+====
+gregexpr('a-z', y)
+NEW:
+====
+gregexpr('a-z', y, fixed = TRUE)
+
+OLD:
+====
+gregexpr('a-z', y, fixed = FALSE)
+NEW:
+====
+gregexpr('a-z', y, fixed = TRUE)
+
+OLD:
+====
+gregexpr('a-z', y, fixed = FALSE, ignore.case = FALSE)
+NEW:
+====
+gregexpr('a-z', y, ignore.case = FALSE, fixed = TRUE)
+
+OLD:
+====
+gregexpr(pattern = 'a-z', y)
+NEW:
+====
+gregexpr(pattern = 'a-z', y, fixed = TRUE)
