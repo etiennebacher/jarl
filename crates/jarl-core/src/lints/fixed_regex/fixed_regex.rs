@@ -142,17 +142,7 @@ pub fn fixed_regex(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 
 /// Check if a pattern string contains no unescaped regex special characters
 fn is_fixed_pattern(pattern: &str) -> bool {
-    const REGEX_CHARS: &[char] = &['.', '*', '+', '?', '[', '{', '(', ')', '|', '^', '$', '\\'];
-    let chars = pattern.chars().peekable();
+    const REGEX_CHARS: &[u8; 12] = b".*+?[{()|^$\\";
 
-    for c in chars {
-        // Unescaped character - check if it's a regex metacharacter
-        if REGEX_CHARS.contains(&c) {
-            return false;
-        } else {
-            continue;
-        }
-    }
-
-    true
+    pattern.bytes().all(|b| !REGEX_CHARS.contains(&b))
 }
