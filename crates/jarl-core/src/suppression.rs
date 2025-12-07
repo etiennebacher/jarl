@@ -297,16 +297,12 @@ impl SuppressionManager {
         {
             match self.check_suppression(&parent) {
                 Some(None) => return true, // Skip all
-                Some(Some(rules)) => {
-                    if rules.contains(rule_name) {
-                        return true;
-                    }
-                }
-                None => {}
+                Some(Some(rules)) => return rules.contains(rule_name),
+                None => return false,
             }
+        } else {
+            return false;
         }
-
-        false
     }
 }
 
