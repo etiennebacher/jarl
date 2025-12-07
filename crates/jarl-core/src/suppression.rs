@@ -3,7 +3,7 @@
 //! This module handles extracting and checking `# nolint` comments
 //! to determine which nodes should skip linting.
 
-use air_r_syntax::{RLanguage, RSyntaxNode};
+use air_r_syntax::{RLanguage, RSyntaxKind, RSyntaxNode};
 use biome_formatter::comments::{CommentStyle, Comments};
 use biome_rowan::{SyntaxTriviaPieceComments, TextRange};
 use std::collections::HashSet;
@@ -265,12 +265,44 @@ impl SuppressionManager {
             }
         }
 
-        // Then check node-level suppression
+        // Check node-level suppression
         match self.check_suppression(node) {
-            Some(None) => true, // Skip all
-            Some(Some(rules)) => rules.contains(rule_name),
-            None => false,
+            Some(None) => return true, // Skip all
+            Some(Some(rules)) => {
+                if rules.contains(rule_name) {
+                    return true;
+                }
+            }
+            None => {}
         }
+
+        // If node has a parent that is R_ARGUMENT, check that too.
+        // This is necessary for cases like this:
+        // foo(
+        //   # nolint
+        //   any(is.na(x))
+        // )
+        //
+        // The comment is attached to R_ARGUMENT, not to R_CALL, so
+        // any(is.na(x)) is still reported. Same for this:
+        // foo(
+        //   any(is.na(x)) # nolint
+        // )
+        if let Some(parent) = node.parent() {
+            if parent.kind() == RSyntaxKind::R_ARGUMENT {
+                match self.check_suppression(&parent) {
+                    Some(None) => return true, // Skip all
+                    Some(Some(rules)) => {
+                        if rules.contains(rule_name) {
+                            return true;
+                        }
+                    }
+                    None => {}
+                }
+            }
+        }
+
+        false
     }
 }
 

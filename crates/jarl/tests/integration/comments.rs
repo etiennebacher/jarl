@@ -98,6 +98,46 @@ any(is.na(x))
 }
 
 #[test]
+fn test_nolint_nested() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    std::fs::write(
+        directory.join(test_path),
+        "
+foo(
+  # nolint
+  any(is.na(x))
+)
+foo(
+  # nolint: any_is_na
+  any(is.na(x))
+)
+foo(
+  any(is.na(x)) # nolint
+)
+foo(
+  # nolint start
+  any(is.na(x))
+  # nolint end
+)
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
 fn test_nolint_start_end() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();
@@ -254,7 +294,7 @@ any(duplicated(x))
 }
 
 #[test]
-fn test_nolint_no_skip_file() -> anyhow::Result<()> {
+fn test_nolint_no_skip_file_4() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();
 
