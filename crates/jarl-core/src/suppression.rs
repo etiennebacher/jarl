@@ -288,17 +288,17 @@ impl SuppressionManager {
         // foo(
         //   any(is.na(x)) # nolint
         // )
-        if let Some(parent) = node.parent() {
-            if parent.kind() == RSyntaxKind::R_ARGUMENT {
-                match self.check_suppression(&parent) {
-                    Some(None) => return true, // Skip all
-                    Some(Some(rules)) => {
-                        if rules.contains(rule_name) {
-                            return true;
-                        }
+        if let Some(parent) = node.parent()
+            && parent.kind() == RSyntaxKind::R_ARGUMENT
+        {
+            match self.check_suppression(&parent) {
+                Some(None) => return true, // Skip all
+                Some(Some(rules)) => {
+                    if rules.contains(rule_name) {
+                        return true;
                     }
-                    None => {}
                 }
+                None => {}
             }
         }
 
