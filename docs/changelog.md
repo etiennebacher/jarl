@@ -22,7 +22,18 @@
 - Added support for `expect_type` rule (#226).
 - Added support for `fixed_regex` rule (#227).
 
-### Changes
+### Fixes
+
+- `# nolint` comments are now properly applied to nodes that are function arguments, e.g.
+  ```r
+  foo(
+    # nolint
+    any(is.na(x))
+  )
+  ```
+  does not report a violation anymore (#229).
+
+### Other changes
 
 - `expect_named` no longer reports cases like `expect_equal(x, names(y))` because
   rewriting those as `expect_named(y, x)` would potentially change the intent of
