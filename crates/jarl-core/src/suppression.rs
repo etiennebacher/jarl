@@ -4,7 +4,9 @@
 //! to determine which nodes should skip linting.
 
 use air_r_syntax::{RLanguage, RSyntaxKind, RSyntaxNode};
-use biome_formatter::comments::{CommentStyle, Comments};
+use biome_formatter::comments::{
+    CommentKind, CommentPlacement, CommentStyle, Comments, DecoratedComment,
+};
 use biome_rowan::{SyntaxTriviaPieceComments, TextRange};
 use std::collections::HashSet;
 
@@ -21,19 +23,43 @@ impl CommentStyle for RCommentStyle {
         false
     }
 
-    fn get_comment_kind(
-        _comment: &SyntaxTriviaPieceComments<RLanguage>,
-    ) -> biome_formatter::comments::CommentKind {
+    fn get_comment_kind(_comment: &SyntaxTriviaPieceComments<RLanguage>) -> CommentKind {
         // R only has line comments
-        biome_formatter::comments::CommentKind::Line
+        CommentKind::Line
     }
 
     fn place_comment(
         &self,
-        comment: biome_formatter::comments::DecoratedComment<Self::Language>,
-    ) -> biome_formatter::comments::CommentPlacement<Self::Language> {
-        // Use default placement
-        biome_formatter::comments::CommentPlacement::Default(comment)
+        comment: DecoratedComment<Self::Language>,
+    ) -> CommentPlacement<Self::Language> {
+        // If the comment is attached to an R_CALL_ARGUMENTS node, find the
+        // R_ARGUMENT_LIST and attach to its R_ARGUMENT's first child instead.
+        // Without this, the comment below is attached to the R_ARGUMENT instead
+        // of R_CALL, meaning that "# nolint" is useless:
+        // ```
+        // foo(
+        //   # nolint
+        //   any(is.na(x))
+        // )
+        // ```
+        //
+        // This is also more efficient than checking whether the parent is an
+        // R_ARGUMENT in `should_skip_rule()`.
+        let enclosing = comment.enclosing_node();
+        if enclosing.kind() == RSyntaxKind::R_CALL_ARGUMENTS {
+            // Find R_ARGUMENT_LIST child, then first R_ARGUMENT, then its first child
+            for child in enclosing.children() {
+                if child.kind() == RSyntaxKind::R_ARGUMENT_LIST
+                    && let Some(first_arg) = child.first_child()
+                    && first_arg.kind() == RSyntaxKind::R_ARGUMENT
+                    && let Some(first_child) = first_arg.first_child()
+                {
+                    return CommentPlacement::leading(first_child, comment);
+                }
+            }
+        }
+
+        CommentPlacement::Default(comment)
     }
 }
 
@@ -276,33 +302,7 @@ impl SuppressionManager {
             None => {}
         }
 
-        // If node has a parent that is R_ARGUMENT, check that too.
-        // This is necessary for cases like this:
-        // ```
-        // foo(
-        //   # nolint
-        //   any(is.na(x))
-        // )
-        // ```
-        //
-        // The comment is attached to R_ARGUMENT, not to R_CALL, so
-        // any(is.na(x)) is still reported. Same for this:
-        // ```
-        // foo(
-        //   any(is.na(x)) # nolint
-        // )
-        // ```
-        if let Some(parent) = node.parent()
-            && parent.kind() == RSyntaxKind::R_ARGUMENT
-        {
-            match self.check_suppression(&parent) {
-                Some(None) => return true, // Skip all
-                Some(Some(rules)) => return rules.contains(rule_name),
-                None => return false,
-            }
-        } else {
-            return false;
-        }
+        false
     }
 }
 
