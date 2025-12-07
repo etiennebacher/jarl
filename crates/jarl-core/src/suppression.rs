@@ -278,16 +278,20 @@ impl SuppressionManager {
 
         // If node has a parent that is R_ARGUMENT, check that too.
         // This is necessary for cases like this:
+        // ```
         // foo(
         //   # nolint
         //   any(is.na(x))
         // )
+        // ```
         //
         // The comment is attached to R_ARGUMENT, not to R_CALL, so
         // any(is.na(x)) is still reported. Same for this:
+        // ```
         // foo(
         //   any(is.na(x)) # nolint
         // )
+        // ```
         if let Some(parent) = node.parent()
             && parent.kind() == RSyntaxKind::R_ARGUMENT
         {
