@@ -6,6 +6,7 @@ use crate::lints::all_equal::all_equal::all_equal;
 use crate::lints::any_duplicated::any_duplicated::any_duplicated;
 use crate::lints::any_is_na::any_is_na::any_is_na;
 use crate::lints::browser::browser::browser;
+use crate::lints::class_equals::class_equals::class_identical;
 use crate::lints::download_file::download_file::download_file;
 use crate::lints::duplicated_arguments::duplicated_arguments::duplicated_arguments;
 use crate::lints::expect_length::expect_length::expect_length;
@@ -44,6 +45,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled("browser") && !checker.should_skip_rule(node, "browser") {
         checker.report_diagnostic(browser(r_expr)?);
+    }
+    if checker.is_rule_enabled("class_equals") && !checker.should_skip_rule(node, "class_equals") {
+        checker.report_diagnostic(class_identical(r_expr)?);
     }
     if checker.is_rule_enabled("download_file") && !checker.should_skip_rule(node, "download_file")
     {

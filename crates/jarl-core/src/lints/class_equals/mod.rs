@@ -19,6 +19,9 @@ mod tests {
         expect_no_lint("is_regression <- class(x) == 'lm'", "class_equals", None);
         expect_no_lint("is_regression <- 'lm' == class(x)", "class_equals", None);
         expect_no_lint("is_regression <- \"lm\" == class(x)", "class_equals", None);
+
+        expect_no_lint("identical(foo(x), 'a')", "class_equals", None);
+        expect_no_lint("identical(foo(x), c('a', 'b'))", "class_equals", None);
     }
 
     #[test]
@@ -95,6 +98,60 @@ mod tests {
                     "x[if (class(x) == 'foo') 1 else 2]",
                     "if (class(foo(bar(y) + 1)) == 'abc') 1",
                     "if (my_fun(class(x) != 'character')) 1",
+                ],
+                "class_equals",
+                None
+            )
+        );
+    }
+
+    #[test]
+    fn test_lint_identical_class() {
+        use insta::assert_snapshot;
+
+        let expected_message = "Using `identical(class(x), 'a')`";
+
+        // Test identical() - these are always linted regardless of context
+        expect_lint(
+            "is_regression <- identical(class(x), 'lm')",
+            expected_message,
+            "class_equals",
+            None,
+        );
+        expect_lint(
+            "is_regression <- identical('lm', class(x))",
+            expected_message,
+            "class_equals",
+            None,
+        );
+        expect_lint(
+            "if (identical(class(x), 'character')) 1",
+            expected_message,
+            "class_equals",
+            None,
+        );
+        expect_lint(
+            "if (identical('character', class(x))) 1",
+            expected_message,
+            "class_equals",
+            None,
+        );
+        expect_lint(
+            "while (identical(class(x), 'foo')) 1",
+            expected_message,
+            "class_equals",
+            None,
+        );
+
+        assert_snapshot!(
+            "identical_class",
+            get_fixed_text(
+                vec![
+                    "if (identical(class(x), 'character')) 1",
+                    "if (identical('character', class(x))) 1",
+                    "while (identical(class(x), 'foo')) 1",
+                    "is_regression <- identical(class(x), 'lm')",
+                    "is_regression <- identical('lm', class(x))",
                 ],
                 "class_equals",
                 None
