@@ -21,6 +21,7 @@ mod tests {
         expect_no_lint("is_regression <- \"lm\" == class(x)", "class_equals", None);
 
         expect_no_lint("identical(foo(x), 'a')", "class_equals", None);
+        expect_no_lint("identical(foo(x), c('a', 'b'))", "class_equals", None);
     }
 
     #[test]
