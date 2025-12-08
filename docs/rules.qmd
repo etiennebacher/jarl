@@ -6,11 +6,11 @@ title: Rules
 
 All rules belong to at least one category:
 
--   CORR: correctness, code that is outright wrong or useless.
--   SUSP: suspicious, code that is most likely wrong or useless.
--   PERF: performance, code that can be written to run faster.
--   READ: readability, code is correct but can be written in a way that is easier to read.
--   TESTTHAT: rules for the `testthat` package. Disabled by default.
+-   **correctness**: code that is outright wrong or useless.
+-   **suspicious**: code that is most likely wrong or useless.
+-   **performance**: code that can be written to run faster.
+-   **readability**: code is correct but can be written in a way that is easier to read.
+-   **testthat**: rules for the `testthat` package. Disabled by default.
 
 You can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.
 
@@ -45,47 +45,47 @@ The column "Has fix" can take the following values:
 library(tinytable)
 dat <- as.data.frame(
   rbind(
-    c("all_equal", "Suspicious", "❗", ""),
-    c("any_duplicated", "Performance", "✅", ""),
-    c("any_is_na", "Performance", "✅", ""),
-    c("assignment", "Readability", "✅", ""),
-    c("browser", "Correctness", "❌", ""),
-    c("class_equals", "Suspicious", "❗", ""),
-    c("coalesce", "Readability", "✅", "R >= 4.4"),
-    c("comparison_negation", "Readability", "✅", ""),
-    c("download_file", "Suspicious", "❌", ""),
-    c("duplicated_arguments", "Suspicious", "❌", ""),
-    c("empty_assignment", "Readability", "❌", ""),
-    c("equals_na", "Correctness", "✅", ""),
-    c("expect_length", "`testthat`", "✅", "Disabled by default"),
-    c("expect_named", "`testthat`", "✅", "Disabled by default"),
-    c("expect_not", "`testthat`", "✅", "Disabled by default"),
-    c("expect_null", "`testthat`", "✅", "Disabled by default"),
-    c("expect_true_false", "`testthat`", "✅", "Disabled by default"),
-    c("expect_type", "`testthat`", "✅", "Disabled by default"),
-    c("fixed_regex", "Performance", "✅", ""),
-    c("for_loop_index", "Readability", "❌", ""),
-    c("grepv", "Readability", "✅", "R >= 4.5"),
-    c("implicit_assignment", "Readability", "❌", ""),
-    c("is_numeric", "Readability", "✅", ""),
-    c("length_levels", "Readability", "✅", ""),
-    c("length_test", "Correctness", "✅", ""),
-    c("lengths", "Performance, readability", "✅", ""),
-    c("list2df", "Performance, readability", "✅", "R >= 4.0"),
-    c("matrix_apply", "Performance", "✅", ""),
-    c("numeric_leading_zero", "Readability", "✅", ""),
-    c("outer_negation", "Performance, readability", "✅", ""),
-    c("redundant_equals", "Readability", "✅", ""),
-    c("repeat", "Readability", "✅", ""),
-    c("sample_int", "Readability", "✅", ""),
-    c("seq", "Suspicious", "✅", ""),
-    c("seq2", "Suspicious", "✅", ""),
-    c("sort", "Performance, readability", "✅", ""),
-    c("sprintf", "Correctness, suspicious", "✅", ""),
-    c("string_boundary", "Performance, readability", "✅", ""),
-    c("system_file", "Readability", "✅", ""),
-    c("true_false_symbol", "Readability", "❌", ""),
-    c("which_grepl", "Performance, readability", "✅", "")
+    c("all_equal", "suspicious", "❗", ""),
+    c("any_duplicated", "performance", "✅", ""),
+    c("any_is_na", "performance", "✅", ""),
+    c("assignment", "readability", "✅", ""),
+    c("browser", "correctness", "❌", ""),
+    c("class_equals", "suspicious", "❗", ""),
+    c("coalesce", "readability", "✅", "R >= 4.4"),
+    c("comparison_negation", "readability", "✅", ""),
+    c("download_file", "suspicious", "❌", ""),
+    c("duplicated_arguments", "suspicious", "❌", ""),
+    c("empty_assignment", "readability", "❌", ""),
+    c("equals_na", "correctness", "✅", ""),
+    c("expect_length", "testthat", "✅", "Disabled by default"),
+    c("expect_named", "testthat", "✅", "Disabled by default"),
+    c("expect_not", "testthat", "✅", "Disabled by default"),
+    c("expect_null", "testthat", "✅", "Disabled by default"),
+    c("expect_true_false", "testthat", "✅", "Disabled by default"),
+    c("expect_type", "testthat", "✅", "Disabled by default"),
+    c("fixed_regex", "performance", "✅", ""),
+    c("for_loop_index", "readability", "❌", ""),
+    c("grepv", "readability", "✅", "R >= 4.5"),
+    c("implicit_assignment", "readability", "❌", ""),
+    c("is_numeric", "readability", "✅", ""),
+    c("length_levels", "readability", "✅", ""),
+    c("length_test", "correctness", "✅", ""),
+    c("lengths", "performance, readability", "✅", ""),
+    c("list2df", "performance, readability", "✅", "R >= 4.0"),
+    c("matrix_apply", "performance", "✅", ""),
+    c("numeric_leading_zero", "readability", "✅", ""),
+    c("outer_negation", "performance, readability", "✅", ""),
+    c("redundant_equals", "readability", "✅", ""),
+    c("repeat", "readability", "✅", ""),
+    c("sample_int", "readability", "✅", ""),
+    c("seq", "suspicious", "✅", ""),
+    c("seq2", "suspicious", "✅", ""),
+    c("sort", "performance, readability", "✅", ""),
+    c("sprintf", "correctness, suspicious", "✅", ""),
+    c("string_boundary", "performance, readability", "✅", ""),
+    c("system_file", "readability", "✅", ""),
+    c("true_false_symbol", "readability", "❌", ""),
+    c("which_grepl", "performance, readability", "✅", "")
   )
 )
 names(dat) <- c("Rule name", "Group", "Has fix", "Conditions")
