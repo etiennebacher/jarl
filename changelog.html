@@ -246,6 +246,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Added support for <code>string_boundary</code> rule (#225).</li>
 <li>Added support for <code>expect_type</code> rule (#226).</li>
 <li>Added support for <code>fixed_regex</code> rule (#227).</li>
+<li>The <code>class_equals</code> rule now also reports cases like <code>identical(class(x), "foo")</code> and <code>identical("foo", class(x))</code> (#234).</li>
 </ul>
 </section>
 <section id="fixes" class="level3">
