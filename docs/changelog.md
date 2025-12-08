@@ -21,6 +21,8 @@
 - Added support for `string_boundary` rule (#225).
 - Added support for `expect_type` rule (#226).
 - Added support for `fixed_regex` rule (#227).
+- The `class_equals` rule now also reports cases like `identical(class(x), "foo")`
+  and `identical("foo", class(x))` (#234).
 
 ### Fixes
 
