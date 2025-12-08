@@ -15,7 +15,7 @@ Jarl is a fast linter for R: it does static code analysis to search for programm
 
 * Orders of magnitude faster than `lintr` and `flir`[^benchmark]
 * Automatic fixes when possible
-* Support for 35+ rules (and growing)
+* Support for 40+ rules (and growing)
 * Integration in popular IDEs and editors (VS Code, Positron, Zed, ...)
 * CLI available
 * Multiple output modes (concise, detailed, JSON format)
