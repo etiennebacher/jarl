@@ -61,90 +61,6 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// See `?inherits`
-
-fn is_in_condition_context(node: &RSyntaxNode) -> bool {
-    let Some(parent) = node.parent() else {
-        return false;
-    };
-
-    // The `condition` part of an `RIfStatement` is always the 3rd node (index 2):
-    // IF_KW - L_PAREN - [condition] - R_PAREN - [consequence]
-    let parent_is_if = parent.kind() == RSyntaxKind::R_IF_STATEMENT && node.index() == 2;
-
-    // The `condition` part of an `RWhileStatement` is always the 3rd node (index 2):
-    // WHILE_KW - L_PAREN - [condition] - R_PAREN - [consequence]
-    let parent_is_while = parent.kind() == RSyntaxKind::R_WHILE_STATEMENT && node.index() == 2;
-
-    parent_is_if || parent_is_while
-}
-
-/// Extract class() call and string literal from two expressions
-/// Returns (class_call_content, class_name) where:
-/// - class_call_content is the first argument to class()
-/// - class_name is the string literal
-fn extract_class_and_string(
-    left: AnyRExpression,
-    right: AnyRExpression,
-) -> Option<(String, String)> {
-    let mut left_is_class = false;
-    let mut right_is_class = false;
-
-    // Check if left is a class() call or a string
-    if let Some(left_call) = left.as_r_call() {
-        let left_fn = left_call.function().ok()?;
-        let left_fn_name = get_function_name(left_fn);
-        if left_fn_name != "class" {
-            return None;
-        }
-        left_is_class = true;
-    } else if let Some(left_val) = left.as_any_r_value() {
-        if left_val.as_r_string_value().is_none() {
-            return None;
-        }
-    } else {
-        return None;
-    }
-
-    // Check if right is a class() call or a string
-    if let Some(right_call) = right.as_r_call() {
-        let right_fn = right_call.function().ok()?;
-        let right_fn_name = get_function_name(right_fn);
-        if right_fn_name != "class" {
-            return None;
-        }
-        right_is_class = true;
-    } else if let Some(right_val) = right.as_any_r_value() {
-        if right_val.as_r_string_value().is_none() {
-            return None;
-        }
-    } else {
-        return None;
-    }
-
-    // We need exactly one class() and one string
-    let left_is_string = !left_is_class;
-    let right_is_string = !right_is_class;
-
-    if !(left_is_class && right_is_string) && !(left_is_string && right_is_class) {
-        return None;
-    }
-
-    // Extract the content
-    let (fun_content, class_name) = if left_is_class {
-        let args = left.as_r_call()?.arguments().ok()?.items();
-        let content = get_arg_by_position(&args, 1)?.to_trimmed_text();
-        let name = right.to_trimmed_text();
-        (content, name)
-    } else {
-        let args = right.as_r_call()?.arguments().ok()?.items();
-        let content = get_arg_by_position(&args, 1)?.to_trimmed_text();
-        let name = left.to_trimmed_text();
-        (content, name)
-    };
-
-    Some((fun_content.to_string(), class_name.to_string()))
-}
-
 pub fn class_equals(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
@@ -250,4 +166,83 @@ pub fn class_identical(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         },
     );
     Ok(Some(diagnostic))
+}
+
+fn is_in_condition_context(node: &RSyntaxNode) -> bool {
+    let Some(parent) = node.parent() else {
+        return false;
+    };
+
+    // The `condition` part of an `RIfStatement` is always the 3rd node (index 2):
+    // IF_KW - L_PAREN - [condition] - R_PAREN - [consequence]
+    let parent_is_if = parent.kind() == RSyntaxKind::R_IF_STATEMENT && node.index() == 2;
+
+    // The `condition` part of an `RWhileStatement` is always the 3rd node (index 2):
+    // WHILE_KW - L_PAREN - [condition] - R_PAREN - [consequence]
+    let parent_is_while = parent.kind() == RSyntaxKind::R_WHILE_STATEMENT && node.index() == 2;
+
+    parent_is_if || parent_is_while
+}
+
+/// Extract class() call and string literal from two expressions
+/// Returns (class_call_content, class_name) where:
+/// - class_call_content is the first argument to class()
+/// - class_name is the string literal
+fn extract_class_and_string(
+    left: AnyRExpression,
+    right: AnyRExpression,
+) -> Option<(String, String)> {
+    let mut left_is_class = false;
+    let mut right_is_class = false;
+
+    // Check if left is a class() call or a string
+    if let Some(left_call) = left.as_r_call() {
+        let left_fn = left_call.function().ok()?;
+        let left_fn_name = get_function_name(left_fn);
+        if left_fn_name != "class" {
+            return None;
+        }
+        left_is_class = true;
+    } else if let Some(left_val) = left.as_any_r_value() {
+        left_val.as_r_string_value()?;
+    } else {
+        return None;
+    }
+
+    // Check if right is a class() call or a string
+    if let Some(right_call) = right.as_r_call() {
+        let right_fn = right_call.function().ok()?;
+        let right_fn_name = get_function_name(right_fn);
+        if right_fn_name != "class" {
+            return None;
+        }
+        right_is_class = true;
+    } else if let Some(right_val) = right.as_any_r_value() {
+        right_val.as_r_string_value()?;
+    } else {
+        return None;
+    }
+
+    // We need exactly one class() and one string
+    let left_is_string = !left_is_class;
+    let right_is_string = !right_is_class;
+
+    if !(left_is_class && right_is_string || left_is_string && right_is_class) {
+        return None;
+    }
+
+    // Extract the content
+    let (fun_content, class_name) = if left_is_class {
+        let args = left.as_r_call()?.arguments().ok()?.items();
+        let content = get_arg_by_position(&args, 1)?.to_trimmed_text();
+        let name = right.to_trimmed_text();
+        (content, name)
+    } else {
+        let args = right.as_r_call()?.arguments().ok()?.items();
+        let content = get_arg_by_position(&args, 1)?.to_trimmed_text();
+        let name = left.to_trimmed_text();
+        (content, name)
+    };
+
+    Some((fun_content.to_string(), class_name.to_string()))
 }
