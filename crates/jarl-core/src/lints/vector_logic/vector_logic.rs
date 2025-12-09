@@ -5,12 +5,18 @@ use biome_rowan::AstNode;
 
 /// ## What it does
 ///
-/// Checks for implicit assignment in function calls and other situations.
+/// Checks for calls to `&` and `|` in the conditions of `if` and `while`
+/// statements.
 ///
 /// ## Why is this bad?
 ///
-/// Assigning inside function calls or other situations such as in `if()` makes
-/// the code difficult to read, and should be avoided.
+/// Usage of `&` and `|` in conditional statements is error-prone and inefficient.
+/// Having a `condition` of length > 1 in those cases was causing a warning in
+/// R 4.2.* and throws an error since R 4.3.0.
+///
+/// This rule only reports cases where the binary expression is the top operation
+/// of the `condition`. For example, `if (x & y)` will be reported but
+/// `if (foo(x & y))` will not.
 ///
 /// ## Example
 ///
@@ -98,19 +104,9 @@ pub fn vector_logic(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic
         unreachable!()
     };
 
-    let suggestion = match operator.kind() {
-        RSyntaxKind::AND => format!("Use `&&` instead."),
-        RSyntaxKind::OR => format!("Use `||` instead."),
-        _ => unreachable!(),
-    };
-
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
-        ViolationData::new(
-            "vector_logic".to_string(),
-            msg.to_string(),
-            Some(suggestion),
-        ),
+        ViolationData::new("vector_logic".to_string(), msg.to_string(), None),
         range,
         Fix::empty(),
     );
