@@ -26,6 +26,7 @@ mod tests {
         // Those do not work in `expect_s3_class()`.
         expect_no_lint("expect_equal(class(x), 'list')", "expect_s3_class", None);
         expect_no_lint("expect_equal(class(x), 'logical')", "expect_s3_class", None);
+        expect_no_lint("expect_equal(class(x), 'matrix')", "expect_s3_class", None);
 
         // Not sure if those should be fixed here because if it's an object then
         // it could contain classes that don't work in `expect_s3_class()`.

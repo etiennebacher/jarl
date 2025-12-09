@@ -166,6 +166,10 @@ pub static IGNORED_CLASSES: &[&str] = &[
     "name",
     // Not in the linked file, but `expect_s3_class(list(1), "list")` fails.
     "list",
+    // See `?class`
+    "matrix",
+    "array",
+    "function",
 ];
 
 fn check_class_is_s3(x: &AnyRExpression) -> bool {
