@@ -7,13 +7,13 @@ Checks for usage of `expect_equal(class(x), "y")` and
 ## Why is this bad?
 
 `expect_equal(class(x), "y")` will fail if `x` gets more classes in the future,
-even if `"y"` is still one of those classes. It is more robust to use
-`expect_s3_class(x, "y")` instead since it doesn't depend on the number or
-order of classes of `x`. It also gives clearer error messages in case of
-failure.
+even if `"y"` is still one of those classes. `expect_s3_class(x, "y")`
+is more robust because the test success doesn't depend on the number or
+on the order of classes of `x`. This function also gives clearer error
+messages in case of failure.
 
 This rule is **disabled by default**. Select it either with the rule name
-`"expect_named"` or with the rule group `"TESTTHAT"`.
+`"expect_s3_class"` or with the rule group `"TESTTHAT"`.
 
 This rule has a safe automatic fix but doesn't report cases where:
 
