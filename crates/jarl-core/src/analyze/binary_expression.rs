@@ -11,6 +11,7 @@ use crate::lints::is_numeric::is_numeric::is_numeric;
 use crate::lints::redundant_equals::redundant_equals::redundant_equals;
 use crate::lints::seq::seq::seq;
 use crate::lints::string_boundary::string_boundary::string_boundary;
+use crate::lints::vector_logic::vector_logic::vector_logic;
 
 pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> anyhow::Result<()> {
     let node = r_expr.syntax();
@@ -20,6 +21,9 @@ pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> a
     }
     if checker.is_rule_enabled("class_equals") && !checker.should_skip_rule(node, "class_equals") {
         checker.report_diagnostic(class_equals(r_expr)?);
+    }
+    if checker.is_rule_enabled("vector_logic") && !checker.should_skip_rule(node, "vector_logic") {
+        checker.report_diagnostic(vector_logic(r_expr)?);
     }
     if checker.is_rule_enabled("empty_assignment")
         && !checker.should_skip_rule(node, "empty_assignment")
