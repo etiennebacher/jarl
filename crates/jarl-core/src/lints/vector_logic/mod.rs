@@ -11,6 +11,20 @@ mod tests {
         expect_no_lint("if (agg_function(x & y)) 1", "vector_logic", None);
         expect_no_lint("if (DT[x | y, cond]) 1", "vector_logic", None);
         expect_no_lint("if (TRUE && any(TRUE | FALSE)) 1", "vector_logic", None);
+
+        // Bitwise operations with raw/octmode/hexmode
+        expect_no_lint("if (info & as.raw(12)) { }", "vector_logic", None);
+        expect_no_lint("if (as.raw(12) & info) { }", "vector_logic", None);
+        expect_no_lint("if (info | as.raw(12)) { }", "vector_logic", None);
+        expect_no_lint("if (info & as.octmode('100')) { }", "vector_logic", None);
+        expect_no_lint("if (info | as.octmode('011')) { }", "vector_logic", None);
+        expect_no_lint("if (info & as.hexmode('100')) { }", "vector_logic", None);
+        expect_no_lint("if (info | as.hexmode('011')) { }", "vector_logic", None);
+
+        // Implicit as.octmode() coercion with strings
+        expect_no_lint("if (info & '100') { }", "vector_logic", None);
+        expect_no_lint("if (info | '011') { }", "vector_logic", None);
+        expect_no_lint("if ('011' | info) { }", "vector_logic", None);
     }
 
     #[test]
