@@ -61,6 +61,7 @@ dat <- as.data.frame(
     c("expect_named", "testthat", "✅", "Disabled by default"),
     c("expect_not", "testthat", "✅", "Disabled by default"),
     c("expect_null", "testthat", "✅", "Disabled by default"),
+    c("expect_s3_class", "testthat", "✅", "Disabled by default"),
     c("expect_true_false", "testthat", "✅", "Disabled by default"),
     c("expect_type", "testthat", "✅", "Disabled by default"),
     c("fixed_regex", "performance", "✅", ""),

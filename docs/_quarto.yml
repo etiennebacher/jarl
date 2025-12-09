@@ -70,6 +70,7 @@ website:
       - rules/expect_named.md
       - rules/expect_not.md
       - rules/expect_null.md
+      - rules/expect_s3_class.md
       - rules/expect_true_false.md
       - rules/expect_type.md
       - rules/fixed_regex.md
