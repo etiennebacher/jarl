@@ -488,6 +488,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="why-is-this-bad" class="level2">
 <h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
 <p><code>expect_equal(class(x), "y")</code> will fail if <code>x</code> gets more classes in the future, even if <code>"y"</code> is still one of those classes. <code>expect_s3_class(x, "y")</code> is more robust because the test success doesn’t depend on the number or on the order of classes of <code>x</code>. This function also gives clearer error messages in case of failure.</p>
+<p>To test that <code>x</code> only has the class <code>"y"</code>, then one can use <code>expect_s3_class(x, "y", exact = TRUE)</code>.</p>
 <p>This rule is <strong>disabled by default</strong>. Select it either with the rule name <code>"expect_s3_class"</code> or with the rule group <code>"TESTTHAT"</code>.</p>
 <p>This rule has a safe automatic fix but doesn’t report cases where:</p>
 <ul>
@@ -499,6 +500,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>testthat<span class="sc">::</span><span class="fu">expect_equal</span>(<span class="fu">class</span>(x), <span class="fu">c</span>(<span class="st">"foo"</span>, <span class="st">"bar"</span>))</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>testthat<span class="sc">::</span><span class="fu">expect_equal</span>(<span class="fu">class</span>(x), vec_of_classes)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
 </ul>
+<p>Finally, the intent of the test cannot be inferred with the code only, so the user will have to add <code>exact = TRUE</code> if necessary.</p>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
