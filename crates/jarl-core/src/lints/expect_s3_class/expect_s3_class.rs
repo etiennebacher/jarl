@@ -19,6 +19,9 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// on the order of classes of `x`. This function also gives clearer error
 /// messages in case of failure.
 ///
+/// To test that `x` only has the class `"y"`, then one can use
+/// `expect_s3_class(x, "y", exact = TRUE)`.
+///
 /// This rule is **disabled by default**. Select it either with the rule name
 /// `"expect_s3_class"` or with the rule group `"TESTTHAT"`.
 ///
@@ -36,6 +39,9 @@ use biome_rowan::{AstNode, AstSeparatedList};
 ///   testthat::expect_equal(class(x), c("foo", "bar"))
 ///   testthat::expect_equal(class(x), vec_of_classes)
 ///   ```
+///
+/// Finally, the intent of the test cannot be inferred with the code only, so
+/// the user will have to add `exact = TRUE` if necessary.
 ///
 /// ## Example
 ///
