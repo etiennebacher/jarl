@@ -10,42 +10,37 @@ use biome_rowan::AstNode;
 ///
 /// ## Why is this bad?
 ///
-/// Usage of `&` and `|` in conditional statements is error-prone and inefficient.
-/// Having a `condition` of length > 1 in those cases was causing a warning in
-/// R 4.2.* and throws an error since R 4.3.0.
+/// Using `&` and `|` requires evaluating both sides of the expression, which can
+/// be expensive. In contrast, `&&` and `||` have early exits. For example,
+/// `a && b` will not evaluate `b` if `a` is `FALSE` because we already know that
+/// the output of the entire expression will be `FALSE`, regardless of the value of
+/// `b`. Similarly, `a || b` will not evaluate `b` if `a` is `TRUE`.
 ///
 /// This rule only reports cases where the binary expression is the top operation
-/// of the `condition`. For example, `if (x & y)` will be reported but
-/// `if (foo(x & y))` will not.
+/// of the `condition` in an `if` or `while` statement. For example, `if (x & y)`
+/// will be reported but `if (foo(x & y))` will not. The reason for this is
+/// that in those two contexts, the length of `condition` must be equal to 1
+/// (otherwise R would error as of 4.3.0), so using `& / |` or `&& / ||`
+/// is equivalent.
+///
+/// This rule doesn't have an automatic fix.
 ///
 /// ## Example
 ///
 /// ```r
-/// mean(x <- c(1, 2, 3))
-/// x
-///
-/// if (any(y <- x > 0)) {
-///   print(y)
-/// }
+/// if (x & y) 1
+/// if (x | y) 1
 /// ```
 ///
 /// Use instead:
 /// ```r
-/// x <- c(1, 2, 3)
-/// mean(x)
-/// x
-///
-/// larger <- x > 0
-/// if (any(larger)) {
-///   print(larger)
-/// }
+/// if (x && y) 1
+/// if (x || y) 1
 /// ```
 ///
 /// ## References
 ///
-/// See:
-///
-/// - [https://style.tidyverse.org/syntax.html#assignment](https://style.tidyverse.org/syntax.html#assignment)
+/// See `?Logic`
 pub fn vector_logic(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let operator = ast.operator()?;
     if operator.kind() != RSyntaxKind::AND && operator.kind() != RSyntaxKind::OR {
@@ -91,12 +86,12 @@ pub fn vector_logic(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic
 
     let msg = if parent_is_if_condition {
         format!(
-            "`{}` in `if()` statements can lead to conditions of length > 1, which will error.",
+            "`{}` in `if()` statements can be inefficient.",
             operator.text_trimmed()
         )
     } else if parent_is_while_condition {
         format!(
-            "`{}` in `while()` statements can lead to conditions of length > 1, which will error.",
+            "`{}` in `while()` statements can be inefficient.",
             operator.text_trimmed()
         )
     } else {
@@ -116,20 +111,20 @@ pub fn vector_logic(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic
 /// Check if an expression is a raw/octmode/hexmode call or a string literal
 fn is_bitwise_exception(expr: &AnyRExpression) -> bool {
     // Check for as.raw(), as.octmode(), as.hexmode() calls
-    if let Some(call) = expr.as_r_call() {
-        if let Ok(function) = call.function() {
-            let fn_name = get_function_name(function);
-            if fn_name == "as.raw" || fn_name == "as.octmode" || fn_name == "as.hexmode" {
-                return true;
-            }
+    if let Some(call) = expr.as_r_call()
+        && let Ok(function) = call.function()
+    {
+        let fn_name = get_function_name(function);
+        if fn_name == "as.raw" || fn_name == "as.octmode" || fn_name == "as.hexmode" {
+            return true;
         }
     }
 
     // Check for string literals (implicit as.octmode coercion)
-    if let Some(val) = expr.as_any_r_value() {
-        if val.as_r_string_value().is_some() {
-            return true;
-        }
+    if let Some(val) = expr.as_any_r_value()
+        && val.as_r_string_value().is_some()
+    {
+        return true;
     }
 
     false

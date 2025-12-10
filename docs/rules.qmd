@@ -86,6 +86,7 @@ dat <- as.data.frame(
     c("string_boundary", "performance, readability", "✅", ""),
     c("system_file", "readability", "✅", ""),
     c("true_false_symbol", "readability", "❌", ""),
+    c("vector_logic", "performance", "❌", ""),
     c("which_grepl", "performance, readability", "✅", "")
   )
 )

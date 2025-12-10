@@ -102,7 +102,7 @@ pub fn all_rules_and_safety() -> RuleTable {
     rule_table.enable("string_boundary", "PERF, READ", FixStatus::Safe, None);
     rule_table.enable("system_file", "READ", FixStatus::Safe, None);
     rule_table.enable("true_false_symbol", "READ", FixStatus::None, None);
-    rule_table.enable("vector_logic", "CORR", FixStatus::None, None);
+    rule_table.enable("vector_logic", "PERF", FixStatus::None, None);
     rule_table.enable("which_grepl", "PERF,READ", FixStatus::Safe, None);
     rule_table
 }

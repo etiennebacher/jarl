@@ -29,41 +29,20 @@ mod tests {
 
     #[test]
     fn test_lint_vector_logic() {
-        expect_lint(
-            "if (TRUE & FALSE) 1",
-            "can lead to conditions of length > 1",
-            "vector_logic",
-            None,
-        );
-        expect_lint(
-            "if (TRUE | FALSE) 1",
-            "can lead to conditions of length > 1",
-            "vector_logic",
-            None,
-        );
-        expect_lint(
-            "if (TRUE | FALSE & TRUE) 1",
-            "can lead to conditions of length > 1",
-            "vector_logic",
-            None,
-        );
-        expect_lint(
-            "while (TRUE & FALSE) 1",
-            "can lead to conditions of length > 1",
-            "vector_logic",
-            None,
-        );
-        expect_lint(
-            "while (TRUE | FALSE) 1",
-            "can lead to conditions of length > 1",
-            "vector_logic",
-            None,
-        );
-        expect_lint(
-            "if ((x > 1) & (y < 2)) 1",
-            "can lead to conditions of length > 1",
-            "vector_logic",
-            None,
+        use insta::assert_snapshot;
+        let msg = "can be inefficient";
+
+        expect_lint("if (TRUE & FALSE) 1", msg, "vector_logic", None);
+        expect_lint("if (TRUE | FALSE) 1", msg, "vector_logic", None);
+        expect_lint("if (TRUE | FALSE & TRUE) 1", msg, "vector_logic", None);
+        expect_lint("while (TRUE & FALSE) 1", msg, "vector_logic", None);
+        expect_lint("while (TRUE | FALSE) 1", msg, "vector_logic", None);
+        expect_lint("if ((x > 1) & (y < 2)) 1", msg, "vector_logic", None);
+
+        // No fixes because `&` and `|` can be S3 methods.
+        assert_snapshot!(
+            "no_fix_output",
+            get_fixed_text(vec!["if (x & y) 1",], "class_equals", None)
         );
     }
 }

@@ -1,0 +1,10 @@
+---
+source: crates/jarl-core/src/lints/vector_logic/mod.rs
+expression: "get_fixed_text(vec![\"if (x & y) 1\",], \"class_equals\", None)"
+---
+OLD:
+====
+if (x & y) 1
+NEW:
+====
+if (x & y) 1

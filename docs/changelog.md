@@ -22,6 +22,7 @@
 - Added support for `expect_type` rule (#226).
 - Added support for `fixed_regex` rule (#227).
 - Added support for `expect_s3_class` rule (#235).
+- Added support for `vector_logic` rule (#238).
 - The `class_equals` rule now also reports cases like `identical(class(x), "foo")`
   and `identical("foo", class(x))` (#234).
 
