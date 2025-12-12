@@ -250,14 +250,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="ignoring-diagnostics" class="level2">
 <h2 class="anchored" data-anchor-id="ignoring-diagnostics">Ignoring diagnostics</h2>
-<p>It is sometimes needed to ignore diagnostics on certain lines of code, either for all rules or just a subset. Jarl follows the existing infrastructure of <code>lintr</code> and uses special comments starting with <code># nolint</code>. The node that follows this special comment will be ignored.</p>
-<p>Several comments are supported:</p>
+<p>It is sometimes needed to ignore diagnostics on certain lines of code, either for all rules or just a subset. Jarl follows the existing infrastructure of <code>lintr</code> and uses special comments (usually called <strong>suppression comments</strong>) starting with <code># nolint</code>. The node that follows this special comment will be ignored.</p>
+<p>Several suppression comments are supported:</p>
 <ol type="1">
 <li><code># nolint</code> ignores all rules on the next node;</li>
 <li><code># nolint: any_duplicated, any_is_na</code> ignores these two rules only on the next node;</li>
 <li><code># nolint start</code> and <code># nolint end</code> mark the start and end of the chunk of code where diagnostics are ignored. It is also possible to use <code># nolint start: any_duplicated, any_is_na</code> to ignore only those two rules on this chunk of code.</li>
 </ol>
-<p>Note that I have mentioned several times the term “node”. Comments are associated to a node in the representation of R code, and not to a line of code. In other words, when Jarl inspects comments to determine whether some code should be ignored, it considers these two pieces of code to be equivalent:</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>The case against suppression comments
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>It can be tempting to put a suppression comment on a piece of code when one doesn’t want to bother with fixing the diagnostic. However, as the project evolves, there is a risk that no one remembers why those comments are here in the first place and the code may now have many pieces of code that could be more readable, efficient, or robust, but are be invisible to the linter.</p>
+<p>I recommend against using suppression comments, but if you do, you should follow those two points:</p>
+<ol type="1">
+<li>use targeted comments, e.g.&nbsp;<code># nolint: any_is_na</code>, instead of “blanket” comments like <code># nolint</code> that would hide all diagnostics;</li>
+<li>add an extra comment explaining why this diagnostic must be ignored.</li>
+</ol>
+</div>
+</div>
+<p>Note that I have mentioned several times the term “node”. Suppression comments are associated to a node in the representation of R code, and not to a line of code. In other words, when Jarl inspects comments to determine whether some code should be ignored, it considers these two pieces of code to be equivalent:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># nolint</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">is.na</span>(x))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># nolint</span></span>
