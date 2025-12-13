@@ -65,7 +65,7 @@ Several suppression comments are supported:
 ## The case against suppression comments
 
 It can be tempting to put a suppression comment on a piece of code when one doesn't want to bother with fixing the diagnostic.
-However, as the project evolves, there is a risk that no one remembers why those comments are here in the first place and the code may now have many pieces of code that could be more readable, efficient, or robust, but are be invisible to the linter.
+However, as the project evolves, there is a risk that no one remembers why those comments exist in the first place and the code may now have many pieces of code that could be more readable, efficient, or robust, but are invisible to the linter.
 
 I recommend against using suppression comments, but if you do, you should follow those two points:
 
