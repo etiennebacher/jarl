@@ -78,6 +78,8 @@ pub struct SuppressionManager {
     comments: Comments<RLanguage>,
     /// Regions defined by nolint start/end blocks
     skip_regions: Vec<SkipRegion>,
+    /// Fast path: true if there are no suppressions anywhere in the file
+    has_any_suppressions: bool,
 }
 
 impl SuppressionManager {
@@ -85,7 +87,37 @@ impl SuppressionManager {
     pub fn from_node(root: &RSyntaxNode) -> Self {
         let comments = Comments::from_node(root, &RCommentStyle, None);
         let skip_regions = Self::build_skip_regions(root, &comments);
-        Self { comments, skip_regions }
+
+        // Check if there are any suppressions at all
+        let has_any_suppressions =
+            !skip_regions.is_empty() || Self::has_any_directives(root, &comments);
+
+        Self { comments, skip_regions, has_any_suppressions }
+    }
+
+    /// Check if there are any nolint directives in comments
+    fn has_any_directives(node: &RSyntaxNode, comments: &Comments<RLanguage>) -> bool {
+        // Check all comment types for this node
+        for comment in comments
+            .leading_comments(node)
+            .iter()
+            .chain(comments.trailing_comments(node))
+            .chain(comments.dangling_comments(node))
+        {
+            let text = comment.piece().text();
+            if parse_comment_directive(text).is_some() {
+                return true;
+            }
+        }
+
+        // Recursively check children
+        for child in node.children() {
+            if Self::has_any_directives(&child, comments) {
+                return true;
+            }
+        }
+
+        false
     }
 
     /// Build skip regions from nolint start/end directives
@@ -276,6 +308,10 @@ impl SuppressionManager {
 
     /// Check if a specific rule should be skipped for this node
     pub fn should_skip_rule(&self, node: &RSyntaxNode, rule_name: &str) -> bool {
+        // Fast path: if there are no suppressions anywhere, return immediately
+        if !self.has_any_suppressions {
+            return false;
+        }
         // Check skip regions first
         let node_range = node.text_trimmed_range();
         for region in &self.skip_regions {
