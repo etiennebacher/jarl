@@ -252,6 +252,15 @@ impl SuppressionManager {
             None
         };
 
+        // if node.text_trimmed() == "any(is.na(x))" {
+        //     println!(
+        //         "comments: {:#?}",
+        //         self.comments.trailing_comments(node)[0]
+        //             .piece()
+        //             .text_range()
+        //     );
+        // }
+
         // Check leading comments
         let leading = self.comments.leading_comments(node);
         if let Some(result) = check_comments(leading) {

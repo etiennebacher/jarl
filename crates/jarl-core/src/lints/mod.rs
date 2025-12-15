@@ -6,6 +6,7 @@ pub(crate) mod all_equal;
 pub(crate) mod any_duplicated;
 pub(crate) mod any_is_na;
 pub(crate) mod assignment;
+pub(crate) mod blanket_suppression;
 pub(crate) mod browser;
 pub(crate) mod class_equals;
 pub(crate) mod coalesce;
@@ -65,6 +66,7 @@ pub fn all_rules_and_safety() -> RuleTable {
     rule_table.enable("any_duplicated", "PERF", FixStatus::Safe, None);
     rule_table.enable("any_is_na", "PERF", FixStatus::Safe, None);
     rule_table.enable("assignment", "READ", FixStatus::Safe, None);
+    rule_table.enable("blanket_suppression", "SUSP", FixStatus::None, None);
     rule_table.enable("browser", "CORR", FixStatus::Safe, None);
     rule_table.enable("class_equals", "SUSP", FixStatus::Safe, None);
     rule_table.enable("comparison_negation", "READ", FixStatus::Safe, None);
