@@ -135,8 +135,9 @@ impl Checker {
     }
 
     /// Check if a rule should be skipped for the given node due to suppression comments
-    pub(crate) fn should_skip_rule(&self, node: &air_r_syntax::RSyntaxNode, rule: &str) -> bool {
-        self.suppression.should_skip_rule(node, rule)
+    pub(crate) fn should_skip_rule(&self, _node: &air_r_syntax::RSyntaxNode, rule: &str) -> bool {
+        // self.suppression.should_skip_rule(node, rule)
+        false
     }
 }
 
