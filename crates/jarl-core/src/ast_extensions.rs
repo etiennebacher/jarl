@@ -59,14 +59,6 @@ pub trait AstNodeExt: AstNode<Language = RLanguage> {
             .unwrap_or(false)
     }
 
-    /// Returns true if this node has a ! (BANG) operator immediately before it.
-    fn has_previous_bang(&self) -> bool {
-        self.syntax()
-            .prev_sibling_or_token()
-            .map(|prev| prev.kind() == RSyntaxKind::BANG)
-            .unwrap_or(false)
-    }
-
     /// Returns true if this node has a pipe operator immediately before it.
     fn has_previous_pipe(&self) -> bool {
         self.syntax()
