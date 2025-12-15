@@ -2,7 +2,7 @@ use crate::logging::LogLevel;
 use crate::output_format::OutputFormat;
 use clap::builder::Styles;
 use clap::builder::styling::{AnsiColor, Effects};
-use clap::{Parser, Subcommand, arg};
+use clap::{Parser, Subcommand};
 
 // Configures Clap v3-style help menu colors
 const STYLES: Styles = Styles::styled()
