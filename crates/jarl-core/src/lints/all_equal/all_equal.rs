@@ -80,41 +80,39 @@ pub fn all_equal(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    let mut msg = "".to_string();
-    let mut fix_content = "".to_string();
+    if !ast.parent_is_if_condition()
+        && !ast.parent_is_while_condition()
+        && !ast.parent_is_bang_unary()
+    {
+        return Ok(None);
+    }
+
+    let msg = "`all.equal()` can return a string instead of FALSE.".to_string();
     let mut range = ast.syntax().text_trimmed_range();
 
-    if ast.parent_is_if_condition() || ast.parent_is_while_condition() {
-        msg = "`all.equal()` can return a string instead of FALSE.".to_string();
-        fix_content = format!("isTRUE({})", ast.to_trimmed_text());
-    }
-
-    if let Some(prev) = ast.syntax().prev_sibling_or_token()
-        && prev.kind() == RSyntaxKind::BANG
-    {
-        msg = "`all.equal()` can return a string instead of FALSE.".to_string();
-        fix_content = format!("!isTRUE({})", ast.to_trimmed_text());
-        range = TextRange::new(prev.text_trimmed_range().start(), range.end())
+    let fix_content = if ast.parent_is_bang_unary() {
+        if let Some(prev) = ast.syntax().prev_sibling_or_token() {
+            range = TextRange::new(prev.text_trimmed_range().start(), range.end())
+        }
+        format!("!isTRUE({})", ast.to_trimmed_text())
+    } else {
+        format!("isTRUE({})", ast.to_trimmed_text())
     };
 
-    if !msg.is_empty() {
-        let diagnostic = Diagnostic::new(
-            ViolationData::new(
-                "all_equal".to_string(),
-                msg,
-                Some("Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.".to_string()),
-            ),
-            range,
-            Fix {
-                content: fix_content,
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
-        );
+    let diagnostic = Diagnostic::new(
+        ViolationData::new(
+            "all_equal".to_string(),
+            msg,
+            Some("Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.".to_string()),
+        ),
+        range,
+        Fix {
+            content: fix_content,
+            start: range.start().into(),
+            end: range.end().into(),
+            to_skip: node_contains_comments(ast.syntax()),
+        },
+    );
 
-        return Ok(Some(diagnostic));
-    }
-
-    Ok(None)
+    Ok(Some(diagnostic))
 }

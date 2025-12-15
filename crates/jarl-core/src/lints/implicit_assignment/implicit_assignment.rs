@@ -1,3 +1,4 @@
+use crate::ast_extensions::AstNodeExt;
 use crate::diagnostic::*;
 use crate::utils::get_function_name;
 use air_r_syntax::*;
@@ -114,16 +115,8 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
     let ancestor_is_if = {
         let mut result = false;
 
-        // The `consequence` part of an `RIfStatement` is always the 5th node
-        // (index 4):
-        // IF_KW - L_PAREN - [condition] - R_PAREN - [consequence]
-        //
-        // `.unwrap()` is fine here because the RBinaryExpression will always
-        // have a parent.
-        let in_if_body = ast.syntax().parent().unwrap().kind() == RSyntaxKind::R_IF_STATEMENT
-            && ast.syntax().index() == 4;
-        let in_else_body = ast.syntax().parent().unwrap().kind() == RSyntaxKind::R_ELSE_CLAUSE
-            && ast.syntax().index() == 1;
+        let in_if_body = ast.parent_is_if_body();
+        let in_else_body = ast.parent_is_else_body();
 
         if !in_if_body && !in_else_body {
             for ancestor in ast.syntax().ancestors() {
@@ -143,14 +136,7 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
     let ancestor_is_while = {
         let mut result = false;
 
-        // The `consequence` part of an `RWhileStatement` is always the 5th node
-        // (index 4):
-        // WHILE_KW - L_PAREN - [condition] - R_PAREN - [consequence]
-        //
-        // `.unwrap()` is fine here because the RBinaryExpression will always
-        // have a parent.
-        let in_while_body = ast.syntax().parent().unwrap().kind() == RSyntaxKind::R_WHILE_STATEMENT
-            && ast.syntax().index() == 4;
+        let in_while_body = ast.parent_is_while_body();
 
         if !in_while_body {
             for ancestor in ast.syntax().ancestors() {
@@ -170,14 +156,7 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
     let ancestor_is_for = {
         let mut result = false;
 
-        // The `consequence` part of an `RWhileStatement` is always the 7th node
-        // (index 6):
-        // FOR_KW - L_PAREN - [value] - IN_KW - [sequence] - R_PAREN - [consequence]
-        //
-        // `.unwrap()` is fine here because the RBinaryExpression will always
-        // have a parent.
-        let in_for_body = ast.syntax().parent().unwrap().kind() == RSyntaxKind::R_FOR_STATEMENT
-            && ast.syntax().index() == 6;
+        let in_for_body = ast.parent_is_for_body();
 
         if !in_for_body {
             for ancestor in ast.syntax().ancestors() {
