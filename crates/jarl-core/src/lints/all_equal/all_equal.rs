@@ -1,6 +1,6 @@
-use crate::ast_extensions::AstNodeExt;
 use crate::diagnostic::*;
 use crate::utils::{get_function_name, get_nested_functions_content, node_contains_comments};
+use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 

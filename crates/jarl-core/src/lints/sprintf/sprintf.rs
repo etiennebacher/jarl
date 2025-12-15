@@ -1,8 +1,8 @@
-use crate::ast_extensions::AstNodeExt;
 use crate::diagnostic::*;
 use crate::utils::{
     get_arg_by_name_then_position, get_function_name, get_unnamed_args, node_contains_comments,
 };
+use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 

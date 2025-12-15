@@ -10,7 +10,6 @@
 pub mod utils;
 
 pub mod analyze;
-pub mod ast_extensions;
 pub mod check;
 pub mod config;
 pub mod description;
@@ -26,6 +25,7 @@ pub mod rule_table;
 pub mod settings;
 pub mod suppression;
 pub mod toml;
+pub mod utils_ast;
 pub mod vcs;
 
 #[cfg(test)]
