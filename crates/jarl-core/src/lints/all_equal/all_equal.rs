@@ -1,3 +1,4 @@
+use crate::ast_extensions::AstNodeExt;
 use crate::diagnostic::*;
 use crate::utils::{get_function_name, get_nested_functions_content, node_contains_comments};
 use air_r_syntax::*;
@@ -83,18 +84,7 @@ pub fn all_equal(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let mut fix_content = "".to_string();
     let mut range = ast.syntax().text_trimmed_range();
 
-    // The `condition` part of an `RIfStatement` is always the 3rd node
-    // (index 2):
-    // IF_KW - L_PAREN - [condition] - R_PAREN - [consequence]
-    let in_if_condition = ast.syntax().parent().unwrap().kind() == RSyntaxKind::R_IF_STATEMENT
-        && ast.syntax().index() == 2;
-    // The `consequence` part of an `RWhileStatement` is always the 3rd node
-    // (index 2):
-    // WHILE_KW - L_PAREN - [condition] - R_PAREN - [consequence]
-    let in_while_condition = ast.syntax().parent().unwrap().kind()
-        == RSyntaxKind::R_WHILE_STATEMENT
-        && ast.syntax().index() == 2;
-    if in_if_condition || in_while_condition {
+    if ast.parent_is_if_condition() || ast.parent_is_while_condition() {
         msg = "`all.equal()` can return a string instead of FALSE.".to_string();
         fix_content = format!("isTRUE({})", ast.to_trimmed_text());
     }

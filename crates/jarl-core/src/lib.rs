@@ -10,6 +10,7 @@
 pub mod utils;
 
 pub mod analyze;
+pub mod ast_extensions;
 pub mod check;
 pub mod config;
 pub mod description;

@@ -1,3 +1,4 @@
+use crate::ast_extensions::AstNodeExt;
 use crate::diagnostic::*;
 use crate::utils::get_function_name;
 use air_r_syntax::*;
@@ -55,41 +56,16 @@ pub fn vector_logic(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic
         return Ok(None);
     }
 
-    // We want to only keep cases that are in the condition of RIfStatement or RWhileStatement.
-    // In this rule, we don't want to go back to all ancestors, only the direct parent, because
-    // we want to allow, e.g.:
-    // ```r
-    // if (x && any(x | y)) 1
-    // ```
-
-    // The `condition` part of an `RIfStatement` is always the 3rd node (index 2):
-    // IF_KW - L_PAREN - [condition] - R_PAREN - [consequence]
-    //
-    // `.unwrap()` is fine here because the RBinaryExpression will always
-    // have a parent.
-    let parent_is_if_condition = ast.syntax().parent().unwrap().kind()
-        == RSyntaxKind::R_IF_STATEMENT
-        && ast.syntax().index() == 2;
-
-    // The `condition` part of an `RWhileStatement` is always the 3rd node (index 2):
-    // WHILE_KW - L_PAREN - [condition] - R_PAREN - [consequence]
-    //
-    // `.unwrap()` is fine here because the RBinaryExpression will always
-    // have a parent.
-    let parent_is_while_condition = ast.syntax().parent().unwrap().kind()
-        == RSyntaxKind::R_WHILE_STATEMENT
-        && ast.syntax().index() == 2;
-
-    if !parent_is_while_condition && !parent_is_if_condition {
+    if !ast.parent_is_if_condition() && !ast.parent_is_while_condition() {
         return Ok(None);
     }
 
-    let msg = if parent_is_if_condition {
+    let msg = if ast.parent_is_if_condition() {
         format!(
             "`{}` in `if()` statements can be inefficient.",
             operator.text_trimmed()
         )
-    } else if parent_is_while_condition {
+    } else if ast.parent_is_while_condition() {
         format!(
             "`{}` in `while()` statements can be inefficient.",
             operator.text_trimmed()
