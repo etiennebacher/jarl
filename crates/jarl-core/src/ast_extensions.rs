@@ -68,13 +68,20 @@ pub trait AstNodeExt: AstNode<Language = RLanguage> {
     }
 
     /// Returns true if parent is a unary expression with a BANG operator.
+    /// This returns false for rlang's `!!` and `!!!`.
     fn parent_is_bang_unary(&self) -> bool {
-        if let Some(parent) = self.syntax().parent() {
-            if parent.kind() == RSyntaxKind::R_UNARY_EXPRESSION {
-                if let Some(prev) = self.syntax().prev_sibling_or_token() {
-                    return prev.kind() == RSyntaxKind::BANG;
-                }
+        if let Some(parent) = self.syntax().parent()
+            && parent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
+            && let Some(prev) = self.syntax().prev_sibling_or_token()
+            && prev.kind() == RSyntaxKind::BANG
+        {
+            // Check if parent's parent is also a unary bang (double negation)
+            if let Some(grandparent) = parent.parent()
+                && grandparent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
+            {
+                return false;
             }
+            return true;
         }
         false
     }
