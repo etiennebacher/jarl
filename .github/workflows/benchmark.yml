@@ -25,6 +25,7 @@ env:
   RUST_BACKTRACE: 1
   # Same repositories as ecosystem-check for consistency
   TEST_REPOS: |
+    easystats/datawizard@7466ff6f91040e25f826b224a4ef5e9aeb63b567
     lrberge/stringmagic@87b187d40c745ea1d8496f071aee7229985da23c
     pola-rs/r-polars@055f891d977d6a8004fe8ab1bb5d47cfdd44872a
     Rdatatable/data.table@d7833cb3a0c36ab329fcfe5cc1523449663f898f
