@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use crate::status::ExitStatus;
 
 pub fn print_statistics(diagnostics: &[&Diagnostic]) -> anyhow::Result<ExitStatus> {
-    if diagnostics.len() == 0 {
+    if diagnostics.is_empty() {
         println!("All checks passed!");
         return Ok(ExitStatus::Success);
     }
@@ -38,5 +38,5 @@ pub fn print_statistics(diagnostics: &[&Diagnostic]) -> anyhow::Result<ExitStatu
 
     println!("\nRules with `[*]` have an automatic fix.");
 
-    return Ok(ExitStatus::Failure);
+    Ok(ExitStatus::Failure)
 }

@@ -98,7 +98,7 @@ pub fn check() -> Result<ExitStatus> {
     all_diagnostics_flat.sort();
 
     if args.statistics {
-        return Ok(print_statistics(&all_diagnostics_flat)?);
+        return print_statistics(&all_diagnostics_flat);
     }
 
     let mut stdout = std::io::stdout();
