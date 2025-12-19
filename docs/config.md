@@ -66,9 +66,12 @@ Options:
 
       --assignment <ASSIGNMENT>
           Assignment operator to use, can be either `<-` or `=`.
-          
+
       --no-default-exclude
           Do not apply the default set of file patterns that should be excluded.
+
+      --statistics
+          Show counts for every rule with at least one violation.
 
   -h, --help
           Print help (see a summary with '-h')

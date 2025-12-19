@@ -1,5 +1,12 @@
 # Changelog
 
+## Development
+
+### Features
+
+- New CLI argument `--statistics` to show the number of violations per rule instead
+  of the details of each violation (#250).
+
 ## 0.3.0
 
 ### Breaking changes
