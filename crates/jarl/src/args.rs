@@ -129,6 +129,12 @@ pub struct CheckCommand {
         help = "Do not apply the default set of file patterns that should be excluded."
     )]
     pub no_default_exclude: bool,
+    #[arg(
+        long,
+        default_value = "false",
+        help = "Show counts for every rule with at least one violation."
+    )]
+    pub statistics: bool,
 }
 #[derive(Clone, Debug, Parser)]
 pub(crate) struct ServerCommand {}

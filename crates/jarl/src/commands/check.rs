@@ -11,6 +11,7 @@ use std::time::Instant;
 
 use crate::args::CheckCommand;
 use crate::output_format::{self, GithubEmitter};
+use crate::statistics::print_statistics;
 use crate::status::ExitStatus;
 
 use output_format::{ConciseEmitter, Emitter, FullEmitter, JsonEmitter, OutputFormat};
@@ -95,6 +96,10 @@ pub fn check() -> Result<ExitStatus> {
         .collect();
 
     all_diagnostics_flat.sort();
+
+    if args.statistics {
+        return print_statistics(&all_diagnostics_flat);
+    }
 
     let mut stdout = std::io::stdout();
 

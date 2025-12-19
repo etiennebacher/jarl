@@ -6,6 +6,7 @@ pub mod args;
 pub mod commands;
 pub mod logging;
 pub mod output_format;
+pub mod statistics;
 pub mod status;
 
 pub use args::CheckCommand;
