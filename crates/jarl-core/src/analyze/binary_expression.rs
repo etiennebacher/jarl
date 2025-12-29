@@ -4,6 +4,7 @@ use biome_rowan::AstNode;
 
 use crate::lints::assignment::assignment::assignment;
 use crate::lints::class_equals::class_equals::class_equals;
+use crate::lints::comparison_double::comparison_double::comparison_double;
 use crate::lints::empty_assignment::empty_assignment::empty_assignment;
 use crate::lints::equals_na::equals_na::equals_na;
 use crate::lints::implicit_assignment::implicit_assignment::implicit_assignment;
@@ -22,8 +23,10 @@ pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> a
     if checker.is_rule_enabled("class_equals") && !checker.should_skip_rule(node, "class_equals") {
         checker.report_diagnostic(class_equals(r_expr)?);
     }
-    if checker.is_rule_enabled("vector_logic") && !checker.should_skip_rule(node, "vector_logic") {
-        checker.report_diagnostic(vector_logic(r_expr)?);
+    if checker.is_rule_enabled("comparison_double")
+        && !checker.should_skip_rule(node, "comparison_double")
+    {
+        checker.report_diagnostic(comparison_double(r_expr)?);
     }
     if checker.is_rule_enabled("empty_assignment")
         && !checker.should_skip_rule(node, "empty_assignment")
@@ -53,6 +56,9 @@ pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> a
         && !checker.should_skip_rule(node, "string_boundary")
     {
         checker.report_diagnostic(string_boundary(r_expr)?);
+    }
+    if checker.is_rule_enabled("vector_logic") && !checker.should_skip_rule(node, "vector_logic") {
+        checker.report_diagnostic(vector_logic(r_expr)?);
     }
     Ok(())
 }

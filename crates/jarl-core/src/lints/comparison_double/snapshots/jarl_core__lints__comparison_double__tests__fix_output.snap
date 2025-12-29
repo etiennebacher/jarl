@@ -1,0 +1,24 @@
+---
+source: crates/jarl-core/src/lints/comparison_double/mod.rs
+expression: "get_fixed_text(vec![\"x == 2\", \"x == 2.1\", \"1 == x\",], \"comparison_double\",\nNone)"
+---
+OLD:
+====
+x == 2
+NEW:
+====
+isTRUE(all.equal(x, 2))
+
+OLD:
+====
+x == 2.1
+NEW:
+====
+isTRUE(all.equal(x, 2.1))
+
+OLD:
+====
+1 == x
+NEW:
+====
+isTRUE(all.equal(x, 1))

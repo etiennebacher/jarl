@@ -62,6 +62,7 @@ website:
       - rules/browser.md
       - rules/class_equals.md
       - rules/coalesce.md
+      - rules/comparison_double.md
       - rules/comparison_negation.md
       - rules/download_file.md
       - rules/duplicated_arguments.md

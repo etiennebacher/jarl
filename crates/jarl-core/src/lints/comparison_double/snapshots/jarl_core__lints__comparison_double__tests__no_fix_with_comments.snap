@@ -1,0 +1,30 @@
+---
+source: crates/jarl-core/src/lints/comparison_double/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\nx == 2\", \"x == \\n # hello there \\n 2\",\n\"x == 2 # trailing comment\",], \"comparison_double\", None)"
+---
+OLD:
+====
+# leading comment
+x == 2
+NEW:
+====
+# leading comment
+isTRUE(all.equal(x, 2))
+
+OLD:
+====
+x == 
+ # hello there 
+ 2
+NEW:
+====
+x == 
+ # hello there 
+ 2
+
+OLD:
+====
+x == 2 # trailing comment
+NEW:
+====
+isTRUE(all.equal(x, 2)) # trailing comment

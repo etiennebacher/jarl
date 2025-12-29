@@ -52,6 +52,7 @@ dat <- as.data.frame(
     c("browser", "correctness", "❌", ""),
     c("class_equals", "suspicious", "❗", ""),
     c("coalesce", "readability", "✅", "R >= 4.4"),
+    c("comparison_double", "suspicious", "✅", ""),
     c("comparison_negation", "readability", "✅", ""),
     c("download_file", "suspicious", "❌", ""),
     c("duplicated_arguments", "suspicious", "❌", ""),
