@@ -78,24 +78,22 @@ pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<Disc
             }
 
             // Stop at user config directory if we have one
-            if let Some(ref config_dir) = user_config_dir {
-                if ancestor == config_dir {
-                    break;
-                }
+            if let Some(ref config_dir) = user_config_dir
+                && ancestor == config_dir
+            {
+                break;
             }
         }
 
         // If no config found in ancestors, check user config directory as fallback
-        if !found_config {
-            if let Some(ref config_dir) = user_config_dir {
-                if seen.insert(config_dir.as_path()) {
-                    if let Some(toml) = find_jarl_toml_in_directory(config_dir) {
-                        let settings = parse_settings(&toml, config_dir)?;
-                        discovered_settings
-                            .push(DiscoveredSettings { directory: config_dir.clone(), settings });
-                    }
-                }
-            }
+        if !found_config
+            && let Some(ref config_dir) = user_config_dir
+            && seen.insert(config_dir.as_path())
+            && let Some(toml) = find_jarl_toml_in_directory(config_dir)
+        {
+            let settings = parse_settings(&toml, config_dir)?;
+            discovered_settings
+                .push(DiscoveredSettings { directory: config_dir.clone(), settings });
         }
     }
 
