@@ -22,6 +22,7 @@ clap = { version = "4.5.21", features = ["derive"] }
 colored = "2.1.0"
 ignore = "0.4.23"
 insta = { version = "1.42.0", features = ["yaml"] }
+etcetera = "0.8.0"
 jarl-core = { path = "crates/jarl-core" }
 jarl-lsp = { path = "crates/jarl-lsp" }
 path-absolutize = "3.1.1"

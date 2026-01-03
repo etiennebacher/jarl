@@ -34,6 +34,7 @@ tracing.workspace = true
 path-absolutize.workspace = true
 ignore.workspace = true
 tempfile.workspace = true
+etcetera.workspace = true
 
 # Parallel processing
 rayon.workspace = true

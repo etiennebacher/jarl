@@ -1,0 +1,24 @@
+---
+source: crates/jarl/tests/integration/toml_hierarchical.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(&subdir).arg(\"check\").arg(\".\").run().normalize_os_executable_name().normalize_temp_paths()"
+---
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+Used '[TEMP_DIR]/jarl.toml'
+
+----- stderr -----
+
+----- args -----
+check .

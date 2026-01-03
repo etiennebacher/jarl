@@ -8,6 +8,7 @@ format:
     theme: morph
     css: styles.css
     toc: true
+    toc-depth: 4
     code-copy: true
 language:
   search-text-placeholder: Search (press "s")

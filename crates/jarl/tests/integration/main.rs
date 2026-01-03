@@ -19,3 +19,4 @@ mod output_format;
 mod rules;
 mod statistics;
 mod toml;
+mod toml_hierarchical;

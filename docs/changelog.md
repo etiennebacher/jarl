@@ -7,6 +7,13 @@
 - New CLI argument `--statistics` to show the number of violations per rule instead
   of the details of each violation (#250).
 
+- Jarl now looks in parent folders for `jarl.toml`. It searches until the user
+  config folder is reached (the location of this folder depends on the OS:
+  `~/.config` on Unix and `~/AppData/Roaming` on Windows). Jarl uses the first
+  `jarl.toml` that is found. This is useful to store settings that should be
+  common to all projects (e.g. `assignment = "<-"`) without creating a
+  `jarl.toml`, which is a common situation for standalone R scripts. (#253)
+
 ### Bug fixes
 
 - When `output-format` is `json` or `github`, additional information displayed in
