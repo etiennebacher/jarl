@@ -16,6 +16,8 @@ warning: any_is_na
 Found 1 error.
 1 fixable with the `--fix` option.
 
+Used '[TEMP_DIR]/project/jarl.toml'
+
 ----- stderr -----
 
 ----- args -----
