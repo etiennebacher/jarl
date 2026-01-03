@@ -7,6 +7,11 @@
 - New CLI argument `--statistics` to show the number of violations per rule instead
   of the details of each violation (#250).
 
+### Bug fixes
+
+- When `output-format` is `json` or `github`, additional information displayed in
+  the terminal (e.g. timing) isn't included anymore to avoid parsing errors (#254).
+
 ## 0.3.0
 
 ### Breaking changes
