@@ -131,14 +131,23 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         }
     }
 
-    // Inform the user if the config file used comes from a parent directory.
-    if let Some(config_path) = parent_config_path {
-        println!("\nUsed '{}'", config_path.display());
-    }
+    // For human-readable formats, print timing and config info
+    // Skip for JSON/GitHub to avoid corrupting structured output
+    let is_structured_format = matches!(
+        args.output_format,
+        OutputFormat::Json | OutputFormat::Github
+    );
 
-    if let Some(start) = start {
-        let duration = start.elapsed();
-        println!("\nChecked files in: {duration:?}");
+    if !is_structured_format {
+        // Inform the user if the config file used comes from a parent directory.
+        if let Some(config_path) = parent_config_path {
+            println!("\nUsed '{}'", config_path.display());
+        }
+
+        if let Some(start) = start {
+            let duration = start.elapsed();
+            println!("\nChecked files in: {duration:?}");
+        }
     }
 
     if !all_errors.is_empty() {

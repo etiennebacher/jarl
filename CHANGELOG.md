@@ -14,6 +14,11 @@
   common to all projects (e.g. `assignment = "<-"`) without creating a
   `jarl.toml`, which is a common situation for standalone R scripts. (#253)
 
+### Bug fixes
+
+- When `output-format` is `json` or `github`, additional information displayed in
+  the terminal (e.g. timing) isn't included anymore to avoid parsing errors (#254).
+
 ## 0.3.0
 
 ### Breaking changes
