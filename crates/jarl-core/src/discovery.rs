@@ -15,6 +15,7 @@ use crate::settings::Settings;
 use crate::toml::find_jarl_toml_in_directory;
 use crate::toml::parse_jarl_toml;
 use air_workspace::resolve::PathResolver;
+use etcetera::BaseStrategy;
 
 /// Default patterns to exclude from linting
 /// These match common R project files that should not be linted
@@ -34,22 +35,32 @@ pub struct DiscoveredSettings {
     pub settings: Settings,
 }
 
+/// Get the user config directory for jarl
+fn get_user_config_dir() -> Option<PathBuf> {
+    let strategy = etcetera::base_strategy::choose_base_strategy().ok()?;
+    Some(strategy.config_dir())
+}
+
 /// This is the core function for walking a set of `paths` looking for `jarl.toml`s.
 ///
 /// You typically follow this function up by loading the set of returned path into a
 /// [crate::resolve::PathResolver].
 ///
 /// For each `path`, we:
-/// - Walk up its ancestors, looking for an `jarl.toml`
+/// - Walk up its ancestors until the user config directory, looking for a `jarl.toml`
+/// - If no config found in ancestors, fall back to checking the user config directory
 /// - TODO(hierarchical): Walk down its children, looking for nested `jarl.toml`s
 pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<DiscoveredSettings>> {
     let paths: Vec<PathBuf> = paths.iter().map(fs::normalize_path).collect();
 
     let mut seen = FxHashSet::default();
     let mut discovered_settings = Vec::with_capacity(paths.len());
+    let user_config_dir = get_user_config_dir();
 
     // Discover all `Settings` across all `paths`, looking up each path's directory tree
     for path in &paths {
+        let mut found_config = false;
+
         for ancestor in path.ancestors() {
             let is_new_ancestor = seen.insert(ancestor);
 
@@ -62,7 +73,28 @@ pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<Disc
                 let settings = parse_settings(&toml, ancestor)?;
                 discovered_settings
                     .push(DiscoveredSettings { directory: ancestor.to_path_buf(), settings });
+                found_config = true;
                 break;
+            }
+
+            // Stop at user config directory if we have one
+            if let Some(ref config_dir) = user_config_dir {
+                if ancestor == config_dir {
+                    break;
+                }
+            }
+        }
+
+        // If no config found in ancestors, check user config directory as fallback
+        if !found_config {
+            if let Some(ref config_dir) = user_config_dir {
+                if seen.insert(config_dir.as_path()) {
+                    if let Some(toml) = find_jarl_toml_in_directory(config_dir) {
+                        let settings = parse_settings(&toml, config_dir)?;
+                        discovered_settings
+                            .push(DiscoveredSettings { directory: config_dir.clone(), settings });
+                    }
+                }
             }
         }
     }
