@@ -125,11 +125,9 @@ pub fn check() -> Result<ExitStatus> {
         OutputFormat::Json | OutputFormat::Github
     );
 
-    if !is_structured_format {
-        if let Some(start) = start {
-            let duration = start.elapsed();
-            println!("\nChecked files in: {duration:?}");
-        }
+    if !is_structured_format && let Some(start) = start {
+        let duration = start.elapsed();
+        println!("\nChecked files in: {duration:?}");
     }
 
     if !all_errors.is_empty() {
