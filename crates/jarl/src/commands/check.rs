@@ -118,7 +118,14 @@ pub fn check() -> Result<ExitStatus> {
         }
     }
 
-    if let Some(start) = start {
+    // For human-readable formats, print timing and config info
+    // Skip for JSON/GitHub to avoid corrupting structured output
+    let is_structured_format = matches!(
+        args.output_format,
+        OutputFormat::Json | OutputFormat::Github
+    );
+
+    if !is_structured_format && let Some(start) = start {
         let duration = start.elapsed();
         println!("\nChecked files in: {duration:?}");
     }

@@ -108,6 +108,19 @@ fn test_output_json() -> anyhow::Result<()> {
             .normalize_os_executable_name()
     );
 
+    // Additional info such as timing isn't included in output, #254
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("json")
+            .arg("--with-timing")
+            .run()
+            .normalize_os_executable_name()
+    );
+
     Ok(())
 }
 
@@ -131,6 +144,19 @@ fn test_output_github() -> anyhow::Result<()> {
             .arg(".")
             .arg("--output-format")
             .arg("github")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    // Additional info such as timing isn't included in output, #254
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("github")
+            .arg("--with-timing")
             .run()
             .normalize_os_executable_name()
     );
