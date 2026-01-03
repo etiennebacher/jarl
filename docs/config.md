@@ -85,6 +85,8 @@ jarl check . --fix --select any_is_na,class_equals
 
 ## With a config file
 
+### Introduction
+
 To avoid typing options every time and to ensure all uses of Jarl in a project are consistent, it is possible to store options in `jarl.toml`.
 
 This file could look like this:
@@ -105,10 +107,9 @@ default-exclude = true
 assignment = "<-"
 ```
 
-These arguments are described below.
+These arguments (among others) are described below.
 
-::: {.callout-note}
-## Using CLI arguments and `jarl.toml`
+### Interaction between CLI arguments and config file
 
 Arguments in the command line always have the priority on those specified in `jarl.toml`.
 For example, if you have the following file:
@@ -126,9 +127,27 @@ jarl check . --ignore PERF
 ```
 
 will only apply the rule `length_test`.
-:::
 
-### `select`
+### Config file detection
+
+Like [Ruff](https://docs.astral.sh/ruff/configuration/#config-file-discovery), Jarl follows a hierarchical strategy to detect the closest config file relative to the current working directory.
+
+Jarl follows these steps:
+
+1. look for `jarl.toml` in the current working directory;
+1. if not present, go to the parent folder until a `jarl.toml` is found;
+1. if none of the parent directories contain the config file, Jarl check if one exists in the home config directory. For Unix users, it looks for `~/.config/jarl/jarl.toml`. For Windows users, it looks for `~/AppData/Roaming/jarl/jarl.toml`.
+1. if the config file is not present there, then it stops looking for one.
+
+Storing a default `jarl.toml` in the home config directory may be useful to apply some arguments by default on all R files.
+For example, if you use `=` as assignment operator, you can set `assignment = "="` in `~/<config_dir>/jarl.toml` and all R files that don't belong to a project subject to another `jarl.toml` will use this argument.
+
+Note that Jarl cannot handle multiple config files, it will use the first one it finds.
+
+
+### Arguments
+
+#### `select`
 
 Select some rules by default.
 
@@ -139,7 +158,7 @@ This has the same capabilities as `--select`, so it is possible to pass rule nam
 select = ["PERF", "length_test"]
 ```
 
-### `extend-select`
+#### `extend-select`
 
 Select some rules in addition to `select`.
 
@@ -155,7 +174,7 @@ This has the same constraints as `select`.
 extend-select = ["TESTTHAT"]
 ```
 
-### `ignore`
+#### `ignore`
 
 Ignore some rules by default.
 
@@ -166,7 +185,7 @@ This has the same capabilities as `--ignore`, so it is possible to pass rule nam
 ignore = ["PERF", "length_test"]
 ```
 
-### `exclude`
+#### `exclude`
 
 Files and/or directories that are not checked.
 
@@ -184,7 +203,7 @@ It also supports glob patterns:
 exclude = ["excluded-*.R"]
 ```
 
-### `default-exclude`
+#### `default-exclude`
 
 This takes a boolean argument indicating whether the default file exclude patterns are used.
 
@@ -205,7 +224,7 @@ The complete list of default exclude patterns is:
 default-exclude = true
 ```
 
-### `assignment`
+#### `assignment`
 
 This takes a single value (`"<-"` or `"="`) indicating the preferred assignment operator in the files to check.
 While `"<-"` is recommended by several style guides, using `"="` is equivalent in most cases and several popular projects use it.
@@ -218,7 +237,7 @@ If `assignment = "<-"` (default), then any use of the `"="` operator to assign v
 assignment = "<-"
 ```
 
-### `fixable`
+#### `fixable`
 
 This determines which rule violations will be fixed if `--fix` is passed.
 This can be useful if you only trust Jarl's automatic fixes for some rules and want to avoid automatic fixes for other rules.
@@ -238,7 +257,7 @@ fixable = ["PERF"]
 fixable = []
 ```
 
-### `unfixable`
+#### `unfixable`
 
 This determines which rule violations will be not fixed, even if `--fix` is passed.
 This can be useful if you only trust Jarl's automatic fixes for some rules and want to avoid automatic fixes for other rules.
