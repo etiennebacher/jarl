@@ -1,10 +1,13 @@
 use colored::Colorize;
 use jarl_core::diagnostic::Diagnostic;
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 use crate::status::ExitStatus;
 
-pub fn print_statistics(diagnostics: &[&Diagnostic]) -> anyhow::Result<ExitStatus> {
+pub fn print_statistics(
+    diagnostics: &[&Diagnostic],
+    parent_config_path: Option<PathBuf>,
+) -> anyhow::Result<ExitStatus> {
     if diagnostics.is_empty() {
         println!("All checks passed!");
         return Ok(ExitStatus::Success);
@@ -37,6 +40,11 @@ pub fn print_statistics(diagnostics: &[&Diagnostic]) -> anyhow::Result<ExitStatu
     }
 
     println!("\nRules with `[*]` have an automatic fix.");
+
+    // Inform the user if the config file used comes from a parent directory.
+    if let Some(config_path) = parent_config_path {
+        println!("\nUsed '{}'", config_path.display());
+    }
 
     Ok(ExitStatus::Failure)
 }

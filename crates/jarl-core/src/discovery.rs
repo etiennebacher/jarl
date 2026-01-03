@@ -33,12 +33,14 @@ pub const DEFAULT_EXCLUDE_PATTERNS: &[&str] = &[
 pub struct DiscoveredSettings {
     pub directory: PathBuf,
     pub settings: Settings,
+    /// Path to the config file that was used
+    pub config_path: Option<PathBuf>,
 }
 
 /// Get the user config directory for jarl
 fn get_user_config_dir() -> Option<PathBuf> {
     let strategy = etcetera::base_strategy::choose_base_strategy().ok()?;
-    Some(strategy.config_dir())
+    Some(strategy.config_dir().join("jarl"))
 }
 
 /// This is the core function for walking a set of `paths` looking for `jarl.toml`s.
@@ -71,8 +73,11 @@ pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<Disc
 
             if let Some(toml) = find_jarl_toml_in_directory(ancestor) {
                 let settings = parse_settings(&toml, ancestor)?;
-                discovered_settings
-                    .push(DiscoveredSettings { directory: ancestor.to_path_buf(), settings });
+                discovered_settings.push(DiscoveredSettings {
+                    directory: ancestor.to_path_buf(),
+                    settings,
+                    config_path: Some(toml),
+                });
                 found_config = true;
                 break;
             }
@@ -92,8 +97,11 @@ pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<Disc
             && let Some(toml) = find_jarl_toml_in_directory(config_dir)
         {
             let settings = parse_settings(&toml, config_dir)?;
-            discovered_settings
-                .push(DiscoveredSettings { directory: config_dir.clone(), settings });
+            discovered_settings.push(DiscoveredSettings {
+                directory: config_dir.clone(),
+                settings,
+                config_path: Some(toml),
+            });
         }
     }
 
