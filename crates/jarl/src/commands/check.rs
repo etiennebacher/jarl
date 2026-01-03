@@ -40,12 +40,11 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         }
 
         // Check if config is from a parent directory (not CWD)
-        if let (Some(config_path), Some(current_dir)) = (&ds.config_path, &cwd) {
-            if let Some(config_dir) = config_path.parent() {
-                if config_dir != current_dir {
-                    parent_config_path = Some(config_path.clone());
-                }
-            }
+        if let (Some(config_path), Some(current_dir)) = (&ds.config_path, &cwd)
+            && let Some(config_dir) = config_path.parent()
+            && config_dir != current_dir
+        {
+            parent_config_path = Some(config_path.clone());
         }
 
         resolver.add(&ds.directory, ds.settings);
