@@ -186,6 +186,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#with-the-command-line" id="toc-with-the-command-line" class="nav-link active" data-scroll-target="#with-the-command-line">With the command line</a></li>
   <li><a href="#with-a-config-file" id="toc-with-a-config-file" class="nav-link" data-scroll-target="#with-a-config-file">With a config file</a>
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#interaction-between-cli-arguments-and-config-file" id="toc-interaction-between-cli-arguments-and-config-file" class="nav-link" data-scroll-target="#interaction-between-cli-arguments-and-config-file">Interaction between CLI arguments and config file</a></li>
+  <li><a href="#config-file-detection" id="toc-config-file-detection" class="nav-link" data-scroll-target="#config-file-detection">Config file detection</a></li>
+  <li><a href="#arguments" id="toc-arguments" class="nav-link" data-scroll-target="#arguments">Arguments</a>
   <ul class="collapse">
   <li><a href="#select" id="toc-select" class="nav-link" data-scroll-target="#select"><code>select</code></a></li>
   <li><a href="#extend-select" id="toc-extend-select" class="nav-link" data-scroll-target="#extend-select"><code>extend-select</code></a></li>
@@ -195,6 +200,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#assignment" id="toc-assignment" class="nav-link" data-scroll-target="#assignment"><code>assignment</code></a></li>
   <li><a href="#fixable" id="toc-fixable" class="nav-link" data-scroll-target="#fixable"><code>fixable</code></a></li>
   <li><a href="#unfixable" id="toc-unfixable" class="nav-link" data-scroll-target="#unfixable"><code>unfixable</code></a></li>
+  </ul></li>
   </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/config.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
@@ -296,6 +302,8 @@ Options:
 </section>
 <section id="with-a-config-file" class="level2">
 <h2 class="anchored" data-anchor-id="with-a-config-file">With a config file</h2>
+<section id="introduction" class="level3">
+<h3 class="anchored" data-anchor-id="introduction">Introduction</h3>
 <p>To avoid typing options every time and to ensure all uses of Jarl in a project are consistent, it is possible to store options in <code>jarl.toml</code>.</p>
 <p>This file could look like this:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
@@ -311,17 +319,10 @@ Options:
 <span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="dt">default-exclude</span> <span class="op">=</span> <span class="cn">true</span></span>
 <span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Set the default assignment operator to report cases where "=" is used.</span></span>
 <span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="dt">assignment</span> <span class="op">=</span> <span class="st">"&lt;-"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>These arguments are described below.</p>
-<div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Using CLI arguments and <code>jarl.toml</code>
-</div>
-</div>
-<div class="callout-body-container callout-body">
+<p>These arguments (among others) are described below.</p>
+</section>
+<section id="interaction-between-cli-arguments-and-config-file" class="level3">
+<h3 class="anchored" data-anchor-id="interaction-between-cli-arguments-and-config-file">Interaction between CLI arguments and config file</h3>
 <p>Arguments in the command line always have the priority on those specified in <code>jarl.toml</code>. For example, if you have the following file:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="dt">select</span> <span class="op">=</span> <span class="op">[</span><span class="st">"PERF"</span><span class="op">,</span> <span class="st">"length_test"</span><span class="op">]</span></span>
@@ -329,17 +330,31 @@ Options:
 <p>then calling</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--ignore</span> PERF</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>will only apply the rule <code>length_test</code>.</p>
-</div>
-</div>
-<section id="select" class="level3">
-<h3 class="anchored" data-anchor-id="select"><code>select</code></h3>
+</section>
+<section id="config-file-detection" class="level3">
+<h3 class="anchored" data-anchor-id="config-file-detection">Config file detection</h3>
+<p>Like <a href="https://docs.astral.sh/ruff/configuration/#config-file-discovery" target="_blank">Ruff</a>, Jarl follows a hierarchical strategy to detect the closest config file relative to the current working directory.</p>
+<p>Jarl follows these steps:</p>
+<ol type="1">
+<li>look for <code>jarl.toml</code> in the current working directory;</li>
+<li>if not present, go to the parent folder until a <code>jarl.toml</code> is found;</li>
+<li>if none of the parent directories contain the config file, Jarl check if one exists in the home config directory. For Unix users, it looks for <code>~/.config/jarl/jarl.toml</code>. For Windows users, it looks for <code>~/AppData/Roaming/jarl/jarl.toml</code>.</li>
+<li>if the config file is not present there, then it stops looking for one.</li>
+</ol>
+<p>Storing a default <code>jarl.toml</code> in the home config directory may be useful to apply some arguments by default on all R files. For example, if you use <code>=</code> as assignment operator, you can set <code>assignment = "="</code> in <code>~/&lt;config_dir&gt;/jarl.toml</code> and all R files that don’t belong to a project subject to another <code>jarl.toml</code> will use this argument.</p>
+<p>Note that Jarl cannot handle multiple config files, it will use the first one it finds.</p>
+</section>
+<section id="arguments" class="level3">
+<h3 class="anchored" data-anchor-id="arguments">Arguments</h3>
+<section id="select" class="level4">
+<h4 class="anchored" data-anchor-id="select"><code>select</code></h4>
 <p>Select some rules by default.</p>
 <p>This has the same capabilities as <code>--select</code>, so it is possible to pass rule names and names of groups of rules:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="dt">select</span> <span class="op">=</span> <span class="op">[</span><span class="st">"PERF"</span><span class="op">,</span> <span class="st">"length_test"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="extend-select" class="level3">
-<h3 class="anchored" data-anchor-id="extend-select"><code>extend-select</code></h3>
+<section id="extend-select" class="level4">
+<h4 class="anchored" data-anchor-id="extend-select"><code>extend-select</code></h4>
 <p>Select some rules in addition to <code>select</code>.</p>
 <p>This is useful when you want to use the default set of rules <em>and</em> some additional opt-in rules. In this scenario, you only need to add <code>extend-select = ["OPT_IN_RULE"]</code> instead of writing all default rule names.</p>
 <p>This has the same constraints as <code>select</code>.</p>
@@ -348,15 +363,15 @@ Options:
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="dt">extend-select</span> <span class="op">=</span> <span class="op">[</span><span class="st">"TESTTHAT"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="ignore" class="level3">
-<h3 class="anchored" data-anchor-id="ignore"><code>ignore</code></h3>
+<section id="ignore" class="level4">
+<h4 class="anchored" data-anchor-id="ignore"><code>ignore</code></h4>
 <p>Ignore some rules by default.</p>
 <p>This has the same capabilities as <code>--ignore</code>, so it is possible to pass rule names and names of groups of rules:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="dt">ignore</span> <span class="op">=</span> <span class="op">[</span><span class="st">"PERF"</span><span class="op">,</span> <span class="st">"length_test"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="exclude" class="level3">
-<h3 class="anchored" data-anchor-id="exclude"><code>exclude</code></h3>
+<section id="exclude" class="level4">
+<h4 class="anchored" data-anchor-id="exclude"><code>exclude</code></h4>
 <p>Files and/or directories that are not checked.</p>
 <p>This takes a list relative paths to ignore:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
@@ -365,8 +380,8 @@ Options:
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="dt">exclude</span> <span class="op">=</span> <span class="op">[</span><span class="st">"excluded-*.R"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="default-exclude" class="level3">
-<h3 class="anchored" data-anchor-id="default-exclude"><code>default-exclude</code></h3>
+<section id="default-exclude" class="level4">
+<h4 class="anchored" data-anchor-id="default-exclude"><code>default-exclude</code></h4>
 <p>This takes a boolean argument indicating whether the default file exclude patterns are used.</p>
 <p>By default, Jarl (just like the Air formatter) excludes a set of files and folders that are probably not worth checking, for instance because they are automatically generated by another program.</p>
 <p>The complete list of default exclude patterns is:</p>
@@ -382,15 +397,15 @@ Options:
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="dt">default-exclude</span> <span class="op">=</span> <span class="cn">true</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="assignment" class="level3">
-<h3 class="anchored" data-anchor-id="assignment"><code>assignment</code></h3>
+<section id="assignment" class="level4">
+<h4 class="anchored" data-anchor-id="assignment"><code>assignment</code></h4>
 <p>This takes a single value (<code>"&lt;-"</code> or <code>"="</code>) indicating the preferred assignment operator in the files to check. While <code>"&lt;-"</code> is recommended by several style guides, using <code>"="</code> is equivalent in most cases and several popular projects use it.</p>
 <p>This parameter is only useful if the <code>assignment</code> rule is active. If <code>assignment = "&lt;-"</code> (default), then any use of the <code>"="</code> operator to assign values will be reported, and vice-versa.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="dt">assignment</span> <span class="op">=</span> <span class="st">"&lt;-"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="fixable" class="level3">
-<h3 class="anchored" data-anchor-id="fixable"><code>fixable</code></h3>
+<section id="fixable" class="level4">
+<h4 class="anchored" data-anchor-id="fixable"><code>fixable</code></h4>
 <p>This determines which rule violations will be fixed if <code>--fix</code> is passed. This can be useful if you only trust Jarl’s automatic fixes for some rules and want to avoid automatic fixes for other rules. It takes a list of rule names or names or groups of rules, and defaults to all rules if this argument is not specified.</p>
 <p>If a rule appears in both <code>fixable</code> and <code>unfixable</code>, <code>unfixable</code> takes precedence (i.e.&nbsp;violations of this rule will not be fixed).</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
@@ -400,8 +415,8 @@ Options:
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Do not fix any violation.</span></span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="dt">fixable</span> <span class="op">=</span> <span class="op">[]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="unfixable" class="level3">
-<h3 class="anchored" data-anchor-id="unfixable"><code>unfixable</code></h3>
+<section id="unfixable" class="level4">
+<h4 class="anchored" data-anchor-id="unfixable"><code>unfixable</code></h4>
 <p>This determines which rule violations will be not fixed, even if <code>--fix</code> is passed. This can be useful if you only trust Jarl’s automatic fixes for some rules and want to avoid automatic fixes for other rules. It takes a list of rule names or names or groups of rules, and defaults no rules if this argument is not specified.</p>
 <p>If a rule appears in both <code>fixable</code> and <code>unfixable</code>, <code>unfixable</code> takes precedence (i.e.&nbsp;violations of this rule will not be fixed).</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
@@ -412,6 +427,7 @@ Options:
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="dt">unfixable</span> <span class="op">=</span> <span class="op">[]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
+</section>
 </section>
 </section>
 

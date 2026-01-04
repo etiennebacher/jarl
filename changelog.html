@@ -185,7 +185,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul>
   <li><a href="#changelog" id="toc-changelog" class="nav-link active" data-scroll-target="#changelog">Changelog</a>
-  <ul class="collapse">
+  <ul>
   <li><a href="#development" id="toc-development" class="nav-link" data-scroll-target="#development">Development</a>
   <ul class="collapse">
   <li><a href="#features" id="toc-features" class="nav-link" data-scroll-target="#features">Features</a></li>
@@ -238,7 +238,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="features" class="level3">
 <h3 class="anchored" data-anchor-id="features">Features</h3>
 <ul>
-<li>New CLI argument <code>--statistics</code> to show the number of violations per rule instead of the details of each violation (#250).</li>
+<li><p>New CLI argument <code>--statistics</code> to show the number of violations per rule instead of the details of each violation (#250).</p></li>
+<li><p>Jarl now looks in parent folders for <code>jarl.toml</code>. It searches until the user config folder is reached (the location of this folder depends on the OS: <code>~/.config</code> on Unix and <code>~/AppData/Roaming</code> on Windows). Jarl uses the first <code>jarl.toml</code> that is found. This is useful to store settings that should be common to all projects (e.g.&nbsp;<code>assignment = "&lt;-"</code>) without creating a <code>jarl.toml</code>, which is a common situation for standalone R scripts. (#253)</p></li>
 </ul>
 </section>
 <section id="bug-fixes" class="level3">
