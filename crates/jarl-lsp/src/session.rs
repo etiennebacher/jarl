@@ -669,14 +669,10 @@ mod tests {
         fs::write(&test_file, "x <- 1\n").unwrap();
 
         // Change to this directory for the test
-        // let original_dir = std::env::current_dir().unwrap();
         std::env::set_current_dir(cwd).unwrap();
 
         // Should not show notification when no config exists
         let result = session.check_and_notify_config(&test_file);
-
-        // Restore original directory
-        // std::env::set_current_dir(original_dir).unwrap();
 
         // Notification should not be shown when no config exists
         assert!(
