@@ -47,6 +47,8 @@ pub struct Session {
     client: Client,
     /// Assignment operator preference from initialization
     assignment: Option<String>,
+    /// Whether we've shown the config notification
+    config_notification_shown: bool,
 }
 
 /// Immutable snapshot of a document and its context
@@ -79,6 +81,7 @@ impl Session {
             workspace_roots,
             client,
             assignment: None,
+            config_notification_shown: false,
         }
     }
 
@@ -281,6 +284,60 @@ impl Session {
     /// Get the number of open documents
     pub fn document_count(&self) -> usize {
         self.documents.len()
+    }
+
+    /// Check and notify about config file location if needed
+    /// Returns true if notification was shown, false otherwise
+    pub fn check_and_notify_config(&mut self, file_path: &std::path::Path) -> bool {
+        use jarl_core::discovery::discover_settings;
+        use std::env;
+
+        // Only show notification once per session
+        if self.config_notification_shown {
+            return false;
+        }
+
+        // Get current working directory
+        let cwd = match env::current_dir() {
+            Ok(cwd) => cwd,
+            Err(_) => return false,
+        };
+
+        // Discover settings for this file
+        let file_path_str = vec![file_path.to_string_lossy().to_string()];
+        let discovered_settings = match discover_settings(&file_path_str) {
+            Ok(settings) => settings,
+            Err(_) => return false,
+        };
+
+        // Check if any config is from a parent directory (not CWD)
+        for ds in discovered_settings {
+            if let Some(config_path) = &ds.config_path {
+                if let Some(config_dir) = config_path.parent() {
+                    if config_dir != cwd {
+                        // Config is from a parent directory, show notification
+                        if let Err(e) = self.client.show_message(
+                            &format!(
+                                "Jarl uses the configuration from '{}'",
+                                config_path.display()
+                            ),
+                            lsp_types::MessageType::INFO,
+                        ) {
+                            tracing::error!("Failed to show config notification: {}", e);
+                        } else {
+                            tracing::info!(
+                                "Showed config notification for: {}",
+                                config_path.display()
+                            );
+                        }
+                        self.config_notification_shown = true;
+                        return true;
+                    }
+                }
+            }
+        }
+
+        false
     }
 }
 
@@ -490,5 +547,145 @@ mod tests {
             assert_eq!(options.open_close, Some(true));
             assert_eq!(options.change, Some(TextDocumentSyncKind::INCREMENTAL));
         }
+    }
+
+    #[test]
+    fn test_config_notification_shown_for_parent_config() {
+        use std::fs;
+
+        let mut session = create_test_session();
+
+        // Create a temporary directory structure with a config file in parent
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let parent_dir = temp_dir.path();
+        let child_dir = parent_dir.join("subdir");
+        fs::create_dir_all(&child_dir).unwrap();
+
+        // Create a jarl.toml in the parent directory
+        let config_path = parent_dir.join("jarl.toml");
+        fs::write(&config_path, "[lint]\n").unwrap();
+
+        // Create a test file in the child directory
+        let test_file = child_dir.join("test.R");
+        fs::write(&test_file, "x <- 1\n").unwrap();
+
+        // Change to child directory (so config is in parent, not CWD)
+        let original_dir = std::env::current_dir().unwrap();
+        std::env::set_current_dir(&child_dir).unwrap();
+
+        // First call should show notification (config is in parent dir, not CWD)
+        let result1 = session.check_and_notify_config(&test_file);
+
+        // Second call should not show notification again (flag is set)
+        let result2 = session.check_and_notify_config(&test_file);
+
+        // Restore original directory
+        std::env::set_current_dir(original_dir).unwrap();
+
+        assert!(result1, "Notification should be shown on first occurrence");
+        assert!(
+            session.config_notification_shown,
+            "Flag should be set when notification is shown"
+        );
+        assert!(!result2, "Notification should not be shown twice");
+    }
+
+    #[test]
+    fn test_config_notification_flag_prevents_duplicate() {
+        let mut session = create_test_session();
+
+        // Initially, notification should not be shown
+        assert!(!session.config_notification_shown);
+
+        // Manually set the flag to simulate notification already shown
+        session.config_notification_shown = true;
+
+        // Create a test file (won't matter since flag is already set)
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let test_file = temp_dir.path().join("test.R");
+        std::fs::write(&test_file, "x <- 1\n").unwrap();
+
+        // Even if there's a config to discover, it should return false
+        let result = session.check_and_notify_config(&test_file);
+
+        assert!(
+            !result,
+            "Notification should not be shown when flag is already set"
+        );
+        assert!(session.config_notification_shown, "Flag should remain true");
+    }
+
+    #[test]
+    fn test_config_notification_not_shown_for_cwd_config() {
+        use std::fs;
+
+        let mut session = create_test_session();
+
+        // Create a temporary directory with a config file in CWD
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let cwd = temp_dir.path();
+
+        // Create a jarl.toml in the current directory
+        let config_path = cwd.join("jarl.toml");
+        fs::write(&config_path, "[lint]\n").unwrap();
+
+        // Create a test file in the same directory
+        let test_file = cwd.join("test.R");
+        fs::write(&test_file, "x <- 1\n").unwrap();
+
+        // Change to this directory for the test
+        let original_dir = std::env::current_dir().unwrap();
+        std::env::set_current_dir(cwd).unwrap();
+
+        // Should not show notification for config in CWD
+        let result = session.check_and_notify_config(&test_file);
+
+        // Restore original directory
+        std::env::set_current_dir(original_dir).unwrap();
+
+        // Notification should not be shown for CWD config
+        assert!(
+            !result,
+            "Notification should not be shown for config in CWD"
+        );
+        assert!(
+            !session.config_notification_shown,
+            "Flag should not be set for CWD config"
+        );
+    }
+
+    #[test]
+    fn test_config_notification_with_no_config() {
+        use std::fs;
+
+        let mut session = create_test_session();
+
+        // Create a temporary directory without a config file
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let cwd = temp_dir.path();
+
+        // Create a test file without any config
+        let test_file = cwd.join("test.R");
+        fs::write(&test_file, "x <- 1\n").unwrap();
+
+        // Change to this directory for the test
+        let original_dir = std::env::current_dir().unwrap();
+        std::env::set_current_dir(cwd).unwrap();
+
+        // Should not show notification when no config exists
+        let result = session.check_and_notify_config(&test_file);
+
+        // Restore original directory
+        std::env::set_current_dir(original_dir).unwrap();
+
+        // Notification should not be shown when no config exists
+        assert!(
+            !result,
+            "Notification should not be shown when no config exists"
+        );
+        assert!(
+            !session.config_notification_shown,
+            "Flag should not be set when no config exists"
+        );
     }
 }

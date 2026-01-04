@@ -309,6 +309,11 @@ impl Server {
 
                 session.open_document(params.text_document.uri.clone(), document);
 
+                // Check and notify about config file location (once per session, only if not in CWD)
+                if let Ok(file_path) = params.text_document.uri.to_file_path() {
+                    session.check_and_notify_config(&file_path);
+                }
+
                 // Trigger linting for push diagnostics (real-time as you type)
                 let supports_pull_diagnostics = session.supports_pull_diagnostics();
 
