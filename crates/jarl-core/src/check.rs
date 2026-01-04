@@ -101,7 +101,7 @@ pub struct Checker {
     // A vector of `Rule`. A `rule` contains the name of the rule to apply,
     // whether it is safe to fix, unsafe to fix, or doesn't have a fix, and
     // the minimum R version from which this rule is available.
-    pub rules: RuleTable,
+    pub rule_table: RuleTable,
     // The R version that is manually passed by the user in the CLI. Any rule
     // that has a minimum R version higher than this value will be deactivated.
     pub minimum_r_version: Option<(u32, u32, u32)>,
@@ -115,7 +115,7 @@ impl Checker {
     fn new(suppression: SuppressionManager, assignment: RSyntaxKind) -> Self {
         Self {
             diagnostics: vec![],
-            rules: RuleTable::empty(),
+            rule_table: RuleTable::empty(),
             minimum_r_version: None,
             suppression,
             assignment,
@@ -131,7 +131,7 @@ impl Checker {
     }
 
     pub(crate) fn is_rule_enabled(&mut self, rule: &str) -> bool {
-        self.rules.enabled.iter().any(|r| r.name == rule)
+        self.rule_table.rules.iter().any(|r| r.name == rule)
     }
 
     /// Check if a rule should be skipped for the given node due to suppression comments
@@ -165,7 +165,7 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     }
 
     let mut checker = Checker::new(suppression, config.assignment);
-    checker.rules = config.rules_to_apply.clone();
+    checker.rule_table = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
     for expr in expressions_vec {
         check_expression(&expr, &mut checker)?;
@@ -178,8 +178,8 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     // pay attention to whether the user wants to fix them or not. Adding this
     // step here is a way to filter those fixes out before calling apply_fixes().
     let rules_without_fix = checker
+        .rule_table
         .rules
-        .enabled
         .iter()
         .filter(|x| x.has_no_fix())
         .map(|x| x.name.clone())

@@ -1,4 +1,4 @@
-use crate::rule_table::{FixStatus, RuleTable};
+use crate::rule_table::{DefaultStatus, FixStatus, RuleTable};
 use std::collections::HashSet;
 use std::sync::OnceLock;
 
@@ -48,10 +48,8 @@ pub(crate) mod which_grepl;
 
 pub static RULE_GROUPS: &[&str] = &["CORR", "PERF", "READ", "SUSP", "TESTTHAT"];
 
-/// Rule groups that are selected by default when no selectors are provided
-pub static DEFAULT_SELECTORS: &[&str] = &["CORR", "PERF", "READ", "SUSP"];
-
-/// List of supported rules and whether they have a safe fix.
+/// List of supported rules and additional metadata, including whether they have
+/// a fix, the categories they belong to, and whether they are enabled by default.
 ///
 /// Possible categories:
 /// - CORR: correctness, code that is outright wrong or useless
@@ -61,49 +59,301 @@ pub static DEFAULT_SELECTORS: &[&str] = &["CORR", "PERF", "READ", "SUSP"];
 ///   easier to read.
 pub fn all_rules_and_safety() -> RuleTable {
     let mut rule_table = RuleTable::empty();
-    rule_table.enable("all_equal", "SUSP", FixStatus::Unsafe, None);
-    rule_table.enable("any_duplicated", "PERF", FixStatus::Safe, None);
-    rule_table.enable("any_is_na", "PERF", FixStatus::Safe, None);
-    rule_table.enable("assignment", "READ", FixStatus::Safe, None);
-    rule_table.enable("browser", "CORR", FixStatus::Safe, None);
-    rule_table.enable("class_equals", "SUSP", FixStatus::Safe, None);
-    rule_table.enable("comparison_negation", "READ", FixStatus::Safe, None);
-    rule_table.enable("coalesce", "READ", FixStatus::Safe, Some((4, 4, 0)));
-    rule_table.enable("download_file", "SUSP", FixStatus::None, None);
-    rule_table.enable("duplicated_arguments", "SUSP", FixStatus::None, None);
-    rule_table.enable("empty_assignment", "READ", FixStatus::Safe, None);
-    rule_table.enable("equals_na", "CORR", FixStatus::Safe, None);
-    rule_table.enable("expect_length", "TESTTHAT", FixStatus::Safe, None);
-    rule_table.enable("expect_named", "TESTTHAT", FixStatus::Safe, None);
-    rule_table.enable("expect_not", "TESTTHAT", FixStatus::Safe, None);
-    rule_table.enable("expect_null", "TESTTHAT", FixStatus::Safe, None);
-    rule_table.enable("expect_s3_class", "TESTTHAT", FixStatus::Safe, None);
-    rule_table.enable("expect_true_false", "TESTTHAT", FixStatus::Safe, None);
-    rule_table.enable("expect_type", "TESTTHAT", FixStatus::Safe, None);
-    rule_table.enable("fixed_regex", "READ", FixStatus::Safe, None);
-    rule_table.enable("for_loop_index", "READ", FixStatus::None, None);
-    rule_table.enable("grepv", "READ", FixStatus::Safe, Some((4, 5, 0)));
-    rule_table.enable("implicit_assignment", "READ", FixStatus::None, None);
-    rule_table.enable("is_numeric", "READ", FixStatus::Safe, None);
-    rule_table.enable("length_levels", "READ", FixStatus::Safe, None);
-    rule_table.enable("length_test", "CORR", FixStatus::Safe, None);
-    rule_table.enable("lengths", "PERF,READ", FixStatus::Safe, None);
-    rule_table.enable("list2df", "PERF,READ", FixStatus::Safe, Some((4, 0, 0)));
-    rule_table.enable("matrix_apply", "PERF", FixStatus::Safe, None);
-    rule_table.enable("numeric_leading_zero", "READ", FixStatus::Safe, None);
-    rule_table.enable("outer_negation", "PERF,READ", FixStatus::Safe, None);
-    rule_table.enable("redundant_equals", "READ", FixStatus::Safe, None);
-    rule_table.enable("repeat", "READ", FixStatus::Safe, None);
-    rule_table.enable("sample_int", "READ", FixStatus::Safe, None);
-    rule_table.enable("seq", "SUSP", FixStatus::Safe, None);
-    rule_table.enable("seq2", "SUSP", FixStatus::Safe, None);
-    rule_table.enable("sort", "PERF,READ", FixStatus::Safe, None);
-    rule_table.enable("sprintf", "CORR,SUSP", FixStatus::Safe, None);
-    rule_table.enable("string_boundary", "PERF, READ", FixStatus::Safe, None);
-    rule_table.enable("system_file", "READ", FixStatus::Safe, None);
-    rule_table.enable("true_false_symbol", "READ", FixStatus::None, None);
-    rule_table.enable("vector_logic", "PERF", FixStatus::None, None);
-    rule_table.enable("which_grepl", "PERF,READ", FixStatus::Safe, None);
+    rule_table.add_rule(
+        "all_equal",
+        "SUSP",
+        DefaultStatus::Enabled,
+        FixStatus::Unsafe,
+        None,
+    );
+    rule_table.add_rule(
+        "any_duplicated",
+        "PERF",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "any_is_na",
+        "PERF",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "assignment",
+        "READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "browser",
+        "CORR",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "class_equals",
+        "SUSP",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "comparison_negation",
+        "READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "coalesce",
+        "READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        Some((4, 4, 0)),
+    );
+    rule_table.add_rule(
+        "download_file",
+        "SUSP",
+        DefaultStatus::Enabled,
+        FixStatus::None,
+        None,
+    );
+    rule_table.add_rule(
+        "duplicated_arguments",
+        "SUSP",
+        DefaultStatus::Enabled,
+        FixStatus::None,
+        None,
+    );
+    rule_table.add_rule(
+        "empty_assignment",
+        "READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "equals_na",
+        "CORR",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "expect_length",
+        "TESTTHAT",
+        DefaultStatus::Disabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "expect_named",
+        "TESTTHAT",
+        DefaultStatus::Disabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "expect_not",
+        "TESTTHAT",
+        DefaultStatus::Disabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "expect_null",
+        "TESTTHAT",
+        DefaultStatus::Disabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "expect_s3_class",
+        "TESTTHAT",
+        DefaultStatus::Disabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "expect_true_false",
+        "TESTTHAT",
+        DefaultStatus::Disabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "expect_type",
+        "TESTTHAT",
+        DefaultStatus::Disabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "fixed_regex",
+        "READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "for_loop_index",
+        "READ",
+        DefaultStatus::Enabled,
+        FixStatus::None,
+        None,
+    );
+    rule_table.add_rule(
+        "grepv",
+        "READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        Some((4, 5, 0)),
+    );
+    rule_table.add_rule(
+        "implicit_assignment",
+        "READ",
+        DefaultStatus::Enabled,
+        FixStatus::None,
+        None,
+    );
+    rule_table.add_rule(
+        "is_numeric",
+        "READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "length_levels",
+        "READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "length_test",
+        "CORR",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "lengths",
+        "PERF,READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "list2df",
+        "PERF,READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        Some((4, 0, 0)),
+    );
+    rule_table.add_rule(
+        "matrix_apply",
+        "PERF",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "numeric_leading_zero",
+        "READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "outer_negation",
+        "PERF,READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "redundant_equals",
+        "READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "repeat",
+        "READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "sample_int",
+        "READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule("seq", "SUSP", DefaultStatus::Enabled, FixStatus::Safe, None);
+    rule_table.add_rule(
+        "seq2",
+        "SUSP",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "sort",
+        "PERF,READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "sprintf",
+        "CORR,SUSP",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "string_boundary",
+        "PERF, READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "system_file",
+        "READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
+    rule_table.add_rule(
+        "true_false_symbol",
+        "READ",
+        DefaultStatus::Enabled,
+        FixStatus::None,
+        None,
+    );
+    rule_table.add_rule(
+        "vector_logic",
+        "PERF",
+        DefaultStatus::Enabled,
+        FixStatus::None,
+        None,
+    );
+    rule_table.add_rule(
+        "which_grepl",
+        "PERF,READ",
+        DefaultStatus::Enabled,
+        FixStatus::Safe,
+        None,
+    );
     rule_table
 }
 
@@ -159,4 +409,12 @@ pub fn all_unsafe_rules() -> Vec<String> {
 
 pub fn all_nofix_rules() -> Vec<String> {
     nofix_rules_set().iter().cloned().collect()
+}
+
+pub fn all_rules_enabled_by_default() -> Vec<String> {
+    all_rules_and_safety()
+        .iter()
+        .filter(|x| x.is_enabled_by_default())
+        .map(|x| x.name.clone())
+        .collect()
 }

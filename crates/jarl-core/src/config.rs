@@ -1,6 +1,6 @@
 use crate::{
     description::Description,
-    lints::{DEFAULT_SELECTORS, RULE_GROUPS, all_rules_and_safety},
+    lints::{RULE_GROUPS, all_rules_and_safety, all_rules_enabled_by_default},
     rule_table::{FixStatus, Rule, RuleTable},
     settings::Settings,
 };
@@ -482,18 +482,8 @@ fn reconcile_rules(rules_cli: RuleSelection, rules_toml: RuleSelection) -> Resul
         // No CLI select, but TOML select exists, use TOML
         toml_selected
     } else {
-        // Neither CLI nor TOML specified select rules, use DEFAULT_SELECTORS
-        let default_groups: HashSet<&str> = DEFAULT_SELECTORS.iter().copied().collect();
-        HashSet::from_iter(
-            all_rules
-                .iter()
-                .filter(|rule| {
-                    rule.categories
-                        .iter()
-                        .any(|cat| default_groups.contains(cat.as_str()))
-                })
-                .map(|x| x.name.clone()),
-        )
+        // Neither CLI nor TOML specified select rules, use the default set of rules
+        HashSet::from_iter(all_rules_enabled_by_default())
     };
 
     // Step 2: Add extended rules (CLI extend-select takes precedence over TOML extend-select)
@@ -646,6 +636,7 @@ fn apply_fixable_filters(
                 return Rule {
                     name: rule.name.clone(),
                     categories: rule.categories.clone(),
+                    default_status: rule.default_status,
                     fix_status: FixStatus::None,
                     minimum_r_version: rule.minimum_r_version,
                 };
@@ -658,6 +649,7 @@ fn apply_fixable_filters(
                 return Rule {
                     name: rule.name.clone(),
                     categories: rule.categories.clone(),
+                    default_status: rule.default_status,
                     fix_status: FixStatus::None,
                     minimum_r_version: rule.minimum_r_version,
                 };
