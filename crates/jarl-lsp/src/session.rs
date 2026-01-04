@@ -297,8 +297,8 @@ impl Session {
             return false;
         }
 
-        // Get current working directory
-        let cwd = match env::current_dir() {
+        // Get current working directory and canonicalize to handle symlinks
+        let cwd = match env::current_dir().and_then(|p| p.canonicalize()) {
             Ok(cwd) => cwd,
             Err(_) => return false,
         };
@@ -314,22 +314,29 @@ impl Session {
         for ds in discovered_settings {
             if let Some(config_path) = &ds.config_path
                 && let Some(config_dir) = config_path.parent()
-                && config_dir != cwd
             {
-                // Config is from a parent directory, show notification
-                if let Err(e) = self.client.show_message(
-                    &format!(
-                        "Jarl uses the configuration from '{}'",
-                        config_path.display()
-                    ),
-                    lsp_types::MessageType::INFO,
-                ) {
-                    tracing::error!("Failed to show config notification: {}", e);
-                } else {
-                    tracing::info!("Showed config notification for: {}", config_path.display());
+                // Canonicalize config_dir to handle symlinks (especially on macOS)
+                let config_dir_canonical = match config_dir.canonicalize() {
+                    Ok(p) => p,
+                    Err(_) => continue,
+                };
+
+                if config_dir_canonical != cwd {
+                    // Config is from a parent directory, show notification
+                    if let Err(e) = self.client.show_message(
+                        &format!(
+                            "Jarl uses the configuration from '{}'",
+                            config_path.display()
+                        ),
+                        lsp_types::MessageType::INFO,
+                    ) {
+                        tracing::error!("Failed to show config notification: {}", e);
+                    } else {
+                        tracing::info!("Showed config notification for: {}", config_path.display());
+                    }
+                    self.config_notification_shown = true;
+                    return true;
                 }
-                self.config_notification_shown = true;
-                return true;
             }
         }
 
@@ -566,7 +573,6 @@ mod tests {
         fs::write(&test_file, "x <- 1\n").unwrap();
 
         // Change to child directory (so config is in parent, not CWD)
-        let original_dir = std::env::current_dir().unwrap();
         std::env::set_current_dir(&child_dir).unwrap();
 
         // First call should show notification (config is in parent dir, not CWD)
@@ -575,9 +581,7 @@ mod tests {
         // Second call should not show notification again (flag is set)
         let result2 = session.check_and_notify_config(&test_file);
 
-        // Restore original directory
-        std::env::set_current_dir(original_dir).unwrap();
-
+        // Now run assertions
         assert!(result1, "Notification should be shown on first occurrence");
         assert!(
             session.config_notification_shown,
