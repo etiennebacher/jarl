@@ -312,28 +312,24 @@ impl Session {
 
         // Check if any config is from a parent directory (not CWD)
         for ds in discovered_settings {
-            if let Some(config_path) = &ds.config_path {
-                if let Some(config_dir) = config_path.parent() {
-                    if config_dir != cwd {
-                        // Config is from a parent directory, show notification
-                        if let Err(e) = self.client.show_message(
-                            &format!(
-                                "Jarl uses the configuration from '{}'",
-                                config_path.display()
-                            ),
-                            lsp_types::MessageType::INFO,
-                        ) {
-                            tracing::error!("Failed to show config notification: {}", e);
-                        } else {
-                            tracing::info!(
-                                "Showed config notification for: {}",
-                                config_path.display()
-                            );
-                        }
-                        self.config_notification_shown = true;
-                        return true;
-                    }
+            if let Some(config_path) = &ds.config_path
+                && let Some(config_dir) = config_path.parent()
+                && config_dir != cwd
+            {
+                // Config is from a parent directory, show notification
+                if let Err(e) = self.client.show_message(
+                    &format!(
+                        "Jarl uses the configuration from '{}'",
+                        config_path.display()
+                    ),
+                    lsp_types::MessageType::INFO,
+                ) {
+                    tracing::error!("Failed to show config notification: {}", e);
+                } else {
+                    tracing::info!("Showed config notification for: {}", config_path.display());
                 }
+                self.config_notification_shown = true;
+                return true;
             }
         }
 
