@@ -19,6 +19,9 @@
 - When `output-format` is `json` or `github`, additional information displayed in
   the terminal (e.g. timing) isn't included anymore to avoid parsing errors (#254).
 
+- Fixed a bug in the number of "fixable diagnostics" reported when the arg
+  `fixable` is present in `jarl.toml` but `--fix` is not passed (#255).
+
 ## 0.3.0
 
 ### Breaking changes
