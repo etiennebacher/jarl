@@ -338,7 +338,7 @@ Options:
 <ol type="1">
 <li>look for <code>jarl.toml</code> in the current working directory;</li>
 <li>if not present, go to the parent folder until a <code>jarl.toml</code> is found;</li>
-<li>if none of the parent directories contain the config file, Jarl check if one exists in the home config directory. For Unix users, it looks for <code>~/.config/jarl/jarl.toml</code>. For Windows users, it looks for <code>~/AppData/Roaming/jarl/jarl.toml</code>.</li>
+<li>if none of the parent directories contain the config file, Jarl checks if one exists in the home config directory. For Unix users, it looks for <code>~/.config/jarl/jarl.toml</code>. For Windows users, it looks for <code>~/AppData/Roaming/jarl/jarl.toml</code>.</li>
 <li>if the config file is not present there, then it stops looking for one.</li>
 </ol>
 <p>Storing a default <code>jarl.toml</code> in the home config directory may be useful to apply some arguments by default on all R files. For example, if you use <code>=</code> as assignment operator, you can set <code>assignment = "="</code> in <code>~/&lt;config_dir&gt;/jarl.toml</code> and all R files that don’t belong to a project subject to another <code>jarl.toml</code> will use this argument.</p>
