@@ -75,16 +75,6 @@
 					"scope": "application",
 					"type": "string"
 				},
-				"jarl.assignmentOperator": {
-					"default": "<-",
-					"markdownDescription": "Controls the preferred assignment operator and will report usage of the other one if the `assignment` linter is active. Changes take effect immediately.",
-					"enum": [
-						"<-",
-						"="
-					],
-					"scope": "window",
-					"type": "string"
-				},
 				"jarl.syncFileSettingsWithClient": {
 					"default": true,
 					"markdownDescription": "Whether settings from jarl.toml files should be propagated to the client (the IDE).",
