@@ -1,4 +1,5 @@
 use crate::error::ParseError;
+use crate::rule_set::Rule;
 use crate::suppression::SuppressionManager;
 use crate::vcs::check_version_control;
 use air_fs::relativize_path;
@@ -129,12 +130,12 @@ impl Checker {
         }
     }
 
-    pub(crate) fn is_rule_enabled(&mut self, rule: &str) -> bool {
-        self.rule_set.contains_name(rule)
+    pub(crate) fn is_rule_enabled(&mut self, rule: Rule) -> bool {
+        self.rule_set.contains(&rule)
     }
 
     /// Check if a rule should be skipped for the given node due to suppression comments
-    pub(crate) fn should_skip_rule(&self, node: &air_r_syntax::RSyntaxNode, rule: &str) -> bool {
+    pub(crate) fn should_skip_rule(&self, node: &air_r_syntax::RSyntaxNode, rule: Rule) -> bool {
         self.suppression.should_skip_rule(node, rule)
     }
 }

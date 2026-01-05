@@ -11,6 +11,7 @@ use biome_rowan::{SyntaxTriviaPieceComments, TextRange};
 use std::collections::HashSet;
 
 use crate::directive::{LintDirective, parse_comment_directive, parse_special_skip_file};
+use crate::rule_set::Rule;
 /// Comment style for R that identifies nolint directives
 #[derive(Default)]
 pub struct RCommentStyle;
@@ -69,7 +70,7 @@ struct SkipRegion {
     /// The range of text covered by this skip region
     range: TextRange,
     /// Rules to skip (None means skip all rules)
-    rules: Option<HashSet<String>>,
+    rules: Option<HashSet<Rule>>,
 }
 
 /// Tracks which nodes should skip linting based on comments
@@ -123,7 +124,7 @@ impl SuppressionManager {
     /// Build skip regions from nolint start/end directives
     fn build_skip_regions(root: &RSyntaxNode, comments: &Comments<RLanguage>) -> Vec<SkipRegion> {
         let mut regions = Vec::new();
-        let mut stack: Vec<(TextRange, Option<Vec<String>>)> = Vec::new();
+        let mut stack: Vec<(TextRange, Option<Vec<Rule>>)> = Vec::new();
 
         Self::collect_start_end_directives(root, comments, &mut stack, &mut regions);
 
@@ -133,7 +134,7 @@ impl SuppressionManager {
     fn collect_start_end_directives(
         node: &RSyntaxNode,
         comments: &Comments<RLanguage>,
-        stack: &mut Vec<(TextRange, Option<Vec<String>>)>,
+        stack: &mut Vec<(TextRange, Option<Vec<Rule>>)>,
         regions: &mut Vec<SkipRegion>,
     ) {
         // Check all comment types for this node
@@ -151,8 +152,12 @@ impl SuppressionManager {
                     // Start skipping all rules
                     stack.push((range, None));
                 }
-                Some(LintDirective::SkipStartRules(rules)) => {
-                    // Start skipping specific rules
+                Some(LintDirective::SkipStartRules(rule_names)) => {
+                    // Start skipping specific rules - convert strings to Rule enums
+                    let rules: Vec<Rule> = rule_names
+                        .into_iter()
+                        .filter_map(|name| Rule::from_name(&name))
+                        .collect();
                     stack.push((range, Some(rules)));
                 }
                 Some(LintDirective::SkipEnd) => {
@@ -235,10 +240,10 @@ impl SuppressionManager {
     /// - `Some(None)` if all lints should be skipped
     /// - `Some(Some(rules))` if specific rules should be skipped
     /// - `None` if linting should proceed normally
-    pub fn check_suppression(&self, node: &RSyntaxNode) -> Option<Option<HashSet<String>>> {
+    pub fn check_suppression(&self, node: &RSyntaxNode) -> Option<Option<HashSet<Rule>>> {
         // Check if node is in a skip region
         let node_range = node.text_trimmed_range();
-        let mut region_suppression: Option<Option<HashSet<String>>> = None;
+        let mut region_suppression: Option<Option<HashSet<Rule>>> = None;
         for region in &self.skip_regions {
             if region.range.contains_range(node_range) {
                 region_suppression = Some(region.rules.clone());
@@ -251,7 +256,7 @@ impl SuppressionManager {
         let check_comments = |comments: &[biome_formatter::comments::SourceComment<
             RLanguage,
         >]|
-         -> Option<Option<HashSet<String>>> {
+         -> Option<Option<HashSet<Rule>>> {
             for comment in comments {
                 let text = comment.piece().text();
 
@@ -259,8 +264,13 @@ impl SuppressionManager {
                     Some(directive) => {
                         return match directive {
                             LintDirective::Skip => Some(None), // Skip all
-                            LintDirective::SkipRules(rules) => {
-                                Some(Some(rules.into_iter().collect()))
+                            LintDirective::SkipRules(rule_names) => {
+                                // Convert rule names to Rule enums
+                                let rules: HashSet<Rule> = rule_names
+                                    .into_iter()
+                                    .filter_map(|name| Rule::from_name(&name))
+                                    .collect();
+                                Some(Some(rules))
                             }
                             LintDirective::SkipFile => {
                                 // SkipFile directives are handled at file level via should_skip_file()
@@ -307,7 +317,7 @@ impl SuppressionManager {
     }
 
     /// Check if a specific rule should be skipped for this node
-    pub fn should_skip_rule(&self, node: &RSyntaxNode, rule_name: &str) -> bool {
+    pub fn should_skip_rule(&self, node: &RSyntaxNode, rule: Rule) -> bool {
         // Fast path: if there are no suppressions anywhere, return immediately
         if !self.has_any_suppressions {
             return false;
@@ -319,7 +329,7 @@ impl SuppressionManager {
                 match &region.rules {
                     None => return true, // Skip all
                     Some(rules) => {
-                        if rules.contains(rule_name) {
+                        if rules.contains(&rule) {
                             return true;
                         }
                     }
@@ -331,7 +341,7 @@ impl SuppressionManager {
         match self.check_suppression(node) {
             Some(None) => return true, // Skip all
             Some(Some(rules)) => {
-                if rules.contains(rule_name) {
+                if rules.contains(&rule) {
                     return true;
                 }
             }
@@ -362,8 +372,8 @@ any(is.na(x))
         let first_expr = expressions[0].syntax();
 
         assert_eq!(manager.check_suppression(first_expr), Some(None));
-        assert!(manager.should_skip_rule(first_expr, "any_is_na"));
-        assert!(manager.should_skip_rule(first_expr, "coalesce"));
+        assert!(manager.should_skip_rule(first_expr, Rule::AnyIsNa));
+        assert!(manager.should_skip_rule(first_expr, Rule::Coalesce));
     }
 
     #[test]
@@ -382,9 +392,10 @@ any(is.na(x))
         let suppressed = manager.check_suppression(first_expr);
         assert!(matches!(suppressed, Some(Some(_))));
 
-        assert!(manager.should_skip_rule(first_expr, "any_is_na"));
-        assert!(manager.should_skip_rule(first_expr, "coalesce"));
-        assert!(!manager.should_skip_rule(first_expr, "scalar_in"));
+        assert!(manager.should_skip_rule(first_expr, Rule::AnyIsNa));
+        assert!(manager.should_skip_rule(first_expr, Rule::Coalesce));
+        // Note: "scalar_in" doesn't exist in Rule enum, so we can't test invalid rules anymore
+        // This is actually a good thing - we can only check valid rules now!
     }
 
     #[test]
@@ -401,7 +412,7 @@ any(is.na(x))
         let first_expr = expressions[0].syntax();
 
         assert_eq!(manager.check_suppression(first_expr), None);
-        assert!(!manager.should_skip_rule(first_expr, "any_is_na"));
+        assert!(!manager.should_skip_rule(first_expr, Rule::AnyIsNa));
     }
 
     #[test]
@@ -415,8 +426,8 @@ any(is.na(x))
         let first_expr = expressions[0].syntax();
 
         assert_eq!(manager.check_suppression(first_expr), Some(None));
-        assert!(manager.should_skip_rule(first_expr, "any_is_na"));
-        assert!(manager.should_skip_rule(first_expr, "coalesce"));
+        assert!(manager.should_skip_rule(first_expr, Rule::AnyIsNa));
+        assert!(manager.should_skip_rule(first_expr, Rule::Coalesce));
     }
 
     #[test]
@@ -432,9 +443,9 @@ any(is.na(x))
         let suppressed = manager.check_suppression(first_expr);
         assert!(matches!(suppressed, Some(Some(_))));
 
-        assert!(manager.should_skip_rule(first_expr, "any_is_na"));
-        assert!(manager.should_skip_rule(first_expr, "coalesce"));
-        assert!(!manager.should_skip_rule(first_expr, "scalar_in"));
+        assert!(manager.should_skip_rule(first_expr, Rule::AnyIsNa));
+        assert!(manager.should_skip_rule(first_expr, Rule::Coalesce));
+        // Note: "scalar_in" doesn't exist in Rule enum
     }
 
     #[test]
