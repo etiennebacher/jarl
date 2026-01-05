@@ -245,7 +245,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="bug-fixes" class="level3">
 <h3 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h3>
 <ul>
-<li>When <code>output-format</code> is <code>json</code> or <code>github</code>, additional information displayed in the terminal (e.g.&nbsp;timing) isn’t included anymore to avoid parsing errors (#254).</li>
+<li><p>When <code>output-format</code> is <code>json</code> or <code>github</code>, additional information displayed in the terminal (e.g.&nbsp;timing) isn’t included anymore to avoid parsing errors (#254).</p></li>
+<li><p>Fixed a bug in the number of “fixable diagnostics” reported when the arg <code>fixable</code> is present in <code>jarl.toml</code> but <code>--fix</code> is not passed (#255).</p></li>
 </ul>
 </section>
 </section>
