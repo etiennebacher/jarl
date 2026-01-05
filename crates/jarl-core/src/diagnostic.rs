@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
-use crate::lints::{nofix_rules_set, safe_rules_set, unsafe_rules_set};
 use crate::location::Location;
+use crate::rule_set::{FixStatus, Rule};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 // The fix to apply to the violation.
@@ -108,13 +108,28 @@ impl Diagnostic {
     // TODO: in these three functions, the first condition should be removed
     // once comments in nodes are better handled, #95.
     pub fn has_safe_fix(&self) -> bool {
-        !self.fix.to_skip && safe_rules_set().contains(&self.message.name)
+        if self.fix.to_skip || self.fix.content.is_empty() {
+            return false;
+        }
+        Rule::from_name(&self.message.name)
+            .map(|r| r.fix_status() == FixStatus::Safe)
+            .unwrap_or(false)
     }
     pub fn has_unsafe_fix(&self) -> bool {
-        !self.fix.to_skip && unsafe_rules_set().contains(&self.message.name)
+        if self.fix.to_skip || self.fix.content.is_empty() {
+            return false;
+        }
+        Rule::from_name(&self.message.name)
+            .map(|r| r.fix_status() == FixStatus::Unsafe)
+            .unwrap_or(false)
     }
     pub fn has_no_fix(&self) -> bool {
-        self.fix.to_skip || nofix_rules_set().contains(&self.message.name)
+        if self.fix.to_skip {
+            return true;
+        }
+        Rule::from_name(&self.message.name)
+            .map(|r| r.fix_status() == FixStatus::None)
+            .unwrap_or(true)
     }
 }
 

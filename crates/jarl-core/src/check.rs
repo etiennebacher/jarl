@@ -18,7 +18,7 @@ use crate::analyze;
 use crate::config::Config;
 use crate::diagnostic::*;
 use crate::fix::*;
-use crate::rule_table::RuleTable;
+use crate::rule_set::RuleSet;
 use crate::utils::*;
 
 pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
@@ -98,10 +98,9 @@ pub fn lint_fix(path: &PathBuf, config: Arc<Config>) -> Result<Vec<Diagnostic>, 
 pub struct Checker {
     // The diagnostics to report (possibly empty).
     pub diagnostics: Vec<Diagnostic>,
-    // A vector of `Rule`. A `rule` contains the name of the rule to apply,
-    // whether it is safe to fix, unsafe to fix, or doesn't have a fix, and
-    // the minimum R version from which this rule is available.
-    pub rule_table: RuleTable,
+    // A set of rules to apply. Each rule contains metadata about whether it
+    // has a safe fix, unsafe fix, or no fix, and the minimum R version required.
+    pub rule_set: RuleSet,
     // The R version that is manually passed by the user in the CLI. Any rule
     // that has a minimum R version higher than this value will be deactivated.
     pub minimum_r_version: Option<(u32, u32, u32)>,
@@ -115,7 +114,7 @@ impl Checker {
     fn new(suppression: SuppressionManager, assignment: RSyntaxKind) -> Self {
         Self {
             diagnostics: vec![],
-            rule_table: RuleTable::empty(),
+            rule_set: RuleSet::empty(),
             minimum_r_version: None,
             suppression,
             assignment,
@@ -131,7 +130,7 @@ impl Checker {
     }
 
     pub(crate) fn is_rule_enabled(&mut self, rule: &str) -> bool {
-        self.rule_table.rules.iter().any(|r| r.name == rule)
+        self.rule_set.contains_name(rule)
     }
 
     /// Check if a rule should be skipped for the given node due to suppression comments
@@ -165,7 +164,7 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     }
 
     let mut checker = Checker::new(suppression, config.assignment);
-    checker.rule_table = config.rules_to_apply.clone();
+    checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
     for expr in expressions_vec {
         check_expression(&expr, &mut checker)?;
@@ -178,11 +177,10 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     // pay attention to whether the user wants to fix them or not. Adding this
     // step here is a way to filter those fixes out before calling apply_fixes().
     let rules_without_fix = checker
-        .rule_table
-        .rules
+        .rule_set
         .iter()
         .filter(|x| x.has_no_fix())
-        .map(|x| x.name.clone())
+        .map(|x| x.name().to_string())
         .collect::<Vec<String>>();
 
     let diagnostics: Vec<Diagnostic> = checker
@@ -190,7 +188,18 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
         .into_iter()
         .map(|mut x| {
             x.filename = file.to_path_buf();
+            // Check if fix should be skipped based on fixable/unfixable settings
             if rules_without_fix.contains(&x.message.name) {
+                x.fix = Fix::empty();
+            }
+            // Also check against unfixable set from config
+            if config.unfixable.contains(&x.message.name) {
+                x.fix = Fix::empty();
+            }
+            // If fixable is specified, only allow those rules to have fixes
+            if let Some(ref fixable_set) = config.fixable
+                && !fixable_set.contains(&x.message.name)
+            {
                 x.fix = Fix::empty();
             }
             // TODO: this should be removed once comments in nodes are better
