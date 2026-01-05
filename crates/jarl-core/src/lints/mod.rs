@@ -1,4 +1,4 @@
-use crate::rule_set::{Category, Rule};
+use crate::rule_set::Rule;
 
 pub(crate) mod all_equal;
 pub(crate) mod any_duplicated;
@@ -47,57 +47,11 @@ pub(crate) mod which_grepl;
 /// All available rule categories
 pub static RULE_GROUPS: &[&str] = &["CORR", "PERF", "READ", "SUSP", "TESTTHAT"];
 
-/// Get all rules (static reference to the compile-time array)
-pub fn all_rules() -> &'static [Rule] {
-    Rule::all()
-}
-
-/// Get all rule names as strings
-pub fn all_rule_names() -> Vec<String> {
-    Rule::all().iter().map(|r| r.name().to_string()).collect()
-}
-
-/// Get all rules with safe fixes
-pub fn all_safe_rules() -> Vec<String> {
-    Rule::all()
-        .iter()
-        .filter(|r| r.has_safe_fix())
-        .map(|r| r.name().to_string())
-        .collect()
-}
-
-/// Get all rules with unsafe fixes
-pub fn all_unsafe_rules() -> Vec<String> {
-    Rule::all()
-        .iter()
-        .filter(|r| r.has_unsafe_fix())
-        .map(|r| r.name().to_string())
-        .collect()
-}
-
-/// Get all rules with no fixes
-pub fn all_nofix_rules() -> Vec<String> {
-    Rule::all()
-        .iter()
-        .filter(|r| r.has_no_fix())
-        .map(|r| r.name().to_string())
-        .collect()
-}
-
 /// Get all rules enabled by default
 pub fn all_rules_enabled_by_default() -> Vec<String> {
     Rule::all()
         .iter()
         .filter(|r| r.is_enabled_by_default())
-        .map(|r| r.name().to_string())
-        .collect()
-}
-
-/// Get all rules in a specific category
-pub fn rules_by_category(category: Category) -> Vec<String> {
-    Rule::all()
-        .iter()
-        .filter(|r| r.has_category(category))
         .map(|r| r.name().to_string())
         .collect()
 }
