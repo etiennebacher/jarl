@@ -1,6 +1,6 @@
 ---
 source: crates/jarl/tests/integration/assignment.rs
-expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name().normalize_temp_paths()"
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--select\").arg(\"assignment\").run().normalize_os_executable_name().normalize_temp_paths()"
 ---
 success: false
 exit_code: 255
@@ -11,4 +11,4 @@ jarl failed
   Cause: Invalid value in `--assignment`: foo
 
 ----- args -----
-check .
+check . --select assignment

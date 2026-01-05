@@ -10,7 +10,7 @@ fn test_no_default_exclude() -> anyhow::Result<()> {
     let directory = directory.path();
 
     let test_path = "cpp11.R";
-    let test_contents = "x = 1";
+    let test_contents = "any(is.na(x))";
 
     std::fs::write(directory.join(test_path), test_contents)?;
 
@@ -41,7 +41,7 @@ fn test_no_default_exclude_overrides_toml() -> anyhow::Result<()> {
     let directory = directory.path();
 
     let test_path = "cpp11.R";
-    let test_contents = "x = 1";
+    let test_contents = "any(is.na(x))";
 
     std::fs::write(directory.join(test_path), test_contents)?;
     std::fs::write(
