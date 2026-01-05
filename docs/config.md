@@ -136,14 +136,13 @@ Jarl follows these steps:
 
 1. look for `jarl.toml` in the current working directory;
 1. if not present, go to the parent folder until a `jarl.toml` is found;
-1. if none of the parent directories contain the config file, Jarl check if one exists in the home config directory. For Unix users, it looks for `~/.config/jarl/jarl.toml`. For Windows users, it looks for `~/AppData/Roaming/jarl/jarl.toml`.
+1. if none of the parent directories contain the config file, Jarl checks if one exists in the home config directory. For Unix users, it looks for `~/.config/jarl/jarl.toml`. For Windows users, it looks for `~/AppData/Roaming/jarl/jarl.toml`.
 1. if the config file is not present there, then it stops looking for one.
 
 Storing a default `jarl.toml` in the home config directory may be useful to apply some arguments by default on all R files.
 For example, if you use `=` as assignment operator, you can set `assignment = "="` in `~/<config_dir>/jarl.toml` and all R files that don't belong to a project subject to another `jarl.toml` will use this argument.
 
 Note that Jarl cannot handle multiple config files, it will use the first one it finds.
-
 
 ### Arguments
 
