@@ -1,6 +1,6 @@
 use crate::{
     description::Description,
-    lints::{RULE_GROUPS, all_rules_enabled_by_default},
+    lints::all_rules_enabled_by_default,
     rule_set::{Category, Rule, RuleSet},
     settings::Settings,
 };
@@ -401,7 +401,7 @@ pub fn parse_fixable_toml(
 // Returns a vector with the original rule names left unmodified and the expanded
 // group names.
 fn replace_group_rules(rules_passed_by_user: &Vec<&str>, all_rules: &[Rule]) -> Vec<String> {
-    let rule_groups_set: HashSet<&str> = RULE_GROUPS.iter().copied().collect();
+    let rule_groups_set: HashSet<&str> = Category::ALL.iter().map(|c| c.as_str()).collect();
     let mut expanded_rules = Vec::new();
 
     for &rule_or_group in rules_passed_by_user {

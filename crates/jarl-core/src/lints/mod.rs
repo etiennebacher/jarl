@@ -44,9 +44,6 @@ pub(crate) mod true_false_symbol;
 pub(crate) mod vector_logic;
 pub(crate) mod which_grepl;
 
-/// All available rule categories
-pub static RULE_GROUPS: &[&str] = &["CORR", "PERF", "READ", "SUSP", "TESTTHAT"];
-
 /// Get all rules enabled by default
 pub fn all_rules_enabled_by_default() -> Vec<String> {
     Rule::all()
