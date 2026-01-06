@@ -2,7 +2,6 @@ import * as vscode from "vscode";
 import { ExecutableStrategy } from "./binary";
 
 type LogLevel = "error" | "warn" | "info" | "debug" | "trace";
-type AssignmentOperator = "<-" | "="
 
 // This is a direct representation of the Client settings sent to the Server in the
 // `initializationOptions` field of `InitializeParams`. These are only pulled at the

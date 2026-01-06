@@ -41,10 +41,9 @@ pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<Vec<Diagnostic>> {
     let content = snapshot.content();
     let file_path = snapshot.file_path();
     let encoding = snapshot.position_encoding();
-    let assignment = snapshot.assignment();
 
     // Run the actual linting
-    let jarl_diagnostics = run_jarl_linting(content, file_path.as_deref(), assignment)?;
+    let jarl_diagnostics = run_jarl_linting(content, file_path.as_deref())?;
 
     // Convert to LSP diagnostics with fix information
     let mut lsp_diagnostics = Vec::new();
@@ -57,11 +56,7 @@ pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<Vec<Diagnostic>> {
 }
 
 /// Run the Jarl linting engine on the given content
-fn run_jarl_linting(
-    content: &str,
-    file_path: Option<&Path>,
-    lsp_assignment: Option<&String>,
-) -> Result<Vec<JarlDiagnostic>> {
+fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlDiagnostic>> {
     let file_path = match file_path {
         Some(path) => path,
         None => {
@@ -109,19 +104,6 @@ fn run_jarl_linting(
         .filter_map(Result::ok)
         .collect::<Vec<_>>();
 
-    // Check if TOML has assignment setting and if so use it, otherwise use
-    // the assignment from the workspace settings.
-    let toml_has_assignment = resolver
-        .items()
-        .iter()
-        .any(|item| item.value().linter.assignment.is_some());
-
-    let assignment = if toml_has_assignment {
-        None
-    } else {
-        lsp_assignment.cloned()
-    };
-
     let check_config = ArgsConfig {
         files: temp_path.iter().map(|s| s.into()).collect(),
         fix: false,
@@ -133,7 +115,7 @@ fn run_jarl_linting(
         min_r_version: None,
         allow_dirty: false,
         allow_no_vcs: false,
-        assignment,
+        assignment: None,
     };
 
     let config = build_config(&check_config, &resolver, paths)?;
@@ -318,7 +300,6 @@ mod tests {
             key,
             PositionEncoding::UTF8,
             ClientCapabilities::default(),
-            None,
         )
     }
 
@@ -431,7 +412,6 @@ mod tests {
             key,
             PositionEncoding::UTF8,
             lsp_types::ClientCapabilities::default(),
-            None,
         );
 
         // Should return no diagnostics because file is excluded
@@ -475,7 +455,6 @@ mod tests {
             key,
             PositionEncoding::UTF8,
             lsp_types::ClientCapabilities::default(),
-            None,
         );
 
         // Should return diagnostics because file is not excluded
@@ -516,7 +495,6 @@ mod tests {
             key,
             PositionEncoding::UTF8,
             lsp_types::ClientCapabilities::default(),
-            None,
         );
 
         // Should return no diagnostics because file matches exclude pattern

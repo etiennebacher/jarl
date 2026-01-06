@@ -27,8 +27,6 @@ pub struct InitializationOptions {
     pub log_level: Option<String>,
     /// Log levels for dependencies
     pub dependency_log_levels: Option<String>,
-    /// Assignment operator preference: "<-" or "="
-    pub assignment: Option<String>,
 }
 
 /// Main session state for the LSP server
@@ -45,8 +43,6 @@ pub struct Session {
     workspace_roots: Vec<PathBuf>,
     /// Client for sending messages
     client: Client,
-    /// Assignment operator preference from initialization
-    assignment: Option<String>,
     /// Whether we've shown the config notification
     config_notification_shown: bool,
 }
@@ -61,8 +57,6 @@ pub struct DocumentSnapshot {
     position_encoding: PositionEncoding,
     /// Client capabilities
     client_capabilities: ClientCapabilities,
-    /// Assignment operator preference
-    assignment: Option<String>,
 }
 
 impl Session {
@@ -80,7 +74,6 @@ impl Session {
             shutdown_requested: false,
             workspace_roots,
             client,
-            assignment: None,
             config_notification_shown: false,
         }
     }
@@ -88,27 +81,6 @@ impl Session {
     /// Initialize the session with client parameters
     #[allow(deprecated)]
     pub fn initialize(&mut self, params: InitializeParams) -> LspResult<InitializeResult> {
-        // Parse initialization options
-        tracing::debug!(
-            "Initialization params received: {:?}",
-            params.initialization_options
-        );
-        if let Some(init_options) = params.initialization_options {
-            match serde_json::from_value::<InitializationOptions>(init_options.clone()) {
-                Ok(options) => {
-                    tracing::info!("Successfully parsed initialization options: {:?}", options);
-                    tracing::info!("Setting assignment to: {:?}", options.assignment);
-                    self.assignment = options.assignment.clone();
-                }
-                Err(e) => {
-                    tracing::warn!("Failed to parse initialization options: {:?}", e);
-                    tracing::warn!("Raw initialization_options: {:?}", init_options);
-                }
-            }
-        } else {
-            tracing::warn!("No initialization_options provided");
-        }
-
         // Update workspace roots if provided
         if let Some(workspace_folders) = params.workspace_folders {
             self.workspace_roots.clear();
@@ -228,13 +200,7 @@ impl Session {
             key,
             position_encoding: self.position_encoding,
             client_capabilities: self.client_capabilities.clone(),
-            assignment: self.assignment.clone(),
         })
-    }
-
-    /// Update the assignment operator preference
-    pub fn update_assignment(&mut self, assignment: Option<String>) {
-        self.assignment = assignment;
     }
 
     /// Get all open document URIs
@@ -350,14 +316,12 @@ impl DocumentSnapshot {
         key: DocumentKey,
         position_encoding: PositionEncoding,
         client_capabilities: ClientCapabilities,
-        assignment: Option<String>,
     ) -> Self {
         Self {
             document,
             key,
             position_encoding,
             client_capabilities,
-            assignment,
         }
     }
 
@@ -389,11 +353,6 @@ impl DocumentSnapshot {
     /// Get the position encoding
     pub fn position_encoding(&self) -> PositionEncoding {
         self.position_encoding
-    }
-
-    /// Get the assignment operator preference
-    pub fn assignment(&self) -> Option<&String> {
-        self.assignment.as_ref()
     }
 
     /// Get the client capabilities

@@ -787,7 +787,6 @@ mod tests {
             key,
             PositionEncoding::UTF8,
             lsp_types::ClientCapabilities::default(),
-            None,
         )
     }
 
@@ -1285,7 +1284,6 @@ mod tests {
             key,
             encoding,
             lsp_types::ClientCapabilities::default(),
-            None,
         )
     }
 

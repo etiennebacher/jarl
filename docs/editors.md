@@ -27,12 +27,7 @@ This extension provides code higlights and quick fixes:
 
 ![](img/code_quick_fix_3.PNG){fig-alt="The fix has been applied, the screenshot now shows `anyNA(x)`."}
 
-
-This extension provides few options integrated in VS Code or Positron.
-One of them is "Assignment operator", that indicates which of `"="` or `"<-"` is preferred in the files parsed by Jarl.
-This option can be set at the User or Workspace level by looking for "Jarl" in the IDE settings.
-
-It is recommended to use [`jarl.toml`](config.md) if more configuration is needed.
+Use [`jarl.toml`](config.md) to configure Jarl (rules to select or ignore, files to skip, assignment operator to use, etc.).
 
 ::: {.callout-tip}
 The [Tombi extension](https://github.com/tombi-toml/tombi) is useful to have suggestions and autocompletion when editing `jarl.toml`.
