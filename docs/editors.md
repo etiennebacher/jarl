@@ -57,19 +57,6 @@ After installing it, you will need to update `settings.json`, in particular the 
 
 `language_servers` accepts multiple values, so you may have `"language_servers": ["jarl", "air"]` for example.
 
-As in Positron / VS Code, it is possible to pass a few options, such as `assignmentOperator`.
-This has to be specified in the `lsp` field:
-
-```json
-"lsp": {
-  "jarl": {
-    "initialization_options": {
-      "assignmentOperator": "="
-    }
-  }
-}
-```
-
 ## RStudio
 
 Currently, Jarl cannot be integrated in RStudio to highlight code or provide quick fix actions in the editor.

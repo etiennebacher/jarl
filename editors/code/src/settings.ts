@@ -11,7 +11,6 @@ type AssignmentOperator = "<-" | "="
 export type InitializationOptions = {
 	logLevel?: LogLevel;
 	dependencyLogLevels?: string;
-	assignmentOperator?: AssignmentOperator;
 };
 
 export type WorkspaceSettings = {
@@ -30,7 +29,6 @@ export function getInitializationOptions(
 			config,
 			"dependencyLogLevels",
 		),
-		assignmentOperator: getOptionalUserValue<AssignmentOperator>(config, "assignmentOperator") || "<-",
 	};
 }
 
