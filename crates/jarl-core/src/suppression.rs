@@ -394,8 +394,6 @@ any(is.na(x))
 
         assert!(manager.should_skip_rule(first_expr, Rule::AnyIsNa));
         assert!(manager.should_skip_rule(first_expr, Rule::Coalesce));
-        // Note: "scalar_in" doesn't exist in Rule enum, so we can't test invalid rules anymore
-        // This is actually a good thing - we can only check valid rules now!
     }
 
     #[test]
@@ -445,7 +443,6 @@ any(is.na(x))
 
         assert!(manager.should_skip_rule(first_expr, Rule::AnyIsNa));
         assert!(manager.should_skip_rule(first_expr, Rule::Coalesce));
-        // Note: "scalar_in" doesn't exist in Rule enum
     }
 
     #[test]
