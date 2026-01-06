@@ -14,6 +14,10 @@
   common to all projects (e.g. `assignment = "<-"`) without creating a
   `jarl.toml`, which is a common situation for standalone R scripts. (#253)
 
+### Other changes
+
+- The rule `assignment` is now disabled by default (#258).
+
 ### Bug fixes
 
 - When `output-format` is `json` or `github`, additional information displayed in
