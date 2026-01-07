@@ -6,164 +6,62 @@ mod tests {
 
     #[test]
     fn test_no_lint_redundant_ifelse() {
-        expect_no_lint("class(x) <- 'character'", "redundant_ifelse", None);
-        expect_no_lint(
-            "identical(class(x), c('glue', 'character'))",
-            "redundant_ifelse",
-            None,
-        );
-        expect_no_lint("all(sup %in% class(model))", "redundant_ifelse", None);
+        // Normal ifelse calls with non-boolean constants
+        expect_no_lint("ifelse(x > 0, 1, 0)", "redundant_ifelse", None);
+        expect_no_lint("ifelse(x > 0, 'yes', 'no')", "redundant_ifelse", None);
+        expect_no_lint("ifelse(x > 0, x, y)", "redundant_ifelse", None);
+        expect_no_lint("ifelse(x > 0, TRUE, 0)", "redundant_ifelse", None);
+        expect_no_lint("ifelse(x > 0, 1, FALSE)", "redundant_ifelse", None);
 
-        // We cannot infer the use that will be made of this output, so we can't
-        // report it:
+        // if_else with non-boolean constants
+        expect_no_lint("dplyr::if_else(x > 0, 1, 0)", "redundant_ifelse", None);
+        expect_no_lint("if_else(x > 0, 'yes', 'no')", "redundant_ifelse", None);
+
+        // fifelse with non-boolean constants
+        expect_no_lint("data.table::fifelse(x > 0, 1, 0)", "redundant_ifelse", None);
+        expect_no_lint("fifelse(x > 0, x, y)", "redundant_ifelse", None);
+
+        // Calls with more than 3 arguments (shouldn't be handled)
+        expect_no_lint("ifelse(x > 0, TRUE, FALSE, NA)", "redundant_ifelse", None);
         expect_no_lint(
-            "is_regression <- class(x) == 'lm'",
-            "redundant_ifelse",
-            None,
-        );
-        expect_no_lint(
-            "is_regression <- 'lm' == class(x)",
-            "redundant_ifelse",
-            None,
-        );
-        expect_no_lint(
-            "is_regression <- \"lm\" == class(x)",
+            "dplyr::if_else(x > 0, TRUE, FALSE, missing = NA)",
             "redundant_ifelse",
             None,
         );
 
-        expect_no_lint("identical(foo(x), 'a')", "redundant_ifelse", None);
-        expect_no_lint("identical(foo(x), c('a', 'b'))", "redundant_ifelse", None);
+        // Other functions that aren't ifelse
+        expect_no_lint("if (x > 0) TRUE else FALSE", "redundant_ifelse", None);
+        expect_no_lint("my_ifelse(x > 0, TRUE, FALSE)", "redundant_ifelse", None);
     }
 
     #[test]
-    fn test_lint_redundant_ifelse() {
+    fn test_redundant_ifelse_complex_conditions() {
         use insta::assert_snapshot;
 
-        let expected_message = "Comparing `class(x)` with";
+        // Complex conditions should still be detected
+        let expected_message = "This `ifelse()` is redundant";
 
         expect_lint(
-            "if (class(x) == 'character') 1",
+            "ifelse(x > 0 & y < 10, TRUE, FALSE)",
             expected_message,
             "redundant_ifelse",
             None,
         );
         expect_lint(
-            "if (base::class(x) == 'character') 1",
+            "ifelse(foo(bar(x)) == 'test', TRUE, FALSE)",
             expected_message,
             "redundant_ifelse",
             None,
-        );
-        expect_lint(
-            "if ('character' %in% class(x)) 1",
-            expected_message,
-            "redundant_ifelse",
-            None,
-        );
-        expect_lint(
-            "if (class(x) %in% 'character') 1",
-            expected_message,
-            "redundant_ifelse",
-            None,
-        );
-        expect_lint(
-            "if (class(x) != 'character') 1",
-            expected_message,
-            "redundant_ifelse",
-            None,
-        );
-        expect_lint(
-            "while (class(x) != 'character') 1",
-            expected_message,
-            "redundant_ifelse",
-            None,
-        );
-        expect_lint(
-            "x[if (class(x) == 'foo') 1 else 2]",
-            expected_message,
-            "redundant_ifelse",
-            None,
-        );
-
-        // No fixes because we can't infer if it is correct or not.
-        assert_snapshot!(
-            "no_fix_output",
-            get_fixed_text(
-                vec!["is_regression <- class(x) == 'lm'",],
-                "redundant_ifelse",
-                None
-            )
         );
 
         assert_snapshot!(
-            "fix_output",
+            "complex_conditions",
             get_fixed_text(
                 vec![
-                    "is_regression <- class(x) == 'lm'",
-                    "if (class(x) == 'character') 1",
-                    "is_regression <- 'lm' == class(x)",
-                    "is_regression <- \"lm\" == class(x)",
-                    "if ('character' %in% class(x)) 1",
-                    "if (class(x) %in% 'character') 1",
-                    "if (class(x) != 'character') 1",
-                    "while (class(x) != 'character') 1",
-                    "x[if (class(x) == 'foo') 1 else 2]",
-                    "if (class(foo(bar(y) + 1)) == 'abc') 1",
-                    "if (my_fun(class(x) != 'character')) 1",
-                ],
-                "redundant_ifelse",
-                None
-            )
-        );
-    }
-
-    #[test]
-    fn test_lint_identical_class() {
-        use insta::assert_snapshot;
-
-        let expected_message = "Using `identical(class(x), 'a')`";
-
-        // Test identical() - these are always linted regardless of context
-        expect_lint(
-            "is_regression <- identical(class(x), 'lm')",
-            expected_message,
-            "redundant_ifelse",
-            None,
-        );
-        expect_lint(
-            "is_regression <- identical('lm', class(x))",
-            expected_message,
-            "redundant_ifelse",
-            None,
-        );
-        expect_lint(
-            "if (identical(class(x), 'character')) 1",
-            expected_message,
-            "redundant_ifelse",
-            None,
-        );
-        expect_lint(
-            "if (identical('character', class(x))) 1",
-            expected_message,
-            "redundant_ifelse",
-            None,
-        );
-        expect_lint(
-            "while (identical(class(x), 'foo')) 1",
-            expected_message,
-            "redundant_ifelse",
-            None,
-        );
-
-        assert_snapshot!(
-            "identical_class",
-            get_fixed_text(
-                vec![
-                    "if (identical(class(x), 'character')) 1",
-                    "if (identical('character', class(x))) 1",
-                    "while (identical(class(x), 'foo')) 1",
-                    "is_regression <- identical(class(x), 'lm')",
-                    "is_regression <- identical('lm', class(x))",
+                    "ifelse(x > 0 & y < 10, TRUE, FALSE)",
+                    "ifelse(x > 0 | y < 10, FALSE, TRUE)",
+                    "ifelse(foo(bar(x)) == 'test', TRUE, FALSE)",
+                    "ifelse(!is.na(x) & x > 0, TRUE, FALSE)",
                 ],
                 "redundant_ifelse",
                 None
@@ -174,14 +72,50 @@ mod tests {
     #[test]
     fn test_redundant_ifelse_with_comments_no_fix() {
         use insta::assert_snapshot;
+
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",
             get_fixed_text(
                 vec![
-                    "# leading comment\nif (class(x) == 'foo') 1",
-                    "if(\n  class(\n  # comment\nx) == 'foo'\n) 1",
-                    "if (class(x) == 'foo') 1 # trailing comment",
+                    "# leading comment\nifelse(x > 0, TRUE, FALSE)",
+                    "ifelse(\n  # comment\n  x > 0, TRUE, FALSE)",
+                    "ifelse(x > 0, TRUE, FALSE) # trailing comment",
+                ],
+                "redundant_ifelse",
+                None
+            )
+        );
+    }
+
+    #[test]
+    fn test_redundant_ifelse_all_variants() {
+        use insta::assert_snapshot;
+
+        // Comprehensive test with all function variants and patterns
+        assert_snapshot!(
+            "all_variants",
+            get_fixed_text(
+                vec![
+                    // ifelse variants
+                    "ifelse(x > 0, TRUE, FALSE)",
+                    "ifelse(x > 0, FALSE, TRUE)",
+                    "ifelse(x > 0, TRUE, TRUE)",
+                    "ifelse(x > 0, FALSE, FALSE)",
+                    // if_else variants
+                    "if_else(x > 0, TRUE, FALSE)",
+                    "if_else(x > 0, FALSE, TRUE)",
+                    "if_else(x > 0, TRUE, TRUE)",
+                    "if_else(x > 0, FALSE, FALSE)",
+                    // fifelse variants
+                    "fifelse(x > 0, TRUE, FALSE)",
+                    "fifelse(x > 0, FALSE, TRUE)",
+                    "fifelse(x > 0, TRUE, TRUE)",
+                    "fifelse(x > 0, FALSE, FALSE)",
+                    // With namespace
+                    "base::ifelse(x > 0, TRUE, FALSE)",
+                    "dplyr::if_else(x > 0, TRUE, FALSE)",
+                    "data.table::fifelse(x > 0, TRUE, FALSE)",
                 ],
                 "redundant_ifelse",
                 None

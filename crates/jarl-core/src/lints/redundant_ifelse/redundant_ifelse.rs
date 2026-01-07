@@ -35,7 +35,7 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// Use instead:
 /// ```r
 /// x %in% letters
-/// !x > 1 # (or `!(x > 1)` or `x <= 1`)
+/// !(x > 1) # (or `x <= 1`)
 /// ```
 pub fn redundant_ifelse(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let function = ast.function()?;
@@ -85,44 +85,51 @@ pub fn redundant_ifelse(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    let (msg, suggestion, replacement) = if arg_true_is_true && arg_false_is_false {
+    let range = ast.syntax().text_trimmed_range();
+
+    let (msg, suggestion, fix) = if arg_true_is_true && arg_false_is_false {
         (
             format!("This `{}()` is redundant.", fn_name),
             "Use `condition` directly.".to_string(),
-            arg_cond.to_string(),
+            Fix {
+                content: arg_cond.to_string(),
+                start: range.start().into(),
+                end: range.end().into(),
+                to_skip: node_contains_comments(ast.syntax()),
+            },
         )
     } else if arg_true_is_false && arg_false_is_true {
         (
             format!("This `{}()` is redundant.", fn_name),
             "Use `!condition` directly.".to_string(),
-            format!("!{}", arg_cond.to_string()),
+            Fix {
+                content: format!("!({})", arg_cond.to_string()),
+
+                start: range.start().into(),
+                end: range.end().into(),
+                to_skip: node_contains_comments(ast.syntax()),
+            },
         )
     } else if arg_true_is_true && arg_false_is_true {
         (
             format!("This `{}()` always evaluates to `TRUE`.", fn_name),
             "This is likely wrong.".to_string(),
-            format!("!{}", arg_cond.to_string()),
+            Fix::empty(),
         )
     } else if arg_true_is_false && arg_false_is_false {
         (
             format!("This `{}()` always evaluates to `FALSE`.", fn_name),
             "This is likely wrong.".to_string(),
-            format!("!{}", arg_cond.to_string()),
+            Fix::empty(),
         )
     } else {
         unreachable!()
     };
 
-    let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new("redundant_ifelse".to_string(), msg, Some(suggestion)),
         range,
-        Fix {
-            content: replacement,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        fix,
     );
 
     Ok(Some(diagnostic))
