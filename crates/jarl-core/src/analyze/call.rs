@@ -25,6 +25,7 @@ use crate::lints::lengths::lengths::lengths;
 use crate::lints::list2df::list2df::list2df;
 use crate::lints::matrix_apply::matrix_apply::matrix_apply;
 use crate::lints::outer_negation::outer_negation::outer_negation;
+use crate::lints::redundant_ifelse::redundant_ifelse::redundant_ifelse;
 use crate::lints::sample_int::sample_int::sample_int;
 use crate::lints::seq2::seq2::seq2;
 use crate::lints::sprintf::sprintf::sprintf;
@@ -130,6 +131,11 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
         && !checker.should_skip_rule(node, Rule::OuterNegation)
     {
         checker.report_diagnostic(outer_negation(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::RedundantIfelse)
+        && !checker.should_skip_rule(node, Rule::RedundantIfelse)
+    {
+        checker.report_diagnostic(redundant_ifelse(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::SampleInt) && !checker.should_skip_rule(node, Rule::SampleInt)
     {

@@ -409,6 +409,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    RedundantIfelse => {
+        name: "redundant_ifelse",
+        categories: [Corr, Perf, Read],
+        default: Enabled,
+        fix: Safe,
+        min_r_version: None,
+    },
     Repeat => {
         name: "repeat",
         categories: [Read],

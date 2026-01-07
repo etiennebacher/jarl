@@ -32,6 +32,7 @@ pub(crate) mod matrix_apply;
 pub(crate) mod numeric_leading_zero;
 pub(crate) mod outer_negation;
 pub(crate) mod redundant_equals;
+pub(crate) mod redundant_ifelse;
 pub(crate) mod repeat;
 pub(crate) mod sample_int;
 pub(crate) mod seq;

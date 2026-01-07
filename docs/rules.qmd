@@ -77,6 +77,7 @@ dat <- as.data.frame(
     c("numeric_leading_zero", "readability", "✅", ""),
     c("outer_negation", "performance, readability", "✅", ""),
     c("redundant_equals", "readability", "✅", ""),
+    c("redundant_ifelse", "correctness, performance, readability", "✅", ""),
     c("repeat", "readability", "✅", ""),
     c("sample_int", "readability", "✅", ""),
     c("seq", "suspicious", "✅", ""),
