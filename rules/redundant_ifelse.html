@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>implicit_assignment – jarl</title>
+<title>redundant_ifelse – jarl</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -179,7 +179,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../rules/all_equal.html">List of rules</a></li><li class="breadcrumb-item"><a href="../rules/implicit_assignment.html">implicit_assignment</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../rules/all_equal.html">List of rules</a></li><li class="breadcrumb-item"><a href="../rules/redundant_ifelse.html">redundant_ifelse</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -334,7 +334,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../rules/implicit_assignment.html" class="sidebar-item-text sidebar-link active">
+  <a href="../rules/implicit_assignment.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">implicit_assignment</span></a>
   </div>
 </li>
@@ -394,7 +394,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../rules/redundant_ifelse.html" class="sidebar-item-text sidebar-link">
+  <a href="../rules/redundant_ifelse.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">redundant_ifelse</span></a>
   </div>
 </li>
@@ -476,56 +476,46 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#implicit_assignment" id="toc-implicit_assignment" class="nav-link active" data-scroll-target="#implicit_assignment">implicit_assignment</a>
+  <li><a href="#redundant_ifelse" id="toc-redundant_ifelse" class="nav-link active" data-scroll-target="#redundant_ifelse">redundant_ifelse</a>
   <ul>
   <li><a href="#what-it-does" id="toc-what-it-does" class="nav-link" data-scroll-target="#what-it-does">What it does</a></li>
   <li><a href="#why-is-this-bad" id="toc-why-is-this-bad" class="nav-link" data-scroll-target="#why-is-this-bad">Why is this bad?</a></li>
   <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
-  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
   </ul></li>
   </ul>
-<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/implicit_assignment.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/redundant_ifelse.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../rules/all_equal.html">List of rules</a></li><li class="breadcrumb-item"><a href="../rules/implicit_assignment.html">implicit_assignment</a></li></ol></nav></header>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../rules/all_equal.html">List of rules</a></li><li class="breadcrumb-item"><a href="../rules/redundant_ifelse.html">redundant_ifelse</a></li></ol></nav></header>
 
 
 
 
-<section id="implicit_assignment" class="level1">
-<h1>implicit_assignment</h1>
+<section id="redundant_ifelse" class="level1">
+<h1>redundant_ifelse</h1>
 <section id="what-it-does" class="level2">
 <h2 class="anchored" data-anchor-id="what-it-does">What it does</h2>
-<p>Checks for implicit assignment in function calls and other situations.</p>
+<p>This checks for cases of <code>ifelse()</code>, <code>dplyr::if_else()</code>, and <code>data.table::fifelse()</code> where the output is always a boolean. In those cases, using the condition directly is enough, the function call is redundant.</p>
 </section>
 <section id="why-is-this-bad" class="level2">
 <h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
-<p>Assigning inside function calls or other situations such as in <code>if()</code> makes the code difficult to read, and should be avoided.</p>
+<p>This rule looks for 4 cases:</p>
+<ul>
+<li><code>ifelse(condition, TRUE, FALSE)</code></li>
+<li><code>ifelse(condition, FALSE, TRUE)</code></li>
+<li><code>ifelse(condition, TRUE, TRUE)</code></li>
+<li><code>ifelse(condition, FALSE, FALSE)</code></li>
+</ul>
+<p>The first two cases can be simplified to <code>condition</code> and <code>!condition</code> respectively. The last two cases are very likely to be mistakes since the output is always the same.</p>
+<p>This rule has a safe fix and doesn’t handle calls to <code>dplyr::if_else()</code> and <code>data.table::fifelse()</code> when they have additional arguments.</p>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(x <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>))</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>x</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">any</span>(y <span class="ot">&lt;-</span> x <span class="sc">&gt;</span> <span class="dv">0</span>)) {</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(y)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ifelse</span>(x <span class="sc">%in%</span> letters, <span class="cn">TRUE</span>, <span class="cn">FALSE</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>dplyr<span class="sc">::</span><span class="fu">if_else</span>(x <span class="sc">&gt;</span> <span class="dv">1</span>, <span class="cn">FALSE</span>, <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Use instead:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(x)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>x</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>larger <span class="ot">&lt;-</span> x <span class="sc">&gt;</span> <span class="dv">0</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">any</span>(larger)) {</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(larger)</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="references" class="level2">
-<h2 class="anchored" data-anchor-id="references">References</h2>
-<p>See:</p>
-<ul>
-<li><a href="https://style.tidyverse.org/syntax.html#assignment" target="_blank">https://style.tidyverse.org/syntax.html#assignment</a></li>
-</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>x <span class="sc">%in%</span> letters</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="sc">!</span>(x <span class="sc">&gt;</span> <span class="dv">1</span>) <span class="co"># (or `x &lt;= 1`)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>
@@ -937,4 +927,4 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/implicit_assignment.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/redundant_ifelse.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
