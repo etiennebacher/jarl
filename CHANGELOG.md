@@ -14,6 +14,9 @@
   common to all projects (e.g. `assignment = "<-"`) without creating a
   `jarl.toml`, which is a common situation for standalone R scripts. (#253)
 
+- New rules:
+  - `redundant_ifelse` (#260)
+
 ### Other changes
 
 - The rule `assignment` is now disabled by default (#258).

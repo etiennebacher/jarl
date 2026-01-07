@@ -87,6 +87,7 @@ website:
       - rules/numeric_leading_zero.md
       - rules/outer_negation.md
       - rules/redundant_equals.md
+      - rules/redundant_ifelse.md
       - rules/repeat.md
       - rules/sample_int.md
       - rules/seq.md
