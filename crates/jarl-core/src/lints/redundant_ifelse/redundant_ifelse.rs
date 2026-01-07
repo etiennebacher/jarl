@@ -103,7 +103,7 @@ pub fn redundant_ifelse(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             format!("This `{}()` is redundant.", fn_name),
             "Use `!condition` directly.".to_string(),
             Fix {
-                content: format!("!({})", arg_cond.to_string()),
+                content: format!("!({})", arg_cond),
 
                 start: range.start().into(),
                 end: range.end().into(),
