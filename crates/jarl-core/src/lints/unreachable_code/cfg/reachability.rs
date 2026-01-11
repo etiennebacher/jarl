@@ -17,6 +17,8 @@ pub enum UnreachableReason {
     AfterReturn,
     /// Code after a break statement
     AfterBreak,
+    /// Code after a statement to stop the execution (`stop()`, `abort()`, etc.)
+    AfterStop,
     /// Code after a next statement
     AfterNext,
     /// Code in a branch that's never taken (constant condition)
@@ -26,13 +28,18 @@ pub enum UnreachableReason {
 }
 
 /// Find all unreachable code in a control flow graph
+///
+/// This function:
+/// 1. Uses BFS (Breadth-First Search) to find all reachable blocks from entry
+/// 2. Identifies unreachable blocks and determines why they're unreachable
+/// 3. Groups contiguous unreachable statements with the same reason into single diagnostics
 pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo> {
     let mut unreachable = Vec::new();
 
-    // First, find blocks reachable from entry
+    // Step 1: Find all blocks reachable from the entry block using BFS traversal
     let reachable = find_reachable_blocks(cfg);
 
-    // Process blocks in order and group contiguous unreachable ones
+    // Step 2: Process blocks in order and group contiguous unreachable ones
     let mut current_group: Option<(TextRange, UnreachableReason)> = None;
 
     for block in &cfg.blocks {
@@ -90,36 +97,36 @@ pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo>
         } else {
             // Block is reachable, flush any current group
             if let Some((group_range, group_reason)) = current_group.take() {
-                unreachable.push(UnreachableCodeInfo {
-                    range: group_range,
-                    reason: group_reason,
-                });
+                unreachable.push(UnreachableCodeInfo { range: group_range, reason: group_reason });
             }
         }
     }
 
     // Don't forget to flush any remaining group at the end
     if let Some((group_range, group_reason)) = current_group {
-        unreachable.push(UnreachableCodeInfo {
-            range: group_range,
-            reason: group_reason,
-        });
+        unreachable.push(UnreachableCodeInfo { range: group_range, reason: group_reason });
     }
 
     unreachable
 }
 
 /// Determine why a block is unreachable by examining its context
+///
+/// Priority order:
+/// 1. Check if a predecessor has a terminator (return/break/next)
+/// 2. Check if it's a dead branch (has predecessor pointer but no actual edge)
+/// 3. Default to NoPathFromEntry
 fn determine_unreachable_reason(cfg: &ControlFlowGraph, block_id: BlockId) -> UnreachableReason {
     use super::graph::Terminator;
 
     // Check the block's predecessors to find what terminator caused unreachability
     if let Some(block) = cfg.block(block_id) {
-        // First check for terminators (return/break/next) - these take priority
+        // Priority 1: Check for terminators (return/break/next) - these take priority
         for &pred_id in &block.predecessors {
             if let Some(pred_block) = cfg.block(pred_id) {
                 match &pred_block.terminator {
                     Terminator::Return => return UnreachableReason::AfterReturn,
+                    Terminator::Stop => return UnreachableReason::AfterStop,
                     Terminator::Break => return UnreachableReason::AfterBreak,
                     Terminator::Next => return UnreachableReason::AfterNext,
                     _ => {}
@@ -127,7 +134,9 @@ fn determine_unreachable_reason(cfg: &ControlFlowGraph, block_id: BlockId) -> Un
             }
         }
 
-        // If no terminator found, check if it's a dead branch (has predecessor but no actual edge)
+        // Priority 2: Check if it's a dead branch from a constant condition
+        // Dead branches have a predecessor pointer (for tracking) but no actual CFG edge
+        // This happens when we detect `if (TRUE)` or `if (FALSE)` during CFG construction
         if !block.predecessors.is_empty() {
             let has_incoming_edge = block.predecessors.iter().any(|&pred_id| {
                 cfg.block(pred_id)
@@ -142,17 +151,26 @@ fn determine_unreachable_reason(cfg: &ControlFlowGraph, block_id: BlockId) -> Un
         }
     }
 
+    // Priority 3: Default reason
     UnreachableReason::NoPathFromEntry
 }
 
-/// Find all blocks reachable from the entry block using BFS
+/// Find all blocks reachable from the entry block using BFS (Breadth-First Search)
+///
+/// BFS is a graph traversal algorithm that explores nodes level by level:
+/// - Start with the entry block
+/// - Visit each reachable successor before moving to the next level
+/// - Mark blocks as visited to avoid infinite loops
+///
+/// Time complexity: O(V + E) where V = number of blocks, E = number of edges
+/// Space complexity: O(V) for the visited set and queue
 fn find_reachable_blocks(cfg: &ControlFlowGraph) -> FxHashSet<BlockId> {
     let mut visited = FxHashSet::default();
     let mut queue = vec![cfg.entry];
 
     while let Some(block_id) = queue.pop() {
         if visited.insert(block_id) {
-            // Add all successors to the queue
+            // Add all successors to the queue (only following actual edges, not predecessor pointers)
             if let Some(block) = cfg.block(block_id) {
                 for &successor in &block.successors {
                     if !visited.contains(&successor) {

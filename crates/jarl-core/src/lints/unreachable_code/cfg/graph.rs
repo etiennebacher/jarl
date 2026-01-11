@@ -52,6 +52,9 @@ pub enum Terminator {
     /// Return from function (exits the CFG)
     Return,
 
+    /// Throw an error from function (exits the CFG)
+    Stop,
+
     /// Break statement (exits innermost loop)
     Break,
 

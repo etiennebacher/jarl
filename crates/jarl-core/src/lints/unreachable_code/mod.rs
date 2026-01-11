@@ -226,4 +226,56 @@ foo <- function(x) {
 "#;
         expect_no_lint(code, "unreachable_code", None);
     }
+
+    #[test]
+    fn test_code_after_stop() {
+        let code = r#"
+foo <- function() {
+  stop("a")
+  1 + 1
+}
+"#;
+        expect_lint(
+            code,
+            "because it appears after a `stop()` statement ",
+            "unreachable_code",
+            None,
+        );
+
+        let code = r#"
+foo <- function() {
+  abort("a")
+  1 + 1
+}
+"#;
+        expect_lint(
+            code,
+            "because it appears after a `stop()` statement ",
+            "unreachable_code",
+            None,
+        );
+
+        let code = r#"
+foo <- function() {
+  cli_abort("a")
+  1 + 1
+}
+"#;
+        expect_lint(
+            code,
+            "because it appears after a `stop()` statement ",
+            "unreachable_code",
+            None,
+        );
+
+        let code = r#"
+        foo <- function() {
+          if (x > 0) {
+            cli_abort("a")
+          }
+          1 + 1
+        }
+        "#;
+        expect_no_lint(code, "unreachable_code", None);
+    }
 }

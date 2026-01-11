@@ -1,7 +1,7 @@
 use crate::diagnostic::*;
 use air_r_syntax::*;
 
-use super::cfg::{build_cfg, find_unreachable_code, UnreachableReason};
+use super::cfg::{UnreachableReason, build_cfg, find_unreachable_code};
 
 /// ## What it does
 ///
@@ -44,6 +44,9 @@ pub fn unreachable_code(ast: &RFunctionDefinition) -> anyhow::Result<Vec<Diagnos
         let message = match unreachable_info.reason {
             UnreachableReason::AfterReturn => {
                 "This code is unreachable because it appears after a return statement."
+            }
+            UnreachableReason::AfterStop => {
+                "This code is unreachable because it appears after a `stop()` statement (or equivalent)."
             }
             UnreachableReason::AfterBreak => {
                 "This code is unreachable because it appears after a break statement."

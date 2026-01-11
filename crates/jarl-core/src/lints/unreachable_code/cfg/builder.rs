@@ -93,7 +93,7 @@ impl CfgBuilder {
             if let Some(block) = self.cfg.block(current) {
                 if matches!(
                     block.terminator,
-                    Terminator::Return | Terminator::Break | Terminator::Next
+                    Terminator::Return | Terminator::Break | Terminator::Next | Terminator::Stop
                 ) {
                     // Create a new unreachable block for remaining statements
                     if idx + 1 < statements.len() {
@@ -164,15 +164,19 @@ impl CfgBuilder {
             }
             RSyntaxKind::R_CALL => {
                 // Check if this is a return, break, or next call
-                let text = stmt.text_trimmed().to_string();
-                if text.trim().starts_with("return") {
+                let fun_name = stmt.first_child().unwrap().to_string();
+                let fun_name = fun_name.trim();
+                if fun_name.trim().starts_with("return") {
                     self.build_return(current, stmt.clone());
                     current
-                } else if text.trim().starts_with("break") {
+                } else if fun_name == "break" {
                     self.build_break(current, stmt.clone());
                     current
-                } else if text.trim().starts_with("next") {
+                } else if fun_name == "next" {
                     self.build_next(current, stmt.clone());
+                    current
+                } else if ["stop", "abort", "cli_abort"].contains(&fun_name) {
+                    self.build_stop(current, stmt.clone());
                     current
                 } else {
                     self.add_statement(current, stmt.clone());
@@ -251,7 +255,7 @@ impl CfgBuilder {
             if let Some(block) = self.cfg.block(then_end) {
                 if !matches!(
                     block.terminator,
-                    Terminator::Return | Terminator::Break | Terminator::Next
+                    Terminator::Return | Terminator::Break | Terminator::Next | Terminator::Stop
                 ) {
                     if let Some(b) = self.cfg.block_mut(then_end) {
                         b.terminator = Terminator::Goto;
@@ -273,6 +277,7 @@ impl CfgBuilder {
                         Terminator::Return { .. }
                             | Terminator::Break { .. }
                             | Terminator::Next { .. }
+                            | Terminator::Stop { .. }
                     ) {
                         if let Some(b) = self.cfg.block_mut(else_end) {
                             b.terminator = Terminator::Goto;
@@ -330,7 +335,7 @@ impl CfgBuilder {
             if let Some(block) = self.cfg.block(body_end) {
                 if !matches!(
                     block.terminator,
-                    Terminator::Return | Terminator::Break | Terminator::Next
+                    Terminator::Return | Terminator::Break | Terminator::Next | Terminator::Stop
                 ) {
                     if let Some(b) = self.cfg.block_mut(body_end) {
                         b.terminator = Terminator::Goto;
@@ -383,7 +388,7 @@ impl CfgBuilder {
             if let Some(block) = self.cfg.block(body_end) {
                 if !matches!(
                     block.terminator,
-                    Terminator::Return | Terminator::Break | Terminator::Next
+                    Terminator::Return | Terminator::Break | Terminator::Next | Terminator::Stop
                 ) {
                     if let Some(b) = self.cfg.block_mut(body_end) {
                         b.terminator = Terminator::Goto;
@@ -428,7 +433,7 @@ impl CfgBuilder {
             if let Some(block) = self.cfg.block(body_end) {
                 if !matches!(
                     block.terminator,
-                    Terminator::Return | Terminator::Break | Terminator::Next
+                    Terminator::Return | Terminator::Break | Terminator::Next | Terminator::Stop
                 ) {
                     if let Some(b) = self.cfg.block_mut(body_end) {
                         b.terminator = Terminator::Goto;
@@ -447,6 +452,17 @@ impl CfgBuilder {
     fn build_return(&mut self, current: BlockId, _node: RSyntaxNode) {
         if let Some(block) = self.cfg.block_mut(current) {
             block.terminator = Terminator::Return;
+        }
+        // Return goes to exit (but we don't add edge since returns don't flow)
+    }
+
+    /// Build stop statement.
+    ///
+    /// This is a list of R functions that stop the execution, e.g. `stop()`,
+    /// `abort()`, `cli_abort()`.
+    fn build_stop(&mut self, current: BlockId, _node: RSyntaxNode) {
+        if let Some(block) = self.cfg.block_mut(current) {
+            block.terminator = Terminator::Stop;
         }
         // Return goes to exit (but we don't add edge since returns don't flow)
     }
