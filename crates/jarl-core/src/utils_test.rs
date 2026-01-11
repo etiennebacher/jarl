@@ -324,3 +324,59 @@ pub fn get_unsafe_fixed_text(text: Vec<&str>, rule: &str) -> String {
 
     output.trim_end().to_string()
 }
+
+/// Format diagnostics as they would appear in the console for snapshot testing
+///
+/// This function uses annotate_snippets (same as CLI output) to format diagnostics
+/// with line numbers and highlighted ranges.
+///
+/// # Example
+/// ```
+/// let output = format_diagnostics("x <- 1\nreturn(2)\ny <- 3", "unreachable_code", None);
+/// insta::assert_snapshot!(output);
+/// ```
+pub fn format_diagnostics(text: &str, rule: &str, min_r_version: Option<&str>) -> String {
+    use annotate_snippets::{Level, Renderer, Snippet};
+
+    let diagnostics = check_code(text, rule, min_r_version);
+
+    if diagnostics.is_empty() {
+        return "All checks passed!".to_string();
+    }
+
+    // Force plain rendering for consistent snapshots (no colors)
+    let renderer = Renderer::plain();
+
+    let mut output = String::new();
+
+    for diagnostic in &diagnostics {
+        let start_offset = usize::from(diagnostic.range.start());
+        let end_offset = usize::from(diagnostic.range.end());
+
+        // Build the snippet annotation
+        let snippet = Snippet::source(text)
+            .origin("<test>")
+            .fold(true)
+            .annotation(
+                Level::Warning
+                    .span(start_offset..end_offset)
+                    .label(&diagnostic.message.body),
+            );
+
+        // Create the message
+        let message = Level::Warning
+            .title(&diagnostic.message.name)
+            .snippet(snippet);
+
+        let rendered = renderer.render(message);
+        output.push_str(&format!("{}\n", rendered));
+    }
+
+    output.push_str(&format!(
+        "Found {} error{}.",
+        diagnostics.len(),
+        if diagnostics.len() == 1 { "" } else { "s" }
+    ));
+
+    output
+}
