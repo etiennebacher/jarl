@@ -190,6 +190,30 @@ foo <- function() {
     }
 
     #[test]
+    fn test_dead_branch_t_and_f_are_not_true_and_false() {
+        let code = r#"
+foo <- function() {
+  if (F) {
+    "a"
+  } else {
+    "b"
+  }
+}
+"#;
+        expect_no_lint(code, "unreachable_code", None);
+        let code = r#"
+foo <- function() {
+  if (T) {
+    "a"
+  } else {
+    "b"
+  }
+}
+"#;
+        expect_no_lint(code, "unreachable_code", None);
+    }
+
+    #[test]
     fn test_no_dead_branch_variable_condition() {
         let code = r#"
 foo <- function(x) {
