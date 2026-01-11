@@ -248,18 +248,28 @@ impl CfgBuilder {
 
         // Build then branch
         if let Ok(consequence) = fields.consequence {
-            let then_end = self.build_expression(consequence.syntax(), then_block, exit);
-            // Only add edge if the then block doesn't end with return/break/next
-            if let Some(block) = self.cfg.block(then_end)
-                && !matches!(
-                    block.terminator,
-                    Terminator::Return | Terminator::Break | Terminator::Next | Terminator::Stop
-                )
-            {
-                if let Some(b) = self.cfg.block_mut(then_end) {
-                    b.terminator = Terminator::Goto;
+            // If this is a dead branch (condition is false), mark the entire branch as unreachable
+            // by storing the whole branch syntax node
+            if constant_value == Some(false) {
+                // Dead then branch - store the entire branch as a single statement
+                if let Some(block) = self.cfg.block_mut(then_block) {
+                    block.statements.push(consequence.syntax().clone());
                 }
-                self.cfg.add_edge(then_end, after_if);
+            } else {
+                // Reachable or maybe-reachable branch - build normally
+                let then_end = self.build_expression(consequence.syntax(), then_block, exit);
+                // Only add edge if the then block doesn't end with return/break/next
+                if let Some(block) = self.cfg.block(then_end)
+                    && !matches!(
+                        block.terminator,
+                        Terminator::Return | Terminator::Break | Terminator::Next | Terminator::Stop
+                    )
+                {
+                    if let Some(b) = self.cfg.block_mut(then_end) {
+                        b.terminator = Terminator::Goto;
+                    }
+                    self.cfg.add_edge(then_end, after_if);
+                }
             }
         }
 
@@ -267,21 +277,31 @@ impl CfgBuilder {
         if let Some(else_clause) = fields.else_clause {
             let else_fields = else_clause.as_fields();
             if let Ok(alt_body) = else_fields.alternative {
-                let else_end = self.build_expression(alt_body.syntax(), else_block, exit);
-                // Only add edge if the else block doesn't end with return/break/next
-                if let Some(block) = self.cfg.block(else_end)
-                    && !matches!(
-                        block.terminator,
-                        Terminator::Return
-                            | Terminator::Break
-                            | Terminator::Next
-                            | Terminator::Stop
-                    )
-                {
-                    if let Some(b) = self.cfg.block_mut(else_end) {
-                        b.terminator = Terminator::Goto;
+                // If this is a dead branch (condition is true), mark the entire branch as unreachable
+                // by storing the whole branch syntax node
+                if constant_value == Some(true) {
+                    // Dead else branch - store the entire branch as a single statement
+                    if let Some(block) = self.cfg.block_mut(else_block) {
+                        block.statements.push(alt_body.syntax().clone());
                     }
-                    self.cfg.add_edge(else_end, after_if);
+                } else {
+                    // Reachable or maybe-reachable branch - build normally
+                    let else_end = self.build_expression(alt_body.syntax(), else_block, exit);
+                    // Only add edge if the else block doesn't end with return/break/next
+                    if let Some(block) = self.cfg.block(else_end)
+                        && !matches!(
+                            block.terminator,
+                            Terminator::Return
+                                | Terminator::Break
+                                | Terminator::Next
+                                | Terminator::Stop
+                        )
+                    {
+                        if let Some(b) = self.cfg.block_mut(else_end) {
+                            b.terminator = Terminator::Goto;
+                        }
+                        self.cfg.add_edge(else_end, after_if);
+                    }
                 }
             }
         } else {

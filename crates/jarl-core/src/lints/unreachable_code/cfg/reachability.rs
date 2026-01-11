@@ -73,19 +73,20 @@ pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo>
     unreachable_blocks.sort_by_key(|(range, _)| range.start());
 
     // Step 4: Group contiguous unreachable code with the same reason
+    // Since dead branches now collect all statements in a single block,
+    // we only need to merge blocks that are directly contiguous (no gap)
     let mut current_group: Option<(TextRange, UnreachableReason)> = None;
 
     for (block_range, reason) in unreachable_blocks {
         if let Some((ref mut group_range, ref group_reason)) = current_group {
-            // Check if this block is contiguous in source code and has the same reason
-            let is_contiguous = block_range.start() == group_range.end();
             let same_reason = std::mem::discriminant(group_reason) == std::mem::discriminant(&reason);
+            let is_contiguous = block_range.start() == group_range.end();
 
-            if is_contiguous && same_reason {
-                // Extend the current group
+            if same_reason && is_contiguous {
+                // Extend the current group to cover this block
                 *group_range = group_range.cover(block_range);
             } else {
-                // Flush current group and start a new one
+                // Different reason or not contiguous - flush current group and start a new one
                 unreachable.push(UnreachableCodeInfo {
                     range: *group_range,
                     reason: group_reason.clone(),
@@ -114,9 +115,11 @@ pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo>
 /// Priority order:
 /// 1. Check if a predecessor has a terminator (return/break/next)
 /// 2. Check if it's a dead branch (has predecessor pointer but no actual edge)
-/// 3. Default to NoPathFromEntry
+/// 3. Check if any transitive predecessor is a dead branch
+/// 4. Default to NoPathFromEntry
 fn determine_unreachable_reason(cfg: &ControlFlowGraph, block_id: BlockId) -> UnreachableReason {
     use super::graph::Terminator;
+    use rustc_hash::FxHashSet;
 
     // Check the block's predecessors to find what terminator caused unreachability
     if let Some(block) = cfg.block(block_id) {
@@ -125,9 +128,9 @@ fn determine_unreachable_reason(cfg: &ControlFlowGraph, block_id: BlockId) -> Un
             if let Some(pred_block) = cfg.block(pred_id) {
                 match &pred_block.terminator {
                     Terminator::Return => return UnreachableReason::AfterReturn,
-                    Terminator::Stop => return UnreachableReason::AfterStop,
                     Terminator::Break => return UnreachableReason::AfterBreak,
                     Terminator::Next => return UnreachableReason::AfterNext,
+                    Terminator::Stop => return UnreachableReason::AfterStop,
                     _ => {}
                 }
             }
@@ -148,9 +151,43 @@ fn determine_unreachable_reason(cfg: &ControlFlowGraph, block_id: BlockId) -> Un
                 return UnreachableReason::DeadBranch;
             }
         }
+
+        // Priority 3: Check transitive predecessors for dead branches
+        // This handles nested structures within dead branches
+        let mut visited = FxHashSet::default();
+        let mut to_check = block.predecessors.clone();
+
+        while let Some(pred_id) = to_check.pop() {
+            if !visited.insert(pred_id) {
+                continue; // Already checked this block
+            }
+
+            if let Some(pred_block) = cfg.block(pred_id) {
+                // Check if this predecessor is a dead branch
+                if !pred_block.predecessors.is_empty() {
+                    let has_incoming = pred_block.predecessors.iter().any(|&pp_id| {
+                        cfg.block(pp_id)
+                            .map(|pp| pp.successors.contains(&pred_id))
+                            .unwrap_or(false)
+                    });
+
+                    if !has_incoming {
+                        // This transitive predecessor is a dead branch
+                        return UnreachableReason::DeadBranch;
+                    }
+                }
+
+                // Add this block's predecessors to continue searching
+                for &pp_id in &pred_block.predecessors {
+                    if !visited.contains(&pp_id) {
+                        to_check.push(pp_id);
+                    }
+                }
+            }
+        }
     }
 
-    // Priority 3: Default reason
+    // Priority 4: Default reason
     UnreachableReason::NoPathFromEntry
 }
 
