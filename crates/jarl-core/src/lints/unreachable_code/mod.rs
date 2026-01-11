@@ -326,7 +326,7 @@ foo <- function(bar) {
           --> <test>:10:3
            |
         10 |   1 + 1
-           |   ----- This code is in a branch that can never be executed due to a constant condition.
+           |   ----- This code has no execution path from the function entry.
            |
         Found 3 errors.
         ");

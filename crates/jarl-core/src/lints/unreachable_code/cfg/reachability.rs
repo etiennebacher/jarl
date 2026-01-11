@@ -79,7 +79,8 @@ pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo>
 
     for (block_range, reason) in unreachable_blocks {
         if let Some((ref mut group_range, ref group_reason)) = current_group {
-            let same_reason = std::mem::discriminant(group_reason) == std::mem::discriminant(&reason);
+            let same_reason =
+                std::mem::discriminant(group_reason) == std::mem::discriminant(&reason);
             let is_contiguous = block_range.start() == group_range.end();
 
             if same_reason && is_contiguous {
@@ -101,10 +102,7 @@ pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo>
 
     // Don't forget to flush any remaining group at the end
     if let Some((group_range, group_reason)) = current_group {
-        unreachable.push(UnreachableCodeInfo {
-            range: group_range,
-            reason: group_reason,
-        });
+        unreachable.push(UnreachableCodeInfo { range: group_range, reason: group_reason });
     }
 
     unreachable
@@ -119,7 +117,6 @@ pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo>
 /// 4. Default to NoPathFromEntry
 fn determine_unreachable_reason(cfg: &ControlFlowGraph, block_id: BlockId) -> UnreachableReason {
     use super::graph::Terminator;
-    use rustc_hash::FxHashSet;
 
     // Check the block's predecessors to find what terminator caused unreachability
     if let Some(block) = cfg.block(block_id) {
@@ -151,43 +148,9 @@ fn determine_unreachable_reason(cfg: &ControlFlowGraph, block_id: BlockId) -> Un
                 return UnreachableReason::DeadBranch;
             }
         }
-
-        // Priority 3: Check transitive predecessors for dead branches
-        // This handles nested structures within dead branches
-        let mut visited = FxHashSet::default();
-        let mut to_check = block.predecessors.clone();
-
-        while let Some(pred_id) = to_check.pop() {
-            if !visited.insert(pred_id) {
-                continue; // Already checked this block
-            }
-
-            if let Some(pred_block) = cfg.block(pred_id) {
-                // Check if this predecessor is a dead branch
-                if !pred_block.predecessors.is_empty() {
-                    let has_incoming = pred_block.predecessors.iter().any(|&pp_id| {
-                        cfg.block(pp_id)
-                            .map(|pp| pp.successors.contains(&pred_id))
-                            .unwrap_or(false)
-                    });
-
-                    if !has_incoming {
-                        // This transitive predecessor is a dead branch
-                        return UnreachableReason::DeadBranch;
-                    }
-                }
-
-                // Add this block's predecessors to continue searching
-                for &pp_id in &pred_block.predecessors {
-                    if !visited.contains(&pp_id) {
-                        to_check.push(pp_id);
-                    }
-                }
-            }
-        }
     }
 
-    // Priority 4: Default reason
+    // Priority 3: Default reason
     UnreachableReason::NoPathFromEntry
 }
 
