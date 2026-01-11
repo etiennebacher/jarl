@@ -51,6 +51,9 @@ pub fn unreachable_code(ast: &RFunctionDefinition) -> anyhow::Result<Vec<Diagnos
             UnreachableReason::AfterNext => {
                 "This code is unreachable because it appears after a next statement."
             }
+            UnreachableReason::DeadBranch => {
+                "This code is in a branch that can never be executed due to a constant condition."
+            }
             UnreachableReason::NoPathFromEntry => {
                 "This code has no execution path from the function entry."
             }

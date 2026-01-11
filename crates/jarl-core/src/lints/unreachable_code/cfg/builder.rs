@@ -20,6 +20,18 @@ struct LoopContext {
     break_target: BlockId,
 }
 
+/// Evaluate a constant boolean condition if possible
+fn evaluate_constant_condition(node: &RSyntaxNode) -> Option<bool> {
+    let text = node.text_trimmed().to_string();
+    let trimmed = text.trim();
+
+    match trimmed {
+        "TRUE" => Some(true),
+        "FALSE" => Some(false),
+        _ => None,
+    }
+}
+
 impl CfgBuilder {
     fn new() -> Self {
         Self {
@@ -194,13 +206,42 @@ impl CfgBuilder {
         let else_block = self.cfg.new_block();
         let after_if = self.cfg.new_block();
 
+        // Check if the condition is a constant
+        let constant_value = condition
+            .as_ref()
+            .and_then(|c| evaluate_constant_condition(c));
+
         // Set up the branch terminator
         if condition.is_some() {
             if let Some(block) = self.cfg.block_mut(current) {
                 block.terminator = Terminator::Branch;
             }
-            self.cfg.add_edge(current, then_block);
-            self.cfg.add_edge(current, else_block);
+
+            // Only add edges for branches that can actually be taken
+            match constant_value {
+                Some(true) => {
+                    // Only then branch is reachable
+                    self.cfg.add_edge(current, then_block);
+                    // Mark else_block as unreachable by adding it as a predecessor
+                    // but not connecting it from current
+                    if let Some(else_b) = self.cfg.block_mut(else_block) {
+                        else_b.predecessors.push(current);
+                    }
+                }
+                Some(false) => {
+                    // Only else branch is reachable
+                    self.cfg.add_edge(current, else_block);
+                    // Mark then_block as unreachable
+                    if let Some(then_b) = self.cfg.block_mut(then_block) {
+                        then_b.predecessors.push(current);
+                    }
+                }
+                None => {
+                    // Both branches are possible
+                    self.cfg.add_edge(current, then_block);
+                    self.cfg.add_edge(current, else_block);
+                }
+            }
         }
 
         // Build then branch

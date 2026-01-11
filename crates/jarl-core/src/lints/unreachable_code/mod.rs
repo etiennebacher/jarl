@@ -150,4 +150,56 @@ outer <- function() {
             None,
         );
     }
+
+    #[test]
+    fn test_dead_branch_if_true() {
+        let code = r#"
+foo <- function() {
+  if (TRUE) {
+    "a"
+  } else {
+    "b"  # Dead branch
+  }
+}
+"#;
+        expect_lint(
+            code,
+            "branch that can never be executed due to a constant condition",
+            "unreachable_code",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_dead_branch_if_false() {
+        let code = r#"
+foo <- function() {
+  if (FALSE) {
+    "a"  # Dead branch
+  } else {
+    "b"
+  }
+}
+"#;
+        expect_lint(
+            code,
+            "branch that can never be executed due to a constant condition",
+            "unreachable_code",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_dead_branch_variable_condition() {
+        let code = r#"
+foo <- function(x) {
+  if (x > 0) {
+    "a"
+  } else {
+    "b"
+  }
+}
+"#;
+        expect_no_lint(code, "unreachable_code", None);
+    }
 }

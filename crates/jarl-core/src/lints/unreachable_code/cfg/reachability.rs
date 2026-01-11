@@ -19,6 +19,8 @@ pub enum UnreachableReason {
     AfterBreak,
     /// Code after a next statement
     AfterNext,
+    /// Code in a branch that's never taken (constant condition)
+    DeadBranch,
     /// Code that has no path from entry
     NoPathFromEntry,
 }
@@ -113,6 +115,7 @@ fn determine_unreachable_reason(cfg: &ControlFlowGraph, block_id: BlockId) -> Un
 
     // Check the block's predecessors to find what terminator caused unreachability
     if let Some(block) = cfg.block(block_id) {
+        // First check for terminators (return/break/next) - these take priority
         for &pred_id in &block.predecessors {
             if let Some(pred_block) = cfg.block(pred_id) {
                 match &pred_block.terminator {
@@ -121,6 +124,20 @@ fn determine_unreachable_reason(cfg: &ControlFlowGraph, block_id: BlockId) -> Un
                     Terminator::Next => return UnreachableReason::AfterNext,
                     _ => {}
                 }
+            }
+        }
+
+        // If no terminator found, check if it's a dead branch (has predecessor but no actual edge)
+        if !block.predecessors.is_empty() {
+            let has_incoming_edge = block.predecessors.iter().any(|&pred_id| {
+                cfg.block(pred_id)
+                    .map(|pred| pred.successors.contains(&block_id))
+                    .unwrap_or(false)
+            });
+
+            if !has_incoming_edge {
+                // Has predecessor but no actual edge - this is a dead branch from a constant condition
+                return UnreachableReason::DeadBranch;
             }
         }
     }
