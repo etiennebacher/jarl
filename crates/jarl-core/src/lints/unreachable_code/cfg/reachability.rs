@@ -30,7 +30,9 @@ pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo>
     // First, find blocks reachable from entry
     let reachable = find_reachable_blocks(cfg);
 
-    // Any block not reachable from entry (except exit) is unreachable
+    // Process blocks in order and group contiguous unreachable ones
+    let mut current_group: Option<(TextRange, UnreachableReason)> = None;
+
     for block in &cfg.blocks {
         // Skip entry and exit blocks
         if block.id == cfg.entry || block.id == cfg.exit {
@@ -38,22 +40,68 @@ pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo>
         }
 
         if !reachable.contains(&block.id) {
-            // Determine the reason by checking what makes this unreachable
+            // This block is unreachable
             let reason = determine_unreachable_reason(cfg, block.id);
 
-            // Report each statement in the unreachable block individually
+            // If block has statements, process them
             if !block.statements.is_empty() {
-                for stmt in &block.statements {
-                    unreachable.push(UnreachableCodeInfo {
-                        range: stmt.text_trimmed_range(),
-                        reason: reason.clone(),
-                    });
+                // Get the range spanning all statements in this block
+                let first_stmt = &block.statements[0];
+                let last_stmt = &block.statements[block.statements.len() - 1];
+                let block_range = first_stmt
+                    .text_trimmed_range()
+                    .cover(last_stmt.text_trimmed_range());
+
+                // Try to merge with current group if reasons match
+                if let Some((ref mut group_range, ref group_reason)) = current_group {
+                    if std::mem::discriminant(group_reason) == std::mem::discriminant(&reason) {
+                        // Same reason, extend the range
+                        *group_range = group_range.cover(block_range);
+                    } else {
+                        // Different reason, push the current group and start a new one
+                        unreachable.push(UnreachableCodeInfo {
+                            range: *group_range,
+                            reason: group_reason.clone(),
+                        });
+                        current_group = Some((block_range, reason));
+                    }
+                } else {
+                    // No current group, start a new one
+                    current_group = Some((block_range, reason));
                 }
             } else if let Some(range) = block.range {
-                // If block has no statements but has a range, report that
-                unreachable.push(UnreachableCodeInfo { range, reason: reason.clone() });
+                // Block has no statements but has a range
+                if let Some((ref mut group_range, ref group_reason)) = current_group {
+                    if std::mem::discriminant(group_reason) == std::mem::discriminant(&reason) {
+                        *group_range = group_range.cover(range);
+                    } else {
+                        unreachable.push(UnreachableCodeInfo {
+                            range: *group_range,
+                            reason: group_reason.clone(),
+                        });
+                        current_group = Some((range, reason));
+                    }
+                } else {
+                    current_group = Some((range, reason));
+                }
+            }
+        } else {
+            // Block is reachable, flush any current group
+            if let Some((group_range, group_reason)) = current_group.take() {
+                unreachable.push(UnreachableCodeInfo {
+                    range: group_range,
+                    reason: group_reason,
+                });
             }
         }
+    }
+
+    // Don't forget to flush any remaining group at the end
+    if let Some((group_range, group_reason)) = current_group {
+        unreachable.push(UnreachableCodeInfo {
+            range: group_range,
+            reason: group_reason,
+        });
     }
 
     unreachable
