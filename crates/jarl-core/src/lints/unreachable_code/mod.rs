@@ -278,4 +278,34 @@ foo <- function() {
         "#;
         expect_no_lint(code, "unreachable_code", None);
     }
+
+    #[test]
+    fn test_repeat_with_break_in_braced_expression() {
+        let code = r#"
+foo <- function() {
+  repeat {
+    ({
+      if (1 == 1) break
+    })
+  }
+  print("here")
+}
+"#;
+        expect_no_lint(code, "unreachable_code", None);
+    }
+
+    #[test]
+    fn test_repeat_with_break_in_nested_braces() {
+        let code = r#"
+foo <- function() {
+  repeat {
+    {
+      if (1 == 1) break
+    }
+  }
+  print("here")
+}
+"#;
+        expect_no_lint(code, "unreachable_code", None);
+    }
 }

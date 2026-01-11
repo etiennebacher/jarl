@@ -444,6 +444,10 @@ impl CfgBuilder {
             break_target: after_loop,
         });
 
+        // Add edge to after_loop so it's always reachable (like for/while loops)
+        // This represents the possibility of breaking out of the repeat loop
+        self.cfg.add_edge(loop_body, after_loop);
+
         // Build loop body
         if let Ok(body) = fields.body {
             let body_end = self.build_expression(body.syntax(), loop_body, exit);
