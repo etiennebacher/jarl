@@ -5,8 +5,6 @@ use rustc_hash::FxHashSet;
 /// Information about unreachable code found in a CFG
 #[derive(Debug, Clone)]
 pub struct UnreachableCodeInfo {
-    /// The block that is unreachable
-    pub block_id: BlockId,
     /// The text range of the unreachable code (for diagnostics)
     pub range: TextRange,
     /// Why this code is unreachable
@@ -21,8 +19,6 @@ pub enum UnreachableReason {
     AfterBreak,
     /// Code after a next statement
     AfterNext,
-    /// Code in a branch that's never taken
-    DeadBranch,
     /// Code that has no path from entry
     NoPathFromEntry,
 }
@@ -49,7 +45,6 @@ pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo>
             if !block.statements.is_empty() {
                 for stmt in &block.statements {
                     unreachable.push(UnreachableCodeInfo {
-                        block_id: block.id,
                         range: stmt.text_trimmed_range(),
                         reason: reason.clone(),
                     });
@@ -57,7 +52,6 @@ pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo>
             } else if let Some(range) = block.range {
                 // If block has no statements but has a range, report that
                 unreachable.push(UnreachableCodeInfo {
-                    block_id: block.id,
                     range,
                     reason: reason.clone(),
                 });
@@ -70,18 +64,18 @@ pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo>
 
 /// Determine why a block is unreachable by examining its context
 fn determine_unreachable_reason(cfg: &ControlFlowGraph, block_id: BlockId) -> UnreachableReason {
-    // Check if any predecessor exists (even if unreachable itself)
-    // and examine their terminators
-    for predecessor_block in &cfg.blocks {
-        if predecessor_block.successors.contains(&block_id) {
-            // This block has a predecessor, but the predecessor must be unreachable
-            // or ends with a terminator that prevents reaching here
-            use super::graph::Terminator;
-            match &predecessor_block.terminator {
-                Terminator::Return { .. } => return UnreachableReason::AfterReturn,
-                Terminator::Break { .. } => return UnreachableReason::AfterBreak,
-                Terminator::Next { .. } => return UnreachableReason::AfterNext,
-                _ => {}
+    use super::graph::Terminator;
+
+    // Check the block's predecessors to find what terminator caused unreachability
+    if let Some(block) = cfg.block(block_id) {
+        for &pred_id in &block.predecessors {
+            if let Some(pred_block) = cfg.block(pred_id) {
+                match &pred_block.terminator {
+                    Terminator::Return => return UnreachableReason::AfterReturn,
+                    Terminator::Break => return UnreachableReason::AfterBreak,
+                    Terminator::Next => return UnreachableReason::AfterNext,
+                    _ => {}
+                }
             }
         }
     }
@@ -108,31 +102,4 @@ fn find_reachable_blocks(cfg: &ControlFlowGraph) -> FxHashSet<BlockId> {
     }
 
     visited
-}
-
-/// Check if a specific block is reachable from entry
-pub fn is_block_reachable(cfg: &ControlFlowGraph, block_id: BlockId) -> bool {
-    let reachable = find_reachable_blocks(cfg);
-    reachable.contains(&block_id)
-}
-
-/// Get all blocks that can reach a given block (reverse reachability)
-pub fn find_predecessors(cfg: &ControlFlowGraph, target: BlockId) -> FxHashSet<BlockId> {
-    let mut can_reach = FxHashSet::default();
-    let mut queue = vec![target];
-
-    while let Some(block_id) = queue.pop() {
-        if can_reach.insert(block_id) {
-            // Add all predecessors to the queue
-            if let Some(block) = cfg.block(block_id) {
-                for &predecessor in &block.predecessors {
-                    if !can_reach.contains(&predecessor) {
-                        queue.push(predecessor);
-                    }
-                }
-            }
-        }
-    }
-
-    can_reach
 }

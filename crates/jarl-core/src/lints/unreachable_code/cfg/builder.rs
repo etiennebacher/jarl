@@ -21,9 +21,9 @@ struct LoopContext {
 }
 
 impl CfgBuilder {
-    fn new(function_node: RSyntaxNode) -> Self {
+    fn new() -> Self {
         Self {
-            cfg: ControlFlowGraph::new(function_node),
+            cfg: ControlFlowGraph::new(),
             loop_stack: Vec::new(),
         }
     }
@@ -81,11 +81,16 @@ impl CfgBuilder {
             if let Some(block) = self.cfg.block(current) {
                 if matches!(
                     block.terminator,
-                    Terminator::Return { .. } | Terminator::Break { .. } | Terminator::Next { .. }
+                    Terminator::Return | Terminator::Break | Terminator::Next
                 ) {
                     // Create a new unreachable block for remaining statements
                     if idx + 1 < statements.len() {
                         let unreachable = self.cfg.new_block();
+                        // Mark this block as having the terminator block as predecessor (for tracking)
+                        // Even though we don't add an edge, we store it in predecessors for analysis
+                        if let Some(unreachable_block) = self.cfg.block_mut(unreachable) {
+                            unreachable_block.predecessors.push(current);
+                        }
                         // Add all remaining statements to the unreachable block
                         for remaining_stmt in &statements[idx + 1..] {
                             self.add_statement(unreachable, remaining_stmt.clone());
@@ -190,9 +195,9 @@ impl CfgBuilder {
         let after_if = self.cfg.new_block();
 
         // Set up the branch terminator
-        if let Some(cond) = condition {
+        if condition.is_some() {
             if let Some(block) = self.cfg.block_mut(current) {
-                block.terminator = Terminator::Branch { condition: cond, then_block, else_block };
+                block.terminator = Terminator::Branch;
             }
             self.cfg.add_edge(current, then_block);
             self.cfg.add_edge(current, else_block);
@@ -205,10 +210,10 @@ impl CfgBuilder {
             if let Some(block) = self.cfg.block(then_end) {
                 if !matches!(
                     block.terminator,
-                    Terminator::Return { .. } | Terminator::Break { .. } | Terminator::Next { .. }
+                    Terminator::Return | Terminator::Break | Terminator::Next
                 ) {
                     if let Some(b) = self.cfg.block_mut(then_end) {
-                        b.terminator = Terminator::Goto(after_if);
+                        b.terminator = Terminator::Goto;
                     }
                     self.cfg.add_edge(then_end, after_if);
                 }
@@ -229,7 +234,7 @@ impl CfgBuilder {
                             | Terminator::Next { .. }
                     ) {
                         if let Some(b) = self.cfg.block_mut(else_end) {
-                            b.terminator = Terminator::Goto(after_if);
+                            b.terminator = Terminator::Goto;
                         }
                         self.cfg.add_edge(else_end, after_if);
                     }
@@ -238,7 +243,7 @@ impl CfgBuilder {
         } else {
             // No else branch, just connect to after_if
             if let Some(b) = self.cfg.block_mut(else_block) {
-                b.terminator = Terminator::Goto(after_if);
+                b.terminator = Terminator::Goto;
             }
             self.cfg.add_edge(else_block, after_if);
         }
@@ -260,17 +265,13 @@ impl CfgBuilder {
 
         // Jump from current to loop header
         if let Some(b) = self.cfg.block_mut(current) {
-            b.terminator = Terminator::Goto(loop_header);
+            b.terminator = Terminator::Goto;
         }
         self.cfg.add_edge(current, loop_header);
 
         // Loop header has the for condition/iterator
         if let Some(b) = self.cfg.block_mut(loop_header) {
-            b.terminator = Terminator::Loop {
-                condition: fields.sequence.ok().map(|s| s.syntax().clone()),
-                body: loop_body,
-                after: after_loop,
-            };
+            b.terminator = Terminator::Loop;
         }
         self.cfg.add_edge(loop_header, loop_body);
         self.cfg.add_edge(loop_header, after_loop);
@@ -288,10 +289,10 @@ impl CfgBuilder {
             if let Some(block) = self.cfg.block(body_end) {
                 if !matches!(
                     block.terminator,
-                    Terminator::Return { .. } | Terminator::Break { .. } | Terminator::Next { .. }
+                    Terminator::Return | Terminator::Break | Terminator::Next
                 ) {
                     if let Some(b) = self.cfg.block_mut(body_end) {
-                        b.terminator = Terminator::Goto(loop_header);
+                        b.terminator = Terminator::Goto;
                     }
                     self.cfg.add_edge(body_end, loop_header);
                 }
@@ -317,17 +318,13 @@ impl CfgBuilder {
 
         // Jump from current to loop header
         if let Some(b) = self.cfg.block_mut(current) {
-            b.terminator = Terminator::Goto(loop_header);
+            b.terminator = Terminator::Goto;
         }
         self.cfg.add_edge(current, loop_header);
 
         // Loop header checks condition
         if let Some(b) = self.cfg.block_mut(loop_header) {
-            b.terminator = Terminator::Loop {
-                condition: fields.condition.ok().map(|c| c.syntax().clone()),
-                body: loop_body,
-                after: after_loop,
-            };
+            b.terminator = Terminator::Loop;
         }
         self.cfg.add_edge(loop_header, loop_body);
         self.cfg.add_edge(loop_header, after_loop);
@@ -345,10 +342,10 @@ impl CfgBuilder {
             if let Some(block) = self.cfg.block(body_end) {
                 if !matches!(
                     block.terminator,
-                    Terminator::Return { .. } | Terminator::Break { .. } | Terminator::Next { .. }
+                    Terminator::Return | Terminator::Break | Terminator::Next
                 ) {
                     if let Some(b) = self.cfg.block_mut(body_end) {
-                        b.terminator = Terminator::Goto(loop_header);
+                        b.terminator = Terminator::Goto;
                     }
                     self.cfg.add_edge(body_end, loop_header);
                 }
@@ -373,7 +370,7 @@ impl CfgBuilder {
 
         // Jump from current to loop body (repeat has no condition check)
         if let Some(b) = self.cfg.block_mut(current) {
-            b.terminator = Terminator::Goto(loop_body);
+            b.terminator = Terminator::Goto;
         }
         self.cfg.add_edge(current, loop_body);
 
@@ -390,10 +387,10 @@ impl CfgBuilder {
             if let Some(block) = self.cfg.block(body_end) {
                 if !matches!(
                     block.terminator,
-                    Terminator::Return { .. } | Terminator::Break { .. } | Terminator::Next { .. }
+                    Terminator::Return | Terminator::Break | Terminator::Next
                 ) {
                     if let Some(b) = self.cfg.block_mut(body_end) {
-                        b.terminator = Terminator::Goto(loop_body);
+                        b.terminator = Terminator::Goto;
                     }
                     self.cfg.add_edge(body_end, loop_body);
                 }
@@ -406,30 +403,30 @@ impl CfgBuilder {
     }
 
     /// Build return statement
-    fn build_return(&mut self, current: BlockId, node: RSyntaxNode) {
+    fn build_return(&mut self, current: BlockId, _node: RSyntaxNode) {
         if let Some(block) = self.cfg.block_mut(current) {
-            block.terminator = Terminator::Return { node: node.clone() };
+            block.terminator = Terminator::Return;
         }
         // Return goes to exit (but we don't add edge since returns don't flow)
     }
 
     /// Build break statement
-    fn build_break(&mut self, current: BlockId, node: RSyntaxNode) {
+    fn build_break(&mut self, current: BlockId, _node: RSyntaxNode) {
         if let Some(loop_ctx) = self.loop_stack.last() {
             let target = loop_ctx.break_target;
             if let Some(block) = self.cfg.block_mut(current) {
-                block.terminator = Terminator::Break { node: node.clone(), target };
+                block.terminator = Terminator::Break;
             }
             self.cfg.add_edge(current, target);
         }
     }
 
     /// Build next statement
-    fn build_next(&mut self, current: BlockId, node: RSyntaxNode) {
+    fn build_next(&mut self, current: BlockId, _node: RSyntaxNode) {
         if let Some(loop_ctx) = self.loop_stack.last() {
             let target = loop_ctx.continue_target;
             if let Some(block) = self.cfg.block_mut(current) {
-                block.terminator = Terminator::Next { node: node.clone(), target };
+                block.terminator = Terminator::Next;
             }
             self.cfg.add_edge(current, target);
         }
@@ -453,6 +450,6 @@ impl CfgBuilder {
 
 /// Build a control flow graph for a function definition
 pub fn build_cfg(func: &RFunctionDefinition) -> ControlFlowGraph {
-    let builder = CfgBuilder::new(func.syntax().clone());
+    let builder = CfgBuilder::new();
     builder.build(func)
 }

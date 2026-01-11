@@ -38,11 +38,6 @@ impl BasicBlock {
             range: None,
         }
     }
-
-    /// Check if this block is empty (no statements and no terminator)
-    pub fn is_empty(&self) -> bool {
-        self.statements.is_empty() && matches!(self.terminator, Terminator::None)
-    }
 }
 
 /// How control flow exits a basic block
@@ -52,55 +47,22 @@ pub enum Terminator {
     None,
 
     /// Unconditional jump to another block
-    Goto(BlockId),
+    Goto,
 
     /// Return from function (exits the CFG)
-    Return {
-        node: RSyntaxNode,
-    },
+    Return,
 
     /// Break statement (exits innermost loop)
-    Break {
-        node: RSyntaxNode,
-        target: BlockId, // Block after the loop
-    },
+    Break,
 
     /// Next statement (continue to next iteration)
-    Next {
-        node: RSyntaxNode,
-        target: BlockId, // Loop condition/header
-    },
+    Next,
 
     /// Conditional branch (if/else)
-    Branch {
-        condition: RSyntaxNode,
-        then_block: BlockId,
-        else_block: BlockId,
-    },
+    Branch,
 
     /// Loop (for/while/repeat)
-    Loop {
-        condition: Option<RSyntaxNode>, // None for repeat loops
-        body: BlockId,
-        after: BlockId, // Block after loop exits
-    },
-}
-
-impl Terminator {
-    /// Get the successor blocks from this terminator
-    pub fn successors(&self) -> Vec<BlockId> {
-        match self {
-            Terminator::None => vec![],
-            Terminator::Goto(target) => vec![*target],
-            Terminator::Return { .. } => vec![],
-            Terminator::Break { target, .. } => vec![*target],
-            Terminator::Next { target, .. } => vec![*target],
-            Terminator::Branch { then_block, else_block, .. } => {
-                vec![*then_block, *else_block]
-            }
-            Terminator::Loop { body, after, .. } => vec![*body, *after],
-        }
-    }
+    Loop,
 }
 
 /// Control Flow Graph for a function
@@ -112,12 +74,10 @@ pub struct ControlFlowGraph {
     pub entry: BlockId,
     /// Exit block (implicit return point)
     pub exit: BlockId,
-    /// The function node this CFG represents
-    pub function_node: RSyntaxNode,
 }
 
 impl ControlFlowGraph {
-    pub fn new(function_node: RSyntaxNode) -> Self {
+    pub fn new() -> Self {
         let entry = BasicBlock::new(BlockId(0));
         let exit = BasicBlock::new(BlockId(1));
 
@@ -125,7 +85,6 @@ impl ControlFlowGraph {
             blocks: vec![entry, exit],
             entry: BlockId(0),
             exit: BlockId(1),
-            function_node,
         }
     }
 
@@ -158,13 +117,6 @@ impl ControlFlowGraph {
                 to_block.predecessors.push(from);
             }
         }
-    }
-
-    /// Get all blocks that are not the entry or exit
-    pub fn regular_blocks(&self) -> impl Iterator<Item = &BasicBlock> {
-        self.blocks
-            .iter()
-            .filter(|b| b.id != self.entry && b.id != self.exit)
     }
 }
 

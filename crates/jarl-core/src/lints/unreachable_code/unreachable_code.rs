@@ -1,9 +1,7 @@
 use crate::diagnostic::*;
 use air_r_syntax::*;
-use biome_rowan::AstNode;
 
-use super::cfg::{UnreachableReason, build_cfg, find_unreachable_code};
-use crate::diagnostic::Fix;
+use super::cfg::{build_cfg, find_unreachable_code, UnreachableReason};
 
 /// ## What it does
 ///
@@ -53,7 +51,6 @@ pub fn unreachable_code(ast: &RFunctionDefinition) -> anyhow::Result<Vec<Diagnos
             UnreachableReason::AfterNext => {
                 "This code is unreachable because it appears after a next statement."
             }
-            UnreachableReason::DeadBranch => "This code is in a branch that can never be executed.",
             UnreachableReason::NoPathFromEntry => {
                 "This code has no execution path from the function entry."
             }
@@ -74,26 +71,3 @@ pub fn unreachable_code(ast: &RFunctionDefinition) -> anyhow::Result<Vec<Diagnos
 
     Ok(diagnostics)
 }
-
-// /// Entry point for analyzing statements and expressions for unreachable code
-// /// This traverses the AST and builds CFGs for each function definition
-// pub fn check_unreachable_code(node: &RSyntaxNode) -> anyhow::Result<Vec<Diagnostic>> {
-//     let mut diagnostics = Vec::new();
-
-//     // Find all function definitions in the tree
-//     for func_node in node.descendants() {
-//         if let Some(func_def) = RFunctionDefinition::cast(func_node) {
-//             match unreachable_code(&func_def) {
-//                 Ok(mut func_diagnostics) => {
-//                     diagnostics.append(&mut func_diagnostics);
-//                 }
-//                 Err(e) => {
-//                     // Log error but continue processing other functions
-//                     eprintln!("Error analyzing function for unreachable code: {}", e);
-//                 }
-//             }
-//         }
-//     }
-
-//     Ok(diagnostics)
-// }
