@@ -110,15 +110,15 @@ impl ControlFlowGraph {
 
     /// Add an edge from one block to another
     pub fn add_edge(&mut self, from: BlockId, to: BlockId) {
-        if let Some(from_block) = self.block_mut(from) {
-            if !from_block.successors.contains(&to) {
-                from_block.successors.push(to);
-            }
+        if let Some(from_block) = self.block_mut(from)
+            && !from_block.successors.contains(&to)
+        {
+            from_block.successors.push(to);
         }
-        if let Some(to_block) = self.block_mut(to) {
-            if !to_block.predecessors.contains(&from) {
-                to_block.predecessors.push(from);
-            }
+        if let Some(to_block) = self.block_mut(to)
+            && !to_block.predecessors.contains(&from)
+        {
+            to_block.predecessors.push(from);
         }
     }
 }

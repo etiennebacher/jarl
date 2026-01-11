@@ -90,25 +90,25 @@ impl CfgBuilder {
             current = self.build_statement(stmt, current, exit);
 
             // If we've hit a return or other terminator, remaining statements are unreachable
-            if let Some(block) = self.cfg.block(current) {
-                if matches!(
+            if let Some(block) = self.cfg.block(current)
+                && matches!(
                     block.terminator,
                     Terminator::Return | Terminator::Break | Terminator::Next | Terminator::Stop
-                ) {
-                    // Create a new unreachable block for remaining statements
-                    if idx + 1 < statements.len() {
-                        let unreachable = self.cfg.new_block();
-                        // Mark this block as having the terminator block as predecessor (for tracking)
-                        // Even though we don't add an edge, we store it in predecessors for analysis
-                        if let Some(unreachable_block) = self.cfg.block_mut(unreachable) {
-                            unreachable_block.predecessors.push(current);
-                        }
-                        // Add all remaining statements to the unreachable block
-                        for remaining_stmt in &statements[idx + 1..] {
-                            self.add_statement(unreachable, remaining_stmt.clone());
-                        }
-                        return unreachable;
+                )
+            {
+                // Create a new unreachable block for remaining statements
+                if idx + 1 < statements.len() {
+                    let unreachable = self.cfg.new_block();
+                    // Mark this block as having the terminator block as predecessor (for tracking)
+                    // Even though we don't add an edge, we store it in predecessors for analysis
+                    if let Some(unreachable_block) = self.cfg.block_mut(unreachable) {
+                        unreachable_block.predecessors.push(current);
                     }
+                    // Add all remaining statements to the unreachable block
+                    for remaining_stmt in &statements[idx + 1..] {
+                        self.add_statement(unreachable, remaining_stmt.clone());
+                    }
+                    return unreachable;
                 }
             }
         }
@@ -211,9 +211,7 @@ impl CfgBuilder {
         let after_if = self.cfg.new_block();
 
         // Check if the condition is a constant
-        let constant_value = condition
-            .as_ref()
-            .and_then(|c| evaluate_constant_condition(c));
+        let constant_value = condition.as_ref().and_then(evaluate_constant_condition);
 
         // Set up the branch terminator
         if condition.is_some() {
@@ -252,16 +250,16 @@ impl CfgBuilder {
         if let Ok(consequence) = fields.consequence {
             let then_end = self.build_expression(consequence.syntax(), then_block, exit);
             // Only add edge if the then block doesn't end with return/break/next
-            if let Some(block) = self.cfg.block(then_end) {
-                if !matches!(
+            if let Some(block) = self.cfg.block(then_end)
+                && !matches!(
                     block.terminator,
                     Terminator::Return | Terminator::Break | Terminator::Next | Terminator::Stop
-                ) {
-                    if let Some(b) = self.cfg.block_mut(then_end) {
-                        b.terminator = Terminator::Goto;
-                    }
-                    self.cfg.add_edge(then_end, after_if);
+                )
+            {
+                if let Some(b) = self.cfg.block_mut(then_end) {
+                    b.terminator = Terminator::Goto;
                 }
+                self.cfg.add_edge(then_end, after_if);
             }
         }
 
@@ -271,19 +269,19 @@ impl CfgBuilder {
             if let Ok(alt_body) = else_fields.alternative {
                 let else_end = self.build_expression(alt_body.syntax(), else_block, exit);
                 // Only add edge if the else block doesn't end with return/break/next
-                if let Some(block) = self.cfg.block(else_end) {
-                    if !matches!(
+                if let Some(block) = self.cfg.block(else_end)
+                    && !matches!(
                         block.terminator,
-                        Terminator::Return { .. }
-                            | Terminator::Break { .. }
-                            | Terminator::Next { .. }
-                            | Terminator::Stop { .. }
-                    ) {
-                        if let Some(b) = self.cfg.block_mut(else_end) {
-                            b.terminator = Terminator::Goto;
-                        }
-                        self.cfg.add_edge(else_end, after_if);
+                        Terminator::Return
+                            | Terminator::Break
+                            | Terminator::Next
+                            | Terminator::Stop
+                    )
+                {
+                    if let Some(b) = self.cfg.block_mut(else_end) {
+                        b.terminator = Terminator::Goto;
                     }
+                    self.cfg.add_edge(else_end, after_if);
                 }
             }
         } else {
@@ -332,16 +330,16 @@ impl CfgBuilder {
         if let Ok(body) = fields.body {
             let body_end = self.build_expression(body.syntax(), loop_body, exit);
             // Loop back to header (unless body ends with return/break/next)
-            if let Some(block) = self.cfg.block(body_end) {
-                if !matches!(
+            if let Some(block) = self.cfg.block(body_end)
+                && !matches!(
                     block.terminator,
                     Terminator::Return | Terminator::Break | Terminator::Next | Terminator::Stop
-                ) {
-                    if let Some(b) = self.cfg.block_mut(body_end) {
-                        b.terminator = Terminator::Goto;
-                    }
-                    self.cfg.add_edge(body_end, loop_header);
+                )
+            {
+                if let Some(b) = self.cfg.block_mut(body_end) {
+                    b.terminator = Terminator::Goto;
                 }
+                self.cfg.add_edge(body_end, loop_header);
             }
         }
 
@@ -385,16 +383,16 @@ impl CfgBuilder {
         if let Ok(body) = fields.body {
             let body_end = self.build_expression(body.syntax(), loop_body, exit);
             // Loop back to header
-            if let Some(block) = self.cfg.block(body_end) {
-                if !matches!(
+            if let Some(block) = self.cfg.block(body_end)
+                && !matches!(
                     block.terminator,
                     Terminator::Return | Terminator::Break | Terminator::Next | Terminator::Stop
-                ) {
-                    if let Some(b) = self.cfg.block_mut(body_end) {
-                        b.terminator = Terminator::Goto;
-                    }
-                    self.cfg.add_edge(body_end, loop_header);
+                )
+            {
+                if let Some(b) = self.cfg.block_mut(body_end) {
+                    b.terminator = Terminator::Goto;
                 }
+                self.cfg.add_edge(body_end, loop_header);
             }
         }
 
@@ -430,16 +428,16 @@ impl CfgBuilder {
         if let Ok(body) = fields.body {
             let body_end = self.build_expression(body.syntax(), loop_body, exit);
             // Loop back to start (infinite loop unless broken)
-            if let Some(block) = self.cfg.block(body_end) {
-                if !matches!(
+            if let Some(block) = self.cfg.block(body_end)
+                && !matches!(
                     block.terminator,
                     Terminator::Return | Terminator::Break | Terminator::Next | Terminator::Stop
-                ) {
-                    if let Some(b) = self.cfg.block_mut(body_end) {
-                        b.terminator = Terminator::Goto;
-                    }
-                    self.cfg.add_edge(body_end, loop_body);
+                )
+            {
+                if let Some(b) = self.cfg.block_mut(body_end) {
+                    b.terminator = Terminator::Goto;
                 }
+                self.cfg.add_edge(body_end, loop_body);
             }
         }
 

@@ -29,8 +29,6 @@ use super::cfg::{UnreachableReason, build_cfg, find_unreachable_code};
 ///   x <- i  # unreachable
 /// }
 /// ```
-
-/// Analyze a function for unreachable code using control flow graph analysis
 pub fn unreachable_code(ast: &RFunctionDefinition) -> anyhow::Result<Vec<Diagnostic>> {
     let mut diagnostics = Vec::new();
 
