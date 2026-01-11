@@ -51,10 +51,7 @@ pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo>
                 }
             } else if let Some(range) = block.range {
                 // If block has no statements but has a range, report that
-                unreachable.push(UnreachableCodeInfo {
-                    range,
-                    reason: reason.clone(),
-                });
+                unreachable.push(UnreachableCodeInfo { range, reason: reason.clone() });
             }
         }
     }
