@@ -469,6 +469,14 @@ foo <- function() {
 }
 "#;
         expect_no_lint(code, "unreachable_code", None);
+
+        let code = r#"
+foo <- function() {
+  bar$stop()
+  1 + 1
+}
+"#;
+        expect_no_lint(code, "unreachable_code", None);
     }
 
     #[test]
