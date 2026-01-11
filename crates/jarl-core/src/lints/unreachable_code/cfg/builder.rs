@@ -54,10 +54,10 @@ impl CfgBuilder {
         if let Some(block) = self.cfg.block(block_id) {
             // Check if any predecessor has an actual edge to this block
             for &pred_id in &block.predecessors {
-                if let Some(pred) = self.cfg.block(pred_id) {
-                    if pred.successors.contains(&block_id) {
-                        return true;
-                    }
+                if let Some(pred) = self.cfg.block(pred_id)
+                    && pred.successors.contains(&block_id)
+                {
+                    return true;
                 }
             }
         }
@@ -295,7 +295,10 @@ impl CfgBuilder {
                 if let Some(block) = self.cfg.block(then_end)
                     && !matches!(
                         block.terminator,
-                        Terminator::Return | Terminator::Break | Terminator::Next | Terminator::Stop
+                        Terminator::Return
+                            | Terminator::Break
+                            | Terminator::Next
+                            | Terminator::Stop
                     )
                     && self.has_incoming_edges(then_end)
                 {
@@ -351,10 +354,10 @@ impl CfgBuilder {
         // If after_if has no incoming edges (both branches terminated),
         // mark it as having the branch block as predecessor for proper
         // unreachable code reason detection
-        if !self.has_incoming_edges(after_if) {
-            if let Some(after_block) = self.cfg.block_mut(after_if) {
-                after_block.predecessors.push(current);
-            }
+        if !self.has_incoming_edges(after_if)
+            && let Some(after_block) = self.cfg.block_mut(after_if)
+        {
+            after_block.predecessors.push(current);
         }
 
         after_if

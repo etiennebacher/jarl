@@ -136,12 +136,12 @@ fn determine_unreachable_reason(cfg: &ControlFlowGraph, block_id: BlockId) -> Un
         // Priority 2: Check if predecessor is a branch where all successors terminate
         // This handles the case where an if/else has returns in all branches
         for &pred_id in &block.predecessors {
-            if let Some(pred_block) = cfg.block(pred_id) {
-                if matches!(pred_block.terminator, Terminator::Branch) {
-                    // Check all successors of the branch to find what terminator they end with
-                    if let Some(reason) = find_branch_terminator_reason(cfg, pred_id) {
-                        return reason;
-                    }
+            if let Some(pred_block) = cfg.block(pred_id)
+                && matches!(pred_block.terminator, Terminator::Branch)
+            {
+                // Check all successors of the branch to find what terminator they end with
+                if let Some(reason) = find_branch_terminator_reason(cfg, pred_id) {
+                    return reason;
                 }
             }
         }
