@@ -481,7 +481,7 @@ declare_rules! {
     },
     UnreachableCode => {
         name: "unreachable_code",
-        categories: [Corr, Susp],
+        categories: [Read, Susp],
         default: Enabled,
         fix: None,
         min_r_version: None,
