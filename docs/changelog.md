@@ -16,6 +16,7 @@
 
 - New rules:
   - `redundant_ifelse` (#260)
+  - `unreachable_code` (#261)
 
 ### Other changes
 
