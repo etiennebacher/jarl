@@ -1,0 +1,153 @@
+pub(crate) mod cfg;
+pub(crate) mod unreachable_code;
+
+#[cfg(test)]
+mod tests {
+    use crate::utils_test::*;
+
+    #[test]
+    fn test_unreachable_after_return() {
+        let code = r#"
+foo <- function() {
+  return(1)
+  x <- 5  # This should be flagged as unreachable
+}
+"#;
+        expect_lint(
+            code,
+            "unreachable because it appears after a return statement",
+            "unreachable_code",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_unreachable_after_break() {
+        let code = r#"
+foo <- function() {
+  for (i in 1:10) {
+    break
+    x <- i  # This should be flagged as unreachable
+  }
+}
+"#;
+        expect_lint(
+            code,
+            "unreachable because it appears after a break statement",
+            "unreachable_code",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_unreachable_after_next() {
+        let code = r#"
+foo <- function() {
+  for (i in 1:10) {
+    next
+    x <- i  # This should be flagged as unreachable
+  }
+}
+"#;
+        expect_lint(
+            code,
+            "unreachable because it appears after a next statement",
+            "unreachable_code",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_unreachable_simple_function() {
+        let code = r#"
+foo <- function() {
+  x <- 1
+  y <- 2
+  return(x + y)
+}
+"#;
+        expect_no_lint(code, "unreachable_code", None);
+    }
+
+    #[test]
+    fn test_no_unreachable_conditional_return() {
+        let code = r#"
+foo <- function(x) {
+  if (x > 0) {
+    return(1)
+  } else {
+    return(-1)
+  }
+}
+"#;
+        expect_no_lint(code, "unreachable_code", None);
+    }
+
+    #[test]
+    fn test_no_unreachable_loop_with_conditional_break() {
+        let code = r#"
+foo <- function() {
+  for (i in 1:10) {
+    if (i == 5) {
+      break
+    }
+    x <- i  # This is reachable
+  }
+}
+"#;
+        expect_no_lint(code, "unreachable_code", None);
+    }
+
+    #[test]
+    fn test_multiple_statements_after_return() {
+        let code = r#"
+foo <- function() {
+  x <- 1
+  return(x)
+  y <- 2  # Unreachable
+  z <- 3  # Unreachable
+}
+"#;
+        expect_lint(
+            code,
+            "unreachable because it appears after a return statement",
+            "unreachable_code",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_reachable_code_in_loop() {
+        let code = r#"
+foo <- function() {
+  for (i in 1:10) {
+    x <- i
+    if (x > 5) {
+      next
+    }
+    y <- x + 1  # This is reachable (when x <= 5)
+  }
+}
+"#;
+        expect_no_lint(code, "unreachable_code", None);
+    }
+
+    #[test]
+    fn test_nested_function_with_return() {
+        let code = r#"
+outer <- function() {
+  inner <- function() {
+    return(1)
+    x <- 2  # Unreachable in inner function
+  }
+  y <- 3  # Reachable in outer function
+}
+"#;
+        expect_lint(
+            code,
+            "unreachable because it appears after a return statement",
+            "unreachable_code",
+            None,
+        );
+    }
+}
