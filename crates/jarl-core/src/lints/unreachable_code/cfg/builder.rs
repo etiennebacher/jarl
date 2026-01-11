@@ -40,6 +40,30 @@ impl CfgBuilder {
         }
     }
 
+    /// Check if a block has any incoming edges (actual edges, not just predecessor pointers)
+    ///
+    /// This is used to detect when we're in an unreachable block (e.g., after an if/else
+    /// where both branches terminate). In such cases, we don't want to recursively build
+    /// control flow structures - we just want to add all statements to the unreachable block.
+    fn has_incoming_edges(&self, block_id: BlockId) -> bool {
+        // Entry block is always considered "reachable" for building purposes
+        if block_id == self.cfg.entry {
+            return true;
+        }
+
+        if let Some(block) = self.cfg.block(block_id) {
+            // Check if any predecessor has an actual edge to this block
+            for &pred_id in &block.predecessors {
+                if let Some(pred) = self.cfg.block(pred_id) {
+                    if pred.successors.contains(&block_id) {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
     /// Build a CFG from a function definition
     pub fn build(mut self, func: &RFunctionDefinition) -> ControlFlowGraph {
         let fields = func.as_fields();
@@ -117,6 +141,14 @@ impl CfgBuilder {
 
     /// Build CFG for a single statement
     fn build_statement(&mut self, stmt: &RSyntaxNode, current: BlockId, exit: BlockId) -> BlockId {
+        // If current block has no incoming edges, we're in unreachable code.
+        // Don't recursively build control flow structures - just add statements
+        // to keep them grouped as a single diagnostic.
+        if !self.has_incoming_edges(current) {
+            self.add_statement(current, stmt.clone());
+            return current;
+        }
+
         match stmt.kind() {
             RSyntaxKind::R_BREAK_EXPRESSION => {
                 self.build_break(current, stmt.clone());
@@ -259,11 +291,13 @@ impl CfgBuilder {
                 // Reachable or maybe-reachable branch - build normally
                 let then_end = self.build_expression(consequence.syntax(), then_block, exit);
                 // Only add edge if the then block doesn't end with return/break/next
+                // AND then_end is not itself an unreachable block (has incoming edges)
                 if let Some(block) = self.cfg.block(then_end)
                     && !matches!(
                         block.terminator,
                         Terminator::Return | Terminator::Break | Terminator::Next | Terminator::Stop
                     )
+                    && self.has_incoming_edges(then_end)
                 {
                     if let Some(b) = self.cfg.block_mut(then_end) {
                         b.terminator = Terminator::Goto;
@@ -288,6 +322,7 @@ impl CfgBuilder {
                     // Reachable or maybe-reachable branch - build normally
                     let else_end = self.build_expression(alt_body.syntax(), else_block, exit);
                     // Only add edge if the else block doesn't end with return/break/next
+                    // AND else_end is not itself an unreachable block (has incoming edges)
                     if let Some(block) = self.cfg.block(else_end)
                         && !matches!(
                             block.terminator,
@@ -296,6 +331,7 @@ impl CfgBuilder {
                                 | Terminator::Next
                                 | Terminator::Stop
                         )
+                        && self.has_incoming_edges(else_end)
                     {
                         if let Some(b) = self.cfg.block_mut(else_end) {
                             b.terminator = Terminator::Goto;
@@ -310,6 +346,15 @@ impl CfgBuilder {
                 b.terminator = Terminator::Goto;
             }
             self.cfg.add_edge(else_block, after_if);
+        }
+
+        // If after_if has no incoming edges (both branches terminated),
+        // mark it as having the branch block as predecessor for proper
+        // unreachable code reason detection
+        if !self.has_incoming_edges(after_if) {
+            if let Some(after_block) = self.cfg.block_mut(after_if) {
+                after_block.predecessors.push(current);
+            }
         }
 
         after_if

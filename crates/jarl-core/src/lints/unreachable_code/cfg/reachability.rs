@@ -112,8 +112,8 @@ pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo>
 ///
 /// Priority order:
 /// 1. Check if a predecessor has a terminator (return/break/next)
-/// 2. Check if it's a dead branch (has predecessor pointer but no actual edge)
-/// 3. Check if any transitive predecessor is a dead branch
+/// 2. Check if predecessor is a branch where all successors terminate (if/else with returns in all branches)
+/// 3. Check if it's a dead branch (has predecessor pointer but no actual edge)
 /// 4. Default to NoPathFromEntry
 fn determine_unreachable_reason(cfg: &ControlFlowGraph, block_id: BlockId) -> UnreachableReason {
     use super::graph::Terminator;
@@ -133,7 +133,20 @@ fn determine_unreachable_reason(cfg: &ControlFlowGraph, block_id: BlockId) -> Un
             }
         }
 
-        // Priority 2: Check if it's a dead branch from a constant condition
+        // Priority 2: Check if predecessor is a branch where all successors terminate
+        // This handles the case where an if/else has returns in all branches
+        for &pred_id in &block.predecessors {
+            if let Some(pred_block) = cfg.block(pred_id) {
+                if matches!(pred_block.terminator, Terminator::Branch) {
+                    // Check all successors of the branch to find what terminator they end with
+                    if let Some(reason) = find_branch_terminator_reason(cfg, pred_id) {
+                        return reason;
+                    }
+                }
+            }
+        }
+
+        // Priority 3: Check if it's a dead branch from a constant condition
         // Dead branches have a predecessor pointer (for tracking) but no actual CFG edge
         // This happens when we detect `if (TRUE)` or `if (FALSE)` during CFG construction
         if !block.predecessors.is_empty() {
@@ -150,8 +163,89 @@ fn determine_unreachable_reason(cfg: &ControlFlowGraph, block_id: BlockId) -> Un
         }
     }
 
-    // Priority 3: Default reason
+    // Priority 4: Default reason
     UnreachableReason::NoPathFromEntry
+}
+
+/// Find the terminator reason for a branch by traversing its successors
+///
+/// This handles if/else statements where all branches terminate (return/break/next/stop).
+/// We traverse the branch's successors to find what terminator they end with.
+fn find_branch_terminator_reason(
+    cfg: &ControlFlowGraph,
+    branch_id: BlockId,
+) -> Option<UnreachableReason> {
+    let branch_block = cfg.block(branch_id)?;
+
+    // Collect terminators from all branches
+    let mut found_return = false;
+    let mut found_stop = false;
+
+    for &succ_id in &branch_block.successors {
+        if let Some(reason) = find_terminator_in_path(cfg, succ_id, &mut FxHashSet::default()) {
+            match reason {
+                UnreachableReason::AfterReturn => found_return = true,
+                UnreachableReason::AfterStop => found_stop = true,
+                // Break/Next inside an if/else would exit to a loop, not make code after if unreachable
+                _ => {}
+            }
+        }
+    }
+
+    // Prefer return over stop for the message
+    if found_return {
+        Some(UnreachableReason::AfterReturn)
+    } else if found_stop {
+        Some(UnreachableReason::AfterStop)
+    } else {
+        None
+    }
+}
+
+/// Recursively find what terminator a path ends with
+fn find_terminator_in_path(
+    cfg: &ControlFlowGraph,
+    block_id: BlockId,
+    visited: &mut FxHashSet<BlockId>,
+) -> Option<UnreachableReason> {
+    use super::graph::Terminator;
+
+    if !visited.insert(block_id) {
+        return None; // Already visited, avoid cycles
+    }
+
+    let block = cfg.block(block_id)?;
+
+    match &block.terminator {
+        Terminator::Return => Some(UnreachableReason::AfterReturn),
+        Terminator::Stop => Some(UnreachableReason::AfterStop),
+        Terminator::Break | Terminator::Next => {
+            // These exit to loop structures, not relevant for if/else termination
+            None
+        }
+        Terminator::Goto => {
+            // Follow the goto to its successor
+            if let Some(&next) = block.successors.first() {
+                find_terminator_in_path(cfg, next, visited)
+            } else {
+                None
+            }
+        }
+        Terminator::Branch => {
+            // Nested if - check if all branches terminate
+            let mut result = None;
+            for &succ_id in &block.successors {
+                if let Some(reason) = find_terminator_in_path(cfg, succ_id, visited) {
+                    result = Some(reason);
+                } else {
+                    // One branch doesn't terminate, so the nested if doesn't fully terminate
+                    return None;
+                }
+            }
+            result
+        }
+        Terminator::Loop | Terminator::None => None,
+    }
 }
 
 /// Find all blocks reachable from the entry block using BFS (Breadth-First Search)

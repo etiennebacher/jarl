@@ -67,7 +67,15 @@ foo <- function(x) {
   x <- 1
 }
 "#;
-        expect_no_lint(code, "unreachable_code", None);
+        insta::assert_snapshot!(snapshot_lint(code), @r"
+        warning: unreachable_code
+         --> <test>:8:3
+          |
+        8 |   x <- 1
+          |   ------ This code is unreachable because it appears after a return statement.
+          |
+        Found 1 error.
+        ");
     }
 
     #[test]
@@ -326,7 +334,63 @@ foo <- function(bar) {
           --> <test>:10:3
            |
         10 |   1 + 1
-           |   ----- This code has no execution path from the function entry.
+           |   ----- This code is unreachable because it appears after a return statement.
+           |
+        Found 3 errors.
+        ");
+    }
+
+    #[test]
+    fn test_if_else_both_return_followed_by_loops() {
+        // This should produce exactly 3 diagnostics:
+        // 1. x <- 2 (after return in then branch)
+        // 2. x <- 3 (after return in else branch)
+        // 3. All code after if/else as single diagnostic (not one per loop)
+        let code = r#"
+foo <- function(bar) {
+  if (bar) {
+    return(bar) # comment
+    x <- 2
+  } else {
+    return(bar) # comment
+    x <- 3
+  }
+  while (bar) {
+    return(bar) # comment
+    5 + 3
+  }
+  repeat {
+    return(bar) # comment
+    test()
+  }
+  for (i in 1:3) {
+    return(bar) # comment
+    5 + 4
+  }
+}
+"#;
+        insta::assert_snapshot!(snapshot_lint(code), @r"
+        warning: unreachable_code
+         --> <test>:5:5
+          |
+        5 |     x <- 2
+          |     ------ This code is unreachable because it appears after a return statement.
+          |
+        warning: unreachable_code
+         --> <test>:8:5
+          |
+        8 |     x <- 3
+          |     ------ This code is unreachable because it appears after a return statement.
+          |
+        warning: unreachable_code
+          --> <test>:10:3
+           |
+        10 | /   while (bar) {
+        11 | |     return(bar) # comment
+        ...  |
+        20 | |     5 + 4
+        21 | |   }
+           | |___- This code is unreachable because it appears after a return statement.
            |
         Found 3 errors.
         ");
