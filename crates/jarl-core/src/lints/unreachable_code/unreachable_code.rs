@@ -64,11 +64,7 @@ pub fn unreachable_code(ast: &RFunctionDefinition) -> anyhow::Result<Vec<Diagnos
         };
 
         let diagnostic = Diagnostic::new(
-            ViolationData::new(
-                "unreachable_code".to_string(),
-                message.to_string(),
-                Some("".to_string()),
-            ),
+            ViolationData::new("unreachable_code".to_string(), message.to_string(), None),
             unreachable_info.range,
             Fix::empty(),
         );
