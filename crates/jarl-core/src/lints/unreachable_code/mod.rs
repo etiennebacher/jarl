@@ -604,4 +604,24 @@ foo <- \(x) {
         Found 1 error.
         ");
     }
+
+    #[test]
+    fn test_unreachable_after_semicolon() {
+        let code = r#"
+foo <- function(x) {
+  return(
+    y^2
+  ); 3 + 1
+}
+"#;
+        insta::assert_snapshot!(snapshot_lint(code), @r"
+        warning: unreachable_code
+         --> <test>:5:6
+          |
+        5 |   ); 3 + 1
+          |      ----- This code is unreachable because it appears after a return statement.
+          |
+        Found 1 error.
+        ");
+    }
 }
