@@ -1344,7 +1344,7 @@
     "href": "rules.html",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_hfelqcgj0py8doknu7f2",
+    "text": "All rules belong to at least one category:\n\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_ubactbqaiioqo0kyy5d3",
     "crumbs": [
       "Rules"
     ]
@@ -1354,7 +1354,7 @@
     "href": "rules.html#overview",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_hfelqcgj0py8doknu7f2",
+    "text": "All rules belong to at least one category:\n\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_ubactbqaiioqo0kyy5d3",
     "crumbs": [
       "Rules"
     ]
@@ -1931,7 +1931,7 @@
     "href": "rules/sample_int.html",
     "title": "sample_int",
     "section": "",
-    "text": "Checks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.\n\n\n\nsample() calls sample.int() internally so they have the same performance, but the latter is more readable.\n\n\n\nsample(1:10, 2)\nUse instead:\nsample.int(10, 2)\n\n\n\nSee ?sample",
+    "text": "Checks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.\n\n\n\nsample() calls sample.int() internally so they have the same performance, but the latter is more readable.\nThis rule is disabled by default.\n\n\n\nsample(1:10, 2)\nUse instead:\nsample.int(10, 2)\n\n\n\nSee ?sample",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -1955,7 +1955,7 @@
     "href": "rules/sample_int.html#why-is-this-bad",
     "title": "sample_int",
     "section": "",
-    "text": "sample() calls sample.int() internally so they have the same performance, but the latter is more readable.",
+    "text": "sample() calls sample.int() internally so they have the same performance, but the latter is more readable.\nThis rule is disabled by default.",
     "crumbs": [
       "Rules",
       "List of rules",
