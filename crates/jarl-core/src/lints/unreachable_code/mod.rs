@@ -554,4 +554,35 @@ foo <- function(x) {
         Found 1 error.
         ");
     }
+
+    #[test]
+    fn test_unreachable_after_return_with_comment() {
+        let code = r#"
+foo <- function(x) {
+  #
+  return(x)
+  1 + 1
+}
+"#;
+        insta::assert_snapshot!(snapshot_lint(code), @r"
+        warning: unreachable_code
+         --> <test>:5:3
+          |
+        5 |   1 + 1
+          |   ----- This code is unreachable because it appears after a return statement.
+          |
+        Found 1 error.
+        ");
+    }
+
+    #[test]
+    fn test_reachable_function_starting_with_return() {
+        let code = r#"
+foo <- function(x) {
+  return_foo(x)
+  1 + 1
+}
+"#;
+        expect_no_lint(code, "unreachable_code", None);
+    }
 }

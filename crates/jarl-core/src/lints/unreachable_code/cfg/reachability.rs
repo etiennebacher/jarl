@@ -90,10 +90,8 @@ pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo>
                 *group_range = group_range.cover(block_range);
             } else {
                 // Different reason or not contiguous - flush current group and start a new one
-                unreachable.push(UnreachableCodeInfo {
-                    range: *group_range,
-                    reason: group_reason.clone(),
-                });
+                unreachable
+                    .push(UnreachableCodeInfo { range: *group_range, reason: *group_reason });
                 current_group = Some((block_range, reason));
             }
         } else {
