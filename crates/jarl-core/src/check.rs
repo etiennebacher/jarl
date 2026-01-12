@@ -280,6 +280,7 @@ pub fn check_expression(
             check_expression(&body?, checker)?;
         }
         AnyRExpression::RFunctionDefinition(children) => {
+            analyze::function_definition::function_definition(children, checker)?;
             let body = children.body();
             check_expression(&body?, checker)?;
         }

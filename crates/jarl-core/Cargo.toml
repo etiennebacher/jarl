@@ -49,6 +49,7 @@ schemars = { workspace = true, optional = true }
 
 [dev-dependencies]
 insta.workspace = true
+annotate-snippets = "0.11"
 
 
 [lints.clippy]

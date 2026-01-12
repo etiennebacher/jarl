@@ -935,6 +935,7 @@ version = "0.3.0"
 dependencies = [
  "air_r_parser",
  "air_r_syntax",
+ "annotate-snippets",
  "anyhow",
  "biome_formatter",
  "biome_rowan",

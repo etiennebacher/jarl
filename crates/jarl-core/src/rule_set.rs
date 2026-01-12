@@ -479,6 +479,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    UnreachableCode => {
+        name: "unreachable_code",
+        categories: [Read, Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     VectorLogic => {
         name: "vector_logic",
         categories: [Perf],
