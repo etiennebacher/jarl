@@ -426,7 +426,7 @@ declare_rules! {
     SampleInt => {
         name: "sample_int",
         categories: [Read],
-        default: Enabled,
+        default: Disabled,
         fix: Safe,
         min_r_version: None,
     },

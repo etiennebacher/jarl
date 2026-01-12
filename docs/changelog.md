@@ -22,6 +22,8 @@
 
 - The rule `assignment` is now disabled by default (#258).
 
+- The rule `sample_int` is now disabled by default (#262).
+
 ### Bug fixes
 
 - When `output-format` is `json` or `github`, additional information displayed in
