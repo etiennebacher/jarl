@@ -524,4 +524,34 @@ foo <- function() {
 "#;
         expect_no_lint(code, "unreachable_code", None);
     }
+
+    #[test]
+    fn test_nested_if_with_all_branches_returning() {
+        let code = r#"
+foo <- function(x) {
+  if (x) {
+    if (y) {
+      print("hi")
+    }
+    return(1)
+  } else {
+    if (is.null(z)) {
+      print("hello")
+    }
+    return(2)
+  }
+
+  return(3)
+}
+"#;
+        insta::assert_snapshot!(snapshot_lint(code), @r"
+        warning: unreachable_code
+          --> <test>:15:3
+           |
+        15 |   return(3)
+           |   --------- This code is unreachable because the preceding if/else terminates in all branches.
+           |
+        Found 1 error.
+        ");
+    }
 }

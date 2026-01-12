@@ -11,7 +11,7 @@ pub struct UnreachableCodeInfo {
     pub reason: UnreachableReason,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum UnreachableReason {
     /// Code after a return statement
     AfterReturn,
@@ -179,23 +179,35 @@ fn find_branch_terminator_reason(
 ) -> Option<UnreachableReason> {
     let branch_block = cfg.block(branch_id)?;
 
+    // We need ALL branches to terminate for code after the if/else to be unreachable
+    if branch_block.successors.is_empty() {
+        return None;
+    }
+
+    // Use a shared cache for all branches to avoid recomputing paths
+    let mut cache = rustc_hash::FxHashMap::default();
+
     // Collect terminators from all branches
+    let mut all_terminate = true;
     let mut found_return = false;
     let mut found_stop = false;
 
     for &succ_id in &branch_block.successors {
-        if let Some(reason) = find_terminator_in_path(cfg, succ_id, &mut FxHashSet::default()) {
+        if let Some(reason) = find_terminator_in_path(cfg, succ_id, &mut cache) {
             match reason {
                 UnreachableReason::AfterReturn => found_return = true,
                 UnreachableReason::AfterStop => found_stop = true,
                 // Break/Next inside an if/else would exit to a loop, not make code after if unreachable
                 _ => {}
             }
+        } else {
+            // This branch doesn't terminate - code after the if/else is reachable
+            all_terminate = false;
         }
     }
 
-    // If any branch terminates, return the unified reason
-    if found_return || found_stop {
+    // Only return AfterBranchTerminating if ALL branches terminate
+    if all_terminate && (found_return || found_stop) {
         Some(UnreachableReason::AfterBranchTerminating)
     } else {
         None
@@ -203,20 +215,27 @@ fn find_branch_terminator_reason(
 }
 
 /// Recursively find what terminator a path ends with
+///
+/// Uses a cache to store computed results, avoiding both infinite loops and redundant computation.
+/// When multiple branches converge to the same terminator, we return the cached result.
 fn find_terminator_in_path(
     cfg: &ControlFlowGraph,
     block_id: BlockId,
-    visited: &mut FxHashSet<BlockId>,
+    cache: &mut rustc_hash::FxHashMap<BlockId, Option<UnreachableReason>>,
 ) -> Option<UnreachableReason> {
     use super::graph::Terminator;
 
-    if !visited.insert(block_id) {
-        return None; // Already visited, avoid cycles
+    // Check cache first
+    if let Some(&cached) = cache.get(&block_id) {
+        return cached;
     }
+
+    // Mark as in-progress (None) to detect cycles
+    cache.insert(block_id, None);
 
     let block = cfg.block(block_id)?;
 
-    match &block.terminator {
+    let result = match &block.terminator {
         Terminator::Return => Some(UnreachableReason::AfterReturn),
         Terminator::Stop => Some(UnreachableReason::AfterStop),
         Terminator::Break | Terminator::Next => {
@@ -226,7 +245,7 @@ fn find_terminator_in_path(
         Terminator::Goto => {
             // Follow the goto to its successor
             if let Some(&next) = block.successors.first() {
-                find_terminator_in_path(cfg, next, visited)
+                find_terminator_in_path(cfg, next, cache)
             } else {
                 None
             }
@@ -235,17 +254,22 @@ fn find_terminator_in_path(
             // Nested if - check if all branches terminate
             let mut result = None;
             for &succ_id in &block.successors {
-                if let Some(reason) = find_terminator_in_path(cfg, succ_id, visited) {
+                if let Some(reason) = find_terminator_in_path(cfg, succ_id, cache) {
                     result = Some(reason);
                 } else {
                     // One branch doesn't terminate, so the nested if doesn't fully terminate
+                    cache.insert(block_id, None);
                     return None;
                 }
             }
             result
         }
         Terminator::Loop | Terminator::None => None,
-    }
+    };
+
+    // Cache the result
+    cache.insert(block_id, result);
+    result
 }
 
 /// Find all blocks reachable from the entry block using BFS (Breadth-First Search)
