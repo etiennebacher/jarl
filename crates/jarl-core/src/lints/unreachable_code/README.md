@@ -38,6 +38,21 @@ A **basic block** contains:
 - **Predecessors**: Blocks that can execute before this one
 - **Terminator**: How control flow exits this block
 
+### Edges
+
+An **edge** is a directed connection between two basic blocks that represents a possible path of execution. Edges connect a block's successors list to another block's predecessors list:
+
+- **Edge existence**: When block A has an edge to block B, then B appears in A's successors list AND A appears in B's predecessors list
+- **Reachability**: A block is reachable if there exists a path of edges from the entry block to it
+- **Unreachable blocks**: Some blocks may have predecessors listed but no actual incoming edges. This occurs for unreachable code after terminators or in dead branches from constant conditions
+
+Example:
+```
+Block A --edge--> Block B
+  (A.successors contains B)
+  (B.predecessors contains A)
+```
+
 ### Terminators
 
 Terminators describe how control flow exits a basic block:
