@@ -82,6 +82,17 @@ impl CfgBuilder {
         self.cfg
     }
 
+    /// Build CFG for any expression (handles AnyRExpression from loops)
+    fn build_expression(&mut self, expr: &RSyntaxNode, current: BlockId, exit: BlockId) -> BlockId {
+        // Check if it's a braced expression
+        if let Some(braced) = RBracedExpressions::cast_ref(expr) {
+            self.build_braced_expressions(&braced, current, exit)
+        } else {
+            // For non-braced expressions, treat as a single statement
+            self.build_statement(expr, current, exit)
+        }
+    }
+
     /// Build CFG for a braced expression block
     fn build_braced_expressions(
         &mut self,
@@ -96,17 +107,6 @@ impl CfgBuilder {
             .map(|e| e.syntax().clone())
             .collect();
         self.build_statements(&items, current, exit)
-    }
-
-    /// Build CFG for any expression (handles AnyRExpression from loops)
-    fn build_expression(&mut self, expr: &RSyntaxNode, current: BlockId, exit: BlockId) -> BlockId {
-        // Check if it's a braced expression
-        if let Some(braced) = RBracedExpressions::cast_ref(expr) {
-            self.build_braced_expressions(&braced, current, exit)
-        } else {
-            // For non-braced expressions, treat as a single statement
-            self.build_statement(expr, current, exit)
-        }
     }
 
     /// Build CFG for a sequence of statements
