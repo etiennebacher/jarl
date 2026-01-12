@@ -10,18 +10,36 @@ cannot be reached.
 Unreachable code indicates a logic error or dead code that should be removed.
 It clutters the codebase, confuses readers, and may indicate unintended behavior.
 
+Unreachable code can only be detected in functions.
+
 ## Example
 
 ```r
 foo <- function(x) {
   return(x + 1)
-  print("This will never execute")  # unreachable
+  print("hi")  # unreachable
 }
 ```
 
 ```r
-for (i in 1:10) {
-  break
-  x <- i  # unreachable
+foo <- function(x) {
+  for (i in 1:10) {
+    x <- x + 1
+    if (x > 10) {
+       break
+       print("x is greater than 10") # unreachable
+    }
+  }
+}
+```
+
+```r
+foo <- function(x) {
+  if (x > 5) {
+    return("hi")
+  } else {
+    return("bye")
+  }
+  1 + 1 # unreachable
 }
 ```
