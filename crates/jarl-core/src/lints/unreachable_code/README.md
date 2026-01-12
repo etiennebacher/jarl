@@ -112,6 +112,15 @@ The `CfgBuilder` traverses the R function's AST and constructs a CFG:
    - Constant conditions (`if (TRUE)`, `if (FALSE)`) create blocks for dead branches
    - When processing statements in an unreachable block (no incoming edges), statements are added directly without recursive structure building, ensuring all unreachable code is grouped together
 
+#### Identifying Control Flow Statements
+
+When processing `R_CALL` nodes, the builder identifies control flow statements by examining the function name:
+
+- **Recognized terminators**:
+  - `return()` → Return terminator
+  - `stop()`, `abort()`, `.Defunct()`, `cli_abort()` → Stop terminator
+  - `break`, `next` → Loop control terminators
+
 ### Step 2: Find Reachable Blocks (BFS)
 
 **BFS (Breadth-First Search)** is a graph traversal algorithm that explores nodes level by level:
@@ -147,22 +156,24 @@ Not visited: `bb3` (unreachable!)
 
 ### Step 3: Determine Unreachability Reason
 
-For each unreachable block, we determine **why** it's unreachable by examining its context:
+For each unreachable block, we determine **why** it's unreachable by examining its context in priority order:
 
-1. **Check predecessors for terminators** (priority):
+1. **Check predecessors for direct terminators** (highest priority):
    - If a predecessor has a `Return` terminator → `AfterReturn`
    - If a predecessor has a `Stop` terminator → `AfterStop`
    - If a predecessor has a `Break` terminator → `AfterBreak`
    - If a predecessor has a `Next` terminator → `AfterNext`
 
-2. **Check if predecessor is a branch where all successors terminate**:
-   - For if/else where both branches end with `return`/`stop()`, traverse successors to find the terminator type
-   - This correctly attributes unreachable code after such if/else statements
+2. **Check if predecessor is a branch where all successors terminate** → `AfterBranchTerminating`:
+   - For if/else where both branches end with `return`/`stop()`, traverse all branch successors to verify they all terminate
+   - Example: `if (x) { return(1) } else { return(2) }` followed by unreachable code
 
-3. **Check for dead branches**:
-   - If the block has predecessors in the `predecessors` list but no actual edges (from successors) → `DeadBranch`
+3. **Check for dead branches** → `DeadBranch`:
+   - If the block has predecessors in the `predecessors` list but no actual edges (from successors)
+   - This occurs with constant conditions: `if (TRUE)` or `if (FALSE)`
 
-4. **Fallback**: `NoPathFromEntry`
+4. **Fallback** → `NoPathFromEntry`:
+   - Used when no specific reason can be determined
 
 ### Step 4: Group Contiguous Unreachable Code
 
@@ -229,7 +240,22 @@ bar <- function() {
 
 **Diagnostic**: Line 5 highlighted as unreachable due to constant condition.
 
-### Example 3: Nested Functions
+### Example 3: Code After Terminating Branch
+
+```r
+baz <- function(x) {
+  if (x > 0) {
+    return(1)
+  } else {
+    return(-1)
+  }
+  print("never reached")
+}
+```
+
+**Diagnostic**: Line 7 highlighted as unreachable because all branches of the if/else terminate.
+
+### Example 4: Nested Functions
 
 ```r
 outer <- function() {
