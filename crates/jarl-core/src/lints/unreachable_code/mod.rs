@@ -446,6 +446,22 @@ foo <- function() {
 
         let code = r#"
 foo <- function() {
+  .Defunct("a")
+  1 + 1
+}
+"#;
+        insta::assert_snapshot!(snapshot_lint(code), @r"
+        warning: unreachable_code
+         --> <test>:4:3
+          |
+        4 |   1 + 1
+          |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
+          |
+        Found 1 error.
+        ");
+
+        let code = r#"
+foo <- function() {
   cli_abort("a")
   1 + 1
 }
