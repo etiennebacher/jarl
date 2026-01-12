@@ -52,6 +52,9 @@ pub fn unreachable_code(ast: &RFunctionDefinition) -> anyhow::Result<Vec<Diagnos
             UnreachableReason::AfterNext => {
                 "This code is unreachable because it appears after a next statement."
             }
+            UnreachableReason::AfterBranchTerminating => {
+                "This code is unreachable because the preceding if/else terminates in all branches."
+            }
             UnreachableReason::DeadBranch => {
                 "This code is in a branch that can never be executed due to a constant condition."
             }

@@ -21,6 +21,8 @@ pub enum UnreachableReason {
     AfterStop,
     /// Code after a next statement
     AfterNext,
+    /// Code after an if/else where all branches terminate
+    AfterBranchTerminating,
     /// Code in a branch that's never taken (constant condition)
     DeadBranch,
     /// Code that has no path from entry
@@ -192,11 +194,9 @@ fn find_branch_terminator_reason(
         }
     }
 
-    // Prefer return over stop for the message
-    if found_return {
-        Some(UnreachableReason::AfterReturn)
-    } else if found_stop {
-        Some(UnreachableReason::AfterStop)
+    // If any branch terminates, return the unified reason
+    if found_return || found_stop {
+        Some(UnreachableReason::AfterBranchTerminating)
     } else {
         None
     }

@@ -72,7 +72,7 @@ foo <- function(x) {
          --> <test>:8:3
           |
         8 |   x <- 1
-          |   ------ This code is unreachable because it appears after a return statement.
+          |   ------ This code is unreachable because the preceding if/else terminates in all branches.
           |
         Found 1 error.
         ");
@@ -334,7 +334,7 @@ foo <- function(bar) {
           --> <test>:10:3
            |
         10 |   1 + 1
-           |   ----- This code is unreachable because it appears after a return statement.
+           |   ----- This code is unreachable because the preceding if/else terminates in all branches.
            |
         Found 3 errors.
         ");
@@ -390,7 +390,7 @@ foo <- function(bar) {
         ...  |
         20 | |     5 + 4
         21 | |   }
-           | |___- This code is unreachable because it appears after a return statement.
+           | |___- This code is unreachable because the preceding if/else terminates in all branches.
            |
         Found 3 errors.
         ");
