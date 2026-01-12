@@ -585,4 +585,23 @@ foo <- function(x) {
 "#;
         expect_no_lint(code, "unreachable_code", None);
     }
+
+    #[test]
+    fn test_function_shortcut_is_handled() {
+        let code = r#"
+foo <- \(x) {
+  return(x)
+  1 + 1
+}
+"#;
+        insta::assert_snapshot!(snapshot_lint(code), @r"
+        warning: unreachable_code
+         --> <test>:4:3
+          |
+        4 |   1 + 1
+          |   ----- This code is unreachable because it appears after a return statement.
+          |
+        Found 1 error.
+        ");
+    }
 }
