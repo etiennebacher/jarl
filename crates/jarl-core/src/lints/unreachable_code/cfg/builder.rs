@@ -22,13 +22,19 @@ struct LoopContext {
 
 /// Evaluate a constant boolean condition if possible
 fn evaluate_constant_condition(node: &RSyntaxNode) -> Option<bool> {
-    let text = node.text_trimmed().to_string();
-    let trimmed = text.trim();
+    let kind = node.kind();
+    let is_true_literal = matches!(kind, RSyntaxKind::TRUE_KW | RSyntaxKind::R_TRUE_EXPRESSION);
+    let is_false_literal = matches!(
+        kind,
+        RSyntaxKind::FALSE_KW | RSyntaxKind::R_FALSE_EXPRESSION
+    );
 
-    match trimmed {
-        "TRUE" => Some(true),
-        "FALSE" => Some(false),
-        _ => None,
+    if is_true_literal {
+        Some(true)
+    } else if is_false_literal {
+        Some(false)
+    } else {
+        None
     }
 }
 
