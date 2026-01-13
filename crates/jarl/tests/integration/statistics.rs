@@ -104,22 +104,17 @@ any(is.na(x))
             .normalize_os_executable_name()
     );
 
-    unsafe {
-        std::env::set_var("JARL_N_VIOLATIONS_HINT_STAT", "25");
-
-        insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--output-format")
-                .arg("concise")
-                .run()
-                .normalize_os_executable_name()
-        );
-
-        std::env::remove_var("JARL_N_VIOLATIONS_HINT_STAT");
-    }
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .env("JARL_N_VIOLATIONS_HINT_STAT", "25")
+            .run()
+            .normalize_os_executable_name()
+    );
 
     Ok(())
 }
