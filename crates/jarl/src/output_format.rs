@@ -8,7 +8,7 @@ use std::io::{BufWriter, Write};
 
 use jarl_core::diagnostic::Diagnostic;
 
-fn show_hint_statistics(total_diagnostics: i32) -> () {
+fn show_hint_statistics(total_diagnostics: i32) {
     let n_violations = std::env::var("JARL_N_VIOLATIONS_HINT_STAT")
         .ok()
         .and_then(|value| value.parse::<i32>().ok())
