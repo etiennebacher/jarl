@@ -202,6 +202,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#unfixable" id="toc-unfixable" class="nav-link" data-scroll-target="#unfixable"><code>unfixable</code></a></li>
   </ul></li>
   </ul></li>
+  <li><a href="#environment-variables" id="toc-environment-variables" class="nav-link" data-scroll-target="#environment-variables">Environment variables</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/config.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -425,10 +426,24 @@ Options:
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Fix all violations.</span></span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="dt">unfixable</span> <span class="op">=</span> <span class="op">[]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-
-
 </section>
 </section>
+</section>
+<section id="environment-variables" class="level2">
+<h2 class="anchored" data-anchor-id="environment-variables">Environment variables</h2>
+<p>This section lists all environment variables that can be used in Jarl:</p>
+<ul>
+<li><code>NO_COLOR</code>: set this to any value to remove colors from the output.
+<ul>
+<li>Example: <code>NO_COLOR=1</code></li>
+</ul></li>
+<li><code>JARL_N_VIOLATIONS_HINT_STAT</code>: Jarl prints a hint to use <code>--statistics</code> if the number of violations is higher than a certain threshold. By default, this threshold is 15. This environment variable overrides this value.
+<ul>
+<li>Example: <code>JARL_N_VIOLATIONS_HINT_STAT=25</code></li>
+</ul></li>
+</ul>
+
+
 </section>
 
 </main> <!-- /main -->
