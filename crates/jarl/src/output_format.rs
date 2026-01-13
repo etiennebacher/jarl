@@ -8,6 +8,18 @@ use std::io::{BufWriter, Write};
 
 use jarl_core::diagnostic::Diagnostic;
 
+fn show_hint_statistics(total_diagnostics: i32) -> () {
+    let n_violations = std::env::var("JARL_N_VIOLATIONS_HINT_STAT")
+        .ok()
+        .and_then(|value| value.parse::<i32>().ok())
+        .unwrap_or(15);
+    if total_diagnostics > n_violations {
+        println!(
+            "\nMore than {n_violations} errors reported, use `--statistics` to get the count by rule."
+        );
+    }
+}
+
 #[derive(Debug, Serialize)]
 struct JsonOutput<'a> {
     diagnostics: Vec<&'a Diagnostic>,
@@ -146,6 +158,8 @@ impl Emitter for ConciseEmitter {
                 };
                 println!("{label} available with the `--fix --unsafe-fixes` option.");
             }
+
+            show_hint_statistics(total_diagnostics);
         } else if errors.is_empty() {
             println!("All checks passed!");
         }
@@ -388,6 +402,8 @@ impl Emitter for FullEmitter {
                 };
                 println!("{label} available with the `--fix --unsafe-fixes` option.");
             }
+
+            show_hint_statistics(total_diagnostics);
         } else if errors.is_empty() {
             println!("All checks passed!");
         }

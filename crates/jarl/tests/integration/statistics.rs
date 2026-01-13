@@ -65,3 +65,61 @@ fn test_stats_no_violation() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_hint_stats_arg() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    let test_contents = "
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    unsafe {
+        std::env::set_var("JARL_N_VIOLATIONS_HINT_STAT", "25");
+
+        insta::assert_snapshot!(
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .arg("--output-format")
+                .arg("concise")
+                .run()
+                .normalize_os_executable_name()
+        );
+
+        std::env::remove_var("JARL_N_VIOLATIONS_HINT_STAT");
+    }
+
+    Ok(())
+}
