@@ -8,7 +8,7 @@
   of the details of each violation. Jarl prints a hint to use this argument when
   more than 15 violations are reported (only when `--output-format` is `concise`
   or `full`). This value can be configured with the environment variable
-  `JARL_N_VIOLATIONS_HINT_STAT`. (#250, #265)
+  `JARL_N_VIOLATIONS_HINT_STAT`. (#250, #266)
 
 - Jarl now looks in parent folders for `jarl.toml`. It searches until the user
   config folder is reached (the location of this folder depends on the OS:
