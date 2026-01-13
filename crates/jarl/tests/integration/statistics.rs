@@ -104,6 +104,36 @@ any(is.na(x))
             .normalize_os_executable_name()
     );
 
+    Ok(())
+}
+
+#[test]
+fn test_hint_stats_arg_with_envvar() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    let test_contents = "
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+any(is.na(x))
+";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)
