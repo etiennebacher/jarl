@@ -266,7 +266,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="useful-commands" class="level3">
 <h3 class="anchored" data-anchor-id="useful-commands">Useful commands</h3>
 <ul>
-<li><code>cargo run --bin jarl -- check demos/foo.R</code> (or any other paths to check). The <code>--</code> in the middle is required to use the CLI in development mode (i.e.&nbsp;without installing it with <code>cargo install</code>)</li>
+<li><code>cargo run --bin jarl -- check file.R</code> (or any other paths to check). The <code>--</code> in the middle is required to use the CLI in development mode (i.e.&nbsp;without installing it with <code>cargo install</code>)</li>
 <li><code>cargo insta test</code> and <code>cargo insta review</code> (if necessary) for snapshot tests only.</li>
 <li><code>cargo test</code> to run all tests, including snapshot tests.</li>
 <li><code>cargo install --path crates/jarl --profile=release</code> (or <code>--profile=dev</code>) to have a system-wide install and test the crate in other R projects.</li>
