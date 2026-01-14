@@ -167,9 +167,12 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     let mut checker = Checker::new(suppression, config.assignment);
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
-    for expr in expressions_vec {
-        check_expression(&expr, &mut checker)?;
+    for expr in expressions_vec.iter() {
+        check_expression(expr, &mut checker)?;
     }
+
+    // Analyze top-level code (checks that require the entire document)
+    analyze::top_level::top_level(&expressions_vec, &mut checker)?;
 
     // Some rules have a fix available in their implementation but do not have
     // fix in the config, for instance because they are part of the "unfixable"
