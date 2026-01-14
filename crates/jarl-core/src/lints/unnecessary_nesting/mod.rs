@@ -207,6 +207,30 @@ mod tests {
             "unnecessary_nesting",
             None,
         );
+        expect_lint(
+            "
+        if (x) {
+            if (y) {
+                1L
+            }
+        }
+      ",
+            msg,
+            "unnecessary_nesting",
+            None,
+        );
+        expect_lint(
+            "
+        if (x) {
+            if (y) {
+                1L
+            }
+        }
+      ",
+            msg,
+            "unnecessary_nesting",
+            None,
+        );
 
         assert_snapshot!(
             "fix_output",
