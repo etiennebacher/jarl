@@ -269,8 +269,8 @@ Found 2 errors.
 </section>
 <section id="installation" class="level2">
 <h2 class="anchored" data-anchor-id="installation">Installation</h2>
-<section id="binaries" class="level3">
-<h3 class="anchored" data-anchor-id="binaries">Binaries</h3>
+<section id="released-version" class="level3">
+<h3 class="anchored" data-anchor-id="released-version">Released version</h3>
 <p>Either get binaries from the <a href="https://github.com/etiennebacher/jarl/releases" target="_blank">Releases page</a> or install Jarl from the existing installer scripts below.</p>
 <p><strong>macOS and Linux:</strong></p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">--proto</span> <span class="st">'=https'</span> <span class="at">--tlsv1.2</span> <span class="at">-LsSf</span> <span class="dt">\</span></span>
@@ -287,9 +287,10 @@ Found 2 errors.
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># update</span></span>
 <span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="ex">scoop</span> update jarl</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="from-source" class="level3">
-<h3 class="anchored" data-anchor-id="from-source">From source</h3>
-<p>Alternatively, if you have Rust installed, you can get the development version with:</p>
+<section id="development-version" class="level3">
+<h3 class="anchored" data-anchor-id="development-version">Development version</h3>
+<p>Some pre-releases may be available from the <a href="https://github.com/etiennebacher/jarl/releases" target="_blank">Releases page</a> (the version usually contains <code>alpha</code>).</p>
+<p>Alternatively, if you have Rust installed, you should be able to get the development version with:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install <span class="at">--git</span> https://github.com/etiennebacher/jarl jarl <span class="at">--profile</span><span class="op">=</span>release</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 </section>
