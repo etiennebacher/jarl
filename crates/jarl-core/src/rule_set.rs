@@ -482,7 +482,7 @@ declare_rules! {
     UnnecessaryNesting => {
         name: "unnecessary_nesting",
         categories: [Read],
-        default: Enabled,
+        default: Disabled,
         fix: Safe,
         min_r_version: None,
     },
