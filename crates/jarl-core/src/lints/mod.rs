@@ -42,6 +42,7 @@ pub(crate) mod sprintf;
 pub(crate) mod string_boundary;
 pub(crate) mod system_file;
 pub(crate) mod true_false_symbol;
+pub(crate) mod unnecessary_nesting;
 pub(crate) mod unreachable_code;
 pub(crate) mod vector_logic;
 pub(crate) mod which_grepl;

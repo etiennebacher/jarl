@@ -97,6 +97,7 @@ website:
       - rules/string_boundary.md
       - rules/system_file.md
       - rules/true_false_symbol.md
+      - rules/unnecessary_nesting.md
       - rules/unreachable_code.md
       - rules/vector_logic.md
       - rules/which_grepl.md

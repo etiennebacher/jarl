@@ -87,6 +87,7 @@ dat <- as.data.frame(
     c("string_boundary", "performance, readability", "✅", ""),
     c("system_file", "readability", "✅", ""),
     c("true_false_symbol", "readability", "❌", ""),
+    c("unnecessary_nesting", "readability", "✅", "Disabled by default"),
     c("unreachable_code", "readability, suspicious", "❌", ""),
     c("vector_logic", "performance", "❌", ""),
     c("which_grepl", "performance, readability", "✅", "")

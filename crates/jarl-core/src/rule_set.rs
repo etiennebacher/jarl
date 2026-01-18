@@ -479,6 +479,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    UnnecessaryNesting => {
+        name: "unnecessary_nesting",
+        categories: [Read],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
     UnreachableCode => {
         name: "unreachable_code",
         categories: [Read, Susp],

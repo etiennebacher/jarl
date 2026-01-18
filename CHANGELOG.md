@@ -19,6 +19,7 @@
 
 - New rules:
   - `redundant_ifelse` (#260)
+  - `unnecessary_nesting` (#268)
   - `unreachable_code` (#261)
 
 ### Other changes
