@@ -199,7 +199,7 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     let syntax = &parsed.syntax();
     let expressions = &parsed.tree().expressions();
 
-    let suppression = SuppressionManager::from_node(syntax);
+    let suppression = SuppressionManager::from_node(syntax, contents);
 
     // Check if the entire file should be skipped
     if suppression.should_skip_file(syntax) {
