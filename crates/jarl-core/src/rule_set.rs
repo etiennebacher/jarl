@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fmt;
 use std::str::FromStr;
 
@@ -512,23 +513,23 @@ declare_rules! {
 /// A collection of rules
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuleSet {
-    rules: Vec<Rule>,
+    rules: HashSet<Rule>,
 }
 
 impl RuleSet {
     /// Create an empty rule set
     pub fn empty() -> Self {
-        Self { rules: Vec::new() }
+        Self { rules: HashSet::new() }
     }
 
     /// Create a rule set from a vector of rules
     pub fn from_rules(rules: Vec<Rule>) -> Self {
-        Self { rules }
+        Self { rules: rules.into_iter().collect() }
     }
 
     /// Create a rule set containing all rules
     pub fn all() -> Self {
-        Self { rules: ALL_RULES.to_vec() }
+        Self { rules: ALL_RULES.iter().copied().collect() }
     }
 
     /// Get an iterator over the rules
