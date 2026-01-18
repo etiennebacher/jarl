@@ -1,6 +1,6 @@
 use crate::diagnostic::*;
 use air_r_syntax::*;
-use biome_rowan::{AstNode, Text};
+use biome_rowan::AstNode;
 
 pub struct ForLoopIndex;
 
@@ -62,29 +62,24 @@ fn contains_identifier(expr: &AnyRExpression, target: &str) -> anyhow::Result<bo
         AnyRExpression::RCall(call) => {
             let arguments = call.arguments()?.items();
 
-            let arg_names: Vec<Text> = arguments
-                .clone()
-                .into_iter()
-                .filter_map(|x| {
-                    let expr = x.ok()?; // Convert Result to Option
-                    let name_clause = expr.as_fields().name_clause?;
-                    let name = name_clause.name().unwrap();
-                    Some(name.to_trimmed_text())
-                })
-                .collect();
+            // Check both names and values in a single iteration
+            for arg in arguments {
+                if let Ok(expr) = arg {
+                    // Check if the name matches the target
+                    if let Some(name_clause) = expr.as_fields().name_clause {
+                        if let Ok(name) = name_clause.name() {
+                            if name.to_trimmed_text() == target {
+                                return Ok(true);
+                            }
+                        }
+                    }
 
-            if arg_names.iter().any(|x| *x == target) {
-                return Ok(true);
-            }
-
-            let arg_values: Vec<AnyRExpression> = arguments
-                .into_iter()
-                .filter_map(|x| x.unwrap().as_fields().value)
-                .collect();
-
-            for expr in arg_values {
-                if contains_identifier(&expr, target)? {
-                    return Ok(true);
+                    // Check if the value contains the target identifier
+                    if let Some(value) = expr.as_fields().value {
+                        if contains_identifier(&value, target)? {
+                            return Ok(true);
+                        }
+                    }
                 }
             }
             false
