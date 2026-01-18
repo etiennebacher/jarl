@@ -9,6 +9,8 @@ pub struct UnreachableCodeInfo {
     pub range: TextRange,
     /// Why this code is unreachable
     pub reason: UnreachableReason,
+    /// Nesting level of this unreachable code (0 = top level)
+    pub nesting_level: u32,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -42,7 +44,7 @@ pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo>
     let reachable = find_reachable_blocks(cfg);
 
     // Step 2: Collect all unreachable blocks with their info
-    let mut unreachable_blocks: Vec<(TextRange, UnreachableReason)> = Vec::new();
+    let mut unreachable_blocks: Vec<(TextRange, UnreachableReason, u32)> = Vec::new();
 
     for block in &cfg.blocks {
         // Skip entry and exit blocks
@@ -63,46 +65,54 @@ pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo>
                     .text_trimmed_range()
                     .cover(last_stmt.text_trimmed_range());
 
-                unreachable_blocks.push((block_range, reason));
+                unreachable_blocks.push((block_range, reason, block.nesting_level));
             } else if let Some(range) = block.range {
                 // Block has no statements but has a range
-                unreachable_blocks.push((range, reason));
+                unreachable_blocks.push((range, reason, block.nesting_level));
             }
         }
     }
 
     // Step 3: Sort by source position
-    unreachable_blocks.sort_by_key(|(range, _)| range.start());
+    unreachable_blocks.sort_by_key(|(range, _, _)| range.start());
 
     // Step 4: Group contiguous unreachable code with the same reason
     // Since dead branches now collect all statements in a single block,
     // we only need to merge blocks that are directly contiguous (no gap)
-    let mut current_group: Option<(TextRange, UnreachableReason)> = None;
+    let mut current_group: Option<(TextRange, UnreachableReason, u32)> = None;
 
-    for (block_range, reason) in unreachable_blocks {
-        if let Some((ref mut group_range, ref group_reason)) = current_group {
+    for (block_range, reason, nesting_level) in unreachable_blocks {
+        if let Some((ref mut group_range, ref group_reason, ref group_nesting)) = current_group {
             let same_reason =
                 std::mem::discriminant(group_reason) == std::mem::discriminant(&reason);
+            let same_nesting = *group_nesting == nesting_level;
             let is_contiguous = block_range.start() == group_range.end();
 
-            if same_reason && is_contiguous {
+            if same_reason && same_nesting && is_contiguous {
                 // Extend the current group to cover this block
                 *group_range = group_range.cover(block_range);
             } else {
                 // Different reason or not contiguous - flush current group and start a new one
-                unreachable
-                    .push(UnreachableCodeInfo { range: *group_range, reason: *group_reason });
-                current_group = Some((block_range, reason));
+                unreachable.push(UnreachableCodeInfo {
+                    range: *group_range,
+                    reason: *group_reason,
+                    nesting_level: *group_nesting,
+                });
+                current_group = Some((block_range, reason, nesting_level));
             }
         } else {
             // Start a new group
-            current_group = Some((block_range, reason));
+            current_group = Some((block_range, reason, nesting_level));
         }
     }
 
     // Don't forget to flush any remaining group at the end
-    if let Some((group_range, group_reason)) = current_group {
-        unreachable.push(UnreachableCodeInfo { range: group_range, reason: group_reason });
+    if let Some((group_range, group_reason, group_nesting)) = current_group {
+        unreachable.push(UnreachableCodeInfo {
+            range: group_range,
+            reason: group_reason,
+            nesting_level: group_nesting,
+        });
     }
 
     unreachable
