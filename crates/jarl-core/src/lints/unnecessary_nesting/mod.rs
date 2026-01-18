@@ -41,6 +41,19 @@ if (x) {
 
         expect_no_lint(
             "
+if (x) {
+  if (y) {
+    print('hi')
+  }
+} else {
+    print('hello')
+}",
+            "unnecessary_nesting",
+            None,
+        );
+
+        expect_no_lint(
+            "
 if (if (x) TRUE else FALSE) {
   1L
 }",
