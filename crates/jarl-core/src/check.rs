@@ -198,7 +198,6 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
 
     let syntax = &parsed.syntax();
     let expressions = &parsed.tree().expressions();
-    let expressions_vec: Vec<_> = expressions.into_iter().collect();
 
     let suppression = SuppressionManager::from_node(syntax);
 
@@ -210,7 +209,7 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     let mut checker = Checker::new(suppression, config.assignment);
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
-    for expr in expressions_vec {
+    for expr in expressions {
         check_expression(&expr, &mut checker)?;
     }
 
@@ -294,24 +293,17 @@ pub fn check_expression(
             check_expression(&right?, checker)?;
         }
         AnyRExpression::RBracedExpressions(children) => {
-            let expressions: Vec<_> = children.expressions().into_iter().collect();
-
-            for expr in expressions {
+            for expr in children.expressions() {
                 check_expression(&expr, checker)?;
             }
         }
         AnyRExpression::RCall(children) => {
             analyze::call::call(children, checker)?;
 
-            let arguments: Vec<AnyRExpression> = children
-                .arguments()?
-                .items()
-                .into_iter()
-                .filter_map(|x| x.unwrap().as_fields().value)
-                .collect();
-
-            for expr in arguments {
-                check_expression(&expr, checker)?;
+            for arg in children.arguments()?.items() {
+                if let Some(expr) = arg.unwrap().as_fields().value {
+                    check_expression(&expr, checker)?;
+                }
             }
         }
         AnyRExpression::RForStatement(children) => {
@@ -352,19 +344,16 @@ pub fn check_expression(
         }
         AnyRExpression::RSubset(children) => {
             analyze::subset::subset(children, checker)?;
-            let arguments: Vec<_> = children.arguments()?.items().into_iter().collect();
 
-            for expr in arguments {
-                if let Some(expr) = expr?.value() {
+            for arg in children.arguments()?.items() {
+                if let Some(expr) = arg?.value() {
                     check_expression(&expr, checker)?;
                 }
             }
         }
         AnyRExpression::RSubset2(children) => {
-            let arguments: Vec<_> = children.arguments()?.items().into_iter().collect();
-
-            for expr in arguments {
-                if let Some(expr) = expr?.value() {
+            for arg in children.arguments()?.items() {
+                if let Some(expr) = arg?.value() {
                     check_expression(&expr, checker)?;
                 }
             }
