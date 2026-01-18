@@ -212,7 +212,9 @@ impl CfgBuilder {
                 } else if fun_name == "next" {
                     self.build_next(current, stmt.clone());
                     current
-                } else if ["stop", ".Defunct", "abort", "cli_abort"].contains(&fun_name.as_str()) {
+                } else if ["stop", ".Defunct", "abort", "cli_abort", "q", "quit"]
+                    .contains(&fun_name.as_str())
+                {
                     self.build_stop(current, stmt.clone());
                     current
                 } else {
