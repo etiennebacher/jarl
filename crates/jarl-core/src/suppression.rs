@@ -66,11 +66,11 @@ impl CommentStyle for RCommentStyle {
 
 /// Represents a region where linting should be skipped
 #[derive(Debug, Clone)]
-struct SkipRegion {
+pub struct SkipRegion {
     /// The range of text covered by this skip region
-    range: TextRange,
+    pub range: TextRange,
     /// Rules to skip (None means skip all rules)
-    rules: Option<HashSet<Rule>>,
+    pub rules: Option<HashSet<Rule>>,
 }
 
 /// Tracks which nodes should skip linting based on comments
@@ -78,9 +78,9 @@ struct SkipRegion {
 pub struct SuppressionManager {
     comments: Comments<RLanguage>,
     /// Regions defined by nolint start/end blocks
-    skip_regions: Vec<SkipRegion>,
+    pub skip_regions: Vec<SkipRegion>,
     /// Fast path: true if there are no suppressions anywhere in the file
-    has_any_suppressions: bool,
+    pub has_any_suppressions: bool,
 }
 
 impl SuppressionManager {
