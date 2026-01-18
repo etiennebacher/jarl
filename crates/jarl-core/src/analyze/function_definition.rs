@@ -14,7 +14,9 @@ pub fn function_definition(
     // Check suppressions once for this node
     let suppressed_rules = checker.get_suppressed_rules(node);
 
-    if checker.is_rule_enabled(Rule::UnreachableCode) && !suppressed_rules.contains(&Rule::UnreachableCode) {
+    if checker.is_rule_enabled(Rule::UnreachableCode)
+        && !suppressed_rules.contains(&Rule::UnreachableCode)
+    {
         let diagnostics = unreachable_code(func)?;
         for diagnostic in diagnostics {
             checker.report_diagnostic(Some(diagnostic));

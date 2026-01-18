@@ -23,31 +23,41 @@ pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> a
     if checker.is_rule_enabled(Rule::Assignment) && !suppressed_rules.contains(&Rule::Assignment) {
         checker.report_diagnostic(assignment(r_expr, checker.assignment)?);
     }
-    if checker.is_rule_enabled(Rule::ClassEquals) && !suppressed_rules.contains(&Rule::ClassEquals) {
+    if checker.is_rule_enabled(Rule::ClassEquals) && !suppressed_rules.contains(&Rule::ClassEquals)
+    {
         checker.report_diagnostic(class_equals(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::VectorLogic) && !suppressed_rules.contains(&Rule::VectorLogic) {
+    if checker.is_rule_enabled(Rule::VectorLogic) && !suppressed_rules.contains(&Rule::VectorLogic)
+    {
         checker.report_diagnostic(vector_logic(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::EmptyAssignment) && !suppressed_rules.contains(&Rule::EmptyAssignment) {
+    if checker.is_rule_enabled(Rule::EmptyAssignment)
+        && !suppressed_rules.contains(&Rule::EmptyAssignment)
+    {
         checker.report_diagnostic(empty_assignment(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::EqualsNa) && !suppressed_rules.contains(&Rule::EqualsNa) {
         checker.report_diagnostic(equals_na(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::ImplicitAssignment) && !suppressed_rules.contains(&Rule::ImplicitAssignment) {
+    if checker.is_rule_enabled(Rule::ImplicitAssignment)
+        && !suppressed_rules.contains(&Rule::ImplicitAssignment)
+    {
         checker.report_diagnostic(implicit_assignment(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::IsNumeric) && !suppressed_rules.contains(&Rule::IsNumeric) {
         checker.report_diagnostic(is_numeric(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::RedundantEquals) && !suppressed_rules.contains(&Rule::RedundantEquals) {
+    if checker.is_rule_enabled(Rule::RedundantEquals)
+        && !suppressed_rules.contains(&Rule::RedundantEquals)
+    {
         checker.report_diagnostic(redundant_equals(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::Seq) && !suppressed_rules.contains(&Rule::Seq) {
         checker.report_diagnostic(seq(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::StringBoundary) && !suppressed_rules.contains(&Rule::StringBoundary) {
+    if checker.is_rule_enabled(Rule::StringBoundary)
+        && !suppressed_rules.contains(&Rule::StringBoundary)
+    {
         checker.report_diagnostic(string_boundary(r_expr)?);
     }
     Ok(())

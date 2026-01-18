@@ -41,7 +41,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::AllEqual) && !suppressed_rules.contains(&Rule::AllEqual) {
         checker.report_diagnostic(all_equal(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::AnyDuplicated) && !suppressed_rules.contains(&Rule::AnyDuplicated) {
+    if checker.is_rule_enabled(Rule::AnyDuplicated)
+        && !suppressed_rules.contains(&Rule::AnyDuplicated)
+    {
         checker.report_diagnostic(any_duplicated(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::AnyIsNa) && !suppressed_rules.contains(&Rule::AnyIsNa) {
@@ -50,19 +52,27 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::Browser) && !suppressed_rules.contains(&Rule::Browser) {
         checker.report_diagnostic(browser(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::ClassEquals) && !suppressed_rules.contains(&Rule::ClassEquals) {
+    if checker.is_rule_enabled(Rule::ClassEquals) && !suppressed_rules.contains(&Rule::ClassEquals)
+    {
         checker.report_diagnostic(class_identical(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::DownloadFile) && !suppressed_rules.contains(&Rule::DownloadFile) {
+    if checker.is_rule_enabled(Rule::DownloadFile)
+        && !suppressed_rules.contains(&Rule::DownloadFile)
+    {
         checker.report_diagnostic(download_file(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::DuplicatedArguments) && !suppressed_rules.contains(&Rule::DuplicatedArguments) {
+    if checker.is_rule_enabled(Rule::DuplicatedArguments)
+        && !suppressed_rules.contains(&Rule::DuplicatedArguments)
+    {
         checker.report_diagnostic(duplicated_arguments(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::ExpectLength) && !suppressed_rules.contains(&Rule::ExpectLength) {
+    if checker.is_rule_enabled(Rule::ExpectLength)
+        && !suppressed_rules.contains(&Rule::ExpectLength)
+    {
         checker.report_diagnostic(expect_length(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::ExpectNamed) && !suppressed_rules.contains(&Rule::ExpectNamed) {
+    if checker.is_rule_enabled(Rule::ExpectNamed) && !suppressed_rules.contains(&Rule::ExpectNamed)
+    {
         checker.report_diagnostic(expect_named(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::ExpectNot) && !suppressed_rules.contains(&Rule::ExpectNot) {
@@ -71,13 +81,17 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::ExpectNull) && !suppressed_rules.contains(&Rule::ExpectNull) {
         checker.report_diagnostic(expect_null(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::ExpectS3Class) && !suppressed_rules.contains(&Rule::ExpectS3Class) {
+    if checker.is_rule_enabled(Rule::ExpectS3Class)
+        && !suppressed_rules.contains(&Rule::ExpectS3Class)
+    {
         checker.report_diagnostic(expect_s3_class(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::ExpectType) && !suppressed_rules.contains(&Rule::ExpectType) {
         checker.report_diagnostic(expect_type(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::ExpectTrueFalse) && !suppressed_rules.contains(&Rule::ExpectTrueFalse) {
+    if checker.is_rule_enabled(Rule::ExpectTrueFalse)
+        && !suppressed_rules.contains(&Rule::ExpectTrueFalse)
+    {
         checker.report_diagnostic(expect_true_false(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::FixedRegex) && !suppressed_rules.contains(&Rule::FixedRegex) {
@@ -86,7 +100,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::Grepv) && !suppressed_rules.contains(&Rule::Grepv) {
         checker.report_diagnostic(grepv(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::LengthLevels) && !suppressed_rules.contains(&Rule::LengthLevels) {
+    if checker.is_rule_enabled(Rule::LengthLevels)
+        && !suppressed_rules.contains(&Rule::LengthLevels)
+    {
         checker.report_diagnostic(length_levels(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::LengthTest) && !suppressed_rules.contains(&Rule::LengthTest) {
@@ -98,13 +114,18 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::List2df) && !suppressed_rules.contains(&Rule::List2df) {
         checker.report_diagnostic(list2df(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::MatrixApply) && !suppressed_rules.contains(&Rule::MatrixApply) {
+    if checker.is_rule_enabled(Rule::MatrixApply) && !suppressed_rules.contains(&Rule::MatrixApply)
+    {
         checker.report_diagnostic(matrix_apply(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::OuterNegation) && !suppressed_rules.contains(&Rule::OuterNegation) {
+    if checker.is_rule_enabled(Rule::OuterNegation)
+        && !suppressed_rules.contains(&Rule::OuterNegation)
+    {
         checker.report_diagnostic(outer_negation(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::RedundantIfelse) && !suppressed_rules.contains(&Rule::RedundantIfelse) {
+    if checker.is_rule_enabled(Rule::RedundantIfelse)
+        && !suppressed_rules.contains(&Rule::RedundantIfelse)
+    {
         checker.report_diagnostic(redundant_ifelse(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::SampleInt) && !suppressed_rules.contains(&Rule::SampleInt) {
