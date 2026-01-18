@@ -134,9 +134,52 @@ impl Checker {
         self.rule_set.contains(&rule)
     }
 
-    /// Check if a rule should be skipped for the given node due to suppression comments
-    pub(crate) fn should_skip_rule(&self, node: &air_r_syntax::RSyntaxNode, rule: Rule) -> bool {
-        self.suppression.should_skip_rule(node, rule)
+    /// Get all suppressed rules for a node in a single check.
+    ///
+    /// Returns:
+    /// - An empty set if no rules are suppressed
+    /// - A set containing all enabled rules if all rules are suppressed
+    /// - A set containing specific suppressed rules otherwise
+    pub(crate) fn get_suppressed_rules(
+        &self,
+        node: &air_r_syntax::RSyntaxNode,
+    ) -> std::collections::HashSet<Rule> {
+        // Fast path: if there are no suppressions anywhere, return empty set immediately
+        if !self.suppression.has_any_suppressions {
+            return std::collections::HashSet::new();
+        }
+
+        // Check once and return all suppressed rules
+        match self.suppression.check_suppression(node) {
+            Some(None) => {
+                // Skip all rules - return all enabled rules
+                self.rule_set.iter().cloned().collect()
+            }
+            Some(Some(rules)) => {
+                // Skip specific rules - return only those that are enabled
+                rules
+                    .into_iter()
+                    .filter(|r| self.rule_set.contains(r))
+                    .collect()
+            }
+            None => {
+                // No suppression at node level, check regions
+                let node_range = node.text_trimmed_range();
+                for region in &self.suppression.skip_regions {
+                    if region.range.contains_range(node_range) {
+                        return match &region.rules {
+                            None => self.rule_set.iter().cloned().collect(),
+                            Some(rules) => rules
+                                .iter()
+                                .filter(|r| self.rule_set.contains(r))
+                                .cloned()
+                                .collect::<std::collections::HashSet<Rule>>(),
+                        };
+                    }
+                }
+                std::collections::HashSet::new()
+            }
+        }
     }
 }
 
