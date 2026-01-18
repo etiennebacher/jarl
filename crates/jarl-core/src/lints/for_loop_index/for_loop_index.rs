@@ -63,23 +63,20 @@ fn contains_identifier(expr: &AnyRExpression, target: &str) -> anyhow::Result<bo
             let arguments = call.arguments()?.items();
 
             // Check both names and values in a single iteration
-            for arg in arguments {
-                if let Ok(expr) = arg {
-                    // Check if the name matches the target
-                    if let Some(name_clause) = expr.as_fields().name_clause {
-                        if let Ok(name) = name_clause.name() {
-                            if name.to_trimmed_text() == target {
-                                return Ok(true);
-                            }
-                        }
-                    }
+            for expr in arguments.into_iter().flatten() {
+                // Check if the name matches the target
+                if let Some(name_clause) = expr.as_fields().name_clause
+                    && let Ok(name) = name_clause.name()
+                    && name.to_trimmed_text() == target
+                {
+                    return Ok(true);
+                }
 
-                    // Check if the value contains the target identifier
-                    if let Some(value) = expr.as_fields().value {
-                        if contains_identifier(&value, target)? {
-                            return Ok(true);
-                        }
-                    }
+                // Check if the value contains the target identifier
+                if let Some(value) = expr.as_fields().value
+                    && contains_identifier(&value, target)?
+                {
+                    return Ok(true);
                 }
             }
             false
