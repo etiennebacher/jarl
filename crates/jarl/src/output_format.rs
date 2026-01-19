@@ -8,8 +8,12 @@ use std::io::{BufWriter, Write};
 
 /// Creates a terminal hyperlink using OSC 8 escape sequences
 /// Format: \x1b]8;;<URL>\x1b\\<TEXT>\x1b]8;;\x1b\\
-fn make_hyperlink(text: &str, url: &str) -> String {
-    format!("\x1b]8;;{}\x1b\\{}\x1b]8;;\x1b\\", url, text)
+fn make_hyperlink(text: &str) -> String {
+    format!(
+        "\x1b]8;;{}\x1b\\{}\x1b]8;;\x1b\\",
+        format!("https://jarl.etiennebacher.com/rules/{}", text),
+        text
+    )
 }
 
 use jarl_core::diagnostic::Diagnostic;
@@ -114,11 +118,7 @@ impl Emitter for ConciseEmitter {
             };
             let use_colors = std::env::var("NO_COLOR").is_err();
             let rule_name = if use_colors {
-                let url = format!(
-                    "https://jarl.etiennebacher.com/rules/{}",
-                    diagnostic.message.name
-                );
-                &make_hyperlink(&diagnostic.message.name, &url)
+                &make_hyperlink(&diagnostic.message.name)
             } else {
                 &diagnostic.message.name
             };
@@ -366,11 +366,7 @@ impl Emitter for FullEmitter {
 
             // Create the main message with clickable rule name
             let title = if use_colors {
-                let url = format!(
-                    "https://jarl.etiennebacher.com/rules/{}",
-                    diagnostic.message.name
-                );
-                make_hyperlink(&diagnostic.message.name, &url)
+                make_hyperlink(&diagnostic.message.name)
             } else {
                 diagnostic.message.name.clone()
             };
