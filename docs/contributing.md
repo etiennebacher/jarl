@@ -58,9 +58,9 @@ Adding a new rule requires four main steps:
 
 ### Useful commands
 
-* `cargo run --bin jarl -- check demos/foo.R` (or any other paths to check). The `--` in the middle is required to use the CLI in development mode (i.e. without installing it with `cargo install`)
-* `cargo test` to run all tests, including snapshot tests.
+* `cargo run --bin jarl -- check file.R` (or any other paths to check). The `--` in the middle is required to use the CLI in development mode (i.e. without installing it with `cargo install`)
 * `cargo insta test` and `cargo insta review` (if necessary) for snapshot tests only.
+* `cargo test` to run all tests, including snapshot tests.
 * `cargo install --path crates/jarl --profile=release` (or `--profile=dev`) to have a system-wide install and test the crate in other R projects.
 
 

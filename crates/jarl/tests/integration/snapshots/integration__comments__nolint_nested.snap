@@ -6,6 +6,14 @@ success: false
 exit_code: 1
 ----- stdout -----
 warning: blanket_suppression
+ --> test.R:3:3
+  |
+3 |   # nolint
+  |   -------- This comment suppresses all possible violations of this node.
+  |
+  = help: Consider ignoring specific rules instead, e.g., `# nolint: any_is_na`.
+
+warning: blanket_suppression
   --> test.R:11:17
    |
 11 |   any(is.na(x)) # nolint
@@ -13,7 +21,7 @@ warning: blanket_suppression
    |
    = help: Consider ignoring specific rules instead, e.g., `# nolint: any_is_na`.
 
-Found 1 error.
+Found 2 errors.
 
 ----- stderr -----
 

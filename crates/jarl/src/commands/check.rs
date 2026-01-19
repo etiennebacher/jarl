@@ -5,19 +5,19 @@ use jarl_core::{
 };
 
 use anyhow::Result;
-use clap::Parser;
 use colored::Colorize;
+use std::env;
+use std::path::PathBuf;
 use std::time::Instant;
 
 use crate::args::CheckCommand;
 use crate::output_format::{self, GithubEmitter};
+use crate::statistics::print_statistics;
 use crate::status::ExitStatus;
 
 use output_format::{ConciseEmitter, Emitter, FullEmitter, JsonEmitter, OutputFormat};
 
-pub fn check() -> Result<ExitStatus> {
-    let args = CheckCommand::parse();
-
+pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     let start = if args.with_timing {
         Some(Instant::now())
     } else {
@@ -25,6 +25,10 @@ pub fn check() -> Result<ExitStatus> {
     };
 
     let mut resolver = PathResolver::new(Settings::default());
+
+    // Track if we're using a config from a parent directory
+    let mut parent_config_path: Option<PathBuf> = None;
+    let cwd = env::current_dir().ok();
 
     // Load discovered settings. If the user passed `--no-default-exclude`,
     // override each discovered settings' `default_exclude` to `false` so the
@@ -34,6 +38,15 @@ pub fn check() -> Result<ExitStatus> {
         if args.no_default_exclude {
             ds.settings.linter.default_exclude = Some(false);
         }
+
+        // Check if config is from a parent directory (not CWD)
+        if let (Some(config_path), Some(current_dir)) = (&ds.config_path, &cwd)
+            && let Some(config_dir) = config_path.parent()
+            && config_dir != current_dir
+        {
+            parent_config_path = Some(config_path.clone());
+        }
+
         resolver.add(&ds.directory, ds.settings);
     }
 
@@ -50,9 +63,6 @@ pub fn check() -> Result<ExitStatus> {
         );
         return Ok(ExitStatus::Success);
     }
-
-    // use std::path::Path;
-    // let paths = vec![Path::new("demos/foo.R").to_path_buf()];
 
     let check_config = ArgsConfig {
         files: args.files.iter().map(|s| s.into()).collect(),
@@ -96,6 +106,10 @@ pub fn check() -> Result<ExitStatus> {
 
     all_diagnostics_flat.sort();
 
+    if args.statistics {
+        return print_statistics(&all_diagnostics_flat, parent_config_path);
+    }
+
     let mut stdout = std::io::stdout();
 
     match args.output_format {
@@ -113,9 +127,23 @@ pub fn check() -> Result<ExitStatus> {
         }
     }
 
-    if let Some(start) = start {
-        let duration = start.elapsed();
-        println!("\nChecked files in: {duration:?}");
+    // For human-readable formats, print timing and config info
+    // Skip for JSON/GitHub to avoid corrupting structured output
+    let is_structured_format = matches!(
+        args.output_format,
+        OutputFormat::Json | OutputFormat::Github
+    );
+
+    if !is_structured_format {
+        // Inform the user if the config file used comes from a parent directory.
+        if let Some(config_path) = parent_config_path {
+            println!("\nUsed '{}'", config_path.display());
+        }
+
+        if let Some(start) = start {
+            let duration = start.elapsed();
+            println!("\nChecked files in: {duration:?}");
+        }
     }
 
     if !all_errors.is_empty() {

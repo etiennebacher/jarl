@@ -31,3 +31,7 @@ lint-fix:
 # Generates the `jarl.schema.json`
 gen-schema:
     cargo run -p xtask_codegen -- json-schema
+
+install-positron:
+  cp target/release/jarl editors/code/bundled/bin/jarl
+  cd editors/code && rm -rf *.vsix && vsce package && positron --install-extension *.vsix

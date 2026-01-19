@@ -8,6 +8,7 @@ format:
     theme: morph
     css: styles.css
     toc: true
+    toc-depth: 4
     code-copy: true
 language:
   search-text-placeholder: Search (press "s")
@@ -86,6 +87,7 @@ website:
       - rules/numeric_leading_zero.md
       - rules/outer_negation.md
       - rules/redundant_equals.md
+      - rules/redundant_ifelse.md
       - rules/repeat.md
       - rules/sample_int.md
       - rules/seq.md
@@ -95,5 +97,7 @@ website:
       - rules/string_boundary.md
       - rules/system_file.md
       - rules/true_false_symbol.md
+      - rules/unnecessary_nesting.md
+      - rules/unreachable_code.md
       - rules/vector_logic.md
       - rules/which_grepl.md

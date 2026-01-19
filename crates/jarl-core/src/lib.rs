@@ -21,7 +21,7 @@ pub mod fix;
 pub mod fs;
 pub mod lints;
 pub mod location;
-pub mod rule_table;
+pub mod rule_set;
 pub mod settings;
 pub mod suppression;
 pub mod toml;

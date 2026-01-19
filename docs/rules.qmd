@@ -6,11 +6,11 @@ title: Rules
 
 All rules belong to at least one category:
 
--   **correctness**: code that is outright wrong or useless.
--   **suspicious**: code that is most likely wrong or useless.
--   **performance**: code that can be written to run faster.
--   **readability**: code is correct but can be written in a way that is easier to read.
--   **testthat**: rules for the `testthat` package. Disabled by default.
+-   **correctness** (CORR): code that is outright wrong or useless.
+-   **suspicious** (SUSP): code that is most likely wrong or useless.
+-   **performance** (PERF): code that can be written to run faster.
+-   **readability** (READ): code is correct but can be written in a way that is easier to read.
+-   **testthat** (TESTTHAT): rules for the `testthat` package. Disabled by default.
 
 You can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.
 
@@ -77,6 +77,7 @@ dat <- as.data.frame(
     c("numeric_leading_zero", "readability", "✅", ""),
     c("outer_negation", "performance, readability", "✅", ""),
     c("redundant_equals", "readability", "✅", ""),
+    c("redundant_ifelse", "correctness, performance, readability", "✅", ""),
     c("repeat", "readability", "✅", ""),
     c("sample_int", "readability", "✅", ""),
     c("seq", "suspicious", "✅", ""),
@@ -86,6 +87,8 @@ dat <- as.data.frame(
     c("string_boundary", "performance, readability", "✅", ""),
     c("system_file", "readability", "✅", ""),
     c("true_false_symbol", "readability", "❌", ""),
+    c("unnecessary_nesting", "readability", "✅", "Disabled by default"),
+    c("unreachable_code", "readability, suspicious", "❌", ""),
     c("vector_logic", "performance", "❌", ""),
     c("which_grepl", "performance, readability", "✅", "")
   )

@@ -15,11 +15,11 @@ rule_files <- paste0(rule_dirs, "/", rule_names, ".rs")
 
 docs <- lapply(rule_files, \(x) {
   content <- readLines(x)
-  if (!any(grepl("## What it does", content))) {
+  if (!any(grepl("## What it does", content, fixed = TRUE))) {
     return()
   }
 
-  start <- grep("## What it does", content)
+  start <- grep("## What it does", content, fixed = TRUE)
   end <- grep("(impl Violation for)|(pub fn)", content) - 1
   end <- end[1] # could be several "pub fn"
 

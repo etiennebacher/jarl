@@ -22,7 +22,7 @@ warning: any_duplicated
   = help: Use `anyDuplicated(...) > 0` instead.
 
 Found 2 errors.
-2 fixable with the `--fix` option.
+1 fixable with the `--fix` option.
 
 ----- stderr -----
 

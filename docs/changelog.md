@@ -2,6 +2,45 @@
 
 ## Development
 
+### Features
+
+- New CLI argument `--statistics` to show the number of violations per rule instead
+  of the details of each violation. Jarl prints a hint to use this argument when
+  more than 15 violations are reported (only when `--output-format` is `concise`
+  or `full`). This value can be configured with the environment variable
+  `JARL_N_VIOLATIONS_HINT_STAT`. (#250, #266)
+
+- Jarl now looks in parent folders for `jarl.toml`. It searches until the user
+  config folder is reached (the location of this folder depends on the OS:
+  `~/.config` on Unix and `~/AppData/Roaming` on Windows). Jarl uses the first
+  `jarl.toml` that is found. This is useful to store settings that should be
+  common to all projects (e.g. `assignment = "<-"`) without creating a
+  `jarl.toml`, which is a common situation for standalone R scripts. (#253)
+
+- New rules:
+  - `redundant_ifelse` (#260)
+  - `unnecessary_nesting` (#268)
+  - `unreachable_code` (#261)
+
+- When the output format is `full` or `concise`, rule names now have a hyperlink
+  leading to the website documentation (#278).
+
+### Other changes
+
+- The rule `assignment` is now disabled by default (#258).
+
+- The rule `sample_int` is now disabled by default (#262).
+
+### Bug fixes
+
+- When `output-format` is `json` or `github`, additional information displayed in
+  the terminal (e.g. timing) isn't included anymore to avoid parsing errors (#254).
+
+- Fixed a bug in the number of "fixable diagnostics" reported when the arg
+  `fixable` is present in `jarl.toml` but `--fix` is not passed (#255).
+
+## 0.3.0
+
 ### Breaking changes
 
 - Jarl now excludes by default file paths matching the following patterns:
@@ -17,14 +56,15 @@
 - `--output-format json` now contains two fields `diagnostics` and `errors` (#219).
 - Better support for namespaced function calls, both when reporting violations
   and when fixing them (#221).
-- Added support for `sprintf` rule (#224).
-- Added support for `string_boundary` rule (#225).
-- Added support for `expect_type` rule (#226).
-- Added support for `fixed_regex` rule (#227).
-- Added support for `expect_s3_class` rule (#235).
-- Added support for `vector_logic` rule (#238).
 - The `class_equals` rule now also reports cases like `identical(class(x), "foo")`
   and `identical("foo", class(x))` (#234).
+- New rules:
+  - `expect_s3_class` (#235)
+  - `expect_type` (#226)
+  - `fixed_regex` (#227)
+  - `sprintf` (#224)
+  - `string_boundary` (#225)
+  - `vector_logic` (#238)
 
 ### Fixes
 

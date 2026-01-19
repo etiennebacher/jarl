@@ -1,4 +1,5 @@
 use crate::error::ParseError;
+use crate::rule_set::Rule;
 use crate::suppression::SuppressionManager;
 use crate::vcs::check_version_control;
 use air_fs::relativize_path;
@@ -18,7 +19,7 @@ use crate::analyze;
 use crate::config::Config;
 use crate::diagnostic::*;
 use crate::fix::*;
-use crate::rule_table::RuleTable;
+use crate::rule_set::RuleSet;
 use crate::utils::*;
 
 pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
@@ -98,10 +99,9 @@ pub fn lint_fix(path: &PathBuf, config: Arc<Config>) -> Result<Vec<Diagnostic>, 
 pub struct Checker {
     // The diagnostics to report (possibly empty).
     pub diagnostics: Vec<Diagnostic>,
-    // A vector of `Rule`. A `rule` contains the name of the rule to apply,
-    // whether it is safe to fix, unsafe to fix, or doesn't have a fix, and
-    // the minimum R version from which this rule is available.
-    pub rules: RuleTable,
+    // A set of rules to apply. Each rule contains metadata about whether it
+    // has a safe fix, unsafe fix, or no fix, and the minimum R version required.
+    pub rule_set: RuleSet,
     // The R version that is manually passed by the user in the CLI. Any rule
     // that has a minimum R version higher than this value will be deactivated.
     pub minimum_r_version: Option<(u32, u32, u32)>,
@@ -115,7 +115,7 @@ impl Checker {
     fn new(suppression: SuppressionManager, assignment: RSyntaxKind) -> Self {
         Self {
             diagnostics: vec![],
-            rules: RuleTable::empty(),
+            rule_set: RuleSet::empty(),
             minimum_r_version: None,
             suppression,
             assignment,
@@ -130,13 +130,56 @@ impl Checker {
         }
     }
 
-    pub(crate) fn is_rule_enabled(&mut self, rule: &str) -> bool {
-        self.rules.enabled.iter().any(|r| r.name == rule)
+    pub(crate) fn is_rule_enabled(&mut self, rule: Rule) -> bool {
+        self.rule_set.contains(&rule)
     }
 
-    /// Check if a rule should be skipped for the given node due to suppression comments
-    pub(crate) fn should_skip_rule(&self, node: &air_r_syntax::RSyntaxNode, rule: &str) -> bool {
-        self.suppression.should_skip_rule(node, rule)
+    /// Get all suppressed rules for a node in a single check.
+    ///
+    /// Returns:
+    /// - An empty set if no rules are suppressed
+    /// - A set containing all enabled rules if all rules are suppressed
+    /// - A set containing specific suppressed rules otherwise
+    pub(crate) fn get_suppressed_rules(
+        &self,
+        node: &air_r_syntax::RSyntaxNode,
+    ) -> std::collections::HashSet<Rule> {
+        // Fast path: if there are no suppressions anywhere, return empty set immediately
+        if !self.suppression.has_any_suppressions {
+            return std::collections::HashSet::new();
+        }
+
+        // Check once and return all suppressed rules
+        match self.suppression.check_suppression(node) {
+            Some(None) => {
+                // Skip all rules - return all enabled rules
+                self.rule_set.iter().cloned().collect()
+            }
+            Some(Some(rules)) => {
+                // Skip specific rules - return only those that are enabled
+                rules
+                    .into_iter()
+                    .filter(|r| self.rule_set.contains(r))
+                    .collect()
+            }
+            None => {
+                // No suppression at node level, check regions
+                let node_range = node.text_trimmed_range();
+                for region in &self.suppression.skip_regions {
+                    if region.range.contains_range(node_range) {
+                        return match &region.rules {
+                            None => self.rule_set.iter().cloned().collect(),
+                            Some(rules) => rules
+                                .iter()
+                                .filter(|r| self.rule_set.contains(r))
+                                .cloned()
+                                .collect::<std::collections::HashSet<Rule>>(),
+                        };
+                    }
+                }
+                std::collections::HashSet::new()
+            }
+        }
     }
 }
 
@@ -155,9 +198,8 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
 
     let syntax = &parsed.syntax();
     let expressions = &parsed.tree().expressions();
-    let expressions_vec: Vec<_> = expressions.into_iter().collect();
 
-    let suppression = SuppressionManager::from_node(syntax);
+    let suppression = SuppressionManager::from_node(syntax, contents);
 
     // Check if the entire file should be skipped
     if suppression.should_skip_file(syntax) {
@@ -165,9 +207,9 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     }
 
     let mut checker = Checker::new(suppression, config.assignment);
-    checker.rules = config.rules_to_apply.clone();
+    checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
-    for expr in expressions_vec {
+    for expr in expressions {
         check_expression(&expr, &mut checker)?;
     }
 
@@ -178,11 +220,10 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     // pay attention to whether the user wants to fix them or not. Adding this
     // step here is a way to filter those fixes out before calling apply_fixes().
     let rules_without_fix = checker
-        .rules
-        .enabled
+        .rule_set
         .iter()
         .filter(|x| x.has_no_fix())
-        .map(|x| x.name.clone())
+        .map(|x| x.name().to_string())
         .collect::<Vec<String>>();
 
     let diagnostics: Vec<Diagnostic> = checker
@@ -190,7 +231,18 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
         .into_iter()
         .map(|mut x| {
             x.filename = file.to_path_buf();
+            // Check if fix should be skipped based on fixable/unfixable settings
             if rules_without_fix.contains(&x.message.name) {
+                x.fix = Fix::empty();
+            }
+            // Also check against unfixable set from config
+            if config.unfixable.contains(&x.message.name) {
+                x.fix = Fix::empty();
+            }
+            // If fixable is specified, only allow those rules to have fixes
+            if let Some(ref fixable_set) = config.fixable
+                && !fixable_set.contains(&x.message.name)
+            {
                 x.fix = Fix::empty();
             }
             // TODO: this should be removed once comments in nodes are better
@@ -242,24 +294,17 @@ pub fn check_expression(
             check_expression(&right?, checker)?;
         }
         AnyRExpression::RBracedExpressions(children) => {
-            let expressions: Vec<_> = children.expressions().into_iter().collect();
-
-            for expr in expressions {
+            for expr in children.expressions() {
                 check_expression(&expr, checker)?;
             }
         }
         AnyRExpression::RCall(children) => {
             analyze::call::call(children, checker)?;
 
-            let arguments: Vec<AnyRExpression> = children
-                .arguments()?
-                .items()
-                .into_iter()
-                .filter_map(|x| x.unwrap().as_fields().value)
-                .collect();
-
-            for expr in arguments {
-                check_expression(&expr, checker)?;
+            for arg in children.arguments()?.items() {
+                if let Some(expr) = arg.unwrap().as_fields().value {
+                    check_expression(&expr, checker)?;
+                }
             }
         }
         AnyRExpression::RForStatement(children) => {
@@ -271,6 +316,7 @@ pub fn check_expression(
             check_expression(&body?, checker)?;
         }
         AnyRExpression::RFunctionDefinition(children) => {
+            analyze::function_definition::function_definition(children, checker)?;
             let body = children.body();
             check_expression(&body?, checker)?;
         }
@@ -299,19 +345,16 @@ pub fn check_expression(
         }
         AnyRExpression::RSubset(children) => {
             analyze::subset::subset(children, checker)?;
-            let arguments: Vec<_> = children.arguments()?.items().into_iter().collect();
 
-            for expr in arguments {
-                if let Some(expr) = expr?.value() {
+            for arg in children.arguments()?.items() {
+                if let Some(expr) = arg?.value() {
                     check_expression(&expr, checker)?;
                 }
             }
         }
         AnyRExpression::RSubset2(children) => {
-            let arguments: Vec<_> = children.arguments()?.items().into_iter().collect();
-
-            for expr in arguments {
-                if let Some(expr) = expr?.value() {
+            for arg in children.arguments()?.items() {
+                if let Some(expr) = arg?.value() {
                     check_expression(&expr, checker)?;
                 }
             }

@@ -309,6 +309,11 @@ impl Server {
 
                 session.open_document(params.text_document.uri.clone(), document);
 
+                // Check and notify about config file location (once per session, only if not in CWD)
+                if let Ok(file_path) = params.text_document.uri.to_file_path() {
+                    session.check_and_notify_config(&file_path);
+                }
+
                 // Trigger linting for push diagnostics (real-time as you type)
                 let supports_pull_diagnostics = session.supports_pull_diagnostics();
 
@@ -365,57 +370,6 @@ impl Server {
                         client: session.client().clone(),
                     })?;
                 }
-                Ok(())
-            }
-            types::notification::DidChangeConfiguration::METHOD => {
-                let params: types::DidChangeConfigurationParams =
-                    serde_json::from_value(notification.params)?;
-
-                // Try to extract assignmentOperator from settings
-                // VS Code may send the full settings object or just the changed section
-                let mut updated = false;
-
-                if let Some(settings_obj) = params.settings.as_object() {
-                    // Try to get from nested jarl object
-                    if let Some(jarl_settings) = settings_obj.get("jarl")
-                        && let Some(jarl_obj) = jarl_settings.as_object()
-                        && let Some(assignment_value) = jarl_obj.get("assignmentOperator")
-                        && let Some(assignment) = assignment_value.as_str()
-                    {
-                        tracing::info!("Updating assignment operator to: {}", assignment);
-                        session.update_assignment(Some(assignment.to_string()));
-                        updated = true;
-                    }
-                    // Also try direct access in case VS Code sends it at the top level
-                    if !updated
-                        && let Some(assignment_value) = settings_obj.get("assignmentOperator")
-                        && let Some(assignment) = assignment_value.as_str()
-                    {
-                        tracing::info!("Updating assignment operator to: {}", assignment);
-                        session.update_assignment(Some(assignment.to_string()));
-                        updated = true;
-                    }
-                }
-
-                // If we updated the configuration, retrigger diagnostics for all open documents
-                if updated {
-                    tracing::info!("Retriggering diagnostics for all open documents");
-                    for uri in session.open_documents().collect::<Vec<_>>() {
-                        if let Some(snapshot) = session.take_snapshot(uri.clone())
-                            && let Err(e) = task_sender.send(Task::LintDocument {
-                                snapshot: Box::new(snapshot),
-                                client: session.client().clone(),
-                            })
-                        {
-                            tracing::error!("Failed to queue lint task: {}", e);
-                        }
-                    }
-                } else {
-                    tracing::debug!(
-                        "No assignmentOperator found in configuration change, ignoring"
-                    );
-                }
-
                 Ok(())
             }
             _ => {
@@ -833,7 +787,6 @@ mod tests {
             key,
             PositionEncoding::UTF8,
             lsp_types::ClientCapabilities::default(),
-            None,
         )
     }
 
@@ -1331,7 +1284,6 @@ mod tests {
             key,
             encoding,
             lsp_types::ClientCapabilities::default(),
-            None,
         )
     }
 

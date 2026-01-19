@@ -86,7 +86,7 @@ if (all.equal(x, y)) {
 
 ## Installation
 
-### Binaries
+### Released version
 
 Either get binaries from the [Releases page](https://github.com/etiennebacher/jarl/releases) or install Jarl from the existing installer scripts below.
 
@@ -116,9 +116,11 @@ scoop install jarl
 scoop update jarl
 ```
 
-### From source
+### Development version
 
-Alternatively, if you have Rust installed, you can get the development version with:
+Some pre-releases may be available from the [Releases page](https://github.com/etiennebacher/jarl/releases) (the version usually contains `alpha`).
+
+Alternatively, if you have Rust installed, you should be able to get the development version with:
 
 ```sh
 cargo install --git https://github.com/etiennebacher/jarl jarl --profile=release

@@ -1,4 +1,5 @@
 use crate::check::Checker;
+use crate::rule_set::Rule;
 use air_r_syntax::RBinaryExpression;
 use biome_rowan::AstNode;
 
@@ -16,41 +17,46 @@ use crate::lints::vector_logic::vector_logic::vector_logic;
 pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> anyhow::Result<()> {
     let node = r_expr.syntax();
 
-    if checker.is_rule_enabled("assignment") && !checker.should_skip_rule(node, "assignment") {
+    // Check suppressions once for this node
+    let suppressed_rules = checker.get_suppressed_rules(node);
+
+    if checker.is_rule_enabled(Rule::Assignment) && !suppressed_rules.contains(&Rule::Assignment) {
         checker.report_diagnostic(assignment(r_expr, checker.assignment)?);
     }
-    if checker.is_rule_enabled("class_equals") && !checker.should_skip_rule(node, "class_equals") {
+    if checker.is_rule_enabled(Rule::ClassEquals) && !suppressed_rules.contains(&Rule::ClassEquals)
+    {
         checker.report_diagnostic(class_equals(r_expr)?);
     }
-    if checker.is_rule_enabled("vector_logic") && !checker.should_skip_rule(node, "vector_logic") {
+    if checker.is_rule_enabled(Rule::VectorLogic) && !suppressed_rules.contains(&Rule::VectorLogic)
+    {
         checker.report_diagnostic(vector_logic(r_expr)?);
     }
-    if checker.is_rule_enabled("empty_assignment")
-        && !checker.should_skip_rule(node, "empty_assignment")
+    if checker.is_rule_enabled(Rule::EmptyAssignment)
+        && !suppressed_rules.contains(&Rule::EmptyAssignment)
     {
         checker.report_diagnostic(empty_assignment(r_expr)?);
     }
-    if checker.is_rule_enabled("equals_na") && !checker.should_skip_rule(node, "equals_na") {
+    if checker.is_rule_enabled(Rule::EqualsNa) && !suppressed_rules.contains(&Rule::EqualsNa) {
         checker.report_diagnostic(equals_na(r_expr)?);
     }
-    if checker.is_rule_enabled("implicit_assignment")
-        && !checker.should_skip_rule(node, "implicit_assignment")
+    if checker.is_rule_enabled(Rule::ImplicitAssignment)
+        && !suppressed_rules.contains(&Rule::ImplicitAssignment)
     {
         checker.report_diagnostic(implicit_assignment(r_expr)?);
     }
-    if checker.is_rule_enabled("is_numeric") && !checker.should_skip_rule(node, "is_numeric") {
+    if checker.is_rule_enabled(Rule::IsNumeric) && !suppressed_rules.contains(&Rule::IsNumeric) {
         checker.report_diagnostic(is_numeric(r_expr)?);
     }
-    if checker.is_rule_enabled("redundant_equals")
-        && !checker.should_skip_rule(node, "redundant_equals")
+    if checker.is_rule_enabled(Rule::RedundantEquals)
+        && !suppressed_rules.contains(&Rule::RedundantEquals)
     {
         checker.report_diagnostic(redundant_equals(r_expr)?);
     }
-    if checker.is_rule_enabled("seq") && !checker.should_skip_rule(node, "seq") {
+    if checker.is_rule_enabled(Rule::Seq) && !suppressed_rules.contains(&Rule::Seq) {
         checker.report_diagnostic(seq(r_expr)?);
     }
-    if checker.is_rule_enabled("string_boundary")
-        && !checker.should_skip_rule(node, "string_boundary")
+    if checker.is_rule_enabled(Rule::StringBoundary)
+        && !suppressed_rules.contains(&Rule::StringBoundary)
     {
         checker.report_diagnostic(string_boundary(r_expr)?);
     }

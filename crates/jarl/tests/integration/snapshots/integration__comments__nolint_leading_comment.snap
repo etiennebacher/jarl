@@ -1,21 +1,13 @@
 ---
 source: crates/jarl/tests/integration/comments.rs
-expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name()"
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--ignore\").arg(\"blanket_suppression\").run().normalize_os_executable_name()"
 ---
-success: false
-exit_code: 1
+success: true
+exit_code: 0
 ----- stdout -----
-warning: blanket_suppression
- --> test.R:4:15
-  |
-4 | any(is.na(x)) # nolint
-  |               -------- This comment suppresses all possible violations of this node.
-  |
-  = help: Consider ignoring specific rules instead, e.g., `# nolint: any_is_na`.
-
-Found 1 error.
+All checks passed!
 
 ----- stderr -----
 
 ----- args -----
-check .
+check . --ignore blanket_suppression

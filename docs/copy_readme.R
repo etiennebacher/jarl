@@ -11,7 +11,7 @@ new_content <- gsub(
   "style=\"text-align: center !important\"",
   new_content
 )
-new_content <- new_content[-grep("<h1>jarl</h1>", new_content)]
+new_content <- new_content[-grep("<h1>jarl</h1>", new_content, fixed = TRUE)]
 
 new_content <- c(
   "<!-- ============ -->",

@@ -1,7 +1,7 @@
 use crate::{
     description::Description,
-    lints::{DEFAULT_SELECTORS, RULE_GROUPS, all_rules_and_safety},
-    rule_table::{FixStatus, Rule, RuleTable},
+    lints::all_rules_enabled_by_default,
+    rule_set::{Category, Rule, RuleSet},
     settings::Settings,
 };
 use air_r_syntax::RSyntaxKind;
@@ -54,11 +54,11 @@ pub struct Config {
     /// List of rules and whether they have an associated safe fix, passed by
     /// the user and/or recovered from the config file. Those will
     /// not necessarily all be used, for instance if we disable unsafe fixes.
-    pub rules: RuleTable,
+    pub rules: RuleSet,
     /// List of rules to use. If we lint only, then this is equivalent to the
     /// field `rules`. If we apply fixes too, then this might be different from
     /// `rules` because it may filter out rules that have unsafe fixes.
-    pub rules_to_apply: RuleTable,
+    pub rules_to_apply: RuleSet,
     /// Did the user pass the --fix flag?
     pub apply_fixes: bool,
     /// Did the user pass the --unsafe-fixes flag?
@@ -74,6 +74,11 @@ pub struct Config {
     /// Which assignment operator to use? Can be `RSyntaxKind::ASSIGN` or
     /// `RSyntaxKind::EQUAL`.
     pub assignment: RSyntaxKind,
+    /// Rules that should not have their fixes applied (from unfixable setting)
+    pub unfixable: HashSet<String>,
+    /// Rules that are allowed to have fixes applied (from fixable setting)
+    /// None means all rules with fixes can be applied
+    pub fixable: Option<HashSet<String>>,
 }
 
 pub fn build_config(
@@ -112,10 +117,9 @@ pub fn build_config(
 
     let rules = filter_rules_by_version(&rules, minimum_r_version);
 
-    // Parse fixable/unfixable rules from TOML and apply them to rules
-    // This must happen before we check fix/unsafe-fixes flags
+    // Parse fixable/unfixable rules from TOML.
+    // These will be stored in Config and checked when applying fixes.
     let (fixable_toml, unfixable_toml) = parse_fixable_toml(toml_settings)?;
-    let rules = apply_fixable_filters(rules, fixable_toml, unfixable_toml, check_config);
 
     // Resolve the interaction between --fix and --unsafe-fixes first. Using
     // --unsafe-fixes implies using --fix, but the opposite is not true.
@@ -125,14 +129,12 @@ pub fn build_config(
         (true, false) => rules
             .iter()
             .filter(|r| r.has_no_fix() || r.has_safe_fix())
-            .cloned()
-            .collect::<RuleTable>(),
+            .collect::<RuleSet>(),
 
         (_, true) => rules
             .iter()
             .filter(|r| r.has_no_fix() || r.has_safe_fix() || r.has_unsafe_fix())
-            .cloned()
-            .collect::<RuleTable>(),
+            .collect::<RuleSet>(),
     };
 
     // We can now drop rules that don't have any fix if the user passed
@@ -142,8 +144,7 @@ pub fn build_config(
         rules
             .iter()
             .filter(|r| !r.has_no_fix())
-            .cloned()
-            .collect::<RuleTable>()
+            .collect::<RuleSet>()
     } else {
         rules_to_apply
     };
@@ -160,6 +161,8 @@ pub fn build_config(
         allow_dirty: check_config.allow_dirty,
         allow_no_vcs: check_config.allow_no_vcs,
         assignment,
+        unfixable: unfixable_toml,
+        fixable: fixable_toml,
     })
 }
 
@@ -168,14 +171,14 @@ pub fn build_config(
 /// Returns None for selected_rules if no --select was specified.
 /// Returns empty set for ignored_rules if no --ignore was specified.
 pub fn parse_rules_cli(select: &str, extend_select: &str, ignore: &str) -> Result<RuleSelection> {
-    let all_rules = all_rules_and_safety();
+    let all_rules = Rule::all();
 
     let selected_rules: Option<HashSet<String>> = if select.is_empty() {
         None
     } else {
         let passed_by_user = select.split(",").collect::<Vec<&str>>();
-        let expanded_rules = replace_group_rules(&passed_by_user, &all_rules);
-        let invalid_rules = get_invalid_rules(&all_rules, &expanded_rules);
+        let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
+        let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
         if let Some(invalid_rules) = invalid_rules {
             return Err(anyhow::anyhow!(
                 "Unknown rules in `--select`: {}",
@@ -186,8 +189,8 @@ pub fn parse_rules_cli(select: &str, extend_select: &str, ignore: &str) -> Resul
         Some(HashSet::from_iter(
             all_rules
                 .iter()
-                .filter(|r| expanded_rules.contains(&r.name))
-                .map(|x| x.name.clone()),
+                .filter(|r| expanded_rules.iter().any(|name| name == r.name()))
+                .map(|x| x.name().to_string()),
         ))
     };
 
@@ -195,8 +198,8 @@ pub fn parse_rules_cli(select: &str, extend_select: &str, ignore: &str) -> Resul
         None
     } else {
         let passed_by_user = extend_select.split(",").collect::<Vec<&str>>();
-        let expanded_rules = replace_group_rules(&passed_by_user, &all_rules);
-        let invalid_rules = get_invalid_rules(&all_rules, &expanded_rules);
+        let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
+        let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
         if let Some(invalid_rules) = invalid_rules {
             return Err(anyhow::anyhow!(
                 "Unknown rules in `--extend-select`: {}",
@@ -207,8 +210,8 @@ pub fn parse_rules_cli(select: &str, extend_select: &str, ignore: &str) -> Resul
         Some(HashSet::from_iter(
             all_rules
                 .iter()
-                .filter(|r| expanded_rules.contains(&r.name))
-                .map(|x| x.name.clone()),
+                .filter(|r| expanded_rules.iter().any(|name| name == r.name()))
+                .map(|x| x.name().to_string()),
         ))
     };
 
@@ -216,8 +219,8 @@ pub fn parse_rules_cli(select: &str, extend_select: &str, ignore: &str) -> Resul
         HashSet::new()
     } else {
         let passed_by_user = ignore.split(",").collect::<Vec<&str>>();
-        let expanded_rules = replace_group_rules(&passed_by_user, &all_rules);
-        let invalid_rules = get_invalid_rules(&all_rules, &expanded_rules);
+        let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
+        let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
         if let Some(invalid_rules) = invalid_rules {
             return Err(anyhow::anyhow!(
                 "Unknown rules in `--ignore`: {}",
@@ -228,8 +231,8 @@ pub fn parse_rules_cli(select: &str, extend_select: &str, ignore: &str) -> Resul
         HashSet::from_iter(
             all_rules
                 .iter()
-                .filter(|r| expanded_rules.contains(&r.name))
-                .map(|x| x.name.clone()),
+                .filter(|r| expanded_rules.iter().any(|name| name == r.name()))
+                .map(|x| x.name().to_string()),
         )
     };
 
@@ -245,7 +248,7 @@ pub fn parse_rules_cli(select: &str, extend_select: &str, ignore: &str) -> Resul
 /// Returns None for selected_rules if no TOML select was specified (meaning use all rules).
 /// Returns empty set for ignored_rules if no TOML ignore was specified.
 pub fn parse_rules_toml(toml_settings: Option<&Settings>) -> Result<RuleSelection> {
-    let all_rules = all_rules_and_safety();
+    let all_rules = Rule::all();
 
     let Some(settings) = toml_settings else {
         // No TOML configuration found
@@ -261,8 +264,8 @@ pub fn parse_rules_toml(toml_settings: Option<&Settings>) -> Result<RuleSelectio
     // Handle select rules from TOML
     let selected_rules: Option<HashSet<String>> = if let Some(select) = &linter_settings.select {
         let passed_by_user = select.iter().map(|s| s.as_str()).collect();
-        let expanded_rules = replace_group_rules(&passed_by_user, &all_rules);
-        let invalid_rules = get_invalid_rules(&all_rules, &expanded_rules);
+        let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
+        let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
         if let Some(invalid_rules) = invalid_rules {
             return Err(anyhow::anyhow!(
                 "Unknown rules in field `select` in 'jarl.toml': {}",
@@ -272,8 +275,8 @@ pub fn parse_rules_toml(toml_settings: Option<&Settings>) -> Result<RuleSelectio
         Some(HashSet::from_iter(
             all_rules
                 .iter()
-                .filter(|r| expanded_rules.contains(&r.name))
-                .map(|x| x.name.clone()),
+                .filter(|r| expanded_rules.iter().any(|name| name == r.name()))
+                .map(|x| x.name().to_string()),
         ))
     } else {
         None
@@ -283,8 +286,8 @@ pub fn parse_rules_toml(toml_settings: Option<&Settings>) -> Result<RuleSelectio
     let extended_rules: Option<HashSet<String>> =
         if let Some(extend_select) = &linter_settings.extend_select {
             let passed_by_user = extend_select.iter().map(|s| s.as_str()).collect();
-            let expanded_rules = replace_group_rules(&passed_by_user, &all_rules);
-            let invalid_rules = get_invalid_rules(&all_rules, &expanded_rules);
+            let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
+            let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
             if let Some(invalid_rules) = invalid_rules {
                 return Err(anyhow::anyhow!(
                     "Unknown rules in field `extend-select` in 'jarl.toml': {}",
@@ -294,8 +297,8 @@ pub fn parse_rules_toml(toml_settings: Option<&Settings>) -> Result<RuleSelectio
             Some(HashSet::from_iter(
                 all_rules
                     .iter()
-                    .filter(|r| expanded_rules.contains(&r.name))
-                    .map(|x| x.name.clone()),
+                    .filter(|r| expanded_rules.iter().any(|name| name == r.name()))
+                    .map(|x| x.name().to_string()),
             ))
         } else {
             None
@@ -304,8 +307,8 @@ pub fn parse_rules_toml(toml_settings: Option<&Settings>) -> Result<RuleSelectio
     // Handle ignore rules from TOML
     let ignored_rules: HashSet<String> = if let Some(ignore) = &linter_settings.ignore {
         let passed_by_user = ignore.iter().map(|s| s.as_str()).collect();
-        let expanded_rules = replace_group_rules(&passed_by_user, &all_rules);
-        let invalid_rules = get_invalid_rules(&all_rules, &expanded_rules);
+        let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
+        let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
         if let Some(invalid_rules) = invalid_rules {
             return Err(anyhow::anyhow!(
                 "Unknown rules in field `ignore` in 'jarl.toml': {}",
@@ -315,8 +318,8 @@ pub fn parse_rules_toml(toml_settings: Option<&Settings>) -> Result<RuleSelectio
         HashSet::from_iter(
             all_rules
                 .iter()
-                .filter(|r| expanded_rules.contains(&r.name))
-                .map(|x| x.name.clone()),
+                .filter(|r| expanded_rules.iter().any(|name| name == r.name()))
+                .map(|x| x.name().to_string()),
         )
     } else {
         HashSet::new()
@@ -337,7 +340,7 @@ pub fn parse_rules_toml(toml_settings: Option<&Settings>) -> Result<RuleSelectio
 pub fn parse_fixable_toml(
     toml_settings: Option<&Settings>,
 ) -> Result<(Option<HashSet<String>>, HashSet<String>)> {
-    let all_rules = all_rules_and_safety();
+    let all_rules = Rule::all();
 
     let Some(settings) = toml_settings else {
         // No TOML configuration found
@@ -350,8 +353,8 @@ pub fn parse_fixable_toml(
     let fixable_rules: Option<HashSet<String>> =
         if let Some(fixable_rules) = &linter_settings.fixable {
             let passed_by_user = fixable_rules.iter().map(|s| s.as_str()).collect();
-            let expanded_rules = replace_group_rules(&passed_by_user, &all_rules);
-            let invalid_rules = get_invalid_rules(&all_rules, &expanded_rules);
+            let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
+            let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
             if let Some(invalid_rules) = invalid_rules {
                 return Err(anyhow::anyhow!(
                     "Unknown rules in field `fixable` in 'jarl.toml': {}",
@@ -361,8 +364,8 @@ pub fn parse_fixable_toml(
             Some(HashSet::from_iter(
                 all_rules
                     .iter()
-                    .filter(|r| expanded_rules.contains(&r.name))
-                    .map(|x| x.name.clone()),
+                    .filter(|r| expanded_rules.iter().any(|name| name == r.name()))
+                    .map(|x| x.name().to_string()),
             ))
         } else {
             None
@@ -372,8 +375,8 @@ pub fn parse_fixable_toml(
     let unfixable_rules: HashSet<String> = if let Some(unfixable_rules) = &linter_settings.unfixable
     {
         let passed_by_user = unfixable_rules.iter().map(|s| s.as_str()).collect();
-        let expanded_rules = replace_group_rules(&passed_by_user, &all_rules);
-        let invalid_rules = get_invalid_rules(&all_rules, &expanded_rules);
+        let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
+        let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
         if let Some(invalid_rules) = invalid_rules {
             return Err(anyhow::anyhow!(
                 "Unknown rules in field `unfixable` in 'jarl.toml': {}",
@@ -383,8 +386,8 @@ pub fn parse_fixable_toml(
         HashSet::from_iter(
             all_rules
                 .iter()
-                .filter(|r| expanded_rules.contains(&r.name))
-                .map(|x| x.name.clone()),
+                .filter(|r| expanded_rules.iter().any(|name| name == r.name()))
+                .map(|x| x.name().to_string()),
         )
     } else {
         HashSet::new()
@@ -397,8 +400,8 @@ pub fn parse_fixable_toml(
 // with the rule names.
 // Returns a vector with the original rule names left unmodified and the expanded
 // group names.
-fn replace_group_rules(rules_passed_by_user: &Vec<&str>, all_rules: &RuleTable) -> Vec<String> {
-    let rule_groups_set: HashSet<&str> = RULE_GROUPS.iter().copied().collect();
+fn replace_group_rules(rules_passed_by_user: &Vec<&str>, all_rules: &[Rule]) -> Vec<String> {
+    let rule_groups_set: HashSet<&str> = Category::ALL.iter().map(|c| c.as_str()).collect();
     let mut expanded_rules = Vec::new();
 
     for &rule_or_group in rules_passed_by_user {
@@ -407,13 +410,15 @@ fn replace_group_rules(rules_passed_by_user: &Vec<&str>, all_rules: &RuleTable) 
         if trimmed == "ALL" {
             // Special keyword to select all rules (including opt-in ones)
             for rule in all_rules.iter() {
-                expanded_rules.push(rule.name.clone());
+                expanded_rules.push(rule.name().to_string());
             }
         } else if rule_groups_set.contains(trimmed) {
             // This is a group name, expand it to all rules in that group
-            for rule in all_rules.iter() {
-                if rule.categories.iter().any(|cat| cat == trimmed) {
-                    expanded_rules.push(rule.name.clone());
+            if let Ok(category) = trimmed.parse::<Category>() {
+                for rule in all_rules.iter() {
+                    if rule.has_category(category) {
+                        expanded_rules.push(rule.name().to_string());
+                    }
                 }
             }
         } else {
@@ -430,10 +435,10 @@ fn replace_group_rules(rules_passed_by_user: &Vec<&str>, all_rules: &RuleTable) 
 // It is important this comes after expanding group names (e.g. "PERF") to
 // individual rule names.
 fn get_invalid_rules(
-    all_rule_names: &RuleTable,
+    all_rule_names: &[Rule],
     rules_passed_by_user: &[String],
 ) -> Option<Vec<String>> {
-    let all_rules_set: HashSet<_> = all_rule_names.iter().map(|x| x.name.clone()).collect();
+    let all_rules_set: HashSet<_> = all_rule_names.iter().map(|x| x.name()).collect();
 
     let invalid_rules: Vec<String> = rules_passed_by_user
         .iter()
@@ -465,8 +470,8 @@ fn get_invalid_rules(
 /// - CLI select takes precedence over TOML select
 /// - CLI ignore and TOML ignore are combined (both applied)
 /// - If neither CLI nor TOML specify select, start with all rules
-fn reconcile_rules(rules_cli: RuleSelection, rules_toml: RuleSelection) -> Result<RuleTable> {
-    let all_rules = all_rules_and_safety();
+fn reconcile_rules(rules_cli: RuleSelection, rules_toml: RuleSelection) -> Result<RuleSet> {
+    let all_rules = Rule::all();
     let cli_selected = rules_cli.selected;
     let cli_extended = rules_cli.extended;
     let cli_ignored = rules_cli.ignored;
@@ -482,18 +487,8 @@ fn reconcile_rules(rules_cli: RuleSelection, rules_toml: RuleSelection) -> Resul
         // No CLI select, but TOML select exists, use TOML
         toml_selected
     } else {
-        // Neither CLI nor TOML specified select rules, use DEFAULT_SELECTORS
-        let default_groups: HashSet<&str> = DEFAULT_SELECTORS.iter().copied().collect();
-        HashSet::from_iter(
-            all_rules
-                .iter()
-                .filter(|rule| {
-                    rule.categories
-                        .iter()
-                        .any(|cat| default_groups.contains(cat.as_str()))
-                })
-                .map(|x| x.name.clone()),
-        )
+        // Neither CLI nor TOML specified select rules, use the default set of rules
+        HashSet::from_iter(all_rules_enabled_by_default())
     };
 
     // Step 2: Add extended rules (CLI extend-select takes precedence over TOML extend-select)
@@ -511,10 +506,9 @@ fn reconcile_rules(rules_cli: RuleSelection, rules_toml: RuleSelection) -> Resul
     let final_rule_names: HashSet<String> =
         final_selected.difference(&all_ignored).cloned().collect();
 
-    let final_rules: RuleTable = all_rules
+    let final_rules: RuleSet = all_rules
         .iter()
-        .filter(|r| final_rule_names.contains(&r.name))
-        .cloned()
+        .filter(|r| final_rule_names.iter().any(|name| name == r.name()))
         .collect();
 
     Ok(final_rules)
@@ -582,25 +576,22 @@ pub fn parse_r_version(min_r_version: String) -> Result<(u32, u32, u32)> {
 }
 
 /// Filter rules based on minimum R version compatibility
-fn filter_rules_by_version(
-    rules: &RuleTable,
-    minimum_r_version: Option<(u32, u32, u32)>,
-) -> RuleTable {
+fn filter_rules_by_version(rules: &RuleSet, minimum_r_version: Option<(u32, u32, u32)>) -> RuleSet {
     match minimum_r_version {
         None => {
             // If we don't know the minimum R version, only include rules without version requirements
             rules
                 .iter()
-                .filter(|rule| rule.minimum_r_version.is_none())
-                .cloned()
-                .collect::<RuleTable>()
+                .filter(|rule| rule.minimum_r_version().is_none())
+                .collect::<RuleSet>()
         }
         Some(project_min_version) => {
             // Include rules that are compatible with the minimum version
+            // Only include rules that either have no version requirement or meet the minimum version
             rules
                 .iter()
                 .filter(|rule| {
-                    match rule.minimum_r_version {
+                    match rule.minimum_r_version() {
                         None => true, // Rule has no version requirement
                         Some(rule_min_version) => {
                             // For instance, grepv() exists only for R >= 4.5.0,
@@ -610,63 +601,9 @@ fn filter_rules_by_version(
                         }
                     }
                 })
-                .cloned()
-                .collect::<RuleTable>()
+                .collect::<RuleSet>()
         }
     }
-}
-
-/// Apply fixable and unfixable filters to rules.
-///
-/// Strategy:
-/// - If fixable is Some, only those rules (that have fixes) can be fixed
-/// - unfixable rules are never fixed (takes precedence over fixable)
-/// - Rules with no fix are always kept in the table (they just report diagnostics)
-fn apply_fixable_filters(
-    rules: RuleTable,
-    fixable: Option<HashSet<String>>,
-    unfixable: HashSet<String>,
-    check_config: &ArgsConfig,
-) -> RuleTable {
-    // Don't worry about fixable / unfixable if the user doesn't want to fix
-    // anything.
-    if !check_config.fix && !check_config.fix_only && !check_config.unsafe_fixes {
-        return rules;
-    }
-    rules
-        .iter()
-        .map(|rule| {
-            // If the rule has no fix, keep it as-is
-            if rule.has_no_fix() {
-                return rule.clone();
-            }
-
-            // If rule is in unfixable list, mark it as having no fix
-            if unfixable.contains(&rule.name) {
-                return Rule {
-                    name: rule.name.clone(),
-                    categories: rule.categories.clone(),
-                    fix_status: FixStatus::None,
-                    minimum_r_version: rule.minimum_r_version,
-                };
-            }
-
-            // If fixable is specified and rule is not in it, mark as having no fix
-            if let Some(ref fixable_set) = fixable
-                && !fixable_set.contains(&rule.name)
-            {
-                return Rule {
-                    name: rule.name.clone(),
-                    categories: rule.categories.clone(),
-                    fix_status: FixStatus::None,
-                    minimum_r_version: rule.minimum_r_version,
-                };
-            }
-
-            // Otherwise keep the rule's original fix status
-            rule.clone()
-        })
-        .collect()
 }
 
 fn parse_assignment(

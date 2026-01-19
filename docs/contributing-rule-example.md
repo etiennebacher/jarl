@@ -73,6 +73,7 @@ As an example for this entire tutorial, we will analyze [PR #182](https://github
 This PR adds a rule to replace calls like `do.call(cbind.data.frame, x)` by `list2DF(x)`.
 Importantly, `list2DF()` was added in R 4.0.0.
 I encourage you to check this PR as you advance in this tutorial.
+Note that the code described below has slightly evolved since this PR, but the implementation is still similar.
 
 Here's a basic idea of the workflow to add a new rule:
 
@@ -87,19 +88,29 @@ From now on, all file paths refer to the subfolder `crates/jarl-core`.
 
 ### Add the new rule to the list of rules
 
-There are two places to modify: `lints/mod.rs` and one file in the `analyze` folder.
+There are three places to modify: `rule_set.rs`, `lints/mod.rs`, and one file in the `analyze` folder.
 
-`lints/mod.rs` contains the list of all rules provided by Jarl.
-We can add a rule to the list:
+`rule_set.rs` contains the list of all rules provided by Jarl, including their metadata: whether they have a fix or not, whether they are enabled by default, the group(s) they belong to, and an optional minimum R version required for the rule to be enabled:
+
+```rust
+declare_rules! {
+    ...
+    List2df => {
+        name: "list2df",
+        categories: [Perf, Read],
+        default: Enabled,
+        fix: Safe,
+        min_r_version: Some((4, 0, 0)),
+    },
+    ...
+}
+```
+
+We also need to add the following line in `lints/mod.rs`:
 
 ```rust
 pub(crate) mod list2df;
-
-...
-
-rule_table.enable("list2df", "PERF,READ", FixStatus::Safe, Some((4, 0, 0)));
 ```
-This contains the rule name, the categories it belongs to (those are described above in the file), whether it has a safe fix, an unsafe fix, or no fix, and the optional R version from which it is available.
 
 The file to modify in the `analyze` folder will depend on the rule: here, we look for calls to `do.call()`.
 The arguments passed to the function are irrelevant, what matters is that this is a call, so we will modify the file `analyze/call.rs`:
@@ -108,10 +119,10 @@ The arguments passed to the function are irrelevant, what matters is that this i
 use crate::lints::list2df::list2df::list2df;
 
 ...
-
-if checker.is_rule_enabled("list2df") && !checker.should_skip_rule(node, "list2df") {
+if checker.is_rule_enabled(Rule::List2df) && !checker.should_skip_rule(node, Rule::List2df) {
     checker.report_diagnostic(list2df(r_expr)?);
 }
+...
 ```
 
 ### Implement the rule
@@ -393,7 +404,10 @@ We now need to document this change:
 * update `CHANGELOG.md`
 * update `docs/rules.md`
 
-If you have installed `just` as [recommended](https://jarl.etiennebacher.com/contributing#tools), you can now run `just document` to update the website and `just lint` to check that the code has no lints and is properly formatted.
+If you have installed `just` as [recommended](https://jarl.etiennebacher.com/contributing#tools), you can now run `just document` to update the website.
+
+Finally, run `just lint` to ensure that `clippy` (the Rust linter) doesn't report any issue and that the code is properly formatted.
+You can also run `just lint-fix` to apply `clippy`'s automatic fixes if there are any.
 
 
 ## Proposing your changes

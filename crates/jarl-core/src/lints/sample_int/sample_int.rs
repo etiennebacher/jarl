@@ -18,6 +18,8 @@ pub struct SampleInt;
 /// `sample()` calls `sample.int()` internally so they have the same performance,
 /// but the latter is more readable.
 ///
+/// This rule is disabled by default.
+///
 /// ## Example
 ///
 /// ```r

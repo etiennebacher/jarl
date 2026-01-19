@@ -1,0 +1,24 @@
+---
+source: crates/jarl/tests/integration/toml_hierarchical.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(root_path).arg(\"check\").arg(\"project/script.R\").run().normalize_os_executable_name().normalize_temp_paths()"
+---
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> project/script.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+Used '[TEMP_DIR]/project/jarl.toml'
+
+----- stderr -----
+
+----- args -----
+check project/script.R

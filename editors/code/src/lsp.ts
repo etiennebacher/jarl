@@ -59,33 +59,6 @@ export class Lsp {
 		this.onSettingsNotification((settings) =>
 			this.fileSettings.handleSettingsNotification(settings),
 		);
-
-		// Listen for configuration changes and notify the LSP server
-		context.subscriptions.push(
-			vscode.workspace.onDidChangeConfiguration((event) => {
-				if (event.affectsConfiguration("jarl.assignmentOperator")) {
-					this.handleConfigurationChange();
-				}
-			}),
-		);
-	}
-
-	private handleConfigurationChange() {
-		if (!this.client) {
-			return;
-		}
-
-		const config = vscode.workspace.getConfiguration("jarl");
-		const assignmentOperator = config.get<string>("assignmentOperator");
-
-		// Send didChangeConfiguration notification with the new settings
-		this.client.sendNotification("workspace/didChangeConfiguration", {
-			settings: {
-				jarl: {
-					assignmentOperator: assignmentOperator,
-				},
-			},
-		});
 	}
 
 	public getClient(): lc.LanguageClient {
