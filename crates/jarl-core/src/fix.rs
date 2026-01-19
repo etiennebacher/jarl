@@ -61,5 +61,5 @@ pub fn apply_fixes(fixes: &[Diagnostic], contents: &str) -> (bool, String) {
         last_modified_pos = end + diff_length;
     }
 
-    (has_skipped_fixes, new_content.to_string())
+    (has_skipped_fixes, new_content)
 }
