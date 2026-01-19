@@ -10,9 +10,8 @@ use std::io::{BufWriter, Write};
 /// Format: \x1b]8;;<URL>\x1b\\<TEXT>\x1b]8;;\x1b\\
 fn make_hyperlink(text: &str) -> String {
     format!(
-        "\x1b]8;;{}\x1b\\{}\x1b]8;;\x1b\\",
-        format!("https://jarl.etiennebacher.com/rules/{}", text),
-        text
+        "\x1b]8;;{}{}\x1b\\{}\x1b]8;;\x1b\\",
+        "https://jarl.etiennebacher.com/rules/", text, text
     )
 }
 
