@@ -22,6 +22,9 @@
   - `unnecessary_nesting` (#268)
   - `unreachable_code` (#261)
 
+- When the output format is `full` or `concise`, rule names now have a hyperlink
+  leading to the website documentation (#278).
+
 ### Other changes
 
 - The rule `assignment` is now disabled by default (#258).
