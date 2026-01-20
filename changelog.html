@@ -253,8 +253,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="other-changes" class="level3">
 <h3 class="anchored" data-anchor-id="other-changes">Other changes</h3>
 <ul>
-<li><p>The rule <code>assignment</code> is now disabled by default (#258).</p></li>
-<li><p>The rule <code>sample_int</code> is now disabled by default (#262).</p></li>
+<li>The following rules are now disabled by default. They still exist and the user can choose to use them, but they were deemed too noisy for limited benefit to be enabled by default:
+<ul>
+<li><code>assignment</code> (#258)</li>
+<li><code>fixed_regex</code> (#279)</li>
+<li><code>sample_int</code> (#262)</li>
+</ul></li>
 </ul>
 </section>
 <section id="bug-fixes" class="level3">
@@ -262,6 +266,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ul>
 <li><p>When <code>output-format</code> is <code>json</code> or <code>github</code>, additional information displayed in the terminal (e.g.&nbsp;timing) isn’t included anymore to avoid parsing errors (#254).</p></li>
 <li><p>Fixed a bug in the number of “fixable diagnostics” reported when the arg <code>fixable</code> is present in <code>jarl.toml</code> but <code>--fix</code> is not passed (#255).</p></li>
+<li><p><code>fixed_regex</code> is now correctly classified as “Performance” instead of “Readability” rule internally (#279).</p></li>
 </ul>
 </section>
 </section>
