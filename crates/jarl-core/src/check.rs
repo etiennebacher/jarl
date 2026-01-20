@@ -316,8 +316,16 @@ pub fn check_expression(
         }
         AnyRExpression::RFunctionDefinition(children) => {
             analyze::function_definition::function_definition(children, checker)?;
-            let body = children.body();
-            check_expression(&body?, checker)?;
+            let params = children.parameters()?.items();
+            for param in params {
+                let default = param?.default();
+                if let Some(default) = default
+                    && let Ok(default) = default.value()
+                {
+                    check_expression(&default, checker)?;
+                }
+            }
+            check_expression(&children.body()?, checker)?;
         }
         AnyRExpression::RIdentifier(x) => {
             analyze::identifier::identifier(x, checker)?;
