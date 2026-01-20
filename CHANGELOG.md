@@ -27,9 +27,12 @@
 
 ### Other changes
 
-- The rule `assignment` is now disabled by default (#258).
-
-- The rule `sample_int` is now disabled by default (#262).
+- The following rules are now disabled by default. They still exist and the user
+  can choose to use them, but they were deemed too noisy for limited benefit to
+  be enabled by default:
+  - `assignment` (#258)
+  - `fixed_regex` (#279)
+  - `sample_int` (#262)
 
 ### Bug fixes
 
@@ -38,6 +41,9 @@
 
 - Fixed a bug in the number of "fixable diagnostics" reported when the arg
   `fixable` is present in `jarl.toml` but `--fix` is not passed (#255).
+
+- `fixed_regex` is now correctly classified as "Performance" instead of
+  "Readability" rule internally (#279).
 
 ## 0.3.0
 

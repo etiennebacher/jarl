@@ -320,8 +320,8 @@ declare_rules! {
     },
     FixedRegex => {
         name: "fixed_regex",
-        categories: [Read],
-        default: Enabled,
+        categories: [Perf],
+        default: Disabled,
         fix: Safe,
         min_r_version: None,
     },
