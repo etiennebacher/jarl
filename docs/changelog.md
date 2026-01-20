@@ -45,7 +45,7 @@
 - `fixed_regex` is now correctly classified as "Performance" instead of
   "Readability" rule internally (#279).
 
-- Default values of function parameters are now analyzed too (#280).
+- Default values of function parameters are now analyzed too (#282).
 
 ## 0.3.0
 
