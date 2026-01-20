@@ -42,6 +42,9 @@
 - Fixed a bug in the number of "fixable diagnostics" reported when the arg
   `fixable` is present in `jarl.toml` but `--fix` is not passed (#255).
 
+- `fixed_regex` is now correctly classified as "Performance" instead of
+  "Readability" rule internally (#279).
+
 ## 0.3.0
 
 ### Breaking changes
