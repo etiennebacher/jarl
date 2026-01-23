@@ -64,7 +64,7 @@ pub fn equals_nan(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>>
     let left_is_nan = left.as_r_nan_expression().is_some();
     let right_is_nan = right.as_r_nan_expression().is_some();
 
-    // `x %in% NaN` returns missings, but `NaN %in% x` returns TRUE/FALSE.
+    // `NaN %in% x` is equivalent to any(is.nan(x)), not is.nan(x)
     if operator_is_in && left_is_nan {
         return Ok(None);
     }
