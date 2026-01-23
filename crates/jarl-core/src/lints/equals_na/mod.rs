@@ -17,6 +17,7 @@ mod tests {
         expect_lint("x == NA_character_", expected_message, "equals_na", None);
         expect_lint("x == NA_complex_", expected_message, "equals_na", None);
         expect_lint("x != NA", expected_message, "equals_na", None);
+        expect_lint("x %in% NA", expected_message, "equals_na", None);
         expect_lint("foo(x(y)) == NA", expected_message, "equals_na", None);
         expect_lint("NA == x", expected_message, "equals_na", None);
 
@@ -31,6 +32,7 @@ mod tests {
                     "x == NA_character_",
                     "x == NA_complex_",
                     "x != NA",
+                    "x %in% NA",
                     "foo(x(y)) == NA",
                     "NA == x",
                 ],
@@ -42,6 +44,9 @@ mod tests {
 
     #[test]
     fn test_no_lint_equals_na() {
+        // `x %in% NA` is equivalent to `anyNA(x)`, not `is.na(x)`
+        expect_no_lint("NA %in% x", "equals_na", None);
+
         expect_no_lint("x + NA", "equals_na", None);
         expect_no_lint("x == \"NA\"", "equals_na", None);
         expect_no_lint("x == 'NA'", "equals_na", None);
