@@ -3,6 +3,7 @@ use crate::rule_set::Rule;
 use air_r_syntax::RBinaryExpression;
 use biome_rowan::AstNode;
 
+use crate::lints::any_is_na::any_is_na::any_is_na_2;
 use crate::lints::assignment::assignment::assignment;
 use crate::lints::class_equals::class_equals::class_equals;
 use crate::lints::empty_assignment::empty_assignment::empty_assignment;
@@ -22,6 +23,9 @@ pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> a
     // Check suppressions once for this node
     let suppressed_rules = checker.get_suppressed_rules(node);
 
+    if checker.is_rule_enabled(Rule::AnyIsNa) && !suppressed_rules.contains(&Rule::AnyIsNa) {
+        checker.report_diagnostic(any_is_na_2(r_expr)?);
+    }
     if checker.is_rule_enabled(Rule::Assignment) && !suppressed_rules.contains(&Rule::Assignment) {
         checker.report_diagnostic(assignment(r_expr, checker.assignment)?);
     }

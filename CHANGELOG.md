@@ -27,6 +27,8 @@
 - When the output format is `full` or `concise`, rule names now have a hyperlink
   leading to the website documentation (#278).
 
+- `any_is_na` now reports `NA %in% x` (#286).
+
 ### Other changes
 
 - The following rules are now disabled by default. They still exist and the user

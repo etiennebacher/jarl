@@ -1,10 +1,17 @@
 ---
 source: crates/jarl-core/src/lints/any_is_na/mod.rs
-expression: "get_fixed_text(vec![\"any(is.na(x))\", \"any(is.na(foo(x)))\",\n\"any(is.na(x), na.rm = TRUE)\",], \"any_is_na\", None)"
+expression: "get_fixed_text(vec![\"any(is.na(x))\", \"NA %in% x\", \"any(is.na(foo(x)))\",\n\"any(is.na(x), na.rm = TRUE)\",], \"any_is_na\", None)"
 ---
 OLD:
 ====
 any(is.na(x))
+NEW:
+====
+anyNA(x)
+
+OLD:
+====
+NA %in% x
 NEW:
 ====
 anyNA(x)
