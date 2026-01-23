@@ -73,7 +73,7 @@ pub fn equals_na(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> 
     let left_is_na = na_values.contains(&left.to_string().trim());
     let right_is_na = na_values.contains(&right.to_string().trim());
 
-    // `x %in% NA` is equivalent to `anyNA(x)`, not `is.na(x)`
+    // `NA %in% x` is equivalent to `anyNA(x)`, not `is.na(x)`
     if operator_is_in && left_is_na {
         return Ok(None);
     }
