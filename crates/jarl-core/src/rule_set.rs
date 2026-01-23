@@ -269,13 +269,6 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
-    EqualsNaN => {
-        name: "equals_nan",
-        categories: [Corr],
-        default: Enabled,
-        fix: Safe,
-        min_r_version: None,
-    },
     EqualsNull => {
         name: "equals_null",
         categories: [Corr],
