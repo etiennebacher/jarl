@@ -1,0 +1,38 @@
+---
+source: crates/jarl-core/src/lints/equals_nan/mod.rs
+expression: "get_fixed_text(vec![\"x == NaN\", \"x != NaN\", \"x %in% NaN\", \"foo(x(y)) == NaN\",\n\"NaN == x\",], \"equals_nan\", None,)"
+---
+OLD:
+====
+x == NaN
+NEW:
+====
+is.nan(x)
+
+OLD:
+====
+x != NaN
+NEW:
+====
+!is.nan(x)
+
+OLD:
+====
+x %in% NaN
+NEW:
+====
+is.nan(x)
+
+OLD:
+====
+foo(x(y)) == NaN
+NEW:
+====
+is.nan(foo(x(y)))
+
+OLD:
+====
+NaN == x
+NEW:
+====
+is.nan(x)
