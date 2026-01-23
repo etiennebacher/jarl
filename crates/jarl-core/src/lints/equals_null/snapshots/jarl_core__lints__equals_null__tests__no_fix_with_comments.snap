@@ -1,0 +1,28 @@
+---
+source: crates/jarl-core/src/lints/equals_null/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\nx == NULL\", \"x # comment\\n== NULL\",\n\"x == NULL # trailing comment\",], \"equals_null\", None)"
+---
+OLD:
+====
+# leading comment
+x == NULL
+NEW:
+====
+# leading comment
+is.null(x)
+
+OLD:
+====
+x # comment
+== NULL
+NEW:
+====
+x # comment
+== NULL
+
+OLD:
+====
+x == NULL # trailing comment
+NEW:
+====
+is.null(x) # trailing comment

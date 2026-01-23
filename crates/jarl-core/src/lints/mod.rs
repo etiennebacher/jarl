@@ -13,6 +13,7 @@ pub(crate) mod duplicated_arguments;
 pub(crate) mod empty_assignment;
 pub(crate) mod equals_na;
 pub(crate) mod equals_nan;
+pub(crate) mod equals_null;
 pub(crate) mod expect_length;
 pub(crate) mod expect_named;
 pub(crate) mod expect_not;
