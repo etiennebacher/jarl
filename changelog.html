@@ -243,6 +243,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p>Jarl now looks in parent folders for <code>jarl.toml</code>. It searches until the user config folder is reached (the location of this folder depends on the OS: <code>~/.config</code> on Unix and <code>~/AppData/Roaming</code> on Windows). Jarl uses the first <code>jarl.toml</code> that is found. This is useful to store settings that should be common to all projects (e.g.&nbsp;<code>assignment = "&lt;-"</code>) without creating a <code>jarl.toml</code>, which is a common situation for standalone R scripts. (#253)</p></li>
 <li><p>New rules:</p>
 <ul>
+<li><code>equals_null</code> (#283)</li>
 <li><code>redundant_ifelse</code> (#260)</li>
 <li><code>unnecessary_nesting</code> (#268)</li>
 <li><code>unreachable_code</code> (#261)</li>
