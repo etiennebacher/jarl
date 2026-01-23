@@ -18,6 +18,7 @@
   `jarl.toml`, which is a common situation for standalone R scripts. (#253)
 
 - New rules:
+  - `equals_null` (#283)
   - `redundant_ifelse` (#260)
   - `unnecessary_nesting` (#268)
   - `unreachable_code` (#261)

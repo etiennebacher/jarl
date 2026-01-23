@@ -269,6 +269,20 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    EqualsNaN => {
+        name: "equals_nan",
+        categories: [Corr],
+        default: Enabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    EqualsNull => {
+        name: "equals_null",
+        categories: [Corr],
+        default: Enabled,
+        fix: Safe,
+        min_r_version: None,
+    },
     ExpectLength => {
         name: "expect_length",
         categories: [Testthat],

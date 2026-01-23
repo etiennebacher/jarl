@@ -7,6 +7,7 @@ use crate::lints::assignment::assignment::assignment;
 use crate::lints::class_equals::class_equals::class_equals;
 use crate::lints::empty_assignment::empty_assignment::empty_assignment;
 use crate::lints::equals_na::equals_na::equals_na;
+use crate::lints::equals_null::equals_null::equals_null;
 use crate::lints::implicit_assignment::implicit_assignment::implicit_assignment;
 use crate::lints::is_numeric::is_numeric::is_numeric;
 use crate::lints::redundant_equals::redundant_equals::redundant_equals;
@@ -38,6 +39,9 @@ pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> a
     }
     if checker.is_rule_enabled(Rule::EqualsNa) && !suppressed_rules.contains(&Rule::EqualsNa) {
         checker.report_diagnostic(equals_na(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::EqualsNull) && !suppressed_rules.contains(&Rule::EqualsNull) {
+        checker.report_diagnostic(equals_null(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::ImplicitAssignment)
         && !suppressed_rules.contains(&Rule::ImplicitAssignment)

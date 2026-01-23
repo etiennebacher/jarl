@@ -67,6 +67,7 @@ website:
       - rules/download_file.md
       - rules/duplicated_arguments.md
       - rules/equals_na.md
+      - rules/equals_null.md
       - rules/expect_length.md
       - rules/expect_named.md
       - rules/expect_not.md
