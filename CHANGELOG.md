@@ -36,6 +36,8 @@
   - `fixed_regex` (#279)
   - `sample_int` (#262)
 
+- `equals_na` now reports `x %in% NA` cases, as documented (#285).
+
 ### Bug fixes
 
 - When `output-format` is `json` or `github`, additional information displayed in
