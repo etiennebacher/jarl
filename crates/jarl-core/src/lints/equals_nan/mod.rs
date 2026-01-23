@@ -34,6 +34,9 @@ mod tests {
 
     #[test]
     fn test_no_lint_equals_nan() {
+        // `x %in% NaN` returns missings, but `NaN %in% x` returns TRUE/FALSE.
+        expect_no_lint("NaN %in% x", "equals_nan", None);
+
         expect_no_lint("x + NaN", "equals_nan", None);
         expect_no_lint("x == \"NaN\"", "equals_nan", None);
         expect_no_lint("x == 'NaN'", "equals_nan", None);

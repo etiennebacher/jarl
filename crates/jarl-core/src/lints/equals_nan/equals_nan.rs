@@ -51,15 +51,23 @@ pub fn equals_nan(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>>
     let operator = operator?;
     let right = right?;
 
+    let operator_is_in =
+        operator.kind() == RSyntaxKind::SPECIAL && operator.text_trimmed() == "%in%";
+
     if operator.kind() != RSyntaxKind::EQUAL2
         && operator.kind() != RSyntaxKind::NOT_EQUAL
-        && (operator.kind() != RSyntaxKind::SPECIAL || operator.text_trimmed() != "%in%")
+        && !operator_is_in
     {
         return Ok(None);
     };
 
     let left_is_nan = left.as_r_nan_expression().is_some();
     let right_is_nan = right.as_r_nan_expression().is_some();
+
+    // `x %in% NaN` returns missings, but `NaN %in% x` returns TRUE/FALSE.
+    if operator_is_in && left_is_nan {
+        return Ok(None);
+    }
 
     // If NA is quoted in text, then quotation marks are escaped and this
     // is false.
