@@ -272,6 +272,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p>Fixed a bug in the number of “fixable diagnostics” reported when the arg <code>fixable</code> is present in <code>jarl.toml</code> but <code>--fix</code> is not passed (#255).</p></li>
 <li><p><code>fixed_regex</code> is now correctly classified as “Performance” instead of “Readability” rule internally (#279).</p></li>
 <li><p>Default values of function parameters are now analyzed too (#282).</p></li>
+<li><p><code>duplicated_arguments</code> doesn’t report anymore cases where argument names <code>"</code> and <code>'</code> were conflated, e.g.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="cf">switch</span>(x, <span class="st">`</span><span class="at">"</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"double"</span>, <span class="st">`</span><span class="at">'</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"single"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>(#288).</p></li>
 </ul>
 </section>
 </section>
@@ -305,10 +308,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="fixes">Fixes</h3>
 <ul>
 <li><p><code># nolint</code> comments are now properly applied to nodes that are function arguments, e.g.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">foo</span>(</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># nolint</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(x))</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">foo</span>(</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># nolint</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(x))</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>does not report a violation anymore (#229).</p></li>
 </ul>
 </section>
