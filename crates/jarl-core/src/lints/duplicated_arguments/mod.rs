@@ -26,6 +26,9 @@ mod tests {
             "duplicated_arguments",
             None,
         );
+
+        // `"` and `'` are not the same argument names.
+        expect_no_lint("switch(x, `\"` = 1, `'` = 2)", "duplicated_arguments", None);
     }
 
     #[test]

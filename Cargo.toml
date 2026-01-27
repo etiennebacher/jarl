@@ -11,13 +11,13 @@ repository = "https://github.com/etiennebacher/jarl/"
 readme = "README.md"
 
 [workspace.dependencies]
-air_fs = { package = "fs", git = "https://github.com/posit-dev/air", rev = "82751bec9d7b0297282c8e24b813e71bc4d461f6" }
-air_r_parser = { git = "https://github.com/posit-dev/air", rev = "82751bec9d7b0297282c8e24b813e71bc4d461f6" }
-air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "82751bec9d7b0297282c8e24b813e71bc4d461f6" }
-air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air", rev = "82751bec9d7b0297282c8e24b813e71bc4d461f6" }
+air_fs = { package = "fs", git = "https://github.com/posit-dev/air", rev = "4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1" }
+air_r_parser = { git = "https://github.com/posit-dev/air", rev = "4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1" }
+air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1" }
+air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air", rev = "4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1" }
 anyhow = "1.0.94"
-biome_formatter = { git = "https://github.com/biomejs/biome", rev = "c13fc60726883781e4530a4437724273b560c8e0" }
-biome_rowan = { git = "https://github.com/biomejs/biome", rev = "c13fc60726883781e4530a4437724273b560c8e0" }
+biome_formatter = { git = "https://github.com/lionel-/biome", rev = "41d799cfa4cedd25625fc3f6bd7898532873f051" }
+biome_rowan = { git = "https://github.com/lionel-/biome", rev = "41d799cfa4cedd25625fc3f6bd7898532873f051" }
 clap = { version = "4.5.21", features = ["derive"] }
 colored = "2.1.0"
 ignore = "0.4.23"

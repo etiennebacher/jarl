@@ -67,6 +67,8 @@ website:
       - rules/download_file.md
       - rules/duplicated_arguments.md
       - rules/equals_na.md
+      - rules/equals_nan.md
+      - rules/equals_null.md
       - rules/expect_length.md
       - rules/expect_named.md
       - rules/expect_not.md
@@ -97,6 +99,7 @@ website:
       - rules/string_boundary.md
       - rules/system_file.md
       - rules/true_false_symbol.md
+      - rules/unnecessary_nesting.md
       - rules/unreachable_code.md
       - rules/vector_logic.md
       - rules/which_grepl.md

@@ -33,11 +33,20 @@ mod tests {
             "any_is_na",
             None,
         );
+
+        expect_lint(
+            "NA %in% x",
+            "`NA %in% x` is inefficient.",
+            "any_is_na",
+            None,
+        );
+
         assert_snapshot!(
             "fix_output",
             get_fixed_text(
                 vec![
                     "any(is.na(x))",
+                    "NA %in% x",
                     "any(is.na(foo(x)))",
                     "any(is.na(x), na.rm = TRUE)",
                 ],

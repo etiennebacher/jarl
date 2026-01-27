@@ -11,8 +11,11 @@ pub fn function_definition(
 ) -> anyhow::Result<()> {
     let node = func.syntax();
 
+    // Check suppressions once for this node
+    let suppressed_rules = checker.get_suppressed_rules(node);
+
     if checker.is_rule_enabled(Rule::UnreachableCode)
-        && !checker.should_skip_rule(node, Rule::UnreachableCode)
+        && !suppressed_rules.contains(&Rule::UnreachableCode)
     {
         let diagnostics = unreachable_code(func)?;
         for diagnostic in diagnostics {

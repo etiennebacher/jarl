@@ -18,14 +18,27 @@
   `jarl.toml`, which is a common situation for standalone R scripts. (#253)
 
 - New rules:
+  - `equals_nan` (#284)
+  - `equals_null` (#283)
   - `redundant_ifelse` (#260)
+  - `unnecessary_nesting` (#268)
   - `unreachable_code` (#261)
+
+- When the output format is `full` or `concise`, rule names now have a hyperlink
+  leading to the website documentation (#278).
+
+- `any_is_na` now reports `NA %in% x` (#286).
 
 ### Other changes
 
-- The rule `assignment` is now disabled by default (#258).
+- The following rules are now disabled by default. They still exist and the user
+  can choose to use them, but they were deemed too noisy for limited benefit to
+  be enabled by default:
+  - `assignment` (#258)
+  - `fixed_regex` (#279)
+  - `sample_int` (#262)
 
-- The rule `sample_int` is now disabled by default (#262).
+- `equals_na` now reports `x %in% NA` cases, as documented (#285).
 
 ### Bug fixes
 
@@ -34,6 +47,20 @@
 
 - Fixed a bug in the number of "fixable diagnostics" reported when the arg
   `fixable` is present in `jarl.toml` but `--fix` is not passed (#255).
+
+- `fixed_regex` is now correctly classified as "Performance" instead of
+  "Readability" rule internally (#279).
+
+- Default values of function parameters are now analyzed too (#282).
+
+- `duplicated_arguments` doesn't report anymore cases where argument names `"`
+  and `'` were conflated, e.g.
+
+  ```r
+  switch(x, `"` = "double", `'` = "single")
+  ```
+  (#288).
+
 
 ## 0.3.0
 

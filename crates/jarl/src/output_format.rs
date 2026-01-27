@@ -6,6 +6,15 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::{BufWriter, Write};
 
+/// Creates a terminal hyperlink using OSC 8 escape sequences
+/// Format: \x1b]8;;<URL>\x1b\\<TEXT>\x1b]8;;\x1b\\
+fn make_hyperlink(text: &str) -> String {
+    format!(
+        "\x1b]8;;{}{}\x1b\\{}\x1b]8;;\x1b\\",
+        "https://jarl.etiennebacher.com/rules/", text, text
+    )
+}
+
 use jarl_core::diagnostic::Diagnostic;
 
 fn show_hint_statistics(total_diagnostics: i32) {
@@ -106,13 +115,19 @@ impl Emitter for ConciseEmitter {
             } else {
                 diagnostic.message.body.clone()
             };
+            let use_colors = std::env::var("NO_COLOR").is_err();
+            let rule_name = if use_colors {
+                &make_hyperlink(&diagnostic.message.name)
+            } else {
+                &diagnostic.message.name
+            };
             writeln!(
                 writer,
                 "{} [{}:{}] {} {}",
                 relative_path.white(),
                 row,
                 col,
-                diagnostic.message.name.red(),
+                rule_name.red(),
                 message
             )?;
 
@@ -254,10 +269,11 @@ impl Emitter for FullEmitter {
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
         // Use plain renderer when NO_COLOR is set or in snapshots
-        let renderer = if std::env::var("NO_COLOR").is_ok() {
-            Renderer::plain()
-        } else {
+        let use_colors = std::env::var("NO_COLOR").is_err();
+        let renderer = if use_colors {
             Renderer::styled()
+        } else {
+            Renderer::plain()
         };
         let mut total_diagnostics = 0;
         let mut n_diagnostic_with_fixes = 0usize;
@@ -347,10 +363,14 @@ impl Emitter for FullEmitter {
                         .label(&diagnostic.message.body),
                 );
 
-            // Create the main message
-            let mut message = Level::Warning
-                .title(&diagnostic.message.name)
-                .snippet(snippet);
+            // Create the main message with clickable rule name
+            let title = if use_colors {
+                make_hyperlink(&diagnostic.message.name)
+            } else {
+                diagnostic.message.name.clone()
+            };
+
+            let mut message = Level::Warning.title(&title).snippet(snippet);
 
             // Add suggestion as a footer message if present
             if let Some(suggestion_text) = &diagnostic.message.suggestion {

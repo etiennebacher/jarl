@@ -269,6 +269,20 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    EqualsNaN => {
+        name: "equals_nan",
+        categories: [Corr],
+        default: Enabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    EqualsNull => {
+        name: "equals_null",
+        categories: [Corr],
+        default: Enabled,
+        fix: Safe,
+        min_r_version: None,
+    },
     ExpectLength => {
         name: "expect_length",
         categories: [Testthat],
@@ -320,8 +334,8 @@ declare_rules! {
     },
     FixedRegex => {
         name: "fixed_regex",
-        categories: [Read],
-        default: Enabled,
+        categories: [Perf],
+        default: Disabled,
         fix: Safe,
         min_r_version: None,
     },
@@ -477,6 +491,13 @@ declare_rules! {
         categories: [Read],
         default: Enabled,
         fix: None,
+        min_r_version: None,
+    },
+    UnnecessaryNesting => {
+        name: "unnecessary_nesting",
+        categories: [Read],
+        default: Disabled,
+        fix: Safe,
         min_r_version: None,
     },
     UnreachableCode => {

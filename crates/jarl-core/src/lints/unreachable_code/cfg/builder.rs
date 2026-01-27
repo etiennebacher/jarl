@@ -223,7 +223,9 @@ impl CfgBuilder {
                 } else if fun_name == "next" {
                     self.build_next(current, stmt.clone());
                     current
-                } else if ["stop", ".Defunct", "abort", "cli_abort"].contains(&fun_name.as_str()) {
+                } else if ["stop", ".Defunct", "abort", "cli_abort", "q", "quit"]
+                    .contains(&fun_name.as_str())
+                {
                     self.build_stop(current, stmt.clone());
                     current
                 } else {
@@ -583,13 +585,12 @@ impl CfgBuilder {
     fn add_statement(&mut self, block_id: BlockId, stmt: RSyntaxNode) {
         if let Some(block) = self.cfg.block_mut(block_id) {
             block.statements.push(stmt.clone());
-            if block.range.is_none() {
-                block.range = Some(stmt.text_trimmed_range());
-            } else {
+            if let Some(current_range) = block.range {
                 // Extend the range to include this statement
-                let current_range = block.range.unwrap();
                 let new_range = current_range.cover(stmt.text_trimmed_range());
                 block.range = Some(new_range);
+            } else {
+                block.range = Some(stmt.text_trimmed_range());
             }
         }
     }

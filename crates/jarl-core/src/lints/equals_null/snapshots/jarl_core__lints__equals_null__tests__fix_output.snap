@@ -1,0 +1,38 @@
+---
+source: crates/jarl-core/src/lints/equals_null/mod.rs
+expression: "get_fixed_text(vec![\"x == NULL\", \"x != NULL\", \"x %in% NULL\",\n\"foo(x(y)) == NULL\", \"NULL == x\",], \"equals_null\", None,)"
+---
+OLD:
+====
+x == NULL
+NEW:
+====
+is.null(x)
+
+OLD:
+====
+x != NULL
+NEW:
+====
+!is.null(x)
+
+OLD:
+====
+x %in% NULL
+NEW:
+====
+is.null(x)
+
+OLD:
+====
+foo(x(y)) == NULL
+NEW:
+====
+is.null(foo(x(y)))
+
+OLD:
+====
+NULL == x
+NEW:
+====
+is.null(x)

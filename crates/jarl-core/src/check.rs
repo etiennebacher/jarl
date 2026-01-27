@@ -9,6 +9,7 @@ use air_r_syntax::{
     RWhileStatementFields,
 };
 use anyhow::{Context, Result};
+use biome_rowan::AstNodeList;
 use rayon::prelude::*;
 use std::fs;
 use std::path::Path;
@@ -134,9 +135,52 @@ impl Checker {
         self.rule_set.contains(&rule)
     }
 
-    /// Check if a rule should be skipped for the given node due to suppression comments
-    pub(crate) fn should_skip_rule(&self, node: &air_r_syntax::RSyntaxNode, rule: Rule) -> bool {
-        self.suppression.should_skip_rule(node, rule)
+    /// Get all suppressed rules for a node in a single check.
+    ///
+    /// Returns:
+    /// - An empty set if no rules are suppressed
+    /// - A set containing all enabled rules if all rules are suppressed
+    /// - A set containing specific suppressed rules otherwise
+    pub(crate) fn get_suppressed_rules(
+        &self,
+        node: &air_r_syntax::RSyntaxNode,
+    ) -> std::collections::HashSet<Rule> {
+        // Fast path: if there are no suppressions anywhere, return empty set immediately
+        if !self.suppression.has_any_suppressions {
+            return std::collections::HashSet::new();
+        }
+
+        // Check once and return all suppressed rules
+        match self.suppression.check_suppression(node) {
+            Some(None) => {
+                // Skip all rules - return all enabled rules
+                self.rule_set.iter().cloned().collect()
+            }
+            Some(Some(rules)) => {
+                // Skip specific rules - return only those that are enabled
+                rules
+                    .into_iter()
+                    .filter(|r| self.rule_set.contains(r))
+                    .collect()
+            }
+            None => {
+                // No suppression at node level, check regions
+                let node_range = node.text_trimmed_range();
+                for region in &self.suppression.skip_regions {
+                    if region.range.contains_range(node_range) {
+                        return match &region.rules {
+                            None => self.rule_set.iter().cloned().collect(),
+                            Some(rules) => rules
+                                .iter()
+                                .filter(|r| self.rule_set.contains(r))
+                                .cloned()
+                                .collect::<std::collections::HashSet<Rule>>(),
+                        };
+                    }
+                }
+                std::collections::HashSet::new()
+            }
+        }
     }
 }
 
@@ -155,9 +199,8 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
 
     let syntax = &parsed.syntax();
     let expressions = &parsed.tree().expressions();
-    let expressions_vec: Vec<_> = expressions.into_iter().collect();
 
-    let suppression = SuppressionManager::from_node(syntax);
+    let suppression = SuppressionManager::from_node(syntax, contents);
 
     // Check if the entire file should be skipped
     if suppression.should_skip_file(syntax) {
@@ -167,12 +210,12 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     let mut checker = Checker::new(suppression, config.assignment);
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
-    for expr in expressions_vec.iter() {
-        check_expression(expr, &mut checker)?;
+    for expr in expressions {
+        check_expression(&expr, &mut checker)?;
     }
 
     // Analyze top-level code (checks that require the entire document)
-    analyze::top_level::top_level(&expressions_vec, &mut checker)?;
+    analyze::top_level::top_level(&expressions.iter().collect::<Vec<_>>(), &mut checker)?;
 
     // Some rules have a fix available in their implementation but do not have
     // fix in the config, for instance because they are part of the "unfixable"
@@ -254,24 +297,17 @@ pub fn check_expression(
             check_expression(&right?, checker)?;
         }
         AnyRExpression::RBracedExpressions(children) => {
-            let expressions: Vec<_> = children.expressions().into_iter().collect();
-
-            for expr in expressions {
+            for expr in children.expressions() {
                 check_expression(&expr, checker)?;
             }
         }
         AnyRExpression::RCall(children) => {
             analyze::call::call(children, checker)?;
 
-            let arguments: Vec<AnyRExpression> = children
-                .arguments()?
-                .items()
-                .into_iter()
-                .filter_map(|x| x.unwrap().as_fields().value)
-                .collect();
-
-            for expr in arguments {
-                check_expression(&expr, checker)?;
+            for arg in children.arguments()?.items() {
+                if let Some(expr) = arg.unwrap().as_fields().value {
+                    check_expression(&expr, checker)?;
+                }
             }
         }
         AnyRExpression::RForStatement(children) => {
@@ -284,8 +320,16 @@ pub fn check_expression(
         }
         AnyRExpression::RFunctionDefinition(children) => {
             analyze::function_definition::function_definition(children, checker)?;
-            let body = children.body();
-            check_expression(&body?, checker)?;
+            let params = children.parameters()?.items();
+            for param in params {
+                let default = param?.default();
+                if let Some(default) = default
+                    && let Ok(default) = default.value()
+                {
+                    check_expression(&default, checker)?;
+                }
+            }
+            check_expression(&children.body()?, checker)?;
         }
         AnyRExpression::RIdentifier(x) => {
             analyze::identifier::identifier(x, checker)?;
@@ -312,19 +356,16 @@ pub fn check_expression(
         }
         AnyRExpression::RSubset(children) => {
             analyze::subset::subset(children, checker)?;
-            let arguments: Vec<_> = children.arguments()?.items().into_iter().collect();
 
-            for expr in arguments {
-                if let Some(expr) = expr?.value() {
+            for arg in children.arguments()?.items() {
+                if let Some(expr) = arg?.value() {
                     check_expression(&expr, checker)?;
                 }
             }
         }
         AnyRExpression::RSubset2(children) => {
-            let arguments: Vec<_> = children.arguments()?.items().into_iter().collect();
-
-            for expr in arguments {
-                if let Some(expr) = expr?.value() {
+            for arg in children.arguments()?.items() {
+                if let Some(expr) = arg?.value() {
                     check_expression(&expr, checker)?;
                 }
             }

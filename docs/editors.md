@@ -13,6 +13,12 @@ To get the version number of Jarl itself, use `jarl --version`.
 
 Both VS Code and Positron have access to the Jarl extension via the [VS Marketplace](https://marketplace.visualstudio.com/items?itemName=EtienneBacher.jarl-vscode) and [Open VSX](https://open-vsx.org/extension/etiennebacher/jarl-vscode).
 
+::: {.callout-note}
+The extension comes with a bundled version of Jarl. This means you don't need to install Jarl via the command line.
+
+This can be changed in the editor's settings, for instance to manually install a pre-released version of Jarl and have the extension use it. To do so, look for "Jarl: Executable Strategy" in the settings and set it to "path". Then, add the path to the Jarl binary in "Jarl: Executable Path".
+:::
+
 This extension provides code higlights and quick fixes:
 
 * code highlights will underline pieces of code that violate any rule in your setup:

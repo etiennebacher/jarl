@@ -3,120 +3,107 @@ use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
-pub struct EqualsNa;
+pub struct EqualsNull;
 
 /// ## What it does
 ///
-/// Check for `x == NA`, `x != NA` and `x %in% NA`, and replaces those by
-/// `is.na()` calls.
+/// Check for `x == NULL`, `x != NULL` and `x %in% NULL`, and replaces those by
+/// `is.null()` calls.
 ///
 /// ## Why is this bad?
 ///
-/// Comparing a value to `NA` using `==` returns `NA` in many cases:
+/// Comparing a value to `NULL` using `==` returns a `logical(0)` in many cases:
 /// ```r
-/// x <- c(1, 2, 3, NA)
-/// x == NA
-/// #> [1] NA NA NA NA
+/// x <- NULL
+/// x == NULL
+/// #> logical(0)
 /// ```
 /// which is very likely not the expected output.
 ///
 /// ## Example
 ///
 /// ```r
-/// x <- c(1, 2, 3, NA)
-/// x == NA
+/// x <- c(1, 2, 3)
+/// y <- NULL
+///
+/// x == NULL
+/// y == NULL
 /// ```
 ///
 /// Use instead:
 /// ```r
-/// x <- c(1, 2, 3, NA)
-/// is.na(x)
+/// x <- c(1, 2, 3)
+/// y <- NULL
+///
+/// is.null(x)
+/// is.null(y)
 /// ```
-impl Violation for EqualsNa {
+impl Violation for EqualsNull {
     fn name(&self) -> String {
-        "equals_na".to_string()
+        "equals_null".to_string()
     }
     fn body(&self) -> String {
-        "Comparing to NA with `==`, `!=` or `%in%` is problematic.".to_string()
+        "Comparing to NULL with `==`, `!=` or `%in%` is problematic.".to_string()
     }
     fn suggestion(&self) -> Option<String> {
-        Some("Use `is.na()` instead.".to_string())
+        Some("Use `is.null()` instead.".to_string())
     }
 }
 
-pub fn equals_na(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
+pub fn equals_null(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
-    let left = left?.to_trimmed_string();
+    let left = left?;
     let operator = operator?;
-    let right = right?.to_trimmed_string();
-
-    let operator_is_in =
-        operator.kind() == RSyntaxKind::SPECIAL && operator.text_trimmed() == "%in%";
+    let right = right?;
 
     if operator.kind() != RSyntaxKind::EQUAL2
         && operator.kind() != RSyntaxKind::NOT_EQUAL
-        && !operator_is_in
+        && (operator.kind() != RSyntaxKind::SPECIAL || operator.text_trimmed() != "%in%")
     {
         return Ok(None);
     };
 
-    let na_values = [
-        "NA",
-        "NA_character_",
-        "NA_integer_",
-        "NA_real_",
-        "NA_logical_",
-        "NA_complex_",
-    ];
+    let left_is_null = left.as_r_null_expression().is_some();
+    let right_is_null = right.as_r_null_expression().is_some();
 
-    let left_is_na = na_values.contains(&left.to_string().trim());
-    let right_is_na = na_values.contains(&right.to_string().trim());
-
-    // `NA %in% x` is equivalent to `anyNA(x)`, not `is.na(x)`
-    if operator_is_in && left_is_na {
-        return Ok(None);
-    }
-
-    // If NA is quoted in text, then quotation marks are escaped and this
-    // is false.
-    if (left_is_na && right_is_na) || (!left_is_na && !right_is_na) {
+    if (left_is_null && right_is_null) || (!left_is_null && !right_is_null) {
         return Ok(None);
     }
     let range = ast.syntax().text_trimmed_range();
 
-    let replacement = if left_is_na {
-        right.trim().to_string()
+    let replacement = if left_is_null {
+        right.to_trimmed_string()
     } else {
-        left.trim().to_string()
+        left.to_trimmed_string()
     };
 
     let diagnostic = match operator.kind() {
         RSyntaxKind::EQUAL2 => Diagnostic::new(
-            EqualsNa,
+            EqualsNull,
             range,
             Fix {
-                content: format!("is.na({replacement})"),
+                content: format!("is.null({replacement})"),
                 start: range.start().into(),
                 end: range.end().into(),
                 to_skip: node_contains_comments(ast.syntax()),
             },
         ),
         RSyntaxKind::NOT_EQUAL => Diagnostic::new(
-            EqualsNa,
+            EqualsNull,
             range,
             Fix {
-                content: format!("!is.na({replacement})"),
+                content: format!("!is.null({replacement})"),
                 start: range.start().into(),
                 end: range.end().into(),
                 to_skip: node_contains_comments(ast.syntax()),
             },
         ),
         RSyntaxKind::SPECIAL if operator.text_trimmed() == "%in%" => Diagnostic::new(
-            EqualsNa,
+            EqualsNull,
             range,
             Fix {
-                content: format!("is.na({replacement})"),
+                content: format!("is.null({replacement})"),
                 start: range.start().into(),
                 end: range.end().into(),
                 to_skip: node_contains_comments(ast.syntax()),

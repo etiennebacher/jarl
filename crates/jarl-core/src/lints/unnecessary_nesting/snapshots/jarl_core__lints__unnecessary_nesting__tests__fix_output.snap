@@ -1,0 +1,35 @@
+---
+source: crates/jarl-core/src/lints/unnecessary_nesting/mod.rs
+expression: "get_fixed_text(vec![\"\nif (x) {\n  if (y) {\n    1L\n  }\n}\",\n\"\nif (x) {\n  if (y) {\n    if (z) {\n      1L\n    }\n  }\n}\"],\n\"unnecessary_nesting\", None)"
+---
+OLD:
+====
+
+if (x) {
+  if (y) {
+    1L
+  }
+}
+NEW:
+====
+
+if (x && y) {
+    1L
+  }
+
+OLD:
+====
+
+if (x) {
+  if (y) {
+    if (z) {
+      1L
+    }
+  }
+}
+NEW:
+====
+
+if ((x && y) && z) {
+      1L
+    }
