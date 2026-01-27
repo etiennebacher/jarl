@@ -53,6 +53,15 @@
 
 - Default values of function parameters are now analyzed too (#282).
 
+- `duplicated_arguments` doesn't report anymore cases where argument names `"`
+  and `'` were conflated, e.g.
+
+  ```r
+  switch(x, `"` = "double", `'` = "single")
+  ```
+  (#288).
+
+
 ## 0.3.0
 
 ### Breaking changes

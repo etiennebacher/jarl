@@ -72,12 +72,13 @@ pub fn duplicated_arguments(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             if let Some(name_clause) = &fields.name_clause
                 && let Ok(name) = name_clause.name()
             {
-                Some(
-                    name.into_syntax()
-                        .text_trimmed()
-                        .to_string()
-                        .replace(&['\'', '"', '`'][..], ""),
-                )
+                let name = name.to_trimmed_string();
+                let name_no_quotes = name.replace(&['\'', '"', '`'][..], "");
+                if name_no_quotes.chars().count() == 0 {
+                    Some(name)
+                } else {
+                    Some(name_no_quotes)
+                }
             } else {
                 None
             }
