@@ -282,6 +282,7 @@ pub fn check_expression(
     expression: &air_r_syntax::AnyRExpression,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
+    let _ = analyze::anyexpression::anyexpression(expression, checker);
     match expression {
         AnyRExpression::AnyRValue(children) => {
             analyze::anyvalue::anyvalue(children, checker)?;

@@ -16,7 +16,15 @@ warning: any_is_na
   |
   = help: Use `anyNA(...)` instead.
 
-Found 1 error.
+warning: blanket_suppression
+ --> test.R:3:3
+  |
+3 |   # nolint
+  |   -------- This comment suppresses all possible violations of this node.
+  |
+  = help: Consider ignoring specific rules instead, e.g., `# nolint: any_is_na`.
+
+Found 2 errors.
 
 ----- stderr -----
 

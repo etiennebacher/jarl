@@ -76,7 +76,7 @@ pub struct SkipRegion {
 /// Tracks which nodes should skip linting based on comments
 #[derive(Debug)]
 pub struct SuppressionManager {
-    comments: Comments<RLanguage>,
+    pub comments: Comments<RLanguage>,
     /// Regions defined by nolint start/end blocks
     pub skip_regions: Vec<SkipRegion>,
     /// Fast path: true if there are no suppressions anywhere in the file
@@ -308,6 +308,15 @@ impl SuppressionManager {
             }
             None
         };
+
+        // if node.text_trimmed() == "any(is.na(x))" {
+        //     println!(
+        //         "comments: {:#?}",
+        //         self.comments.trailing_comments(node)[0]
+        //             .piece()
+        //             .text_range()
+        //     );
+        // }
 
         // Check leading comments
         let leading = self.comments.leading_comments(node);

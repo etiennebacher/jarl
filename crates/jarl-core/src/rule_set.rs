@@ -213,6 +213,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    BlanketSuppression => {
+        name: "blanket_suppression",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     Browser => {
         name: "browser",
         categories: [Corr],
