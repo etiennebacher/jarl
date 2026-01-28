@@ -40,6 +40,8 @@
 
 - `equals_na` now reports `x %in% NA` cases, as documented (#285).
 
+- There are now binaries available for `linux-musl` (`x64` and `arm64`) (#287).
+
 ### Bug fixes
 
 - When `output-format` is `json` or `github`, additional information displayed in
@@ -61,6 +63,10 @@
   ```
   (#288).
 
+### Documentation
+
+- New section in the `Integrations` page to show how to use Jarl in various
+  CI/CD platforms (#289, @philipp-baumann).
 
 ## 0.3.0
 
