@@ -1352,6 +1352,13 @@
     "text": "Jarl can be used as a Github Action via setup-jarl. This action runs in a couple of seconds and will fail if there are any rule violations. It is possible to customize the arguments passed to Jarl in this action, such as the input paths.\nHere is an example YAML file:\non:\n  push:\n    branches: main\n  pull_request:\n\nname: jarl-check\n\npermissions: read-all\n\njobs:\n  jarl-check:\n    name: jarl-check\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: etiennebacher/setup-jarl@v0.1.0\nSee the setup-jarl repository for more examples."
   },
   {
+    "objectID": "integrations.html#container-based-cicd-platforms",
+    "href": "integrations.html#container-based-cicd-platforms",
+    "title": "Integrations",
+    "section": "Container-based CI/CD platforms",
+    "text": "Container-based CI/CD platforms\njarl can also easily be run in open-source and lightweight CI solutions like Woodpecker CI or Crow CI. For container-based CI/CD, here is an example of using jarl within a slim alpine linux container image.\nsteps:\n  - name: lint-r-jarl\n    image: alpine:2.23\n    commands: |\n      apk add --no-cache -q curl\n      curl -L -o jarl-installer.sh https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.sh\n      sh ./jarl-installer.sh\n      source $HOME/.local/bin/env\n      jarl check ./R/"
+  },
+  {
     "objectID": "contributing-rule-example.html",
     "href": "contributing-rule-example.html",
     "title": "Adding a new rule to Jarl",
@@ -1440,7 +1447,7 @@
     "href": "rules.html",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_osuxxsuumgg29xt9bgqh",
+    "text": "All rules belong to at least one category:\n\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_4yli4r1i7n7wx1pmf5oz",
     "crumbs": [
       "Rules"
     ]
@@ -1450,7 +1457,7 @@
     "href": "rules.html#overview",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_osuxxsuumgg29xt9bgqh",
+    "text": "All rules belong to at least one category:\n\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_4yli4r1i7n7wx1pmf5oz",
     "crumbs": [
       "Rules"
     ]
