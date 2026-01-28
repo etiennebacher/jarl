@@ -6,5 +6,6 @@ pub(crate) mod function_definition;
 pub(crate) mod identifier;
 pub(crate) mod if_;
 pub(crate) mod subset;
+pub(crate) mod top_level;
 pub(crate) mod unary_expression;
 pub(crate) mod while_;
