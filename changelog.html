@@ -191,6 +191,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#features" id="toc-features" class="nav-link" data-scroll-target="#features">Features</a></li>
   <li><a href="#other-changes" id="toc-other-changes" class="nav-link" data-scroll-target="#other-changes">Other changes</a></li>
   <li><a href="#bug-fixes" id="toc-bug-fixes" class="nav-link" data-scroll-target="#bug-fixes">Bug fixes</a></li>
+  <li><a href="#documentation" id="toc-documentation" class="nav-link" data-scroll-target="#documentation">Documentation</a></li>
   </ul></li>
   <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section">0.3.0</a>
   <ul class="collapse">
@@ -208,18 +209,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#breaking-changes-1" id="toc-breaking-changes-1" class="nav-link" data-scroll-target="#breaking-changes-1">Breaking changes</a></li>
   <li><a href="#features-2" id="toc-features-2" class="nav-link" data-scroll-target="#features-2">Features</a></li>
   <li><a href="#fixes-1" id="toc-fixes-1" class="nav-link" data-scroll-target="#fixes-1">Fixes</a></li>
-  <li><a href="#documentation" id="toc-documentation" class="nav-link" data-scroll-target="#documentation">Documentation</a></li>
+  <li><a href="#documentation-1" id="toc-documentation-1" class="nav-link" data-scroll-target="#documentation-1">Documentation</a></li>
   </ul></li>
   <li><a href="#section-3" id="toc-section-3" class="nav-link" data-scroll-target="#section-3">0.1.2</a>
   <ul class="collapse">
   <li><a href="#features-3" id="toc-features-3" class="nav-link" data-scroll-target="#features-3">Features</a></li>
   <li><a href="#fixes-2" id="toc-fixes-2" class="nav-link" data-scroll-target="#fixes-2">Fixes</a></li>
-  <li><a href="#documentation-1" id="toc-documentation-1" class="nav-link" data-scroll-target="#documentation-1">Documentation</a></li>
+  <li><a href="#documentation-2" id="toc-documentation-2" class="nav-link" data-scroll-target="#documentation-2">Documentation</a></li>
   </ul></li>
   <li><a href="#section-4" id="toc-section-4" class="nav-link" data-scroll-target="#section-4">0.1.1</a>
   <ul class="collapse">
   <li><a href="#fixes-3" id="toc-fixes-3" class="nav-link" data-scroll-target="#fixes-3">Fixes</a></li>
-  <li><a href="#documentation-2" id="toc-documentation-2" class="nav-link" data-scroll-target="#documentation-2">Documentation</a></li>
+  <li><a href="#documentation-3" id="toc-documentation-3" class="nav-link" data-scroll-target="#documentation-3">Documentation</a></li>
   </ul></li>
   <li><a href="#section-5" id="toc-section-5" class="nav-link" data-scroll-target="#section-5">0.1.0</a></li>
   </ul></li>
@@ -256,13 +257,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="other-changes" class="level3">
 <h3 class="anchored" data-anchor-id="other-changes">Other changes</h3>
 <ul>
-<li>The following rules are now disabled by default. They still exist and the user can choose to use them, but they were deemed too noisy for limited benefit to be enabled by default:
+<li><p>The following rules are now disabled by default. They still exist and the user can choose to use them, but they were deemed too noisy for limited benefit to be enabled by default:</p>
 <ul>
 <li><code>assignment</code> (#258)</li>
 <li><code>fixed_regex</code> (#279)</li>
 <li><code>sample_int</code> (#262)</li>
 </ul></li>
-<li><code>equals_na</code> now reports <code>x %in% NA</code> cases, as documented (#285).</li>
+<li><p><code>equals_na</code> now reports <code>x %in% NA</code> cases, as documented (#285).</p></li>
+<li><p>There are now binaries available for <code>linux-musl</code> (<code>x64</code> and <code>arm64</code>) (#287).</p></li>
 </ul>
 </section>
 <section id="bug-fixes" class="level3">
@@ -275,6 +277,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p><code>duplicated_arguments</code> doesn’t report anymore cases where argument names <code>"</code> and <code>'</code> were conflated, e.g.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="cf">switch</span>(x, <span class="st">`</span><span class="at">"</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"double"</span>, <span class="st">`</span><span class="at">'</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"single"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>(#288).</p></li>
+</ul>
+</section>
+<section id="documentation" class="level3">
+<h3 class="anchored" data-anchor-id="documentation">Documentation</h3>
+<ul>
+<li>New section in the <code>Integrations</code> page to show how to use Jarl in various CI/CD platforms (#289, <span class="citation" data-cites="philipp-baumann">@philipp-baumann</span>).</li>
 </ul>
 </section>
 </section>
@@ -365,8 +373,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><code>implicit_assignment</code> no longer reports cases inside <code>quote()</code> (#209).</li>
 </ul>
 </section>
-<section id="documentation" class="level3">
-<h3 class="anchored" data-anchor-id="documentation">Documentation</h3>
+<section id="documentation-1" class="level3">
+<h3 class="anchored" data-anchor-id="documentation-1">Documentation</h3>
 <ul>
 <li>Added section on Neovim to the <a href="https://jarl.etiennebacher.com/editors" target="_blank">Editors</a> page (#188, <span class="citation" data-cites="bjyberg">@bjyberg</span>).</li>
 <li>Added page “Tutorial: add a new rule” (#183).</li>
@@ -389,8 +397,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>(Hopefully) Fixed wrong printing of ANSI characters in multiple terminals on Windows (#179, thanks <span class="citation" data-cites="novica">@novica</span> for the report).</li>
 </ul>
 </section>
-<section id="documentation-1" class="level3">
-<h3 class="anchored" data-anchor-id="documentation-1">Documentation</h3>
+<section id="documentation-2" class="level3">
+<h3 class="anchored" data-anchor-id="documentation-2">Documentation</h3>
 <ul>
 <li>Added sections on RStudio and Helix to the <a href="https://jarl.etiennebacher.com/editors" target="_blank">Editors</a> page.</li>
 <li>Added installation instructions using Scoop on Windows.</li>
@@ -406,8 +414,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Rule <code>duplicated_argument</code> no longer reports <code>cli_</code> functions where multiple arguments have the same name (#176, thanks <span class="citation" data-cites="DavisVaughan">@DavisVaughan</span> for the report).</li>
 </ul>
 </section>
-<section id="documentation-2" class="level3">
-<h3 class="anchored" data-anchor-id="documentation-2">Documentation</h3>
+<section id="documentation-3" class="level3">
+<h3 class="anchored" data-anchor-id="documentation-3">Documentation</h3>
 <ul>
 <li>The docs of <code>assignment</code> rule now explain how to change the preferred assignment operator.</li>
 </ul>
