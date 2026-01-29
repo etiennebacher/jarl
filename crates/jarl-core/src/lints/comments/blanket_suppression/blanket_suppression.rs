@@ -4,7 +4,7 @@ use biome_formatter::comments::Comments;
 use biome_rowan::{AstNode, TextRange};
 
 // Define jarl-ignore variants as a constant
-const NOLINT_VARIANTS: &[&str] = &["# jarl-ignore", "#jarl-ignore"];
+const IGNORE_JARL_VARIANTS: &[&str] = &["# jarl-ignore", "#jarl-ignore"];
 
 pub fn blanket_suppression(
     ast: &AnyRExpression,
@@ -21,7 +21,7 @@ pub fn blanket_suppression(
     // Check trailing comments first (most common for jarl-ignore)
     for comment in comments.trailing_comments(syntax) {
         let text = comment.piece().text();
-        if NOLINT_VARIANTS.contains(&text) {
+        if IGNORE_JARL_VARIANTS.contains(&text) {
             return Ok(Some(create_diagnostic(comment.piece().text_range())));
         }
     }
@@ -29,7 +29,7 @@ pub fn blanket_suppression(
     // Check leading comments
     for comment in comments.leading_comments(syntax) {
         let text = comment.piece().text();
-        if NOLINT_VARIANTS.contains(&text) {
+        if IGNORE_JARL_VARIANTS.contains(&text) {
             return Ok(Some(create_diagnostic(comment.piece().text_range())));
         }
     }
@@ -37,7 +37,7 @@ pub fn blanket_suppression(
     // Check dangling comments (least common)
     for comment in comments.dangling_comments(syntax) {
         let text = comment.piece().text();
-        if NOLINT_VARIANTS.contains(&text) {
+        if IGNORE_JARL_VARIANTS.contains(&text) {
             return Ok(Some(create_diagnostic(comment.piece().text_range())));
         }
     }
