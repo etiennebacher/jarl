@@ -1,0 +1,43 @@
+---
+source: crates/jarl-core/src/lints/base/fixed_regex/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\ngrep('hello', x)\",\n\"grep(\\n  # comment\\n  'hello', x\\n)\", \"grep('hello',\\n    # comment\\n    x)\",\n\"grep('hello', x) # trailing comment\",], \"fixed_regex\", None)"
+---
+OLD:
+====
+# leading comment
+grep('hello', x)
+NEW:
+====
+# leading comment
+grep('hello', x, fixed = TRUE)
+
+OLD:
+====
+grep(
+  # comment
+  'hello', x
+)
+NEW:
+====
+grep(
+  # comment
+  'hello', x
+)
+
+OLD:
+====
+grep('hello',
+    # comment
+    x)
+NEW:
+====
+grep('hello',
+    # comment
+    x)
+
+OLD:
+====
+grep('hello', x) # trailing comment
+NEW:
+====
+grep('hello', x, fixed = TRUE) # trailing comment

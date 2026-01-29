@@ -3,7 +3,7 @@ use crate::rule_set::Rule;
 use air_r_syntax::RSubset;
 use biome_rowan::AstNode;
 
-use crate::lints::sort::sort::sort;
+use crate::lints::base::sort::sort::sort;
 
 pub fn subset(r_expr: &RSubset, checker: &mut Checker) -> anyhow::Result<()> {
     let node = r_expr.syntax();

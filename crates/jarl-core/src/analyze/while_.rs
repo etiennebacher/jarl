@@ -3,7 +3,7 @@ use crate::rule_set::Rule;
 use air_r_syntax::RWhileStatement;
 use biome_rowan::AstNode;
 
-use crate::lints::repeat::repeat::repeat;
+use crate::lints::base::repeat::repeat::repeat;
 
 pub fn while_(r_expr: &RWhileStatement, checker: &mut Checker) -> anyhow::Result<()> {
     let node = r_expr.syntax();

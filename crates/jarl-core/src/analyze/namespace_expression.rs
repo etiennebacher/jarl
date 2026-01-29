@@ -3,7 +3,7 @@ use crate::rule_set::Rule;
 use air_r_syntax::RNamespaceExpression;
 use biome_rowan::AstNode;
 
-use crate::lints::internal_function::internal_function::internal_function;
+use crate::lints::base::internal_function::internal_function::internal_function;
 
 pub fn namespace_expression(
     r_expr: &RNamespaceExpression,

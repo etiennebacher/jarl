@@ -3,7 +3,7 @@ use crate::rule_set::Rule;
 use air_r_syntax::RIdentifier;
 use biome_rowan::AstNode;
 
-use crate::lints::true_false_symbol::true_false_symbol::true_false_symbol;
+use crate::lints::base::true_false_symbol::true_false_symbol::true_false_symbol;
 
 pub fn identifier(r_expr: &RIdentifier, checker: &mut Checker) -> anyhow::Result<()> {
     let node = r_expr.syntax();
