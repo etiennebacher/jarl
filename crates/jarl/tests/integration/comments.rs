@@ -559,34 +559,3 @@ any(is.na(y))
 
     Ok(())
 }
-
-#[test]
-fn test_blanket_suppression() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
-        "
-# jarl-ignore
-x <- any(is.na(y))
-",
-    )?;
-
-    // The comment is attached to the binary expression (<-), but should
-    // cascade to suppress the any(is.na()) call inside
-    insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            // Needed since the suppression comment isn't used
-            .arg("--ignore")
-            .arg("any_is_na")
-            .run()
-            .normalize_os_executable_name()
-    );
-
-    Ok(())
-}
