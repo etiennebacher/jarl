@@ -84,6 +84,10 @@ pub struct SuppressionManager {
     pub file_suppressions: HashSet<Rule>,
     /// Fast path: true if there are any suppressions anywhere in the file
     pub has_any_suppressions: bool,
+    /// Suppressions inherited from ancestor nodes (for cascading behavior).
+    /// This is a stack - we push when entering nodes with suppressions and
+    /// truncate when leaving.
+    pub inherited_suppressions: Vec<Rule>,
 }
 
 impl SuppressionManager {
@@ -101,6 +105,7 @@ impl SuppressionManager {
                 skip_regions: Vec::new(),
                 file_suppressions: HashSet::new(),
                 has_any_suppressions: false,
+                inherited_suppressions: Vec::new(),
             };
         }
 
@@ -119,6 +124,7 @@ impl SuppressionManager {
             skip_regions,
             file_suppressions,
             has_any_suppressions,
+            inherited_suppressions: Vec::new(),
         }
     }
 

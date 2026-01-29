@@ -111,10 +111,6 @@ pub struct Checker {
     pub suppression: SuppressionManager,
     // Which assignment operator is preferred?
     pub assignment: RSyntaxKind,
-    // Suppressions inherited from ancestor nodes (for cascading behavior).
-    // This is a stack - we push when entering nodes with suppressions and
-    // truncate when leaving. No cloning required.
-    inherited_suppressions: Vec<Rule>,
 }
 
 impl Checker {
@@ -125,7 +121,6 @@ impl Checker {
             minimum_r_version: None,
             suppression,
             assignment,
-            inherited_suppressions: Vec::new(),
         }
     }
 
@@ -173,7 +168,7 @@ impl Checker {
         }
 
         // Add inherited suppressions from ancestors (accumulated during traversal)
-        for rule in &self.inherited_suppressions {
+        for rule in self.suppression.inherited_suppressions.iter() {
             suppressed.insert(*rule);
         }
 
@@ -305,18 +300,21 @@ pub fn check_expression(
     let node_suppressions = checker.suppression.check_node_comments(node);
 
     // Remember stack length before adding, so we can truncate later
-    let stack_len = checker.inherited_suppressions.len();
+    let stack_len = checker.suppression.inherited_suppressions.len();
     for rule in node_suppressions {
         // Only add if enabled (filter early to keep stack small)
         if checker.rule_set.contains(&rule) {
-            checker.inherited_suppressions.push(rule);
+            checker.suppression.inherited_suppressions.push(rule);
         }
     }
 
     let result = check_expression_inner(expression, checker);
 
     // Restore stack to previous length (removes what we added)
-    checker.inherited_suppressions.truncate(stack_len);
+    checker
+        .suppression
+        .inherited_suppressions
+        .truncate(stack_len);
 
     result
 }
