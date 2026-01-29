@@ -6,20 +6,20 @@ success: false
 exit_code: 1
 ----- stdout -----
 warning: any_is_na
- --> test.R:7:1
+ --> test.R:2:1
   |
-7 | any(is.na(x))
+2 | any(is.na(x))
   | ------------- `any(is.na(...))` is inefficient.
   |
   = help: Use `anyNA(...)` instead.
 
 warning: any_is_na
-  --> test.R:16:5
-   |
-16 |     any(is.na(x))
-   |     ------------- `any(is.na(...))` is inefficient.
-   |
-   = help: Use `anyNA(...)` instead.
+ --> test.R:9:1
+  |
+9 | any(is.na(w))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
 
 Found 2 errors.
 2 fixable with the `--fix` option.

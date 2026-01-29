@@ -2,19 +2,10 @@
 source: crates/jarl/tests/integration/comments.rs
 expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name()"
 ---
-success: false
-exit_code: 1
+success: true
+exit_code: 0
 ----- stdout -----
-warning: any_is_na
-  --> test.R:15:1
-   |
-15 | any(is.na(x))
-   | ------------- `any(is.na(...))` is inefficient.
-   |
-   = help: Use `anyNA(...)` instead.
-
-Found 1 error.
-1 fixable with the `--fix` option.
+All checks passed!
 
 ----- stderr -----
 

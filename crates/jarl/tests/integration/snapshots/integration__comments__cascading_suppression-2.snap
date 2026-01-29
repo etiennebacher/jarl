@@ -6,23 +6,15 @@ success: false
 exit_code: 1
 ----- stdout -----
 warning: any_is_na
- --> test.R:2:1
+ --> test.R:6:1
   |
-2 | any(is.na(x))
+6 | any(is.na(y))
   | ------------- `any(is.na(...))` is inefficient.
   |
   = help: Use `anyNA(...)` instead.
 
-warning: any_duplicated
- --> test.R:4:1
-  |
-4 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
-
-Found 2 errors.
-2 fixable with the `--fix` option.
+Found 1 error.
+1 fixable with the `--fix` option.
 
 ----- stderr -----
 

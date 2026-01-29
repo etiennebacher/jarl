@@ -105,7 +105,7 @@ pub struct Checker {
     // The R version that is manually passed by the user in the CLI. Any rule
     // that has a minimum R version higher than this value will be deactivated.
     pub minimum_r_version: Option<(u32, u32, u32)>,
-    // Tracks comment-based suppression directives like `# nolint`
+    // Tracks comment-based suppression directives like `# jarl-ignore`
     pub suppression: SuppressionManager,
     // Which assignment operator is preferred?
     pub assignment: RSyntaxKind,
@@ -138,8 +138,9 @@ impl Checker {
     ///
     /// Returns:
     /// - An empty set if no rules are suppressed
-    /// - A set containing all enabled rules if all rules are suppressed
     /// - A set containing specific suppressed rules otherwise
+    ///
+    /// This combines file-level, region-level, and node-level suppressions.
     pub(crate) fn get_suppressed_rules(
         &self,
         node: &air_r_syntax::RSyntaxNode,
@@ -149,37 +150,31 @@ impl Checker {
             return std::collections::HashSet::new();
         }
 
-        // Check once and return all suppressed rules
-        match self.suppression.check_suppression(node) {
-            Some(None) => {
-                // Skip all rules - return all enabled rules
-                self.rule_set.iter().cloned().collect()
-            }
-            Some(Some(rules)) => {
-                // Skip specific rules - return only those that are enabled
-                rules
-                    .into_iter()
-                    .filter(|r| self.rule_set.contains(r))
-                    .collect()
-            }
-            None => {
-                // No suppression at node level, check regions
-                let node_range = node.text_trimmed_range();
-                for region in &self.suppression.skip_regions {
-                    if region.range.contains_range(node_range) {
-                        return match &region.rules {
-                            None => self.rule_set.iter().cloned().collect(),
-                            Some(rules) => rules
-                                .iter()
-                                .filter(|r| self.rule_set.contains(r))
-                                .cloned()
-                                .collect::<std::collections::HashSet<Rule>>(),
-                        };
-                    }
-                }
-                std::collections::HashSet::new()
+        let mut suppressed = std::collections::HashSet::new();
+
+        // Add file-level suppressions
+        for rule in &self.suppression.file_suppressions {
+            if self.rule_set.contains(rule) {
+                suppressed.insert(*rule);
             }
         }
+
+        // Add region-level suppressions
+        let node_range = node.text_trimmed_range();
+        for region in &self.suppression.skip_regions {
+            if region.range.contains_range(node_range) && self.rule_set.contains(&region.rule) {
+                suppressed.insert(region.rule);
+            }
+        }
+
+        // Add node-level suppressions
+        for rule in self.suppression.check_suppression(node) {
+            if self.rule_set.contains(&rule) {
+                suppressed.insert(rule);
+            }
+        }
+
+        suppressed
     }
 }
 
@@ -201,10 +196,8 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
 
     let suppression = SuppressionManager::from_node(syntax, contents);
 
-    // Check if the entire file should be skipped
-    if suppression.should_skip_file(syntax) {
-        return Ok(vec![]);
-    }
+    // File-level suppressions are now per-rule and handled by the SuppressionManager
+    // during rule checking, not as a file-wide skip.
 
     let mut checker = Checker::new(suppression, config.assignment);
     checker.rule_set = config.rules_to_apply.clone();
