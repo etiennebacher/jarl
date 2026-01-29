@@ -70,6 +70,7 @@ dat <- as.data.frame(
     c("for_loop_index", "readability", "❌", ""),
     c("grepv", "readability", "✅", "R >= 4.5"),
     c("implicit_assignment", "readability", "❌", ""),
+    c("internal_function", "suspicious", "❌", ""),
     c("is_numeric", "readability", "✅", ""),
     c("length_levels", "readability", "✅", ""),
     c("length_test", "correctness", "✅", ""),

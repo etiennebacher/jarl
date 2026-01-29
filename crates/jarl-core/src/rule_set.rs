@@ -360,6 +360,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    InternalFunction => {
+        name: "internal_function",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     IsNumeric => {
         name: "is_numeric",
         categories: [Read],

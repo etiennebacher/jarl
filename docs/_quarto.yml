@@ -80,6 +80,7 @@ website:
       - rules/for_loop_index.md
       - rules/grepv.md
       - rules/implicit_assignment.md
+      - rules/internal_function.md
       - rules/is_numeric.md
       - rules/length_levels.md
       - rules/length_test.md
