@@ -201,9 +201,6 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
 
     let suppression = SuppressionManager::from_node(syntax, contents);
 
-    // File-level suppressions are now per-rule and handled by the SuppressionManager
-    // during rule checking, not as a file-wide skip.
-
     let mut checker = Checker::new(suppression, config.assignment);
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
@@ -265,11 +262,11 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
 ///
 /// For each node we encounter, we already carry the suppression comments of its
 /// ancestors. When we arrive at a new node, we want to:
-/// i) update the suppression comments with those of this node (if any),
-/// ii) check this node (which requires checking the suppression comments to
-///     know which violations to skip),
-/// iii) remove the suppression comments of this node so that they are not used
-///      anymore when we go to this node's siblings.
+/// 1) update the suppression comments with those of this node (if any),
+/// 2) check this node (which requires checking the suppression comments to
+///    know which violations to skip),
+/// 3) remove the suppression comments of this node so that they are not used
+///    anymore when we go to this node's siblings.
 ///
 /// For instance, if we have:
 ///
