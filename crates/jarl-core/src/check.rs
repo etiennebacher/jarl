@@ -9,6 +9,7 @@ use air_r_syntax::{
     RWhileStatementFields,
 };
 use anyhow::{Context, Result};
+use biome_rowan::AstNodeList;
 use rayon::prelude::*;
 use std::fs;
 use std::path::Path;
@@ -212,6 +213,9 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     for expr in expressions {
         check_expression(&expr, &mut checker)?;
     }
+
+    // Analyze top-level code (checks that require the entire document)
+    analyze::top_level::top_level(&expressions.iter().collect::<Vec<_>>(), &mut checker)?;
 
     // Some rules have a fix available in their implementation but do not have
     // fix in the config, for instance because they are part of the "unfixable"
