@@ -9,7 +9,9 @@ use air_r_syntax::{
     RWhileStatementFields,
 };
 use anyhow::{Context, Result};
+use biome_rowan::AstNode;
 use rayon::prelude::*;
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
@@ -109,6 +111,10 @@ pub struct Checker {
     pub suppression: SuppressionManager,
     // Which assignment operator is preferred?
     pub assignment: RSyntaxKind,
+    // Suppressions inherited from ancestor nodes (for cascading behavior).
+    // This is a stack - we push when entering nodes with suppressions and
+    // truncate when leaving. No cloning required.
+    inherited_suppressions: Vec<Rule>,
 }
 
 impl Checker {
@@ -119,6 +125,7 @@ impl Checker {
             minimum_r_version: None,
             suppression,
             assignment,
+            inherited_suppressions: Vec::new(),
         }
     }
 
@@ -140,17 +147,15 @@ impl Checker {
     /// - An empty set if no rules are suppressed
     /// - A set containing specific suppressed rules otherwise
     ///
-    /// This combines file-level, region-level, and node-level suppressions.
-    pub(crate) fn get_suppressed_rules(
-        &self,
-        node: &air_r_syntax::RSyntaxNode,
-    ) -> std::collections::HashSet<Rule> {
+    /// This combines file-level, region-level, inherited (from ancestors),
+    /// and node-level suppressions.
+    pub(crate) fn get_suppressed_rules(&self, node: &air_r_syntax::RSyntaxNode) -> HashSet<Rule> {
         // Fast path: if there are no suppressions anywhere, return empty set immediately
         if !self.suppression.has_any_suppressions {
-            return std::collections::HashSet::new();
+            return HashSet::new();
         }
 
-        let mut suppressed = std::collections::HashSet::new();
+        let mut suppressed = HashSet::new();
 
         // Add file-level suppressions
         for rule in &self.suppression.file_suppressions {
@@ -167,8 +172,13 @@ impl Checker {
             }
         }
 
-        // Add node-level suppressions
-        for rule in self.suppression.check_suppression(node) {
+        // Add inherited suppressions from ancestors (accumulated during traversal)
+        for rule in &self.inherited_suppressions {
+            suppressed.insert(*rule);
+        }
+
+        // Add node-level suppressions (only this node's comments, not ancestors)
+        for rule in self.suppression.check_node_comments(node) {
             if self.rule_set.contains(&rule) {
                 suppressed.insert(rule);
             }
@@ -253,6 +263,64 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     Ok(diagnostics)
 }
 
+/// This function updates the checker about the suppression comments it carries,
+/// and calls `check_expression_inner()` to run the various rules on the node.
+///
+/// Updating the checker:
+///
+/// For each node we encounter, we already carry the suppression comments of its
+/// ancestors. When we arrive at a new node, we want to:
+/// i) update the suppression comments with those of this node (if any),
+/// ii) check this node (which requires checking the suppression comments to
+///     know which violations to skip),
+/// iii) remove the suppression comments of this node so that they are not used
+///      anymore when we go to this node's siblings.
+///
+/// For instance, if we have:
+///
+/// ```r,ignore
+/// # jarl-ignore assignment: reason 1
+/// x <- function(x) {
+///   if (x) {
+///     # jarl-ignore any_is_na: reason 2
+///     any(is.na(y))
+///   }
+///   any(is.na(x + 1))
+/// }
+/// ```
+///
+/// When we arrive at `any(is.na(y))`, we want to use both suppression comments
+/// because one is attached directly to the node and the other one is attached
+/// to an ancestor. However, `any(is.na(x + 1))` should only use the first
+/// suppression comment, meaning that after we process `any(is.na(y))`, we need
+/// to remove its suppression comment from the stack of suppression comments.
+pub fn check_expression(
+    expression: &air_r_syntax::AnyRExpression,
+    checker: &mut Checker,
+) -> anyhow::Result<()> {
+    // Update inherited suppressions for cascading behavior.
+    // We push node-level suppressions onto the stack and truncate after
+    // processing children. No cloning required.
+    let node = expression.syntax();
+    let node_suppressions = checker.suppression.check_node_comments(node);
+
+    // Remember stack length before adding, so we can truncate later
+    let stack_len = checker.inherited_suppressions.len();
+    for rule in node_suppressions {
+        // Only add if enabled (filter early to keep stack small)
+        if checker.rule_set.contains(&rule) {
+            checker.inherited_suppressions.push(rule);
+        }
+    }
+
+    let result = check_expression_inner(expression, checker);
+
+    // Restore stack to previous length (removes what we added)
+    checker.inherited_suppressions.truncate(stack_len);
+
+    result
+}
+
 // This function does two things:
 // - dispatch an expression to its appropriate set of rules, e.g. binary
 //   expressions are sent to the rules stored in
@@ -271,7 +339,7 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
 //
 // If a rule needs to be applied on RNaExpression in the future, then
 // we can add the corresponding match arm at this moment.
-pub fn check_expression(
+fn check_expression_inner(
     expression: &air_r_syntax::AnyRExpression,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {

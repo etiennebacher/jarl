@@ -228,7 +228,7 @@ impl SuppressionManager {
     }
 
     /// Check suppression directives attached to a single node (not ancestors)
-    fn check_node_comments(&self, node: &RSyntaxNode) -> HashSet<Rule> {
+    pub fn check_node_comments(&self, node: &RSyntaxNode) -> HashSet<Rule> {
         let mut suppressed = HashSet::new();
 
         // Check for node-level directives in leading comments
@@ -258,11 +258,12 @@ impl SuppressionManager {
         suppressed
     }
 
-    /// Check if a node should skip specific rules (cascading behavior)
+    /// Check if a node should skip specific rules
     ///
     /// Returns the set of rules that should be skipped for this node.
-    /// This includes suppressions from the node itself AND all its ancestors
-    /// (cascading behavior).
+    /// Note: This only checks region and node-level suppressions.
+    /// Cascading (ancestor) suppressions are handled during AST traversal
+    /// in check.rs via inherited_suppressions.
     pub fn check_suppression(&self, node: &RSyntaxNode) -> HashSet<Rule> {
         let mut suppressed = HashSet::new();
 
@@ -274,12 +275,8 @@ impl SuppressionManager {
             }
         }
 
-        // Check this node and all ancestors (cascading behavior)
-        let mut current = Some(node.clone());
-        while let Some(n) = current {
-            suppressed.extend(self.check_node_comments(&n));
-            current = n.parent();
-        }
+        // Check this node's comments only (no ancestor walking)
+        suppressed.extend(self.check_node_comments(node));
 
         suppressed
     }
