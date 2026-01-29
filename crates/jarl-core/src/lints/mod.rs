@@ -1,6 +1,7 @@
 use crate::rule_set::Rule;
 
 pub(crate) mod base;
+pub(crate) mod comments;
 pub(crate) mod testthat;
 
 /// Get all rules enabled by default

@@ -3,8 +3,8 @@ use air_r_syntax::*;
 use biome_formatter::comments::Comments;
 use biome_rowan::{AstNode, TextRange};
 
-// Define nolint variants as a constant
-const NOLINT_VARIANTS: &[&str] = &["# nolint", "#nolint"];
+// Define jarl-ignore variants as a constant
+const NOLINT_VARIANTS: &[&str] = &["# jarl-ignore", "#jarl-ignore"];
 
 pub fn blanket_suppression(
     ast: &AnyRExpression,
@@ -18,7 +18,7 @@ pub fn blanket_suppression(
     }
 
     // Check each comment type separately (avoid concat allocation)
-    // Check trailing comments first (most common for nolint)
+    // Check trailing comments first (most common for jarl-ignore)
     for comment in comments.trailing_comments(syntax) {
         let text = comment.piece().text();
         if NOLINT_VARIANTS.contains(&text) {
@@ -51,9 +51,9 @@ fn create_diagnostic(range: TextRange) -> Diagnostic {
     Diagnostic::new(
         ViolationData::new(
             "blanket_suppression".to_string(),
-            "This comment suppresses all possible violations of this node.".to_string(),
+            "This comment isn't used by Jarl because it suppresses all possible violations of this node.".to_string(),
             Some(
-                "Consider ignoring specific rules instead, e.g., `# nolint: any_is_na`."
+                "Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <explanation>`."
                     .to_string(),
             ),
         ),

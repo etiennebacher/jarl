@@ -77,7 +77,7 @@ pub struct SkipRegion {
 /// Tracks which nodes should skip linting based on comments
 #[derive(Debug)]
 pub struct SuppressionManager {
-    comments: Comments<RLanguage>,
+    pub comments: Comments<RLanguage>,
     /// Regions defined by jarl-ignore-start/end blocks
     pub skip_regions: Vec<SkipRegion>,
     /// Rules suppressed at file level via jarl-ignore-file

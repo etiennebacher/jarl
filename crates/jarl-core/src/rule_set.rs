@@ -215,7 +215,7 @@ declare_rules! {
     },
     BlanketSuppression => {
         name: "blanket_suppression",
-        categories: [Susp],
+        categories: [Corr],
         default: Enabled,
         fix: None,
         min_r_version: None,
