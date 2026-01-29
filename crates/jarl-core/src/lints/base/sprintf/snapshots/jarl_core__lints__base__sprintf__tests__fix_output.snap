@@ -1,0 +1,31 @@
+---
+source: crates/jarl-core/src/lints/base/sprintf/mod.rs
+expression: "get_fixed_text(vec![\"sprintf('a')\", \"sprintf(\\\"a\\\")\", \"sprintf('%%')\",\n\"sprintf('hello %%')\",], \"sprintf\", None)"
+---
+OLD:
+====
+sprintf('a')
+NEW:
+====
+'a'
+
+OLD:
+====
+sprintf("a")
+NEW:
+====
+"a"
+
+OLD:
+====
+sprintf('%%')
+NEW:
+====
+'%'
+
+OLD:
+====
+sprintf('hello %%')
+NEW:
+====
+'hello %'

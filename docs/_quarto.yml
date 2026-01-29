@@ -67,6 +67,8 @@ website:
       - rules/download_file.md
       - rules/duplicated_arguments.md
       - rules/equals_na.md
+      - rules/equals_nan.md
+      - rules/equals_null.md
       - rules/expect_length.md
       - rules/expect_named.md
       - rules/expect_not.md
@@ -78,6 +80,7 @@ website:
       - rules/for_loop_index.md
       - rules/grepv.md
       - rules/implicit_assignment.md
+      - rules/internal_function.md
       - rules/is_numeric.md
       - rules/length_levels.md
       - rules/length_test.md

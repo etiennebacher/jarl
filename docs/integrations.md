@@ -30,3 +30,20 @@ jobs:
 ```
 
 See the `setup-jarl` repository for more examples.
+
+## Container-based CI/CD platforms
+
+`jarl` can also easily be run in open-source and lightweight CI solutions like [Woodpecker CI](https://woodpecker-ci.org) or [Crow CI](https://crowci.dev).
+For container-based CI/CD, here is an example of using `jarl` within a slim alpine linux container image.
+
+```yaml
+steps:
+  - name: lint-r-jarl
+    image: alpine:3.23
+    commands: |
+      apk add --no-cache -q curl
+      curl -L -o jarl-installer.sh https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.sh
+      sh ./jarl-installer.sh
+      source $HOME/.local/bin/env
+      jarl check ./R/
+```

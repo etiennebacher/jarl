@@ -9,7 +9,9 @@ use air_r_syntax::{
     RWhileStatementFields,
 };
 use anyhow::{Context, Result};
+use biome_rowan::AstNode;
 use rayon::prelude::*;
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
@@ -105,7 +107,7 @@ pub struct Checker {
     // The R version that is manually passed by the user in the CLI. Any rule
     // that has a minimum R version higher than this value will be deactivated.
     pub minimum_r_version: Option<(u32, u32, u32)>,
-    // Tracks comment-based suppression directives like `# nolint`
+    // Tracks comment-based suppression directives like `# jarl-ignore`
     pub suppression: SuppressionManager,
     // Which assignment operator is preferred?
     pub assignment: RSyntaxKind,
@@ -138,48 +140,46 @@ impl Checker {
     ///
     /// Returns:
     /// - An empty set if no rules are suppressed
-    /// - A set containing all enabled rules if all rules are suppressed
     /// - A set containing specific suppressed rules otherwise
-    pub(crate) fn get_suppressed_rules(
-        &self,
-        node: &air_r_syntax::RSyntaxNode,
-    ) -> std::collections::HashSet<Rule> {
+    ///
+    /// This combines file-level, region-level, inherited (from ancestors),
+    /// and node-level suppressions.
+    pub(crate) fn get_suppressed_rules(&self, node: &air_r_syntax::RSyntaxNode) -> HashSet<Rule> {
         // Fast path: if there are no suppressions anywhere, return empty set immediately
         if !self.suppression.has_any_suppressions {
-            return std::collections::HashSet::new();
+            return HashSet::new();
         }
 
-        // Check once and return all suppressed rules
-        match self.suppression.check_suppression(node) {
-            Some(None) => {
-                // Skip all rules - return all enabled rules
-                self.rule_set.iter().cloned().collect()
-            }
-            Some(Some(rules)) => {
-                // Skip specific rules - return only those that are enabled
-                rules
-                    .into_iter()
-                    .filter(|r| self.rule_set.contains(r))
-                    .collect()
-            }
-            None => {
-                // No suppression at node level, check regions
-                let node_range = node.text_trimmed_range();
-                for region in &self.suppression.skip_regions {
-                    if region.range.contains_range(node_range) {
-                        return match &region.rules {
-                            None => self.rule_set.iter().cloned().collect(),
-                            Some(rules) => rules
-                                .iter()
-                                .filter(|r| self.rule_set.contains(r))
-                                .cloned()
-                                .collect::<std::collections::HashSet<Rule>>(),
-                        };
-                    }
-                }
-                std::collections::HashSet::new()
+        let mut suppressed = HashSet::new();
+
+        // Add file-level suppressions
+        for rule in &self.suppression.file_suppressions {
+            if self.rule_set.contains(rule) {
+                suppressed.insert(*rule);
             }
         }
+
+        // Add region-level suppressions
+        let node_range = node.text_trimmed_range();
+        for region in &self.suppression.skip_regions {
+            if region.range.contains_range(node_range) && self.rule_set.contains(&region.rule) {
+                suppressed.insert(region.rule);
+            }
+        }
+
+        // Add inherited suppressions from ancestors (accumulated during traversal)
+        for rule in self.suppression.inherited_suppressions.iter() {
+            suppressed.insert(*rule);
+        }
+
+        // Add node-level suppressions (only this node's comments, not ancestors)
+        for rule in self.suppression.check_node_comments(node) {
+            if self.rule_set.contains(&rule) {
+                suppressed.insert(rule);
+            }
+        }
+
+        suppressed
     }
 }
 
@@ -200,11 +200,6 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     let expressions = &parsed.tree().expressions();
 
     let suppression = SuppressionManager::from_node(syntax, contents);
-
-    // Check if the entire file should be skipped
-    if suppression.should_skip_file(syntax) {
-        return Ok(vec![]);
-    }
 
     let mut checker = Checker::new(suppression, config.assignment);
     checker.rule_set = config.rules_to_apply.clone();
@@ -260,6 +255,67 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     Ok(diagnostics)
 }
 
+/// This function updates the checker about the suppression comments it carries,
+/// and calls `check_expression_inner()` to run the various rules on the node.
+///
+/// Updating the checker:
+///
+/// For each node we encounter, we already carry the suppression comments of its
+/// ancestors. When we arrive at a new node, we want to:
+/// 1) update the suppression comments with those of this node (if any),
+/// 2) check this node (which requires checking the suppression comments to
+///    know which violations to skip),
+/// 3) remove the suppression comments of this node so that they are not used
+///    anymore when we go to this node's siblings.
+///
+/// For instance, if we have:
+///
+/// ```r,ignore
+/// # jarl-ignore assignment: reason 1
+/// x <- function(x) {
+///   if (x) {
+///     # jarl-ignore any_is_na: reason 2
+///     any(is.na(y))
+///   }
+///   any(is.na(x + 1))
+/// }
+/// ```
+///
+/// When we arrive at `any(is.na(y))`, we want to use both suppression comments
+/// because one is attached directly to the node and the other one is attached
+/// to an ancestor. However, `any(is.na(x + 1))` should only use the first
+/// suppression comment, meaning that after we process `any(is.na(y))`, we need
+/// to remove its suppression comment from the stack of suppression comments.
+pub fn check_expression(
+    expression: &air_r_syntax::AnyRExpression,
+    checker: &mut Checker,
+) -> anyhow::Result<()> {
+    // Update inherited suppressions for cascading behavior.
+    // We push node-level suppressions onto the stack and truncate after
+    // processing children. No cloning required.
+    let node = expression.syntax();
+    let node_suppressions = checker.suppression.check_node_comments(node);
+
+    // Remember stack length before adding, so we can truncate later
+    let stack_len = checker.suppression.inherited_suppressions.len();
+    for rule in node_suppressions {
+        // Only add if enabled (filter early to keep stack small)
+        if checker.rule_set.contains(&rule) {
+            checker.suppression.inherited_suppressions.push(rule);
+        }
+    }
+
+    let result = check_expression_inner(expression, checker);
+
+    // Restore stack to previous length (removes what we added)
+    checker
+        .suppression
+        .inherited_suppressions
+        .truncate(stack_len);
+
+    result
+}
+
 // This function does two things:
 // - dispatch an expression to its appropriate set of rules, e.g. binary
 //   expressions are sent to the rules stored in
@@ -278,7 +334,7 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
 //
 // If a rule needs to be applied on RNaExpression in the future, then
 // we can add the corresponding match arm at this moment.
-pub fn check_expression(
+fn check_expression_inner(
     expression: &air_r_syntax::AnyRExpression,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
@@ -301,6 +357,10 @@ pub fn check_expression(
         AnyRExpression::RCall(children) => {
             analyze::call::call(children, checker)?;
 
+            if let Some(ns_expr) = children.function()?.as_r_namespace_expression() {
+                analyze::namespace_expression::namespace_expression(ns_expr, checker)?;
+            }
+
             for arg in children.arguments()?.items() {
                 if let Some(expr) = arg.unwrap().as_fields().value {
                     check_expression(&expr, checker)?;
@@ -317,8 +377,16 @@ pub fn check_expression(
         }
         AnyRExpression::RFunctionDefinition(children) => {
             analyze::function_definition::function_definition(children, checker)?;
-            let body = children.body();
-            check_expression(&body?, checker)?;
+            let params = children.parameters()?.items();
+            for param in params {
+                let default = param?.default();
+                if let Some(default) = default
+                    && let Ok(default) = default.value()
+                {
+                    check_expression(&default, checker)?;
+                }
+            }
+            check_expression(&children.body()?, checker)?;
         }
         AnyRExpression::RIdentifier(x) => {
             analyze::identifier::identifier(x, checker)?;
@@ -334,6 +402,9 @@ pub fn check_expression(
                 let alternative = else_clause.alternative();
                 check_expression(&alternative?, checker)?;
             }
+        }
+        AnyRExpression::RNamespaceExpression(children) => {
+            analyze::namespace_expression::namespace_expression(children, checker)?;
         }
         AnyRExpression::RParenthesizedExpression(children) => {
             let body = children.body();

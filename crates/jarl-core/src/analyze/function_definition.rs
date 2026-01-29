@@ -3,7 +3,7 @@ use crate::rule_set::Rule;
 use air_r_syntax::RFunctionDefinition;
 use biome_rowan::AstNode;
 
-use crate::lints::unreachable_code::unreachable_code::unreachable_code;
+use crate::lints::base::unreachable_code::unreachable_code::unreachable_code;
 
 pub fn function_definition(
     func: &RFunctionDefinition,

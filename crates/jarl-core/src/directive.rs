@@ -1,242 +1,118 @@
-#[derive(Debug, PartialEq)]
+//! Parsing of suppression comment directives.
+//!
+//! This module handles parsing `# jarl-ignore` comments to determine
+//! which rules should be suppressed.
+
+use crate::rule_set::Rule;
+
+/// A parsed lint directive from a comment
+#[derive(Debug, PartialEq, Clone)]
 pub enum LintDirective {
-    /// Skip all lints for the next node
-    Skip,
-    /// Skip specific lints for the next node, e.g. "# nolint: any_is_na, coalesce"
-    SkipRules(Vec<String>),
-    /// Skip an entire file
-    SkipFile,
-    /// Start a block where all lints are skipped
-    SkipStart,
-    /// Start a block where specific lints are skipped
-    SkipStartRules(Vec<String>),
-    /// End a skip block
-    SkipEnd,
+    /// Skip specific rule for the next node: `# jarl-ignore <rule>: <explanation>`
+    Ignore(Rule),
+    /// Skip entire file for a rule: `# jarl-ignore-file <rule>: <explanation>`
+    IgnoreFile(Rule),
+    /// Start a range suppression: `# jarl-ignore-start <rule>: <explanation>`
+    IgnoreStart(Rule),
+    /// End a range suppression: `# jarl-ignore-end <rule>`
+    IgnoreEnd(Rule),
 }
 
 /// Parse a comment directive
 ///
-/// These can take the form:
+/// Supported formats:
 ///
 /// ```text
-/// # nolint
-/// # nolint: rule1, rule2
-/// # nolint start
-/// # nolint start: rule1, rule2
-/// # nolint end
+/// # jarl-ignore <rule>: <explanation>
+/// # jarl-ignore-file <rule>: <explanation>
+/// # jarl-ignore-start <rule>: <explanation>
+/// # jarl-ignore-end <rule>
 /// ```
 ///
-/// Note that directives are applied to the node they are attached to,
-/// except for start/end directives which define regions.
+/// Also accepts without space after `#`:
+/// ```text
+/// #jarl-ignore <rule>: <explanation>
+/// ```
 ///
-/// `text` should be single line but we don't check for this. A potential usage
-/// of this function is to iterate over a document line by line to scan for a
-/// directive.
+/// Notes:
+/// - Rule name must be valid (validated against known rules)
+/// - Explanation is mandatory (except for `-end`)
+/// - One rule per directive
 ///
 /// Returns:
 /// - `Some(directive)` - A valid directive was found
-/// - `None` - Invalid directive (e.g. `# nolint:`) or just a regular comment
+/// - `None` - Invalid directive or just a regular comment
 pub fn parse_comment_directive(text: &str) -> Option<LintDirective> {
-    // Only allow single # followed by space
     let text = text.trim_start();
-    if !text.starts_with("# ") {
+
+    // Accept both "# jarl-ignore" and "#jarl-ignore"
+    let text = if let Some(rest) = text.strip_prefix("# ") {
+        rest
+    } else if let Some(rest) = text.strip_prefix('#') {
+        rest
+    } else {
+        return None;
+    };
+
+    // Must start with "jarl-ignore"
+    let rest = text.strip_prefix("jarl-ignore")?;
+
+    // Determine the directive type based on what follows
+    if let Some(after_file) = rest.strip_prefix("-file ") {
+        // `# jarl-ignore-file <rule>: <explanation>`
+        parse_rule_with_explanation(after_file).map(LintDirective::IgnoreFile)
+    } else if let Some(after_start) = rest.strip_prefix("-start ") {
+        // `# jarl-ignore-start <rule>: <explanation>`
+        parse_rule_with_explanation(after_start).map(LintDirective::IgnoreStart)
+    } else if let Some(after_end) = rest.strip_prefix("-end ") {
+        // `# jarl-ignore-end <rule>`
+        parse_rule_only(after_end).map(LintDirective::IgnoreEnd)
+    } else if let Some(after_ignore) = rest.strip_prefix(' ') {
+        // `# jarl-ignore <rule>: <explanation>`
+        parse_rule_with_explanation(after_ignore).map(LintDirective::Ignore)
+    } else {
+        // Not a valid directive (e.g., `# jarl-ignorefoo` or just `# jarl-ignore`)
+        None
+    }
+}
+
+/// Parse a rule name followed by `: <explanation>`
+///
+/// Format: `<rule>: <explanation>`
+/// - Rule name must be valid
+/// - Colon and explanation are mandatory
+/// - Explanation must be non-empty
+fn parse_rule_with_explanation(text: &str) -> Option<Rule> {
+    // Find the colon separator
+    let colon_pos = text.find(':')?;
+
+    // Extract and validate rule name
+    let rule_name = text[..colon_pos].trim();
+    if rule_name.is_empty() {
         return None;
     }
 
-    let text = &text[2..]; // Skip "# "
-
-    // Handle "nolint" specially to allow various forms
-    if let Some(stripped) = text.strip_prefix("nolint") {
-        let rest = stripped.trim_start();
-        if rest.is_empty() {
-            // "# nolint" with nothing after -> skip all
-            return Some(LintDirective::Skip);
-        } else if let Some(after_start) = rest.strip_prefix("start") {
-            // "# nolint start" or "# nolint start: rules"
-            let after_start = after_start.trim_start();
-            if after_start.is_empty() {
-                // "# nolint start" -> skip all in block
-                return Some(LintDirective::SkipStart);
-            } else if let Some(after_colon) = after_start.strip_prefix(':') {
-                // "# nolint start: rules"
-                let after_colon = after_colon.trim();
-                return parse_lint_directive_for_start(after_colon);
-            } else {
-                // "# nolint start" followed by something that's not a colon -> invalid
-                return None;
-            }
-        } else if rest == "end" {
-            // "# nolint end"
-            return Some(LintDirective::SkipEnd);
-        } else if let Some(after_colon) = rest.strip_prefix(':') {
-            // "# nolint: rules"
-            let after_colon = after_colon.trim();
-            return parse_lint_directive(after_colon);
-        } else {
-            // "# nolint" followed by something that's not recognized -> invalid
-            return None;
-        }
-    }
-
-    None
-}
-
-// https://github.com/posit-dev/air/issues/219
-// Should be called only on the first line in a block of comments.
-pub fn parse_special_skip_file(text: &str) -> Option<LintDirective> {
-    // Only allow single # followed by space
-    let text = text.trim_start();
-    if !text.starts_with("# ") {
+    // Check explanation exists (non-empty after colon)
+    let explanation = text[colon_pos + 1..].trim();
+    if explanation.is_empty() {
         return None;
     }
 
-    let text = &text[2..]; // Skip "# "
-
-    // Convention used in the R community (Roxygen, Rcpp, etc)
-    if text.starts_with("Generated by") {
-        return Some(LintDirective::SkipFile);
-    }
-
-    None
+    // Validate rule name against known rules
+    Rule::from_name(rule_name)
 }
 
-#[inline]
-fn parse_lint_directive(text: &str) -> Option<LintDirective> {
-    // Parse comma-separated rule names, e.g. "any_is_na, coalesce"
-    let rules: Vec<String> = text
-        .split(',')
-        .map(|s| s.trim().trim_end_matches("_linter").to_string())
-        .filter(|s| !s.is_empty())
-        .collect();
-
-    if rules.is_empty() {
-        None
-    } else {
-        Some(LintDirective::SkipRules(rules))
-    }
-}
-
-#[inline]
-fn parse_lint_directive_for_start(text: &str) -> Option<LintDirective> {
-    // Parse comma-separated rule names for start directive
-    let rules: Vec<String> = text
-        .split(',')
-        .map(|s| s.trim().trim_end_matches("_linter").to_string())
-        .filter(|s| !s.is_empty())
-        .collect();
-
-    if rules.is_empty() {
-        None
-    } else {
-        Some(LintDirective::SkipStartRules(rules))
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use crate::directive::LintDirective;
-    use crate::directive::parse_comment_directive;
-
-    #[test]
-    fn test_lint_directive() {
-        let lint_skip = Some(LintDirective::Skip);
-
-        // "# nolint" without colon should skip all (must have space after #)
-        assert_eq!(parse_comment_directive("# nolint"), lint_skip);
-
-        // Without space after # should not work
-        assert_eq!(parse_comment_directive("#nolint"), None);
-        assert_eq!(parse_comment_directive("##nolint"), None);
-        assert_eq!(parse_comment_directive("## nolint"), None);
-
-        assert_eq!(parse_comment_directive("# nolint:"), None);
-        assert_eq!(parse_comment_directive("#nolint:"), None);
-        assert_eq!(parse_comment_directive("# nolint: "), None);
-
-        // Skip specific rules
-        let result = parse_comment_directive("# nolint: any_is_na");
-        assert!(matches!(
-            result,
-            Some(LintDirective::SkipRules(ref rules)) if rules == &vec!["any_is_na"]
-        ));
-
-        let result = parse_comment_directive("# nolint: any_is_na, coalesce");
-        assert!(matches!(
-            result,
-            Some(LintDirective::SkipRules(ref rules))
-            if rules == &vec!["any_is_na", "coalesce"]
-        ));
-
-        // lintr compatibility: also accept rule names that end with "_linter"
-        let result = parse_comment_directive("# nolint: any_is_na_linter");
-        assert!(matches!(
-            result,
-            Some(LintDirective::SkipRules(ref rules)) if rules == &vec!["any_is_na"]
-        ));
-
-        let result = parse_comment_directive("# nolint: any_is_na_linter, coalesce_linter");
-        assert!(matches!(
-            result,
-            Some(LintDirective::SkipRules(ref rules))
-            if rules == &vec!["any_is_na", "coalesce"]
-        ));
-
-        // With extra spaces
-        let result = parse_comment_directive("# nolint:  any_is_na  ,  coalesce_linter  ");
-        assert!(matches!(
-            result,
-            Some(LintDirective::SkipRules(ref rules))
-            if rules == &vec!["any_is_na", "coalesce"]
-        ));
-
-        // Can't have unrelated leading text
-        assert_eq!(parse_comment_directive("# please nolint:"), None);
-        assert_eq!(parse_comment_directive("# please nolint"), None);
-
-        // Can't have text after nolint without a colon
-        assert_eq!(parse_comment_directive("# nolint any_is_na"), None);
+/// Parse a rule name only (for `-end` directives)
+///
+/// Format: `<rule>`
+/// - Rule name must be valid
+/// - No colon or explanation expected
+fn parse_rule_only(text: &str) -> Option<Rule> {
+    let rule_name = text.trim();
+    if rule_name.is_empty() {
+        return None;
     }
 
-    #[test]
-    fn test_lint_directive_start_end() {
-        // "# nolint start" should start skipping all
-        assert_eq!(
-            parse_comment_directive("# nolint start"),
-            Some(LintDirective::SkipStart)
-        );
-
-        // "# nolint end" should end skipping
-        assert_eq!(
-            parse_comment_directive("# nolint end"),
-            Some(LintDirective::SkipEnd)
-        );
-
-        // "# nolint start: rules" should start skipping specific rules
-        let result = parse_comment_directive("# nolint start: any_is_na");
-        assert!(matches!(
-            result,
-            Some(LintDirective::SkipStartRules(ref rules)) if rules == &vec!["any_is_na"]
-        ));
-
-        let result = parse_comment_directive("# nolint start: any_is_na, coalesce");
-        assert!(matches!(
-            result,
-            Some(LintDirective::SkipStartRules(ref rules))
-            if rules == &vec!["any_is_na", "coalesce"]
-        ));
-
-        // With extra spaces
-        let result = parse_comment_directive("# nolint start:  any_is_na  ,  coalesce_linter  ");
-        assert!(matches!(
-            result,
-            Some(LintDirective::SkipStartRules(ref rules))
-            if rules == &vec!["any_is_na", "coalesce"]
-        ));
-
-        // Invalid forms
-        assert_eq!(parse_comment_directive("# nolint start:"), None);
-        assert_eq!(parse_comment_directive("# nolint start: "), None);
-        assert_eq!(parse_comment_directive("# nolint start any_is_na"), None);
-        assert_eq!(parse_comment_directive("# nolint ending"), None);
-    }
+    // Validate rule name against known rules
+    Rule::from_name(rule_name)
 }

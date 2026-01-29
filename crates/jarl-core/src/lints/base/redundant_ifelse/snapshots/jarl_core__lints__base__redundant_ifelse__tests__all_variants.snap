@@ -1,0 +1,108 @@
+---
+source: crates/jarl-core/src/lints/base/redundant_ifelse/mod.rs
+expression: "get_fixed_text(vec![\"ifelse(x > 0, TRUE, FALSE)\",\n\"ifelse(x > 0, FALSE, TRUE)\", \"ifelse(x > 0, TRUE, TRUE)\",\n\"ifelse(x > 0, FALSE, FALSE)\", \"if_else(x > 0, TRUE, FALSE)\",\n\"if_else(x > 0, FALSE, TRUE)\", \"if_else(x > 0, TRUE, TRUE)\",\n\"if_else(x > 0, FALSE, FALSE)\", \"fifelse(x > 0, TRUE, FALSE)\",\n\"fifelse(x > 0, FALSE, TRUE)\", \"fifelse(x > 0, TRUE, TRUE)\",\n\"fifelse(x > 0, FALSE, FALSE)\", \"base::ifelse(x > 0, TRUE, FALSE)\",\n\"dplyr::if_else(x > 0, TRUE, FALSE)\",\n\"data.table::fifelse(x > 0, TRUE, FALSE)\",], \"redundant_ifelse\", None)"
+---
+OLD:
+====
+ifelse(x > 0, TRUE, FALSE)
+NEW:
+====
+x > 0
+
+OLD:
+====
+ifelse(x > 0, FALSE, TRUE)
+NEW:
+====
+!(x > 0)
+
+OLD:
+====
+ifelse(x > 0, TRUE, TRUE)
+NEW:
+====
+ifelse(x > 0, TRUE, TRUE)
+
+OLD:
+====
+ifelse(x > 0, FALSE, FALSE)
+NEW:
+====
+ifelse(x > 0, FALSE, FALSE)
+
+OLD:
+====
+if_else(x > 0, TRUE, FALSE)
+NEW:
+====
+x > 0
+
+OLD:
+====
+if_else(x > 0, FALSE, TRUE)
+NEW:
+====
+!(x > 0)
+
+OLD:
+====
+if_else(x > 0, TRUE, TRUE)
+NEW:
+====
+if_else(x > 0, TRUE, TRUE)
+
+OLD:
+====
+if_else(x > 0, FALSE, FALSE)
+NEW:
+====
+if_else(x > 0, FALSE, FALSE)
+
+OLD:
+====
+fifelse(x > 0, TRUE, FALSE)
+NEW:
+====
+x > 0
+
+OLD:
+====
+fifelse(x > 0, FALSE, TRUE)
+NEW:
+====
+!(x > 0)
+
+OLD:
+====
+fifelse(x > 0, TRUE, TRUE)
+NEW:
+====
+fifelse(x > 0, TRUE, TRUE)
+
+OLD:
+====
+fifelse(x > 0, FALSE, FALSE)
+NEW:
+====
+fifelse(x > 0, FALSE, FALSE)
+
+OLD:
+====
+base::ifelse(x > 0, TRUE, FALSE)
+NEW:
+====
+x > 0
+
+OLD:
+====
+dplyr::if_else(x > 0, TRUE, FALSE)
+NEW:
+====
+x > 0
+
+OLD:
+====
+data.table::fifelse(x > 0, TRUE, FALSE)
+NEW:
+====
+x > 0

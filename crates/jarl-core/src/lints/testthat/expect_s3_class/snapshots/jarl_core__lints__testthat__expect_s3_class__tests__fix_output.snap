@@ -1,0 +1,31 @@
+---
+source: crates/jarl-core/src/lints/testthat/expect_s3_class/mod.rs
+expression: "get_fixed_text(vec![\"expect_equal(class(x), 'data.frame')\",\n\"expect_equal(class(x), \\\"data.frame\\\")\",\n\"testthat::expect_equal(class(x), 'data.frame')\",\n\"expect_equal('data.frame', class(x))\",], \"expect_s3_class\", None,)"
+---
+OLD:
+====
+expect_equal(class(x), 'data.frame')
+NEW:
+====
+expect_s3_class(x, 'data.frame')
+
+OLD:
+====
+expect_equal(class(x), "data.frame")
+NEW:
+====
+expect_s3_class(x, "data.frame")
+
+OLD:
+====
+testthat::expect_equal(class(x), 'data.frame')
+NEW:
+====
+testthat::expect_s3_class(x, 'data.frame')
+
+OLD:
+====
+expect_equal('data.frame', class(x))
+NEW:
+====
+expect_s3_class(x, 'data.frame')

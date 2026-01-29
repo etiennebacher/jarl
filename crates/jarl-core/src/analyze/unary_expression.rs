@@ -3,7 +3,7 @@ use crate::rule_set::Rule;
 use air_r_syntax::RUnaryExpression;
 use biome_rowan::AstNode;
 
-use crate::lints::comparison_negation::comparison_negation::comparison_negation;
+use crate::lints::base::comparison_negation::comparison_negation::comparison_negation;
 
 pub fn unary_expression(r_expr: &RUnaryExpression, checker: &mut Checker) -> anyhow::Result<()> {
     let node = r_expr.syntax();

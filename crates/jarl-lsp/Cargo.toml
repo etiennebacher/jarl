@@ -1,7 +1,7 @@
 [package]
 name = "jarl-lsp"
 description = "Language Server Protocol implementation for Jarl linter"
-version = "0.4.0-alpha.1"
+version = "0.4.0-alpha.2"
 authors.workspace = true
 edition.workspace = true
 license-file.workspace = true
