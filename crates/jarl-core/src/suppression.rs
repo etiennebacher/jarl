@@ -10,7 +10,7 @@ use biome_formatter::comments::{
 use biome_rowan::{SyntaxTriviaPieceComments, TextRange};
 use std::collections::{HashMap, HashSet};
 
-use crate::directive::{parse_comment_directive, LintDirective};
+use crate::directive::{LintDirective, parse_comment_directive};
 use crate::rule_set::Rule;
 
 /// Comment style for R that identifies suppression directives
