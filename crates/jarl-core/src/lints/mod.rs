@@ -25,6 +25,7 @@ pub(crate) mod fixed_regex;
 pub(crate) mod for_loop_index;
 pub(crate) mod grepv;
 pub(crate) mod implicit_assignment;
+pub(crate) mod internal_function;
 pub(crate) mod is_numeric;
 pub(crate) mod length_levels;
 pub(crate) mod length_test;

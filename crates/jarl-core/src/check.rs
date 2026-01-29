@@ -300,6 +300,10 @@ pub fn check_expression(
         AnyRExpression::RCall(children) => {
             analyze::call::call(children, checker)?;
 
+            if let Some(ns_expr) = children.function()?.as_r_namespace_expression() {
+                analyze::namespace_expression::namespace_expression(ns_expr, checker)?;
+            }
+
             for arg in children.arguments()?.items() {
                 if let Some(expr) = arg.unwrap().as_fields().value {
                     check_expression(&expr, checker)?;
@@ -341,6 +345,9 @@ pub fn check_expression(
                 let alternative = else_clause.alternative();
                 check_expression(&alternative?, checker)?;
             }
+        }
+        AnyRExpression::RNamespaceExpression(children) => {
+            analyze::namespace_expression::namespace_expression(children, checker)?;
         }
         AnyRExpression::RParenthesizedExpression(children) => {
             let body = children.body();
