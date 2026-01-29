@@ -5,15 +5,18 @@ if (dir.exists("docs/rules")) {
 }
 dir.create("docs/rules")
 
-rule_dirs <- list.files("crates/jarl-core/src/lints", full.names = TRUE)
-rule_dirs <- rule_dirs[!grepl("mod.rs", rule_dirs)]
-rule_names <- basename(rule_dirs)
+rules <- list.files(
+  "crates/jarl-core/src/lints",
+  full.names = TRUE,
+  recursive = TRUE,
+  pattern = "\\.rs$"
+)
+rules <- rules[!grepl("mod.rs", rules)]
+rule_names <- gsub("\\.rs$", "", basename(rules))
 
 ### Create individual qmd files for rules
 
-rule_files <- paste0(rule_dirs, "/", rule_names, ".rs")
-
-docs <- lapply(rule_files, \(x) {
+docs <- lapply(rules, \(x) {
   content <- readLines(x)
   if (!any(grepl("## What it does", content, fixed = TRUE))) {
     return()

@@ -3,19 +3,19 @@ use crate::rule_set::Rule;
 use air_r_syntax::RBinaryExpression;
 use biome_rowan::AstNode;
 
-use crate::lints::any_is_na::any_is_na::any_is_na_2;
-use crate::lints::assignment::assignment::assignment;
-use crate::lints::class_equals::class_equals::class_equals;
-use crate::lints::empty_assignment::empty_assignment::empty_assignment;
-use crate::lints::equals_na::equals_na::equals_na;
-use crate::lints::equals_nan::equals_nan::equals_nan;
-use crate::lints::equals_null::equals_null::equals_null;
-use crate::lints::implicit_assignment::implicit_assignment::implicit_assignment;
-use crate::lints::is_numeric::is_numeric::is_numeric;
-use crate::lints::redundant_equals::redundant_equals::redundant_equals;
-use crate::lints::seq::seq::seq;
-use crate::lints::string_boundary::string_boundary::string_boundary;
-use crate::lints::vector_logic::vector_logic::vector_logic;
+use crate::lints::base::any_is_na::any_is_na::any_is_na_2;
+use crate::lints::base::assignment::assignment::assignment;
+use crate::lints::base::class_equals::class_equals::class_equals;
+use crate::lints::base::empty_assignment::empty_assignment::empty_assignment;
+use crate::lints::base::equals_na::equals_na::equals_na;
+use crate::lints::base::equals_nan::equals_nan::equals_nan;
+use crate::lints::base::equals_null::equals_null::equals_null;
+use crate::lints::base::implicit_assignment::implicit_assignment::implicit_assignment;
+use crate::lints::base::is_numeric::is_numeric::is_numeric;
+use crate::lints::base::redundant_equals::redundant_equals::redundant_equals;
+use crate::lints::base::seq::seq::seq;
+use crate::lints::base::string_boundary::string_boundary::string_boundary;
+use crate::lints::base::vector_logic::vector_logic::vector_logic;
 
 pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> anyhow::Result<()> {
     let node = r_expr.syntax();

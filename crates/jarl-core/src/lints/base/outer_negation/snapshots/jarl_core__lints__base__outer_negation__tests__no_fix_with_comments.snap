@@ -1,0 +1,45 @@
+---
+source: crates/jarl-core/src/lints/base/outer_negation/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\nany(!x)\", \"any(\\n # comment\\n !x\\n)\",\n\"all(\\n # comment\\n !x\\n)\", \"any(!x) # trailing comment\",], \"outer_negation\",\nNone)"
+---
+OLD:
+====
+# leading comment
+any(!x)
+NEW:
+====
+# leading comment
+!all(x)
+
+OLD:
+====
+any(
+ # comment
+ !x
+)
+NEW:
+====
+any(
+ # comment
+ !x
+)
+
+OLD:
+====
+all(
+ # comment
+ !x
+)
+NEW:
+====
+all(
+ # comment
+ !x
+)
+
+OLD:
+====
+any(!x) # trailing comment
+NEW:
+====
+!all(x) # trailing comment

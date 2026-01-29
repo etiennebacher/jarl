@@ -3,8 +3,8 @@ use crate::rule_set::Rule;
 use air_r_syntax::RIfStatement;
 use biome_rowan::AstNode;
 
-use crate::lints::coalesce::coalesce::coalesce;
-use crate::lints::unnecessary_nesting::unnecessary_nesting::unnecessary_nesting;
+use crate::lints::base::coalesce::coalesce::coalesce;
+use crate::lints::base::unnecessary_nesting::unnecessary_nesting::unnecessary_nesting;
 
 pub fn if_(r_expr: &RIfStatement, checker: &mut Checker) -> anyhow::Result<()> {
     let node = r_expr.syntax();

@@ -1,0 +1,30 @@
+---
+source: crates/jarl-core/src/lints/base/string_boundary/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\nsubstr(x, 1, 2) == 'ab'\",\n\"substr(x, \\n # a comment \\n1, 2) == 'ab'\",\n\"substr(x, 1, 2) == 'ab' # trailing comment\",], \"string_boundary\", None)"
+---
+OLD:
+====
+# leading comment
+substr(x, 1, 2) == 'ab'
+NEW:
+====
+# leading comment
+startsWith(x, 'ab')
+
+OLD:
+====
+substr(x, 
+ # a comment 
+1, 2) == 'ab'
+NEW:
+====
+substr(x, 
+ # a comment 
+1, 2) == 'ab'
+
+OLD:
+====
+substr(x, 1, 2) == 'ab' # trailing comment
+NEW:
+====
+startsWith(x, 'ab') # trailing comment

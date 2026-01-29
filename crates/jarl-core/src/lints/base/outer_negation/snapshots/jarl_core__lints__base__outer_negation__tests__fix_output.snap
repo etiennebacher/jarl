@@ -1,0 +1,45 @@
+---
+source: crates/jarl-core/src/lints/base/outer_negation/mod.rs
+expression: "get_fixed_text(vec![\"any(!x)\", \"any(!f(x, y))\", \"any(!f(all(!x)))\", \"all(!x)\",\n\"all(!f(x, y))\", \"all(!f(any(!x)))\"], \"outer_negation\", None)"
+---
+OLD:
+====
+any(!x)
+NEW:
+====
+!all(x)
+
+OLD:
+====
+any(!f(x, y))
+NEW:
+====
+!all(f(x, y))
+
+OLD:
+====
+any(!f(all(!x)))
+NEW:
+====
+!all(f(!any(x)))
+
+OLD:
+====
+all(!x)
+NEW:
+====
+!any(x)
+
+OLD:
+====
+all(!f(x, y))
+NEW:
+====
+!any(f(x, y))
+
+OLD:
+====
+all(!f(any(!x)))
+NEW:
+====
+!any(f(!all(x)))
