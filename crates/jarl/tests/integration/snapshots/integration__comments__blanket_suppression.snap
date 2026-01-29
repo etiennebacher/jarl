@@ -1,0 +1,21 @@
+---
+source: crates/jarl/tests/integration/comments.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--ignore\").arg(\"any_is_na\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 1
+----- stdout -----
+warning: blanket_suppression
+ --> test.R:2:1
+  |
+2 | # jarl-ignore
+  | ------------- This comment isn't used by Jarl because it suppresses all possible violations of this node.
+  |
+  = help: Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <explanation>`.
+
+Found 1 error.
+
+----- stderr -----
+
+----- args -----
+check . --ignore any_is_na

@@ -2,26 +2,10 @@
 source: crates/jarl/tests/integration/comments.rs
 expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name()"
 ---
-success: false
-exit_code: 1
+success: true
+exit_code: 0
 ----- stdout -----
-warning: blanket_suppression
- --> test.R:3:3
-  |
-3 |   # nolint
-  |   -------- This comment suppresses all possible violations of this node.
-  |
-  = help: Consider ignoring specific rules instead, e.g., `# nolint: any_is_na`.
-
-warning: blanket_suppression
-  --> test.R:11:17
-   |
-11 |   any(is.na(x)) # nolint
-   |                 -------- This comment suppresses all possible violations of this node.
-   |
-   = help: Consider ignoring specific rules instead, e.g., `# nolint: any_is_na`.
-
-Found 2 errors.
+All checks passed!
 
 ----- stderr -----
 
