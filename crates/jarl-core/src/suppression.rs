@@ -84,6 +84,8 @@ struct CommentCollector {
     file_suppressions: HashSet<Rule>,
     /// Blanket suppression locations
     blanket_suppressions: Vec<TextRange>,
+    /// Suppressions with missing explanations
+    unexplained_suppressions: Vec<TextRange>,
     /// Whether any valid directive was found (for fast path)
     has_any_valid_directive: bool,
 }
@@ -95,6 +97,7 @@ impl CommentCollector {
             skip_regions: Vec::new(),
             file_suppressions: HashSet::new(),
             blanket_suppressions: Vec::new(),
+            unexplained_suppressions: Vec::new(),
             has_any_valid_directive: false,
         }
     }
@@ -116,6 +119,8 @@ pub struct SuppressionManager {
     pub inherited_suppressions: Vec<Rule>,
     /// Locations of blanket suppression comments (e.g., `# jarl-ignore` without a rule)
     pub blanket_suppressions: Vec<TextRange>,
+    /// Suppressions with missing explanations
+    pub unexplained_suppressions: Vec<TextRange>,
 }
 
 impl SuppressionManager {
@@ -135,6 +140,7 @@ impl SuppressionManager {
                 has_any_suppressions: false,
                 inherited_suppressions: Vec::new(),
                 blanket_suppressions: Vec::new(),
+                unexplained_suppressions: Vec::new(),
             };
         }
 
@@ -156,6 +162,7 @@ impl SuppressionManager {
             has_any_suppressions,
             inherited_suppressions: Vec::new(),
             blanket_suppressions: collector.blanket_suppressions,
+            unexplained_suppressions: collector.unexplained_suppressions,
         }
     }
 
@@ -238,6 +245,9 @@ impl SuppressionManager {
             }
             Some(DirectiveParseResult::BlanketSuppression) => {
                 collector.blanket_suppressions.push(range);
+            }
+            Some(DirectiveParseResult::MissingExplanation) => {
+                collector.unexplained_suppressions.push(range);
             }
             None => {}
         }
