@@ -39,7 +39,7 @@ For container-based CI/CD, here is an example of using `jarl` within a slim alpi
 ```yaml
 steps:
   - name: lint-r-jarl
-    image: alpine:3.23
+    image: alpine:<YOUR_ALPINE_VERSION>
     commands: |
       apk add --no-cache -q curl
       curl -L -o jarl-installer.sh https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.sh
