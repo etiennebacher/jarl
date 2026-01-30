@@ -356,7 +356,6 @@ fn check_expression_inner(
     expression: &air_r_syntax::AnyRExpression,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
-    analyze::anyexpression::anyexpression(expression, checker)?;
     match expression {
         AnyRExpression::AnyRValue(children) => {
             analyze::anyvalue::anyvalue(children, checker)?;
