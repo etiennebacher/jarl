@@ -86,6 +86,8 @@ struct CommentCollector {
     blanket_suppressions: Vec<TextRange>,
     /// Suppressions with missing explanations
     unexplained_suppressions: Vec<TextRange>,
+    /// Misplaced file-level suppressions (not at top of file)
+    misplaced_file_suppressions: Vec<TextRange>,
     /// Whether any valid directive was found (for fast path)
     has_any_valid_directive: bool,
 }
@@ -98,6 +100,7 @@ impl CommentCollector {
             file_suppressions: HashSet::new(),
             blanket_suppressions: Vec::new(),
             unexplained_suppressions: Vec::new(),
+            misplaced_file_suppressions: Vec::new(),
             has_any_valid_directive: false,
         }
     }
@@ -121,6 +124,8 @@ pub struct SuppressionManager {
     pub blanket_suppressions: Vec<TextRange>,
     /// Suppressions with missing explanations
     pub unexplained_suppressions: Vec<TextRange>,
+    /// Misplaced file-level suppressions (not at top of file)
+    pub misplaced_file_suppressions: Vec<TextRange>,
 }
 
 impl SuppressionManager {
@@ -141,6 +146,7 @@ impl SuppressionManager {
                 inherited_suppressions: Vec::new(),
                 blanket_suppressions: Vec::new(),
                 unexplained_suppressions: Vec::new(),
+                misplaced_file_suppressions: Vec::new(),
             };
         }
 
@@ -163,6 +169,7 @@ impl SuppressionManager {
             inherited_suppressions: Vec::new(),
             blanket_suppressions: collector.blanket_suppressions,
             unexplained_suppressions: collector.unexplained_suppressions,
+            misplaced_file_suppressions: collector.misplaced_file_suppressions,
         }
     }
 
@@ -236,6 +243,8 @@ impl SuppressionManager {
                     LintDirective::IgnoreFile(rule) => {
                         if allow_file_suppression {
                             collector.file_suppressions.insert(rule);
+                        } else {
+                            collector.misplaced_file_suppressions.push(range);
                         }
                     }
                     LintDirective::Ignore(_) => {

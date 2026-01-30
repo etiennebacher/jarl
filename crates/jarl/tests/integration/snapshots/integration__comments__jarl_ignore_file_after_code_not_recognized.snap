@@ -13,6 +13,14 @@ warning: any_is_na
   |
   = help: Use `anyNA(...)` instead.
 
+warning: misplaced_file_suppression
+ --> test.R:3:1
+  |
+3 | # jarl-ignore-file any_is_na: too late
+  | -------------------------------------- This comment isn't used by Jarl because `# jarl-ignore-file` must be at the top of the file.
+  |
+  = help: Move this comment to the beginning of the file, before any code.
+
 warning: any_is_na
  --> test.R:4:1
   |
@@ -21,7 +29,7 @@ warning: any_is_na
   |
   = help: Use `anyNA(...)` instead.
 
-Found 2 errors.
+Found 3 errors.
 2 fixable with the `--fix` option.
 
 ----- stderr -----
