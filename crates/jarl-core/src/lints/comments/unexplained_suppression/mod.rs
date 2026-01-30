@@ -40,11 +40,10 @@ any(is.na(x))",
             None,
         );
 
-        // Colon with only whitespace
+        // Colon with only whitespace (requires all text on same line with line
+        // breaks)
         expect_lint(
-            "
-# jarl-ignore any_is_na:     \
-any(is.na(x))",
+            "\n# jarl-ignore any_is_na:     \nany(is.na(x))",
             lint_msg,
             "unexplained_suppression",
             None,
