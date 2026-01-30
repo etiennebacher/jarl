@@ -21,6 +21,7 @@ use crate::analyze;
 use crate::config::Config;
 use crate::diagnostic::*;
 use crate::fix::*;
+use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
 use crate::rule_set::RuleSet;
 use crate::utils::*;
 
@@ -204,6 +205,12 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     let mut checker = Checker::new(suppression, config.assignment);
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
+
+    // These checks do not need to run on all expressions because we only have
+    // the information needed at file-level.
+    check_file(&mut checker)?;
+
+    // Now we run checks at expression-level.
     for expr in expressions {
         check_expression(&expr, &mut checker)?;
     }
@@ -253,6 +260,17 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
 
     Ok(diagnostics)
+}
+
+pub fn check_file(checker: &mut Checker) -> anyhow::Result<()> {
+    // Report blanket suppression comments (file-level, done once)
+    if checker.is_rule_enabled(Rule::BlanketSuppression) {
+        let diagnostics = blanket_suppression(&checker.suppression.blanket_suppressions);
+        for diagnostic in diagnostics {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    };
+    Ok(())
 }
 
 /// This function updates the checker about the suppression comments it carries,
@@ -338,7 +356,6 @@ fn check_expression_inner(
     expression: &air_r_syntax::AnyRExpression,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
-    analyze::anyexpression::anyexpression(expression, checker)?;
     match expression {
         AnyRExpression::AnyRValue(children) => {
             analyze::anyvalue::anyvalue(children, checker)?;

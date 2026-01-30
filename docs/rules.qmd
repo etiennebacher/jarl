@@ -6,6 +6,7 @@ title: Rules
 
 All rules belong to at least one category:
 
+-   **comments** (COMM): mistakes in the suppression comments (`# jarl-ignore`).
 -   **correctness** (CORR): code that is outright wrong or useless.
 -   **suspicious** (SUSP): code that is most likely wrong or useless.
 -   **performance** (PERF): code that can be written to run faster.
@@ -49,6 +50,7 @@ dat <- as.data.frame(
     c("any_duplicated", "performance", "✅", ""),
     c("any_is_na", "performance", "✅", ""),
     c("assignment", "readability", "✅", "Disabled by default"),
+    c("blanket_suppression", "comments", "❌", ""),
     c("browser", "correctness", "❌", ""),
     c("class_equals", "suspicious", "❗", ""),
     c("coalesce", "readability", "✅", "R >= 4.4"),

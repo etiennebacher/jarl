@@ -24,5 +24,23 @@ any_is_na(x)",
             "blanket_suppression",
             None,
         );
+        expect_lint(
+            "
+#jarl-ignore: <explanation>
+any_is_na(x)",
+            lint_msg,
+            "blanket_suppression",
+            None,
+        );
+
+        // With space before colon
+        expect_lint(
+            "
+# jarl-ignore : <explanation>
+any_is_na(x)",
+            lint_msg,
+            "blanket_suppression",
+            None,
+        );
     }
 }

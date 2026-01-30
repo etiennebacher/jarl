@@ -18,6 +18,22 @@ pub enum LintDirective {
     IgnoreEnd(Rule),
 }
 
+/// Result of parsing a comment that looks like a suppression directive.
+///
+/// This reports valid lint directives but also those that are invalid for any
+/// reason (blanket suppression, wrong rule name, no explanation, etc.). We do
+/// this here to parse and collect potential errors in comments in a single
+/// pass.
+///
+/// Information on the invalid comments is then reported when we run the checks.
+#[derive(Debug, PartialEq, Clone)]
+pub enum DirectiveParseResult {
+    /// A valid, complete directive
+    Valid(LintDirective),
+    /// Comment is `# jarl-ignore` without specifying a rule (blanket suppression)
+    BlanketSuppression,
+}
+
 /// Parse a comment directive
 ///
 /// Supported formats:
@@ -40,9 +56,10 @@ pub enum LintDirective {
 /// - One rule per directive
 ///
 /// Returns:
-/// - `Some(directive)` - A valid directive was found
-/// - `None` - Invalid directive or just a regular comment
-pub fn parse_comment_directive(text: &str) -> Option<LintDirective> {
+/// - `Some(Valid(directive))` - A valid directive was found
+/// - `Some(BlanketSuppression)` - A blanket suppression was found (no rule specified)
+/// - `None` - Not a suppression comment at all
+pub fn parse_comment_directive(text: &str) -> Option<DirectiveParseResult> {
     let text = text.trim_start();
 
     // Accept both "# jarl-ignore" and "#jarl-ignore"
@@ -60,18 +77,30 @@ pub fn parse_comment_directive(text: &str) -> Option<LintDirective> {
     // Determine the directive type based on what follows
     if let Some(after_file) = rest.strip_prefix("-file ") {
         // `# jarl-ignore-file <rule>: <explanation>`
-        parse_rule_with_explanation(after_file).map(LintDirective::IgnoreFile)
+        parse_rule_with_explanation(after_file)
+            .map(|rule| DirectiveParseResult::Valid(LintDirective::IgnoreFile(rule)))
     } else if let Some(after_start) = rest.strip_prefix("-start ") {
         // `# jarl-ignore-start <rule>: <explanation>`
-        parse_rule_with_explanation(after_start).map(LintDirective::IgnoreStart)
+        parse_rule_with_explanation(after_start)
+            .map(|rule| DirectiveParseResult::Valid(LintDirective::IgnoreStart(rule)))
     } else if let Some(after_end) = rest.strip_prefix("-end ") {
         // `# jarl-ignore-end <rule>`
-        parse_rule_only(after_end).map(LintDirective::IgnoreEnd)
+        parse_rule_only(after_end)
+            .map(|rule| DirectiveParseResult::Valid(LintDirective::IgnoreEnd(rule)))
     } else if let Some(after_ignore) = rest.strip_prefix(' ') {
         // `# jarl-ignore <rule>: <explanation>`
-        parse_rule_with_explanation(after_ignore).map(LintDirective::Ignore)
+        // If after_ignore starts with `:`, it's a blanket suppression (no rule name)
+        if after_ignore.starts_with(':') {
+            Some(DirectiveParseResult::BlanketSuppression)
+        } else {
+            parse_rule_with_explanation(after_ignore)
+                .map(|rule| DirectiveParseResult::Valid(LintDirective::Ignore(rule)))
+        }
+    } else if rest.is_empty() || rest.starts_with(':') {
+        // Blanket suppression: `# jarl-ignore`, `#jarl-ignore`, or `# jarl-ignore:`
+        Some(DirectiveParseResult::BlanketSuppression)
     } else {
-        // Not a valid directive (e.g., `# jarl-ignorefoo` or just `# jarl-ignore`)
+        // Not a valid directive (e.g., `# jarl-ignorefoo`)
         None
     }
 }
