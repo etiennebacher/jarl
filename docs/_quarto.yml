@@ -60,6 +60,7 @@ website:
       - rules/any_duplicated.md
       - rules/any_is_na.md
       - rules/assignment.md
+      - rules/blanket_suppression.md
       - rules/browser.md
       - rules/class_equals.md
       - rules/coalesce.md
