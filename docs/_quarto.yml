@@ -89,6 +89,7 @@ website:
       - rules/list2df.md
       - rules/matrix_apply.md
       - rules/misplaced_file_suppression.md
+      - rules/misplaced_suppression.md
       - rules/numeric_leading_zero.md
       - rules/outer_negation.md
       - rules/redundant_equals.md

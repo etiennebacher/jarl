@@ -88,6 +88,8 @@ struct CommentCollector {
     unexplained_suppressions: Vec<TextRange>,
     /// Misplaced file-level suppressions (not at top of file)
     misplaced_file_suppressions: Vec<TextRange>,
+    /// End-of-line suppression comments (trailing comments)
+    misplaced_suppressions: Vec<TextRange>,
     /// Whether any valid directive was found (for fast path)
     has_any_valid_directive: bool,
 }
@@ -101,6 +103,7 @@ impl CommentCollector {
             blanket_suppressions: Vec::new(),
             unexplained_suppressions: Vec::new(),
             misplaced_file_suppressions: Vec::new(),
+            misplaced_suppressions: Vec::new(),
             has_any_valid_directive: false,
         }
     }
@@ -126,6 +129,8 @@ pub struct SuppressionManager {
     pub unexplained_suppressions: Vec<TextRange>,
     /// Misplaced file-level suppressions (not at top of file)
     pub misplaced_file_suppressions: Vec<TextRange>,
+    /// End-of-line suppression comments (trailing comments)
+    pub misplaced_suppressions: Vec<TextRange>,
 }
 
 impl SuppressionManager {
@@ -147,6 +152,7 @@ impl SuppressionManager {
                 blanket_suppressions: Vec::new(),
                 unexplained_suppressions: Vec::new(),
                 misplaced_file_suppressions: Vec::new(),
+                misplaced_suppressions: Vec::new(),
             };
         }
 
@@ -170,6 +176,7 @@ impl SuppressionManager {
             blanket_suppressions: collector.blanket_suppressions,
             unexplained_suppressions: collector.unexplained_suppressions,
             misplaced_file_suppressions: collector.misplaced_file_suppressions,
+            misplaced_suppressions: collector.misplaced_suppressions,
         }
     }
 
@@ -187,16 +194,18 @@ impl SuppressionManager {
                 comment.piece().text_range(),
                 collector,
                 is_first_expression,
+                false, // not trailing
             );
         }
 
-        // Process trailing comments
+        // Process trailing comments (end-of-line comments)
         for comment in comments.trailing_comments(node) {
             Self::process_comment(
                 comment.piece().text(),
                 comment.piece().text_range(),
                 collector,
                 false,
+                true, // trailing
             );
         }
 
@@ -207,6 +216,7 @@ impl SuppressionManager {
                 comment.piece().text_range(),
                 collector,
                 false,
+                false, // not trailing
             );
         }
 
@@ -224,9 +234,15 @@ impl SuppressionManager {
         range: TextRange,
         collector: &mut CommentCollector,
         allow_file_suppression: bool,
+        is_trailing: bool,
     ) {
         match parse_comment_directive(text) {
             Some(DirectiveParseResult::Valid(directive)) => {
+                // Trailing comments (end-of-line) are not supported for suppressions
+                if is_trailing {
+                    collector.misplaced_suppressions.push(range);
+                    return;
+                }
                 collector.has_any_valid_directive = true;
                 match directive {
                     LintDirective::IgnoreStart(rule) => {
@@ -253,10 +269,20 @@ impl SuppressionManager {
                 }
             }
             Some(DirectiveParseResult::BlanketSuppression) => {
-                collector.blanket_suppressions.push(range);
+                // Trailing comments are also misplaced
+                if is_trailing {
+                    collector.misplaced_suppressions.push(range);
+                } else {
+                    collector.blanket_suppressions.push(range);
+                }
             }
             Some(DirectiveParseResult::MissingExplanation) => {
-                collector.unexplained_suppressions.push(range);
+                // Trailing comments are also misplaced
+                if is_trailing {
+                    collector.misplaced_suppressions.push(range);
+                } else {
+                    collector.unexplained_suppressions.push(range);
+                }
             }
             None => {}
         }

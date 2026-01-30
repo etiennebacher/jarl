@@ -80,6 +80,7 @@ dat <- as.data.frame(
     c("list2df", "performance, readability", "✅", "R >= 4.0"),
     c("matrix_apply", "performance", "✅", ""),
     c("misplaced_file_suppression", "comments", "❌", ""),
+    c("misplaced_suppression", "comments", "❌", ""),
     c("numeric_leading_zero", "readability", "✅", ""),
     c("outer_negation", "performance, readability", "✅", ""),
     c("redundant_equals", "readability", "✅", ""),
