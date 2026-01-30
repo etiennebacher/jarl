@@ -4,6 +4,8 @@ use std::str::FromStr;
 /// Category of a linting rule
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Category {
+    /// Comments: violations related to suppression comments
+    Comm,
     /// Correctness: code that is outright wrong or useless
     Corr,
     /// Suspicious: code that is most likely wrong or useless
@@ -19,6 +21,7 @@ pub enum Category {
 impl Category {
     pub const fn as_str(self) -> &'static str {
         match self {
+            Self::Comm => "COMM",
             Self::Corr => "CORR",
             Self::Susp => "SUSP",
             Self::Perf => "PERF",
@@ -28,6 +31,7 @@ impl Category {
     }
 
     pub const ALL: &'static [Category] = &[
+        Category::Comm,
         Category::Corr,
         Category::Susp,
         Category::Perf,
@@ -47,6 +51,7 @@ impl FromStr for Category {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "COMM" => Ok(Self::Comm),
             "CORR" => Ok(Self::Corr),
             "SUSP" => Ok(Self::Susp),
             "PERF" => Ok(Self::Perf),
@@ -215,7 +220,7 @@ declare_rules! {
     },
     BlanketSuppression => {
         name: "blanket_suppression",
-        categories: [Corr],
+        categories: [Comm],
         default: Enabled,
         fix: None,
         min_r_version: None,

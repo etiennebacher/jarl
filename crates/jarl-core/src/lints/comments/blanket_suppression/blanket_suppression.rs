@@ -1,52 +1,37 @@
 use crate::diagnostic::*;
-use air_r_syntax::*;
-use biome_formatter::comments::Comments;
-use biome_rowan::{AstNode, TextRange};
+use biome_rowan::TextRange;
 
-// Define jarl-ignore variants as a constant
-const IGNORE_JARL_VARIANTS: &[&str] = &["# jarl-ignore", "#jarl-ignore"];
-
-pub fn blanket_suppression(
-    ast: &AnyRExpression,
-    comments: &Comments<RLanguage>,
-) -> anyhow::Result<Option<Diagnostic>> {
-    let syntax = ast.syntax();
-
-    // Early exit: most nodes don't have comments
-    if !syntax.has_leading_comments() && !syntax.has_trailing_comments() {
-        return Ok(None);
-    }
-
-    // Check each comment type separately (avoid concat allocation)
-    // Check trailing comments first (most common for jarl-ignore)
-    for comment in comments.trailing_comments(syntax) {
-        let text = comment.piece().text();
-        if IGNORE_JARL_VARIANTS.contains(&text) {
-            return Ok(Some(create_diagnostic(comment.piece().text_range())));
-        }
-    }
-
-    // Check leading comments
-    for comment in comments.leading_comments(syntax) {
-        let text = comment.piece().text();
-        if IGNORE_JARL_VARIANTS.contains(&text) {
-            return Ok(Some(create_diagnostic(comment.piece().text_range())));
-        }
-    }
-
-    // Check dangling comments (least common)
-    for comment in comments.dangling_comments(syntax) {
-        let text = comment.piece().text();
-        if IGNORE_JARL_VARIANTS.contains(&text) {
-            return Ok(Some(create_diagnostic(comment.piece().text_range())));
-        }
-    }
-
-    Ok(None)
+/// ## What it does
+///
+/// Checks for blanket suppression comments. Those are comments such as
+/// `# jarl-ignore: <explanation>` where a rule isn't specified.
+///
+/// ## Why is this bad?
+///
+/// This type of comment isn't supported by Jarl as it would suppress all
+/// possible violations. Suppression comments should always target one or a few
+/// rules, but never all of them.
+///
+/// ## Example
+///
+/// ```r
+/// # The comment below isn't applied, the code below is still reported.
+/// # jarl-ignore: <explanation>
+/// any(is.na(x))
+/// ```
+///
+/// Use instead to ignore the violation:
+/// ```r
+/// # jarl-ignore any_is_na: <explanation>
+/// any(is.na(x))
+/// ```
+pub fn blanket_suppression(ranges: &[TextRange]) -> Vec<Diagnostic> {
+    ranges
+        .iter()
+        .map(|range| create_diagnostic(*range))
+        .collect()
 }
 
-/// Create diagnostic for blanket suppression
-#[inline]
 fn create_diagnostic(range: TextRange) -> Diagnostic {
     Diagnostic::new(
         ViolationData::new(

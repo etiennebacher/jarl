@@ -10,7 +10,7 @@ use biome_formatter::comments::{
 use biome_rowan::{SyntaxTriviaPieceComments, TextRange};
 use std::collections::{HashMap, HashSet};
 
-use crate::directive::{LintDirective, parse_comment_directive};
+use crate::directive::{DirectiveParseResult, LintDirective, parse_comment_directive};
 use crate::rule_set::Rule;
 
 /// Comment style for R that identifies suppression directives
@@ -88,6 +88,8 @@ pub struct SuppressionManager {
     /// This is a stack - we push when entering nodes with suppressions and
     /// truncate when leaving.
     pub inherited_suppressions: Vec<Rule>,
+    /// Locations of blanket suppression comments (e.g., `# jarl-ignore` without a rule)
+    pub blanket_suppressions: Vec<TextRange>,
 }
 
 impl SuppressionManager {
@@ -106,6 +108,7 @@ impl SuppressionManager {
                 file_suppressions: HashSet::new(),
                 has_any_suppressions: false,
                 inherited_suppressions: Vec::new(),
+                blanket_suppressions: Vec::new(),
             };
         }
 
@@ -113,6 +116,7 @@ impl SuppressionManager {
         let comments = Comments::from_node(root, &RCommentStyle, None);
         let skip_regions = Self::build_skip_regions(root, &comments);
         let file_suppressions = Self::build_file_suppressions(root, &comments);
+        let blanket_suppressions = Self::build_blanket_suppressions(root, &comments);
 
         // Check if there are any suppressions at all
         let has_any_suppressions = !skip_regions.is_empty()
@@ -125,6 +129,7 @@ impl SuppressionManager {
             file_suppressions,
             has_any_suppressions,
             inherited_suppressions: Vec::new(),
+            blanket_suppressions,
         }
     }
 
@@ -138,7 +143,7 @@ impl SuppressionManager {
             .chain(comments.dangling_comments(node))
         {
             let text = comment.piece().text();
-            if parse_comment_directive(text).is_some() {
+            if let Some(DirectiveParseResult::Valid(_)) = parse_comment_directive(text) {
                 return true;
             }
         }
@@ -172,13 +177,49 @@ impl SuppressionManager {
         if let Some(child) = first_child {
             for comment in comments.leading_comments(&child) {
                 let text = comment.piece().text();
-                if let Some(LintDirective::IgnoreFile(rule)) = parse_comment_directive(text) {
+                if let Some(DirectiveParseResult::Valid(LintDirective::IgnoreFile(rule))) =
+                    parse_comment_directive(text)
+                {
                     suppressions.insert(rule);
                 }
             }
         }
 
         suppressions
+    }
+
+    /// Collect all blanket suppression comments (e.g., `# jarl-ignore` without a rule)
+    fn build_blanket_suppressions(
+        root: &RSyntaxNode,
+        comments: &Comments<RLanguage>,
+    ) -> Vec<TextRange> {
+        let mut blanket_suppressions = Vec::new();
+        Self::collect_blanket_suppressions(root, comments, &mut blanket_suppressions);
+        blanket_suppressions
+    }
+
+    fn collect_blanket_suppressions(
+        node: &RSyntaxNode,
+        comments: &Comments<RLanguage>,
+        blanket_suppressions: &mut Vec<TextRange>,
+    ) {
+        // Check all comment types for this node
+        for comment in comments
+            .leading_comments(node)
+            .iter()
+            .chain(comments.trailing_comments(node))
+            .chain(comments.dangling_comments(node))
+        {
+            let text = comment.piece().text();
+            if let Some(DirectiveParseResult::BlanketSuppression) = parse_comment_directive(text) {
+                blanket_suppressions.push(comment.piece().text_range());
+            }
+        }
+
+        // Recursively process children
+        for child in node.children() {
+            Self::collect_blanket_suppressions(&child, comments, blanket_suppressions);
+        }
     }
 
     /// Build skip regions from jarl-ignore-start/end directives
@@ -209,11 +250,11 @@ impl SuppressionManager {
             let range = comment.piece().text_range();
 
             match parse_comment_directive(text) {
-                Some(LintDirective::IgnoreStart(rule)) => {
+                Some(DirectiveParseResult::Valid(LintDirective::IgnoreStart(rule))) => {
                     // Start skipping this rule (overwrites previous start if any)
                     starts.insert(rule, range);
                 }
-                Some(LintDirective::IgnoreEnd(rule)) => {
+                Some(DirectiveParseResult::Valid(LintDirective::IgnoreEnd(rule))) => {
                     // End the skip region for this rule if there was a matching start
                     if let Some(start_range) = starts.remove(&rule) {
                         regions.push(SkipRegion {
@@ -240,7 +281,9 @@ impl SuppressionManager {
         // Check for node-level directives in leading comments
         for comment in self.comments.leading_comments(node) {
             let text = comment.piece().text();
-            if let Some(LintDirective::Ignore(rule)) = parse_comment_directive(text) {
+            if let Some(DirectiveParseResult::Valid(LintDirective::Ignore(rule))) =
+                parse_comment_directive(text)
+            {
                 suppressed.insert(rule);
             }
         }
@@ -248,7 +291,9 @@ impl SuppressionManager {
         // Check trailing comments
         for comment in self.comments.trailing_comments(node) {
             let text = comment.piece().text();
-            if let Some(LintDirective::Ignore(rule)) = parse_comment_directive(text) {
+            if let Some(DirectiveParseResult::Valid(LintDirective::Ignore(rule))) =
+                parse_comment_directive(text)
+            {
                 suppressed.insert(rule);
             }
         }
@@ -256,7 +301,9 @@ impl SuppressionManager {
         // Check dangling comments
         for comment in self.comments.dangling_comments(node) {
             let text = comment.piece().text();
-            if let Some(LintDirective::Ignore(rule)) = parse_comment_directive(text) {
+            if let Some(DirectiveParseResult::Valid(LintDirective::Ignore(rule))) =
+                parse_comment_directive(text)
+            {
                 suppressed.insert(rule);
             }
         }
