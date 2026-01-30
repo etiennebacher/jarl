@@ -239,6 +239,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    MisplacedSuppression => {
+        name: "misplaced_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     Browser => {
         name: "browser",
         categories: [Corr],

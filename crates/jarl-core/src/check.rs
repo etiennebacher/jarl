@@ -23,6 +23,7 @@ use crate::diagnostic::*;
 use crate::fix::*;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
 use crate::lints::comments::misplaced_file_suppression::misplaced_file_suppression::misplaced_file_suppression;
+use crate::lints::comments::misplaced_suppression::misplaced_suppression::misplaced_suppression;
 use crate::lints::comments::unexplained_suppression::unexplained_suppression::unexplained_suppression;
 use crate::rule_set::RuleSet;
 use crate::utils::*;
@@ -285,6 +286,14 @@ pub fn check_file(checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::MisplacedFileSuppression) {
         let diagnostics =
             misplaced_file_suppression(&checker.suppression.misplaced_file_suppressions);
+        for diagnostic in diagnostics {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    }
+
+    // Report misplaced (end-of-line) suppression comments
+    if checker.is_rule_enabled(Rule::MisplacedSuppression) {
+        let diagnostics = misplaced_suppression(&checker.suppression.misplaced_suppressions);
         for diagnostic in diagnostics {
             checker.report_diagnostic(Some(diagnostic));
         }
