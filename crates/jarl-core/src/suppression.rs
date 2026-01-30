@@ -74,6 +74,32 @@ pub struct SkipRegion {
     pub rule: Rule,
 }
 
+/// Intermediate state used during single-pass comment collection
+struct CommentCollector {
+    /// Track start positions per rule for building skip regions
+    starts: HashMap<Rule, TextRange>,
+    /// Completed skip regions
+    skip_regions: Vec<SkipRegion>,
+    /// Rules suppressed at file level
+    file_suppressions: HashSet<Rule>,
+    /// Blanket suppression locations
+    blanket_suppressions: Vec<TextRange>,
+    /// Whether any valid directive was found (for fast path)
+    has_any_valid_directive: bool,
+}
+
+impl CommentCollector {
+    fn new() -> Self {
+        Self {
+            starts: HashMap::new(),
+            skip_regions: Vec::new(),
+            file_suppressions: HashSet::new(),
+            blanket_suppressions: Vec::new(),
+            has_any_valid_directive: false,
+        }
+    }
+}
+
 /// Tracks which nodes should skip linting based on comments
 #[derive(Debug)]
 pub struct SuppressionManager {
@@ -114,163 +140,106 @@ impl SuppressionManager {
 
         // Only do expensive comment processing if needed
         let comments = Comments::from_node(root, &RCommentStyle, None);
-        let skip_regions = Self::build_skip_regions(root, &comments);
-        let file_suppressions = Self::build_file_suppressions(root, &comments);
-        let blanket_suppressions = Self::build_blanket_suppressions(root, &comments);
 
-        // Check if there are any suppressions at all
-        let has_any_suppressions = !skip_regions.is_empty()
-            || !file_suppressions.is_empty()
-            || Self::has_any_directives(root, &comments);
+        // Single pass: collect all directive information at once
+        let mut collector = CommentCollector::new();
+        Self::collect_all_directives(root, &comments, &mut collector, true);
+
+        let has_any_suppressions = !collector.skip_regions.is_empty()
+            || !collector.file_suppressions.is_empty()
+            || collector.has_any_valid_directive;
 
         Self {
             comments,
-            skip_regions,
-            file_suppressions,
+            skip_regions: collector.skip_regions,
+            file_suppressions: collector.file_suppressions,
             has_any_suppressions,
             inherited_suppressions: Vec::new(),
-            blanket_suppressions,
+            blanket_suppressions: collector.blanket_suppressions,
         }
     }
 
-    /// Check if there are any jarl-ignore directives in comments
-    fn has_any_directives(node: &RSyntaxNode, comments: &Comments<RLanguage>) -> bool {
-        // Check all comment types for this node
-        for comment in comments
-            .leading_comments(node)
-            .iter()
-            .chain(comments.trailing_comments(node))
-            .chain(comments.dangling_comments(node))
-        {
-            let text = comment.piece().text();
-            if let Some(DirectiveParseResult::Valid(_)) = parse_comment_directive(text) {
-                return true;
-            }
-        }
-
-        // Recursively check children
-        for child in node.children() {
-            if Self::has_any_directives(&child, comments) {
-                return true;
-            }
-        }
-
-        false
-    }
-
-    /// Build file-level suppressions from jarl-ignore-file directives
-    ///
-    /// These must appear in leading comments of the first expression
-    /// (before any R code, but can be after other comments).
-    fn build_file_suppressions(
-        root: &RSyntaxNode,
-        comments: &Comments<RLanguage>,
-    ) -> HashSet<Rule> {
-        let mut suppressions = HashSet::new();
-
-        // A root node always has children, even if the file is empty.
-        // We want to check only the leading comments of the first child
-        // of the root node (the expression list's first item).
-        let r_expression_list = root.first_child().unwrap();
-        let first_child = r_expression_list.first_child();
-
-        if let Some(child) = first_child {
-            for comment in comments.leading_comments(&child) {
-                let text = comment.piece().text();
-                if let Some(DirectiveParseResult::Valid(LintDirective::IgnoreFile(rule))) =
-                    parse_comment_directive(text)
-                {
-                    suppressions.insert(rule);
-                }
-            }
-        }
-
-        suppressions
-    }
-
-    /// Collect all blanket suppression comments (e.g., `# jarl-ignore` without a rule)
-    fn build_blanket_suppressions(
-        root: &RSyntaxNode,
-        comments: &Comments<RLanguage>,
-    ) -> Vec<TextRange> {
-        let mut blanket_suppressions = Vec::new();
-        Self::collect_blanket_suppressions(root, comments, &mut blanket_suppressions);
-        blanket_suppressions
-    }
-
-    fn collect_blanket_suppressions(
+    /// Single-pass collection of all directive information from comments
+    fn collect_all_directives(
         node: &RSyntaxNode,
         comments: &Comments<RLanguage>,
-        blanket_suppressions: &mut Vec<TextRange>,
+        collector: &mut CommentCollector,
+        is_first_expression: bool,
     ) {
-        // Check all comment types for this node
-        for comment in comments
-            .leading_comments(node)
-            .iter()
-            .chain(comments.trailing_comments(node))
-            .chain(comments.dangling_comments(node))
-        {
-            let text = comment.piece().text();
-            if let Some(DirectiveParseResult::BlanketSuppression) = parse_comment_directive(text) {
-                blanket_suppressions.push(comment.piece().text_range());
-            }
+        // Process leading comments (file suppressions only valid here)
+        for comment in comments.leading_comments(node) {
+            Self::process_comment(
+                comment.piece().text(),
+                comment.piece().text_range(),
+                collector,
+                is_first_expression,
+            );
+        }
+
+        // Process trailing comments
+        for comment in comments.trailing_comments(node) {
+            Self::process_comment(
+                comment.piece().text(),
+                comment.piece().text_range(),
+                collector,
+                false,
+            );
+        }
+
+        // Process dangling comments
+        for comment in comments.dangling_comments(node) {
+            Self::process_comment(
+                comment.piece().text(),
+                comment.piece().text_range(),
+                collector,
+                false,
+            );
         }
 
         // Recursively process children
+        let mut is_first = is_first_expression;
         for child in node.children() {
-            Self::collect_blanket_suppressions(&child, comments, blanket_suppressions);
+            Self::collect_all_directives(&child, comments, collector, is_first);
+            is_first = false; // Only the first child can have file-level suppressions
         }
     }
 
-    /// Build skip regions from jarl-ignore-start/end directives
-    fn build_skip_regions(root: &RSyntaxNode, comments: &Comments<RLanguage>) -> Vec<SkipRegion> {
-        let mut regions = Vec::new();
-        // Track start positions per rule
-        let mut starts: HashMap<Rule, TextRange> = HashMap::new();
-
-        Self::collect_start_end_directives(root, comments, &mut starts, &mut regions);
-
-        regions
-    }
-
-    fn collect_start_end_directives(
-        node: &RSyntaxNode,
-        comments: &Comments<RLanguage>,
-        starts: &mut HashMap<Rule, TextRange>,
-        regions: &mut Vec<SkipRegion>,
+    /// Process a single comment and update the collector
+    fn process_comment(
+        text: &str,
+        range: TextRange,
+        collector: &mut CommentCollector,
+        allow_file_suppression: bool,
     ) {
-        // Check all comment types for this node
-        for comment in comments
-            .leading_comments(node)
-            .iter()
-            .chain(comments.trailing_comments(node))
-            .chain(comments.dangling_comments(node))
-        {
-            let text = comment.piece().text();
-            let range = comment.piece().text_range();
-
-            match parse_comment_directive(text) {
-                Some(DirectiveParseResult::Valid(LintDirective::IgnoreStart(rule))) => {
-                    // Start skipping this rule (overwrites previous start if any)
-                    starts.insert(rule, range);
-                }
-                Some(DirectiveParseResult::Valid(LintDirective::IgnoreEnd(rule))) => {
-                    // End the skip region for this rule if there was a matching start
-                    if let Some(start_range) = starts.remove(&rule) {
-                        regions.push(SkipRegion {
-                            range: TextRange::new(start_range.start(), range.end()),
-                            rule,
-                        });
+        match parse_comment_directive(text) {
+            Some(DirectiveParseResult::Valid(directive)) => {
+                collector.has_any_valid_directive = true;
+                match directive {
+                    LintDirective::IgnoreStart(rule) => {
+                        collector.starts.insert(rule, range);
                     }
-                    // Unmatched ends are silently ignored
+                    LintDirective::IgnoreEnd(rule) => {
+                        if let Some(start_range) = collector.starts.remove(&rule) {
+                            collector.skip_regions.push(SkipRegion {
+                                range: TextRange::new(start_range.start(), range.end()),
+                                rule,
+                            });
+                        }
+                    }
+                    LintDirective::IgnoreFile(rule) => {
+                        if allow_file_suppression {
+                            collector.file_suppressions.insert(rule);
+                        }
+                    }
+                    LintDirective::Ignore(_) => {
+                        // Node-level suppressions are handled at check time via check_node_comments
+                    }
                 }
-                _ => {}
             }
-        }
-
-        // Recursively process children
-        for child in node.children() {
-            Self::collect_start_end_directives(&child, comments, starts, regions);
+            Some(DirectiveParseResult::BlanketSuppression) => {
+                collector.blanket_suppressions.push(range);
+            }
+            None => {}
         }
     }
 
