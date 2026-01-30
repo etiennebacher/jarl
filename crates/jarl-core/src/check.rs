@@ -22,6 +22,7 @@ use crate::config::Config;
 use crate::diagnostic::*;
 use crate::fix::*;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
+use crate::lints::comments::unexplained_suppression::unexplained_suppression::unexplained_suppression;
 use crate::rule_set::RuleSet;
 use crate::utils::*;
 
@@ -269,7 +270,16 @@ pub fn check_file(checker: &mut Checker) -> anyhow::Result<()> {
         for diagnostic in diagnostics {
             checker.report_diagnostic(Some(diagnostic));
         }
-    };
+    }
+
+    // Report suppressions missing explanations
+    if checker.is_rule_enabled(Rule::UnexplainedSuppression) {
+        let diagnostics = unexplained_suppression(&checker.suppression.unexplained_suppressions);
+        for diagnostic in diagnostics {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    }
+
     Ok(())
 }
 

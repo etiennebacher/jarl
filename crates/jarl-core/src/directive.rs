@@ -32,6 +32,8 @@ pub enum DirectiveParseResult {
     Valid(LintDirective),
     /// Comment is `# jarl-ignore` without specifying a rule (blanket suppression)
     BlanketSuppression,
+    /// Rule is valid but explanation is missing (no colon or empty after colon)
+    MissingExplanation,
 }
 
 /// Parse a comment directive
@@ -77,14 +79,24 @@ pub fn parse_comment_directive(text: &str) -> Option<DirectiveParseResult> {
     // Determine the directive type based on what follows
     if let Some(after_file) = rest.strip_prefix("-file ") {
         // `# jarl-ignore-file <rule>: <explanation>`
-        parse_rule_with_explanation(after_file)
-            .map(|rule| DirectiveParseResult::Valid(LintDirective::IgnoreFile(rule)))
+        match parse_rule_with_explanation(after_file) {
+            RuleParseResult::Valid(rule) => {
+                Some(DirectiveParseResult::Valid(LintDirective::IgnoreFile(rule)))
+            }
+            RuleParseResult::MissingExplanation => Some(DirectiveParseResult::MissingExplanation),
+            RuleParseResult::Invalid => None,
+        }
     } else if let Some(after_start) = rest.strip_prefix("-start ") {
         // `# jarl-ignore-start <rule>: <explanation>`
-        parse_rule_with_explanation(after_start)
-            .map(|rule| DirectiveParseResult::Valid(LintDirective::IgnoreStart(rule)))
+        match parse_rule_with_explanation(after_start) {
+            RuleParseResult::Valid(rule) => Some(DirectiveParseResult::Valid(
+                LintDirective::IgnoreStart(rule),
+            )),
+            RuleParseResult::MissingExplanation => Some(DirectiveParseResult::MissingExplanation),
+            RuleParseResult::Invalid => None,
+        }
     } else if let Some(after_end) = rest.strip_prefix("-end ") {
-        // `# jarl-ignore-end <rule>`
+        // `# jarl-ignore-end <rule>` - no explanation required
         parse_rule_only(after_end)
             .map(|rule| DirectiveParseResult::Valid(LintDirective::IgnoreEnd(rule)))
     } else if let Some(after_ignore) = rest.strip_prefix(' ') {
@@ -93,8 +105,15 @@ pub fn parse_comment_directive(text: &str) -> Option<DirectiveParseResult> {
         if after_ignore.starts_with(':') {
             Some(DirectiveParseResult::BlanketSuppression)
         } else {
-            parse_rule_with_explanation(after_ignore)
-                .map(|rule| DirectiveParseResult::Valid(LintDirective::Ignore(rule)))
+            match parse_rule_with_explanation(after_ignore) {
+                RuleParseResult::Valid(rule) => {
+                    Some(DirectiveParseResult::Valid(LintDirective::Ignore(rule)))
+                }
+                RuleParseResult::MissingExplanation => {
+                    Some(DirectiveParseResult::MissingExplanation)
+                }
+                RuleParseResult::Invalid => None,
+            }
         }
     } else if rest.is_empty() || rest.starts_with(':') {
         // Blanket suppression: `# jarl-ignore`, `#jarl-ignore`, or `# jarl-ignore:`
@@ -105,30 +124,54 @@ pub fn parse_comment_directive(text: &str) -> Option<DirectiveParseResult> {
     }
 }
 
+/// Result of parsing a rule with explanation
+enum RuleParseResult {
+    /// Valid rule with explanation
+    Valid(Rule),
+    /// Valid rule but missing explanation
+    MissingExplanation,
+    /// Invalid (unknown rule name, empty rule name, or no colon)
+    Invalid,
+}
+
 /// Parse a rule name followed by `: <explanation>`
 ///
 /// Format: `<rule>: <explanation>`
 /// - Rule name must be valid
 /// - Colon and explanation are mandatory
 /// - Explanation must be non-empty
-fn parse_rule_with_explanation(text: &str) -> Option<Rule> {
+fn parse_rule_with_explanation(text: &str) -> RuleParseResult {
     // Find the colon separator
-    let colon_pos = text.find(':')?;
+    let Some(colon_pos) = text.find(':') else {
+        // No colon - check if there's a valid rule name (missing explanation case)
+        let rule_name = text.trim();
+        if rule_name.is_empty() {
+            return RuleParseResult::Invalid;
+        }
+        return match Rule::from_name(rule_name) {
+            Some(_) => RuleParseResult::MissingExplanation,
+            None => RuleParseResult::Invalid,
+        };
+    };
 
     // Extract and validate rule name
     let rule_name = text[..colon_pos].trim();
     if rule_name.is_empty() {
-        return None;
+        return RuleParseResult::Invalid;
     }
+
+    // Validate rule name against known rules
+    let Some(rule) = Rule::from_name(rule_name) else {
+        return RuleParseResult::Invalid;
+    };
 
     // Check explanation exists (non-empty after colon)
     let explanation = text[colon_pos + 1..].trim();
     if explanation.is_empty() {
-        return None;
+        return RuleParseResult::MissingExplanation;
     }
 
-    // Validate rule name against known rules
-    Rule::from_name(rule_name)
+    RuleParseResult::Valid(rule)
 }
 
 /// Parse a rule name only (for `-end` directives)
