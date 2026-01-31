@@ -2,7 +2,7 @@
 ## What it does
 
 Checks for blanket suppression comments. Those are comments such as
-`# jarl-ignore: <explanation>` where a rule isn't specified.
+`# jarl-ignore: <reason>` where a rule isn't specified.
 
 ## Why is this bad?
 
@@ -14,12 +14,12 @@ rules, but never all of them.
 
 ```r
 # The comment below isn't applied, the code below is still reported.
-# jarl-ignore: <explanation>
+# jarl-ignore: <reason>
 any(is.na(x))
 ```
 
 Use instead to ignore the violation:
 ```r
-# jarl-ignore any_is_na: <explanation>
+# jarl-ignore any_is_na: <reason>
 any(is.na(x))
 ```

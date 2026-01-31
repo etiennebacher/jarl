@@ -11,7 +11,7 @@ warning: unexplained_suppression
 2 | # jarl-ignore any_is_na
   | ----------------------- This comment isn't used by Jarl because it is missing an explanation.
   |
-  = help: Add an explanation after the colon, e.g., `# jarl-ignore rule: <explanation>`.
+  = help: Add an explanation after the colon, e.g., `# jarl-ignore rule: <reason>`.
 
 warning: any_is_na
  --> test.R:3:1
@@ -27,7 +27,7 @@ warning: unexplained_suppression
 4 | # jarl-ignore any_is_na:
   | ------------------------ This comment isn't used by Jarl because it is missing an explanation.
   |
-  = help: Add an explanation after the colon, e.g., `# jarl-ignore rule: <explanation>`.
+  = help: Add an explanation after the colon, e.g., `# jarl-ignore rule: <reason>`.
 
 warning: any_is_na
  --> test.R:5:1

@@ -15,7 +15,7 @@ mistake in the suppression structure and may not suppress what you intended.
 
 ```r
 # The start and end are at different nesting levels, so both are unmatched.
-# jarl-ignore-start any_is_na: <explanation>
+# jarl-ignore-start any_is_na: <reason>
 f <- function() {
   any(is.na(x))
   # jarl-ignore-end any_is_na
@@ -26,7 +26,7 @@ any(is.na(x))  # This is NOT suppressed!
 Use instead:
 ```r
 # Start and end at the same level
-# jarl-ignore-start any_is_na: <explanation>
+# jarl-ignore-start any_is_na: <reason>
 any(is.na(x))
 # jarl-ignore-end any_is_na
 ```

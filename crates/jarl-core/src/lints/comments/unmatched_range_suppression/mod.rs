@@ -9,7 +9,7 @@ mod tests {
         // Properly matched start/end at top level
         expect_no_lint(
             "
-# jarl-ignore-start any_is_na: <explanation>
+# jarl-ignore-start any_is_na: <reason>
 any(is.na(x))
 # jarl-ignore-end any_is_na",
             "unmatched_range_suppression",
@@ -20,7 +20,7 @@ any(is.na(x))
         expect_no_lint(
             "
 f <- function() {
-  # jarl-ignore-start any_is_na: <explanation>
+  # jarl-ignore-start any_is_na: <reason>
   any(is.na(x))
   # jarl-ignore-end any_is_na
 }",
@@ -31,10 +31,10 @@ f <- function() {
         // Multiple nested levels, each properly matched
         expect_no_lint(
             "
-# jarl-ignore-start any_is_na: <explanation>
+# jarl-ignore-start any_is_na: <reason>
 any(is.na(x))
 f <- function() {
-  # jarl-ignore-start equals_na: <explanation>
+  # jarl-ignore-start equals_na: <reason>
   x == NA
   # jarl-ignore-end equals_na
 }
@@ -51,7 +51,7 @@ f <- function() {
         // Start at top level, end inside function
         expect_lint(
             "
-# jarl-ignore-start any_is_na: <explanation>
+# jarl-ignore-start any_is_na: <reason>
 f <- function() {
   any(is.na(x))
   # jarl-ignore-end any_is_na
@@ -64,7 +64,7 @@ f <- function() {
         // Start at top level, end inside if statement
         expect_lint(
             "
-# jarl-ignore-start any_is_na: <explanation>
+# jarl-ignore-start any_is_na: <reason>
 if (a) {
   any(is.na(x))
   # jarl-ignore-end any_is_na
@@ -77,7 +77,7 @@ if (a) {
         // Start at top level, end inside while statement
         expect_lint(
             "
-# jarl-ignore-start any_is_na: <explanation>
+# jarl-ignore-start any_is_na: <reason>
 while (a) {
   any(is.na(x))
   # jarl-ignore-end any_is_na
@@ -90,7 +90,7 @@ while (a) {
         // Start at top level, end inside for loop
         expect_lint(
             "
-# jarl-ignore-start any_is_na: <explanation>
+# jarl-ignore-start any_is_na: <reason>
 for (i in 1:10) {
   any(is.na(x))
   # jarl-ignore-end any_is_na
@@ -103,7 +103,7 @@ for (i in 1:10) {
         // Start at top level, end inside repeat statement
         expect_lint(
             "
-# jarl-ignore-start any_is_na: <explanation>
+# jarl-ignore-start any_is_na: <reason>
 repeat {
   any(is.na(x))
   # jarl-ignore-end any_is_na
@@ -116,7 +116,7 @@ repeat {
         // Start without any end
         expect_lint(
             "
-# jarl-ignore-start any_is_na: <explanation>
+# jarl-ignore-start any_is_na: <reason>
 any(is.na(x))",
             lint_msg,
             "unmatched_range_suppression",
@@ -132,7 +132,7 @@ any(is.na(x))",
         expect_lint(
             "
 f <- function() {
-  # jarl-ignore-start any_is_na: <explanation>
+  # jarl-ignore-start any_is_na: <reason>
   any(is.na(x))
 }
 # jarl-ignore-end any_is_na",
@@ -145,7 +145,7 @@ f <- function() {
         expect_lint(
             "
 if (a) {
-  # jarl-ignore-start any_is_na: <explanation>
+  # jarl-ignore-start any_is_na: <reason>
   any(is.na(x))
 }
 # jarl-ignore-end any_is_na",
@@ -158,7 +158,7 @@ if (a) {
         expect_lint(
             "
 while (a) {
-  # jarl-ignore-start any_is_na: <explanation>
+  # jarl-ignore-start any_is_na: <reason>
   any(is.na(x))
 }
 # jarl-ignore-end any_is_na",
@@ -171,7 +171,7 @@ while (a) {
         expect_lint(
             "
 for (i in 1:10) {
-  # jarl-ignore-start any_is_na: <explanation>
+  # jarl-ignore-start any_is_na: <reason>
   any(is.na(x))
 }
 # jarl-ignore-end any_is_na",
@@ -184,7 +184,7 @@ for (i in 1:10) {
         expect_lint(
             "
 repeat {
-  # jarl-ignore-start any_is_na: <explanation>
+  # jarl-ignore-start any_is_na: <reason>
   any(is.na(x))
 }
 # jarl-ignore-end any_is_na",
