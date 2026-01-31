@@ -24,6 +24,7 @@ pub mod location;
 pub mod rule_set;
 pub mod settings;
 pub mod suppression;
+pub mod suppression_edit;
 pub mod toml;
 pub mod utils_ast;
 pub mod vcs;

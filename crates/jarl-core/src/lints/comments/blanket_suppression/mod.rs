@@ -26,7 +26,7 @@ any_is_na(x)",
         );
         expect_lint(
             "
-#jarl-ignore: <explanation>
+#jarl-ignore: <reason>
 any_is_na(x)",
             lint_msg,
             "blanket_suppression",
@@ -36,7 +36,7 @@ any_is_na(x)",
         // With space before colon
         expect_lint(
             "
-# jarl-ignore : <explanation>
+# jarl-ignore : <reason>
 any_is_na(x)",
             lint_msg,
             "blanket_suppression",
