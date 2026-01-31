@@ -1380,34 +1380,40 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_nolint_entire_document_insert_new_comment() {
-        // Test the entire resulting document when inserting a new nolint comment
-        let content = "x = 1\ny = 2\n";
+    // =========================================================================
+    // Suppression comment insertion tests
+    // =========================================================================
+
+    /// Helper to apply a suppression comment edit and return the resulting code
+    fn apply_suppression_edit(
+        content: &str,
+        diagnostic_start: usize,
+        diagnostic_end: usize,
+        rule_name: &str,
+    ) -> Option<String> {
         let snapshot = create_test_snapshot(content);
 
         let fix = DiagnosticFix {
-            content: "x <- 1".to_string(),
+            content: String::new(), // Not used for suppression
             start: 0,
-            end: 5,
+            end: 0,
             is_safe: true,
-            rule_name: "assignment".to_string(),
-            diagnostic_start: 0,
-            diagnostic_end: 5,
+            rule_name: rule_name.to_string(),
+            diagnostic_start,
+            diagnostic_end,
         };
 
         let diagnostic = create_test_diagnostic_with_fix(
-            Range::new(Position::new(0, 2), Position::new(0, 3)),
-            "Use <- for assignment".to_string(),
+            Range::new(Position::new(0, 0), Position::new(0, 1)),
+            "Test diagnostic".to_string(),
             fix,
         );
 
-        let action = Server::diagnostic_to_nolint_rule_action(&diagnostic, &snapshot).unwrap();
-        let edit = action.edit.unwrap();
-        let changes = edit.changes.unwrap();
-        let text_edits = changes.values().next().unwrap();
+        let action = Server::diagnostic_to_nolint_rule_action(&diagnostic, &snapshot)?;
+        let edit = action.edit?;
+        let changes = edit.changes?;
+        let text_edits = changes.values().next()?;
 
-        // Apply the edit manually to verify the result
         let mut result = content.to_string();
         for text_edit in text_edits.iter().rev() {
             let start = position_to_offset(&result, text_edit.range.start);
@@ -1415,130 +1421,161 @@ mod tests {
             result.replace_range(start..end, &text_edit.new_text);
         }
 
-        assert_eq!(result, "# jarl-ignore assignment: <reason>\nx = 1\ny = 2\n");
+        Some(result)
     }
 
     #[test]
-    fn test_nolint_entire_document_update_existing_comment() {
-        // Test the entire resulting document when updating an existing jarl-ignore comment
-        let content = "# jarl-ignore foo: reason\nx = 1\ny = 2\n";
-        let snapshot = create_test_snapshot(content);
+    fn test_suppression_insert_new_comment() {
+        let result = apply_suppression_edit(
+            "x = 1\ny = 2\n",
+            0,
+            5, // diagnostic on "x = 1"
+            "assignment",
+        )
+        .unwrap();
 
-        let fix = DiagnosticFix {
-            content: "x <- 1".to_string(),
-            start: 26,
-            end: 31,
-            is_safe: true,
-            rule_name: "assignment".to_string(),
-            diagnostic_start: 26,
-            diagnostic_end: 31,
-        };
-
-        let diagnostic = create_test_diagnostic_with_fix(
-            Range::new(Position::new(1, 2), Position::new(1, 3)),
-            "Use <- for assignment".to_string(),
-            fix,
-        );
-
-        let action = Server::diagnostic_to_nolint_rule_action(&diagnostic, &snapshot).unwrap();
-        let edit = action.edit.unwrap();
-        let changes = edit.changes.unwrap();
-        let text_edits = changes.values().next().unwrap();
-
-        // Apply the edit manually to verify the result
-        let mut result = content.to_string();
-        for text_edit in text_edits.iter().rev() {
-            let start = position_to_offset(&result, text_edit.range.start);
-            let end = position_to_offset(&result, text_edit.range.end);
-            result.replace_range(start..end, &text_edit.new_text);
-        }
-
-        assert_eq!(
-            result,
-            "# jarl-ignore foo, assignment: <reason>\nx = 1\ny = 2\n"
-        );
+        insta::assert_snapshot!(result, @r#"
+        # jarl-ignore assignment: <reason>
+        x = 1
+        y = 2
+        "#);
     }
 
     #[test]
-    fn test_nolint_entire_document_multiline_with_comments() {
-        // Test with the complex multiline example with existing comments
-        let content = "# jarl-ignore implicit_assignment: reason\nany(\n  duplicated(\n    which(grepl(\"a\", x))\n  )\n)\n";
-        let snapshot = create_test_snapshot(content);
+    fn test_suppression_update_existing_comment() {
+        let result = apply_suppression_edit(
+            "# jarl-ignore foo: reason\nx = 1\ny = 2\n",
+            26,
+            31, // diagnostic on "x = 1" (after the comment line)
+            "assignment",
+        )
+        .unwrap();
 
-        let fix = DiagnosticFix {
-            content: "anyDuplicated(which(grepl(\"a\", x)))".to_string(),
-            start: 42,
-            end: 80,
-            is_safe: true,
-            rule_name: "any_duplicated".to_string(),
-            diagnostic_start: 42,
-            diagnostic_end: 80,
-        };
-
-        let diagnostic = create_test_diagnostic_with_fix(
-            Range::new(Position::new(1, 0), Position::new(1, 3)),
-            "Use anyDuplicated() instead of any(duplicated())".to_string(),
-            fix,
-        );
-
-        let action = Server::diagnostic_to_nolint_rule_action(&diagnostic, &snapshot).unwrap();
-        let edit = action.edit.unwrap();
-        let changes = edit.changes.unwrap();
-        let text_edits = changes.values().next().unwrap();
-
-        // Apply the edit manually to verify the result
-        let mut result = content.to_string();
-        for text_edit in text_edits.iter().rev() {
-            let start = position_to_offset(&result, text_edit.range.start);
-            let end = position_to_offset(&result, text_edit.range.end);
-            result.replace_range(start..end, &text_edit.new_text);
-        }
-
-        // Should update the existing jarl-ignore comment without adding extra blank lines
-        assert_eq!(
-            result,
-            "# jarl-ignore implicit_assignment, any_duplicated: <reason>\nany(\n  duplicated(\n    which(grepl(\"a\", x))\n  )\n)\n"
-        );
+        insta::assert_snapshot!(result, @r#"
+        # jarl-ignore foo, assignment: <reason>
+        x = 1
+        y = 2
+        "#);
     }
 
     #[test]
-    fn test_nolint_entire_document_with_indentation() {
-        // Test that indentation is preserved in the resulting document
-        let content = "  # jarl-ignore foo: reason\n  x = 1\n  y = 2\n";
-        let snapshot = create_test_snapshot(content);
+    fn test_suppression_multiline_update() {
+        let content = r#"# jarl-ignore implicit_assignment: reason
+any(
+  duplicated(
+    which(grepl("a", x))
+  )
+)
+"#;
+        let result = apply_suppression_edit(
+            content,
+            42,
+            80, // diagnostic on the any(...) call
+            "any_duplicated",
+        )
+        .unwrap();
 
-        let fix = DiagnosticFix {
-            content: "x <- 1".to_string(),
-            start: 30,
-            end: 35,
-            is_safe: true,
-            rule_name: "assignment".to_string(),
-            diagnostic_start: 30,
-            diagnostic_end: 35,
-        };
+        insta::assert_snapshot!(result, @r###"
+        # jarl-ignore implicit_assignment, any_duplicated: <reason>
+        any(
+          duplicated(
+            which(grepl("a", x))
+          )
+        )
+        "###);
+    }
 
-        let diagnostic = create_test_diagnostic_with_fix(
-            Range::new(Position::new(1, 4), Position::new(1, 5)),
-            "Use <- for assignment".to_string(),
-            fix,
+    #[test]
+    fn test_suppression_preserves_indentation() {
+        let result = apply_suppression_edit(
+            "  # jarl-ignore foo: reason\n  x = 1\n  y = 2\n",
+            30,
+            35, // diagnostic on "x = 1"
+            "assignment",
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r#"
+          # jarl-ignore foo, assignment: <reason>
+          x = 1
+          y = 2
+        "#);
+    }
+
+    #[test]
+    fn test_suppression_inside_function() {
+        // When the inner expression is on its own line inside a function,
+        // the suppression goes before that expression
+        let content = r#"f <- function() {
+  any(is.na(x))
+}
+"#;
+        let result = apply_suppression_edit(
+            content,
+            20,
+            33, // diagnostic on "any(is.na(x))"
+            "any_is_na",
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r###"
+        f <- function() {
+          # jarl-ignore any_is_na: <reason>
+          any(is.na(x))
+        }
+        "###);
+    }
+
+    #[test]
+    fn test_suppression_inline_condition() {
+        // Diagnostic on "y <- 1" inside else if condition
+        let content = "if (x) {\n  1\n} else if (y <- 1) {\n  2\n}\n";
+        let result = apply_suppression_edit(
+            content,
+            24,
+            30, // diagnostic on "y <- 1"
+            "implicit_assignment",
+        )
+        .unwrap();
+
+        // Should insert inline with leading newline since "y <- 1" is not on its own line
+        insta::assert_snapshot!(result, @r###"
+        if (x) {
+          1
+        } else if (
+                   # jarl-ignore implicit_assignment: <reason>
+                   y <- 1) {
+          2
+        }
+        "###);
+    }
+
+    #[test]
+    fn test_suppression_no_duplicate() {
+        // Should return None when rule is already suppressed
+        let result = apply_suppression_edit(
+            "# jarl-ignore assignment: already suppressed\nx = 1\n",
+            46,
+            51, // diagnostic on "x = 1"
+            "assignment",
         );
 
-        let action = Server::diagnostic_to_nolint_rule_action(&diagnostic, &snapshot).unwrap();
-        let edit = action.edit.unwrap();
-        let changes = edit.changes.unwrap();
-        let text_edits = changes.values().next().unwrap();
+        assert!(result.is_none(), "Should not add duplicate rule");
+    }
 
-        // Apply the edit manually to verify the result
-        let mut result = content.to_string();
-        for text_edit in text_edits.iter().rev() {
-            let start = position_to_offset(&result, text_edit.range.start);
-            let end = position_to_offset(&result, text_edit.range.end);
-            result.replace_range(start..end, &text_edit.new_text);
-        }
+    #[test]
+    fn test_suppression_blanket_covers_all() {
+        // Should return None when blanket suppression exists
+        let result = apply_suppression_edit(
+            "# jarl-ignore\nx = 1\n",
+            14,
+            19, // diagnostic on "x = 1"
+            "assignment",
+        );
 
-        assert_eq!(
-            result,
-            "  # jarl-ignore foo, assignment: <reason>\n  x = 1\n  y = 2\n"
+        assert!(
+            result.is_none(),
+            "Blanket suppression should cover all rules"
         );
     }
 

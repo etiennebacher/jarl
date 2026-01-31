@@ -34,3 +34,4 @@ rustc-hash = "2.0"
 tempfile.workspace = true
 
 [dev-dependencies]
+insta.workspace = true
