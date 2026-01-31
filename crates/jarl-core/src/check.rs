@@ -262,11 +262,14 @@ pub fn check_file(checker: &mut Checker) -> anyhow::Result<()> {
         }
     }
 
+    // Filter diagnostics by suppressions. This removes suppressed violations
+    // and tracks which suppressions were used (for outdated suppression detection).
+    // Must happen BEFORE checking for outdated suppressions.
+    checker.diagnostics = checker
+        .suppression
+        .filter_diagnostics(std::mem::take(&mut checker.diagnostics));
+
     // Report outdated suppressions (suppressions that didn't suppress anything).
-    // This is similar to Ruff's approach:
-    // 1. Filter out diagnostics that are suppressed by comments
-    // 2. Track which suppressions were used
-    // 3. Report unused suppressions as outdated
     if checker.is_rule_enabled(Rule::OutdatedSuppression) {
         let unused = checker.suppression.get_unused_suppressions();
         let outdated_diagnostics = outdated_suppression(&unused);

@@ -315,7 +315,9 @@ impl SuppressionManager {
                 match directive {
                     LintDirective::IgnoreStart(rule) => {
                         // Store both the region start position and the comment range
-                        collector.starts.insert(rule, (comment_range, comment_range));
+                        collector
+                            .starts
+                            .insert(rule, (comment_range, comment_range));
                     }
                     LintDirective::IgnoreEnd(rule) => {
                         if let Some((start_comment_range, _)) = collector.starts.remove(&rule) {
@@ -331,10 +333,9 @@ impl SuppressionManager {
                     }
                     LintDirective::IgnoreFile(rule) => {
                         if allow_file_suppression {
-                            collector.file_suppressions.push(FileSuppression {
-                                rule,
-                                comment_range,
-                            });
+                            collector
+                                .file_suppressions
+                                .push(FileSuppression { rule, comment_range });
                         } else {
                             collector.misplaced_file_suppressions.push(comment_range);
                         }
