@@ -898,39 +898,6 @@ select = ["ALL"]
         Some(result)
     }
 
-    /// Apply a nolint-all action at the cursor position by running the actual linter.
-    fn apply_nolint_all_at_cursor(source_with_cursor: &str) -> Option<String> {
-        let cursor_pos = source_with_cursor.find(CURSOR)?;
-        let content = source_with_cursor.replace(CURSOR, "");
-
-        let env = TestEnv::new(&content);
-        let snapshot = env.create_snapshot(&content);
-
-        // Run the linter to get real diagnostics
-        let diagnostics = lint::lint_document(&snapshot).ok()?;
-
-        // Find the diagnostic at cursor position
-        let cursor_lsp_pos = offset_to_position(&content, cursor_pos);
-        let diagnostic = diagnostics
-            .iter()
-            .find(|d| position_in_range(cursor_lsp_pos, &d.range))?;
-
-        // Get the nolint-all action
-        let action = Server::diagnostic_to_nolint_all_action(diagnostic, &snapshot)?;
-        let edit = action.edit?;
-        let changes = edit.changes?;
-        let text_edits = changes.values().next()?;
-
-        // Apply edits
-        let mut result = content.clone();
-        for text_edit in text_edits.iter().rev() {
-            let start = position_to_offset(&result, text_edit.range.start);
-            let end = position_to_offset(&result, text_edit.range.end);
-            result.replace_range(start..end, &text_edit.new_text);
-        }
-
-        Some(result)
-    }
 
     // =========================================================================
     // Server creation test
@@ -1016,7 +983,7 @@ select = ["ALL"]
     // =========================================================================
 
     #[test]
-    fn test_nolint_insert_new_comment() {
+    fn test_suppression_insert_new_comment() {
         let result = apply_nolint_at_cursor(
             r#"<CURS>x = 1
 "#,
@@ -1024,13 +991,13 @@ select = ["ALL"]
         .unwrap();
 
         insta::assert_snapshot!(result, @r#"
-        # nolint: assignment
+        # jarl-ignore assignment: <reason>
         x = 1
         "#);
     }
 
     #[test]
-    fn test_nolint_any_is_na() {
+    fn test_suppression_any_is_na() {
         let result = apply_nolint_at_cursor(
             r#"<CURS>any(is.na(x))
 "#,
@@ -1038,28 +1005,29 @@ select = ["ALL"]
         .unwrap();
 
         insta::assert_snapshot!(result, @r#"
-        # nolint: any_is_na
+        # jarl-ignore any_is_na: <reason>
         any(is.na(x))
         "#);
     }
 
     #[test]
-    fn test_nolint_update_existing_comment() {
+    fn test_suppression_adds_new_line_for_different_rule() {
         let result = apply_nolint_at_cursor(
-            r#"# nolint: foo
+            r#"# jarl-ignore foo: some reason
 <CURS>x = 1
 "#,
         )
         .unwrap();
 
         insta::assert_snapshot!(result, @r#"
-        # nolint: foo, assignment
+        # jarl-ignore foo: some reason
+        # jarl-ignore assignment: <reason>
         x = 1
         "#);
     }
 
     #[test]
-    fn test_nolint_with_indentation() {
+    fn test_suppression_with_indentation() {
         let result = apply_nolint_at_cursor(
             r#"f <- function() {
   <CURS>x = 1
@@ -1070,16 +1038,16 @@ select = ["ALL"]
 
         insta::assert_snapshot!(result, @r#"
         f <- function() {
-          # nolint: assignment
+          # jarl-ignore assignment: <reason>
           x = 1
         }
         "#);
     }
 
     #[test]
-    fn test_nolint_no_duplicate_rule() {
+    fn test_suppression_no_duplicate_rule() {
         let result = apply_nolint_at_cursor(
-            r#"# nolint: assignment
+            r#"# jarl-ignore assignment: already suppressed
 <CURS>x = 1
 "#,
         );
@@ -1088,47 +1056,14 @@ select = ["ALL"]
     }
 
     #[test]
-    fn test_nolint_no_add_to_generic() {
+    fn test_suppression_no_add_to_blanket() {
         let result = apply_nolint_at_cursor(
-            r#"# nolint
+            r#"# jarl-ignore
 <CURS>x = 1
 "#,
         );
 
         assert!(result.is_none());
-    }
-
-    // =========================================================================
-    // Nolint all snapshot tests (using real linter)
-    // =========================================================================
-
-    #[test]
-    fn test_nolint_all_insert_new() {
-        let result = apply_nolint_all_at_cursor(
-            r#"<CURS>x = 1
-"#,
-        )
-        .unwrap();
-
-        insta::assert_snapshot!(result, @r#"
-        # nolint
-        x = 1
-        "#);
-    }
-
-    #[test]
-    fn test_nolint_all_replaces_specific() {
-        let result = apply_nolint_all_at_cursor(
-            r#"# nolint: foo, bar
-<CURS>x = 1
-"#,
-        )
-        .unwrap();
-
-        insta::assert_snapshot!(result, @r#"
-        # nolint
-        x = 1
-        "#);
     }
 
     // =========================================================================
@@ -1152,7 +1087,7 @@ select = ["ALL"]
     }
 
     #[test]
-    fn test_nolint_action_properties() {
+    fn test_suppression_action_properties() {
         let content = "x = 1\n";
         let env = TestEnv::new(content);
         let snapshot = env.create_snapshot(content);
@@ -1163,23 +1098,9 @@ select = ["ALL"]
         let action = Server::diagnostic_to_nolint_rule_action(diagnostic, &snapshot).unwrap();
 
         assert!(action.title.contains("assignment"));
+        assert!(action.title.contains("jarl-ignore"));
         assert_eq!(action.kind, Some(types::CodeActionKind::QUICKFIX));
         assert!(!action.is_preferred.unwrap_or(true));
-    }
-
-    #[test]
-    fn test_nolint_all_action_properties() {
-        let content = "x = 1\n";
-        let env = TestEnv::new(content);
-        let snapshot = env.create_snapshot(content);
-
-        let diagnostics = lint::lint_document(&snapshot).unwrap();
-        let diagnostic = diagnostics.first().unwrap();
-
-        let action = Server::diagnostic_to_nolint_all_action(diagnostic, &snapshot).unwrap();
-
-        assert_eq!(action.title, "Ignore all violations on this node.");
-        assert_eq!(action.kind, Some(types::CodeActionKind::QUICKFIX));
     }
 
     // =========================================================================
@@ -1220,13 +1141,13 @@ select = ["ALL"]
         let snapshot_utf16 = create_test_snapshot_with_encoding(content, PositionEncoding::UTF16);
 
         let fix = DiagnosticFix {
-            content: String::new(),
+            content: "x <- 1".to_string(),
             start: 0,
-            end: 0,
+            end: 5,
             is_safe: true,
-            rule_name: rule_name.to_string(),
-            diagnostic_start: cursor_pos,
-            diagnostic_end: cursor_pos + 1, // Small range at cursor
+            rule_name: "assignment".to_string(),
+            diagnostic_start: 0,
+            diagnostic_end: 5,
         };
 
         let diagnostic_utf8 = create_test_diagnostic_with_fix(
