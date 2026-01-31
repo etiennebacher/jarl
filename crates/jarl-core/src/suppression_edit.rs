@@ -309,39 +309,6 @@ pub fn parse_existing_suppression(line: &str) -> Option<(String, Option<Vec<Stri
     None
 }
 
-/// Update an existing jarl-ignore comment to include a new rule.
-/// Returns the new comment text if the comment was updated, None if the rule already exists
-/// or if this is a blanket suppression.
-pub fn update_existing_suppression(
-    line: &str,
-    new_rule: &str,
-    explanation: &str,
-) -> Option<String> {
-    let (indent, existing_rules) = parse_existing_suppression(line)?;
-
-    match existing_rules {
-        None => {
-            // Blanket suppression, don't modify
-            None
-        }
-        Some(rules) => {
-            if rules.iter().any(|r| r == new_rule) {
-                // Rule already exists
-                None
-            } else {
-                // Add the new rule
-                let mut all_rules = rules;
-                all_rules.push(new_rule.to_string());
-                let rules_str = all_rules.join(", ");
-                Some(format!(
-                    "{}# jarl-ignore {}: {}",
-                    indent, rules_str, explanation
-                ))
-            }
-        }
-    }
-}
-
 /// Create a complete suppression edit for a diagnostic.
 ///
 /// This is the main entry point for creating suppression comments.
@@ -454,23 +421,5 @@ mod tests {
 
         // Not a suppression
         assert!(parse_existing_suppression("# some other comment").is_none());
-    }
-
-    #[test]
-    fn test_update_existing_suppression() {
-        // Add new rule
-        let updated =
-            update_existing_suppression("# jarl-ignore any_is_na: reason", "equals_na", "updated")
-                .unwrap();
-        assert_eq!(updated, "# jarl-ignore any_is_na, equals_na: updated");
-
-        // Rule already exists
-        assert!(
-            update_existing_suppression("# jarl-ignore any_is_na: reason", "any_is_na", "reason")
-                .is_none()
-        );
-
-        // Blanket suppression - don't modify
-        assert!(update_existing_suppression("# jarl-ignore", "any_is_na", "reason").is_none());
     }
 }

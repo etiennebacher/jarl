@@ -585,9 +585,32 @@ impl Server {
             fix.diagnostic_end,
         )?;
 
+        // Check if there's already a jarl-ignore comment that covers this rule
+        if insert_point.line > 0 && !insert_point.needs_leading_newline {
+            if let Some(prev_line_text) = Self::get_line_text(content, insert_point.line - 1) {
+                if let Some((_, existing_rules)) =
+                    suppression_edit::parse_existing_suppression(&prev_line_text)
+                {
+                    match existing_rules {
+                        None => {
+                            // Blanket suppression already exists, no need to add specific rule
+                            return None;
+                        }
+                        Some(rules) if rules.iter().any(|r| r == rule_name) => {
+                            // Rule already suppressed
+                            return None;
+                        }
+                        Some(_) => {
+                            // Other rules are suppressed, but not this one - we'll add a new line
+                        }
+                    }
+                }
+            }
+        }
+
+        // Always insert a new comment line (each rule gets its own comment with its own explanation)
         let (insert_range, new_comment) = if insert_point.needs_leading_newline {
             // Inline insertion: insert right at the expression with a leading newline
-            // Convert byte offset to LSP position
             let insert_pos = Self::offset_to_position(content, insert_point.offset);
             let comment = suppression_edit::format_suppression_comment(
                 rule_name,
@@ -596,56 +619,9 @@ impl Server {
                 true,
             );
             (types::Range::new(insert_pos, insert_pos), comment)
-        } else if insert_point.line > 0 {
-            // Check if there's already a jarl-ignore comment on the previous line
-            let prev_line_text = Self::get_line_text(content, insert_point.line - 1)?;
-
-            // Check for existing jarl-ignore comment
-            if let Some((_, existing_rules)) =
-                suppression_edit::parse_existing_suppression(&prev_line_text)
-            {
-                match existing_rules {
-                    None => {
-                        // Blanket suppression already exists, no need to add specific rule
-                        return None;
-                    }
-                    Some(rules) if rules.iter().any(|r| r == rule_name) => {
-                        // Rule already suppressed
-                        return None;
-                    }
-                    Some(_) => {
-                        // Update existing comment to add this rule
-                        if let Some(updated) = suppression_edit::update_existing_suppression(
-                            &prev_line_text,
-                            rule_name,
-                            "<reason>",
-                        ) {
-                            let prev_line_start =
-                                types::Position::new(insert_point.line as u32 - 1, 0);
-                            let prev_line_end = types::Position::new(
-                                insert_point.line as u32 - 1,
-                                prev_line_text.len() as u32,
-                            );
-                            (types::Range::new(prev_line_start, prev_line_end), updated)
-                        } else {
-                            return None;
-                        }
-                    }
-                }
-            } else {
-                // No existing suppression, insert new comment at line start
-                let line_start_pos = types::Position::new(insert_point.line as u32, 0);
-                let comment = suppression_edit::format_suppression_comment(
-                    rule_name,
-                    "<reason>",
-                    &insert_point.indent,
-                    false,
-                );
-                (types::Range::new(line_start_pos, line_start_pos), comment)
-            }
         } else {
-            // First line, just insert at beginning
-            let line_start_pos = types::Position::new(0, 0);
+            // Insert new comment at line start
+            let line_start_pos = types::Position::new(insert_point.line as u32, 0);
             let comment = suppression_edit::format_suppression_comment(
                 rule_name,
                 "<reason>",
@@ -1442,7 +1418,9 @@ mod tests {
     }
 
     #[test]
-    fn test_suppression_update_existing_comment() {
+    fn test_suppression_adds_new_line_with_existing_comment() {
+        // When there's already a suppression comment, we add a new line
+        // so each rule can have its own explanation
         let result = apply_suppression_edit(
             "# jarl-ignore foo: reason\nx = 1\ny = 2\n",
             26,
@@ -1452,14 +1430,16 @@ mod tests {
         .unwrap();
 
         insta::assert_snapshot!(result, @r#"
-        # jarl-ignore foo, assignment: <reason>
+        # jarl-ignore foo: reason
+        # jarl-ignore assignment: <reason>
         x = 1
         y = 2
         "#);
     }
 
     #[test]
-    fn test_suppression_multiline_update() {
+    fn test_suppression_multiline_adds_new_line() {
+        // Each rule gets its own suppression comment
         let content = r#"# jarl-ignore implicit_assignment: reason
 any(
   duplicated(
@@ -1476,7 +1456,8 @@ any(
         .unwrap();
 
         insta::assert_snapshot!(result, @r###"
-        # jarl-ignore implicit_assignment, any_duplicated: <reason>
+        # jarl-ignore implicit_assignment: reason
+        # jarl-ignore any_duplicated: <reason>
         any(
           duplicated(
             which(grepl("a", x))
@@ -1487,6 +1468,7 @@ any(
 
     #[test]
     fn test_suppression_preserves_indentation() {
+        // Adds a new comment line with proper indentation
         let result = apply_suppression_edit(
             "  # jarl-ignore foo: reason\n  x = 1\n  y = 2\n",
             30,
@@ -1496,7 +1478,8 @@ any(
         .unwrap();
 
         insta::assert_snapshot!(result, @r#"
-          # jarl-ignore foo, assignment: <reason>
+          # jarl-ignore foo: reason
+          # jarl-ignore assignment: <reason>
           x = 1
           y = 2
         "#);
@@ -1561,22 +1544,6 @@ any(
         );
 
         assert!(result.is_none(), "Should not add duplicate rule");
-    }
-
-    #[test]
-    fn test_suppression_blanket_covers_all() {
-        // Should return None when blanket suppression exists
-        let result = apply_suppression_edit(
-            "# jarl-ignore\nx = 1\n",
-            14,
-            19, // diagnostic on "x = 1"
-            "assignment",
-        );
-
-        assert!(
-            result.is_none(),
-            "Blanket suppression should cover all rules"
-        );
     }
 
     /// Helper function to convert LSP Position to byte offset in a string
