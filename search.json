@@ -262,7 +262,7 @@
     "href": "rules/misplaced_suppression.html",
     "title": "misplaced_suppression",
     "section": "",
-    "text": "Checks for suppression comments placed at the end of a line.\n\n\n\nEnd-of-line suppression comments (trailing comments) are not supported by Jarl because the comment system attaches them to the expression they follow, not to the next expression. This means the suppression would not apply to the intended code.\n\n\n\n# The comment below isn't applied because it's at the end of a line.\nany(is.na(x)) # jarl-ignore any_is_na: &lt;explanation&gt;\nUse instead:\n# jarl-ignore any_is_na: &lt;explanation&gt;\nany(is.na(x))",
+    "text": "Checks for suppression comments placed at the end of a line.\n\n\n\nEnd-of-line suppression comments (trailing comments) are not supported by Jarl because the comment system attaches them to the expression they follow, not to the next expression. This means the suppression would not apply to the intended code.\n\n\n\n# The comment below isn't applied because it's at the end of a line.\nany(is.na(x)) # jarl-ignore any_is_na: &lt;reason&gt;\nUse instead:\n# jarl-ignore any_is_na: &lt;reason&gt;\nany(is.na(x))",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -298,7 +298,7 @@
     "href": "rules/misplaced_suppression.html#example",
     "title": "misplaced_suppression",
     "section": "",
-    "text": "# The comment below isn't applied because it's at the end of a line.\nany(is.na(x)) # jarl-ignore any_is_na: &lt;explanation&gt;\nUse instead:\n# jarl-ignore any_is_na: &lt;explanation&gt;\nany(is.na(x))",
+    "text": "# The comment below isn't applied because it's at the end of a line.\nany(is.na(x)) # jarl-ignore any_is_na: &lt;reason&gt;\nUse instead:\n# jarl-ignore any_is_na: &lt;reason&gt;\nany(is.na(x))",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -358,7 +358,7 @@
     "href": "rules/misnamed_suppression.html",
     "title": "misnamed_suppression",
     "section": "",
-    "text": "Checks for suppression comments with an invalid rule name.\n\n\n\nA suppression comment with an unrecognized rule name will not suppress any violations. This could be due to a typo in the rule name or using a rule name that doesn’t exist.\n\n\n\n# The comment below isn't applied because \"any_isna\" is not a valid rule.\n# jarl-ignore any_isna: &lt;explanation&gt;\nany(is.na(x))\nUse instead:\n# jarl-ignore any_is_na: &lt;explanation&gt;\nany(is.na(x))",
+    "text": "Checks for suppression comments with an invalid rule name.\n\n\n\nA suppression comment with an unrecognized rule name will not suppress any violations. This could be due to a typo in the rule name or using a rule name that doesn’t exist.\n\n\n\n# The comment below isn't applied because \"any_isna\" is not a valid rule.\n# jarl-ignore any_isna: &lt;reason&gt;\nany(is.na(x))\nUse instead:\n# jarl-ignore any_is_na: &lt;reason&gt;\nany(is.na(x))",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -394,7 +394,7 @@
     "href": "rules/misnamed_suppression.html#example",
     "title": "misnamed_suppression",
     "section": "",
-    "text": "# The comment below isn't applied because \"any_isna\" is not a valid rule.\n# jarl-ignore any_isna: &lt;explanation&gt;\nany(is.na(x))\nUse instead:\n# jarl-ignore any_is_na: &lt;explanation&gt;\nany(is.na(x))",
+    "text": "# The comment below isn't applied because \"any_isna\" is not a valid rule.\n# jarl-ignore any_isna: &lt;reason&gt;\nany(is.na(x))\nUse instead:\n# jarl-ignore any_is_na: &lt;reason&gt;\nany(is.na(x))",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -502,7 +502,7 @@
     "href": "rules/unexplained_suppression.html",
     "title": "unexplained_suppression",
     "section": "",
-    "text": "Checks for suppression comments that are missing an explanation.\n\n\n\nSuppression comments without explanations make it hard to understand why a rule was suppressed. Over time, these unexplained suppressions can lead to technical debt as developers may not know if the suppression is still needed or what the original reason was.\nA # jarl-ignore comment without an explanation is ignored by Jarl.\n\n\n\n# The comment below isn't applied, the code below is still reported.\n# jarl-ignore any_is_na\nany(is.na(x))\nUse instead:\n# jarl-ignore any_is_na: &lt;explanation&gt;\nany(is.na(x))",
+    "text": "Checks for suppression comments that are missing an explanation.\n\n\n\nSuppression comments without explanations make it hard to understand why a rule was suppressed. Over time, these unexplained suppressions can lead to technical debt as developers may not know if the suppression is still needed or what the original reason was.\nA # jarl-ignore comment without an explanation is ignored by Jarl.\n\n\n\n# The comment below isn't applied, the code below is still reported.\n# jarl-ignore any_is_na\nany(is.na(x))\nUse instead:\n# jarl-ignore any_is_na: &lt;reason&gt;\nany(is.na(x))",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -538,7 +538,7 @@
     "href": "rules/unexplained_suppression.html#example",
     "title": "unexplained_suppression",
     "section": "",
-    "text": "# The comment below isn't applied, the code below is still reported.\n# jarl-ignore any_is_na\nany(is.na(x))\nUse instead:\n# jarl-ignore any_is_na: &lt;explanation&gt;\nany(is.na(x))",
+    "text": "# The comment below isn't applied, the code below is still reported.\n# jarl-ignore any_is_na\nany(is.na(x))\nUse instead:\n# jarl-ignore any_is_na: &lt;reason&gt;\nany(is.na(x))",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -718,7 +718,7 @@
     "href": "rules/unmatched_range_suppression.html",
     "title": "unmatched_range_suppression",
     "section": "",
-    "text": "Checks for jarl-ignore-start and jarl-ignore-end comments that don’t have a matching counterpart at the same nesting level.\n\n\n\nStart and end suppression comments must be matched at the same nesting level. A start comment inside a function body cannot be closed by an end comment outside that function, and vice versa. Unmatched suppressions indicate a mistake in the suppression structure and may not suppress what you intended.\n\n\n\n# The start and end are at different nesting levels, so both are unmatched.\n# jarl-ignore-start any_is_na: &lt;explanation&gt;\nf &lt;- function() {\n  any(is.na(x))\n  # jarl-ignore-end any_is_na\n}\nany(is.na(x))  # This is NOT suppressed!\nUse instead:\n# Start and end at the same level\n# jarl-ignore-start any_is_na: &lt;explanation&gt;\nany(is.na(x))\n# jarl-ignore-end any_is_na",
+    "text": "Checks for jarl-ignore-start and jarl-ignore-end comments that don’t have a matching counterpart at the same nesting level.\n\n\n\nStart and end suppression comments must be matched at the same nesting level. A start comment inside a function body cannot be closed by an end comment outside that function, and vice versa. Unmatched suppressions indicate a mistake in the suppression structure and may not suppress what you intended.\n\n\n\n# The start and end are at different nesting levels, so both are unmatched.\n# jarl-ignore-start any_is_na: &lt;reason&gt;\nf &lt;- function() {\n  any(is.na(x))\n  # jarl-ignore-end any_is_na\n}\nany(is.na(x))  # This is NOT suppressed!\nUse instead:\n# Start and end at the same level\n# jarl-ignore-start any_is_na: &lt;reason&gt;\nany(is.na(x))\n# jarl-ignore-end any_is_na",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -754,7 +754,7 @@
     "href": "rules/unmatched_range_suppression.html#example",
     "title": "unmatched_range_suppression",
     "section": "",
-    "text": "# The start and end are at different nesting levels, so both are unmatched.\n# jarl-ignore-start any_is_na: &lt;explanation&gt;\nf &lt;- function() {\n  any(is.na(x))\n  # jarl-ignore-end any_is_na\n}\nany(is.na(x))  # This is NOT suppressed!\nUse instead:\n# Start and end at the same level\n# jarl-ignore-start any_is_na: &lt;explanation&gt;\nany(is.na(x))\n# jarl-ignore-end any_is_na",
+    "text": "# The start and end are at different nesting levels, so both are unmatched.\n# jarl-ignore-start any_is_na: &lt;reason&gt;\nf &lt;- function() {\n  any(is.na(x))\n  # jarl-ignore-end any_is_na\n}\nany(is.na(x))  # This is NOT suppressed!\nUse instead:\n# Start and end at the same level\n# jarl-ignore-start any_is_na: &lt;reason&gt;\nany(is.na(x))\n# jarl-ignore-end any_is_na",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -826,7 +826,7 @@
     "href": "rules/outdated_suppression.html",
     "title": "outdated_suppression",
     "section": "",
-    "text": "Checks for suppression comments that don’t suppress any actual violations.\n\n\n\nSuppression comments that are no longer needed can be confusing and may indicate that the underlying code has changed but the comment was not updated. They also add noise to the codebase.\n\n\n\n# The suppression below is unnecessary because there's no any_is_na violation.\n# jarl-ignore any_is_na: &lt;explanation&gt;\nx &lt;- 1\nUse instead:\n# Remove the suppression comment since it's not needed.\nx &lt;- 1",
+    "text": "Checks for suppression comments that don’t suppress any actual violations.\n\n\n\nSuppression comments that are no longer needed can be confusing and may indicate that the underlying code has changed but the comment was not updated. They also add noise to the codebase.\n\n\n\n# The suppression below is unnecessary because there's no any_is_na violation.\n# jarl-ignore any_is_na: &lt;reason&gt;\nx &lt;- 1\nUse instead:\n# Remove the suppression comment since it's not needed.\nx &lt;- 1",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -862,7 +862,7 @@
     "href": "rules/outdated_suppression.html#example",
     "title": "outdated_suppression",
     "section": "",
-    "text": "# The suppression below is unnecessary because there's no any_is_na violation.\n# jarl-ignore any_is_na: &lt;explanation&gt;\nx &lt;- 1\nUse instead:\n# Remove the suppression comment since it's not needed.\nx &lt;- 1",
+    "text": "# The suppression below is unnecessary because there's no any_is_na violation.\n# jarl-ignore any_is_na: &lt;reason&gt;\nx &lt;- 1\nUse instead:\n# Remove the suppression comment since it's not needed.\nx &lt;- 1",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -1663,7 +1663,7 @@
     "href": "rules.html",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\ncomments (COMM): mistakes in the suppression comments (# jarl-ignore).\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_h728nzp8mxys9sjp0w4n",
+    "text": "All rules belong to at least one category:\n\ncomments (COMM): mistakes in the suppression comments (# jarl-ignore).\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_tsggaeq4eow0ta4mdhsc",
     "crumbs": [
       "Rules"
     ]
@@ -1673,7 +1673,7 @@
     "href": "rules.html#overview",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\ncomments (COMM): mistakes in the suppression comments (# jarl-ignore).\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_h728nzp8mxys9sjp0w4n",
+    "text": "All rules belong to at least one category:\n\ncomments (COMM): mistakes in the suppression comments (# jarl-ignore).\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_tsggaeq4eow0ta4mdhsc",
     "crumbs": [
       "Rules"
     ]
@@ -2101,7 +2101,7 @@
     "href": "rules/blanket_suppression.html",
     "title": "blanket_suppression",
     "section": "",
-    "text": "Checks for blanket suppression comments. Those are comments such as # jarl-ignore: &lt;explanation&gt; where a rule isn’t specified.\n\n\n\nThis type of comment isn’t supported by Jarl as it would suppress all possible violations. Suppression comments should always target one or a few rules, but never all of them.\n\n\n\n# The comment below isn't applied, the code below is still reported.\n# jarl-ignore: &lt;explanation&gt;\nany(is.na(x))\nUse instead to ignore the violation:\n# jarl-ignore any_is_na: &lt;explanation&gt;\nany(is.na(x))",
+    "text": "Checks for blanket suppression comments. Those are comments such as # jarl-ignore: &lt;reason&gt; where a rule isn’t specified.\n\n\n\nThis type of comment isn’t supported by Jarl as it would suppress all possible violations. Suppression comments should always target one or a few rules, but never all of them.\n\n\n\n# The comment below isn't applied, the code below is still reported.\n# jarl-ignore: &lt;reason&gt;\nany(is.na(x))\nUse instead to ignore the violation:\n# jarl-ignore any_is_na: &lt;reason&gt;\nany(is.na(x))",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -2113,7 +2113,7 @@
     "href": "rules/blanket_suppression.html#what-it-does",
     "title": "blanket_suppression",
     "section": "",
-    "text": "Checks for blanket suppression comments. Those are comments such as # jarl-ignore: &lt;explanation&gt; where a rule isn’t specified.",
+    "text": "Checks for blanket suppression comments. Those are comments such as # jarl-ignore: &lt;reason&gt; where a rule isn’t specified.",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -2137,7 +2137,7 @@
     "href": "rules/blanket_suppression.html#example",
     "title": "blanket_suppression",
     "section": "",
-    "text": "# The comment below isn't applied, the code below is still reported.\n# jarl-ignore: &lt;explanation&gt;\nany(is.na(x))\nUse instead to ignore the violation:\n# jarl-ignore any_is_na: &lt;explanation&gt;\nany(is.na(x))",
+    "text": "# The comment below isn't applied, the code below is still reported.\n# jarl-ignore: &lt;reason&gt;\nany(is.na(x))\nUse instead to ignore the violation:\n# jarl-ignore any_is_na: &lt;reason&gt;\nany(is.na(x))",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -3001,7 +3001,7 @@
     "href": "rules/misplaced_file_suppression.html",
     "title": "misplaced_file_suppression",
     "section": "",
-    "text": "Checks for # jarl-ignore-file comments that are not at the top of the file.\n\n\n\nFile-level suppression comments must appear at the very beginning of the file (before any code) to be applied. A # jarl-ignore-file comment placed elsewhere in the file is silently ignored by Jarl.\n\n\n\nx &lt;- 1\n\n# The comment below isn't applied because it's not at the top of the file.\n# jarl-ignore-file any_is_na: &lt;explanation&gt;\nany(is.na(x))\nUse instead:\n# jarl-ignore-file any_is_na: &lt;explanation&gt;\n\nx &lt;- 1\nany(is.na(x))",
+    "text": "Checks for # jarl-ignore-file comments that are not at the top of the file.\n\n\n\nFile-level suppression comments must appear at the very beginning of the file (before any code) to be applied. A # jarl-ignore-file comment placed elsewhere in the file is silently ignored by Jarl.\n\n\n\nx &lt;- 1\n\n# The comment below isn't applied because it's not at the top of the file.\n# jarl-ignore-file any_is_na: &lt;reason&gt;\nany(is.na(x))\nUse instead:\n# jarl-ignore-file any_is_na: &lt;reason&gt;\n\nx &lt;- 1\nany(is.na(x))",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -3037,7 +3037,7 @@
     "href": "rules/misplaced_file_suppression.html#example",
     "title": "misplaced_file_suppression",
     "section": "",
-    "text": "x &lt;- 1\n\n# The comment below isn't applied because it's not at the top of the file.\n# jarl-ignore-file any_is_na: &lt;explanation&gt;\nany(is.na(x))\nUse instead:\n# jarl-ignore-file any_is_na: &lt;explanation&gt;\n\nx &lt;- 1\nany(is.na(x))",
+    "text": "x &lt;- 1\n\n# The comment below isn't applied because it's not at the top of the file.\n# jarl-ignore-file any_is_na: &lt;reason&gt;\nany(is.na(x))\nUse instead:\n# jarl-ignore-file any_is_na: &lt;reason&gt;\n\nx &lt;- 1\nany(is.na(x))",
     "crumbs": [
       "Rules",
       "List of rules",
