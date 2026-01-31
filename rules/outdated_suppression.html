@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>vector_logic – jarl</title>
+<title>outdated_suppression – jarl</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -179,7 +179,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../rules/all_equal.html">List of rules</a></li><li class="breadcrumb-item"><a href="../rules/vector_logic.html">vector_logic</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../rules/all_equal.html">List of rules</a></li><li class="breadcrumb-item"><a href="../rules/outdated_suppression.html">outdated_suppression</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -424,7 +424,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../rules/outdated_suppression.html" class="sidebar-item-text sidebar-link">
+  <a href="../rules/outdated_suppression.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">outdated_suppression</span></a>
   </div>
 </li>
@@ -520,7 +520,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../rules/vector_logic.html" class="sidebar-item-text sidebar-link active">
+  <a href="../rules/vector_logic.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">vector_logic</span></a>
   </div>
 </li>
@@ -542,45 +542,39 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#vector_logic" id="toc-vector_logic" class="nav-link active" data-scroll-target="#vector_logic">vector_logic</a>
+  <li><a href="#outdated_suppression" id="toc-outdated_suppression" class="nav-link active" data-scroll-target="#outdated_suppression">outdated_suppression</a>
   <ul>
   <li><a href="#what-it-does" id="toc-what-it-does" class="nav-link" data-scroll-target="#what-it-does">What it does</a></li>
   <li><a href="#why-is-this-bad" id="toc-why-is-this-bad" class="nav-link" data-scroll-target="#why-is-this-bad">Why is this bad?</a></li>
   <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
-  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
   </ul></li>
   </ul>
-<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/vector_logic.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/outdated_suppression.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../rules/all_equal.html">List of rules</a></li><li class="breadcrumb-item"><a href="../rules/vector_logic.html">vector_logic</a></li></ol></nav></header>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../rules/all_equal.html">List of rules</a></li><li class="breadcrumb-item"><a href="../rules/outdated_suppression.html">outdated_suppression</a></li></ol></nav></header>
 
 
 
 
-<section id="vector_logic" class="level1">
-<h1>vector_logic</h1>
+<section id="outdated_suppression" class="level1">
+<h1>outdated_suppression</h1>
 <section id="what-it-does" class="level2">
 <h2 class="anchored" data-anchor-id="what-it-does">What it does</h2>
-<p>Checks for calls to <code>&amp;</code> and <code>|</code> in the conditions of <code>if</code> and <code>while</code> statements.</p>
+<p>Checks for suppression comments that don’t suppress any actual violations.</p>
 </section>
 <section id="why-is-this-bad" class="level2">
 <h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
-<p>Using <code>&amp;</code> and <code>|</code> requires evaluating both sides of the expression, which can be expensive. In contrast, <code>&amp;&amp;</code> and <code>||</code> have early exits. For example, <code>a &amp;&amp; b</code> will not evaluate <code>b</code> if <code>a</code> is <code>FALSE</code> because we already know that the output of the entire expression will be <code>FALSE</code>, regardless of the value of <code>b</code>. Similarly, <code>a || b</code> will not evaluate <code>b</code> if <code>a</code> is <code>TRUE</code>.</p>
-<p>This rule only reports cases where the binary expression is the top operation of the <code>condition</code> in an <code>if</code> or <code>while</code> statement. For example, <code>if (x &amp; y)</code> will be reported but <code>if (foo(x &amp; y))</code> will not. The reason for this is that in those two contexts, the length of <code>condition</code> must be equal to 1 (otherwise R would error as of 4.3.0), so using <code>&amp; / |</code> or <code>&amp;&amp; / ||</code> is equivalent.</p>
-<p>This rule doesn’t have an automatic fix.</p>
+<p>Suppression comments that are no longer needed can be confusing and may indicate that the underlying code has changed but the comment was not updated. They also add noise to the codebase.</p>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (x <span class="sc">&amp;</span> y) <span class="dv">1</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (x <span class="sc">|</span> y) <span class="dv">1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The suppression below is unnecessary because there's no any_is_na violation.</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># jarl-ignore any_is_na: &lt;explanation&gt;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Use instead:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (x <span class="sc">&amp;&amp;</span> y) <span class="dv">1</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (x <span class="sc">||</span> y) <span class="dv">1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="references" class="level2">
-<h2 class="anchored" data-anchor-id="references">References</h2>
-<p>See <code>?Logic</code></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove the suppression comment since it's not needed.</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>
@@ -992,4 +986,4 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/vector_logic.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/outdated_suppression.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
