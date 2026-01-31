@@ -1,23 +1,17 @@
 use crate::check::Checker;
 use crate::rule_set::Rule;
 use air_r_syntax::RIfStatement;
-use biome_rowan::AstNode;
 
 use crate::lints::base::coalesce::coalesce::coalesce;
 use crate::lints::base::unnecessary_nesting::unnecessary_nesting::unnecessary_nesting;
 
+/// Run all if statement-related lints.
+/// Suppressions are handled in post-processing via filter_diagnostics.
 pub fn if_(r_expr: &RIfStatement, checker: &mut Checker) -> anyhow::Result<()> {
-    let node = r_expr.syntax();
-
-    // Check suppressions once for this node
-    let suppressed_rules = checker.get_suppressed_rules(node);
-
-    if checker.is_rule_enabled(Rule::Coalesce) && !suppressed_rules.contains(&Rule::Coalesce) {
+    if checker.is_rule_enabled(Rule::Coalesce) {
         checker.report_diagnostic(coalesce(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::UnnecessaryNesting)
-        && !suppressed_rules.contains(&Rule::UnnecessaryNesting)
-    {
+    if checker.is_rule_enabled(Rule::UnnecessaryNesting) {
         checker.report_diagnostic(unnecessary_nesting(r_expr)?);
     }
     Ok(())
