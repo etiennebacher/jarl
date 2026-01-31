@@ -15,6 +15,7 @@ pub(crate) mod equals_null;
 pub(crate) mod fixed_regex;
 pub(crate) mod for_loop_index;
 pub(crate) mod grepv;
+pub(crate) mod if_constant_condition;
 pub(crate) mod implicit_assignment;
 pub(crate) mod internal_function;
 pub(crate) mod is_numeric;

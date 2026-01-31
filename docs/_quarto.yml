@@ -80,6 +80,7 @@ website:
       - rules/fixed_regex.md
       - rules/for_loop_index.md
       - rules/grepv.md
+      - rules/if_constant_condition.md
       - rules/implicit_assignment.md
       - rules/internal_function.md
       - rules/is_numeric.md
