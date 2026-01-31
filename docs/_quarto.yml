@@ -106,6 +106,7 @@ website:
       - rules/system_file.md
       - rules/true_false_symbol.md
       - rules/unexplained_suppression.md
+      - rules/unmatched_range_suppression.md
       - rules/unnecessary_nesting.md
       - rules/unreachable_code.md
       - rules/vector_logic.md

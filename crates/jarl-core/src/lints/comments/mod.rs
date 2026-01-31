@@ -4,3 +4,4 @@ pub(crate) mod misplaced_file_suppression;
 pub(crate) mod misplaced_suppression;
 pub(crate) mod outdated_suppression;
 pub(crate) mod unexplained_suppression;
+pub(crate) mod unmatched_range_suppression;

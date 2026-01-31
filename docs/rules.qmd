@@ -96,6 +96,7 @@ dat <- as.data.frame(
     c("system_file", "readability", "✅", ""),
     c("true_false_symbol", "readability", "❌", ""),
     c("unexplained_suppression", "comments", "❌", ""),
+    c("unmatched_range_suppression", "comments", "❌", ""),
     c("unnecessary_nesting", "readability", "✅", "Disabled by default"),
     c("unreachable_code", "readability, suspicious", "❌", ""),
     c("unused_suppression", "comments", "❌", ""),

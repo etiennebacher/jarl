@@ -25,6 +25,9 @@ use crate::lints::comments::misplaced_file_suppression::misplaced_file_suppressi
 use crate::lints::comments::misplaced_suppression::misplaced_suppression::misplaced_suppression;
 use crate::lints::comments::outdated_suppression::outdated_suppression::outdated_suppression;
 use crate::lints::comments::unexplained_suppression::unexplained_suppression::unexplained_suppression;
+use crate::lints::comments::unmatched_range_suppression::unmatched_range_suppression::{
+    unmatched_range_suppression_end, unmatched_range_suppression_start,
+};
 use crate::rule_set::RuleSet;
 use crate::utils::*;
 
@@ -261,6 +264,20 @@ pub fn check_file(checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::MisnamedSuppression) {
         let diagnostics = misnamed_suppression(&checker.suppression.misnamed_suppressions);
         for diagnostic in diagnostics {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    }
+
+    // Report unmatched start/end suppression comments
+    if checker.is_rule_enabled(Rule::UnmatchedRangeSuppression) {
+        let start_diagnostics =
+            unmatched_range_suppression_start(&checker.suppression.unmatched_start_suppressions);
+        for diagnostic in start_diagnostics {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+        let end_diagnostics =
+            unmatched_range_suppression_end(&checker.suppression.unmatched_end_suppressions);
+        for diagnostic in end_diagnostics {
             checker.report_diagnostic(Some(diagnostic));
         }
     }
