@@ -5,6 +5,14 @@ expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"chec
 success: false
 exit_code: 1
 ----- stdout -----
+warning: misnamed_suppression
+ --> test.R:2:1
+  |
+2 | # jarl-ignore not_a_real_rule: some reason
+  | ------------------------------------------ This comment isn't used by Jarl because it contains an unrecognized rule name.
+  |
+  = help: Check the rule name for typos.
+
 warning: any_is_na
  --> test.R:3:1
   |
@@ -13,7 +21,7 @@ warning: any_is_na
   |
   = help: Use `anyNA(...)` instead.
 
-Found 1 error.
+Found 2 errors.
 1 fixable with the `--fix` option.
 
 ----- stderr -----

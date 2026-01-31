@@ -29,7 +29,8 @@ any(is.na(x))",
             "
 # jarl-ignore-start any_is_na: <explanation>
 any(is.na(x))
-# jarl-ignore-end any_is_na: <explanation>",
+# jarl-ignore-end any_is_na
+x <- 1",
             "misplaced_suppression",
             None,
         );
