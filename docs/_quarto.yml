@@ -92,6 +92,7 @@ website:
       - rules/misplaced_file_suppression.md
       - rules/misplaced_suppression.md
       - rules/numeric_leading_zero.md
+      - rules/outdated_suppression.md
       - rules/outer_negation.md
       - rules/redundant_equals.md
       - rules/redundant_ifelse.md

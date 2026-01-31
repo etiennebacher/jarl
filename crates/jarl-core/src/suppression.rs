@@ -10,6 +10,7 @@ use biome_formatter::comments::{
 use biome_rowan::{SyntaxTriviaPieceComments, TextRange};
 use std::collections::{HashMap, HashSet};
 
+use crate::diagnostic::Diagnostic;
 use crate::directive::{DirectiveParseResult, LintDirective, parse_comment_directive};
 use crate::rule_set::Rule;
 
@@ -72,16 +73,40 @@ pub struct SkipRegion {
     pub range: TextRange,
     /// The rule to skip in this region
     pub rule: Rule,
+    /// The range of the comment that created this region (for tracking usage)
+    pub comment_range: TextRange,
+}
+
+/// Represents a node-level suppression (# jarl-ignore rule: explanation)
+#[derive(Debug, Clone)]
+pub struct NodeSuppression {
+    /// The range of the node this suppression applies to
+    pub node_range: TextRange,
+    /// The rule being suppressed
+    pub rule: Rule,
+    /// The range of the suppression comment
+    pub comment_range: TextRange,
+}
+
+/// Represents a file-level suppression
+#[derive(Debug, Clone)]
+pub struct FileSuppression {
+    /// The rule being suppressed
+    pub rule: Rule,
+    /// The range of the suppression comment
+    pub comment_range: TextRange,
 }
 
 /// Intermediate state used during single-pass comment collection
 struct CommentCollector {
-    /// Track start positions per rule for building skip regions
-    starts: HashMap<Rule, TextRange>,
+    /// Track start positions per rule for building skip regions (rule -> (region_start, comment_range))
+    starts: HashMap<Rule, (TextRange, TextRange)>,
     /// Completed skip regions
     skip_regions: Vec<SkipRegion>,
     /// Rules suppressed at file level
-    file_suppressions: HashSet<Rule>,
+    file_suppressions: Vec<FileSuppression>,
+    /// Node-level suppressions
+    node_suppressions: Vec<NodeSuppression>,
     /// Blanket suppression locations
     blanket_suppressions: Vec<TextRange>,
     /// Suppressions with missing explanations
@@ -101,7 +126,8 @@ impl CommentCollector {
         Self {
             starts: HashMap::new(),
             skip_regions: Vec::new(),
-            file_suppressions: HashSet::new(),
+            file_suppressions: Vec::new(),
+            node_suppressions: Vec::new(),
             blanket_suppressions: Vec::new(),
             unexplained_suppressions: Vec::new(),
             misplaced_file_suppressions: Vec::new(),
@@ -119,13 +145,11 @@ pub struct SuppressionManager {
     /// Regions defined by jarl-ignore-start/end blocks
     pub skip_regions: Vec<SkipRegion>,
     /// Rules suppressed at file level via jarl-ignore-file
-    pub file_suppressions: HashSet<Rule>,
+    pub file_suppressions: Vec<FileSuppression>,
+    /// Node-level suppressions (# jarl-ignore rule: explanation)
+    pub node_suppressions: Vec<NodeSuppression>,
     /// Fast path: true if there are any suppressions anywhere in the file
     pub has_any_suppressions: bool,
-    /// Suppressions inherited from ancestor nodes (for cascading behavior).
-    /// This is a stack - we push when entering nodes with suppressions and
-    /// truncate when leaving.
-    pub inherited_suppressions: Vec<Rule>,
     /// Locations of blanket suppression comments (e.g., `# jarl-ignore` without a rule)
     pub blanket_suppressions: Vec<TextRange>,
     /// Suppressions with missing explanations
@@ -136,6 +160,8 @@ pub struct SuppressionManager {
     pub misplaced_suppressions: Vec<TextRange>,
     /// Suppressions with invalid rule names
     pub misnamed_suppressions: Vec<TextRange>,
+    /// Tracks which suppression comment ranges have been used (suppressed a real violation)
+    pub used_suppressions: HashSet<TextRange>,
 }
 
 impl SuppressionManager {
@@ -151,14 +177,15 @@ impl SuppressionManager {
             return Self {
                 comments: Comments::default(),
                 skip_regions: Vec::new(),
-                file_suppressions: HashSet::new(),
+                file_suppressions: Vec::new(),
+                node_suppressions: Vec::new(),
                 has_any_suppressions: false,
-                inherited_suppressions: Vec::new(),
                 blanket_suppressions: Vec::new(),
                 unexplained_suppressions: Vec::new(),
                 misplaced_file_suppressions: Vec::new(),
                 misplaced_suppressions: Vec::new(),
                 misnamed_suppressions: Vec::new(),
+                used_suppressions: HashSet::new(),
             };
         }
 
@@ -177,13 +204,14 @@ impl SuppressionManager {
             comments,
             skip_regions: collector.skip_regions,
             file_suppressions: collector.file_suppressions,
+            node_suppressions: collector.node_suppressions,
             has_any_suppressions,
-            inherited_suppressions: Vec::new(),
             blanket_suppressions: collector.blanket_suppressions,
             unexplained_suppressions: collector.unexplained_suppressions,
             misplaced_file_suppressions: collector.misplaced_file_suppressions,
             misplaced_suppressions: collector.misplaced_suppressions,
             misnamed_suppressions: collector.misnamed_suppressions,
+            used_suppressions: HashSet::new(),
         }
     }
 
@@ -195,11 +223,14 @@ impl SuppressionManager {
         is_first_expression: bool,
         source: &str,
     ) {
+        let node_range = node.text_trimmed_range();
+
         // Process leading comments (file suppressions only valid here)
         for comment in comments.leading_comments(node) {
             Self::process_comment(
                 comment.piece().text(),
                 comment.piece().text_range(),
+                node_range,
                 collector,
                 is_first_expression,
                 false, // not trailing
@@ -215,6 +246,7 @@ impl SuppressionManager {
             Self::process_comment(
                 comment.piece().text(),
                 range,
+                node_range,
                 collector,
                 false,
                 is_true_end_of_line,
@@ -226,6 +258,7 @@ impl SuppressionManager {
             Self::process_comment(
                 comment.piece().text(),
                 comment.piece().text_range(),
+                node_range,
                 collector,
                 false,
                 false, // not trailing
@@ -266,7 +299,8 @@ impl SuppressionManager {
     /// Process a single comment and update the collector
     fn process_comment(
         text: &str,
-        range: TextRange,
+        comment_range: TextRange,
+        node_range: TextRange,
         collector: &mut CommentCollector,
         allow_file_suppression: bool,
         is_trailing: bool,
@@ -275,56 +309,70 @@ impl SuppressionManager {
             Some(DirectiveParseResult::Valid(directive)) => {
                 // Trailing comments (end-of-line) are not supported for suppressions
                 if is_trailing {
-                    collector.misplaced_suppressions.push(range);
+                    collector.misplaced_suppressions.push(comment_range);
                     return;
                 }
                 collector.has_any_valid_directive = true;
                 match directive {
                     LintDirective::IgnoreStart(rule) => {
-                        collector.starts.insert(rule, range);
+                        // Store both the region start position and the comment range
+                        collector
+                            .starts
+                            .insert(rule, (comment_range, comment_range));
                     }
                     LintDirective::IgnoreEnd(rule) => {
-                        if let Some(start_range) = collector.starts.remove(&rule) {
+                        if let Some((start_comment_range, _)) = collector.starts.remove(&rule) {
                             collector.skip_regions.push(SkipRegion {
-                                range: TextRange::new(start_range.start(), range.end()),
+                                range: TextRange::new(
+                                    start_comment_range.start(),
+                                    comment_range.end(),
+                                ),
                                 rule,
+                                comment_range: start_comment_range,
                             });
                         }
                     }
                     LintDirective::IgnoreFile(rule) => {
                         if allow_file_suppression {
-                            collector.file_suppressions.insert(rule);
+                            collector
+                                .file_suppressions
+                                .push(FileSuppression { rule, comment_range });
                         } else {
-                            collector.misplaced_file_suppressions.push(range);
+                            collector.misplaced_file_suppressions.push(comment_range);
                         }
                     }
-                    LintDirective::Ignore(_) => {
-                        // Node-level suppressions are handled at check time via check_node_comments
+                    LintDirective::Ignore(rule) => {
+                        // Collect node-level suppressions
+                        collector.node_suppressions.push(NodeSuppression {
+                            node_range,
+                            rule,
+                            comment_range,
+                        });
                     }
                 }
             }
             Some(DirectiveParseResult::BlanketSuppression) => {
                 // Trailing comments are also misplaced
                 if is_trailing {
-                    collector.misplaced_suppressions.push(range);
+                    collector.misplaced_suppressions.push(comment_range);
                 } else {
-                    collector.blanket_suppressions.push(range);
+                    collector.blanket_suppressions.push(comment_range);
                 }
             }
             Some(DirectiveParseResult::MissingExplanation) => {
                 // Trailing comments are also misplaced
                 if is_trailing {
-                    collector.misplaced_suppressions.push(range);
+                    collector.misplaced_suppressions.push(comment_range);
                 } else {
-                    collector.unexplained_suppressions.push(range);
+                    collector.unexplained_suppressions.push(comment_range);
                 }
             }
             Some(DirectiveParseResult::InvalidRuleName) => {
                 // Trailing comments are also misplaced
                 if is_trailing {
-                    collector.misplaced_suppressions.push(range);
+                    collector.misplaced_suppressions.push(comment_range);
                 } else {
-                    collector.misnamed_suppressions.push(range);
+                    collector.misnamed_suppressions.push(comment_range);
                 }
             }
             None => {}
@@ -399,7 +447,7 @@ impl SuppressionManager {
         }
 
         // Check file-level suppressions first
-        if self.file_suppressions.contains(&rule) {
+        if self.file_suppressions.iter().any(|s| s.rule == rule) {
             return true;
         }
 
@@ -414,5 +462,84 @@ impl SuppressionManager {
         // Check node-level suppression (with cascading to ancestors)
         let suppressed = self.check_suppression(node);
         suppressed.contains(&rule)
+    }
+
+    /// Filter diagnostics by suppressions and track which suppressions were used.
+    /// Returns the filtered diagnostics (those that should be reported).
+    ///
+    /// This follows Ruff's approach: collect all diagnostics first, then remove
+    /// those that are suppressed.
+    pub fn filter_diagnostics(&mut self, diagnostics: Vec<Diagnostic>) -> Vec<Diagnostic> {
+        // Fast path: if there are no suppressions, return all diagnostics
+        if !self.has_any_suppressions {
+            return diagnostics;
+        }
+
+        diagnostics
+            .into_iter()
+            .filter(|diag| !self.is_diagnostic_suppressed(diag))
+            .collect()
+    }
+
+    /// Check if a diagnostic should be suppressed, and if so, mark the suppression as used.
+    fn is_diagnostic_suppressed(&mut self, diag: &Diagnostic) -> bool {
+        let Some(rule) = Rule::from_name(&diag.message.name) else {
+            return false;
+        };
+
+        // Check file-level suppressions
+        for sup in &self.file_suppressions {
+            if sup.rule == rule {
+                self.used_suppressions.insert(sup.comment_range);
+                return true;
+            }
+        }
+
+        // Check region-level suppressions
+        for region in &self.skip_regions {
+            if region.rule == rule && region.range.contains_range(diag.range) {
+                self.used_suppressions.insert(region.comment_range);
+                return true;
+            }
+        }
+
+        // Check node-level suppressions (cascading: diagnostic within node range)
+        for sup in &self.node_suppressions {
+            if sup.rule == rule && sup.node_range.contains_range(diag.range) {
+                self.used_suppressions.insert(sup.comment_range);
+                return true;
+            }
+        }
+
+        false
+    }
+
+    /// Get all suppression comment ranges that were never used.
+    /// This is used to report outdated suppressions.
+    pub fn get_unused_suppressions(&self) -> Vec<TextRange> {
+        let mut unused = Vec::new();
+
+        // Check file-level suppressions
+        for sup in &self.file_suppressions {
+            if !self.used_suppressions.contains(&sup.comment_range) {
+                unused.push(sup.comment_range);
+            }
+        }
+
+        // Check region-level suppressions
+        for region in &self.skip_regions {
+            if !self.used_suppressions.contains(&region.comment_range) {
+                unused.push(region.comment_range);
+            }
+        }
+
+        // Check node-level suppressions
+        for sup in &self.node_suppressions {
+            if !self.used_suppressions.contains(&sup.comment_range) {
+                unused.push(sup.comment_range);
+            }
+        }
+
+        unused
     }
 }

@@ -187,6 +187,8 @@ x = any(is.na(y))
             .current_dir(directory)
             .arg("check")
             .arg(".")
+            .arg("--extend-select")
+            .arg("assignment")
             .run()
             .normalize_os_executable_name()
     );
@@ -351,7 +353,8 @@ fn test_jarl_ignore_file_multiple_rules() -> anyhow::Result<()> {
     let test_path = "test.R";
     std::fs::write(
         directory.join(test_path),
-        "# jarl-ignore-file any_is_na: legacy patterns
+        "
+# jarl-ignore-file any_is_na: legacy patterns
 # jarl-ignore-file assignment: uses = throughout
 x = any(is.na(y))
 z = any(is.na(w))
@@ -363,6 +366,8 @@ z = any(is.na(w))
             .current_dir(directory)
             .arg("check")
             .arg(".")
+            .arg("--extend-select")
+            .arg("assignment")
             .run()
             .normalize_os_executable_name()
     );

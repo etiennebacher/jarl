@@ -5,6 +5,14 @@ expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"chec
 success: false
 exit_code: 1
 ----- stdout -----
+warning: outdated_suppression
+ --> test.R:2:1
+  |
+2 | # jarl-ignore any_duplicated: wrong rule for this violation
+  | ----------------------------------------------------------- This suppression comment is unused, no violation would be reported without it.
+  |
+  = help: Remove this suppression comment or verify that it's still needed.
+
 warning: any_is_na
  --> test.R:3:1
   |
@@ -13,7 +21,7 @@ warning: any_is_na
   |
   = help: Use `anyNA(...)` instead.
 
-Found 1 error.
+Found 2 errors.
 1 fixable with the `--fix` option.
 
 ----- stderr -----
