@@ -1360,23 +1360,29 @@ mod tests {
     // Suppression comment insertion tests
     // =========================================================================
 
-    /// Helper to apply a suppression comment edit and return the resulting code
-    fn apply_suppression_edit(
-        content: &str,
-        diagnostic_start: usize,
-        diagnostic_end: usize,
-        rule_name: &str,
-    ) -> Option<String> {
-        let snapshot = create_test_snapshot(content);
+    /// Apply a suppression comment at the cursor position marked by `<CURS>`.
+    ///
+    /// The cursor marker indicates where the diagnostic is located. The marker
+    /// is removed from the source before applying the edit.
+    ///
+    /// Returns the resulting code after applying the suppression, or None if
+    /// the suppression couldn't be applied (e.g., rule already suppressed).
+    fn apply_suppression_at_cursor(source_with_cursor: &str, rule_name: &str) -> Option<String> {
+        const CURSOR: &str = "<CURS>";
+
+        let cursor_pos = source_with_cursor.find(CURSOR)?;
+        let content = source_with_cursor.replace(CURSOR, "");
+
+        let snapshot = create_test_snapshot(&content);
 
         let fix = DiagnosticFix {
-            content: String::new(), // Not used for suppression
+            content: String::new(),
             start: 0,
             end: 0,
             is_safe: true,
             rule_name: rule_name.to_string(),
-            diagnostic_start,
-            diagnostic_end,
+            diagnostic_start: cursor_pos,
+            diagnostic_end: cursor_pos + 1, // Small range at cursor
         };
 
         let diagnostic = create_test_diagnostic_with_fix(
@@ -1402,15 +1408,17 @@ mod tests {
 
     #[test]
     fn test_suppression_insert_new_comment() {
-        let result = apply_suppression_edit(
-            "x = 1\ny = 2\n",
-            0,
-            5, // diagnostic on "x = 1"
+        let result = apply_suppression_at_cursor(
+            r#"
+<CURS>x = 1
+y = 2
+"#,
             "assignment",
         )
         .unwrap();
 
         insta::assert_snapshot!(result, @r#"
+
         # jarl-ignore assignment: <reason>
         x = 1
         y = 2
@@ -1419,17 +1427,18 @@ mod tests {
 
     #[test]
     fn test_suppression_adds_new_line_with_existing_comment() {
-        // When there's already a suppression comment, we add a new line
-        // so each rule can have its own explanation
-        let result = apply_suppression_edit(
-            "# jarl-ignore foo: reason\nx = 1\ny = 2\n",
-            26,
-            31, // diagnostic on "x = 1" (after the comment line)
+        let result = apply_suppression_at_cursor(
+            r#"
+# jarl-ignore foo: reason
+<CURS>x = 1
+y = 2
+"#,
             "assignment",
         )
         .unwrap();
 
         insta::assert_snapshot!(result, @r#"
+
         # jarl-ignore foo: reason
         # jarl-ignore assignment: <reason>
         x = 1
@@ -1439,23 +1448,21 @@ mod tests {
 
     #[test]
     fn test_suppression_multiline_adds_new_line() {
-        // Each rule gets its own suppression comment
-        let content = r#"# jarl-ignore implicit_assignment: reason
-any(
+        let result = apply_suppression_at_cursor(
+            r#"
+# jarl-ignore implicit_assignment: reason
+<CURS>any(
   duplicated(
     which(grepl("a", x))
   )
 )
-"#;
-        let result = apply_suppression_edit(
-            content,
-            42,
-            80, // diagnostic on the any(...) call
+"#,
             "any_duplicated",
         )
         .unwrap();
 
         insta::assert_snapshot!(result, @r###"
+
         # jarl-ignore implicit_assignment: reason
         # jarl-ignore any_duplicated: <reason>
         any(
@@ -1468,16 +1475,18 @@ any(
 
     #[test]
     fn test_suppression_preserves_indentation() {
-        // Adds a new comment line with proper indentation
-        let result = apply_suppression_edit(
-            "  # jarl-ignore foo: reason\n  x = 1\n  y = 2\n",
-            30,
-            35, // diagnostic on "x = 1"
+        let result = apply_suppression_at_cursor(
+            r#"
+  # jarl-ignore foo: reason
+  <CURS>x = 1
+  y = 2
+"#,
             "assignment",
         )
         .unwrap();
 
         insta::assert_snapshot!(result, @r#"
+
           # jarl-ignore foo: reason
           # jarl-ignore assignment: <reason>
           x = 1
@@ -1487,21 +1496,18 @@ any(
 
     #[test]
     fn test_suppression_inside_function() {
-        // When the inner expression is on its own line inside a function,
-        // the suppression goes before that expression
-        let content = r#"f <- function() {
-  any(is.na(x))
+        let result = apply_suppression_at_cursor(
+            r#"
+f <- function() {
+  <CURS>any(is.na(x))
 }
-"#;
-        let result = apply_suppression_edit(
-            content,
-            20,
-            33, // diagnostic on "any(is.na(x))"
+"#,
             "any_is_na",
         )
         .unwrap();
 
         insta::assert_snapshot!(result, @r###"
+
         f <- function() {
           # jarl-ignore any_is_na: <reason>
           any(is.na(x))
@@ -1511,18 +1517,20 @@ any(
 
     #[test]
     fn test_suppression_inline_condition() {
-        // Diagnostic on "y <- 1" inside else if condition
-        let content = "if (x) {\n  1\n} else if (y <- 1) {\n  2\n}\n";
-        let result = apply_suppression_edit(
-            content,
-            24,
-            30, // diagnostic on "y <- 1"
+        let result = apply_suppression_at_cursor(
+            r#"
+if (x) {
+  1
+} else if (<CURS>y <- 1) {
+  2
+}
+"#,
             "implicit_assignment",
         )
         .unwrap();
 
-        // Should insert inline with leading newline since "y <- 1" is not on its own line
         insta::assert_snapshot!(result, @r###"
+
         if (x) {
           1
         } else if (
@@ -1535,11 +1543,11 @@ any(
 
     #[test]
     fn test_suppression_no_duplicate() {
-        // Should return None when rule is already suppressed
-        let result = apply_suppression_edit(
-            "# jarl-ignore assignment: already suppressed\nx = 1\n",
-            46,
-            51, // diagnostic on "x = 1"
+        let result = apply_suppression_at_cursor(
+            r#"
+# jarl-ignore assignment: already suppressed
+<CURS>x = 1
+"#,
             "assignment",
         );
 
