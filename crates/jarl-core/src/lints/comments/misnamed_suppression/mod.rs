@@ -85,7 +85,7 @@ any(is.na(x))
     fn test_lint_misnamed_suppression_region_end() {
         let lint_msg = "unrecognized rule name";
 
-        // Non-existent rule in region end (with code after to ensure comment is attached)
+        // Non-existent rule in region end
         expect_lint(
             "
 # jarl-ignore-start any_is_na: <explanation>

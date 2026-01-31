@@ -167,7 +167,7 @@ impl SuppressionManager {
 
         // Single pass: collect all directive information at once
         let mut collector = CommentCollector::new();
-        Self::collect_all_directives(root, &comments, &mut collector, true);
+        Self::collect_all_directives(root, &comments, &mut collector, true, source);
 
         let has_any_suppressions = !collector.skip_regions.is_empty()
             || !collector.file_suppressions.is_empty()
@@ -193,6 +193,7 @@ impl SuppressionManager {
         comments: &Comments<RLanguage>,
         collector: &mut CommentCollector,
         is_first_expression: bool,
+        source: &str,
     ) {
         // Process leading comments (file suppressions only valid here)
         for comment in comments.leading_comments(node) {
@@ -206,13 +207,17 @@ impl SuppressionManager {
         }
 
         // Process trailing comments (end-of-line comments)
+        // Note: biome classifies comments at EOF as "trailing" even if they're on their own line.
+        // We need to check if the comment is actually on the same line as code (true end-of-line).
         for comment in comments.trailing_comments(node) {
+            let range = comment.piece().text_range();
+            let is_true_end_of_line = Self::is_same_line_as_code(range, source);
             Self::process_comment(
                 comment.piece().text(),
-                comment.piece().text_range(),
+                range,
                 collector,
                 false,
-                true, // trailing
+                is_true_end_of_line,
             );
         }
 
@@ -230,8 +235,31 @@ impl SuppressionManager {
         // Recursively process children
         let mut is_first = is_first_expression;
         for child in node.children() {
-            Self::collect_all_directives(&child, comments, collector, is_first);
+            Self::collect_all_directives(&child, comments, collector, is_first, source);
             is_first = false; // Only the first child can have file-level suppressions
+        }
+    }
+
+    /// Check if a comment is on the same line as code (true end-of-line comment)
+    /// Returns true if there's no newline between the start of the line and the comment
+    fn is_same_line_as_code(comment_range: TextRange, source: &str) -> bool {
+        let start = comment_range.start().into();
+        if start == 0 {
+            return false; // Comment at start of file is not end-of-line
+        }
+
+        // Look backwards from comment start to find if there's code on the same line
+        let before_comment = &source[..start];
+
+        // Find the last newline before the comment
+        if let Some(last_newline) = before_comment.rfind('\n') {
+            // Check if there's any non-whitespace between the newline and the comment
+            let between = &before_comment[last_newline + 1..];
+            between.chars().any(|c| !c.is_whitespace())
+        } else {
+            // No newline found - comment is on first line
+            // Check if there's any non-whitespace before it
+            before_comment.chars().any(|c| !c.is_whitespace())
         }
     }
 
