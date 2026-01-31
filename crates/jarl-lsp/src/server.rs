@@ -592,16 +592,12 @@ impl Server {
                     suppression_edit::parse_existing_suppression(&prev_line_text)
                 {
                     match existing_rules {
-                        None => {
-                            // Blanket suppression already exists, no need to add specific rule
-                            return None;
-                        }
                         Some(rules) if rules.iter().any(|r| r == rule_name) => {
                             // Rule already suppressed
                             return None;
                         }
-                        Some(_) => {
-                            // Other rules are suppressed, but not this one - we'll add a new line
+                        _ => {
+                            // No rules or other rules - we'll add a new line
                         }
                     }
                 }
@@ -948,29 +944,31 @@ select = ["ALL"]
     #[test]
     fn test_suppression_insert_new_comment() {
         let result = apply_nolint_at_cursor(
-            r#"<CURS>x = 1
-"#,
-        )
-        .unwrap();
-
-        insta::assert_snapshot!(result, @r#"
-        # jarl-ignore assignment: <reason>
-        x = 1
-        "#);
-    }
-
-    #[test]
-    fn test_suppression_any_is_na() {
-        let result = apply_nolint_at_cursor(
             r#"<CURS>any(is.na(x))
 "#,
         )
         .unwrap();
 
         insta::assert_snapshot!(result, @r#"
-        # jarl-ignore any_is_na: <reason>
-        any(is.na(x))
-        "#);
+# jarl-ignore any_is_na: <reason>
+any(is.na(x))
+"#);
+    }
+
+    #[test]
+    fn test_suppression_insert_new_comment_between_violations() {
+        let result = apply_nolint_at_cursor(
+            r#"x = 1
+<CURS>x = 2
+"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+        x = 1
+        # jarl-ignore assignment: <reason>
+        x = 2
+        ");
     }
 
     #[test]
@@ -1008,6 +1006,29 @@ select = ["ALL"]
     }
 
     #[test]
+    fn test_insert_suppression_with_if_condition() {
+        let result = apply_nolint_at_cursor(
+            r#"if (x) {
+  x = 1
+} else if (<CURS>x <- 2) {
+  x = 1
+}
+"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+        if (x) {
+          x = 1
+        } else if (
+                   # jarl-ignore implicit_assignment: <reason>
+                   x <- 2) {
+          x = 1
+        }
+        ");
+    }
+
+    #[test]
     fn test_suppression_no_duplicate_rule() {
         let result = apply_nolint_at_cursor(
             r#"# jarl-ignore assignment: already suppressed
@@ -1019,14 +1040,20 @@ select = ["ALL"]
     }
 
     #[test]
-    fn test_suppression_no_add_to_blanket() {
+    fn test_suppression_with_invalid_blanket_above() {
+        // "# jarl-ignore" without a rule name is invalid, so we should still insert a new comment
         let result = apply_nolint_at_cursor(
             r#"# jarl-ignore
 <CURS>x = 1
 "#,
-        );
+        )
+        .unwrap();
 
-        assert!(result.is_none());
+        insta::assert_snapshot!(result, @r#"
+        # jarl-ignore
+        # jarl-ignore assignment: <reason>
+        x = 1
+        "#);
     }
 
     // =========================================================================
