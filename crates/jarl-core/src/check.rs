@@ -22,6 +22,7 @@ use crate::config::Config;
 use crate::diagnostic::*;
 use crate::fix::*;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
+use crate::lints::comments::misnamed_suppression::misnamed_suppression::misnamed_suppression;
 use crate::lints::comments::misplaced_file_suppression::misplaced_file_suppression::misplaced_file_suppression;
 use crate::lints::comments::misplaced_suppression::misplaced_suppression::misplaced_suppression;
 use crate::lints::comments::unexplained_suppression::unexplained_suppression::unexplained_suppression;
@@ -294,6 +295,14 @@ pub fn check_file(checker: &mut Checker) -> anyhow::Result<()> {
     // Report misplaced (end-of-line) suppression comments
     if checker.is_rule_enabled(Rule::MisplacedSuppression) {
         let diagnostics = misplaced_suppression(&checker.suppression.misplaced_suppressions);
+        for diagnostic in diagnostics {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    }
+
+    // Report suppressions with invalid rule names
+    if checker.is_rule_enabled(Rule::MisnamedSuppression) {
+        let diagnostics = misnamed_suppression(&checker.suppression.misnamed_suppressions);
         for diagnostic in diagnostics {
             checker.report_diagnostic(Some(diagnostic));
         }

@@ -90,6 +90,8 @@ struct CommentCollector {
     misplaced_file_suppressions: Vec<TextRange>,
     /// End-of-line suppression comments (trailing comments)
     misplaced_suppressions: Vec<TextRange>,
+    /// Suppressions with invalid rule names
+    misnamed_suppressions: Vec<TextRange>,
     /// Whether any valid directive was found (for fast path)
     has_any_valid_directive: bool,
 }
@@ -104,6 +106,7 @@ impl CommentCollector {
             unexplained_suppressions: Vec::new(),
             misplaced_file_suppressions: Vec::new(),
             misplaced_suppressions: Vec::new(),
+            misnamed_suppressions: Vec::new(),
             has_any_valid_directive: false,
         }
     }
@@ -131,6 +134,8 @@ pub struct SuppressionManager {
     pub misplaced_file_suppressions: Vec<TextRange>,
     /// End-of-line suppression comments (trailing comments)
     pub misplaced_suppressions: Vec<TextRange>,
+    /// Suppressions with invalid rule names
+    pub misnamed_suppressions: Vec<TextRange>,
 }
 
 impl SuppressionManager {
@@ -153,6 +158,7 @@ impl SuppressionManager {
                 unexplained_suppressions: Vec::new(),
                 misplaced_file_suppressions: Vec::new(),
                 misplaced_suppressions: Vec::new(),
+                misnamed_suppressions: Vec::new(),
             };
         }
 
@@ -177,6 +183,7 @@ impl SuppressionManager {
             unexplained_suppressions: collector.unexplained_suppressions,
             misplaced_file_suppressions: collector.misplaced_file_suppressions,
             misplaced_suppressions: collector.misplaced_suppressions,
+            misnamed_suppressions: collector.misnamed_suppressions,
         }
     }
 
@@ -282,6 +289,14 @@ impl SuppressionManager {
                     collector.misplaced_suppressions.push(range);
                 } else {
                     collector.unexplained_suppressions.push(range);
+                }
+            }
+            Some(DirectiveParseResult::InvalidRuleName) => {
+                // Trailing comments are also misplaced
+                if is_trailing {
+                    collector.misplaced_suppressions.push(range);
+                } else {
+                    collector.misnamed_suppressions.push(range);
                 }
             }
             None => {}

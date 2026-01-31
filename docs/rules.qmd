@@ -79,6 +79,7 @@ dat <- as.data.frame(
     c("lengths", "performance, readability", "✅", ""),
     c("list2df", "performance, readability", "✅", "R >= 4.0"),
     c("matrix_apply", "performance", "✅", ""),
+    c("misnamed_suppression", "comments", "❌", ""),
     c("misplaced_file_suppression", "comments", "❌", ""),
     c("misplaced_suppression", "comments", "❌", ""),
     c("numeric_leading_zero", "readability", "✅", ""),
