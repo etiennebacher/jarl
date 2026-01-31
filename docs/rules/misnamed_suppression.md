@@ -13,12 +13,12 @@ name that doesn't exist.
 
 ```r
 # The comment below isn't applied because "any_isna" is not a valid rule.
-# jarl-ignore any_isna: <explanation>
+# jarl-ignore any_isna: <reason>
 any(is.na(x))
 ```
 
 Use instead:
 ```r
-# jarl-ignore any_is_na: <explanation>
+# jarl-ignore any_is_na: <reason>
 any(is.na(x))
 ```

@@ -16,12 +16,12 @@ use biome_rowan::TextRange;
 ///
 /// ```r
 /// # The comment below isn't applied because it's at the end of a line.
-/// any(is.na(x)) # jarl-ignore any_is_na: <explanation>
+/// any(is.na(x)) # jarl-ignore any_is_na: <reason>
 /// ```
 ///
 /// Use instead:
 /// ```r
-/// # jarl-ignore any_is_na: <explanation>
+/// # jarl-ignore any_is_na: <reason>
 /// any(is.na(x))
 /// ```
 pub fn misplaced_suppression(ranges: &[TextRange]) -> Vec<Diagnostic> {

@@ -22,6 +22,6 @@ any(is.na(x))
 
 Use instead:
 ```r
-# jarl-ignore any_is_na: <explanation>
+# jarl-ignore any_is_na: <reason>
 any(is.na(x))
 ```

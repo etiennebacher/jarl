@@ -13,7 +13,7 @@ updated. They also add noise to the codebase.
 
 ```r
 # The suppression below is unnecessary because there's no any_is_na violation.
-# jarl-ignore any_is_na: <explanation>
+# jarl-ignore any_is_na: <reason>
 x <- 1
 ```
 

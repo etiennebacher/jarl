@@ -24,7 +24,7 @@ use biome_rowan::TextRange;
 ///
 /// Use instead:
 /// ```r
-/// # jarl-ignore any_is_na: <explanation>
+/// # jarl-ignore any_is_na: <reason>
 /// any(is.na(x))
 /// ```
 pub fn unexplained_suppression(ranges: &[TextRange]) -> Vec<Diagnostic> {
@@ -40,7 +40,7 @@ fn create_diagnostic(range: TextRange) -> Diagnostic {
             "unexplained_suppression".to_string(),
             "This comment isn't used by Jarl because it is missing an explanation.".to_string(),
             Some(
-                "Add an explanation after the colon, e.g., `# jarl-ignore rule: <explanation>`."
+                "Add an explanation after the colon, e.g., `# jarl-ignore rule: <reason>`."
                     .to_string(),
             ),
         ),
