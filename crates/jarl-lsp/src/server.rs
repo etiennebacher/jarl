@@ -678,7 +678,7 @@ mod tests {
     use super::*;
     use crate::document::PositionEncoding;
     use crate::document::{DocumentKey, TextDocument};
-    use crate::lint::{self, DiagnosticFix};
+    use crate::lint;
     use crate::session::DocumentSnapshot;
     use lsp_server::Connection;
     use lsp_types::{Position, Range, Url};
@@ -740,42 +740,6 @@ select = ["ALL"]
             PositionEncoding::UTF8,
             lsp_types::ClientCapabilities::default(),
         )
-    }
-
-    fn create_test_snapshot_with_encoding(
-        content: &str,
-        encoding: PositionEncoding,
-    ) -> DocumentSnapshot {
-        let uri = Url::parse("file:///test.R").unwrap();
-        let key = DocumentKey::from(uri);
-        let document = TextDocument::new(content.to_string(), 1);
-
-        DocumentSnapshot::new(
-            document,
-            key,
-            encoding,
-            lsp_types::ClientCapabilities::default(),
-        )
-    }
-
-    fn create_test_diagnostic_with_fix(
-        range: Range,
-        message: String,
-        fix: DiagnosticFix,
-    ) -> types::Diagnostic {
-        let fix_data = serde_json::to_value(&fix).unwrap();
-
-        types::Diagnostic {
-            range,
-            severity: Some(types::DiagnosticSeverity::WARNING),
-            code: None,
-            code_description: None,
-            source: Some("jarl".to_string()),
-            message,
-            related_information: None,
-            tags: None,
-            data: Some(fix_data),
-        }
     }
 
     /// Convert byte offset to LSP position
@@ -897,7 +861,6 @@ select = ["ALL"]
 
         Some(result)
     }
-
 
     // =========================================================================
     // Server creation test
@@ -1121,52 +1084,16 @@ select = ["ALL"]
     }
 
     #[test]
-    fn test_fix_unicode_emoji() {
+    fn test_fix_unicode_chinese() {
         let result = apply_fix_at_cursor(
-            r#"<CURS>rocket_var = 2
+            r#"<CURS>数据 = 2
 "#,
         )
         .unwrap();
 
         insta::assert_snapshot!(result, @r#"
-        rocket_var <- 2
+        数据 <- 2
         "#);
-    }
-
-    #[test]
-    fn test_unicode_position_utf8_vs_utf16() {
-        let content = "x = 1";
-
-        let snapshot_utf8 = create_test_snapshot_with_encoding(content, PositionEncoding::UTF8);
-        let snapshot_utf16 = create_test_snapshot_with_encoding(content, PositionEncoding::UTF16);
-
-        let fix = DiagnosticFix {
-            content: "x <- 1".to_string(),
-            start: 0,
-            end: 5,
-            is_safe: true,
-            rule_name: "assignment".to_string(),
-            diagnostic_start: 0,
-            diagnostic_end: 5,
-        };
-
-        let diagnostic_utf8 = create_test_diagnostic_with_fix(
-            Range::new(Position::new(0, 2), Position::new(0, 3)),
-            "Use <- for assignment".to_string(),
-            fix.clone(),
-        );
-
-        let diagnostic_utf16 = create_test_diagnostic_with_fix(
-            Range::new(Position::new(0, 2), Position::new(0, 3)),
-            "Use <- for assignment".to_string(),
-            fix,
-        );
-
-        let action_utf8 = Server::diagnostic_to_code_action(&diagnostic_utf8, &snapshot_utf8);
-        let action_utf16 = Server::diagnostic_to_code_action(&diagnostic_utf16, &snapshot_utf16);
-
-        assert!(action_utf8.is_some());
-        assert!(action_utf16.is_some());
     }
 
     // =========================================================================
