@@ -99,8 +99,9 @@ pub struct FileSuppression {
 
 /// Intermediate state used during single-pass comment collection
 struct CommentCollector {
-    /// Track start positions per rule for building skip regions (rule -> (region_start, comment_range))
-    starts: HashMap<Rule, (TextRange, TextRange)>,
+    /// Track start positions per (rule, nesting_level) for building skip regions
+    /// Key: (rule, nesting_level), Value: (region_start_range, comment_range)
+    starts: HashMap<(Rule, usize), (TextRange, TextRange)>,
     /// Completed skip regions
     skip_regions: Vec<SkipRegion>,
     /// Rules suppressed at file level
@@ -117,6 +118,10 @@ struct CommentCollector {
     misplaced_suppressions: Vec<TextRange>,
     /// Suppressions with invalid rule names
     misnamed_suppressions: Vec<TextRange>,
+    /// Unmatched start suppressions (no matching end at the same nesting level)
+    unmatched_start_suppressions: Vec<TextRange>,
+    /// Unmatched end suppressions (no matching start at the same nesting level)
+    unmatched_end_suppressions: Vec<TextRange>,
     /// Whether any valid directive was found (for fast path)
     has_any_valid_directive: bool,
 }
@@ -133,6 +138,8 @@ impl CommentCollector {
             misplaced_file_suppressions: Vec::new(),
             misplaced_suppressions: Vec::new(),
             misnamed_suppressions: Vec::new(),
+            unmatched_start_suppressions: Vec::new(),
+            unmatched_end_suppressions: Vec::new(),
             has_any_valid_directive: false,
         }
     }
@@ -152,6 +159,10 @@ pub struct SuppressionManager {
     pub has_any_suppressions: bool,
     /// Locations of blanket suppression comments (e.g., `# jarl-ignore` without a rule)
     pub blanket_suppressions: Vec<TextRange>,
+    /// Unmatched start suppressions (no matching end at the same nesting level)
+    pub unmatched_start_suppressions: Vec<TextRange>,
+    /// Unmatched end suppressions (no matching start at the same nesting level)
+    pub unmatched_end_suppressions: Vec<TextRange>,
     /// Suppressions with missing explanations
     pub unexplained_suppressions: Vec<TextRange>,
     /// Misplaced file-level suppressions (not at top of file)
@@ -181,6 +192,8 @@ impl SuppressionManager {
                 node_suppressions: Vec::new(),
                 has_any_suppressions: false,
                 blanket_suppressions: Vec::new(),
+                unmatched_start_suppressions: Vec::new(),
+                unmatched_end_suppressions: Vec::new(),
                 unexplained_suppressions: Vec::new(),
                 misplaced_file_suppressions: Vec::new(),
                 misplaced_suppressions: Vec::new(),
@@ -194,7 +207,12 @@ impl SuppressionManager {
 
         // Single pass: collect all directive information at once
         let mut collector = CommentCollector::new();
-        Self::collect_all_directives(root, &comments, &mut collector, true, source);
+        Self::collect_all_directives(root, &comments, &mut collector, true, source, 0);
+
+        // Any remaining starts without matching ends are unmatched
+        for ((_, _), (comment_range, _)) in collector.starts.drain() {
+            collector.unmatched_start_suppressions.push(comment_range);
+        }
 
         let has_any_suppressions = !collector.skip_regions.is_empty()
             || !collector.file_suppressions.is_empty()
@@ -207,6 +225,8 @@ impl SuppressionManager {
             node_suppressions: collector.node_suppressions,
             has_any_suppressions,
             blanket_suppressions: collector.blanket_suppressions,
+            unmatched_start_suppressions: collector.unmatched_start_suppressions,
+            unmatched_end_suppressions: collector.unmatched_end_suppressions,
             unexplained_suppressions: collector.unexplained_suppressions,
             misplaced_file_suppressions: collector.misplaced_file_suppressions,
             misplaced_suppressions: collector.misplaced_suppressions,
@@ -222,6 +242,7 @@ impl SuppressionManager {
         collector: &mut CommentCollector,
         is_first_expression: bool,
         source: &str,
+        nesting_level: usize,
     ) {
         let node_range = node.text_trimmed_range();
 
@@ -234,6 +255,7 @@ impl SuppressionManager {
                 collector,
                 is_first_expression,
                 false, // not trailing
+                nesting_level,
             );
         }
 
@@ -250,6 +272,7 @@ impl SuppressionManager {
                 collector,
                 false,
                 is_true_end_of_line,
+                nesting_level,
             );
         }
 
@@ -262,13 +285,27 @@ impl SuppressionManager {
                 collector,
                 false,
                 false, // not trailing
+                nesting_level,
             );
         }
 
         // Recursively process children
+        // Increment nesting level when entering braced expressions (function bodies, etc.)
         let mut is_first = is_first_expression;
         for child in node.children() {
-            Self::collect_all_directives(&child, comments, collector, is_first, source);
+            let child_nesting = if child.kind() == RSyntaxKind::R_BRACED_EXPRESSIONS {
+                nesting_level + 1
+            } else {
+                nesting_level
+            };
+            Self::collect_all_directives(
+                &child,
+                comments,
+                collector,
+                is_first,
+                source,
+                child_nesting,
+            );
             is_first = false; // Only the first child can have file-level suppressions
         }
     }
@@ -304,6 +341,7 @@ impl SuppressionManager {
         collector: &mut CommentCollector,
         allow_file_suppression: bool,
         is_trailing: bool,
+        nesting_level: usize,
     ) {
         match parse_comment_directive(text) {
             Some(DirectiveParseResult::Valid(directive)) => {
@@ -315,13 +353,16 @@ impl SuppressionManager {
                 collector.has_any_valid_directive = true;
                 match directive {
                     LintDirective::IgnoreStart(rule) => {
-                        // Store both the region start position and the comment range
+                        // Store with nesting level for proper matching
                         collector
                             .starts
-                            .insert(rule, (comment_range, comment_range));
+                            .insert((rule, nesting_level), (comment_range, comment_range));
                     }
                     LintDirective::IgnoreEnd(rule) => {
-                        if let Some((start_comment_range, _)) = collector.starts.remove(&rule) {
+                        // Only match with start at the same nesting level
+                        if let Some((start_comment_range, _)) =
+                            collector.starts.remove(&(rule, nesting_level))
+                        {
                             collector.skip_regions.push(SkipRegion {
                                 range: TextRange::new(
                                     start_comment_range.start(),
@@ -330,6 +371,9 @@ impl SuppressionManager {
                                 rule,
                                 comment_range: start_comment_range,
                             });
+                        } else {
+                            // No matching start at this nesting level
+                            collector.unmatched_end_suppressions.push(comment_range);
                         }
                     }
                     LintDirective::IgnoreFile(rule) => {
