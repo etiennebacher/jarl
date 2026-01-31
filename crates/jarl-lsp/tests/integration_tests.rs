@@ -73,6 +73,8 @@ fn test_diagnostic_fix_serialization() {
         end: 5,
         is_safe: true,
         rule_name: "assignment".to_string(),
+        diagnostic_start: 0,
+        diagnostic_end: 5,
     };
 
     let json_value = serde_json::to_value(&fix).unwrap();

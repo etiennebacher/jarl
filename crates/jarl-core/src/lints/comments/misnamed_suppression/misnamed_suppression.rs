@@ -15,13 +15,13 @@ use biome_rowan::TextRange;
 ///
 /// ```r
 /// # The comment below isn't applied because "any_isna" is not a valid rule.
-/// # jarl-ignore any_isna: <explanation>
+/// # jarl-ignore any_isna: <reason>
 /// any(is.na(x))
 /// ```
 ///
 /// Use instead:
 /// ```r
-/// # jarl-ignore any_is_na: <explanation>
+/// # jarl-ignore any_is_na: <reason>
 /// any(is.na(x))
 /// ```
 pub fn misnamed_suppression(ranges: &[TextRange]) -> Vec<Diagnostic> {

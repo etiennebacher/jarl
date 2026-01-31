@@ -9,7 +9,7 @@ mod tests {
         // Valid rule name
         expect_no_lint(
             "
-# jarl-ignore any_is_na: <explanation>
+# jarl-ignore any_is_na: <reason>
 any(is.na(x))",
             "misnamed_suppression",
             None,
@@ -18,7 +18,7 @@ any(is.na(x))",
         // Valid file suppression
         expect_no_lint(
             "
-# jarl-ignore-file any_is_na: <explanation>
+# jarl-ignore-file any_is_na: <reason>
 any(is.na(x))",
             "misnamed_suppression",
             None,
@@ -27,7 +27,7 @@ any(is.na(x))",
         // Valid region suppression
         expect_no_lint(
             "
-# jarl-ignore-start any_is_na: <explanation>
+# jarl-ignore-start any_is_na: <reason>
 any(is.na(x))
 # jarl-ignore-end any_is_na",
             "misnamed_suppression",
@@ -42,7 +42,7 @@ any(is.na(x))
         // Typo in rule name
         expect_lint(
             "
-# jarl-ignore any_isna: <explanation>
+# jarl-ignore any_isna: <reason>
 any(is.na(x))",
             lint_msg,
             "misnamed_suppression",
@@ -57,7 +57,7 @@ any(is.na(x))",
         // Non-existent rule in file suppression
         expect_lint(
             "
-# jarl-ignore-file nonexistent_rule: <explanation>
+# jarl-ignore-file nonexistent_rule: <reason>
 any(is.na(x))",
             lint_msg,
             "misnamed_suppression",
@@ -72,7 +72,7 @@ any(is.na(x))",
         // Non-existent rule in region start
         expect_lint(
             "
-# jarl-ignore-start fake_rule: <explanation>
+# jarl-ignore-start fake_rule: <reason>
 any(is.na(x))
 # jarl-ignore-end any_is_na",
             lint_msg,
@@ -88,7 +88,7 @@ any(is.na(x))
         // Non-existent rule in region end
         expect_lint(
             "
-# jarl-ignore-start any_is_na: <explanation>
+# jarl-ignore-start any_is_na: <reason>
 any(is.na(x))
 # jarl-ignore-end fake_rule",
             lint_msg,

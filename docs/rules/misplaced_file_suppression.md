@@ -15,13 +15,13 @@ elsewhere in the file is silently ignored by Jarl.
 x <- 1
 
 # The comment below isn't applied because it's not at the top of the file.
-# jarl-ignore-file any_is_na: <explanation>
+# jarl-ignore-file any_is_na: <reason>
 any(is.na(x))
 ```
 
 Use instead:
 ```r
-# jarl-ignore-file any_is_na: <explanation>
+# jarl-ignore-file any_is_na: <reason>
 
 x <- 1
 any(is.na(x))

@@ -4,7 +4,7 @@ use biome_rowan::TextRange;
 /// ## What it does
 ///
 /// Checks for blanket suppression comments. Those are comments such as
-/// `# jarl-ignore: <explanation>` where a rule isn't specified.
+/// `# jarl-ignore: <reason>` where a rule isn't specified.
 ///
 /// ## Why is this bad?
 ///
@@ -16,13 +16,13 @@ use biome_rowan::TextRange;
 ///
 /// ```r
 /// # The comment below isn't applied, the code below is still reported.
-/// # jarl-ignore: <explanation>
+/// # jarl-ignore: <reason>
 /// any(is.na(x))
 /// ```
 ///
 /// Use instead to ignore the violation:
 /// ```r
-/// # jarl-ignore any_is_na: <explanation>
+/// # jarl-ignore any_is_na: <reason>
 /// any(is.na(x))
 /// ```
 pub fn blanket_suppression(ranges: &[TextRange]) -> Vec<Diagnostic> {
@@ -38,7 +38,7 @@ fn create_diagnostic(range: TextRange) -> Diagnostic {
             "blanket_suppression".to_string(),
             "This comment isn't used by Jarl because it suppresses all possible violations of this node.".to_string(),
             Some(
-                "Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <explanation>`."
+                "Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`."
                     .to_string(),
             ),
         ),

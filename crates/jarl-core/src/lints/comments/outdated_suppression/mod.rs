@@ -14,14 +14,14 @@ mod tests {
         // Suppression that actually suppresses a violation is not outdated
         expect_no_lint(
             "
-# jarl-ignore any_is_na: <explanation>
+# jarl-ignore any_is_na: <reason>
 any(is.na(x))",
             "outdated_suppression,any_is_na",
             None,
         );
         expect_no_lint(
             "
-# jarl-ignore any_is_na: <explanation>
+# jarl-ignore any_is_na: <reason>
 f <- function(x) {
   any(is.na(x))
 }",
@@ -32,7 +32,7 @@ f <- function(x) {
         // File-level suppression that suppresses a violation
         expect_no_lint(
             "
-# jarl-ignore-file any_is_na: <explanation>
+# jarl-ignore-file any_is_na: <reason>
 any(is.na(x))
 any(is.na(y))",
             "outdated_suppression,any_is_na",
@@ -42,7 +42,7 @@ any(is.na(y))",
         // Region suppression that suppresses a violation
         expect_no_lint(
             "
-# jarl-ignore-start any_is_na: <explanation>
+# jarl-ignore-start any_is_na: <reason>
 any(is.na(x))
 # jarl-ignore-end any_is_na
 x <- 1",
@@ -58,7 +58,7 @@ x <- 1",
         // Suppression with no violation to suppress
         expect_lint(
             "
-# jarl-ignore any_is_na: <explanation>
+# jarl-ignore any_is_na: <reason>
 x <- 1",
             lint_msg,
             "outdated_suppression,any_is_na",
@@ -66,7 +66,7 @@ x <- 1",
         );
         expect_lint(
             "
-# jarl-ignore any_is_na: <explanation>
+# jarl-ignore any_is_na: <reason>
 f <- function(x) {
   1 + 1
 }",
@@ -78,7 +78,7 @@ f <- function(x) {
         // File-level suppression with no violation to suppress
         expect_lint(
             "
-# jarl-ignore-file any_is_na: <explanation>
+# jarl-ignore-file any_is_na: <reason>
 x <- 1
 y <- 2",
             lint_msg,
@@ -89,7 +89,7 @@ y <- 2",
         // Region suppression with no violation to suppress
         expect_lint(
             "
-# jarl-ignore-start any_is_na: <explanation>
+# jarl-ignore-start any_is_na: <reason>
 x <- 1
 # jarl-ignore-end any_is_na
 y <- 2",
@@ -106,7 +106,7 @@ y <- 2",
         // Suppression for wrong rule (any_is_na suppression, but violation is equals_na)
         expect_lint(
             "
-# jarl-ignore any_is_na: <explanation>
+# jarl-ignore any_is_na: <reason>
 x == NA",
             lint_msg,
             "outdated_suppression,any_is_na,equals_na",

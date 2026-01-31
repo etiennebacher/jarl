@@ -9,7 +9,7 @@ mod tests {
         // Suppression on its own line is valid
         expect_no_lint(
             "
-# jarl-ignore any_is_na: <explanation>
+# jarl-ignore any_is_na: <reason>
 any(is.na(x))",
             "misplaced_suppression",
             None,
@@ -18,7 +18,7 @@ any(is.na(x))",
         // File suppression at top is valid
         expect_no_lint(
             "
-# jarl-ignore-file any_is_na: <explanation>
+# jarl-ignore-file any_is_na: <reason>
 any(is.na(x))",
             "misplaced_suppression",
             None,
@@ -27,7 +27,7 @@ any(is.na(x))",
         // Region suppression is valid
         expect_no_lint(
             "
-# jarl-ignore-start any_is_na: <explanation>
+# jarl-ignore-start any_is_na: <reason>
 any(is.na(x))
 # jarl-ignore-end any_is_na
 x <- 1",
@@ -42,7 +42,7 @@ x <- 1",
 
         // Trailing suppression comment
         expect_lint(
-            "any(is.na(x)) # jarl-ignore any_is_na: <explanation>",
+            "any(is.na(x)) # jarl-ignore any_is_na: <reason>",
             lint_msg,
             "misplaced_suppression",
             None,
@@ -53,7 +53,7 @@ x <- 1",
             "
 any(
   is.na(x)
-) # jarl-ignore any_is_na: <explanation>",
+) # jarl-ignore any_is_na: <reason>",
             lint_msg,
             "misplaced_suppression",
             None,
@@ -61,7 +61,7 @@ any(
 
         // Trailing file suppression
         expect_lint(
-            "any(is.na(x)) # jarl-ignore-file any_is_na: <explanation>",
+            "any(is.na(x)) # jarl-ignore-file any_is_na: <reason>",
             lint_msg,
             "misplaced_suppression",
             None,
@@ -69,7 +69,7 @@ any(
 
         // Trailing region start
         expect_lint(
-            "any(is.na(x)) # jarl-ignore-start any_is_na: <explanation>",
+            "any(is.na(x)) # jarl-ignore-start any_is_na: <reason>",
             lint_msg,
             "misplaced_suppression",
             None,

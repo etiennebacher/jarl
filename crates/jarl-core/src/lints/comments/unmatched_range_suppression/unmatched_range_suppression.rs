@@ -17,7 +17,7 @@ use biome_rowan::TextRange;
 ///
 /// ```r
 /// # The start and end are at different nesting levels, so both are unmatched.
-/// # jarl-ignore-start any_is_na: <explanation>
+/// # jarl-ignore-start any_is_na: <reason>
 /// f <- function() {
 ///   any(is.na(x))
 ///   # jarl-ignore-end any_is_na
@@ -28,7 +28,7 @@ use biome_rowan::TextRange;
 /// Use instead:
 /// ```r
 /// # Start and end at the same level
-/// # jarl-ignore-start any_is_na: <explanation>
+/// # jarl-ignore-start any_is_na: <reason>
 /// any(is.na(x))
 /// # jarl-ignore-end any_is_na
 /// ```
