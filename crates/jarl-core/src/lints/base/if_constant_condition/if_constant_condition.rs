@@ -14,6 +14,8 @@ use biome_rowan::AstNode;
 /// It clutters the code and makes it more difficult to read.
 /// Dead code should be removed and always true code should be unwrapped.
 ///
+/// This rule does not have an automatic fix
+///
 /// ## Example
 ///
 /// ```r
@@ -35,7 +37,7 @@ pub fn if_constant_condition(ast: &RIfStatement) -> anyhow::Result<Option<Diagno
     }
 
     let condition = ast.condition()?;
-    let constant_value = match evaluate_constant_condition(&condition) {
+    let constant_value = match evaluate_constant_condition(&condition)? {
         Some(value) => value,
         None => return Ok(None),
     };
@@ -62,15 +64,15 @@ pub fn if_constant_condition(ast: &RIfStatement) -> anyhow::Result<Option<Diagno
     Ok(Some(diagnostic))
 }
 
-fn evaluate_constant_condition(expr: &AnyRExpression) -> Option<bool> {
+fn evaluate_constant_condition(expr: &AnyRExpression) -> anyhow::Result<Option<bool>> {
     match expr {
         // Catch simple if (TRUE) ... or if (FALSE) ...
-        AnyRExpression::RTrueExpression(_) => Some(true),
-        AnyRExpression::RFalseExpression(_) => Some(false),
+        AnyRExpression::RTrueExpression(_) => Ok(Some(true)),
+        AnyRExpression::RFalseExpression(_) => Ok(Some(false)),
 
         // Catch if ((TRUE)) or if ((FALSE))
         AnyRExpression::RParenthesizedExpression(children) => {
-            let body = children.body().ok()?;
+            let body = children.body()?;
             evaluate_constant_condition(&body)
         }
 
@@ -78,13 +80,13 @@ fn evaluate_constant_condition(expr: &AnyRExpression) -> Option<bool> {
         // NOTE: Maybe this should be its own linter?
         // FALSE should be used instead of !TRUE and so on?
         AnyRExpression::RUnaryExpression(children) => {
-            let operator = children.operator().ok()?;
+            let operator = children.operator()?;
             let operator = operator.text_trimmed();
             if operator != "!" {
-                return None;
+                return Ok(None);
             }
-            let argument = children.argument().ok()?;
-            evaluate_constant_condition(&argument).map(|value| !value)
+            let argument = children.argument()?;
+            Ok(evaluate_constant_condition(&argument)?.map(|value| !value))
         }
 
         // Catch cases with `&&` and `||`
@@ -92,43 +94,43 @@ fn evaluate_constant_condition(expr: &AnyRExpression) -> Option<bool> {
         // but I hope that isn't common...
         AnyRExpression::RBinaryExpression(children) => {
             let RBinaryExpressionFields { left, operator, right } = children.as_fields();
-            let operator = operator.ok()?;
-            let left = left.ok()?;
-            let right = right.ok()?;
+            let operator = operator?;
+            let left = left?;
+            let right = right?;
 
             let operator_text = operator.text_trimmed();
             let is_or = matches!(operator_text, "||" | "|");
             let is_and = matches!(operator_text, "&&" | "&");
 
             if !is_or && !is_and {
-                return None;
+                return Ok(None);
             }
 
-            let left_const = evaluate_constant_condition(&left);
-            let right_const = evaluate_constant_condition(&right);
+            let left_const = evaluate_constant_condition(&left)?;
+            let right_const = evaluate_constant_condition(&right)?;
 
             if is_or {
                 // either side of || is true => always true
                 if left_const == Some(true) || right_const == Some(true) {
-                    return Some(true);
+                    return Ok(Some(true));
                 }
                 // FALSE || x => x
                 if left_const == Some(false) {
-                    return right_const;
+                    return Ok(right_const);
                 }
-                None
+                Ok(None)
             } else {
                 // either side of && is false => always false
                 if left_const == Some(false) || right_const == Some(false) {
-                    return Some(false);
+                    return Ok(Some(false));
                 }
                 // TRUE && x => x
                 if left_const == Some(true) {
-                    return right_const;
+                    return Ok(right_const);
                 }
-                None
+                Ok(None)
             }
         }
-        _ => None,
+        _ => Ok(None),
     }
 }
