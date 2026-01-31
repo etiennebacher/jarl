@@ -10,6 +10,7 @@ use biome_formatter::comments::{
 use biome_rowan::{SyntaxTriviaPieceComments, TextRange};
 use std::collections::{HashMap, HashSet};
 
+use crate::diagnostic::Diagnostic;
 use crate::directive::{DirectiveParseResult, LintDirective, parse_comment_directive};
 use crate::rule_set::Rule;
 
@@ -466,12 +467,9 @@ impl SuppressionManager {
     /// Filter diagnostics by suppressions and track which suppressions were used.
     /// Returns the filtered diagnostics (those that should be reported).
     ///
-    /// This implements the Ruff-style approach: collect all diagnostics first,
-    /// then filter by suppressions in post-processing.
-    pub fn filter_diagnostics(
-        &mut self,
-        diagnostics: Vec<crate::diagnostic::Diagnostic>,
-    ) -> Vec<crate::diagnostic::Diagnostic> {
+    /// This follows Ruff's approach: collect all diagnostics first, then remove
+    /// those that are suppressed.
+    pub fn filter_diagnostics(&mut self, diagnostics: Vec<Diagnostic>) -> Vec<Diagnostic> {
         // Fast path: if there are no suppressions, return all diagnostics
         if !self.has_any_suppressions {
             return diagnostics;
@@ -484,7 +482,7 @@ impl SuppressionManager {
     }
 
     /// Check if a diagnostic should be suppressed, and if so, mark the suppression as used.
-    fn is_diagnostic_suppressed(&mut self, diag: &crate::diagnostic::Diagnostic) -> bool {
+    fn is_diagnostic_suppressed(&mut self, diag: &Diagnostic) -> bool {
         let Some(rule) = Rule::from_name(&diag.message.name) else {
             return false;
         };

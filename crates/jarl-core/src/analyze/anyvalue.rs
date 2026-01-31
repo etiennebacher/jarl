@@ -4,8 +4,6 @@ use air_r_syntax::AnyRValue;
 
 use crate::lints::base::numeric_leading_zero::numeric_leading_zero::numeric_leading_zero;
 
-/// Run all value-related lints.
-/// Suppressions are handled in post-processing via filter_diagnostics.
 pub fn anyvalue(r_expr: &AnyRValue, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::NumericLeadingZero) {
         checker.report_diagnostic(numeric_leading_zero(r_expr)?);

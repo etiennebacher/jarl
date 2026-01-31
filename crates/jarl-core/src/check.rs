@@ -163,14 +163,17 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
 
-    // Now we run checks at expression-level.
+    // We run checks at expression-level. This gathers all violations, no matter
+    // whether they are suppressed or not. They are filtered out in the next
+    // step (this is also Ruff's approach).
     for expr in expressions {
         check_expression(&expr, &mut checker)?;
     }
 
-    // These checks do not need to run on all expressions because we only have
-    // the information needed at file-level. These are comment-related checks
-    // (blanket, unexplained, misplaced, misnamed, unused suppressions).
+    // We run checks at file-level. These are comment-related checks
+    // (blanket, unexplained, misplaced, misnamed, unused suppressions). This
+    // must run after checking expressions because we filter out those that
+    // are unused.
     check_file(&mut checker)?;
 
     // Some rules have a fix available in their implementation but do not have

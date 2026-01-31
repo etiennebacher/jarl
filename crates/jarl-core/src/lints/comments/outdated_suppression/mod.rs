@@ -19,6 +19,15 @@ any(is.na(x))",
             "outdated_suppression,any_is_na",
             None,
         );
+        expect_no_lint(
+            "
+# jarl-ignore any_is_na: <explanation>
+f <- function(x) {
+  any(is.na(x))
+}",
+            "outdated_suppression,any_is_na",
+            None,
+        );
 
         // File-level suppression that suppresses a violation
         expect_no_lint(
@@ -44,13 +53,23 @@ x <- 1",
 
     #[test]
     fn test_lint_outdated_suppression() {
-        let lint_msg = "Suppression comment is unused";
+        let lint_msg = "This suppression comment is unused";
 
         // Suppression with no violation to suppress
         expect_lint(
             "
 # jarl-ignore any_is_na: <explanation>
 x <- 1",
+            lint_msg,
+            "outdated_suppression,any_is_na",
+            None,
+        );
+        expect_lint(
+            "
+# jarl-ignore any_is_na: <explanation>
+f <- function(x) {
+  1 + 1
+}",
             lint_msg,
             "outdated_suppression,any_is_na",
             None,
@@ -82,7 +101,7 @@ y <- 2",
 
     #[test]
     fn test_lint_outdated_suppression_wrong_rule() {
-        let lint_msg = "Suppression comment is unused";
+        let lint_msg = "This suppression comment is unused";
 
         // Suppression for wrong rule (any_is_na suppression, but violation is equals_na)
         expect_lint(

@@ -32,8 +32,6 @@ use crate::lints::testthat::expect_s3_class::expect_s3_class::expect_s3_class;
 use crate::lints::testthat::expect_true_false::expect_true_false::expect_true_false;
 use crate::lints::testthat::expect_type::expect_type::expect_type;
 
-/// Run all call-related lints.
-/// Suppressions are handled in post-processing via filter_diagnostics.
 pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::AllEqual) {
         checker.report_diagnostic(all_equal(r_expr)?);

@@ -4,8 +4,6 @@ use air_r_syntax::RFunctionDefinition;
 
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code;
 
-/// Run all function definition-related lints.
-/// Suppressions are handled in post-processing via filter_diagnostics.
 pub fn function_definition(
     func: &RFunctionDefinition,
     checker: &mut Checker,

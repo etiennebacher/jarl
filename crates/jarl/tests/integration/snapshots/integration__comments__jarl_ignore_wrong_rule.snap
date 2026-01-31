@@ -9,7 +9,7 @@ warning: outdated_suppression
  --> test.R:2:1
   |
 2 | # jarl-ignore any_duplicated: wrong rule for this violation
-  | ----------------------------------------------------------- Suppression comment is unused - no violation would be reported without it.
+  | ----------------------------------------------------------- This suppression comment is unused, no violation would be reported without it.
   |
   = help: Remove this suppression comment or verify that it's still needed.
 

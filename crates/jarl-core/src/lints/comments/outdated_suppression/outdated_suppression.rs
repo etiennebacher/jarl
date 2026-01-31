@@ -35,7 +35,7 @@ fn create_diagnostic(range: TextRange) -> Diagnostic {
     Diagnostic::new(
         ViolationData::new(
             "outdated_suppression".to_string(),
-            "Suppression comment is unused - no violation would be reported without it."
+            "This suppression comment is unused, no violation would be reported without it."
                 .to_string(),
             Some("Remove this suppression comment or verify that it's still needed.".to_string()),
         ),

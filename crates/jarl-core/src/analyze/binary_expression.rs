@@ -16,8 +16,6 @@ use crate::lints::base::seq::seq::seq;
 use crate::lints::base::string_boundary::string_boundary::string_boundary;
 use crate::lints::base::vector_logic::vector_logic::vector_logic;
 
-/// Run all binary expression-related lints.
-/// Suppressions are handled in post-processing via filter_diagnostics.
 pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::AnyIsNa) {
         checker.report_diagnostic(any_is_na_2(r_expr)?);

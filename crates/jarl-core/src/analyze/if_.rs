@@ -5,8 +5,6 @@ use air_r_syntax::RIfStatement;
 use crate::lints::base::coalesce::coalesce::coalesce;
 use crate::lints::base::unnecessary_nesting::unnecessary_nesting::unnecessary_nesting;
 
-/// Run all if statement-related lints.
-/// Suppressions are handled in post-processing via filter_diagnostics.
 pub fn if_(r_expr: &RIfStatement, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::Coalesce) {
         checker.report_diagnostic(coalesce(r_expr)?);
