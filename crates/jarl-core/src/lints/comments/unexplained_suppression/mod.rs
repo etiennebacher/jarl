@@ -4,9 +4,12 @@ pub(crate) mod unexplained_suppression;
 mod tests {
     use crate::utils_test::*;
 
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "unexplained_suppression", None)
+    }
+
     #[test]
     fn test_no_lint_unexplained_suppression() {
-        // Valid suppression with explanation
         expect_no_lint(
             "
 # jarl-ignore any_is_na: this is needed for performance
@@ -18,35 +21,39 @@ any(is.na(x))",
 
     #[test]
     fn test_lint_unexplained_suppression() {
-        let lint_msg = "is missing an explanation";
-
-        // No colon at all
-        expect_lint(
-            "
+        insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore any_is_na
-any(is.na(x))",
-            lint_msg,
-            "unexplained_suppression",
-            None,
-        );
+any(is.na(x))"), @r"
+        warning: unexplained_suppression
+         --> <test>:2:1
+          |
+        2 | # jarl-ignore any_is_na
+          | ----------------------- This comment isn't used by Jarl because it is missing an explanation.
+          |
+        Found 1 error.
+        ");
 
-        // Colon but empty explanation
-        expect_lint(
-            "
+        insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore any_is_na:
-any(is.na(x))",
-            lint_msg,
-            "unexplained_suppression",
-            None,
-        );
+any(is.na(x))"), @r"
+        warning: unexplained_suppression
+         --> <test>:2:1
+          |
+        2 | # jarl-ignore any_is_na:
+          | ------------------------ This comment isn't used by Jarl because it is missing an explanation.
+          |
+        Found 1 error.
+        ");
 
-        // Colon with only whitespace (requires all text on same line with line
-        // breaks)
-        expect_lint(
-            "\n# jarl-ignore any_is_na:     \nany(is.na(x))",
-            lint_msg,
-            "unexplained_suppression",
-            None,
-        );
+        insta::assert_snapshot!(snapshot_lint(
+            "\n# jarl-ignore any_is_na:     \nany(is.na(x))"), @r"
+        warning: unexplained_suppression
+         --> <test>:2:1
+          |
+        2 | # jarl-ignore any_is_na:     
+          | ----------------------------- This comment isn't used by Jarl because it is missing an explanation.
+          |
+        Found 1 error.
+        ");
     }
 }

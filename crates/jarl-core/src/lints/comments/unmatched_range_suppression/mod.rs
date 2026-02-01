@@ -4,9 +4,12 @@ pub(crate) mod unmatched_range_suppression;
 mod tests {
     use crate::utils_test::*;
 
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "unmatched_range_suppression", None)
+    }
+
     #[test]
     fn test_no_lint_unmatched_range_suppression() {
-        // Properly matched start/end at top level
         expect_no_lint(
             "
 # jarl-ignore-start any_is_na: <reason>
@@ -16,7 +19,6 @@ any(is.na(x))
             None,
         );
 
-        // Properly matched start/end inside a function
         expect_no_lint(
             "
 f <- function() {
@@ -28,7 +30,6 @@ f <- function() {
             None,
         );
 
-        // Multiple nested levels, each properly matched
         expect_no_lint(
             "
 # jarl-ignore-start any_is_na: <reason>
@@ -46,161 +47,241 @@ f <- function() {
 
     #[test]
     fn test_lint_unmatched_start() {
-        let lint_msg = "no matching `jarl-ignore-end`";
-
-        // Start at top level, end inside function
-        expect_lint(
-            "
+        insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
 f <- function() {
   any(is.na(x))
   # jarl-ignore-end any_is_na
-}",
-            lint_msg,
-            "unmatched_range_suppression",
-            None,
-        );
+}"), @r"
+        warning: unmatched_range_suppression
+         --> <test>:2:1
+          |
+        2 | # jarl-ignore-start any_is_na: <reason>
+          | --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
+          |
+        warning: unmatched_range_suppression
+         --> <test>:5:3
+          |
+        5 |   # jarl-ignore-end any_is_na
+          |   --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
+          |
+        Found 2 errors.
+        ");
 
-        // Start at top level, end inside if statement
-        expect_lint(
-            "
+        insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
 if (a) {
   any(is.na(x))
   # jarl-ignore-end any_is_na
-}",
-            lint_msg,
-            "unmatched_range_suppression",
-            None,
-        );
+}"), @r"
+        warning: unmatched_range_suppression
+         --> <test>:2:1
+          |
+        2 | # jarl-ignore-start any_is_na: <reason>
+          | --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
+          |
+        warning: unmatched_range_suppression
+         --> <test>:5:3
+          |
+        5 |   # jarl-ignore-end any_is_na
+          |   --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
+          |
+        Found 2 errors.
+        ");
 
-        // Start at top level, end inside while statement
-        expect_lint(
-            "
+        insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
 while (a) {
   any(is.na(x))
   # jarl-ignore-end any_is_na
-}",
-            lint_msg,
-            "unmatched_range_suppression",
-            None,
-        );
+}"), @r"
+        warning: unmatched_range_suppression
+         --> <test>:2:1
+          |
+        2 | # jarl-ignore-start any_is_na: <reason>
+          | --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
+          |
+        warning: unmatched_range_suppression
+         --> <test>:5:3
+          |
+        5 |   # jarl-ignore-end any_is_na
+          |   --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
+          |
+        Found 2 errors.
+        ");
 
-        // Start at top level, end inside for loop
-        expect_lint(
-            "
+        insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
 for (i in 1:10) {
   any(is.na(x))
   # jarl-ignore-end any_is_na
-}",
-            lint_msg,
-            "unmatched_range_suppression",
-            None,
-        );
+}"), @r"
+        warning: unmatched_range_suppression
+         --> <test>:2:1
+          |
+        2 | # jarl-ignore-start any_is_na: <reason>
+          | --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
+          |
+        warning: unmatched_range_suppression
+         --> <test>:5:3
+          |
+        5 |   # jarl-ignore-end any_is_na
+          |   --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
+          |
+        Found 2 errors.
+        ");
 
-        // Start at top level, end inside repeat statement
-        expect_lint(
-            "
+        insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
 repeat {
   any(is.na(x))
   # jarl-ignore-end any_is_na
-}",
-            lint_msg,
-            "unmatched_range_suppression",
-            None,
-        );
+}"), @r"
+        warning: unmatched_range_suppression
+         --> <test>:2:1
+          |
+        2 | # jarl-ignore-start any_is_na: <reason>
+          | --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
+          |
+        warning: unmatched_range_suppression
+         --> <test>:5:3
+          |
+        5 |   # jarl-ignore-end any_is_na
+          |   --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
+          |
+        Found 2 errors.
+        ");
 
-        // Start without any end
-        expect_lint(
-            "
+        insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
-any(is.na(x))",
-            lint_msg,
-            "unmatched_range_suppression",
-            None,
-        );
+any(is.na(x))"), @r"
+        warning: unmatched_range_suppression
+         --> <test>:2:1
+          |
+        2 | # jarl-ignore-start any_is_na: <reason>
+          | --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
+          |
+        Found 1 error.
+        ");
     }
 
     #[test]
     fn test_lint_unmatched_end() {
-        let lint_msg = "no matching `jarl-ignore-start`";
-
-        // Start inside function, end at top level (mismatched nesting)
-        expect_lint(
-            "
+        insta::assert_snapshot!(snapshot_lint("
 f <- function() {
   # jarl-ignore-start any_is_na: <reason>
   any(is.na(x))
 }
-# jarl-ignore-end any_is_na",
-            lint_msg,
-            "unmatched_range_suppression",
-            None,
-        );
+# jarl-ignore-end any_is_na"), @r"
+        warning: unmatched_range_suppression
+         --> <test>:3:3
+          |
+        3 |   # jarl-ignore-start any_is_na: <reason>
+          |   --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
+          |
+        warning: unmatched_range_suppression
+         --> <test>:6:1
+          |
+        6 | # jarl-ignore-end any_is_na
+          | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
+          |
+        Found 2 errors.
+        ");
 
-        // Start inside if statement, end at top-level
-        expect_lint(
-            "
+        insta::assert_snapshot!(snapshot_lint("
 if (a) {
   # jarl-ignore-start any_is_na: <reason>
   any(is.na(x))
 }
-# jarl-ignore-end any_is_na",
-            lint_msg,
-            "unmatched_range_suppression",
-            None,
-        );
+# jarl-ignore-end any_is_na"), @r"
+        warning: unmatched_range_suppression
+         --> <test>:3:3
+          |
+        3 |   # jarl-ignore-start any_is_na: <reason>
+          |   --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
+          |
+        warning: unmatched_range_suppression
+         --> <test>:6:1
+          |
+        6 | # jarl-ignore-end any_is_na
+          | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
+          |
+        Found 2 errors.
+        ");
 
-        // Start inside while statement, end at top-level
-        expect_lint(
-            "
+        insta::assert_snapshot!(snapshot_lint("
 while (a) {
   # jarl-ignore-start any_is_na: <reason>
   any(is.na(x))
 }
-# jarl-ignore-end any_is_na",
-            lint_msg,
-            "unmatched_range_suppression",
-            None,
-        );
+# jarl-ignore-end any_is_na"), @r"
+        warning: unmatched_range_suppression
+         --> <test>:3:3
+          |
+        3 |   # jarl-ignore-start any_is_na: <reason>
+          |   --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
+          |
+        warning: unmatched_range_suppression
+         --> <test>:6:1
+          |
+        6 | # jarl-ignore-end any_is_na
+          | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
+          |
+        Found 2 errors.
+        ");
 
-        // Start inside for loop, end at top-level
-        expect_lint(
-            "
+        insta::assert_snapshot!(snapshot_lint("
 for (i in 1:10) {
   # jarl-ignore-start any_is_na: <reason>
   any(is.na(x))
 }
-# jarl-ignore-end any_is_na",
-            lint_msg,
-            "unmatched_range_suppression",
-            None,
-        );
+# jarl-ignore-end any_is_na"), @r"
+        warning: unmatched_range_suppression
+         --> <test>:3:3
+          |
+        3 |   # jarl-ignore-start any_is_na: <reason>
+          |   --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
+          |
+        warning: unmatched_range_suppression
+         --> <test>:6:1
+          |
+        6 | # jarl-ignore-end any_is_na
+          | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
+          |
+        Found 2 errors.
+        ");
 
-        // Start inside repeat statement, end at top-level
-        expect_lint(
-            "
+        insta::assert_snapshot!(snapshot_lint("
 repeat {
   # jarl-ignore-start any_is_na: <reason>
   any(is.na(x))
 }
-# jarl-ignore-end any_is_na",
-            lint_msg,
-            "unmatched_range_suppression",
-            None,
-        );
+# jarl-ignore-end any_is_na"), @r"
+        warning: unmatched_range_suppression
+         --> <test>:3:3
+          |
+        3 |   # jarl-ignore-start any_is_na: <reason>
+          |   --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
+          |
+        warning: unmatched_range_suppression
+         --> <test>:6:1
+          |
+        6 | # jarl-ignore-end any_is_na
+          | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
+          |
+        Found 2 errors.
+        ");
 
-        // End without any start
-        expect_lint(
-            "
+        insta::assert_snapshot!(snapshot_lint("
 any(is.na(x))
-# jarl-ignore-end any_is_na",
-            lint_msg,
-            "unmatched_range_suppression",
-            None,
-        );
+# jarl-ignore-end any_is_na"), @r"
+        warning: unmatched_range_suppression
+         --> <test>:3:1
+          |
+        3 | # jarl-ignore-end any_is_na
+          | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
+          |
+        Found 1 error.
+        ");
     }
 }
