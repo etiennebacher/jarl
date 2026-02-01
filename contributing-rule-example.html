@@ -300,14 +300,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="kw">crate</span><span class="pp">::lints::list2df::list2df::</span>list2df<span class="op">;</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> checker<span class="op">.</span>is_rule_enabled(<span class="pp">Rule::</span>List2df) <span class="op">&amp;&amp;</span> <span class="op">!</span>checker<span class="op">.</span>should_skip_rule(node<span class="op">,</span> <span class="pp">Rule::</span>List2df) <span class="op">{</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> checker<span class="op">.</span>is_rule_enabled(<span class="pp">Rule::</span>List2df) <span class="op">{</span></span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    checker<span class="op">.</span>report_diagnostic(list2df(r_expr)<span class="op">?</span>)<span class="op">;</span></span>
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
 <span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="implement-the-rule" class="level3">
 <h3 class="anchored" data-anchor-id="implement-the-rule">Implement the rule</h3>
-<p>This is the hard part of the process. It requires knowledge about the AST you want to parse and about the different functions available to us to navigate this AST. The rule definition must be located in <code>lints/&lt;rule_name&gt;/&lt;rule_name&gt;.rs</code>, so in this example in <code>lints/list2df/list2df.rs</code>.</p>
+<p>This is the hard part of the process. It requires knowledge about the AST you want to parse and about the different functions available to us to navigate this AST. The rule definition must be located in <code>lints/base/&lt;rule_name&gt;/&lt;rule_name&gt;.rs</code>, so in this example in <code>lints/base/list2df/list2df.rs</code>.</p>
 <p>Let’s start with a skeleton of this file:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="kw">crate</span><span class="pp">::diagnostic::</span><span class="op">*;</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="kw">crate</span><span class="pp">::utils::</span><span class="op">{</span>get_arg_by_name_then_position<span class="op">,</span> get_arg_by_position<span class="op">,</span> node_contains_comments<span class="op">};</span></span>
@@ -443,7 +443,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="add-tests" class="level3">
 <h3 class="anchored" data-anchor-id="add-tests">Add tests</h3>
-<p>Tests for each rule are stored in <code>lints/&lt;rule_name&gt;/mod.rs</code>. It is important to test cases where we expect the rule that we just defined to be violated, <em>and</em> to test cases where we don’t expect this violation. Looking at tests for <code>list2df</code>, there are three blocks:</p>
+<p>Tests for each rule are stored in <code>lints/base/&lt;rule_name&gt;/mod.rs</code>. It is important to test cases where we expect the rule that we just defined to be violated, <em>and</em> to test cases where we don’t expect this violation. Looking at tests for <code>list2df</code>, there are three blocks:</p>
 <ul>
 <li>first, we check cases where we don’t expect rule violations:</li>
 </ul>
