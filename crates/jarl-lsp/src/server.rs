@@ -586,20 +586,19 @@ impl Server {
         )?;
 
         // Check if there's already a jarl-ignore comment that covers this rule
-        if insert_point.line > 0 && !insert_point.needs_leading_newline {
-            if let Some(prev_line_text) = Self::get_line_text(content, insert_point.line - 1) {
-                if let Some((_, existing_rules)) =
-                    suppression_edit::parse_existing_suppression(&prev_line_text)
-                {
-                    match existing_rules {
-                        Some(rules) if rules.iter().any(|r| r == rule_name) => {
-                            // Rule already suppressed
-                            return None;
-                        }
-                        _ => {
-                            // No rules or other rules - we'll add a new line
-                        }
-                    }
+        if insert_point.line > 0
+            && !insert_point.needs_leading_newline
+            && let Some(prev_line_text) = Self::get_line_text(content, insert_point.line - 1)
+            && let Some((_, existing_rules)) =
+                suppression_edit::parse_existing_suppression(&prev_line_text)
+        {
+            match existing_rules {
+                Some(rules) if rules.iter().any(|r| r == rule_name) => {
+                    // Rule already suppressed
+                    return None;
+                }
+                _ => {
+                    // No rules or other rules - we'll add a new line
                 }
             }
         }

@@ -113,9 +113,11 @@ pub fn compute_suppression_insert_point(
                 // If this is a control flow statement and we already have a smaller
                 // meaningful expression, prefer inline insertion at the smaller one
                 // to avoid accidentally suppressing too much
-                if is_control_flow_statement(&current) && smallest_meaningful.is_some() {
+                if is_control_flow_statement(&current)
+                    && let Some(smallest_meaningful) = smallest_meaningful
+                {
                     // Use inline insertion at the smaller expression
-                    let inline_node = smallest_meaningful.unwrap();
+                    let inline_node = smallest_meaningful;
                     let inline_start = inline_node.text_trimmed_range().start();
                     let inline_offset: usize = inline_start.into();
 
