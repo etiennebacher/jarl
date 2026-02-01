@@ -6,6 +6,7 @@
 //! of unrelated diagnostics.
 
 use air_r_parser::RParserOptions;
+use air_r_syntax::RSyntaxKind;
 use biome_rowan::{AstNode, SyntaxNode, TextRange, TextSize};
 
 /// Information about where to insert a suppression comment
@@ -62,6 +63,33 @@ pub fn format_suppression_comment(
 /// 2. Walk up to find the smallest expression that starts on its own line
 /// 3. If found, insert at that line start (normal case)
 /// 4. If no expression is on its own line, insert inline with a leading newline
+///
+/// For example, take the following code:
+///
+/// ```r
+/// f <- function(
+///   x = any(is.na(x))
+/// ) {
+///   1
+/// }
+/// ```
+///
+/// We encounter the violation `any(is.na(x))`. This is a meaningful expression
+/// because `R_CALL` is in the list below, *but* it doesn't start on its own
+/// line so we go higher in the AST.
+///
+/// Then we encounter, `x = any(is.na(x))` which is an `R_PARAMETER`. This is
+/// also a meaningful expression, *and* it's on its own line so we stop here
+/// and insert the comment above this line:
+///
+/// ```r
+/// f <- function(
+///   # jarl-ignore any_is_na: <reason>
+///   x = any(is.na(x))
+/// ) {
+///   1
+/// }
+/// ```
 ///
 /// # Arguments
 /// * `source` - The source code
@@ -195,10 +223,9 @@ fn is_on_own_line(source: &str, offset: usize) -> bool {
     }
 }
 
-/// Check if a syntax node is a meaningful expression that can have a suppression comment
+/// Check if a syntax node is a meaningful expression that can have a suppression
+/// comment.
 fn is_meaningful_expression(node: &SyntaxNode<air_r_syntax::RLanguage>) -> bool {
-    use air_r_syntax::RSyntaxKind;
-
     matches!(
         node.kind(),
         RSyntaxKind::R_BINARY_EXPRESSION
@@ -218,8 +245,6 @@ fn is_meaningful_expression(node: &SyntaxNode<air_r_syntax::RLanguage>) -> bool 
 /// Check if a syntax node is a control flow statement that can contain many sub-expressions.
 /// We should be more targeted when placing suppressions inside these.
 fn is_control_flow_statement(node: &SyntaxNode<air_r_syntax::RLanguage>) -> bool {
-    use air_r_syntax::RSyntaxKind;
-
     matches!(
         node.kind(),
         RSyntaxKind::R_IF_STATEMENT
