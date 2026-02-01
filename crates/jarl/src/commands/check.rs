@@ -7,7 +7,7 @@ use jarl_core::{
 
 use anyhow::Result;
 use colored::Colorize;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::env;
 use std::path::PathBuf;
 use std::time::Instant;
@@ -182,8 +182,8 @@ fn add_jarl_ignore_comments(
     let mut total_suppressions = 0;
     let mut files_modified = 0;
 
-    // Group diagnostics by file path
-    let mut by_file: HashMap<&str, Vec<&Diagnostic>> = HashMap::new();
+    // Group diagnostics by file path (use BTreeMap for deterministic order)
+    let mut by_file: BTreeMap<&str, Vec<&Diagnostic>> = BTreeMap::new();
     for (path, diagnostics) in all_diagnostics {
         by_file.entry(path).or_default().extend(diagnostics.iter());
     }

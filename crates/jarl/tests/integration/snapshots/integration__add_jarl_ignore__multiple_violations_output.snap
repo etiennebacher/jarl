@@ -1,0 +1,15 @@
+---
+source: crates/jarl/tests/integration/add_jarl_ignore.rs
+expression: output
+---
+success: true
+exit_code: 0
+----- stdout -----
+Modified: Added 2 suppression comment(s) to test.R
+
+Summary: Added 2 suppression comment(s) across 1 file(s).
+
+----- stderr -----
+
+----- args -----
+check . --add-jarl-ignore

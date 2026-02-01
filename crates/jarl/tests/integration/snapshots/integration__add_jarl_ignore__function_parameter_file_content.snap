@@ -1,0 +1,10 @@
+---
+source: crates/jarl/tests/integration/add_jarl_ignore.rs
+expression: content
+---
+f <- function(
+    # jarl-ignore any_is_na: <reason>
+    a = any(is.na(x))
+) {
+  1
+}

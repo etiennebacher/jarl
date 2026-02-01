@@ -6,6 +6,7 @@
 /// Resolves problems with:
 /// - Compilation times, by only having 1 integration test binary
 /// - Dead code analysis of integration test helpers https://github.com/rust-lang/rust/issues/46379
+mod add_jarl_ignore;
 mod allow_dirty;
 mod allow_no_vcs;
 mod assignment;
