@@ -167,6 +167,37 @@ foo(
     Ok(())
 }
 
+// I observed this in real-life packages where a suppression comment on the
+// second arg wasn't used.
+#[test]
+fn test_jarl_ignore_nested_in_call_second_argument() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    std::fs::write(
+        directory.join(test_path),
+        "
+foo(
+  first_arg,
+  # jarl-ignore implicit_assignment: suppressing second arg
+  x <- 1
+)
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
 #[test]
 fn test_jarl_ignore_multiple_rules_multiple_comments() -> anyhow::Result<()> {
     let directory = TempDir::new()?;

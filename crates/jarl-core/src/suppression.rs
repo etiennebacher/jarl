@@ -35,30 +35,38 @@ impl CommentStyle for RCommentStyle {
         &self,
         comment: DecoratedComment<Self::Language>,
     ) -> CommentPlacement<Self::Language> {
-        // If the comment is attached to an R_CALL_ARGUMENTS node, find the
-        // R_ARGUMENT_LIST and attach to its R_ARGUMENT's first child instead.
-        // Without this, the comment below is attached to the R_ARGUMENT instead
-        // of R_CALL, meaning that "# jarl-ignore" is useless:
+        // Handle comments inside function call arguments to ensure suppression
+        // comments work correctly. Without this special handling, the comment
+        // would be attached to R_CALL_ARGUMENTS or R_ARGUMENT_LIST instead of
+        // the actual expression, meaning "# jarl-ignore" would be useless.
+        //
+        // Example:
         // ```
         // foo(
         //   # jarl-ignore rule: reason
         //   any(is.na(x))
         // )
         // ```
-        //
-        // This is also more efficient than checking whether the parent is an
-        // R_ARGUMENT in `should_skip_rule()`.
         let enclosing = comment.enclosing_node();
-        if enclosing.kind() == RSyntaxKind::R_CALL_ARGUMENTS {
-            // Find R_ARGUMENT_LIST child, then first R_ARGUMENT, then its first child
-            for child in enclosing.children() {
-                if child.kind() == RSyntaxKind::R_ARGUMENT_LIST
-                    && let Some(first_arg) = child.first_child()
-                    && first_arg.kind() == RSyntaxKind::R_ARGUMENT
-                    && let Some(first_child) = first_arg.first_child()
-                {
-                    return CommentPlacement::leading(first_child, comment);
-                }
+        if enclosing.kind() == RSyntaxKind::R_CALL_ARGUMENTS
+            || enclosing.kind() == RSyntaxKind::R_ARGUMENT_LIST
+        {
+            // Comment is inside function call arguments. Attach to the following
+            // argument's first child (the actual expression).
+            //
+            // Example:
+            // ```
+            // foo(
+            //   first_arg,
+            //   # jarl-ignore rule: reason
+            //   second_arg
+            // )
+            // ```
+            if let Some(following) = comment.following_node()
+                && following.kind() == RSyntaxKind::R_ARGUMENT
+                && let Some(first_child) = following.first_child()
+            {
+                return CommentPlacement::leading(first_child, comment);
             }
         }
 
