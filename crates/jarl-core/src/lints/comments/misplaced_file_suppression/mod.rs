@@ -4,9 +4,12 @@ pub(crate) mod misplaced_file_suppression;
 mod tests {
     use crate::utils_test::*;
 
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "misplaced_file_suppression", None)
+    }
+
     #[test]
     fn test_no_lint_misplaced_file_suppression() {
-        // File suppression at the top of the file is valid
         expect_no_lint(
             "
 # jarl-ignore-file any_is_na: this is needed
@@ -15,7 +18,6 @@ any(is.na(x))",
             None,
         );
 
-        // Multiple file suppressions at top are valid
         expect_no_lint(
             "
 # jarl-ignore-file any_is_na: reason 1
@@ -28,29 +30,31 @@ any(is.na(x))",
 
     #[test]
     fn test_lint_misplaced_file_suppression() {
-        let lint_msg = "must be at the top of the file";
-
-        // File suppression after code
-        expect_lint(
-            "
+        insta::assert_snapshot!(snapshot_lint("
 x <- 1
 # jarl-ignore-file any_is_na: explanation
-any(is.na(x))",
-            lint_msg,
-            "misplaced_file_suppression",
-            None,
-        );
+any(is.na(x))"), @r"
+        warning: misplaced_file_suppression
+         --> <test>:3:1
+          |
+        3 | # jarl-ignore-file any_is_na: explanation
+          | ----------------------------------------- This comment isn't used by Jarl because `# jarl-ignore-file` must be at the top of the file.
+          |
+        Found 1 error.
+        ");
 
-        // Some file suppressions are misplaced
-        expect_lint(
-            "
+        insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-file any_is_na: reason 1
 x <- 1
 # jarl-ignore-file browser: reason 2
-any(is.na(x))",
-            lint_msg,
-            "misplaced_file_suppression",
-            None,
-        );
+any(is.na(x))"), @r"
+        warning: misplaced_file_suppression
+         --> <test>:4:1
+          |
+        4 | # jarl-ignore-file browser: reason 2
+          | ------------------------------------ This comment isn't used by Jarl because `# jarl-ignore-file` must be at the top of the file.
+          |
+        Found 1 error.
+        ");
     }
 }
