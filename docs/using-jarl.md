@@ -233,6 +233,7 @@ The checks on suppression comments are listed below:
   x <- 1 + 1
   ```
 
+
 ### How can I automatically add suppression comments?
 
 There are two ways to automatically add suppression comments: via the editor integration and via the command line.
