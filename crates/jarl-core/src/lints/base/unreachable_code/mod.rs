@@ -649,6 +649,11 @@ foo <- function(x) {
   } else {
     2
   }
+  if (TRUE || (x || TRUE)) {
+    1
+  } else {
+    2
+  }
 }
 "#;
         insta::assert_snapshot!(snapshot_lint(code), @r"
@@ -688,7 +693,16 @@ foo <- function(x) {
         22 | |   }
            | |___- This code is in a branch that can never be executed.
            |
-        Found 4 errors.
+        warning: unreachable_code
+          --> <test>:25:10
+           |
+        25 |     } else {
+           |  __________-
+        26 | |     2
+        27 | |   }
+           | |___- This code is in a branch that can never be executed.
+           |
+        Found 5 errors.
         ");
     }
 
@@ -712,6 +726,11 @@ foo <- function(x) {
     2
   }
   if (x && FALSE) {
+    1
+  } else {
+    2
+  }
+  if (FALSE & (x && FALSE)) {
     1
   } else {
     2
@@ -755,7 +774,16 @@ foo <- function(x) {
         20 | |   } else {
            | |___- This code is in a branch that can never be executed.
            |
-        Found 4 errors.
+        warning: unreachable_code
+          --> <test>:23:29
+           |
+        23 |     if (FALSE & (x && FALSE)) {
+           |  _____________________________-
+        24 | |     1
+        25 | |   } else {
+           | |___- This code is in a branch that can never be executed.
+           |
+        Found 5 errors.
         ");
     }
 }
