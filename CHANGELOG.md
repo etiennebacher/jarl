@@ -2,6 +2,24 @@
 
 ## Development
 
+### Breaking changes
+
+- The support for comments to hide violations (aka *suppression comments*, aka
+  `# nolint` comments in `lintr`) has been entirely reworked (#218). It is no
+  longer compatible with `lintr`'s comments. Instead, Jarl now uses `# jarl-ignore`
+  comments and follows different rules regarding the syntax and location of those
+  comments. Detailed documentation is available in the section
+  ["Ignoring diagnostics"](https://jarl.etiennebacher.com/using-jarl#ignoring-diagnostics)
+  on the website. As part of this rewrite, the following rules have been added:
+
+  - `blanket_suppression` (#243)
+  - `misnamed_suppression` (#309)
+  - `misplaced_file_suppression` (#305)
+  - `misplaced_suppression` (#307)
+  - `unexplained_suppression` (#304)
+  - `unmatched_range_suppression` (#312)
+  - `unused_suppression` (#310)
+
 ### Features
 
 - New CLI argument `--statistics` to show the number of violations per rule instead
