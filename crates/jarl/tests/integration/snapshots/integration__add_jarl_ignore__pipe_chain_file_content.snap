@@ -1,0 +1,9 @@
+---
+source: crates/jarl/tests/integration/add_jarl_ignore.rs
+expression: content
+---
+x |>
+  foo() |>
+  # jarl-ignore download_file: <reason>
+  download.file(mode = "w") |>
+  bar()

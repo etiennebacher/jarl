@@ -1,0 +1,16 @@
+---
+source: crates/jarl/tests/integration/add_jarl_ignore.rs
+expression: output
+---
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: --add-jarl-ignore=<reason> cannot contain newline characters.
+
+----- args -----
+check . --add-jarl-ignore=line1
+line2
+line3

@@ -135,6 +135,15 @@ pub struct CheckCommand {
         help = "Show counts for every rule with at least one violation."
     )]
     pub statistics: bool,
+    #[arg(
+        long,
+        value_name = "REASON",
+        default_missing_value = "<reason>",
+        num_args = 0..=1,
+        require_equals = true,
+        help = "Automatically insert a `# jarl-ignore` comment to suppress all violations.\nThe default reason can be customized with `--add-jarl-ignore=\"my_reason\"`."
+    )]
+    pub add_jarl_ignore: Option<String>,
 }
 #[derive(Clone, Debug, Parser)]
 pub(crate) struct ServerCommand {}

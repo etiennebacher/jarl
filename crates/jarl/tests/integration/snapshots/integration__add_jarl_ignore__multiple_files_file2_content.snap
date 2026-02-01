@@ -1,0 +1,6 @@
+---
+source: crates/jarl/tests/integration/add_jarl_ignore.rs
+expression: content2
+---
+# jarl-ignore any_duplicated: <reason>
+any(duplicated(y))
