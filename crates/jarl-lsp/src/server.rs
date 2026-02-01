@@ -501,8 +501,9 @@ impl Server {
                     actions.push(types::CodeActionOrCommand::CodeAction(action));
                 }
 
-                // Add nolint actions
-                if let Some(action) = Self::diagnostic_to_nolint_rule_action(&diagnostic, snapshot)
+                // Add jarl-ignore actions
+                if let Some(action) =
+                    Self::diagnostic_to_jarl_ignore_rule_action(&diagnostic, snapshot)
                 {
                     actions.push(types::CodeActionOrCommand::CodeAction(action));
                 }
@@ -565,7 +566,7 @@ impl Server {
 
     /// Create a code action to add a jarl-ignore comment for a specific rule.
     /// Uses the hoisting infrastructure from jarl-core to find the correct insertion point.
-    fn diagnostic_to_nolint_rule_action(
+    fn diagnostic_to_jarl_ignore_rule_action(
         diagnostic: &types::Diagnostic,
         snapshot: &DocumentSnapshot,
     ) -> Option<types::CodeAction> {
@@ -823,8 +824,8 @@ select = ["ALL"]
         Some(result)
     }
 
-    /// Apply a nolint action at the cursor position by running the actual linter.
-    fn apply_nolint_at_cursor(source_with_cursor: &str) -> Option<String> {
+    /// Apply a jarl-ignore action at the cursor position by running the actual linter.
+    fn apply_jarl_ignore_at_cursor(source_with_cursor: &str) -> Option<String> {
         let cursor_pos = source_with_cursor.find(CURSOR)?;
         let content = source_with_cursor.replace(CURSOR, "");
 
@@ -840,8 +841,8 @@ select = ["ALL"]
             .iter()
             .find(|d| position_in_range(cursor_lsp_pos, &d.range))?;
 
-        // Get the nolint action
-        let action = Server::diagnostic_to_nolint_rule_action(diagnostic, &snapshot)?;
+        // Get the jarl-ignore action
+        let action = Server::diagnostic_to_jarl_ignore_rule_action(diagnostic, &snapshot)?;
         let edit = action.edit?;
         let changes = edit.changes?;
         let text_edits = changes.values().next()?;
@@ -876,15 +877,9 @@ select = ["ALL"]
 
     #[test]
     fn test_fix_one_violation() {
-        let result = apply_fix_at_cursor(
-            r#"<CURS>any(is.na(x))
-"#,
-        )
-        .unwrap();
+        let result = apply_fix_at_cursor(r#"<CURS>any(is.na(x))"#).unwrap();
 
-        insta::assert_snapshot!(result, @r#"
-        anyNA(x)
-        "#);
+        insta::assert_snapshot!(result, @r#"anyNA(x)"#);
     }
 
     #[test]
@@ -942,11 +937,7 @@ select = ["ALL"]
 
     #[test]
     fn test_suppression_insert_new_comment() {
-        let result = apply_nolint_at_cursor(
-            r#"<CURS>any(is.na(x))
-"#,
-        )
-        .unwrap();
+        let result = apply_jarl_ignore_at_cursor(r#"<CURS>any(is.na(x))"#).unwrap();
 
         insta::assert_snapshot!(result, @r#"
 # jarl-ignore any_is_na: <reason>
@@ -955,8 +946,18 @@ any(is.na(x))
     }
 
     #[test]
+    fn test_suppression_insert_new_comment_nested_violation() {
+        let result = apply_jarl_ignore_at_cursor(r#"x <- foo(<CURS>any(is.na(x)))"#).unwrap();
+
+        insta::assert_snapshot!(result, @r#"
+# jarl-ignore any_is_na: <reason>
+x <- foo(any(is.na(x)))
+"#);
+    }
+
+    #[test]
     fn test_suppression_insert_new_comment_between_violations() {
-        let result = apply_nolint_at_cursor(
+        let result = apply_jarl_ignore_at_cursor(
             r#"x = 1
 <CURS>x = 2
 "#,
@@ -972,7 +973,7 @@ any(is.na(x))
 
     #[test]
     fn test_suppression_adds_new_line_for_different_rule() {
-        let result = apply_nolint_at_cursor(
+        let result = apply_jarl_ignore_at_cursor(
             r#"# jarl-ignore foo: some reason
 <CURS>x = 1
 "#,
@@ -988,7 +989,7 @@ any(is.na(x))
 
     #[test]
     fn test_suppression_with_indentation() {
-        let result = apply_nolint_at_cursor(
+        let result = apply_jarl_ignore_at_cursor(
             r#"f <- function() {
   <CURS>x = 1
 }
@@ -1006,7 +1007,7 @@ any(is.na(x))
 
     #[test]
     fn test_insert_suppression_with_if_condition() {
-        let result = apply_nolint_at_cursor(
+        let result = apply_jarl_ignore_at_cursor(
             r#"if (x) {
   x = 1
 } else if (<CURS>x <- 2) {
@@ -1028,8 +1029,118 @@ any(is.na(x))
     }
 
     #[test]
+    fn test_no_hoisting_higher_than_if_body() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"if (x) {
+  <CURS>any(is.na(x))
+}
+"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+if (x) {
+  # jarl-ignore any_is_na: <reason>
+  any(is.na(x))
+}
+        ");
+    }
+
+    #[test]
+    fn test_insert_suppression_with_for_loop() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"for (<CURS>x in x) {
+    print(1)
+}
+    "#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+# jarl-ignore for_loop_index: <reason>
+for (x in x) {
+    print(1)
+}
+            ");
+    }
+
+    #[test]
+    fn test_no_hoisting_higher_than_for_body() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"for (x in y) {
+    <CURS>any(is.na(x))
+}
+    "#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+        for (x in y) {
+            # jarl-ignore any_is_na: <reason>
+            any(is.na(x))
+        }
+        ");
+    }
+
+    #[test]
+    fn test_insert_suppression_with_while_loop() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"while (<CURS>TRUE) {
+    print(1)
+}
+    "#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+# jarl-ignore repeat: <reason>
+while (TRUE) {
+    print(1)
+}
+            ");
+    }
+
+    #[test]
+    fn test_no_hoisting_higher_than_while_body() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"while (x > y) {
+    <CURS>any(is.na(x))
+}
+    "#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+        while (x > y) {
+            # jarl-ignore any_is_na: <reason>
+            any(is.na(x))
+        }
+        ");
+    }
+
+    #[test]
+    fn test_insert_suppression_with_pipe() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"x |>
+  foo() |>
+  download.file(mode = 'w')<CURS> |>
+  bar()
+"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+        x |>
+          foo() |>
+          # jarl-ignore download_file: <reason>
+          download.file(mode = 'w') |>
+          bar()
+        ");
+    }
+
+    #[test]
     fn test_suppression_no_duplicate_rule() {
-        let result = apply_nolint_at_cursor(
+        let result = apply_jarl_ignore_at_cursor(
             r#"# jarl-ignore assignment: already suppressed
 <CURS>x = 1
 "#,
@@ -1041,7 +1152,7 @@ any(is.na(x))
     #[test]
     fn test_suppression_with_invalid_blanket_above() {
         // "# jarl-ignore" without a rule name is invalid, so we should still insert a new comment
-        let result = apply_nolint_at_cursor(
+        let result = apply_jarl_ignore_at_cursor(
             r#"# jarl-ignore
 <CURS>x = 1
 "#,
@@ -1084,7 +1195,7 @@ any(is.na(x))
         let diagnostics = lint::lint_document(&snapshot).unwrap();
         let diagnostic = diagnostics.first().unwrap();
 
-        let action = Server::diagnostic_to_nolint_rule_action(diagnostic, &snapshot).unwrap();
+        let action = Server::diagnostic_to_jarl_ignore_rule_action(diagnostic, &snapshot).unwrap();
 
         assert!(action.title.contains("assignment"));
         assert!(action.title.contains("jarl-ignore"));
