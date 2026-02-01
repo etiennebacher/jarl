@@ -211,6 +211,7 @@ fn is_meaningful_expression(node: &SyntaxNode<air_r_syntax::RLanguage>) -> bool 
             | RSyntaxKind::R_UNARY_EXPRESSION
             | RSyntaxKind::R_SUBSET
             | RSyntaxKind::R_SUBSET2
+            | RSyntaxKind::R_PARAMETER
     )
 }
 
