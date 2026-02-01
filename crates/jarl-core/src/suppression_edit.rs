@@ -91,6 +91,40 @@ pub fn format_suppression_comment(
 /// }
 /// ```
 ///
+/// This algorithm has an exception: control flow nodes. When we meet a control
+/// flow node, we stop and use the latest expression found. Take this code for
+/// example:
+///
+/// ```r
+/// if (a) {
+///   print(1)
+/// } else if (any(is.na(b))) {
+///   print(2)
+/// }
+/// ```
+///
+/// We encounter `any(is.na(b))`, which is a meaningful expression but not on
+/// its own line, so we go higher in the AST. When we go up, we find the
+/// `R_IF_STATEMENT`, which is a control flow node. If we followed the procedure
+/// as initially defined, we would insert the comment above the entire `if` statement.
+/// The problem is that this could lead to accidental suppressions in other branches
+/// of this statement.
+///
+/// Therefore, we stop and revert to the previous node found. Since it's not on
+/// its own line, we insert a newline before the comment, giving this:
+///
+/// ```r
+/// if (a) {
+///   print(1)
+/// } else if (
+///            # jarl-ignore any_is_na: <reason>
+///            any(is.na(b))) {
+///   print(2)
+/// }
+///
+/// *Note:* Jarl doesn't format code, this has to be done with a proper
+/// formatter like Air.
+///
 /// # Arguments
 /// * `source` - The source code
 /// * `diagnostic_start` - The start byte offset of the diagnostic
