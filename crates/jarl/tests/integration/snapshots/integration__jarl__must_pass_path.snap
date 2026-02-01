@@ -29,6 +29,8 @@ Options:
       --assignment <ASSIGNMENT>        Assignment operator to use, can be either `<-` or `=`.
       --no-default-exclude             Do not apply the default set of file patterns that should be excluded.
       --statistics                     Show counts for every rule with at least one violation.
+      --add-jarl-ignore[=<REASON>]     Automatically insert a `# jarl-ignore` comment to suppress all violations.
+                                       The default reason can be customized with `--add-jarl-ignore="my_reason"`.
   -h, --help                           Print help (see more with '--help')
 
 Global options:
