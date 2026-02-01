@@ -46,63 +46,61 @@ fn evaluate_constant_condition(node: &RSyntaxNode) -> Option<bool> {
     }
 
     // Handle parenthesized expressions by unwrapping them
-    if kind == RSyntaxKind::R_PARENTHESIZED_EXPRESSION {
-        if let Some(paren_expr) = RParenthesizedExpression::cast_ref(node) {
-            if let Ok(body) = paren_expr.body() {
-                return evaluate_constant_condition(body.syntax());
-            }
-        }
+    if kind == RSyntaxKind::R_PARENTHESIZED_EXPRESSION
+        && let Some(paren_expr) = RParenthesizedExpression::cast_ref(node)
+        && let Ok(body) = paren_expr.body()
+    {
+        return evaluate_constant_condition(body.syntax());
     }
 
     // Handle binary expressions with boolean operators
-    if kind == RSyntaxKind::R_BINARY_EXPRESSION {
-        if let Some(binary_expr) = RBinaryExpression::cast_ref(node) {
-            if let Ok(operator) = binary_expr.operator() {
-                let op_kind = operator.kind();
+    if kind == RSyntaxKind::R_BINARY_EXPRESSION
+        && let Some(binary_expr) = RBinaryExpression::cast_ref(node)
+        && let Ok(operator) = binary_expr.operator()
+    {
+        let op_kind = operator.kind();
 
-                // Handle OR operators (| and ||)
-                // TRUE | x → TRUE, x | TRUE → TRUE
-                if matches!(op_kind, RSyntaxKind::OR | RSyntaxKind::OR2) {
-                    let left_val = binary_expr
-                        .left()
-                        .ok()
-                        .and_then(|e| evaluate_constant_condition(e.syntax()));
-                    let right_val = binary_expr
-                        .right()
-                        .ok()
-                        .and_then(|e| evaluate_constant_condition(e.syntax()));
+        // Handle OR operators (| and ||)
+        // TRUE | x → TRUE, x | TRUE → TRUE
+        if matches!(op_kind, RSyntaxKind::OR | RSyntaxKind::OR2) {
+            let left_val = binary_expr
+                .left()
+                .ok()
+                .and_then(|e| evaluate_constant_condition(e.syntax()));
+            let right_val = binary_expr
+                .right()
+                .ok()
+                .and_then(|e| evaluate_constant_condition(e.syntax()));
 
-                    // If either side is TRUE, the whole expression is TRUE
-                    if left_val == Some(true) || right_val == Some(true) {
-                        return Some(true);
-                    }
-                    // If both sides are FALSE, the whole expression is FALSE
-                    if left_val == Some(false) && right_val == Some(false) {
-                        return Some(false);
-                    }
-                }
+            // If either side is TRUE, the whole expression is TRUE
+            if left_val == Some(true) || right_val == Some(true) {
+                return Some(true);
+            }
+            // If both sides are FALSE, the whole expression is FALSE
+            if left_val == Some(false) && right_val == Some(false) {
+                return Some(false);
+            }
+        }
 
-                // Handle AND operators (& and &&)
-                // FALSE & x → FALSE, x & FALSE → FALSE
-                if matches!(op_kind, RSyntaxKind::AND | RSyntaxKind::AND2) {
-                    let left_val = binary_expr
-                        .left()
-                        .ok()
-                        .and_then(|e| evaluate_constant_condition(e.syntax()));
-                    let right_val = binary_expr
-                        .right()
-                        .ok()
-                        .and_then(|e| evaluate_constant_condition(e.syntax()));
+        // Handle AND operators (& and &&)
+        // FALSE & x → FALSE, x & FALSE → FALSE
+        if matches!(op_kind, RSyntaxKind::AND | RSyntaxKind::AND2) {
+            let left_val = binary_expr
+                .left()
+                .ok()
+                .and_then(|e| evaluate_constant_condition(e.syntax()));
+            let right_val = binary_expr
+                .right()
+                .ok()
+                .and_then(|e| evaluate_constant_condition(e.syntax()));
 
-                    // If either side is FALSE, the whole expression is FALSE
-                    if left_val == Some(false) || right_val == Some(false) {
-                        return Some(false);
-                    }
-                    // If both sides are TRUE, the whole expression is TRUE
-                    if left_val == Some(true) && right_val == Some(true) {
-                        return Some(true);
-                    }
-                }
+            // If either side is FALSE, the whole expression is FALSE
+            if left_val == Some(false) || right_val == Some(false) {
+                return Some(false);
+            }
+            // If both sides are TRUE, the whole expression is TRUE
+            if left_val == Some(true) && right_val == Some(true) {
+                return Some(true);
             }
         }
     }
