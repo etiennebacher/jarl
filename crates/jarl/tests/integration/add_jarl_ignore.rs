@@ -5,6 +5,33 @@ use crate::helpers::CommandExt;
 use crate::helpers::binary_path;
 
 #[test]
+fn test_add_jarl_ignore_reason_with_newlines() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    std::fs::write(directory.join(test_path), "any(is.na(x))\n")?;
+
+    // Reason contains newlines - they should be converted to spaces
+    let output = Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--add-jarl-ignore=line1\nline2\nline3")
+        .run()
+        .normalize_os_executable_name()
+        .normalize_temp_paths();
+
+    insta::assert_snapshot!("reason_with_newlines_output", output);
+
+    // Check the file content - newlines should be converted to spaces
+    let content = std::fs::read_to_string(directory.join(test_path))?;
+    insta::assert_snapshot!("reason_with_newlines_file_content", content);
+
+    Ok(())
+}
+
+#[test]
 fn test_add_jarl_ignore_basic() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();

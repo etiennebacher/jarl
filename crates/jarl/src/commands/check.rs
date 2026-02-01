@@ -170,6 +170,10 @@ fn add_jarl_ignore_comments(
     reason: &str,
     parent_config_path: Option<PathBuf>,
 ) -> Result<ExitStatus> {
+    // Sanitize reason: replace newlines with spaces to prevent breaking comment format
+    let reason = reason.replace('\n', " ").replace('\r', " ");
+    let reason = reason.trim();
+
     if all_diagnostics.is_empty() {
         println!(
             "{}: {}",
