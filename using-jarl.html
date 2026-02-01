@@ -186,9 +186,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#linting-and-fixing" id="toc-linting-and-fixing" class="nav-link active" data-scroll-target="#linting-and-fixing">Linting and fixing</a></li>
   <li><a href="#selecting-and-ignoring-rules" id="toc-selecting-and-ignoring-rules" class="nav-link" data-scroll-target="#selecting-and-ignoring-rules">Selecting and ignoring rules</a></li>
-  <li><a href="#ignoring-diagnostics" id="toc-ignoring-diagnostics" class="nav-link" data-scroll-target="#ignoring-diagnostics">Ignoring diagnostics</a></li>
-  <li><a href="#dealing-with-r-versions" id="toc-dealing-with-r-versions" class="nav-link" data-scroll-target="#dealing-with-r-versions">Dealing with R versions</a></li>
   <li><a href="#using-a-configuration-file" id="toc-using-a-configuration-file" class="nav-link" data-scroll-target="#using-a-configuration-file">Using a configuration file</a></li>
+  <li><a href="#ignoring-diagnostics" id="toc-ignoring-diagnostics" class="nav-link" data-scroll-target="#ignoring-diagnostics">Ignoring diagnostics</a>
+  <ul>
+  <li><a href="#how-should-i-write-suppression-comments" id="toc-how-should-i-write-suppression-comments" class="nav-link" data-scroll-target="#how-should-i-write-suppression-comments">How should I write suppression comments?</a></li>
+  <li><a href="#where-should-i-place-suppression-comments" id="toc-where-should-i-place-suppression-comments" class="nav-link" data-scroll-target="#where-should-i-place-suppression-comments">Where should I place suppression comments?</a></li>
+  <li><a href="#how-can-i-check-that-my-suppression-comments-are-correct" id="toc-how-can-i-check-that-my-suppression-comments-are-correct" class="nav-link" data-scroll-target="#how-can-i-check-that-my-suppression-comments-are-correct">How can I check that my suppression comments are correct?</a></li>
+  <li><a href="#how-can-i-automatically-add-suppression-comments" id="toc-how-can-i-automatically-add-suppression-comments" class="nav-link" data-scroll-target="#how-can-i-automatically-add-suppression-comments">How can I automatically add suppression comments?</a></li>
+  <li><a href="#compatibility-with-lintr" id="toc-compatibility-with-lintr" class="nav-link" data-scroll-target="#compatibility-with-lintr">Compatibility with <code>lintr</code></a></li>
+  </ul></li>
+  <li><a href="#dealing-with-r-versions" id="toc-dealing-with-r-versions" class="nav-link" data-scroll-target="#dealing-with-r-versions">Dealing with R versions</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/using-jarl.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -250,64 +257,167 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--select</span> PERF,READ</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>to select rules related to performance or readability only. The list of rule families is available in the <a href="./rules.html" target="_blank">“Rules” page</a>, and those can be used in all places where selecting and ignoring rules is possible.</p>
 </section>
+<section id="using-a-configuration-file" class="level2">
+<h2 class="anchored" data-anchor-id="using-a-configuration-file">Using a configuration file</h2>
+<p>It is possible to save settings in a <code>jarl.toml</code> file. See the <a href="./config.html" target="_blank">Configuration page</a>.</p>
+</section>
 <section id="ignoring-diagnostics" class="level2">
 <h2 class="anchored" data-anchor-id="ignoring-diagnostics">Ignoring diagnostics</h2>
-<p>It is sometimes needed to ignore diagnostics on certain lines of code, either for all rules or just a subset. Jarl follows the existing infrastructure of <code>lintr</code> and uses special comments (usually called <strong>suppression comments</strong>) starting with <code># nolint</code>. The node that follows this special comment will be ignored.</p>
-<p>Several suppression comments are supported:</p>
+<p>It is sometimes needed to ignore diagnostics on certain lines of code, for instance in case of (hopefully rare) false positives. Jarl supports this via <code># jarl-ignore</code> comments (aka <em>suppression comments</em>, because they are used to suppress violations). In short, Jarl provides three types of suppression comments:</p>
+<ul>
+<li>standard comments: <code># jarl-ignore &lt;rule-name&gt;: &lt;reason&gt;</code></li>
+<li>range comments: <code># jarl-ignore-start &lt;rule-name&gt;: &lt;reason&gt;</code> and <code># jarl-ignore-end &lt;rule-name&gt;</code></li>
+<li>file comments: <code># jarl-ignore-file &lt;rule-name&gt;: &lt;reason&gt;</code></li>
+</ul>
+<p>These comments must follow several rules regarding their syntax and their placement.</p>
+<section id="how-should-i-write-suppression-comments" class="level3">
+<h3 class="anchored" data-anchor-id="how-should-i-write-suppression-comments">How should I write suppression comments?</h3>
+<p>All suppression comments follow the same syntax:</p>
 <ol type="1">
-<li><code># nolint</code> ignores all rules on the next node;</li>
-<li><code># nolint: any_duplicated, any_is_na</code> ignores these two rules only on the next node;</li>
-<li><code># nolint start</code> and <code># nolint end</code> mark the start and end of the chunk of code where diagnostics are ignored. It is also possible to use <code># nolint start: any_duplicated, any_is_na</code> to ignore only those two rules on this chunk of code.</li>
+<li><p><strong>A suppression comment must always specify a rule</strong>. For instance, <code># jarl-ignore any_is_na: &lt;reason&gt;</code> only suppresses violations of the <code>any_is_na</code> rule. This means that if you wish to suppress multiple rules for the same code block, you must have one comment per rule to suppress (the reason for this is the next point). This also means that comments such as <code># jarl-ignore</code> (aka <em>blanket suppressions</em>) are ignored by Jarl (and may be reported, see the section <a href="#how-can-i-check-that-my-suppression-comments-are-correct" target="_blank">“How can I check that my suppression comments are correct?”</a> below).</p></li>
+<li><p><strong>A suppression comment must always specify a reason</strong>. Ideally, you shouldn’t have to use suppression comments. If you don’t want any violations of a specific rule to be reported, you should exclude the rule in <code>jarl.toml</code> or in the command line arguments. Therefore, if you need to use a suppression comment, it means that something went wrong (for instance Jarl reports a false positive). In this case, adding an explanation is useful so that other people (or future you) know why this comment is here. A reason is any text coming after the colon in <code># jarl-ignore any_is_na: &lt;reason&gt;</code>.</p></li>
 </ol>
-<div class="callout callout-style-default callout-important callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Important</span>The case against suppression comments
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>It can be tempting to put a suppression comment on a piece of code when one doesn’t want to bother with fixing the diagnostic. However, as the project evolves, there is a risk that no one remembers why those comments exist in the first place and the code may now have many pieces of code that could be more readable, efficient, or robust, but are invisible to the linter.</p>
-<p>I recommend against using suppression comments, but if you do, you should follow those two points:</p>
-<ol type="1">
-<li>use targeted comments, e.g.&nbsp;<code># nolint: any_is_na</code>, instead of “blanket” comments like <code># nolint</code> that would hide all diagnostics;</li>
-<li>add an extra comment explaining why this diagnostic must be ignored.</li>
-</ol>
-</div>
-</div>
-<p>Note that I have mentioned several times the term “node”. Suppression comments are associated to a node in the representation of R code, and not to a line of code. In other words, when Jarl inspects comments to determine whether some code should be ignored, it considers these two pieces of code to be equivalent:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># nolint</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">is.na</span>(x))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># nolint</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">is.na</span>(x)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>What matters is the position of the comment relative to the start of the node. The following code is different from the two examples above because the comment is now attached to <code>is.na(x)</code>, not to the <code>any()</code> call anymore:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># nolint</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">is.na</span>(x)</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>so this would be reported.</p>
+</section>
+<section id="where-should-i-place-suppression-comments" class="level3">
+<h3 class="anchored" data-anchor-id="where-should-i-place-suppression-comments">Where should I place suppression comments?</h3>
+<p><strong>Standard comments</strong> apply to an entire <em>block</em> of code and not to specific <em>lines</em>. This distinction is important but might seem a bit strange, so let’s take an example to clarify:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">any</span>(<span class="fu">is.na</span>(x1))</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">any</span>(</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">is.na</span>(x2)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>In this case, the only difference between <code>y</code> and <code>z</code> is that the former is written on one line and the latter is written over multiple lines. For Jarl, this doesn’t matter: all it sees is the code and not whether it is on multiple lines. Therefore, one could add a suppression comment above <code>y</code> or <code>z</code> and both would be ignored.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># jarl-ignore any_is_na: &lt;reason&gt;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">any</span>(<span class="fu">is.na</span>(x1))</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># jarl-ignore any_is_na: &lt;reason&gt;</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">any</span>(</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">is.na</span>(x2)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Note that the first comment applies only to the block right after it, so we need one comment per block to ignore. A slightly more complex example would be this:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span>(x1, x2) {</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(x1))</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(x2))</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">any</span>(<span class="fu">is.na</span>(x3))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Here, placing a comment above <code>any(is.na(x1))</code> would only hide this violation and not <code>any(is.na(x2))</code>. However, placing it above <code>f &lt;- function(x1, x2) {</code> would remove both violations in the function definition because both are part of the same block. Either way, the third violation <code>z &lt;- any(is.na(x3))</code> would still be reported because none of the comments apply to this code block.</p>
+<hr>
+<p><strong>Range comments</strong> allow you to hide all violations between the start and end comments. Using again the example above, we could hide all violations with range comments:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># jarl-ignore-start any_is_na: &lt;reason&gt;</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span>(x, y) {</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(x))</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(y))</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">any</span>(<span class="fu">is.na</span>(x))</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co"># jarl-ignore-end any_is_na</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>As you can see, start comments must have the <code>&lt;reason&gt;</code> in the comment, but end comments don’t have to. On top of the syntax rules described above, range comments come with a couple more rules. In particular, all <code>jarl-ignore-start</code> must have a matching <code>jarl-ignore-end</code>, and vice-versa. Additionally, those pairs of comments must be at the same nesting level. For instance, the example above wouldn’t be valid if I had put the end comment inside the function body:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># jarl-ignore-start any_is_na: &lt;reason&gt;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span>(x, y) {</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(x))</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(y))</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># jarl-ignore-end any_is_na</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+<p><strong>File comments</strong> apply to the entire file. Those comments start with <code># jarl-ignore-file</code> and must be placed at the top of the file. This means that they can come after other comments, but they have to be before any piece of code. For example, the code below wouldn’t report any violation.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Author: Etienne Bacher</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co"># jarl-ignore-file any_is_na: &lt;reason&gt;</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Date: 2026-02-01</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span>(x, y) {</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(x))</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(y))</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">any</span>(<span class="fu">is.na</span>(x))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="how-can-i-check-that-my-suppression-comments-are-correct" class="level3">
+<h3 class="anchored" data-anchor-id="how-can-i-check-that-my-suppression-comments-are-correct">How can I check that my suppression comments are correct?</h3>
+<p>By default, Jarl comes with several checks for suppression comments. Those are not different from other rules so they can be deactivated, but it is recommended not to do so because the violating comments will be silently ignored by Jarl. The checks on suppression comments are listed below:</p>
+<ul>
+<li><p><code>blanket_suppression</code>: reports comments that don’t specify a rule, e.g., <code># jarl-ignore: &lt;reason&gt;</code>.</p></li>
+<li><p><code>misnamed_suppression</code>: reports comments where the rule doesn’t exist, e.g., <code># jarl-ignore unknown_rule: &lt;reason&gt;</code>.</p></li>
+<li><p><code>misplaced_file_suppression</code>: reports comments where a file suppression comment is misplaced, e.g.,</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co"># jarl-ignore-file any_is_na: &lt;reason&gt;</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">is.na</span>(y))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><code>misplaced_suppression</code>: reports comments where a suppression comment is misplaced, e.g.,</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">is.na</span>(y)) <span class="co"># jarl-ignore any_is_na: &lt;reason&gt;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><code>unexplained_suppression</code>: reports comments that don’t have a <code>&lt;reason&gt;</code>, e.g.,</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># jarl-ignore any_is_na</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">is.na</span>(y))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><code>unmatched_range_suppression</code>: reports range comments whose start (or end) doesn’t have a corresponding end (or start), e.g.,</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># jarl-ignore-start any_is_na: &lt;reason&gt;</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">is.na</span>(y))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This is also reported when start and end comments are not at the same nesting level.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># jarl-ignore-start any_is_na: &lt;reason&gt;</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(y))</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># jarl-ignore-end any_is_na</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><code>unused_suppression</code>: reports comments that don’t suppress any violations, meaning that they can be removed, e.g.,</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># jarl-ignore any_is_na: &lt;reason&gt;</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+</ul>
+</section>
+<section id="how-can-i-automatically-add-suppression-comments" class="level3">
+<h3 class="anchored" data-anchor-id="how-can-i-automatically-add-suppression-comments">How can I automatically add suppression comments?</h3>
+<p>There are two ways to automatically add suppression comments: via the editor integration and via the command line.</p>
+<p>If you use a <a href="./editors.html" target="_blank">supported editor</a>, clicking on violations will give you several choices, including inserting a suppression comment for the given violation. See more information on the “Editors” page.</p>
+<p>You can also use the command line to insert those suppression comments:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># This will add `# jarl-ignore &lt;rulename&gt;: &lt;reason&gt;` (where &lt;rulename&gt;</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co"># is replaced by the appropriate rule name).</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--add-jarl-ignore</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co"># This will add `# jarl-ignore &lt;rulename&gt;: &lt;reason&gt;` (where &lt;rulename&gt;</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co"># is replaced by the appropriate rule name, and &lt;reason&gt; is replaced</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co"># by the text below).</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--add-jarl-ignore</span><span class="op">=</span><span class="st">"remove this when bug xyz is fixed"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="true" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Compatibility with <code>lintr</code>
+<span class="screen-reader-only">Note</span>About formatting
 </div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse show">
 <div class="callout-body-container callout-body">
-<p>To make it easier to switch between <code>lintr</code> and Jarl (or to use both), putting the special comment at the end of the node is also supported. For example, this wouldn’t be reported:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">is.na</span>(x)) <span class="co"># nolint</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Also for compatibilty, rule names that end with “_linter” are supported, so these two are equivalent:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">is.na</span>(x)) <span class="co"># nolint: any_is_na</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">is.na</span>(x)) <span class="co"># nolint: any_is_na_linter</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Automatically inserting comments can degrade the formatting of your code. For example, the following code:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (x) {</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="dv">1</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> <span class="cf">if</span> (<span class="fu">any</span>(<span class="fu">is.na</span>(y))) {</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>would become</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (x) {</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="dv">1</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> <span class="cf">if</span> (</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>           <span class="co"># jarl-ignore any_is_na: &lt;reason&gt;</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>           <span class="fu">any</span>(<span class="fu">is.na</span>(y))) {</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This can be fixed by a proper code formatter (which Jarl isn’t). It’s worth noting that Jarl plays particularly well with <a href="https://posit-dev.github.io/air/" target="_blank">Air</a> because it uses the same infrastructure. Using Air on the code above would give:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (x) {</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="dv">1</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> <span class="cf">if</span> (</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># jarl-ignore any_is_na: &lt;reason&gt;</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(y))</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>) {</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </div>
-<p>It is also possible to ignore entire files. Jarl will ignore all files that contain “Generated by” in a comment at the top of the file, to avoid linting autogenerated files (by Roxygen2 or Rcpp for example). You can also set a list of files to exclude using <a href="./config.html#exclude" target="_blank"><code>jarl.toml</code></a>.</p>
+</div>
+</section>
+<section id="compatibility-with-lintr" class="level3">
+<h3 class="anchored" data-anchor-id="compatibility-with-lintr">Compatibility with <code>lintr</code></h3>
+<p>Jarl’s suppression comment system is quite different from <a href="https://lintr.r-lib.org/articles/lintr.html#exclusions" target="_blank"><code>lintr</code>’s</a> as they require a different syntax, different locations relative to the violating code, and have different capabilities.</p>
+<p>The good news is that the syntax is so different that one can safely use <code>lintr</code> and Jarl in the same project and be sure that their suppression comments will not conflict. If you wish to transition <code>lintr</code> comments to Jarl, the best way to do so is probably to do a global “search and replace” to remove <code># nolint</code> comments, and then use <code>--add-jarl-ignore</code> in the command line to add Jarl’s comments.</p>
+</section>
 </section>
 <section id="dealing-with-r-versions" class="level2">
 <h2 class="anchored" data-anchor-id="dealing-with-r-versions">Dealing with R versions</h2>
@@ -317,12 +427,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>you can pass this information by hand using <code>--min-r-version</code>. For example, passing <code>--min-r-version 4.3</code> will tell Jarl that it can apply rules that depend on R 4.3.0 or before. Rules that depend on R 4.3.1 or more would still be ignored.</li>
 <li>if your project has a <code>DESCRIPTION</code> file, you can set <code>R (&gt;= x.y.z)</code> in the <code>Depends</code> field and Jarl will retrieve this version.</li>
 </ol>
-</section>
-<section id="using-a-configuration-file" class="level2">
-<h2 class="anchored" data-anchor-id="using-a-configuration-file">Using a configuration file</h2>
-<p>It is possible to save settings in a <code>jarl.toml</code> file. See the <a href="./config.html" target="_blank">Configuration page</a>.</p>
 <div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
@@ -331,10 +437,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div id="callout-3" class="callout-3-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>By default, Jarl will print colored output in the terminal. To deactivate this, set the environment variable <code>NO_COLOR</code> to <code>1</code>. For example, in Bash, the following command would return non-colored output:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="va">NO_COLOR</span><span class="op">=</span>1 <span class="ex">jarl</span> check .</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="va">NO_COLOR</span><span class="op">=</span>1 <span class="ex">jarl</span> check .</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </div>
 </div>
