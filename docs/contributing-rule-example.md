@@ -119,7 +119,7 @@ The arguments passed to the function are irrelevant, what matters is that this i
 use crate::lints::list2df::list2df::list2df;
 
 ...
-if checker.is_rule_enabled(Rule::List2df) && !checker.should_skip_rule(node, Rule::List2df) {
+if checker.is_rule_enabled(Rule::List2df) {
     checker.report_diagnostic(list2df(r_expr)?);
 }
 ...
@@ -129,7 +129,7 @@ if checker.is_rule_enabled(Rule::List2df) && !checker.should_skip_rule(node, Rul
 
 This is the hard part of the process.
 It requires knowledge about the AST you want to parse and about the different functions available to us to navigate this AST.
-The rule definition must be located in `lints/<rule_name>/<rule_name>.rs`, so in this example in `lints/list2df/list2df.rs`.
+The rule definition must be located in `lints/base/<rule_name>/<rule_name>.rs`, so in this example in `lints/base/list2df/list2df.rs`.
 
 Let's start with a skeleton of this file:
 
@@ -305,7 +305,7 @@ At this point, if you have an R file with a couple of examples that should be re
 
 ### Add tests
 
-Tests for each rule are stored in `lints/<rule_name>/mod.rs`.
+Tests for each rule are stored in `lints/base/<rule_name>/mod.rs`.
 It is important to test cases where we expect the rule that we just defined to be violated, *and* to test cases where we don't expect this violation.
 Looking at tests for `list2df`, there are three blocks:
 
