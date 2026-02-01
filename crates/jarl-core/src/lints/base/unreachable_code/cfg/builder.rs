@@ -1,7 +1,7 @@
 use super::graph::{BlockId, ControlFlowGraph, Terminator};
 use air_r_syntax::{
-    RBracedExpressions, RForStatement, RFunctionDefinition, RIfStatement, RRepeatStatement,
-    RSyntaxKind, RSyntaxNode, RWhileStatement,
+    RBinaryExpression, RBracedExpressions, RForStatement, RFunctionDefinition, RIfStatement,
+    RParenthesizedExpression, RRepeatStatement, RSyntaxKind, RSyntaxNode, RWhileStatement,
 };
 use biome_rowan::AstNode;
 
@@ -21,8 +21,17 @@ struct LoopContext {
 }
 
 /// Evaluate a constant boolean condition if possible
+///
+/// This handles:
+/// - Direct TRUE/FALSE literals
+/// - Binary expressions with `|`, `||`, `&`, `&&` where short-circuit logic applies:
+///   - `TRUE | x` or `x | TRUE` → TRUE (regardless of x)
+///   - `FALSE & x` or `x & FALSE` → FALSE (regardless of x)
+///   - Same for `||` and `&&`
 fn evaluate_constant_condition(node: &RSyntaxNode) -> Option<bool> {
     let kind = node.kind();
+
+    // Handle direct TRUE/FALSE literals
     let is_true_literal = matches!(kind, RSyntaxKind::TRUE_KW | RSyntaxKind::R_TRUE_EXPRESSION);
     let is_false_literal = matches!(
         kind,
@@ -30,12 +39,73 @@ fn evaluate_constant_condition(node: &RSyntaxNode) -> Option<bool> {
     );
 
     if is_true_literal {
-        Some(true)
-    } else if is_false_literal {
-        Some(false)
-    } else {
-        None
+        return Some(true);
     }
+    if is_false_literal {
+        return Some(false);
+    }
+
+    // Handle parenthesized expressions by unwrapping them
+    if kind == RSyntaxKind::R_PARENTHESIZED_EXPRESSION
+        && let Some(paren_expr) = RParenthesizedExpression::cast_ref(node)
+        && let Ok(body) = paren_expr.body()
+    {
+        return evaluate_constant_condition(body.syntax());
+    }
+
+    // Handle binary expressions with boolean operators
+    if kind == RSyntaxKind::R_BINARY_EXPRESSION
+        && let Some(binary_expr) = RBinaryExpression::cast_ref(node)
+        && let Ok(operator) = binary_expr.operator()
+    {
+        let op_kind = operator.kind();
+
+        // Handle OR operators (| and ||)
+        // TRUE | x → TRUE, x | TRUE → TRUE
+        if matches!(op_kind, RSyntaxKind::OR | RSyntaxKind::OR2) {
+            let left_val = binary_expr
+                .left()
+                .ok()
+                .and_then(|e| evaluate_constant_condition(e.syntax()));
+            let right_val = binary_expr
+                .right()
+                .ok()
+                .and_then(|e| evaluate_constant_condition(e.syntax()));
+
+            // If either side is TRUE, the whole expression is TRUE
+            if left_val == Some(true) || right_val == Some(true) {
+                return Some(true);
+            }
+            // If both sides are FALSE, the whole expression is FALSE
+            if left_val == Some(false) && right_val == Some(false) {
+                return Some(false);
+            }
+        }
+
+        // Handle AND operators (& and &&)
+        // FALSE & x → FALSE, x & FALSE → FALSE
+        if matches!(op_kind, RSyntaxKind::AND | RSyntaxKind::AND2) {
+            let left_val = binary_expr
+                .left()
+                .ok()
+                .and_then(|e| evaluate_constant_condition(e.syntax()));
+            let right_val = binary_expr
+                .right()
+                .ok()
+                .and_then(|e| evaluate_constant_condition(e.syntax()));
+
+            // If either side is FALSE, the whole expression is FALSE
+            if left_val == Some(false) || right_val == Some(false) {
+                return Some(false);
+            }
+            // If both sides are TRUE, the whole expression is TRUE
+            if left_val == Some(true) && right_val == Some(true) {
+                return Some(true);
+            }
+        }
+    }
+
+    None
 }
 
 impl CfgBuilder {

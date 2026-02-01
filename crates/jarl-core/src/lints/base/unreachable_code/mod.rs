@@ -624,4 +624,166 @@ foo <- function(x) {
         Found 1 error.
         ");
     }
+
+    #[test]
+    fn test_unreachable_true_plus_or() {
+        let code = r#"
+foo <- function(x) {
+  if (TRUE | x) {
+    1
+  } else {
+    2
+  }
+  if (TRUE || x) {
+    1
+  } else {
+    2
+  }
+  if (x | TRUE) {
+    1
+  } else {
+    2
+  }
+  if (x || TRUE) {
+    1
+  } else {
+    2
+  }
+  if (TRUE || (x || TRUE)) {
+    1
+  } else {
+    2
+  }
+}
+"#;
+        insta::assert_snapshot!(snapshot_lint(code), @r"
+        warning: unreachable_code
+         --> <test>:5:10
+          |
+        5 |     } else {
+          |  __________-
+        6 | |     2
+        7 | |   }
+          | |___- This code is in a branch that can never be executed.
+          |
+        warning: unreachable_code
+          --> <test>:10:10
+           |
+        10 |     } else {
+           |  __________-
+        11 | |     2
+        12 | |   }
+           | |___- This code is in a branch that can never be executed.
+           |
+        warning: unreachable_code
+          --> <test>:15:10
+           |
+        15 |     } else {
+           |  __________-
+        16 | |     2
+        17 | |   }
+           | |___- This code is in a branch that can never be executed.
+           |
+        warning: unreachable_code
+          --> <test>:20:10
+           |
+        20 |     } else {
+           |  __________-
+        21 | |     2
+        22 | |   }
+           | |___- This code is in a branch that can never be executed.
+           |
+        warning: unreachable_code
+          --> <test>:25:10
+           |
+        25 |     } else {
+           |  __________-
+        26 | |     2
+        27 | |   }
+           | |___- This code is in a branch that can never be executed.
+           |
+        Found 5 errors.
+        ");
+    }
+
+    #[test]
+    fn test_unreachable_false_plus_and() {
+        let code = r#"
+foo <- function(x) {
+  if (FALSE & x) {
+    1
+  } else {
+    2
+  }
+  if (FALSE && x) {
+    1
+  } else {
+    2
+  }
+  if (x & FALSE) {
+    1
+  } else {
+    2
+  }
+  if (x && FALSE) {
+    1
+  } else {
+    2
+  }
+  if (FALSE & (x && FALSE)) {
+    1
+  } else {
+    2
+  }
+}
+"#;
+        insta::assert_snapshot!(snapshot_lint(code), @r"
+        warning: unreachable_code
+         --> <test>:3:18
+          |
+        3 |     if (FALSE & x) {
+          |  __________________-
+        4 | |     1
+        5 | |   } else {
+          | |___- This code is in a branch that can never be executed.
+          |
+        warning: unreachable_code
+          --> <test>:8:19
+           |
+         8 |     if (FALSE && x) {
+           |  ___________________-
+         9 | |     1
+        10 | |   } else {
+           | |___- This code is in a branch that can never be executed.
+           |
+        warning: unreachable_code
+          --> <test>:13:18
+           |
+        13 |     if (x & FALSE) {
+           |  __________________-
+        14 | |     1
+        15 | |   } else {
+           | |___- This code is in a branch that can never be executed.
+           |
+        warning: unreachable_code
+          --> <test>:18:19
+           |
+        18 |     if (x && FALSE) {
+           |  ___________________-
+        19 | |     1
+        20 | |   } else {
+           | |___- This code is in a branch that can never be executed.
+           |
+        warning: unreachable_code
+          --> <test>:23:29
+           |
+        23 |     if (FALSE & (x && FALSE)) {
+           |  _____________________________-
+        24 | |     1
+        25 | |   } else {
+           | |___- This code is in a branch that can never be executed.
+           |
+        Found 5 errors.
+        ");
+    }
 }
