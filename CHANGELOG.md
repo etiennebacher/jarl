@@ -38,6 +38,7 @@
 - New rules:
   - `equals_nan` (#284)
   - `equals_null` (#283)
+  - `if_always_true` (#311, @bjyberg)
   - `internal_function` (#291)
   - `redundant_ifelse` (#260)
   - `unnecessary_nesting` (#268)
