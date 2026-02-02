@@ -106,7 +106,7 @@
     "href": "rules/unreachable_code.html",
     "title": "unreachable_code",
     "section": "",
-    "text": "Detects code that can never be executed because it appears after control flow statements like return, break, or next, or in branches that cannot be reached.\n\n\n\nUnreachable code indicates a logic error or dead code that should be removed. It clutters the codebase, confuses readers, and may indicate unintended behavior.\nUnreachable code can only be detected in functions.\n\n\n\nfoo &lt;- function(x) {\n  return(x + 1)\n  print(\"hi\")  # unreachable\n}\nfoo &lt;- function(x) {\n  for (i in 1:10) {\n    x &lt;- x + 1\n    if (x &gt; 10) {\n       break\n       print(\"x is greater than 10\") # unreachable\n    }\n  }\n}\nfoo &lt;- function(x) {\n  if (x &gt; 5) {\n    return(\"hi\")\n  } else {\n    return(\"bye\")\n  }\n  1 + 1 # unreachable\n}",
+    "text": "Detects code that can never be executed because it appears after control flow statements like return, break, or next, or in branches that cannot be reached.\n\n\n\nUnreachable code indicates a logic error or dead code that should be removed. It clutters the codebase, confuses readers, and may indicate unintended behavior.\n\n\n\nif (x &gt; 5) {\n  stop(\"hi\")\n} else {\n  stop(\"bye\")\n}\n1 + 1 # unreachable\nfoo &lt;- function(x) {\n  return(x + 1)\n  print(\"hi\")  # unreachable\n}\nfoo &lt;- function(x) {\n  for (i in 1:10) {\n    x &lt;- x + 1\n    if (x &gt; 10) {\n       break\n       print(\"x is greater than 10\") # unreachable\n    }\n  }\n}",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -130,7 +130,7 @@
     "href": "rules/unreachable_code.html#why-is-this-bad",
     "title": "unreachable_code",
     "section": "",
-    "text": "Unreachable code indicates a logic error or dead code that should be removed. It clutters the codebase, confuses readers, and may indicate unintended behavior.\nUnreachable code can only be detected in functions.",
+    "text": "Unreachable code indicates a logic error or dead code that should be removed. It clutters the codebase, confuses readers, and may indicate unintended behavior.",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -138,11 +138,11 @@
     ]
   },
   {
-    "objectID": "rules/unreachable_code.html#example",
-    "href": "rules/unreachable_code.html#example",
+    "objectID": "rules/unreachable_code.html#examples",
+    "href": "rules/unreachable_code.html#examples",
     "title": "unreachable_code",
     "section": "",
-    "text": "foo &lt;- function(x) {\n  return(x + 1)\n  print(\"hi\")  # unreachable\n}\nfoo &lt;- function(x) {\n  for (i in 1:10) {\n    x &lt;- x + 1\n    if (x &gt; 10) {\n       break\n       print(\"x is greater than 10\") # unreachable\n    }\n  }\n}\nfoo &lt;- function(x) {\n  if (x &gt; 5) {\n    return(\"hi\")\n  } else {\n    return(\"bye\")\n  }\n  1 + 1 # unreachable\n}",
+    "text": "if (x &gt; 5) {\n  stop(\"hi\")\n} else {\n  stop(\"bye\")\n}\n1 + 1 # unreachable\nfoo &lt;- function(x) {\n  return(x + 1)\n  print(\"hi\")  # unreachable\n}\nfoo &lt;- function(x) {\n  for (i in 1:10) {\n    x &lt;- x + 1\n    if (x &gt; 10) {\n       break\n       print(\"x is greater than 10\") # unreachable\n    }\n  }\n}",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -3197,7 +3197,7 @@
     "href": "rules.html",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\ncomments (COMM): mistakes in the suppression comments (# jarl-ignore).\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_0f4vhg6vr84gorc78xrd",
+    "text": "All rules belong to at least one category:\n\ncomments (COMM): mistakes in the suppression comments (# jarl-ignore).\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_yj07rmmwcvwxpyk3ihyt",
     "crumbs": [
       "Rules"
     ]
@@ -3207,7 +3207,7 @@
     "href": "rules.html#overview",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\ncomments (COMM): mistakes in the suppression comments (# jarl-ignore).\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_0f4vhg6vr84gorc78xrd",
+    "text": "All rules belong to at least one category:\n\ncomments (COMM): mistakes in the suppression comments (# jarl-ignore).\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_yj07rmmwcvwxpyk3ihyt",
     "crumbs": [
       "Rules"
     ]
