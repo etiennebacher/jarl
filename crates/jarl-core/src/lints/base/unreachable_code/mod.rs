@@ -851,13 +851,20 @@ for (i in 1:10) {
     }
 
     #[test]
-    fn test_top_level_no_unreachable_after_stop() {
-        // AfterStop at top level should NOT be reported
+    fn test_top_level_after_stop() {
         let code = r#"
 stop("error")
 x <- 1
 "#;
-        expect_no_lint(code, "unreachable_code", None);
+        insta::assert_snapshot!(snapshot_lint(code), @r"
+        warning: unreachable_code
+         --> <test>:3:1
+          |
+        3 | x <- 1
+          | ------ This code is unreachable because it appears after a `stop()` statement (or equivalent).
+          |
+        Found 1 error.
+        ");
     }
 
     #[test]
@@ -881,17 +888,24 @@ if (condition) {
     }
 
     #[test]
-    fn test_top_level_no_unreachable_after_branch_terminating() {
-        // AfterBranchTerminating at top level should NOT be reported
+    fn test_top_level_after_branch_terminating() {
         let code = r#"
-if (TRUE) {
+if (condition) {
   stop("a")
 } else {
   stop("b")
 }
 x <- 1
 "#;
-        expect_no_lint(code, "unreachable_code", None);
+        insta::assert_snapshot!(snapshot_lint(code), @r"
+        warning: unreachable_code
+         --> <test>:7:1
+          |
+        7 | x <- 1
+          | ------ This code is unreachable because the preceding if/else terminates in all branches.
+          |
+        Found 1 error.
+        ");
     }
 
     #[test]
@@ -899,7 +913,7 @@ x <- 1
         // AfterBranchTerminating inside an if statement SHOULD be reported
         let code = r#"
 if (outer_condition) {
-  if (TRUE) {
+  if (inner_condition) {
     stop("a")
   } else {
     stop("b")

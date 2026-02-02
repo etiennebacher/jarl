@@ -117,13 +117,9 @@ pub fn unreachable_code_top_level(expressions: &[RSyntaxNode]) -> anyhow::Result
             // Always report these
             UnreachableReason::AfterBreak
             | UnreachableReason::AfterNext
-            | UnreachableReason::DeadBranch => true,
-
-            // Only report if in nested context (inside if statement)
-            UnreachableReason::AfterStop | UnreachableReason::AfterBranchTerminating => {
-                // Check if this unreachable code is nested (nesting_level > 0)
-                unreachable_info.nesting_level > 0
-            }
+            | UnreachableReason::DeadBranch
+            | UnreachableReason::AfterStop
+            | UnreachableReason::AfterBranchTerminating => true,
         };
 
         if !should_report {

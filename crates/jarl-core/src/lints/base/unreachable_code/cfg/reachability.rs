@@ -9,8 +9,6 @@ pub struct UnreachableCodeInfo {
     pub range: TextRange,
     /// Why this code is unreachable
     pub reason: UnreachableReason,
-    /// Nesting level of this unreachable code (0 = top level)
-    pub nesting_level: u32,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -93,11 +91,8 @@ pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo>
                 *group_range = group_range.cover(block_range);
             } else {
                 // Different reason or not contiguous - flush current group and start a new one
-                unreachable.push(UnreachableCodeInfo {
-                    range: *group_range,
-                    reason: *group_reason,
-                    nesting_level: *group_nesting,
-                });
+                unreachable
+                    .push(UnreachableCodeInfo { range: *group_range, reason: *group_reason });
                 current_group = Some((block_range, reason, nesting_level));
             }
         } else {
@@ -107,12 +102,8 @@ pub fn find_unreachable_code(cfg: &ControlFlowGraph) -> Vec<UnreachableCodeInfo>
     }
 
     // Don't forget to flush any remaining group at the end
-    if let Some((group_range, group_reason, group_nesting)) = current_group {
-        unreachable.push(UnreachableCodeInfo {
-            range: group_range,
-            reason: group_reason,
-            nesting_level: group_nesting,
-        });
+    if let Some((group_range, group_reason, _)) = current_group {
+        unreachable.push(UnreachableCodeInfo { range: group_range, reason: group_reason });
     }
 
     unreachable
