@@ -1,0 +1,38 @@
+---
+source: crates/jarl-core/src/lints/base/class_equals/mod.rs
+expression: "get_fixed_text(vec![\"if (identical(class(x), 'character')) 1\",\n\"if (identical('character', class(x))) 1\",\n\"while (identical(class(x), 'foo')) 1\",\n\"is_regression <- identical(class(x), 'lm')\",\n\"is_regression <- identical('lm', class(x))\",], \"class_equals\", None)"
+---
+OLD:
+====
+if (identical(class(x), 'character')) 1
+NEW:
+====
+if (inherits(x, 'character')) 1
+
+OLD:
+====
+if (identical('character', class(x))) 1
+NEW:
+====
+if (inherits(x, 'character')) 1
+
+OLD:
+====
+while (identical(class(x), 'foo')) 1
+NEW:
+====
+while (inherits(x, 'foo')) 1
+
+OLD:
+====
+is_regression <- identical(class(x), 'lm')
+NEW:
+====
+is_regression <- inherits(x, 'lm')
+
+OLD:
+====
+is_regression <- identical('lm', class(x))
+NEW:
+====
+is_regression <- inherits(x, 'lm')

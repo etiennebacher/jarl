@@ -32,6 +32,14 @@ lint-fix:
 gen-schema:
     cargo run -p xtask_codegen -- json-schema
 
-install-positron:
+# Builds the release binary, copy it, and builds the extension
+build-install-positron-extension:
+  cargo build --release
+  cp target/release/jarl editors/code/bundled/bin/jarl
+  cd editors/code && rm -rf *.vsix && vsce package && positron --install-extension *.vsix
+
+
+# Copies the release binary and builds the extension
+install-positron-extension:
   cp target/release/jarl editors/code/bundled/bin/jarl
   cd editors/code && rm -rf *.vsix && vsce package && positron --install-extension *.vsix

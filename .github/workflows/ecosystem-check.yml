@@ -31,6 +31,7 @@ env:
     pola-rs/r-polars@055f891d977d6a8004fe8ab1bb5d47cfdd44872a
     Rdatatable/data.table@d7833cb3a0c36ab329fcfe5cc1523449663f898f
     ropensci/targets@d45243e1a239da467c6e96e0069ecb7368f78021
+    ropensci-review-tools/pkgcheck@12d80c8ad3bc39c94174f0276386869a52568135
     rstudio/shiny@b6e9e9d216cd574cf8985d23772399f51ee4a4ac
     tidyverse/dplyr@384ff2c4af79a9bd9142d8bdab23efbcd52f275b
     tidyverse/ggplot2@bed8e32d45c7dc98afb783b409edac98854d41a7

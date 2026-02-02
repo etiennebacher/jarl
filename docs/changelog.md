@@ -2,6 +2,24 @@
 
 ## Development
 
+### Breaking changes
+
+- The support for comments to hide violations (aka *suppression comments*, aka
+  `# nolint` comments in `lintr`) has been entirely reworked (#218). It is no
+  longer compatible with `lintr`'s comments. Instead, Jarl now uses `# jarl-ignore`
+  comments and follows different rules regarding the syntax and location of those
+  comments. Detailed documentation is available in the section
+  ["Ignoring diagnostics"](https://jarl.etiennebacher.com/using-jarl#ignoring-diagnostics)
+  on the website. As part of this rewrite, the following rules have been added:
+
+  - `blanket_suppression` (#243)
+  - `misnamed_suppression` (#309)
+  - `misplaced_file_suppression` (#305)
+  - `misplaced_suppression` (#307)
+  - `unexplained_suppression` (#304)
+  - `unmatched_range_suppression` (#312)
+  - `unused_suppression` (#310)
+
 ### Features
 
 - New CLI argument `--statistics` to show the number of violations per rule instead
@@ -20,6 +38,7 @@
 - New rules:
   - `equals_nan` (#284)
   - `equals_null` (#283)
+  - `internal_function` (#291)
   - `redundant_ifelse` (#260)
   - `unnecessary_nesting` (#268)
   - `unreachable_code` (#261)
@@ -39,6 +58,8 @@
   - `sample_int` (#262)
 
 - `equals_na` now reports `x %in% NA` cases, as documented (#285).
+
+- There are now binaries available for `linux-musl` (`x64` and `arm64`) (#287).
 
 ### Bug fixes
 
@@ -61,6 +82,10 @@
   ```
   (#288).
 
+### Documentation
+
+- New section in the `Integrations` page to show how to use Jarl in various
+  CI/CD platforms (#289, @philipp-baumann).
 
 ## 0.3.0
 

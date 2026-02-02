@@ -1,0 +1,6 @@
+---
+source: crates/jarl/tests/integration/add_jarl_ignore.rs
+expression: content1
+---
+# jarl-ignore any_is_na: <reason>
+any(is.na(x))

@@ -60,6 +60,7 @@ website:
       - rules/any_duplicated.md
       - rules/any_is_na.md
       - rules/assignment.md
+      - rules/blanket_suppression.md
       - rules/browser.md
       - rules/class_equals.md
       - rules/coalesce.md
@@ -80,13 +81,18 @@ website:
       - rules/for_loop_index.md
       - rules/grepv.md
       - rules/implicit_assignment.md
+      - rules/internal_function.md
       - rules/is_numeric.md
       - rules/length_levels.md
       - rules/length_test.md
       - rules/lengths.md
       - rules/list2df.md
       - rules/matrix_apply.md
+      - rules/misnamed_suppression.md
+      - rules/misplaced_file_suppression.md
+      - rules/misplaced_suppression.md
       - rules/numeric_leading_zero.md
+      - rules/outdated_suppression.md
       - rules/outer_negation.md
       - rules/redundant_equals.md
       - rules/redundant_ifelse.md
@@ -99,6 +105,8 @@ website:
       - rules/string_boundary.md
       - rules/system_file.md
       - rules/true_false_symbol.md
+      - rules/unexplained_suppression.md
+      - rules/unmatched_range_suppression.md
       - rules/unnecessary_nesting.md
       - rules/unreachable_code.md
       - rules/vector_logic.md

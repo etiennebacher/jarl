@@ -1,0 +1,13 @@
+---
+source: crates/jarl/tests/integration/add_jarl_ignore.rs
+expression: output
+---
+success: true
+exit_code: 0
+----- stdout -----
+Info: No violations found, no suppression comments added.
+
+----- stderr -----
+
+----- args -----
+check . --add-jarl-ignore

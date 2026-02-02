@@ -5,7 +5,179 @@ use crate::helpers::CommandExt;
 use crate::helpers::binary_path;
 
 #[test]
-fn test_nolint_leading_comment() -> anyhow::Result<()> {
+fn test_jarl_ignore_inline_suppression() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    std::fs::write(
+        directory.join(test_path),
+        "
+# jarl-ignore any_is_na: legacy code
+any(is.na(x))
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_jarl_ignore_file_suppression() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    std::fs::write(
+        directory.join(test_path),
+        "# jarl-ignore-file any_is_na: this file has many false positives
+any(is.na(x))
+any(is.na(y))
+any(is.na(z))
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_jarl_ignore_region_suppression() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    std::fs::write(
+        directory.join(test_path),
+        "
+any(is.na(x))
+
+# jarl-ignore-start any_is_na: debugging section
+any(is.na(y))
+any(is.na(z))
+# jarl-ignore-end any_is_na
+
+any(is.na(w))
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_jarl_ignore_cascading_suppression() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    std::fs::write(
+        directory.join(test_path),
+        "
+# jarl-ignore any_is_na: cascades to children
+x <- function(x) {
+    any(is.na(y))
+}
+any(is.na(y))
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_jarl_ignore_multiple_rules_with_extend_select() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    std::fs::write(
+        directory.join(test_path),
+        "
+# jarl-ignore any_is_na: first rule
+# jarl-ignore assignment: second rule
+x = any(is.na(y))
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--extend-select")
+            .arg("assignment")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_jarl_ignore_nested_in_call_second_argument() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    std::fs::write(
+        directory.join(test_path),
+        "
+foo(
+  first_arg,
+  # jarl-ignore implicit_assignment: suppressing second arg
+  x <- 1
+)
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_nolint_format_not_recognized() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();
 
@@ -15,301 +187,14 @@ fn test_nolint_leading_comment() -> anyhow::Result<()> {
         "
 # nolint
 any(is.na(x))
-any(is.na(x)) # nolint
-",
-    )?;
-
-    insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
-
-    Ok(())
-}
-
-#[test]
-fn test_nolint_not_applied_when_comment_inside_node() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
-        "
-any(
-  # nolint
-  is.na(x)
-)
-",
-    )?;
-
-    insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
-
-    Ok(())
-}
-
-#[test]
-fn test_nolint_with_specific_rules() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
-        "
 # nolint: any_is_na
-any(is.na(x))
-
-# nolint: class_equals, any_is_na
-any(is.na(x))
-
-# compatibility with lintr
-# nolint: any_is_na_linter
-any(is.na(x))
-# nolint: class_equals_linter, any_is_na_linter
-any(is.na(x))
-
-# nolint: any_duplicated
-any(is.na(x))
-",
-    )?;
-
-    insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
-
-    Ok(())
-}
-
-#[test]
-fn test_nolint_nested() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
-        "
-foo(
-  # nolint
-  any(is.na(x))
-)
-foo(
-  # nolint: any_is_na
-  any(is.na(x))
-)
-foo(
-  any(is.na(x)) # nolint
-)
-foo(
-  # nolint start
-  any(is.na(x))
-  # nolint end
-)
-",
-    )?;
-
-    insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
-
-    Ok(())
-}
-
-#[test]
-fn test_nolint_start_end() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
-        "
+any(is.na(y))
 # nolint start
-any(is.na(x))
-any(duplicated(x))
-# nolint end
-
-any(is.na(x))
-
-# Test not in root node
-f <- function() {
-    # nolint start
-    any(is.na(x))
-    any(duplicated(x))
-    # nolint end
-
-    any(is.na(x))
-}
-",
-    )?;
-
-    insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
-
-    Ok(())
-}
-
-#[test]
-fn test_nolint_start_end_with_specific_rules() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
-        "
-# nolint start: any_is_na
-any(is.na(x))
-any(duplicated(x))
-# nolint end
-
-# compatibility with lintr
-# nolint start: any_is_na_linter
-any(is.na(x))
-any(duplicated(x))
+any(is.na(z))
 # nolint end
 ",
     )?;
 
-    insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
-
-    Ok(())
-}
-
-#[test]
-fn test_nolint_skip_file() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
-        "
-# Generated by foobar
-any(is.na(x))
-any(duplicated(x))
-",
-    )?;
-
-    insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
-    Ok(())
-}
-
-#[test]
-fn test_nolint_skip_file_2() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
-        "
-# hello there
-# Generated by foobar
-any(is.na(x))
-any(duplicated(x))
-",
-    )?;
-
-    insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
-    Ok(())
-}
-
-#[test]
-fn test_nolint_skip_file_3() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
-        "
-# hello there
-
-
-# Generated by foobar
-any(is.na(x))
-any(duplicated(x))
-",
-    )?;
-
-    insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
-    Ok(())
-}
-
-#[test]
-fn test_nolint_no_skip_file_4() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
-        "
-any(is.na(x))
-# Generated by hello
-any(duplicated(x))
-",
-    )?;
-
-    // This should lint because "Generated by" is not in the first
-    // block of comments.
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
             .current_dir(directory)

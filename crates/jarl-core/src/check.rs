@@ -20,6 +20,15 @@ use crate::analyze;
 use crate::config::Config;
 use crate::diagnostic::*;
 use crate::fix::*;
+use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
+use crate::lints::comments::misnamed_suppression::misnamed_suppression::misnamed_suppression;
+use crate::lints::comments::misplaced_file_suppression::misplaced_file_suppression::misplaced_file_suppression;
+use crate::lints::comments::misplaced_suppression::misplaced_suppression::misplaced_suppression;
+use crate::lints::comments::outdated_suppression::outdated_suppression::outdated_suppression;
+use crate::lints::comments::unexplained_suppression::unexplained_suppression::unexplained_suppression;
+use crate::lints::comments::unmatched_range_suppression::unmatched_range_suppression::{
+    unmatched_range_suppression_end, unmatched_range_suppression_start,
+};
 use crate::rule_set::RuleSet;
 use crate::utils::*;
 
@@ -106,7 +115,7 @@ pub struct Checker {
     // The R version that is manually passed by the user in the CLI. Any rule
     // that has a minimum R version higher than this value will be deactivated.
     pub minimum_r_version: Option<(u32, u32, u32)>,
-    // Tracks comment-based suppression directives like `# nolint`
+    // Tracks comment-based suppression directives like `# jarl-ignore`
     pub suppression: SuppressionManager,
     // Which assignment operator is preferred?
     pub assignment: RSyntaxKind,
@@ -134,54 +143,6 @@ impl Checker {
     pub(crate) fn is_rule_enabled(&mut self, rule: Rule) -> bool {
         self.rule_set.contains(&rule)
     }
-
-    /// Get all suppressed rules for a node in a single check.
-    ///
-    /// Returns:
-    /// - An empty set if no rules are suppressed
-    /// - A set containing all enabled rules if all rules are suppressed
-    /// - A set containing specific suppressed rules otherwise
-    pub(crate) fn get_suppressed_rules(
-        &self,
-        node: &air_r_syntax::RSyntaxNode,
-    ) -> std::collections::HashSet<Rule> {
-        // Fast path: if there are no suppressions anywhere, return empty set immediately
-        if !self.suppression.has_any_suppressions {
-            return std::collections::HashSet::new();
-        }
-
-        // Check once and return all suppressed rules
-        match self.suppression.check_suppression(node) {
-            Some(None) => {
-                // Skip all rules - return all enabled rules
-                self.rule_set.iter().cloned().collect()
-            }
-            Some(Some(rules)) => {
-                // Skip specific rules - return only those that are enabled
-                rules
-                    .into_iter()
-                    .filter(|r| self.rule_set.contains(r))
-                    .collect()
-            }
-            None => {
-                // No suppression at node level, check regions
-                let node_range = node.text_trimmed_range();
-                for region in &self.suppression.skip_regions {
-                    if region.range.contains_range(node_range) {
-                        return match &region.rules {
-                            None => self.rule_set.iter().cloned().collect(),
-                            Some(rules) => rules
-                                .iter()
-                                .filter(|r| self.rule_set.contains(r))
-                                .cloned()
-                                .collect::<std::collections::HashSet<Rule>>(),
-                        };
-                    }
-                }
-                std::collections::HashSet::new()
-            }
-        }
-    }
 }
 
 // Takes the R code as a string, parses it, and obtains a (possibly empty)
@@ -202,20 +163,25 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
 
     let suppression = SuppressionManager::from_node(syntax, contents);
 
-    // Check if the entire file should be skipped
-    if suppression.should_skip_file(syntax) {
-        return Ok(vec![]);
-    }
-
     let mut checker = Checker::new(suppression, config.assignment);
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
+
+    // We run checks at expression-level. This gathers all violations, no matter
+    // whether they are suppressed or not. They are filtered out in the next
+    // step (this is also Ruff's approach).
     for expr in expressions {
         check_expression(&expr, &mut checker)?;
     }
 
     // Analyze top-level code (checks that require the entire document)
     analyze::top_level::top_level(&expressions.iter().collect::<Vec<_>>(), &mut checker)?;
+
+    // We run checks at file-level. These are comment-related checks
+    // (blanket, unexplained, misplaced, misnamed, unused suppressions). This
+    // must run after checking expressions because we filter out those that
+    // are unused.
+    check_file(&mut checker)?;
 
     // Some rules have a fix available in their implementation but do not have
     // fix in the config, for instance because they are part of the "unfixable"
@@ -264,6 +230,83 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     Ok(diagnostics)
 }
 
+pub fn check_file(checker: &mut Checker) -> anyhow::Result<()> {
+    // Report blanket suppression comments (file-level, done once)
+    if checker.is_rule_enabled(Rule::BlanketSuppression) {
+        let diagnostics = blanket_suppression(&checker.suppression.blanket_suppressions);
+        for diagnostic in diagnostics {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    }
+
+    // Report suppressions missing explanations
+    if checker.is_rule_enabled(Rule::UnexplainedSuppression) {
+        let diagnostics = unexplained_suppression(&checker.suppression.unexplained_suppressions);
+        for diagnostic in diagnostics {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    }
+
+    // Report misplaced file-level suppressions
+    if checker.is_rule_enabled(Rule::MisplacedFileSuppression) {
+        let diagnostics =
+            misplaced_file_suppression(&checker.suppression.misplaced_file_suppressions);
+        for diagnostic in diagnostics {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    }
+
+    // Report misplaced (end-of-line) suppression comments
+    if checker.is_rule_enabled(Rule::MisplacedSuppression) {
+        let diagnostics = misplaced_suppression(&checker.suppression.misplaced_suppressions);
+        for diagnostic in diagnostics {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    }
+
+    // Report suppressions with invalid rule names
+    if checker.is_rule_enabled(Rule::MisnamedSuppression) {
+        let diagnostics = misnamed_suppression(&checker.suppression.misnamed_suppressions);
+        for diagnostic in diagnostics {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    }
+
+    // Report unmatched start/end suppression comments
+    if checker.is_rule_enabled(Rule::UnmatchedRangeSuppression) {
+        let start_diagnostics =
+            unmatched_range_suppression_start(&checker.suppression.unmatched_start_suppressions);
+        for diagnostic in start_diagnostics {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+        let end_diagnostics =
+            unmatched_range_suppression_end(&checker.suppression.unmatched_end_suppressions);
+        for diagnostic in end_diagnostics {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    }
+
+    // Filter diagnostics by suppressions. This removes suppressed violations
+    // and tracks which suppressions were used (for outdated suppression detection).
+    // Must happen BEFORE checking for outdated suppressions.
+    checker.diagnostics = checker
+        .suppression
+        .filter_diagnostics(std::mem::take(&mut checker.diagnostics));
+
+    // Report outdated suppressions (suppressions that didn't suppress anything).
+    if checker.is_rule_enabled(Rule::OutdatedSuppression) {
+        let unused = checker.suppression.get_unused_suppressions();
+        let outdated_diagnostics = outdated_suppression(&unused);
+        for diag in outdated_diagnostics {
+            checker.report_diagnostic(Some(diag));
+        }
+    }
+
+    Ok(())
+}
+
+/// Filter diagnostics by suppressions and report outdated suppressions.
+///
 // This function does two things:
 // - dispatch an expression to its appropriate set of rules, e.g. binary
 //   expressions are sent to the rules stored in
@@ -282,7 +325,7 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
 //
 // If a rule needs to be applied on RNaExpression in the future, then
 // we can add the corresponding match arm at this moment.
-pub fn check_expression(
+fn check_expression(
     expression: &air_r_syntax::AnyRExpression,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
@@ -303,6 +346,10 @@ pub fn check_expression(
         }
         AnyRExpression::RCall(children) => {
             analyze::call::call(children, checker)?;
+
+            if let Some(ns_expr) = children.function()?.as_r_namespace_expression() {
+                analyze::namespace_expression::namespace_expression(ns_expr, checker)?;
+            }
 
             for arg in children.arguments()?.items() {
                 if let Some(expr) = arg.unwrap().as_fields().value {
@@ -345,6 +392,9 @@ pub fn check_expression(
                 let alternative = else_clause.alternative();
                 check_expression(&alternative?, checker)?;
             }
+        }
+        AnyRExpression::RNamespaceExpression(children) => {
+            analyze::namespace_expression::namespace_expression(children, checker)?;
         }
         AnyRExpression::RParenthesizedExpression(children) => {
             let body = children.body();

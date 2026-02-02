@@ -25,11 +25,20 @@ use jarl_core::{
 /// Fix information that can be attached to a diagnostic for code actions
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DiagnosticFix {
+    /// The replacement content for the fix
     pub content: String,
+    /// The start byte offset of the fix range
     pub start: usize,
+    /// The end byte offset of the fix range
     pub end: usize,
+    /// Whether this fix is safe to apply automatically
     pub is_safe: bool,
+    /// The name of the rule that produced this diagnostic
     pub rule_name: String,
+    /// The start byte offset of the diagnostic range (for suppression insertion)
+    pub diagnostic_start: usize,
+    /// The end byte offset of the diagnostic range (for suppression insertion)
+    pub diagnostic_end: usize,
 }
 
 /// Main entry point for linting a document
@@ -176,6 +185,8 @@ fn convert_to_lsp_diagnostic(
         end: jarl_diag.fix.end,
         is_safe: jarl_diag.has_safe_fix(),
         rule_name: jarl_diag.message.name.clone(),
+        diagnostic_start: start_offset,
+        diagnostic_end: end_offset,
     };
     let fix_data = Some(serde_json::to_value(diagnostic_fix).unwrap_or_default());
 

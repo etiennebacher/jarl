@@ -1,0 +1,30 @@
+---
+source: crates/jarl-core/src/lints/base/redundant_ifelse/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\nifelse(x > 0, TRUE, FALSE)\",\n\"ifelse(\\n  # comment\\n  x > 0, TRUE, FALSE)\",\n\"ifelse(x > 0, TRUE, FALSE) # trailing comment\",], \"redundant_ifelse\", None)"
+---
+OLD:
+====
+# leading comment
+ifelse(x > 0, TRUE, FALSE)
+NEW:
+====
+# leading comment
+x > 0
+
+OLD:
+====
+ifelse(
+  # comment
+  x > 0, TRUE, FALSE)
+NEW:
+====
+ifelse(
+  # comment
+  x > 0, TRUE, FALSE)
+
+OLD:
+====
+ifelse(x > 0, TRUE, FALSE) # trailing comment
+NEW:
+====
+x > 0 # trailing comment

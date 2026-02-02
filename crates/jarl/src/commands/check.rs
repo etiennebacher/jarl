@@ -2,10 +2,12 @@ use air_workspace::resolve::PathResolver;
 use jarl_core::discovery::{discover_r_file_paths, discover_settings};
 use jarl_core::{
     config::ArgsConfig, config::build_config, diagnostic::Diagnostic, settings::Settings,
+    suppression_edit::create_suppression_edit,
 };
 
 use anyhow::Result;
 use colored::Colorize;
+use std::collections::BTreeMap;
 use std::env;
 use std::path::PathBuf;
 use std::time::Instant;
@@ -98,6 +100,11 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         }
     }
 
+    // Handle --add-jarl-ignore: insert suppression comments for all diagnostics
+    if let Some(reason) = &args.add_jarl_ignore {
+        return add_jarl_ignore_comments(&all_diagnostics, reason, parent_config_path);
+    }
+
     // Flatten all diagnostics into a single vector and sort globally
     let mut all_diagnostics_flat: Vec<&Diagnostic> = all_diagnostics
         .iter()
@@ -155,4 +162,120 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     }
 
     Ok(ExitStatus::Failure)
+}
+
+/// Insert `# jarl-ignore` comments for all diagnostics in the given files.
+fn add_jarl_ignore_comments(
+    all_diagnostics: &[(String, Vec<Diagnostic>)],
+    reason: &str,
+    parent_config_path: Option<PathBuf>,
+) -> Result<ExitStatus> {
+    // Newlines would break comment format
+    if reason.contains(['\n', '\r']) {
+        return Err(anyhow::anyhow!(
+            "--add-jarl-ignore=<reason> cannot contain newline characters."
+        ));
+    }
+
+    if all_diagnostics.is_empty() {
+        println!(
+            "{}: {}",
+            "Info".cyan().bold(),
+            "No violations found, no suppression comments added.".white()
+        );
+        return Ok(ExitStatus::Success);
+    }
+
+    let mut total_suppressions = 0;
+    let mut files_modified = 0;
+
+    // Group diagnostics by file path (use BTreeMap for deterministic order)
+    let mut by_file: BTreeMap<&str, Vec<&Diagnostic>> = BTreeMap::new();
+    for (path, diagnostics) in all_diagnostics {
+        by_file.entry(path).or_default().extend(diagnostics.iter());
+    }
+
+    for (path, diagnostics) in by_file {
+        let path = PathBuf::from(path);
+        // Read the file content
+        let content = match std::fs::read_to_string(&path) {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!(
+                    "{}: Could not read {}: {}",
+                    "Error".red().bold(),
+                    path.display(),
+                    e
+                );
+                continue;
+            }
+        };
+
+        // Compute suppression edits for each diagnostic
+        let mut edits: Vec<(usize, String)> = Vec::new();
+        for diagnostic in &diagnostics {
+            let start: usize = diagnostic.range.start().into();
+            let end: usize = diagnostic.range.end().into();
+            let rule_name = &diagnostic.message.name;
+
+            if let Some(edit) = create_suppression_edit(&content, start, end, rule_name, reason) {
+                edits.push((edit.insert_point.offset, edit.comment_text));
+            }
+        }
+
+        if edits.is_empty() {
+            continue;
+        }
+
+        // Sort by offset in descending order so we can apply edits without shifting positions
+        edits.sort_by(|a, b| b.0.cmp(&a.0));
+
+        // Deduplicate edits at the same offset (multiple diagnostics might want the same comment)
+        edits.dedup_by(|a, b| a.0 == b.0);
+
+        // Apply edits to the content
+        let mut modified_content = content.clone();
+        for (offset, comment_text) in &edits {
+            modified_content.insert_str(*offset, comment_text);
+        }
+
+        // Write the modified content back
+        match std::fs::write(&path, &modified_content) {
+            Ok(()) => {
+                total_suppressions += edits.len();
+                files_modified += 1;
+                println!(
+                    "{}: Added {} suppression comment(s) to {}",
+                    "Modified".green().bold(),
+                    edits.len(),
+                    path.display()
+                );
+            }
+            Err(e) => {
+                eprintln!(
+                    "{}: Could not write {}: {}",
+                    "Error".red().bold(),
+                    path.display(),
+                    e
+                );
+            }
+        }
+    }
+
+    // Summary
+    if total_suppressions > 0 {
+        println!(
+            "\n{}: Added {} suppression comment(s) across {} file(s).",
+            "Summary".cyan().bold(),
+            total_suppressions,
+            files_modified
+        );
+    }
+
+    // Inform about parent config if applicable
+    if let Some(config_path) = parent_config_path {
+        println!("\nUsed '{}'", config_path.display());
+    }
+
+    Ok(ExitStatus::Success)
 }

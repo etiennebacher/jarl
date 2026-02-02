@@ -1,5 +1,5 @@
 use crate::check::Checker;
-use crate::lints::unreachable_code::unreachable_code::unreachable_code_top_level;
+use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
 use crate::rule_set::Rule;
 use air_r_syntax::RSyntaxNode;
 use biome_rowan::AstNode;

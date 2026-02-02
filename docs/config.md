@@ -73,6 +73,10 @@ Options:
       --statistics
           Show counts for every rule with at least one violation.
 
+      --add-jarl-ignore[=<REASON>]
+          Automatically insert a `# jarl-ignore` comment to suppress all violations.
+          The default reason can be customized with `--add-jarl-ignore="my_reason"`.
+
   -h, --help
           Print help (see a summary with '-h')
 ```

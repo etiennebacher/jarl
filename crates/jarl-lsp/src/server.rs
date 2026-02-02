@@ -501,13 +501,10 @@ impl Server {
                     actions.push(types::CodeActionOrCommand::CodeAction(action));
                 }
 
-                // Add nolint actions
-                if let Some(action) = Self::diagnostic_to_nolint_rule_action(&diagnostic, snapshot)
+                // Add jarl-ignore actions
+                if let Some(action) =
+                    Self::diagnostic_to_jarl_ignore_rule_action(&diagnostic, snapshot)
                 {
-                    actions.push(types::CodeActionOrCommand::CodeAction(action));
-                }
-
-                if let Some(action) = Self::diagnostic_to_nolint_all_action(&diagnostic, snapshot) {
                     actions.push(types::CodeActionOrCommand::CodeAction(action));
                 }
             }
@@ -567,69 +564,70 @@ impl Server {
         })
     }
 
-    /// Create a code action to add a nolint comment for a specific rule
-    fn diagnostic_to_nolint_rule_action(
+    /// Create a code action to add a jarl-ignore comment for a specific rule.
+    /// Uses the hoisting infrastructure from jarl-core to find the correct insertion point.
+    fn diagnostic_to_jarl_ignore_rule_action(
         diagnostic: &types::Diagnostic,
         snapshot: &DocumentSnapshot,
     ) -> Option<types::CodeAction> {
+        use jarl_core::suppression_edit;
+
         let content = snapshot.content();
 
-        // Extract the rule name from the diagnostic data
+        // Extract the rule name and diagnostic byte range from the diagnostic data
         let fix_data = diagnostic.data.as_ref()?;
         let fix: crate::lint::DiagnosticFix = serde_json::from_value(fix_data.clone()).ok()?;
-        let rule_name = fix.rule_name;
+        let rule_name = &fix.rule_name;
 
-        // Find the start of the line where the diagnostic is
-        let line_start = diagnostic.range.start.line;
-        let line_start_pos = types::Position::new(line_start, 0);
+        // Use the core infrastructure to compute the insertion point with proper hoisting
+        let insert_point = suppression_edit::compute_suppression_insert_point(
+            content,
+            fix.diagnostic_start,
+            fix.diagnostic_end,
+        )?;
 
-        // Calculate the indentation of the current line
-        let line_text = Self::get_line_text(content, line_start as usize)?;
-        let indent = line_text
-            .chars()
-            .take_while(|c| c.is_whitespace())
-            .collect::<String>();
-
-        // Check if there's already a nolint comment on the previous line
-        let (insert_pos, new_comment) = if line_start > 0 {
-            let prev_line_text = Self::get_line_text(content, (line_start - 1) as usize)?;
-            let trimmed = prev_line_text.trim();
-
-            // Check if previous line is a generic nolint or already contains this rule
-            if trimmed == "# nolint" {
-                // Generic nolint already exists, no need to add specific rule
-                return None;
+        // Check if there's already a jarl-ignore comment that covers this rule
+        if insert_point.line > 0
+            && !insert_point.needs_leading_newline
+            && let Some(prev_line_text) = Self::get_line_text(content, insert_point.line - 1)
+            && let Some((_, existing_rules)) =
+                suppression_edit::parse_existing_suppression(&prev_line_text)
+        {
+            match existing_rules {
+                Some(rules) if rules.iter().any(|r| r == rule_name) => {
+                    // Rule already suppressed
+                    return None;
+                }
+                _ => {
+                    // No rules or other rules - we'll add a new line
+                }
             }
+        }
 
-            if let Some(updated_comment) = Self::update_existing_nolint(&prev_line_text, &rule_name)
-            {
-                // Update existing nolint comment (replace without newline since we're replacing the line content)
-                let prev_line_start = types::Position::new(line_start - 1, 0);
-                let prev_line_end =
-                    types::Position::new(line_start - 1, prev_line_text.len() as u32);
-                (
-                    types::Range::new(prev_line_start, prev_line_end),
-                    updated_comment,
-                )
-            } else if trimmed.starts_with("# nolint:") {
-                // Rule already exists in the nolint comment (update_existing_nolint returned None)
-                return None;
-            } else {
-                // Insert new nolint comment
-                (
-                    types::Range::new(line_start_pos, line_start_pos),
-                    format!("{}# nolint: {}\n", indent, rule_name),
-                )
-            }
+        // Always insert a new comment line (each rule gets its own comment with its own explanation)
+        let (insert_range, new_comment) = if insert_point.needs_leading_newline {
+            // Inline insertion: insert right at the expression with a leading newline
+            let insert_pos = Self::offset_to_position(content, insert_point.offset);
+            let comment = suppression_edit::format_suppression_comment(
+                rule_name,
+                "<reason>",
+                &insert_point.indent,
+                true,
+            );
+            (types::Range::new(insert_pos, insert_pos), comment)
         } else {
-            // First line, just insert
-            (
-                types::Range::new(line_start_pos, line_start_pos),
-                format!("{}# nolint: {}\n", indent, rule_name),
-            )
+            // Insert new comment at line start
+            let line_start_pos = types::Position::new(insert_point.line as u32, 0);
+            let comment = suppression_edit::format_suppression_comment(
+                rule_name,
+                "<reason>",
+                &insert_point.indent,
+                false,
+            );
+            (types::Range::new(line_start_pos, line_start_pos), comment)
         };
 
-        let text_edit = types::TextEdit { range: insert_pos, new_text: new_comment };
+        let text_edit = types::TextEdit { range: insert_range, new_text: new_comment };
 
         let mut changes = std::collections::HashMap::new();
         changes.insert(snapshot.uri().clone(), vec![text_edit]);
@@ -637,7 +635,10 @@ impl Server {
         let workspace_edit = types::WorkspaceEdit { changes: Some(changes), ..Default::default() };
 
         Some(types::CodeAction {
-            title: format!("Ignore `{}` violation on this node.", rule_name),
+            title: format!(
+                "Suppress `{}` violation with jarl-ignore comment.",
+                rule_name
+            ),
             kind: Some(types::CodeActionKind::QUICKFIX),
             diagnostics: Some(vec![diagnostic.clone()]),
             edit: Some(workspace_edit),
@@ -648,115 +649,18 @@ impl Server {
         })
     }
 
-    /// Create a code action to add a nolint comment for all rules
-    fn diagnostic_to_nolint_all_action(
-        diagnostic: &types::Diagnostic,
-        snapshot: &DocumentSnapshot,
-    ) -> Option<types::CodeAction> {
-        let content = snapshot.content();
-
-        // Find the start of the line where the diagnostic is
-        let line_start = diagnostic.range.start.line;
-        let line_start_pos = types::Position::new(line_start, 0);
-
-        // Calculate the indentation of the current line
-        let line_text = Self::get_line_text(content, line_start as usize)?;
-        let indent = line_text
-            .chars()
-            .take_while(|c| c.is_whitespace())
-            .collect::<String>();
-
-        // Check if there's already a nolint comment on the previous line
-        let (insert_pos, new_comment) = if line_start > 0 {
-            let prev_line_text = Self::get_line_text(content, (line_start - 1) as usize)?;
-            if prev_line_text.trim().starts_with("# nolint") {
-                // Already has a nolint comment, replace it with the all version (no newline since we're replacing)
-                let prev_line_start = types::Position::new(line_start - 1, 0);
-                let prev_line_end =
-                    types::Position::new(line_start - 1, prev_line_text.len() as u32);
-                (
-                    types::Range::new(prev_line_start, prev_line_end),
-                    format!("{}# nolint", indent),
-                )
-            } else {
-                // Insert new nolint comment
-                (
-                    types::Range::new(line_start_pos, line_start_pos),
-                    format!("{}# nolint\n", indent),
-                )
-            }
-        } else {
-            // First line, just insert
-            (
-                types::Range::new(line_start_pos, line_start_pos),
-                format!("{}# nolint\n", indent),
-            )
-        };
-
-        let text_edit = types::TextEdit { range: insert_pos, new_text: new_comment };
-
-        let mut changes = std::collections::HashMap::new();
-        changes.insert(snapshot.uri().clone(), vec![text_edit]);
-
-        let workspace_edit = types::WorkspaceEdit { changes: Some(changes), ..Default::default() };
-
-        Some(types::CodeAction {
-            title: "Ignore all violations on this node.".to_string(),
-            kind: Some(types::CodeActionKind::QUICKFIX),
-            diagnostics: Some(vec![diagnostic.clone()]),
-            edit: Some(workspace_edit),
-            command: None,
-            is_preferred: Some(false),
-            disabled: None,
-            data: None,
-        })
+    /// Convert a byte offset to an LSP Position
+    fn offset_to_position(content: &str, offset: usize) -> types::Position {
+        let before = &content[..offset.min(content.len())];
+        let line = before.matches('\n').count() as u32;
+        let line_start = before.rfind('\n').map(|p| p + 1).unwrap_or(0);
+        let character = (offset - line_start) as u32;
+        types::Position::new(line, character)
     }
 
     /// Get the text of a specific line
     fn get_line_text(content: &str, line_number: usize) -> Option<String> {
         content.lines().nth(line_number).map(|s| s.to_string())
-    }
-
-    /// Update an existing nolint comment to include a new rule
-    fn update_existing_nolint(line: &str, rule_name: &str) -> Option<String> {
-        let trimmed = line.trim();
-
-        // Check if this is a nolint comment
-        if !trimmed.starts_with("# nolint") {
-            return None;
-        }
-
-        // If it's already a generic "# nolint", leave it as is
-        if trimmed == "# nolint" {
-            return None;
-        }
-
-        // Extract existing rules
-        if let Some(colon_pos) = trimmed.find(':') {
-            let rules_part = trimmed[colon_pos + 1..].trim();
-            let existing_rules: Vec<&str> = rules_part.split(',').map(|s| s.trim()).collect();
-
-            // Check if the rule is already there
-            if existing_rules.contains(&rule_name) {
-                return None;
-            }
-
-            // Add the new rule
-            let indent = line
-                .chars()
-                .take_while(|c| c.is_whitespace())
-                .collect::<String>();
-            let all_rules = existing_rules
-                .iter()
-                .chain(std::iter::once(&rule_name))
-                .map(|s| s.to_string())
-                .collect::<Vec<_>>()
-                .join(", ");
-
-            Some(format!("{}# nolint: {}", indent, all_rules))
-        } else {
-            None
-        }
     }
 }
 
@@ -770,12 +674,56 @@ mod tests {
     use super::*;
     use crate::document::PositionEncoding;
     use crate::document::{DocumentKey, TextDocument};
-    use crate::lint::DiagnosticFix;
+    use crate::lint;
     use crate::session::DocumentSnapshot;
     use lsp_server::Connection;
-    use lsp_types::{
-        CodeActionContext, CodeActionParams, Position, Range, TextDocumentIdentifier, Url,
-    };
+    use lsp_types::{Position, Range, Url};
+    use tempfile::TempDir;
+
+    const CURSOR: &str = "<CURS>";
+
+    /// Test environment that creates a temp directory with jarl.toml config
+    struct TestEnv {
+        _dir: TempDir,
+        file_path: std::path::PathBuf,
+    }
+
+    impl TestEnv {
+        fn new(content: &str) -> Self {
+            let dir = TempDir::new().unwrap();
+            let dir_path = dir.path();
+
+            // Create jarl.toml with all rules enabled including opt-in rules
+            std::fs::write(
+                dir_path.join("jarl.toml"),
+                r#"
+[lint]
+default-exclude = false
+select = ["ALL"]
+"#,
+            )
+            .unwrap();
+
+            // Create the R file
+            let file_path = dir_path.join("test.R");
+            std::fs::write(&file_path, content).unwrap();
+
+            Self { _dir: dir, file_path }
+        }
+
+        fn create_snapshot(&self, content: &str) -> DocumentSnapshot {
+            let uri = Url::from_file_path(&self.file_path).unwrap();
+            let key = DocumentKey::from(uri);
+            let document = TextDocument::new(content.to_string(), 1);
+
+            DocumentSnapshot::new(
+                document,
+                key,
+                PositionEncoding::UTF8,
+                lsp_types::ClientCapabilities::default(),
+            )
+        }
+    }
 
     fn create_test_snapshot(content: &str) -> DocumentSnapshot {
         let uri = Url::parse("file:///test.R").unwrap();
@@ -790,25 +738,129 @@ mod tests {
         )
     }
 
-    fn create_test_diagnostic_with_fix(
-        range: Range,
-        message: String,
-        fix: DiagnosticFix,
-    ) -> types::Diagnostic {
-        let fix_data = serde_json::to_value(&fix).unwrap();
+    /// Convert byte offset to LSP position
+    fn offset_to_position(content: &str, offset: usize) -> Position {
+        let mut line = 0;
+        let mut col = 0;
+        for (i, ch) in content.char_indices() {
+            if i == offset {
+                return Position::new(line, col);
+            }
+            if ch == '\n' {
+                line += 1;
+                col = 0;
+            } else {
+                col += 1;
+            }
+        }
+        Position::new(line, col)
+    }
 
-        types::Diagnostic {
-            range,
-            severity: Some(types::DiagnosticSeverity::WARNING),
-            code: None,
-            code_description: None,
-            source: Some("jarl".to_string()),
-            message,
-            related_information: None,
-            tags: None,
-            data: Some(fix_data),
+    /// Convert LSP Position to byte offset
+    fn position_to_offset(content: &str, position: Position) -> usize {
+        let mut offset = 0;
+        let mut current_line = 0;
+
+        for line in content.lines() {
+            if current_line == position.line {
+                return offset + position.character as usize;
+            }
+            offset += line.len() + 1;
+            current_line += 1;
+        }
+
+        if current_line == position.line {
+            offset + position.character as usize
+        } else {
+            content.len()
         }
     }
+
+    /// Check if a position is within a range
+    fn position_in_range(pos: Position, range: &Range) -> bool {
+        if pos.line < range.start.line || pos.line > range.end.line {
+            return false;
+        }
+        if pos.line == range.start.line && pos.character < range.start.character {
+            return false;
+        }
+        if pos.line == range.end.line && pos.character > range.end.character {
+            return false;
+        }
+        true
+    }
+
+    /// Apply a quick fix at the cursor position by running the actual linter.
+    fn apply_fix_at_cursor(source_with_cursor: &str) -> Option<String> {
+        let cursor_pos = source_with_cursor.find(CURSOR)?;
+        let content = source_with_cursor.replace(CURSOR, "");
+
+        let env = TestEnv::new(&content);
+        let snapshot = env.create_snapshot(&content);
+
+        // Run the linter to get real diagnostics
+        let diagnostics = lint::lint_document(&snapshot).ok()?;
+
+        // Find the diagnostic at cursor position
+        let cursor_lsp_pos = offset_to_position(&content, cursor_pos);
+        let diagnostic = diagnostics
+            .iter()
+            .find(|d| position_in_range(cursor_lsp_pos, &d.range))?;
+
+        // Get the code action
+        let action = Server::diagnostic_to_code_action(diagnostic, &snapshot)?;
+        let edit = action.edit?;
+        let changes = edit.changes?;
+        let text_edits = changes.values().next()?;
+
+        // Apply edits
+        let mut result = content.clone();
+        for text_edit in text_edits.iter().rev() {
+            let start = position_to_offset(&result, text_edit.range.start);
+            let end = position_to_offset(&result, text_edit.range.end);
+            result.replace_range(start..end, &text_edit.new_text);
+        }
+
+        Some(result)
+    }
+
+    /// Apply a jarl-ignore action at the cursor position by running the actual linter.
+    fn apply_jarl_ignore_at_cursor(source_with_cursor: &str) -> Option<String> {
+        let cursor_pos = source_with_cursor.find(CURSOR)?;
+        let content = source_with_cursor.replace(CURSOR, "");
+
+        let env = TestEnv::new(&content);
+        let snapshot = env.create_snapshot(&content);
+
+        // Run the linter to get real diagnostics
+        let diagnostics = lint::lint_document(&snapshot).ok()?;
+
+        // Find the diagnostic at cursor position
+        let cursor_lsp_pos = offset_to_position(&content, cursor_pos);
+        let diagnostic = diagnostics
+            .iter()
+            .find(|d| position_in_range(cursor_lsp_pos, &d.range))?;
+
+        // Get the jarl-ignore action
+        let action = Server::diagnostic_to_jarl_ignore_rule_action(diagnostic, &snapshot)?;
+        let edit = action.edit?;
+        let changes = edit.changes?;
+        let text_edits = changes.values().next()?;
+
+        // Apply edits
+        let mut result = content.clone();
+        for text_edit in text_edits.iter().rev() {
+            let start = position_to_offset(&result, text_edit.range.start);
+            let end = position_to_offset(&result, text_edit.range.end);
+            result.replace_range(start..end, &text_edit.new_text);
+        }
+
+        Some(result)
+    }
+
+    // =========================================================================
+    // Server creation test
+    // =========================================================================
 
     #[test]
     fn test_server_creation() {
@@ -819,47 +871,48 @@ mod tests {
         assert!(result.is_ok());
     }
 
+    // =========================================================================
+    // Quick fix snapshot tests (using real linter)
+    // =========================================================================
+
     #[test]
-    fn test_diagnostic_to_code_action_with_assignment_fix() {
-        let snapshot = create_test_snapshot("x = 1\n");
+    fn test_fix_one_violation() {
+        let result = apply_fix_at_cursor(r#"<CURS>any(is.na(x))"#).unwrap();
 
-        let fix = DiagnosticFix {
-            content: "x <- 1".to_string(),
-            start: 0, // replace entire assignment
-            end: 5,   // end of "x = 1"
-            is_safe: true,
-            rule_name: "assignment".to_string(),
-        };
-
-        let diagnostic = create_test_diagnostic_with_fix(
-            Range::new(Position::new(0, 2), Position::new(0, 3)),
-            "Use <- for assignment".to_string(),
-            fix,
-        );
-
-        let result = Server::diagnostic_to_code_action(&diagnostic, &snapshot);
-
-        assert!(result.is_some());
-        let action = result.unwrap();
-
-        assert_eq!(action.title, "Fix: Use <- for assignment");
-        assert_eq!(action.kind, Some(types::CodeActionKind::QUICKFIX));
-        assert!(action.is_preferred.unwrap_or(false));
-        assert!(action.edit.is_some());
-
-        let edit = action.edit.unwrap();
-        assert!(edit.changes.is_some());
-
-        let changes = edit.changes.unwrap();
-        assert_eq!(changes.len(), 1);
-
-        let text_edits = changes.values().next().unwrap();
-        assert_eq!(text_edits.len(), 1);
-        assert_eq!(text_edits[0].new_text, "x <- 1");
+        insta::assert_snapshot!(result, @r#"anyNA(x)"#);
     }
 
     #[test]
-    fn test_diagnostic_to_code_action_with_no_fix() {
+    fn test_one_of_multiple_violations() {
+        let result = apply_fix_at_cursor(
+            r#"x = 1
+<CURS>x = 2
+"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r#"
+        x = 1
+        x <- 2
+        "#);
+    }
+
+    #[test]
+    fn test_fix_multiline_violation() {
+        let result = apply_fix_at_cursor(
+            r#"any(
+            <CURS>duplicated(x)
+            )"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r#"
+        anyDuplicated(x) > 0
+        "#);
+    }
+
+    #[test]
+    fn test_fix_no_action_without_fix_data() {
         let snapshot = create_test_snapshot("class(x) == \"foo\"\n");
 
         let diagnostic = types::Diagnostic {
@@ -868,201 +921,471 @@ mod tests {
             code: None,
             code_description: None,
             source: Some("jarl".to_string()),
-            message: "Use inherits() instead of class() == \"...\"".to_string(),
+            message: "Use inherits()".to_string(),
             related_information: None,
             tags: None,
-            data: None, // No fix data available for this lint
+            data: None,
         };
 
         let result = Server::diagnostic_to_code_action(&diagnostic, &snapshot);
         assert!(result.is_none());
     }
 
+    // =========================================================================
+    // Nolint rule snapshot tests (using real linter)
+    // =========================================================================
+
     #[test]
-    fn test_diagnostic_to_code_action_with_empty_fix() {
-        let snapshot = create_test_snapshot("y = 2\n");
+    fn test_suppression_insert_new_comment() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+<CURS>any(is.na(x))
+"#,
+        )
+        .unwrap();
 
-        let fix = DiagnosticFix {
-            content: "".to_string(),
-            start: 0,
-            end: 0,
-            is_safe: true,
-            rule_name: "class_comparison".to_string(),
-        };
-
-        let diagnostic = create_test_diagnostic_with_fix(
-            Range::new(Position::new(0, 0), Position::new(0, 0)),
-            "Empty fix data".to_string(),
-            fix,
-        );
-
-        let result = Server::diagnostic_to_code_action(&diagnostic, &snapshot);
-        assert!(result.is_none());
+        insta::assert_snapshot!(result, @r#"
+# jarl-ignore any_is_na: <reason>
+any(is.na(x))
+"#);
     }
 
     #[test]
-    fn test_assignment_quick_fix() {
-        let snapshot = create_test_snapshot("x = 1\n");
+    fn test_suppression_insert_new_comment_nested_violation() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+x <- foo(<CURS>any(is.na(x)))
+"#,
+        )
+        .unwrap();
 
-        let fix = DiagnosticFix {
-            content: "x <- 1".to_string(),
-            start: 0,
-            end: 5, // "x = 1"
-            is_safe: true,
-            rule_name: "assignment".to_string(),
-        };
-
-        let diagnostic = create_test_diagnostic_with_fix(
-            Range::new(Position::new(0, 2), Position::new(0, 3)), // position of "="
-            "Use <- for assignment".to_string(),
-            fix,
-        );
-
-        let action = Server::diagnostic_to_code_action(&diagnostic, &snapshot);
-
-        assert!(action.is_some());
-        let action = action.unwrap();
-
-        assert_eq!(action.title, "Fix: Use <- for assignment");
-        assert_eq!(action.kind, Some(types::CodeActionKind::QUICKFIX));
-        assert!(action.is_preferred.unwrap_or(false));
-
-        // Verify the edit
-        let edit = action.edit.unwrap();
-        let changes = edit.changes.unwrap();
-        let text_edits = changes.values().next().unwrap();
-        assert_eq!(text_edits[0].new_text, "x <- 1");
+        insta::assert_snapshot!(result, @r#"
+# jarl-ignore any_is_na: <reason>
+x <- foo(any(is.na(x)))
+"#);
     }
 
     #[test]
-    fn test_any_is_na_quick_fix() {
-        let snapshot = create_test_snapshot("result <- any(is.na(data$column))\n");
+    fn test_suppression_insert_new_comment_between_violations() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+x = 1
+<CURS>x = 2
+"#,
+        )
+        .unwrap();
 
-        let fix = DiagnosticFix {
-            content: "anyNA(data$column)".to_string(),
-            start: 10, // start of "any(is.na(...))"
-            end: 33,   // end of "any(is.na(data$column))"
-            is_safe: true,
-            rule_name: "any_is_na".to_string(),
-        };
-
-        let diagnostic = create_test_diagnostic_with_fix(
-            Range::new(Position::new(0, 10), Position::new(0, 33)),
-            "Use anyNA() instead of any(is.na())".to_string(),
-            fix,
-        );
-
-        let action = Server::diagnostic_to_code_action(&diagnostic, &snapshot);
-
-        assert!(action.is_some());
-        let action = action.unwrap();
-
-        assert_eq!(action.title, "Fix: Use anyNA() instead of any(is.na())");
-        assert_eq!(action.kind, Some(types::CodeActionKind::QUICKFIX));
-        assert!(action.is_preferred.unwrap_or(false));
-
-        // Verify the edit replaces with anyNA
-        let edit = action.edit.unwrap();
-        let changes = edit.changes.unwrap();
-        let text_edits = changes.values().next().unwrap();
-        assert_eq!(text_edits[0].new_text, "anyNA(data$column)");
+        insta::assert_snapshot!(result, @r"
+        x = 1
+        # jarl-ignore assignment: <reason>
+        x = 2
+        ");
     }
 
     #[test]
-    fn test_class_comparison_no_quick_fix() {
-        let snapshot = create_test_snapshot("if (class(obj) == \"data.frame\") { }\n");
+    fn test_suppression_adds_new_line_for_different_rule() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+# jarl-ignore foo: some reason
+<CURS>x = 1
+"#,
+        )
+        .unwrap();
 
-        // This lint should NOT have a quick fix, only a recommendation
-        let diagnostic = types::Diagnostic {
-            range: Range::new(Position::new(0, 4), Position::new(0, 27)),
-            severity: Some(types::DiagnosticSeverity::WARNING),
-            code: None,
-            code_description: None,
-            source: Some("jarl".to_string()),
-            message: "Use inherits() instead of class() == \"...\"".to_string(),
-            related_information: None,
-            tags: None,
-            data: None, // No fix data - this lint doesn't provide automatic fixes
-        };
-
-        let action = Server::diagnostic_to_code_action(&diagnostic, &snapshot);
-
-        // Should return None because there's no fix data
-        assert!(action.is_none());
+        insta::assert_snapshot!(result, @r#"
+        # jarl-ignore foo: some reason
+        # jarl-ignore assignment: <reason>
+        x = 1
+        "#);
     }
 
     #[test]
-    fn test_multiple_assignment_fixes_in_document() {
-        let snapshot = create_test_snapshot("x = 1\ny = 2\nz = 3\n");
+    fn test_suppression_with_indentation() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+f <- function() {
+  <CURS>x = 1
+}
+"#,
+        )
+        .unwrap();
 
-        // Test multiple assignment fixes in a single document
-        let test_cases = vec![
-            (0, 5, "x <- 1", Position::new(0, 2), Position::new(0, 3)),
-            (6, 11, "y <- 2", Position::new(1, 2), Position::new(1, 3)),
-            (12, 17, "z <- 3", Position::new(2, 2), Position::new(2, 3)),
-        ];
-
-        // Track all actions to verify they can coexist
-        let mut actions = Vec::new();
-
-        for (start, end, replacement, range_start, range_end) in test_cases {
-            let fix = DiagnosticFix {
-                content: replacement.to_string(),
-                start,
-                end,
-                is_safe: true,
-                rule_name: "assignment".to_string(),
-            };
-
-            let range = Range::new(range_start, range_end);
-            let diagnostic =
-                create_test_diagnostic_with_fix(range, "Use <- for assignment".to_string(), fix);
-
-            let action = Server::diagnostic_to_code_action(&diagnostic, &snapshot);
-            assert!(action.is_some());
-
-            let action = action.unwrap();
-            assert_eq!(action.kind, Some(types::CodeActionKind::QUICKFIX));
-            assert!(action.is_preferred.unwrap_or(false));
-
-            // Verify the replacement text
-            let edit = action.edit.as_ref().unwrap();
-            let changes = edit.changes.as_ref().unwrap();
-            let text_edits = changes.values().next().unwrap();
-            assert_eq!(text_edits[0].new_text, replacement);
-
-            actions.push(action);
+        insta::assert_snapshot!(result, @r#"
+        f <- function() {
+          # jarl-ignore assignment: <reason>
+          x = 1
         }
-
-        // Verify we generated all expected fixes
-        assert_eq!(actions.len(), 3);
+        "#);
     }
 
     #[test]
-    fn test_code_action_params_integration() {
-        let snapshot = create_test_snapshot("x = 1\ny = 2\nany(is.na(data))\n");
+    fn test_suppression_with_function_definition() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+f <- function(a = <CURS>any(is.na(x))) {
+  1
+}
+"#,
+        )
+        .unwrap();
 
-        let params = CodeActionParams {
-            text_document: TextDocumentIdentifier { uri: snapshot.uri().clone() },
-            range: Range::new(Position::new(0, 0), Position::new(2, 16)), // All lines
-            context: CodeActionContext {
-                diagnostics: vec![],
-                only: Some(vec![types::CodeActionKind::QUICKFIX]),
-                trigger_kind: None,
-            },
-            partial_result_params: Default::default(),
-            work_done_progress_params: Default::default(),
-        };
+        insta::assert_snapshot!(result, @r"
+        # jarl-ignore any_is_na: <reason>
+        f <- function(a = any(is.na(x))) {
+          1
+        }
+        ");
 
-        // Verify the params structure for multiple potential fixes
-        assert_eq!(params.text_document.uri, *snapshot.uri());
-        assert_eq!(params.range.start.line, 0);
-        assert_eq!(params.range.end.line, 2);
-        assert_eq!(
-            params.context.only,
-            Some(vec![types::CodeActionKind::QUICKFIX])
-        );
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+f <- function(
+    a = <CURS>any(is.na(x))
+) {
+  1
+}
+"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+        f <- function(
+            # jarl-ignore any_is_na: <reason>
+            a = any(is.na(x))
+        ) {
+          1
+        }
+        ");
     }
+
+    #[test]
+    fn test_insert_suppression_with_square_bracket() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+x <- foo[<CURS>any(is.na(x))]
+"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+        # jarl-ignore any_is_na: <reason>
+        x <- foo[any(is.na(x))]
+        ");
+
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+x <- foo[
+    <CURS>any(is.na(x))
+]"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+        x <- foo[
+            # jarl-ignore any_is_na: <reason>
+            any(is.na(x))
+        ]
+        ");
+    }
+
+    #[test]
+    fn test_insert_suppression_with_double_square_bracket() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+x <- foo[[<CURS>any(is.na(x))]]
+"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+        # jarl-ignore any_is_na: <reason>
+        x <- foo[[any(is.na(x))]]
+        ");
+
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+x <- foo[[
+    <CURS>any(is.na(x))
+]]"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+        x <- foo[[
+            # jarl-ignore any_is_na: <reason>
+            any(is.na(x))
+        ]]
+        ");
+    }
+
+    #[test]
+    fn test_insert_suppression_with_unary_expr() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+x <- ~ <CURS>any(is.na(x))
+"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+        # jarl-ignore any_is_na: <reason>
+        x <- ~ any(is.na(x))
+        ");
+
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+x <- ~
+    <CURS>any(is.na(x))
+"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+        x <- ~
+            # jarl-ignore any_is_na: <reason>
+            any(is.na(x))
+        ");
+    }
+
+    #[test]
+    fn test_insert_suppression_with_if_condition() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+if (x) {
+  x = 1
+} else if (<CURS>x <- 2) {
+  x = 1
+}
+"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+        if (x) {
+          x = 1
+        } else if (
+                   # jarl-ignore implicit_assignment: <reason>
+                   x <- 2) {
+          x = 1
+        }
+        ");
+    }
+
+    #[test]
+    fn test_no_hoisting_higher_than_if_body() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+if (x) {
+  <CURS>any(is.na(x))
+}
+"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+if (x) {
+  # jarl-ignore any_is_na: <reason>
+  any(is.na(x))
+}
+        ");
+    }
+
+    #[test]
+    fn test_insert_suppression_with_for_loop() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+for (<CURS>x in x) {
+    print(1)
+}
+    "#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+# jarl-ignore for_loop_index: <reason>
+for (x in x) {
+    print(1)
+}
+            ");
+    }
+
+    #[test]
+    fn test_no_hoisting_higher_than_for_body() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+for (x in y) {
+    <CURS>any(is.na(x))
+}
+    "#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+        for (x in y) {
+            # jarl-ignore any_is_na: <reason>
+            any(is.na(x))
+        }
+        ");
+    }
+
+    #[test]
+    fn test_insert_suppression_with_while_loop() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+while (<CURS>TRUE) {
+    print(1)
+}
+    "#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+# jarl-ignore repeat: <reason>
+while (TRUE) {
+    print(1)
+}
+            ");
+    }
+
+    #[test]
+    fn test_no_hoisting_higher_than_while_body() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+while (x > y) {
+    <CURS>any(is.na(x))
+}
+    "#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+        while (x > y) {
+            # jarl-ignore any_is_na: <reason>
+            any(is.na(x))
+        }
+        ");
+    }
+
+    #[test]
+    fn test_insert_suppression_with_pipe() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+x |>
+  foo() |>
+  download.file(mode = 'w')<CURS> |>
+  bar()
+"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+        x |>
+          foo() |>
+          # jarl-ignore download_file: <reason>
+          download.file(mode = 'w') |>
+          bar()
+        ");
+    }
+
+    #[test]
+    fn test_suppression_no_duplicate_rule() {
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+# jarl-ignore assignment: already suppressed
+<CURS>x = 1
+"#,
+        );
+
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_suppression_with_invalid_blanket_above() {
+        // "# jarl-ignore" without a rule name is invalid, so we should still insert a new comment
+        let result = apply_jarl_ignore_at_cursor(
+            r#"
+# jarl-ignore
+<CURS>x = 1
+"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r#"
+        # jarl-ignore
+        # jarl-ignore assignment: <reason>
+        x = 1
+        "#);
+    }
+
+    // =========================================================================
+    // Action properties tests (non-snapshot)
+    // =========================================================================
+
+    #[test]
+    fn test_fix_action_properties() {
+        let content = "x = 1\n";
+        let env = TestEnv::new(content);
+        let snapshot = env.create_snapshot(content);
+
+        let diagnostics = lint::lint_document(&snapshot).unwrap();
+        let diagnostic = diagnostics.first().unwrap();
+
+        let action = Server::diagnostic_to_code_action(diagnostic, &snapshot).unwrap();
+
+        assert!(action.title.starts_with("Fix:"));
+        assert_eq!(action.kind, Some(types::CodeActionKind::QUICKFIX));
+        assert!(action.is_preferred.unwrap_or(false));
+    }
+
+    #[test]
+    fn test_suppression_action_properties() {
+        let content = "x = 1\n";
+        let env = TestEnv::new(content);
+        let snapshot = env.create_snapshot(content);
+
+        let diagnostics = lint::lint_document(&snapshot).unwrap();
+        let diagnostic = diagnostics.first().unwrap();
+
+        let action = Server::diagnostic_to_jarl_ignore_rule_action(diagnostic, &snapshot).unwrap();
+
+        assert!(action.title.contains("assignment"));
+        assert!(action.title.contains("jarl-ignore"));
+        assert_eq!(action.kind, Some(types::CodeActionKind::QUICKFIX));
+        assert!(!action.is_preferred.unwrap_or(true));
+    }
+
+    // =========================================================================
+    // Unicode tests (using real linter)
+    // =========================================================================
+
+    #[test]
+    fn test_fix_unicode_accent() {
+        let result = apply_fix_at_cursor(
+            r#"<CURS>héllo = 1
+"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r#"
+        héllo <- 1
+        "#);
+    }
+
+    #[test]
+    fn test_fix_unicode_chinese() {
+        let result = apply_fix_at_cursor(
+            r#"<CURS>数据 = 2
+"#,
+        )
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r#"
+        数据 <- 2
+        "#);
+    }
+
+    // =========================================================================
+    // Utility function tests
+    // =========================================================================
 
     #[test]
     fn test_ranges_overlap() {
@@ -1071,579 +1394,11 @@ mod tests {
         let range3 = Range::new(Position::new(0, 6), Position::new(0, 10));
         let range4 = Range::new(Position::new(1, 0), Position::new(1, 5));
 
-        // Overlapping ranges
         assert!(ranges_overlap(&range1, &range2));
         assert!(ranges_overlap(&range2, &range1));
-
-        // Non-overlapping ranges
         assert!(!ranges_overlap(&range1, &range3));
         assert!(!ranges_overlap(&range3, &range1));
-
-        // Different lines
         assert!(!ranges_overlap(&range1, &range4));
-        assert!(!ranges_overlap(&range4, &range1));
-
-        // Same range
         assert!(ranges_overlap(&range1, &range1));
-    }
-
-    #[test]
-    fn test_unicode_diagnostics_and_fixes() {
-        // Test that diagnostics and fixes work correctly with multibyte Unicode characters
-        // Use simpler test cases to avoid byte boundary issues
-
-        // Test case 1: Accent character
-        let content1 = "héllo = 1";
-        let snapshot1 = create_test_snapshot(content1);
-
-        let fix1 = DiagnosticFix {
-            content: "héllo <- 1".to_string(),
-            start: 0,
-            end: content1.len(),
-            is_safe: true,
-            rule_name: "assignment".to_string(),
-        };
-
-        let diagnostic1 = create_test_diagnostic_with_fix(
-            Range::new(Position::new(0, 8), Position::new(0, 9)), // position of "="
-            "Use <- for assignment".to_string(),
-            fix1,
-        );
-
-        let action1 = Server::diagnostic_to_code_action(&diagnostic1, &snapshot1);
-        assert!(
-            action1.is_some(),
-            "Failed to create action for accent character"
-        );
-
-        // Test case 2: Emoji
-        let content2 = "🚀_var = 2";
-        let snapshot2 = create_test_snapshot(content2);
-
-        let fix2 = DiagnosticFix {
-            content: "🚀_var <- 2".to_string(),
-            start: 0,
-            end: content2.len(),
-            is_safe: true,
-            rule_name: "assignment".to_string(),
-        };
-
-        let diagnostic2 = create_test_diagnostic_with_fix(
-            Range::new(Position::new(0, 7), Position::new(0, 8)), // position of "="
-            "Use <- for assignment".to_string(),
-            fix2,
-        );
-
-        let action2 = Server::diagnostic_to_code_action(&diagnostic2, &snapshot2);
-        assert!(action2.is_some(), "Failed to create action for emoji");
-
-        // Test case 3: Chinese characters
-        let content3 = "世界 = 3";
-        let snapshot3 = create_test_snapshot(content3);
-
-        let fix3 = DiagnosticFix {
-            content: "世界 <- 3".to_string(),
-            start: 0,
-            end: content3.len(),
-            is_safe: true,
-            rule_name: "assignment".to_string(),
-        };
-
-        let diagnostic3 = create_test_diagnostic_with_fix(
-            Range::new(Position::new(0, 5), Position::new(0, 6)),
-            "Use <- for assignment".to_string(),
-            fix3,
-        );
-
-        let action3 = Server::diagnostic_to_code_action(&diagnostic3, &snapshot3);
-        assert!(
-            action3.is_some(),
-            "Failed to create action for Chinese characters"
-        );
-
-        // Verify all actions have correct properties
-        for (action, expected_text) in [
-            (action1.unwrap(), "héllo <- 1"),
-            (action2.unwrap(), "🚀_var <- 2"),
-            (action3.unwrap(), "世界 <- 3"),
-        ] {
-            assert_eq!(action.title, "Fix: Use <- for assignment");
-            assert_eq!(action.kind, Some(types::CodeActionKind::QUICKFIX));
-
-            let edit = action.edit.unwrap();
-            let changes = edit.changes.unwrap();
-            let text_edits = changes.values().next().unwrap();
-            assert_eq!(text_edits[0].new_text, expected_text);
-        }
-    }
-
-    #[test]
-    fn test_unicode_any_is_na_fix() {
-        // Test anyNA fix with Unicode variable names
-        let content = "résultat <- any(is.na(données$colonne))";
-        let snapshot = create_test_snapshot(content);
-
-        let fix = DiagnosticFix {
-            content: "anyNA(données$colonne)".to_string(),
-            start: 12, // start of "any(is.na(...))"
-            end: 39,   // end of "any(is.na(données$colonne))"
-            is_safe: true,
-            rule_name: "any_is_na".to_string(),
-        };
-
-        let diagnostic = create_test_diagnostic_with_fix(
-            Range::new(Position::new(0, 12), Position::new(0, 39)),
-            "Use anyNA() instead of any(is.na())".to_string(),
-            fix,
-        );
-
-        let action = Server::diagnostic_to_code_action(&diagnostic, &snapshot);
-        assert!(action.is_some());
-
-        let action = action.unwrap();
-        assert_eq!(action.title, "Fix: Use anyNA() instead of any(is.na())");
-
-        // Verify Unicode is preserved in the fix
-        let edit = action.edit.unwrap();
-        let changes = edit.changes.unwrap();
-        let text_edits = changes.values().next().unwrap();
-        assert_eq!(text_edits[0].new_text, "anyNA(données$colonne)");
-    }
-
-    #[test]
-    fn test_unicode_position_calculations() {
-        // Test that position calculations work correctly with various Unicode scenarios
-        use crate::document::PositionEncoding;
-
-        let content = "🚀 = 1"; // Emoji takes 4 bytes in UTF-8, but 2 code units in UTF-16
-
-        // Create snapshots with different encodings
-        let snapshot_utf8 = create_test_snapshot_with_encoding(content, PositionEncoding::UTF8);
-        let snapshot_utf16 = create_test_snapshot_with_encoding(content, PositionEncoding::UTF16);
-
-        // Create a fix that targets the "=" character
-        let fix = DiagnosticFix {
-            content: "🚀 <- 1".to_string(),
-            start: 5, // byte position of "=" in UTF-8
-            end: 6,
-            is_safe: true,
-            rule_name: "assignment".to_string(),
-        };
-
-        // Test UTF-8 encoding
-        let diagnostic_utf8 = create_test_diagnostic_with_fix(
-            Range::new(Position::new(0, 2), Position::new(0, 3)), // character position of "="
-            "Use <- for assignment".to_string(),
-            fix.clone(),
-        );
-
-        let action_utf8 = Server::diagnostic_to_code_action(&diagnostic_utf8, &snapshot_utf8);
-        assert!(
-            action_utf8.is_some(),
-            "UTF-8 encoding should work with emoji"
-        );
-
-        // Test UTF-16 encoding
-        let diagnostic_utf16 = create_test_diagnostic_with_fix(
-            Range::new(Position::new(0, 3), Position::new(0, 4)), // different char position in UTF-16
-            "Use <- for assignment".to_string(),
-            fix,
-        );
-
-        let action_utf16 = Server::diagnostic_to_code_action(&diagnostic_utf16, &snapshot_utf16);
-        assert!(
-            action_utf16.is_some(),
-            "UTF-16 encoding should work with emoji"
-        );
-
-        // Both should produce the same replacement text
-        let edit_utf8 = action_utf8.unwrap().edit.unwrap();
-        let edit_utf16 = action_utf16.unwrap().edit.unwrap();
-
-        let changes_utf8 = edit_utf8.changes.unwrap();
-        let changes_utf16 = edit_utf16.changes.unwrap();
-
-        let text_edit_utf8 = changes_utf8.values().next().unwrap();
-        let text_edit_utf16 = changes_utf16.values().next().unwrap();
-
-        assert_eq!(text_edit_utf8[0].new_text, "🚀 <- 1");
-        assert_eq!(text_edit_utf16[0].new_text, "🚀 <- 1");
-    }
-
-    /// Helper function to create test snapshots with specific position encoding
-    fn create_test_snapshot_with_encoding(
-        content: &str,
-        encoding: crate::document::PositionEncoding,
-    ) -> DocumentSnapshot {
-        let uri = lsp_types::Url::parse("file:///test_unicode.R").unwrap();
-        let key = DocumentKey::from(uri);
-        let document = TextDocument::new(content.to_string(), 1);
-
-        DocumentSnapshot::new(
-            document,
-            key,
-            encoding,
-            lsp_types::ClientCapabilities::default(),
-        )
-    }
-
-    #[test]
-    fn test_nolint_rule_action_basic() {
-        let snapshot = create_test_snapshot("x = 1\n");
-
-        let fix = DiagnosticFix {
-            content: "x <- 1".to_string(),
-            start: 0,
-            end: 5,
-            is_safe: true,
-            rule_name: "assignment".to_string(),
-        };
-
-        let diagnostic = create_test_diagnostic_with_fix(
-            Range::new(Position::new(0, 2), Position::new(0, 3)),
-            "Use <- for assignment".to_string(),
-            fix,
-        );
-
-        let action = Server::diagnostic_to_nolint_rule_action(&diagnostic, &snapshot);
-
-        assert!(action.is_some());
-        let action = action.unwrap();
-
-        assert_eq!(action.title, "Ignore `assignment` violation on this node.");
-        assert_eq!(action.kind, Some(types::CodeActionKind::QUICKFIX));
-        assert!(!action.is_preferred.unwrap_or(true));
-    }
-
-    #[test]
-    fn test_nolint_all_action_basic() {
-        let snapshot = create_test_snapshot("x = 1\n");
-
-        let fix = DiagnosticFix {
-            content: "x <- 1".to_string(),
-            start: 0,
-            end: 5,
-            is_safe: true,
-            rule_name: "assignment".to_string(),
-        };
-
-        let diagnostic = create_test_diagnostic_with_fix(
-            Range::new(Position::new(0, 2), Position::new(0, 3)),
-            "Use <- for assignment".to_string(),
-            fix,
-        );
-
-        let action = Server::diagnostic_to_nolint_all_action(&diagnostic, &snapshot);
-
-        assert!(action.is_some());
-        let action = action.unwrap();
-
-        assert_eq!(action.title, "Ignore all violations on this node.");
-        assert_eq!(action.kind, Some(types::CodeActionKind::QUICKFIX));
-    }
-
-    #[test]
-    fn test_nolint_does_not_add_duplicate_rule() {
-        let snapshot = create_test_snapshot("# nolint: assignment\nx = 1\n");
-
-        let fix = DiagnosticFix {
-            content: "x <- 1".to_string(),
-            start: 30,
-            end: 35,
-            is_safe: true,
-            rule_name: "assignment".to_string(),
-        };
-
-        let diagnostic = create_test_diagnostic_with_fix(
-            Range::new(Position::new(1, 2), Position::new(1, 3)),
-            "Use <- for assignment".to_string(),
-            fix,
-        );
-
-        let action = Server::diagnostic_to_nolint_rule_action(&diagnostic, &snapshot);
-
-        // Should return None because the rule is already in the nolint comment
-        assert!(action.is_none());
-    }
-
-    #[test]
-    fn test_nolint_does_not_add_to_generic_nolint() {
-        let snapshot = create_test_snapshot("# nolint\nx = 1\n");
-
-        let fix = DiagnosticFix {
-            content: "x <- 1".to_string(),
-            start: 9,
-            end: 14,
-            is_safe: true,
-            rule_name: "assignment".to_string(),
-        };
-
-        let diagnostic = create_test_diagnostic_with_fix(
-            Range::new(Position::new(1, 2), Position::new(1, 3)),
-            "Use <- for assignment".to_string(),
-            fix,
-        );
-
-        let action = Server::diagnostic_to_nolint_rule_action(&diagnostic, &snapshot);
-
-        // Should return None because generic nolint already covers all rules
-        assert!(action.is_none());
-    }
-
-    #[test]
-    fn test_multiple_violations_on_different_lines() {
-        let snapshot = create_test_snapshot(
-            "any(\n  is.na(\n    # hello there\n    any(duplicated(x))\n  ) # end comment\n)\n",
-        );
-
-        // Create two different diagnostics for different lines with comments between
-        let fix1 = DiagnosticFix {
-            content: "anyNA(any(duplicated(x)))".to_string(),
-            start: 0,
-            end: 67,
-            is_safe: true,
-            rule_name: "any_is_na".to_string(),
-        };
-
-        let diagnostic1 = create_test_diagnostic_with_fix(
-            Range::new(Position::new(1, 2), Position::new(1, 7)),
-            "Use anyNA() instead of any(is.na())".to_string(),
-            fix1,
-        );
-
-        let fix2 = DiagnosticFix {
-            content: "anyDuplicated(x)".to_string(),
-            start: 37,
-            end: 54,
-            is_safe: true,
-            rule_name: "any_duplicated".to_string(),
-        };
-
-        let diagnostic2 = create_test_diagnostic_with_fix(
-            Range::new(Position::new(3, 4), Position::new(3, 7)),
-            "Use anyDuplicated() instead of any(duplicated())".to_string(),
-            fix2,
-        );
-
-        // Test that both diagnostics generate nolint actions
-        let action1 = Server::diagnostic_to_nolint_rule_action(&diagnostic1, &snapshot);
-        let action2 = Server::diagnostic_to_nolint_rule_action(&diagnostic2, &snapshot);
-
-        assert!(action1.is_some());
-        assert!(action2.is_some());
-
-        assert_eq!(
-            action1.as_ref().unwrap().title,
-            "Ignore `any_is_na` violation on this node."
-        );
-        assert_eq!(
-            action2.as_ref().unwrap().title,
-            "Ignore `any_duplicated` violation on this node."
-        );
-    }
-
-    #[test]
-    fn test_nolint_entire_document_insert_new_comment() {
-        // Test the entire resulting document when inserting a new nolint comment
-        let content = "x = 1\ny = 2\n";
-        let snapshot = create_test_snapshot(content);
-
-        let fix = DiagnosticFix {
-            content: "x <- 1".to_string(),
-            start: 0,
-            end: 5,
-            is_safe: true,
-            rule_name: "assignment".to_string(),
-        };
-
-        let diagnostic = create_test_diagnostic_with_fix(
-            Range::new(Position::new(0, 2), Position::new(0, 3)),
-            "Use <- for assignment".to_string(),
-            fix,
-        );
-
-        let action = Server::diagnostic_to_nolint_rule_action(&diagnostic, &snapshot).unwrap();
-        let edit = action.edit.unwrap();
-        let changes = edit.changes.unwrap();
-        let text_edits = changes.values().next().unwrap();
-
-        // Apply the edit manually to verify the result
-        let mut result = content.to_string();
-        for text_edit in text_edits.iter().rev() {
-            let start = position_to_offset(&result, text_edit.range.start);
-            let end = position_to_offset(&result, text_edit.range.end);
-            result.replace_range(start..end, &text_edit.new_text);
-        }
-
-        assert_eq!(result, "# nolint: assignment\nx = 1\ny = 2\n");
-    }
-
-    #[test]
-    fn test_nolint_entire_document_update_existing_comment() {
-        // Test the entire resulting document when updating an existing nolint comment
-        let content = "# nolint: foo\nx = 1\ny = 2\n";
-        let snapshot = create_test_snapshot(content);
-
-        let fix = DiagnosticFix {
-            content: "x <- 1".to_string(),
-            start: 14,
-            end: 19,
-            is_safe: true,
-            rule_name: "assignment".to_string(),
-        };
-
-        let diagnostic = create_test_diagnostic_with_fix(
-            Range::new(Position::new(1, 2), Position::new(1, 3)),
-            "Use <- for assignment".to_string(),
-            fix,
-        );
-
-        let action = Server::diagnostic_to_nolint_rule_action(&diagnostic, &snapshot).unwrap();
-        let edit = action.edit.unwrap();
-        let changes = edit.changes.unwrap();
-        let text_edits = changes.values().next().unwrap();
-
-        // Apply the edit manually to verify the result
-        let mut result = content.to_string();
-        for text_edit in text_edits.iter().rev() {
-            let start = position_to_offset(&result, text_edit.range.start);
-            let end = position_to_offset(&result, text_edit.range.end);
-            result.replace_range(start..end, &text_edit.new_text);
-        }
-
-        assert_eq!(result, "# nolint: foo, assignment\nx = 1\ny = 2\n");
-    }
-
-    #[test]
-    fn test_nolint_entire_document_multiline_with_comments() {
-        // Test with the complex multiline example with existing comments
-        let content = "# nolint: implicit_assignment\nany(\n  duplicated(\n    which(grepl(\"a\", x))\n  )\n)\n";
-        let snapshot = create_test_snapshot(content);
-
-        let fix = DiagnosticFix {
-            content: "anyDuplicated(which(grepl(\"a\", x)))".to_string(),
-            start: 35,
-            end: 73,
-            is_safe: true,
-            rule_name: "any_duplicated".to_string(),
-        };
-
-        let diagnostic = create_test_diagnostic_with_fix(
-            Range::new(Position::new(1, 0), Position::new(1, 3)),
-            "Use anyDuplicated() instead of any(duplicated())".to_string(),
-            fix,
-        );
-
-        let action = Server::diagnostic_to_nolint_rule_action(&diagnostic, &snapshot).unwrap();
-        let edit = action.edit.unwrap();
-        let changes = edit.changes.unwrap();
-        let text_edits = changes.values().next().unwrap();
-
-        // Apply the edit manually to verify the result
-        let mut result = content.to_string();
-        for text_edit in text_edits.iter().rev() {
-            let start = position_to_offset(&result, text_edit.range.start);
-            let end = position_to_offset(&result, text_edit.range.end);
-            result.replace_range(start..end, &text_edit.new_text);
-        }
-
-        // Should update the existing nolint comment without adding extra blank lines
-        assert_eq!(
-            result,
-            "# nolint: implicit_assignment, any_duplicated\nany(\n  duplicated(\n    which(grepl(\"a\", x))\n  )\n)\n"
-        );
-    }
-
-    #[test]
-    fn test_nolint_all_entire_document_replaces_specific() {
-        // Test that nolint all replaces specific nolint without extra blank lines
-        let content = "# nolint: foo, bar\nx = 1\n";
-        let snapshot = create_test_snapshot(content);
-
-        let fix = DiagnosticFix {
-            content: "x <- 1".to_string(),
-            start: 19,
-            end: 24,
-            is_safe: true,
-            rule_name: "assignment".to_string(),
-        };
-
-        let diagnostic = create_test_diagnostic_with_fix(
-            Range::new(Position::new(1, 2), Position::new(1, 3)),
-            "Use <- for assignment".to_string(),
-            fix,
-        );
-
-        let action = Server::diagnostic_to_nolint_all_action(&diagnostic, &snapshot).unwrap();
-        let edit = action.edit.unwrap();
-        let changes = edit.changes.unwrap();
-        let text_edits = changes.values().next().unwrap();
-
-        // Apply the edit manually to verify the result
-        let mut result = content.to_string();
-        for text_edit in text_edits.iter().rev() {
-            let start = position_to_offset(&result, text_edit.range.start);
-            let end = position_to_offset(&result, text_edit.range.end);
-            result.replace_range(start..end, &text_edit.new_text);
-        }
-
-        assert_eq!(result, "# nolint\nx = 1\n");
-    }
-
-    #[test]
-    fn test_nolint_entire_document_with_indentation() {
-        // Test that indentation is preserved in the resulting document
-        let content = "  # nolint: foo\n  x = 1\n  y = 2\n";
-        let snapshot = create_test_snapshot(content);
-
-        let fix = DiagnosticFix {
-            content: "x <- 1".to_string(),
-            start: 18,
-            end: 23,
-            is_safe: true,
-            rule_name: "assignment".to_string(),
-        };
-
-        let diagnostic = create_test_diagnostic_with_fix(
-            Range::new(Position::new(1, 4), Position::new(1, 5)),
-            "Use <- for assignment".to_string(),
-            fix,
-        );
-
-        let action = Server::diagnostic_to_nolint_rule_action(&diagnostic, &snapshot).unwrap();
-        let edit = action.edit.unwrap();
-        let changes = edit.changes.unwrap();
-        let text_edits = changes.values().next().unwrap();
-
-        // Apply the edit manually to verify the result
-        let mut result = content.to_string();
-        for text_edit in text_edits.iter().rev() {
-            let start = position_to_offset(&result, text_edit.range.start);
-            let end = position_to_offset(&result, text_edit.range.end);
-            result.replace_range(start..end, &text_edit.new_text);
-        }
-
-        assert_eq!(result, "  # nolint: foo, assignment\n  x = 1\n  y = 2\n");
-    }
-
-    /// Helper function to convert LSP Position to byte offset in a string
-    fn position_to_offset(content: &str, position: types::Position) -> usize {
-        let mut offset = 0;
-        let mut current_line = 0;
-
-        for line in content.lines() {
-            if current_line == position.line {
-                return offset + position.character as usize;
-            }
-            offset += line.len() + 1; // +1 for newline
-            current_line += 1;
-        }
-
-        // If we're past the end, return the content length
-        if current_line == position.line {
-            offset + position.character as usize
-        } else {
-            content.len()
-        }
     }
 }

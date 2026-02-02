@@ -79,3 +79,8 @@ pre code {
 ul.navbar-nav > li.nav-item.dropdown > ul.dropdown-menu.show > li > a.dropdown-item:active {
   background: #303d64
 }
+
+/* Side color of note callouts */
+div.callout-note.callout {
+	border-left-color: #4b5f9b;
+}

@@ -4,6 +4,8 @@ use std::str::FromStr;
 /// Category of a linting rule
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Category {
+    /// Comments: violations related to suppression comments
+    Comm,
     /// Correctness: code that is outright wrong or useless
     Corr,
     /// Suspicious: code that is most likely wrong or useless
@@ -19,6 +21,7 @@ pub enum Category {
 impl Category {
     pub const fn as_str(self) -> &'static str {
         match self {
+            Self::Comm => "COMM",
             Self::Corr => "CORR",
             Self::Susp => "SUSP",
             Self::Perf => "PERF",
@@ -28,6 +31,7 @@ impl Category {
     }
 
     pub const ALL: &'static [Category] = &[
+        Category::Comm,
         Category::Corr,
         Category::Susp,
         Category::Perf,
@@ -47,6 +51,7 @@ impl FromStr for Category {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "COMM" => Ok(Self::Comm),
             "CORR" => Ok(Self::Corr),
             "SUSP" => Ok(Self::Susp),
             "PERF" => Ok(Self::Perf),
@@ -213,6 +218,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    BlanketSuppression => {
+        name: "blanket_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     Browser => {
         name: "browser",
         categories: [Corr],
@@ -360,6 +372,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    InternalFunction => {
+        name: "internal_function",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     IsNumeric => {
         name: "is_numeric",
         categories: [Read],
@@ -402,11 +421,39 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    MisplacedFileSuppression => {
+        name: "misplaced_file_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    MisplacedSuppression => {
+        name: "misplaced_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    MisnamedSuppression => {
+        name: "misnamed_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     NumericLeadingZero => {
         name: "numeric_leading_zero",
         categories: [Read],
         default: Enabled,
         fix: Safe,
+        min_r_version: None,
+    },
+    OutdatedSuppression => {
+        name: "outdated_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
         min_r_version: None,
     },
     OuterNegation => {
@@ -489,6 +536,20 @@ declare_rules! {
     TrueFalseSymbol => {
         name: "true_false_symbol",
         categories: [Read],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    UnexplainedSuppression => {
+        name: "unexplained_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    UnmatchedRangeSuppression => {
+        name: "unmatched_range_suppression",
+        categories: [Comm],
         default: Enabled,
         fix: None,
         min_r_version: None,
