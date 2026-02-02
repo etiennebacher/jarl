@@ -17,7 +17,7 @@ any_is_na(x)"), @r"
          --> <test>:2:1
           |
         2 | # jarl-ignore
-          | ------------- This comment isn't used by Jarl because it suppresses all possible violations of this node.
+          | ------------- This comment isn't used by Jarl because it is missing a rule to ignore.
           |
         Found 1 error.
         ");
@@ -29,7 +29,7 @@ any_is_na(x)"), @r"
          --> <test>:2:1
           |
         2 | #jarl-ignore
-          | ------------ This comment isn't used by Jarl because it suppresses all possible violations of this node.
+          | ------------ This comment isn't used by Jarl because it is missing a rule to ignore.
           |
         Found 1 error.
         ");
@@ -41,7 +41,7 @@ any_is_na(x)"), @r"
          --> <test>:2:1
           |
         2 | #jarl-ignore: <reason>
-          | ---------------------- This comment isn't used by Jarl because it suppresses all possible violations of this node.
+          | ---------------------- This comment isn't used by Jarl because it is missing a rule to ignore.
           |
         Found 1 error.
         ");
@@ -53,7 +53,7 @@ any_is_na(x)"), @r"
          --> <test>:2:1
           |
         2 | # jarl-ignore : <reason>
-          | ------------------------ This comment isn't used by Jarl because it suppresses all possible violations of this node.
+          | ------------------------ This comment isn't used by Jarl because it is missing a rule to ignore.
           |
         Found 1 error.
         ");

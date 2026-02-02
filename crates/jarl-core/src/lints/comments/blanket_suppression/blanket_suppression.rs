@@ -36,7 +36,7 @@ fn create_diagnostic(range: TextRange) -> Diagnostic {
     Diagnostic::new(
         ViolationData::new(
             "blanket_suppression".to_string(),
-            "This comment isn't used by Jarl because it suppresses all possible violations of this node.".to_string(),
+            "This comment isn't used by Jarl because it is missing a rule to ignore.".to_string(),
             Some(
                 "Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`."
                     .to_string(),
