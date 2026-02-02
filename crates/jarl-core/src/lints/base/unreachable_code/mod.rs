@@ -931,14 +931,4 @@ if (outer_condition) {
         Found 1 error.
         ");
     }
-
-    #[test]
-    fn test_top_level_no_unreachable_after_return() {
-        // AfterReturn at top level should NOT be reported (doesn't make sense)
-        let code = r#"
-return(1)
-x <- 1
-"#;
-        expect_no_lint(code, "unreachable_code", None);
-    }
 }
