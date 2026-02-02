@@ -4,43 +4,58 @@ pub(crate) mod blanket_suppression;
 mod tests {
     use crate::utils_test::*;
 
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "blanket_suppression", None)
+    }
+
     #[test]
     fn test_lint_blanket_suppression() {
-        let lint_msg = "isn't used by Jarl because it suppresses all possible violations";
-
-        expect_lint(
-            "
+        insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore
-any_is_na(x)",
-            lint_msg,
-            "blanket_suppression",
-            None,
-        );
-        expect_lint(
-            "
-#jarl-ignore
-any_is_na(x)",
-            lint_msg,
-            "blanket_suppression",
-            None,
-        );
-        expect_lint(
-            "
-#jarl-ignore: <reason>
-any_is_na(x)",
-            lint_msg,
-            "blanket_suppression",
-            None,
-        );
+any_is_na(x)"), @r"
+        warning: blanket_suppression
+         --> <test>:2:1
+          |
+        2 | # jarl-ignore
+          | ------------- This comment isn't used by Jarl because it is missing a rule to ignore.
+          |
+        Found 1 error.
+        ");
 
-        // With space before colon
-        expect_lint(
-            "
+        insta::assert_snapshot!(snapshot_lint("
+#jarl-ignore
+any_is_na(x)"), @r"
+        warning: blanket_suppression
+         --> <test>:2:1
+          |
+        2 | #jarl-ignore
+          | ------------ This comment isn't used by Jarl because it is missing a rule to ignore.
+          |
+        Found 1 error.
+        ");
+
+        insta::assert_snapshot!(snapshot_lint("
+#jarl-ignore: <reason>
+any_is_na(x)"), @r"
+        warning: blanket_suppression
+         --> <test>:2:1
+          |
+        2 | #jarl-ignore: <reason>
+          | ---------------------- This comment isn't used by Jarl because it is missing a rule to ignore.
+          |
+        Found 1 error.
+        ");
+
+        insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore : <reason>
-any_is_na(x)",
-            lint_msg,
-            "blanket_suppression",
-            None,
-        );
+any_is_na(x)"), @r"
+        warning: blanket_suppression
+         --> <test>:2:1
+          |
+        2 | # jarl-ignore : <reason>
+          | ------------------------ This comment isn't used by Jarl because it is missing a rule to ignore.
+          |
+        Found 1 error.
+        ");
     }
 }

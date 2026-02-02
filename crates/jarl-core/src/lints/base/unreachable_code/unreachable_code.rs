@@ -1,7 +1,7 @@
 use crate::diagnostic::*;
 use air_r_syntax::*;
 
-use super::cfg::{UnreachableReason, build_cfg, find_unreachable_code};
+use super::cfg::{UnreachableReason, build_cfg, build_cfg_top_level, find_unreachable_code};
 
 /// ## What it does
 ///
@@ -14,9 +14,16 @@ use super::cfg::{UnreachableReason, build_cfg, find_unreachable_code};
 /// Unreachable code indicates a logic error or dead code that should be removed.
 /// It clutters the codebase, confuses readers, and may indicate unintended behavior.
 ///
-/// Unreachable code can only be detected in functions.
+/// ## Examples
 ///
-/// ## Example
+/// ```r
+/// if (x > 5) {
+///   stop("hi")
+/// } else {
+///   stop("bye")
+/// }
+/// 1 + 1 # unreachable
+/// ```
 ///
 /// ```r
 /// foo <- function(x) {
@@ -36,17 +43,6 @@ use super::cfg::{UnreachableReason, build_cfg, find_unreachable_code};
 ///   }
 /// }
 /// ```
-///
-/// ```r
-/// foo <- function(x) {
-///   if (x > 5) {
-///     return("hi")
-///   } else {
-///     return("bye")
-///   }
-///   1 + 1 # unreachable
-/// }
-/// ```
 pub fn unreachable_code(ast: &RFunctionDefinition) -> anyhow::Result<Vec<Diagnostic>> {
     let mut diagnostics = Vec::new();
 
@@ -54,37 +50,53 @@ pub fn unreachable_code(ast: &RFunctionDefinition) -> anyhow::Result<Vec<Diagnos
     let cfg = build_cfg(ast);
 
     // Find all unreachable code
-    let unreachable_blocks = find_unreachable_code(&cfg);
-
-    for unreachable_info in unreachable_blocks {
-        let message = match unreachable_info.reason {
-            UnreachableReason::AfterReturn => {
-                "This code is unreachable because it appears after a return statement."
-            }
-            UnreachableReason::AfterStop => {
-                "This code is unreachable because it appears after a `stop()` statement (or equivalent)."
-            }
-            UnreachableReason::AfterBreak => {
-                "This code is unreachable because it appears after a break statement."
-            }
-            UnreachableReason::AfterNext => {
-                "This code is unreachable because it appears after a next statement."
-            }
-            UnreachableReason::AfterBranchTerminating => {
-                "This code is unreachable because the preceding if/else terminates in all branches."
-            }
-            UnreachableReason::DeadBranch => "This code is in a branch that can never be executed.",
-            UnreachableReason::NoPathFromEntry => {
-                "This code has no execution path from the function entry."
-            }
-        };
-
+    for unreachable_info in find_unreachable_code(&cfg) {
         let diagnostic = Diagnostic::new(
-            ViolationData::new("unreachable_code".to_string(), message.to_string(), None),
+            ViolationData::new(
+                "unreachable_code".to_string(),
+                unreachable_info.reason.message().to_string(),
+                None,
+            ),
             unreachable_info.range,
             Fix::empty(),
         );
+        diagnostics.push(diagnostic);
+    }
 
+    Ok(diagnostics)
+}
+
+/// Detect unreachable code in top-level R code
+///
+/// This function is similar to `unreachable_code` but is designed for top-level code.
+/// It filters out certain unreachable reasons that don't make sense at the top level:
+/// - `AfterReturn` is ignored (can't return from top-level)
+/// - `NoPathFromEntry` is ignored (doesn't make sense at top level)
+pub fn unreachable_code_top_level(expressions: &[RSyntaxNode]) -> anyhow::Result<Vec<Diagnostic>> {
+    let mut diagnostics = Vec::new();
+
+    // Build the control flow graph for top-level code
+    let cfg = build_cfg_top_level(expressions);
+
+    // Find all unreachable code
+    for unreachable_info in find_unreachable_code(&cfg) {
+        // Filter out reasons that don't make sense at top level
+        if matches!(
+            unreachable_info.reason,
+            UnreachableReason::AfterReturn | UnreachableReason::NoPathFromEntry
+        ) {
+            continue;
+        }
+
+        let diagnostic = Diagnostic::new(
+            ViolationData::new(
+                "unreachable_code".to_string(),
+                unreachable_info.reason.message().to_string(),
+                None,
+            ),
+            unreachable_info.range,
+            Fix::empty(),
+        );
         diagnostics.push(diagnostic);
     }
 

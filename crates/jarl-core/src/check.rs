@@ -4,11 +4,13 @@ use crate::suppression::SuppressionManager;
 use crate::vcs::check_version_control;
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
+use air_r_syntax::RExpressionList;
 use air_r_syntax::{
     AnyRExpression, RBinaryExpressionFields, RForStatementFields, RIfStatementFields, RSyntaxKind,
-    RWhileStatementFields,
+    RSyntaxNode, RWhileStatementFields,
 };
 use anyhow::{Context, Result};
+use biome_rowan::{AstNode, AstNodeList};
 use rayon::prelude::*;
 use std::fs;
 use std::path::Path;
@@ -19,6 +21,7 @@ use crate::analyze;
 use crate::config::Config;
 use crate::diagnostic::*;
 use crate::fix::*;
+use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
 use crate::lints::comments::misnamed_suppression::misnamed_suppression::misnamed_suppression;
 use crate::lints::comments::misplaced_file_suppression::misplaced_file_suppression::misplaced_file_suppression;
@@ -173,11 +176,12 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
         check_expression(&expr, &mut checker)?;
     }
 
-    // We run checks at file-level. These are comment-related checks
-    // (blanket, unexplained, misplaced, misnamed, unused suppressions). This
-    // must run after checking expressions because we filter out those that
+    // We run checks at document-level. This includes checks that require the
+    // entire document (like top-level unreachable code) and comment-related
+    // checks (blanket, unexplained, misplaced, misnamed, unused suppressions).
+    // This must run after checking expressions because we filter out those that
     // are unused.
-    check_file(&mut checker)?;
+    check_document(expressions, &mut checker)?;
 
     // Some rules have a fix available in their implementation but do not have
     // fix in the config, for instance because they are part of the "unfixable"
@@ -226,7 +230,20 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     Ok(diagnostics)
 }
 
-pub fn check_file(checker: &mut Checker) -> anyhow::Result<()> {
+pub fn check_document(expressions: &RExpressionList, checker: &mut Checker) -> anyhow::Result<()> {
+    // --- Document-level analysis ---
+
+    let expressions: Vec<RSyntaxNode> = expressions.iter().map(|e| e.syntax().clone()).collect();
+
+    // Check for unreachable code at top level
+    if checker.is_rule_enabled(Rule::UnreachableCode) {
+        for diagnostic in unreachable_code_top_level(&expressions)? {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    }
+
+    // --- Comment/suppression checks ---
+
     // Report blanket suppression comments (file-level, done once)
     if checker.is_rule_enabled(Rule::BlanketSuppression) {
         let diagnostics = blanket_suppression(&checker.suppression.blanket_suppressions);

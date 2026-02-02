@@ -656,3 +656,12 @@ pub fn build_cfg(func: &RFunctionDefinition) -> ControlFlowGraph {
     let builder = CfgBuilder::new();
     builder.build(func)
 }
+
+/// Build a control flow graph for top-level R code
+pub fn build_cfg_top_level(expressions: &[RSyntaxNode]) -> ControlFlowGraph {
+    let mut builder = CfgBuilder::new();
+    let entry = builder.cfg.entry;
+    let exit = builder.cfg.exit;
+    builder.build_statements(expressions, entry, exit);
+    builder.cfg
+}

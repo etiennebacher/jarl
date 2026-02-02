@@ -29,6 +29,31 @@ pub enum UnreachableReason {
     NoPathFromEntry,
 }
 
+impl UnreachableReason {
+    /// Returns a human-readable message explaining why the code is unreachable
+    pub fn message(&self) -> &'static str {
+        match self {
+            Self::AfterReturn => {
+                "This code is unreachable because it appears after a return statement."
+            }
+            Self::AfterStop => {
+                "This code is unreachable because it appears after a `stop()` statement (or equivalent)."
+            }
+            Self::AfterBreak => {
+                "This code is unreachable because it appears after a break statement."
+            }
+            Self::AfterNext => {
+                "This code is unreachable because it appears after a next statement."
+            }
+            Self::AfterBranchTerminating => {
+                "This code is unreachable because the preceding if/else terminates in all branches."
+            }
+            Self::DeadBranch => "This code is in a branch that can never be executed.",
+            Self::NoPathFromEntry => "This code has no execution path from the function entry.",
+        }
+    }
+}
+
 /// Find all unreachable code in a control flow graph
 ///
 /// This function:
