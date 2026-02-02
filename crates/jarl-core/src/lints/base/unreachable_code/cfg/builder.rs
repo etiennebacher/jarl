@@ -152,14 +152,6 @@ impl CfgBuilder {
         self.cfg
     }
 
-    /// Build a CFG from a list of top-level expressions
-    pub fn build_top_level(mut self, expressions: &[RSyntaxNode]) -> ControlFlowGraph {
-        let entry = self.cfg.entry;
-        let exit = self.cfg.exit;
-        self.build_statements(expressions, entry, exit);
-        self.cfg
-    }
-
     /// Build CFG for any expression (handles AnyRExpression from loops)
     fn build_expression(&mut self, expr: &RSyntaxNode, current: BlockId, exit: BlockId) -> BlockId {
         // Check if it's a braced expression
@@ -667,6 +659,9 @@ pub fn build_cfg(func: &RFunctionDefinition) -> ControlFlowGraph {
 
 /// Build a control flow graph for top-level R code
 pub fn build_cfg_top_level(expressions: &[RSyntaxNode]) -> ControlFlowGraph {
-    let builder = CfgBuilder::new();
-    builder.build_top_level(expressions)
+    let mut builder = CfgBuilder::new();
+    let entry = builder.cfg.entry;
+    let exit = builder.cfg.exit;
+    builder.build_statements(expressions, entry, exit);
+    builder.cfg
 }
