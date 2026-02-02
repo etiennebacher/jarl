@@ -40,6 +40,7 @@ impl Violation for IfAlwaysTrue {
         Some("Remove the `if` condition and keep the body.".to_string())
     }
 }
+
 pub fn if_always_true(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
     // This is already handled by `unreachable_code`
     if ast.else_clause().is_some() {
