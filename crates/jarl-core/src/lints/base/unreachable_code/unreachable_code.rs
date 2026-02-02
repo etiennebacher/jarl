@@ -14,9 +14,16 @@ use super::cfg::{UnreachableReason, build_cfg, build_cfg_top_level, find_unreach
 /// Unreachable code indicates a logic error or dead code that should be removed.
 /// It clutters the codebase, confuses readers, and may indicate unintended behavior.
 ///
-/// Unreachable code can only be detected in functions.
+/// ## Examples
 ///
-/// ## Example
+/// ```r
+/// if (x > 5) {
+///   stop("hi")
+/// } else {
+///   stop("bye")
+/// }
+/// 1 + 1 # unreachable
+/// ```
 ///
 /// ```r
 /// foo <- function(x) {
@@ -34,17 +41,6 @@ use super::cfg::{UnreachableReason, build_cfg, build_cfg_top_level, find_unreach
 ///        print("x is greater than 10") # unreachable
 ///     }
 ///   }
-/// }
-/// ```
-///
-/// ```r
-/// foo <- function(x) {
-///   if (x > 5) {
-///     return("hi")
-///   } else {
-///     return("bye")
-///   }
-///   1 + 1 # unreachable
 /// }
 /// ```
 pub fn unreachable_code(ast: &RFunctionDefinition) -> anyhow::Result<Vec<Diagnostic>> {
