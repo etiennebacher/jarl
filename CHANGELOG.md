@@ -42,7 +42,7 @@
   - `redundant_ifelse` (#260)
   - `unnecessary_nesting` (#268)
   - `unreachable_code` (#261)
-  - `if_constant_condition` (#237)
+  - `if_always_true` (#237)
 
 - When the output format is `full` or `concise`, rule names now have a hyperlink
   leading to the website documentation (#278).

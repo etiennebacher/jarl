@@ -6,31 +6,39 @@ title: Rules
 
 All rules belong to at least one category:
 
--   **comments** (COMM): mistakes in the suppression comments (`# jarl-ignore`).
--   **correctness** (CORR): code that is outright wrong or useless.
--   **suspicious** (SUSP): code that is most likely wrong or useless.
--   **performance** (PERF): code that can be written to run faster.
--   **readability** (READ): code is correct but can be written in a way that is easier to read.
--   **testthat** (TESTTHAT): rules for the `testthat` package. Disabled by default.
+- **comments** (COMM): mistakes in the suppression comments (`# jarl-ignore`).
+- **correctness** (CORR): code that is outright wrong or useless.
+- **suspicious** (SUSP): code that is most likely wrong or useless.
+- **performance** (PERF): code that can be written to run faster.
+- **readability** (READ): code is correct but can be written in a way that is
+  easier to read.
+- **testthat** (TESTTHAT): rules for the `testthat` package. Disabled by
+  default.
 
-You can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.
+You can find the list of available rules below, and more detailed explanations
+and examples in pages in the sidebar.
 
 ::: {.callout-note}
+
 ## Comparison to `lintr`
 
-`lintr` includes many rules related to code formatting, such as [`brace_linter`](https://lintr.r-lib.org/dev/reference/brace_linter.html), [`line_length_linter`](https://lintr.r-lib.org/dev/reference/line_length_linter.html), and [`paren_body_linter`](https://lintr.r-lib.org/dev/reference/paren_body_linter.html), among others.
+`lintr` includes many rules related to code formatting, such as
+[`brace_linter`](https://lintr.r-lib.org/dev/reference/brace_linter.html),
+[`line_length_linter`](https://lintr.r-lib.org/dev/reference/line_length_linter.html),
+and
+[`paren_body_linter`](https://lintr.r-lib.org/dev/reference/paren_body_linter.html),
+among others.
 
-**Supporting those rules is not an objective of Jarl.**
-Instead, I recommend using the [Air formatter](https://posit-dev.github.io/air/).
-:::
+**Supporting those rules is not an objective of Jarl.** Instead, I recommend
+using the [Air formatter](https://posit-dev.github.io/air/). :::
 
 The column "Has fix" can take the following values:
 
--   ✅ Safe fix
+- ✅ Safe fix
 
--   ❗ Unsafe fix
+- ❗ Unsafe fix
 
--   ❌ No fix
+- ❌ No fix
 
 ```{css, eval=TRUE, echo=FALSE}
 .tabulator, .tabulator-header, .tabulator-col, .tabulator-row, .tabulator-cell, .tabulator-table {
@@ -71,7 +79,7 @@ dat <- as.data.frame(
     c("fixed_regex", "performance", "✅", "Disabled by default"),
     c("for_loop_index", "readability", "❌", ""),
     c("grepv", "readability", "✅", "R >= 4.5"),
-    c("if_constant_condition", "readability, suspicious", "❌", ""),
+    c("if_always_true", "readability, suspicious", "❌", ""),
     c("implicit_assignment", "readability", "❌", ""),
     c("internal_function", "suspicious", "❌", ""),
     c("is_numeric", "readability", "✅", ""),
