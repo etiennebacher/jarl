@@ -126,7 +126,8 @@ impl ControlFlowGraph {
     /// Create a new basic block with a specific nesting level and add it to the graph
     pub fn new_block_with_level(&mut self, nesting_level: u32) -> BlockId {
         let id = BlockId(self.blocks.len());
-        self.blocks.push(BasicBlock::new_with_level(id, nesting_level));
+        self.blocks
+            .push(BasicBlock::new_with_level(id, nesting_level));
         id
     }
 
