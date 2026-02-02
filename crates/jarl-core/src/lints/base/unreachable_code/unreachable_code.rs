@@ -97,8 +97,6 @@ pub fn unreachable_code(ast: &RFunctionDefinition) -> anyhow::Result<Vec<Diagnos
 /// It filters out certain unreachable reasons that don't make sense at the top level:
 /// - `AfterReturn` is ignored (can't return from top-level)
 /// - `NoPathFromEntry` is ignored (doesn't make sense at top level)
-/// - `AfterStop` and `AfterBranchTerminating` are only reported if they occur in nested contexts (nesting_level > 0)
-/// - `AfterBreak`, `AfterNext`, and `DeadBranch` are always reported
 pub fn unreachable_code_top_level(expressions: &[RSyntaxNode]) -> anyhow::Result<Vec<Diagnostic>> {
     let mut diagnostics = Vec::new();
 

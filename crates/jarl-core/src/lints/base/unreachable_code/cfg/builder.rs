@@ -10,8 +10,6 @@ pub struct CfgBuilder {
     cfg: ControlFlowGraph,
     /// Stack of loop contexts for handling break/next
     loop_stack: Vec<LoopContext>,
-    /// Current nesting level (0 = top level, increments in control structures)
-    nesting_level: u32,
 }
 
 /// Context information for a loop (for break/next targeting)
@@ -115,7 +113,6 @@ impl CfgBuilder {
         Self {
             cfg: ControlFlowGraph::new(),
             loop_stack: Vec::new(),
-            nesting_level: 0,
         }
     }
 
@@ -209,7 +206,7 @@ impl CfgBuilder {
             {
                 // Create a new unreachable block for remaining statements
                 if idx + 1 < statements.len() {
-                    let unreachable = self.cfg.new_block_with_level(self.nesting_level);
+                    let unreachable = self.cfg.new_block();
                     // Mark this block as having the terminator block as predecessor (for tracking)
                     // Even though we don't add an edge, we store it in predecessors for analysis
                     if let Some(unreachable_block) = self.cfg.block_mut(unreachable) {
@@ -325,10 +322,10 @@ impl CfgBuilder {
         let fields = if_stmt.as_fields();
         let condition = fields.condition.ok().map(|c| c.syntax().clone());
 
-        // Create blocks for then and else branches at current nesting level
+        // Create blocks for then and else branches
         let then_block = self.cfg.new_block();
         let else_block = self.cfg.new_block();
-        let after_if = self.cfg.new_block_with_level(self.nesting_level);
+        let after_if = self.cfg.new_block();
 
         // Check if the condition is a constant
         let constant_value = condition.as_ref().and_then(evaluate_constant_condition);
@@ -366,7 +363,7 @@ impl CfgBuilder {
             }
         }
 
-        // Build then branch - increment nesting level for contents
+        // Build then branch
         if let Ok(consequence) = fields.consequence {
             // If this is a dead branch (condition is false), mark the entire branch as unreachable
             // by storing the whole branch syntax node
@@ -376,10 +373,8 @@ impl CfgBuilder {
                     block.statements.push(consequence.syntax().clone());
                 }
             } else {
-                // Reachable or maybe-reachable branch - build normally with increased nesting
-                self.nesting_level += 1;
+                // Reachable or maybe-reachable branch - build normally
                 let then_end = self.build_expression(consequence.syntax(), then_block, exit);
-                self.nesting_level -= 1;
                 // Only add edge if the then block doesn't end with return/break/next
                 // AND then_end is not itself an unreachable block (has incoming edges)
                 if let Some(block) = self.cfg.block(then_end)
@@ -400,7 +395,7 @@ impl CfgBuilder {
             }
         }
 
-        // Build else branch if it exists - increment nesting level for contents
+        // Build else branch if it exists
         if let Some(else_clause) = fields.else_clause {
             let else_fields = else_clause.as_fields();
             if let Ok(alt_body) = else_fields.alternative {
@@ -412,10 +407,8 @@ impl CfgBuilder {
                         block.statements.push(alt_body.syntax().clone());
                     }
                 } else {
-                    // Reachable or maybe-reachable branch - build normally with increased nesting
-                    self.nesting_level += 1;
+                    // Reachable or maybe-reachable branch - build normally
                     let else_end = self.build_expression(alt_body.syntax(), else_block, exit);
-                    self.nesting_level -= 1;
                     // Only add edge if the else block doesn't end with return/break/next
                     // AND else_end is not itself an unreachable block (has incoming edges)
                     if let Some(block) = self.cfg.block(else_end)

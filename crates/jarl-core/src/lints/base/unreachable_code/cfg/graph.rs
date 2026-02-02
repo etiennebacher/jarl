@@ -25,8 +25,6 @@ pub struct BasicBlock {
     pub terminator: Terminator,
     /// Text range covering this block (for diagnostics)
     pub range: Option<TextRange>,
-    /// Nesting level (0 = top level, increments for nested control structures)
-    pub nesting_level: u32,
 }
 
 impl BasicBlock {
@@ -38,19 +36,6 @@ impl BasicBlock {
             predecessors: Vec::new(),
             terminator: Terminator::None,
             range: None,
-            nesting_level: 0,
-        }
-    }
-
-    pub fn new_with_level(id: BlockId, nesting_level: u32) -> Self {
-        Self {
-            id,
-            statements: Vec::new(),
-            successors: Vec::new(),
-            predecessors: Vec::new(),
-            terminator: Terminator::None,
-            range: None,
-            nesting_level,
         }
     }
 }
@@ -120,14 +105,6 @@ impl ControlFlowGraph {
     pub fn new_block(&mut self) -> BlockId {
         let id = BlockId(self.blocks.len());
         self.blocks.push(BasicBlock::new(id));
-        id
-    }
-
-    /// Create a new basic block with a specific nesting level and add it to the graph
-    pub fn new_block_with_level(&mut self, nesting_level: u32) -> BlockId {
-        let id = BlockId(self.blocks.len());
-        self.blocks
-            .push(BasicBlock::new_with_level(id, nesting_level));
         id
     }
 
