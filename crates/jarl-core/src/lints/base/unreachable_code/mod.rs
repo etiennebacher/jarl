@@ -216,7 +216,7 @@ foo <- function() {
         6 | |     x <- 1
         7 | |     "b"
         8 | |   }
-          | |___- This code is in a branch that can never be executed due to a constant condition.
+          | |___- This code is in a branch that can never be executed.
           |
         Found 1 error.
         "#);
@@ -243,7 +243,7 @@ foo <- function() {
         4 | |     x <- 1
         5 | |     "a"
         6 | |   } else {
-          | |___- This code is in a branch that can never be executed due to a constant condition.
+          | |___- This code is in a branch that can never be executed.
           |
         Found 1 error.
         "#);
@@ -273,7 +273,7 @@ foo <- function(bar) {
         ... |
         7 | |     }
         8 | |   } else {
-          | |___- This code is in a branch that can never be executed due to a constant condition.
+          | |___- This code is in a branch that can never be executed.
           |
         Found 1 error.
         ");
@@ -664,7 +664,7 @@ foo <- function(x) {
           |  __________-
         6 | |     2
         7 | |   }
-          | |___- This code is in a branch that can never be executed due to a constant condition.
+          | |___- This code is in a branch that can never be executed.
           |
         warning: unreachable_code
           --> <test>:10:10
@@ -673,7 +673,7 @@ foo <- function(x) {
            |  __________-
         11 | |     2
         12 | |   }
-           | |___- This code is in a branch that can never be executed due to a constant condition.
+           | |___- This code is in a branch that can never be executed.
            |
         warning: unreachable_code
           --> <test>:15:10
@@ -682,7 +682,7 @@ foo <- function(x) {
            |  __________-
         16 | |     2
         17 | |   }
-           | |___- This code is in a branch that can never be executed due to a constant condition.
+           | |___- This code is in a branch that can never be executed.
            |
         warning: unreachable_code
           --> <test>:20:10
@@ -691,7 +691,7 @@ foo <- function(x) {
            |  __________-
         21 | |     2
         22 | |   }
-           | |___- This code is in a branch that can never be executed due to a constant condition.
+           | |___- This code is in a branch that can never be executed.
            |
         warning: unreachable_code
           --> <test>:25:10
@@ -700,7 +700,7 @@ foo <- function(x) {
            |  __________-
         26 | |     2
         27 | |   }
-           | |___- This code is in a branch that can never be executed due to a constant condition.
+           | |___- This code is in a branch that can never be executed.
            |
         Found 5 errors.
         ");
@@ -745,7 +745,7 @@ foo <- function(x) {
           |  __________________-
         4 | |     1
         5 | |   } else {
-          | |___- This code is in a branch that can never be executed due to a constant condition.
+          | |___- This code is in a branch that can never be executed.
           |
         warning: unreachable_code
           --> <test>:8:19
@@ -754,7 +754,7 @@ foo <- function(x) {
            |  ___________________-
          9 | |     1
         10 | |   } else {
-           | |___- This code is in a branch that can never be executed due to a constant condition.
+           | |___- This code is in a branch that can never be executed.
            |
         warning: unreachable_code
           --> <test>:13:18
@@ -763,7 +763,7 @@ foo <- function(x) {
            |  __________________-
         14 | |     1
         15 | |   } else {
-           | |___- This code is in a branch that can never be executed due to a constant condition.
+           | |___- This code is in a branch that can never be executed.
            |
         warning: unreachable_code
           --> <test>:18:19
@@ -772,7 +772,7 @@ foo <- function(x) {
            |  ___________________-
         19 | |     1
         20 | |   } else {
-           | |___- This code is in a branch that can never be executed due to a constant condition.
+           | |___- This code is in a branch that can never be executed.
            |
         warning: unreachable_code
           --> <test>:23:29
@@ -781,7 +781,7 @@ foo <- function(x) {
            |  _____________________________-
         24 | |     1
         25 | |   } else {
-           | |___- This code is in a branch that can never be executed due to a constant condition.
+           | |___- This code is in a branch that can never be executed.
            |
         Found 5 errors.
         ");
@@ -806,7 +806,7 @@ if (TRUE) {
           |  ________-
         5 | |   y <- 2
         6 | | }
-          | |_- This code is in a branch that can never be executed due to a constant condition.
+          | |_- This code is in a branch that can never be executed.
           |
         Found 1 error.
         ");

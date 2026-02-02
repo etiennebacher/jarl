@@ -48,12 +48,8 @@ impl UnreachableReason {
             Self::AfterBranchTerminating => {
                 "This code is unreachable because the preceding if/else terminates in all branches."
             }
-            Self::DeadBranch => {
-                "This code is in a branch that can never be executed due to a constant condition."
-            }
-            Self::NoPathFromEntry => {
-                "This code has no execution path from the function entry."
-            }
+            Self::DeadBranch => "This code is in a branch that can never be executed.",
+            Self::NoPathFromEntry => "This code has no execution path from the function entry.",
         }
     }
 }
