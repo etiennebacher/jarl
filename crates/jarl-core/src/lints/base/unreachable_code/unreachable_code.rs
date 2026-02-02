@@ -54,37 +54,16 @@ pub fn unreachable_code(ast: &RFunctionDefinition) -> anyhow::Result<Vec<Diagnos
     let cfg = build_cfg(ast);
 
     // Find all unreachable code
-    let unreachable_blocks = find_unreachable_code(&cfg);
-
-    for unreachable_info in unreachable_blocks {
-        let message = match unreachable_info.reason {
-            UnreachableReason::AfterReturn => {
-                "This code is unreachable because it appears after a return statement."
-            }
-            UnreachableReason::AfterStop => {
-                "This code is unreachable because it appears after a `stop()` statement (or equivalent)."
-            }
-            UnreachableReason::AfterBreak => {
-                "This code is unreachable because it appears after a break statement."
-            }
-            UnreachableReason::AfterNext => {
-                "This code is unreachable because it appears after a next statement."
-            }
-            UnreachableReason::AfterBranchTerminating => {
-                "This code is unreachable because the preceding if/else terminates in all branches."
-            }
-            UnreachableReason::DeadBranch => "This code is in a branch that can never be executed.",
-            UnreachableReason::NoPathFromEntry => {
-                "This code has no execution path from the function entry."
-            }
-        };
-
+    for unreachable_info in find_unreachable_code(&cfg) {
         let diagnostic = Diagnostic::new(
-            ViolationData::new("unreachable_code".to_string(), message.to_string(), None),
+            ViolationData::new(
+                "unreachable_code".to_string(),
+                unreachable_info.reason.message().to_string(),
+                None,
+            ),
             unreachable_info.range,
             Fix::empty(),
         );
-
         diagnostics.push(diagnostic);
     }
 
@@ -104,56 +83,24 @@ pub fn unreachable_code_top_level(expressions: &[RSyntaxNode]) -> anyhow::Result
     let cfg = build_cfg_top_level(expressions);
 
     // Find all unreachable code
-    let unreachable_blocks = find_unreachable_code(&cfg);
-
-    for unreachable_info in unreachable_blocks {
-        // Filter based on reason and nesting level
-        let should_report = match unreachable_info.reason {
-            // Always ignore these at top level
-            UnreachableReason::AfterReturn | UnreachableReason::NoPathFromEntry => false,
-
-            // Always report these
-            UnreachableReason::AfterBreak
-            | UnreachableReason::AfterNext
-            | UnreachableReason::DeadBranch
-            | UnreachableReason::AfterStop
-            | UnreachableReason::AfterBranchTerminating => true,
-        };
-
-        if !should_report {
+    for unreachable_info in find_unreachable_code(&cfg) {
+        // Filter out reasons that don't make sense at top level
+        if matches!(
+            unreachable_info.reason,
+            UnreachableReason::AfterReturn | UnreachableReason::NoPathFromEntry
+        ) {
             continue;
         }
 
-        let message = match unreachable_info.reason {
-            UnreachableReason::AfterReturn => {
-                "This code is unreachable because it appears after a return statement."
-            }
-            UnreachableReason::AfterStop => {
-                "This code is unreachable because it appears after a `stop()` statement (or equivalent)."
-            }
-            UnreachableReason::AfterBreak => {
-                "This code is unreachable because it appears after a break statement."
-            }
-            UnreachableReason::AfterNext => {
-                "This code is unreachable because it appears after a next statement."
-            }
-            UnreachableReason::AfterBranchTerminating => {
-                "This code is unreachable because the preceding if/else terminates in all branches."
-            }
-            UnreachableReason::DeadBranch => {
-                "This code is in a branch that can never be executed due to a constant condition."
-            }
-            UnreachableReason::NoPathFromEntry => {
-                "This code has no execution path from the function entry."
-            }
-        };
-
         let diagnostic = Diagnostic::new(
-            ViolationData::new("unreachable_code".to_string(), message.to_string(), None),
+            ViolationData::new(
+                "unreachable_code".to_string(),
+                unreachable_info.reason.message().to_string(),
+                None,
+            ),
             unreachable_info.range,
             Fix::empty(),
         );
-
         diagnostics.push(diagnostic);
     }
 
