@@ -70,6 +70,34 @@ fn evaluate_constant_condition(expr: &AnyRExpression) -> anyhow::Result<Option<b
         AnyRExpression::RTrueExpression(_) => Ok(Some(true)),
         AnyRExpression::RFalseExpression(_) => Ok(Some(false)),
 
+        // Catch Inf and -Inf which are always TRUE
+        AnyRExpression::RInfExpression(_) => Ok(Some(true)),
+
+        // 0 is always FALSE, any other number in R is TRUE
+        AnyRExpression::AnyRValue(value) => {
+            if let Some(int) = value.as_r_integer_value() {
+                let token = int.value_token()?;
+                let text = token.text_trimmed();
+                let normalized = text.strip_suffix('L').unwrap_or(text);
+                let value: i64 = normalized.parse()?;
+                return Ok(Some(value != 0));
+            }
+            if let Some(double) = value.as_r_double_value() {
+                let token = double.value_token()?;
+                let text = token.text_trimmed();
+                let value: f64 = if text.starts_with('.') {
+                    format!("0{text}").parse()?
+                } else {
+                    text.parse()?
+                };
+                if value.is_nan() {
+                    return Ok(None);
+                }
+                return Ok(Some(value != 0.0));
+            }
+            Ok(None)
+        }
+
         // Catch if ((TRUE)) or if ((FALSE))
         AnyRExpression::RParenthesizedExpression(children) => {
             let body = children.body()?;
@@ -82,11 +110,14 @@ fn evaluate_constant_condition(expr: &AnyRExpression) -> anyhow::Result<Option<b
         AnyRExpression::RUnaryExpression(children) => {
             let operator = children.operator()?;
             let operator = operator.text_trimmed();
-            if operator != "!" {
-                return Ok(None);
-            }
             let argument = children.argument()?;
-            Ok(evaluate_constant_condition(&argument)?.map(|value| !value))
+            if operator == "!" {
+                Ok(evaluate_constant_condition(&argument)?.map(|value| !value))
+            } else if operator == "-" || operator == "+" {
+                evaluate_constant_condition(&argument)
+            } else {
+                Ok(None)
+            }
         }
 
         // Catch cases with `&&` and `||`
@@ -110,7 +141,7 @@ fn evaluate_constant_condition(expr: &AnyRExpression) -> anyhow::Result<Option<b
             let right_const = evaluate_constant_condition(&right)?;
 
             if is_or {
-                // either side of || is true => always true
+                // either side of || is TRUE => always TRUE
                 if left_const == Some(true) || right_const == Some(true) {
                     return Ok(Some(true));
                 }
@@ -120,7 +151,7 @@ fn evaluate_constant_condition(expr: &AnyRExpression) -> anyhow::Result<Option<b
                 }
                 Ok(None)
             } else {
-                // either side of && is false => always false
+                // either side of && is FALSE => always FALSE
                 if left_const == Some(false) || right_const == Some(false) {
                     return Ok(Some(false));
                 }

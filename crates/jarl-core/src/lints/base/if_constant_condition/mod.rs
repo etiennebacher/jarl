@@ -32,6 +32,7 @@ mod tests {
             "if_constant_condition",
             None,
         );
+        expect_no_lint("if (0 || x) { print('hi') }", "if_constant_condition", None);
         //Handled by `unreachable_code`
         expect_no_lint(
             "if (x) { print('hi') } else if (TRUE) { print('bye') } else { print('unreachable') }",
@@ -79,7 +80,67 @@ mod tests {
             None,
         );
         expect_lint(
+            "if (0) { print('hi') }",
+            "always `FALSE`",
+            "if_constant_condition",
+            None,
+        );
+        expect_lint(
+            "if (-0.0) { print('hi') }",
+            "always `FALSE`",
+            "if_constant_condition",
+            None,
+        );
+        expect_lint(
+            "if (1) { print('hi') }",
+            "always `TRUE`",
+            "if_constant_condition",
+            None,
+        );
+        expect_lint(
+            "if (-1) { print('hi') }",
+            "always `TRUE`",
+            "if_constant_condition",
+            None,
+        );
+        expect_lint(
+            "if (5.5) { print('hi') }",
+            "always `TRUE`",
+            "if_constant_condition",
+            None,
+        );
+        expect_lint(
+            "if (0.1) { print('hi') }",
+            "always `TRUE`",
+            "if_constant_condition",
+            None,
+        );
+        expect_lint(
+            "if (10 || x) { print('hi') }",
+            "always `TRUE`",
+            "if_constant_condition",
+            None,
+        );
+        expect_lint(
+            "if (x && 0) { print('hi') }",
+            "always `FALSE`",
+            "if_constant_condition",
+            None,
+        );
+        expect_lint(
             "if (!FALSE) { print('hi') }",
+            "always `TRUE`",
+            "if_constant_condition",
+            None,
+        );
+        expect_lint(
+            "if (Inf) { print('hi') }",
+            "always `TRUE`",
+            "if_constant_condition",
+            None,
+        );
+        expect_lint(
+            "if (-Inf) { print('hi') }",
             "always `TRUE`",
             "if_constant_condition",
             None,
