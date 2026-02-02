@@ -63,7 +63,7 @@ It is possible to save settings in a `jarl.toml` file. See the [Configuration pa
 ## Ignoring diagnostics
 
 It is sometimes needed to ignore diagnostics on certain lines of code, for instance in case of (hopefully rare) false positives.
-Jarl supports this via `# jarl-ignore` comments (aka *suppression comments*, because they are used to suppress violations).
+Jarl supports this via `# jarl-ignore` comments (aka *suppression comments*, because they are used to suppress diagnostics).
 In short, Jarl provides three types of suppression comments:
 
 - standard comments: `# jarl-ignore <rule-name>: <reason>`
@@ -78,14 +78,14 @@ These comments must follow several rules regarding their syntax and their placem
 All suppression comments follow the same syntax:
 
 1. **A suppression comment must always specify a rule**.
-   For instance, `# jarl-ignore any_is_na: <reason>` only suppresses violations of the `any_is_na` rule.
-   This means that if you wish to suppress multiple rules for the same code block, you must have one comment per rule to suppress (the reason for this is the next point).
-   This also means that comments such as `# jarl-ignore` (aka *blanket suppressions*) are ignored by Jarl (and may be reported, see the section ["How can I check that my suppression comments are correct?"](#how-can-i-check-that-my-suppression-comments-are-correct) below).
+   For instance, `# jarl-ignore any_is_na: <reason>` only suppresses diagnostics of the `any_is_na` rule.
+   This means that if you wish to ignore multiple rules for the same code block, you must have one comment per rule to ignore (the reason for this is the next point).
+   This also means that comments such as `# jarl-ignore` (aka *blanket suppressions*) are ignored and even reported by Jarl (see the section ["How can I check that my suppression comments are correct?"](#how-can-i-check-that-my-suppression-comments-are-correct) below).
 
 2. **A suppression comment must always specify a reason**.
    Ideally, you shouldn't have to use suppression comments.
-   If you don't want any violations of a specific rule to be reported, you should exclude the rule in `jarl.toml` or in the command line arguments.
-   Therefore, if you need to use a suppression comment, it means that something went wrong (for instance Jarl reports a false positive).
+   If you don't want any diagnostics of a specific rule to be reported, you should exclude the rule in `jarl.toml` or in the command line arguments.
+   Therefore, if you need to use a suppression comment, it means that something went wrong (for instance Jarl reported a false positive).
    In this case, adding an explanation is useful so that other people (or future you) know why this comment is here.
    A reason is any text coming after the colon in `# jarl-ignore any_is_na: <reason>`.
 
@@ -97,28 +97,27 @@ All suppression comments follow the same syntax:
 This distinction is important but might seem a bit strange, so let's take an example to clarify:
 
 ```r
-y <- any(is.na(x1))
+y <- any(is.na(x))
 
 z <- any(
-  is.na(x2)
+  is.na(x)
 )
 ```
 
 In this case, the only difference between `y` and `z` is that the former is written on one line and the latter is written over multiple lines.
 For Jarl, this doesn't matter: all it sees is the code and not whether it is on multiple lines.
-Therefore, one could add a suppression comment above `y` or `z` and both would be ignored.
+Therefore, adding a suppression comment above `y` and `z` ignores both diagnostics.
 
 ```r
 # jarl-ignore any_is_na: <reason>
-y <- any(is.na(x1))
+y <- any(is.na(x))
 
 # jarl-ignore any_is_na: <reason>
 z <- any(
-  is.na(x2)
+  is.na(x)
 )
 ```
 
-Note that the first comment applies only to the block right after it, so we need one comment per block to ignore.
 A slightly more complex example would be this:
 
 ```r
@@ -130,14 +129,14 @@ f <- function(x1, x2) {
 z <- any(is.na(x3))
 ```
 
-Here, placing a comment above `any(is.na(x1))` would only hide this violation and not `any(is.na(x2))`.
-However, placing it above `f <- function(x1, x2) {` would remove both violations in the function definition because both are part of the same block.
-Either way, the third violation `z <- any(is.na(x3))` would still be reported because none of the comments apply to this code block.
+Here, placing a comment above `any(is.na(x1))` would only hide this diagnostic and not `any(is.na(x2))`.
+However, placing it above `f <- function(x1, x2) {` would remove both diagnostics in the function definition because both are part of the same block.
+Either way, the third diagnostic `z <- any(is.na(x3))` would still be reported because none of the comments apply to this code block.
 
 ---
 
-**Range comments** allow you to hide all violations between the start and end comments.
-Using again the example above, we could hide all violations with range comments:
+**Range comments** allow you to hide all diagnostics between the start and end comments.
+Using again the example above, we could hide all diagnostics with range comments:
 
 ```r
 # jarl-ignore-start any_is_na: <reason>
@@ -170,7 +169,7 @@ f <- function(x, y) {
 **File comments** apply to the entire file.
 Those comments start with `# jarl-ignore-file` and must be placed at the top of the file.
 This means that they can come after other comments, but they have to be before any piece of code.
-For example, the code below wouldn't report any violation.
+For example, in the code below, no diagnostic would be reported.
 
 ```r
 # Author: Etienne Bacher
@@ -188,7 +187,7 @@ z <- any(is.na(x))
 ### How can I check that my suppression comments are correct?
 
 By default, Jarl comes with several checks for suppression comments.
-Those are not different from other rules so they can be deactivated, but it is recommended not to do so because the violating comments will be silently ignored by Jarl.
+Those are not different from other rules so they can be deactivated, but it is recommended not to do so because **wrong comments will be silently ignored by Jarl**.
 The checks on suppression comments are listed below:
 
 - `blanket_suppression`: reports comments that don't specify a rule, e.g., `# jarl-ignore: <reason>`.
@@ -253,6 +252,11 @@ jarl check . --add-jarl-ignore
 # by the text below).
 jarl check . --add-jarl-ignore="remove this when bug xyz is fixed"
 ```
+
+<!-- Yes, it is "parsimony" and not "parcimony". -->
+
+Note that automatically inserting comments should be used with parsimony and not to hide all diagnostics from the start.
+Use a custom configuration to entirely ignore rules you don't want to use, and use `--fix` to automatically fix a certain number of diagnostics.
 
 ::: {.callout-note collapse="false"}
 ### About formatting
