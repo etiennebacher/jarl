@@ -75,7 +75,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-1376ff84c0f69d0c1ff4138ca2bebee4.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-2476e11da28413e5372408b8e28f10e3.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -263,7 +263,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="ignoring-diagnostics" class="level2">
 <h2 class="anchored" data-anchor-id="ignoring-diagnostics">Ignoring diagnostics</h2>
-<p>It is sometimes needed to ignore diagnostics on certain lines of code, for instance in case of (hopefully rare) false positives. Jarl supports this via <code># jarl-ignore</code> comments (aka <em>suppression comments</em>, because they are used to suppress violations). In short, Jarl provides three types of suppression comments:</p>
+<p>It is sometimes needed to ignore diagnostics on certain lines of code, for instance in case of (hopefully rare) false positives. Jarl supports this via <code># jarl-ignore</code> comments (aka <em>suppression comments</em>, because they are used to suppress diagnostics). In short, Jarl provides three types of suppression comments:</p>
 <ul>
 <li>standard comments: <code># jarl-ignore &lt;rule-name&gt;: &lt;reason&gt;</code></li>
 <li>range comments: <code># jarl-ignore-start &lt;rule-name&gt;: &lt;reason&gt;</code> and <code># jarl-ignore-end &lt;rule-name&gt;</code></li>
@@ -274,36 +274,36 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="how-should-i-write-suppression-comments">How should I write suppression comments?</h3>
 <p>All suppression comments follow the same syntax:</p>
 <ol type="1">
-<li><p><strong>A suppression comment must always specify a rule</strong>. For instance, <code># jarl-ignore any_is_na: &lt;reason&gt;</code> only suppresses violations of the <code>any_is_na</code> rule. This means that if you wish to suppress multiple rules for the same code block, you must have one comment per rule to suppress (the reason for this is the next point). This also means that comments such as <code># jarl-ignore</code> (aka <em>blanket suppressions</em>) are ignored by Jarl (and may be reported, see the section <a href="#how-can-i-check-that-my-suppression-comments-are-correct" target="_blank">“How can I check that my suppression comments are correct?”</a> below).</p></li>
-<li><p><strong>A suppression comment must always specify a reason</strong>. Ideally, you shouldn’t have to use suppression comments. If you don’t want any violations of a specific rule to be reported, you should exclude the rule in <code>jarl.toml</code> or in the command line arguments. Therefore, if you need to use a suppression comment, it means that something went wrong (for instance Jarl reports a false positive). In this case, adding an explanation is useful so that other people (or future you) know why this comment is here. A reason is any text coming after the colon in <code># jarl-ignore any_is_na: &lt;reason&gt;</code>.</p></li>
+<li><p><strong>A suppression comment must always specify a rule</strong>. For instance, <code># jarl-ignore any_is_na: &lt;reason&gt;</code> only suppresses diagnostics of the <code>any_is_na</code> rule. This means that if you wish to ignore multiple rules for the same code block, you must have one comment per rule to ignore (the reason for this is the next point). This also means that comments such as <code># jarl-ignore</code> (aka <em>blanket suppressions</em>) are ignored and even reported by Jarl (see the section <a href="#how-can-i-check-that-my-suppression-comments-are-correct">“How can I check that my suppression comments are correct?”</a> below).</p></li>
+<li><p><strong>A suppression comment must always specify a reason</strong>. Ideally, you shouldn’t have to use suppression comments. If you don’t want any diagnostics of a specific rule to be reported, you should exclude the rule in <code>jarl.toml</code> or in the command line arguments. Therefore, if you need to use a suppression comment, it means that something went wrong (for instance Jarl reported a false positive). In this case, adding an explanation is useful so that other people (or future you) know why this comment is here. A reason is any text coming after the colon in <code># jarl-ignore any_is_na: &lt;reason&gt;</code>.</p></li>
 </ol>
 </section>
 <section id="where-should-i-place-suppression-comments" class="level3">
 <h3 class="anchored" data-anchor-id="where-should-i-place-suppression-comments">Where should I place suppression comments?</h3>
 <p><strong>Standard comments</strong> apply to an entire <em>block</em> of code and not to specific <em>lines</em>. This distinction is important but might seem a bit strange, so let’s take an example to clarify:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">any</span>(<span class="fu">is.na</span>(x1))</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">any</span>(<span class="fu">is.na</span>(x))</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">any</span>(</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">is.na</span>(x2)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">is.na</span>(x)</span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>In this case, the only difference between <code>y</code> and <code>z</code> is that the former is written on one line and the latter is written over multiple lines. For Jarl, this doesn’t matter: all it sees is the code and not whether it is on multiple lines. Therefore, one could add a suppression comment above <code>y</code> or <code>z</code> and both would be ignored.</p>
+<p>In this case, the only difference between <code>y</code> and <code>z</code> is that the former is written on one line and the latter is written over multiple lines. For Jarl, this doesn’t matter: all it sees is the code and not whether it is on multiple lines. Therefore, adding a suppression comment above <code>y</code> and <code>z</code> ignores both diagnostics.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># jarl-ignore any_is_na: &lt;reason&gt;</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">any</span>(<span class="fu">is.na</span>(x1))</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">any</span>(<span class="fu">is.na</span>(x))</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># jarl-ignore any_is_na: &lt;reason&gt;</span></span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">any</span>(</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">is.na</span>(x2)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">is.na</span>(x)</span>
 <span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Note that the first comment applies only to the block right after it, so we need one comment per block to ignore. A slightly more complex example would be this:</p>
+<p>A slightly more complex example would be this:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span>(x1, x2) {</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(x1))</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(x2))</span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">any</span>(<span class="fu">is.na</span>(x3))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Here, placing a comment above <code>any(is.na(x1))</code> would only hide this violation and not <code>any(is.na(x2))</code>. However, placing it above <code>f &lt;- function(x1, x2) {</code> would remove both violations in the function definition because both are part of the same block. Either way, the third violation <code>z &lt;- any(is.na(x3))</code> would still be reported because none of the comments apply to this code block.</p>
+<p>Here, placing a comment above <code>any(is.na(x1))</code> would only hide this diagnostic and not <code>any(is.na(x2))</code>. However, placing it above <code>f &lt;- function(x1, x2) {</code> would remove both diagnostics in the function definition because both are part of the same block. Either way, the third diagnostic <code>z &lt;- any(is.na(x3))</code> would still be reported because none of the comments apply to this code block.</p>
 <hr>
-<p><strong>Range comments</strong> allow you to hide all violations between the start and end comments. Using again the example above, we could hide all violations with range comments:</p>
+<p><strong>Range comments</strong> allow you to hide all diagnostics between the start and end comments. Using again the example above, we could hide all diagnostics with range comments:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># jarl-ignore-start any_is_na: &lt;reason&gt;</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span>(x, y) {</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(x))</span>
@@ -320,7 +320,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># jarl-ignore-end any_is_na</span></span>
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <hr>
-<p><strong>File comments</strong> apply to the entire file. Those comments start with <code># jarl-ignore-file</code> and must be placed at the top of the file. This means that they can come after other comments, but they have to be before any piece of code. For example, the code below wouldn’t report any violation.</p>
+<p><strong>File comments</strong> apply to the entire file. Those comments start with <code># jarl-ignore-file</code> and must be placed at the top of the file. This means that they can come after other comments, but they have to be before any piece of code. For example, in the code below, no diagnostic would be reported.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Author: Etienne Bacher</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co"># jarl-ignore-file any_is_na: &lt;reason&gt;</span></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Date: 2026-02-01</span></span>
@@ -334,7 +334,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="how-can-i-check-that-my-suppression-comments-are-correct" class="level3">
 <h3 class="anchored" data-anchor-id="how-can-i-check-that-my-suppression-comments-are-correct">How can I check that my suppression comments are correct?</h3>
-<p>By default, Jarl comes with several checks for suppression comments. Those are not different from other rules so they can be deactivated, but it is recommended not to do so because the violating comments will be silently ignored by Jarl. The checks on suppression comments are listed below:</p>
+<p>By default, Jarl comes with several checks for suppression comments. Those are not different from other rules so they can be deactivated, but it is recommended not to do so because <strong>wrong comments will be silently ignored by Jarl</strong>. The checks on suppression comments are listed below:</p>
 <ul>
 <li><p><code>blanket_suppression</code>: reports comments that don’t specify a rule, e.g., <code># jarl-ignore: &lt;reason&gt;</code>.</p></li>
 <li><p><code>misnamed_suppression</code>: reports comments where the rule doesn’t exist, e.g., <code># jarl-ignore unknown_rule: &lt;reason&gt;</code>.</p></li>
@@ -374,6 +374,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co"># is replaced by the appropriate rule name, and &lt;reason&gt; is replaced</span></span>
 <span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co"># by the text below).</span></span>
 <span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--add-jarl-ignore</span><span class="op">=</span><span class="st">"remove this when bug xyz is fixed"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<!-- Yes, it is "parsimony" and not "parcimony". -->
+<p>Note that automatically inserting comments should be used with parsimony and not to hide all diagnostics from the start. Use a custom configuration to entirely ignore rules you don’t want to use, and use <code>--fix</code> to automatically fix a certain number of diagnostics.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="true" aria-label="Toggle callout">
 <div class="callout-icon-container">
