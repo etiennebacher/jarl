@@ -1,0 +1,13 @@
+---
+source: crates/jarl/tests/integration/add_jarl_ignore.rs
+expression: "Command::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name().normalize_temp_paths()"
+---
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+
+----- args -----
+check .

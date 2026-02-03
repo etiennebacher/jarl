@@ -608,8 +608,8 @@ impl Server {
         let (insert_range, new_comment) = if insert_point.needs_leading_newline {
             // Inline insertion: insert right at the expression with a leading newline
             let insert_pos = Self::offset_to_position(content, insert_point.offset);
-            let comment = suppression_edit::format_suppression_comment(
-                rule_name,
+            let comment = suppression_edit::format_suppression_comments(
+                &[rule_name],
                 "<reason>",
                 &insert_point.indent,
                 true,
@@ -618,8 +618,8 @@ impl Server {
         } else {
             // Insert new comment at line start
             let line_start_pos = types::Position::new(insert_point.line as u32, 0);
-            let comment = suppression_edit::format_suppression_comment(
-                rule_name,
+            let comment = suppression_edit::format_suppression_comments(
+                &[rule_name],
                 "<reason>",
                 &insert_point.indent,
                 false,
@@ -1030,8 +1030,9 @@ f <- function(a = <CURS>any(is.na(x))) {
         .unwrap();
 
         insta::assert_snapshot!(result, @r"
-        # jarl-ignore any_is_na: <reason>
-        f <- function(a = any(is.na(x))) {
+        f <- function(
+                      # jarl-ignore any_is_na: <reason>
+                      a = any(is.na(x))) {
           1
         }
         ");

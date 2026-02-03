@@ -31,25 +31,39 @@ pub struct SuppressionEdit {
     pub comment_text: String,
 }
 
-/// Format a suppression comment for a specific rule.
+/// Format suppression comments for one or more rules (one comment per rule).
 ///
-/// If `needs_leading_newline` is true, the comment will be preceded by a newline
+/// If `needs_leading_newline` is true, the comments will be preceded by a newline
 /// and the expression text will follow on a new line with the same indentation.
-pub fn format_suppression_comment(
-    rule_name: &str,
+pub fn format_suppression_comments(
+    rule_names: &[&str],
     explanation: &str,
     indent: &str,
     needs_leading_newline: bool,
 ) -> String {
+    let mut result = String::new();
+
     if needs_leading_newline {
-        // Insert newline, then indented comment, then newline + indent for the expression
-        format!(
-            "\n{}# jarl-ignore {}: {}\n{}",
-            indent, rule_name, explanation, indent
-        )
-    } else {
-        format!("{}# jarl-ignore {}: {}\n", indent, rule_name, explanation)
+        // Start with a newline to break the current line
+        result.push('\n');
     }
+
+    // Add one comment per rule
+    for rule in rule_names {
+        result.push_str(indent);
+        result.push_str("# jarl-ignore ");
+        result.push_str(rule);
+        result.push_str(": ");
+        result.push_str(explanation);
+        result.push('\n');
+    }
+
+    if needs_leading_newline {
+        // Add the indent for the expression that follows
+        result.push_str(indent);
+    }
+
+    result
 }
 
 /// Compute where to insert a suppression comment for a diagnostic at the given byte range.
@@ -159,57 +173,70 @@ pub fn compute_suppression_insert_point(
     };
 
     // Walk up the tree to find meaningful expressions
-    // We want to find the smallest expression that is on its own line
-    // BUT if we encounter a control flow statement that's on its own line,
-    // we prefer inline insertion at a smaller meaningful expression to be more targeted
+    // Strategy:
+    // 1. Inside control flow (if/for/while): use the LARGEST meaningful expression
+    //    so all violations in the same condition get the same insert point
+    // 2. Outside control flow: use the FIRST expression on its own line (more targeted)
     let mut current = start_node;
-    let mut smallest_meaningful: Option<SyntaxNode<air_r_syntax::RLanguage>> = None;
+    let mut last_meaningful: Option<SyntaxNode<air_r_syntax::RLanguage>> = None;
+    let mut first_meaningful_on_own_line: Option<SyntaxNode<air_r_syntax::RLanguage>> = None;
 
     loop {
         if is_meaningful_expression(&current) {
             let node_start = current.text_trimmed_range().start();
             let node_start_offset: usize = node_start.into();
+            let on_own_line = is_on_own_line(source, node_start_offset);
 
-            // Check if this expression is on its own line
-            if is_on_own_line(source, node_start_offset) {
-                // If this is a control flow statement and we already have a smaller
-                // meaningful expression, prefer inline insertion at the smaller one
-                // to avoid accidentally suppressing too much
-                if is_control_flow_statement(&current)
-                    && let Some(smallest_meaningful) = smallest_meaningful
-                {
-                    // Use inline insertion at the smaller expression
-                    let inline_node = smallest_meaningful;
-                    let inline_start = inline_node.text_trimmed_range().start();
-                    let inline_offset: usize = inline_start.into();
+            if is_control_flow_statement(&current) {
+                // Hit a control flow statement - use the LAST (largest) meaningful expression
+                // This ensures all violations in the same condition share one insert point
+                if let Some(expr) = last_meaningful.clone() {
+                    let expr_start: usize = expr.text_trimmed_range().start().into();
+                    if is_on_own_line(source, expr_start) {
+                        // Expression is on its own line - use line-start insertion
+                        let (line_start_offset, indent) =
+                            find_line_start_and_indent(source, expr_start);
+                        let line_number = source[..line_start_offset].matches('\n').count();
 
-                    let indent = compute_inline_indent(source, inline_offset);
-                    let line_number = count_lines_to(source, inline_offset);
+                        return Some(SuppressionInsertPoint {
+                            offset: line_start_offset,
+                            indent,
+                            line: line_number,
+                            needs_leading_newline: false,
+                        });
+                    } else {
+                        // Use inline insertion
+                        let indent = compute_inline_indent(source, expr_start);
+                        let line_number = count_lines_to(source, expr_start);
+
+                        return Some(SuppressionInsertPoint {
+                            offset: expr_start,
+                            indent,
+                            line: line_number,
+                            needs_leading_newline: true,
+                        });
+                    }
+                }
+                // Control flow with no inner expression - use line-start at the control flow
+                if on_own_line {
+                    let (line_start_offset, indent) =
+                        find_line_start_and_indent(source, node_start_offset);
+                    let line_number = source[..line_start_offset].matches('\n').count();
 
                     return Some(SuppressionInsertPoint {
-                        offset: inline_offset,
+                        offset: line_start_offset,
                         indent,
                         line: line_number,
-                        needs_leading_newline: true,
+                        needs_leading_newline: false,
                     });
                 }
-
-                // Found a non-control-flow expression on its own line - use this
-                let (line_start_offset, indent) =
-                    find_line_start_and_indent(source, node_start_offset);
-                let line_number = source[..line_start_offset].matches('\n').count();
-
-                return Some(SuppressionInsertPoint {
-                    offset: line_start_offset,
-                    indent,
-                    line: line_number,
-                    needs_leading_newline: false,
-                });
-            }
-
-            // Remember the smallest meaningful expression for inline insertion
-            if smallest_meaningful.is_none() {
-                smallest_meaningful = Some(current.clone());
+            } else {
+                // Non-control-flow meaningful expression - track it
+                last_meaningful = Some(current.clone());
+                // Track the FIRST one on its own line (for non-control-flow case)
+                if on_own_line && first_meaningful_on_own_line.is_none() {
+                    first_meaningful_on_own_line = Some(current.clone());
+                }
             }
         }
 
@@ -220,8 +247,19 @@ pub fn compute_suppression_insert_point(
         }
     }
 
-    // No expression found on its own line - use inline insertion at the smallest meaningful
-    if let Some(inline_node) = smallest_meaningful {
+    // No control flow found - use the FIRST expression on its own line (more targeted)
+    if let Some(expr) = first_meaningful_on_own_line {
+        let expr_start: usize = expr.text_trimmed_range().start().into();
+        let (line_start_offset, indent) = find_line_start_and_indent(source, expr_start);
+        let line_number = source[..line_start_offset].matches('\n').count();
+
+        return Some(SuppressionInsertPoint {
+            offset: line_start_offset,
+            indent,
+            line: line_number,
+            needs_leading_newline: false,
+        });
+    } else if let Some(inline_node) = last_meaningful {
         let node_start = inline_node.text_trimmed_range().start();
         let node_start_offset: usize = node_start.into();
 
@@ -382,8 +420,8 @@ pub fn create_suppression_edit(
     explanation: &str,
 ) -> Option<SuppressionEdit> {
     let insert_point = compute_suppression_insert_point(source, diagnostic_start, diagnostic_end)?;
-    let comment_text = format_suppression_comment(
-        rule_name,
+    let comment_text = format_suppression_comments(
+        &[rule_name],
         explanation,
         &insert_point.indent,
         insert_point.needs_leading_newline,
@@ -397,20 +435,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_format_suppression_comment() {
+    fn test_format_suppression_comments() {
         // Without leading newline
         assert_eq!(
-            format_suppression_comment("any_is_na", "reason", "", false),
+            format_suppression_comments(&["any_is_na"], "reason", "", false),
             "# jarl-ignore any_is_na: reason\n"
         );
         assert_eq!(
-            format_suppression_comment("any_is_na", "reason", "  ", false),
+            format_suppression_comments(&["any_is_na"], "reason", "  ", false),
             "  # jarl-ignore any_is_na: reason\n"
         );
 
         // With leading newline (for inline expressions)
         assert_eq!(
-            format_suppression_comment("any_is_na", "reason", "  ", true),
+            format_suppression_comments(&["any_is_na"], "reason", "  ", true),
             "\n  # jarl-ignore any_is_na: reason\n  "
         );
     }
