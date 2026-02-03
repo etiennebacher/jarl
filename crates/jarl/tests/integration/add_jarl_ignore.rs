@@ -360,3 +360,135 @@ fn test_add_jarl_ignore_pipe_chain() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_add_jarl_ignore_same_rule_same_line() -> anyhow::Result<()> {
+    // Two violations of the same rule in an if condition should produce one comment
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    std::fs::write(
+        directory.join(test_path),
+        "if (x == TRUE || y == TRUE) {
+  1
+}
+",
+    )?;
+
+    let output = Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--add-jarl-ignore")
+        .run()
+        .normalize_os_executable_name()
+        .normalize_temp_paths();
+
+    insta::assert_snapshot!("same_rule_same_line_output", output);
+
+    let content = std::fs::read_to_string(directory.join(test_path))?;
+    insta::assert_snapshot!("same_rule_same_line_file_content", content);
+
+    insta::assert_snapshot!(
+        "same_rule_same_line_jarl_check",
+        Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_add_jarl_ignore_different_rules_same_line() -> anyhow::Result<()> {
+    // Two violations of different rules in an if condition should produce one comment with both rules
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    std::fs::write(
+        directory.join(test_path),
+        "if (x == TRUE || any(is.na(y))) {
+  1
+}
+",
+    )?;
+
+    let output = Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--add-jarl-ignore")
+        .run()
+        .normalize_os_executable_name()
+        .normalize_temp_paths();
+
+    insta::assert_snapshot!("different_rules_same_line_output", output);
+
+    let content = std::fs::read_to_string(directory.join(test_path))?;
+    insta::assert_snapshot!("different_rules_same_line_file_content", content);
+
+    insta::assert_snapshot!(
+        "different_rules_same_line_jarl_check",
+        Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_add_jarl_ignore_multiline_condition() -> anyhow::Result<()> {
+    // Multi-line condition with violations on different lines should produce one comment
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    std::fs::write(
+        directory.join(test_path),
+        "if (
+  super_long_variable_name == TRUE ||
+    super_long_variable_name_again == TRUE
+) {
+  1
+}
+",
+    )?;
+
+    let output = Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--add-jarl-ignore")
+        .run()
+        .normalize_os_executable_name()
+        .normalize_temp_paths();
+
+    insta::assert_snapshot!("multiline_condition_output", output);
+
+    let content = std::fs::read_to_string(directory.join(test_path))?;
+    insta::assert_snapshot!("multiline_condition_file_content", content);
+
+    insta::assert_snapshot!(
+        "multiline_condition_jarl_check",
+        Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths()
+    );
+
+    Ok(())
+}

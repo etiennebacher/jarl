@@ -2,7 +2,7 @@ use air_workspace::resolve::PathResolver;
 use jarl_core::discovery::{discover_r_file_paths, discover_settings};
 use jarl_core::{
     config::ArgsConfig, config::build_config, diagnostic::Diagnostic, settings::Settings,
-    suppression_edit::create_suppression_edit,
+    suppression_edit::{create_suppression_edit, format_suppression_comments},
 };
 
 use anyhow::Result;
@@ -212,42 +212,70 @@ fn add_jarl_ignore_comments(
         };
 
         // Compute suppression edits for each diagnostic
-        let mut edits: Vec<(usize, String)> = Vec::new();
+        // Store (offset, indent, needs_leading_newline, rule_name) to merge rules at same offset
+        let mut raw_edits: Vec<(usize, String, bool, String)> = Vec::new();
         for diagnostic in &diagnostics {
             let start: usize = diagnostic.range.start().into();
             let end: usize = diagnostic.range.end().into();
             let rule_name = &diagnostic.message.name;
 
             if let Some(edit) = create_suppression_edit(&content, start, end, rule_name, reason) {
-                edits.push((edit.insert_point.offset, edit.comment_text));
+                raw_edits.push((
+                    edit.insert_point.offset,
+                    edit.insert_point.indent,
+                    edit.insert_point.needs_leading_newline,
+                    rule_name.clone(),
+                ));
             }
         }
 
-        if edits.is_empty() {
+        if raw_edits.is_empty() {
             continue;
         }
 
-        // Sort by offset in descending order so we can apply edits without shifting positions
-        edits.sort_by(|a, b| b.0.cmp(&a.0));
+        // Sort by offset ascending to group edits at the same offset
+        raw_edits.sort_by(|a, b| a.0.cmp(&b.0));
 
-        // Deduplicate edits at the same offset (multiple diagnostics might want the same comment)
-        edits.dedup_by(|a, b| a.0 == b.0);
+        // Merge edits at the same offset: collect all rule names for each offset
+        let mut merged_edits: Vec<(usize, String, bool, Vec<String>)> = Vec::new();
+        for (offset, indent, needs_leading_newline, rule_name) in raw_edits {
+            if let Some(last) = merged_edits.last_mut() {
+                if last.0 == offset {
+                    // Same offset - add rule if not already present
+                    if !last.3.contains(&rule_name) {
+                        last.3.push(rule_name);
+                    }
+                    continue;
+                }
+            }
+            // New offset
+            merged_edits.push((offset, indent, needs_leading_newline, vec![rule_name]));
+        }
+
+        // Sort by offset in descending order so we can apply edits without shifting positions
+        merged_edits.sort_by(|a, b| b.0.cmp(&a.0));
 
         // Apply edits to the content
         let mut modified_content = content.clone();
-        for (offset, comment_text) in &edits {
-            modified_content.insert_str(*offset, comment_text);
+        for (offset, indent, needs_leading_newline, rule_names) in &merged_edits {
+            let rule_refs: Vec<&str> = rule_names.iter().map(|s| s.as_str()).collect();
+            let comment_text =
+                format_suppression_comments(&rule_refs, reason, indent, *needs_leading_newline);
+            modified_content.insert_str(*offset, &comment_text);
         }
+
+        // Count total suppression comments (one per rule)
+        let num_suppressions: usize = merged_edits.iter().map(|(_, _, _, rules)| rules.len()).sum();
 
         // Write the modified content back
         match std::fs::write(&path, &modified_content) {
             Ok(()) => {
-                total_suppressions += edits.len();
+                total_suppressions += num_suppressions;
                 files_modified += 1;
                 println!(
                     "{}: Added {} suppression comment(s) to {}",
                     "Modified".green().bold(),
-                    edits.len(),
+                    num_suppressions,
                     path.display()
                 );
             }
