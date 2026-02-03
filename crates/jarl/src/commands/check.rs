@@ -1,7 +1,10 @@
 use air_workspace::resolve::PathResolver;
 use jarl_core::discovery::{discover_r_file_paths, discover_settings};
 use jarl_core::{
-    config::ArgsConfig, config::build_config, diagnostic::Diagnostic, settings::Settings,
+    config::ArgsConfig,
+    config::build_config,
+    diagnostic::Diagnostic,
+    settings::Settings,
     suppression_edit::{create_suppression_edit, format_suppression_comments},
 };
 
@@ -239,14 +242,14 @@ fn add_jarl_ignore_comments(
         // Merge edits at the same offset: collect all rule names for each offset
         let mut merged_edits: Vec<(usize, String, bool, Vec<String>)> = Vec::new();
         for (offset, indent, needs_leading_newline, rule_name) in raw_edits {
-            if let Some(last) = merged_edits.last_mut() {
-                if last.0 == offset {
-                    // Same offset - add rule if not already present
-                    if !last.3.contains(&rule_name) {
-                        last.3.push(rule_name);
-                    }
-                    continue;
+            if let Some(last) = merged_edits.last_mut()
+                && last.0 == offset
+            {
+                // Same offset - add rule if not already present
+                if !last.3.contains(&rule_name) {
+                    last.3.push(rule_name);
                 }
+                continue;
             }
             // New offset
             merged_edits.push((offset, indent, needs_leading_newline, vec![rule_name]));
@@ -265,7 +268,10 @@ fn add_jarl_ignore_comments(
         }
 
         // Count total suppression comments (one per rule)
-        let num_suppressions: usize = merged_edits.iter().map(|(_, _, _, rules)| rules.len()).sum();
+        let num_suppressions: usize = merged_edits
+            .iter()
+            .map(|(_, _, _, rules)| rules.len())
+            .sum();
 
         // Write the modified content back
         match std::fs::write(&path, &modified_content) {
