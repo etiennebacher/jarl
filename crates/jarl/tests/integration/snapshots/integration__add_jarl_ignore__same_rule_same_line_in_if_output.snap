@@ -5,9 +5,9 @@ expression: output
 success: true
 exit_code: 0
 ----- stdout -----
-Modified: Added 2 suppression comment(s) to test.R
+Modified: Added 1 suppression comment(s) to test.R
 
-Summary: Added 2 suppression comment(s) across 1 file(s).
+Summary: Added 1 suppression comment(s) across 1 file(s).
 
 ----- stderr -----
 

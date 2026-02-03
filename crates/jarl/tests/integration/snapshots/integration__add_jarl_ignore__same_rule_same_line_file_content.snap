@@ -2,8 +2,6 @@
 source: crates/jarl/tests/integration/add_jarl_ignore.rs
 expression: content
 ---
-if (
-    # jarl-ignore redundant_equals: <reason>
-    x == TRUE || y == TRUE) {
-  1
-}
+# jarl-ignore redundant_equals: <reason>
+# jarl-ignore any_is_na: <reason>
+z <- x == TRUE && any(is.na(y))

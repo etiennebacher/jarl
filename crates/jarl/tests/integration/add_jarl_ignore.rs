@@ -368,13 +368,7 @@ fn test_add_jarl_ignore_same_rule_same_line() -> anyhow::Result<()> {
     let directory = directory.path();
 
     let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
-        "if (x == TRUE || y == TRUE) {
-  1
-}
-",
-    )?;
+    std::fs::write(directory.join(test_path), "z <- x == TRUE && any(is.na(y))")?;
 
     let output = Command::new(binary_path())
         .current_dir(directory)
@@ -392,6 +386,49 @@ fn test_add_jarl_ignore_same_rule_same_line() -> anyhow::Result<()> {
 
     insta::assert_snapshot!(
         "same_rule_same_line_jarl_check",
+        Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_add_jarl_ignore_same_rule_same_line_in_if_condition() -> anyhow::Result<()> {
+    // Two violations of the same rule in an if condition should produce one comment
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    std::fs::write(
+        directory.join(test_path),
+        "if (x == TRUE || y == TRUE) {
+  1
+}
+",
+    )?;
+
+    let output = Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--add-jarl-ignore")
+        .run()
+        .normalize_os_executable_name()
+        .normalize_temp_paths();
+
+    insta::assert_snapshot!("same_rule_same_line_in_if_output", output);
+
+    let content = std::fs::read_to_string(directory.join(test_path))?;
+    insta::assert_snapshot!("same_rule_same_line_in_if_file_content", content);
+
+    insta::assert_snapshot!(
+        "same_rule_same_line_in_if_jarl_check",
         Command::new(binary_path())
             .current_dir(directory)
             .arg("check")
