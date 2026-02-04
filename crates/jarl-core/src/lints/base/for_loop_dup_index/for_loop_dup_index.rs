@@ -46,8 +46,7 @@ impl Violation for ForLoopDupIndex {
 }
 
 pub fn for_loop_dup_index(ast: &RForStatement) -> anyhow::Result<Option<Diagnostic>> {
-    let index = ast.variable()?;
-    let index_name = index.to_trimmed_string();
+    let index = ast.variable()?.to_trimmed_string();
 
     let has_duplicate_in_ancestor = ast
         .syntax()
@@ -58,7 +57,7 @@ pub fn for_loop_dup_index(ast: &RForStatement) -> anyhow::Result<Option<Diagnost
         .any(|ancestor_for| {
             ancestor_for
                 .variable()
-                .map(|v| v.to_trimmed_string() == index_name)
+                .map(|v| v.to_trimmed_string() == index)
                 .unwrap_or(false)
         });
 
