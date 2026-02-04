@@ -69,6 +69,7 @@ dat <- as.data.frame(
     c("expect_true_false", "testthat", "✅", "Disabled by default"),
     c("expect_type", "testthat", "✅", "Disabled by default"),
     c("fixed_regex", "performance", "✅", "Disabled by default"),
+    c("for_loop_dup_index", "correctness, suspicious", "❌", ""),
     c("for_loop_index", "readability", "❌", ""),
     c("grepv", "readability", "✅", "R >= 4.5"),
     c("if_always_true", "readability, suspicious", "❌", ""),

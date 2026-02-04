@@ -78,6 +78,7 @@ website:
       - rules/expect_true_false.md
       - rules/expect_type.md
       - rules/fixed_regex.md
+      - rules/for_loop_dup_index.md
       - rules/for_loop_index.md
       - rules/grepv.md
       - rules/if_always_true.md

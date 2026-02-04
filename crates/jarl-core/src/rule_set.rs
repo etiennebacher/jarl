@@ -351,6 +351,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    ForLoopDupIndex => {
+        name: "for_loop_dup_index",
+        categories: [Corr, Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     ForLoopIndex => {
         name: "for_loop_index",
         categories: [Read],
