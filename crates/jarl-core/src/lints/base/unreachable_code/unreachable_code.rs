@@ -1,3 +1,4 @@
+use crate::check::Checker;
 use crate::diagnostic::*;
 use air_r_syntax::*;
 
@@ -43,11 +44,15 @@ use super::cfg::{UnreachableReason, build_cfg, build_cfg_top_level, find_unreach
 ///   }
 /// }
 /// ```
-pub fn unreachable_code(ast: &RFunctionDefinition) -> anyhow::Result<Vec<Diagnostic>> {
+pub fn unreachable_code(
+    ast: &RFunctionDefinition,
+    checker: &Checker,
+) -> anyhow::Result<Vec<Diagnostic>> {
     let mut diagnostics = Vec::new();
 
     // Build the control flow graph for this function
-    let cfg = build_cfg(ast);
+    let stopping = &checker.rule_options.unreachable_code.stopping_functions;
+    let cfg = build_cfg(ast, stopping);
 
     // Find all unreachable code
     for unreachable_info in find_unreachable_code(&cfg) {
@@ -72,11 +77,15 @@ pub fn unreachable_code(ast: &RFunctionDefinition) -> anyhow::Result<Vec<Diagnos
 /// It filters out certain unreachable reasons that don't make sense at the top level:
 /// - `AfterReturn` is ignored (can't return from top-level)
 /// - `NoPathFromEntry` is ignored (doesn't make sense at top level)
-pub fn unreachable_code_top_level(expressions: &[RSyntaxNode]) -> anyhow::Result<Vec<Diagnostic>> {
+pub fn unreachable_code_top_level(
+    expressions: &[RSyntaxNode],
+    checker: &Checker,
+) -> anyhow::Result<Vec<Diagnostic>> {
     let mut diagnostics = Vec::new();
 
     // Build the control flow graph for top-level code
-    let cfg = build_cfg_top_level(expressions);
+    let stopping = &checker.rule_options.unreachable_code.stopping_functions;
+    let cfg = build_cfg_top_level(expressions, stopping);
 
     // Find all unreachable code
     for unreachable_info in find_unreachable_code(&cfg) {

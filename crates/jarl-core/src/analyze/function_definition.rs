@@ -9,7 +9,7 @@ pub fn function_definition(
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::UnreachableCode) {
-        let diagnostics = unreachable_code(func)?;
+        let diagnostics = unreachable_code(func, checker)?;
         for diagnostic in diagnostics {
             checker.report_diagnostic(Some(diagnostic));
         }

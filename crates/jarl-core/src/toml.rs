@@ -13,6 +13,9 @@ use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 
+use crate::rule_options::duplicated_arguments::DuplicatedArgumentsOptions;
+use crate::rule_options::unreachable_code::UnreachableCodeOptions;
+use crate::rule_options::ResolvedRuleOptions;
 use crate::settings::LinterSettings;
 use crate::settings::Settings;
 
@@ -170,6 +173,22 @@ pub struct LinterTomlOptions {
     /// This can be either `"<-"` or `"="`. Both are valid in R, so this
     /// option is useful to ensure consistency in a project.
     pub assignment: Option<String>,
+
+    /// # Options for the `duplicated_arguments` rule
+    ///
+    /// Use `skipped-functions` to fully replace the default list of functions
+    /// that are allowed to have duplicated arguments. Use
+    /// `extend-skipped-functions` to add to the default list.
+    /// Specifying both is an error.
+    pub duplicated_arguments: Option<DuplicatedArgumentsOptions>,
+
+    /// # Options for the `unreachable_code` rule
+    ///
+    /// Use `stopping-functions` to fully replace the default list of functions
+    /// that are considered to stop execution (never return). Use
+    /// `extend-stopping-functions` to add to the default list.
+    /// Specifying both is an error.
+    pub unreachable_code: Option<UnreachableCodeOptions>,
 }
 
 /// Return the path to the `jarl.toml` or `.jarl.toml` file in a given directory.
@@ -213,6 +232,10 @@ impl TomlOptions {
             default_exclude: linter.default_exclude,
             fixable: linter.fixable,
             unfixable: linter.unfixable,
+            rule_options: ResolvedRuleOptions::resolve(
+                linter.duplicated_arguments.as_ref(),
+                linter.unreachable_code.as_ref(),
+            )?,
         };
 
         Ok(Settings { linter })

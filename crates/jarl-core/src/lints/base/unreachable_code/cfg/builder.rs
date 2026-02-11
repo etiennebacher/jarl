@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use super::graph::{BlockId, ControlFlowGraph, Terminator};
 use air_r_syntax::{
     RBinaryExpression, RBracedExpressions, RForStatement, RFunctionDefinition, RIfStatement,
@@ -6,10 +8,12 @@ use air_r_syntax::{
 use biome_rowan::AstNode;
 
 /// Builder for constructing control flow graphs
-pub struct CfgBuilder {
+pub struct CfgBuilder<'a> {
     cfg: ControlFlowGraph,
     /// Stack of loop contexts for handling break/next
     loop_stack: Vec<LoopContext>,
+    /// Functions that stop execution (never return), e.g. `stop()`, `abort()`
+    stopping_functions: &'a HashSet<String>,
 }
 
 /// Context information for a loop (for break/next targeting)
@@ -108,11 +112,12 @@ fn evaluate_constant_condition(node: &RSyntaxNode) -> Option<bool> {
     None
 }
 
-impl CfgBuilder {
-    fn new() -> Self {
+impl<'a> CfgBuilder<'a> {
+    fn new(stopping_functions: &'a HashSet<String>) -> Self {
         Self {
             cfg: ControlFlowGraph::new(),
             loop_stack: Vec::new(),
+            stopping_functions,
         }
     }
 
@@ -282,9 +287,7 @@ impl CfgBuilder {
                 } else if fun_name == "next" {
                     self.build_next(current, stmt.clone());
                     current
-                } else if ["stop", ".Defunct", "abort", "cli_abort", "q", "quit"]
-                    .contains(&fun_name.as_str())
-                {
+                } else if self.stopping_functions.contains(fun_name.as_str()) {
                     self.build_stop(current, stmt.clone());
                     current
                 } else {
@@ -652,14 +655,20 @@ impl CfgBuilder {
 }
 
 /// Build a control flow graph for a function definition
-pub fn build_cfg(func: &RFunctionDefinition) -> ControlFlowGraph {
-    let builder = CfgBuilder::new();
+pub fn build_cfg(
+    func: &RFunctionDefinition,
+    stopping_functions: &HashSet<String>,
+) -> ControlFlowGraph {
+    let builder = CfgBuilder::new(stopping_functions);
     builder.build(func)
 }
 
 /// Build a control flow graph for top-level R code
-pub fn build_cfg_top_level(expressions: &[RSyntaxNode]) -> ControlFlowGraph {
-    let mut builder = CfgBuilder::new();
+pub fn build_cfg_top_level(
+    expressions: &[RSyntaxNode],
+    stopping_functions: &HashSet<String>,
+) -> ControlFlowGraph {
+    let mut builder = CfgBuilder::new(stopping_functions);
     let entry = builder.cfg.entry;
     let exit = builder.cfg.exit;
     builder.build_statements(expressions, entry, exit);

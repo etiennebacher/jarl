@@ -52,7 +52,7 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
         checker.report_diagnostic(download_file(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::DuplicatedArguments) {
-        checker.report_diagnostic(duplicated_arguments(r_expr)?);
+        checker.report_diagnostic(duplicated_arguments(r_expr, checker)?);
     }
     if checker.is_rule_enabled(Rule::ExpectLength) {
         checker.report_diagnostic(expect_length(r_expr)?);

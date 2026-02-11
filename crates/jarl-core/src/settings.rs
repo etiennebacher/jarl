@@ -4,6 +4,8 @@
 //
 // MIT License - Posit PBC
 
+use crate::rule_options::ResolvedRuleOptions;
+
 /// Resolved configuration settings used within jarl
 #[derive(Debug, Default)]
 pub struct Settings {
@@ -20,6 +22,7 @@ pub struct LinterSettings {
     pub default_exclude: Option<bool>,
     pub fixable: Option<Vec<String>>,
     pub unfixable: Option<Vec<String>>,
+    pub rule_options: ResolvedRuleOptions,
 }
 
 impl Default for LinterSettings {
@@ -36,6 +39,7 @@ impl Default for LinterSettings {
             default_exclude: None,
             fixable: None,
             unfixable: None,
+            rule_options: ResolvedRuleOptions::default(),
         }
     }
 }

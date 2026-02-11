@@ -20,6 +20,7 @@ use std::sync::Arc;
 use crate::analyze;
 use crate::config::Config;
 use crate::diagnostic::*;
+use crate::rule_options::ResolvedRuleOptions;
 use crate::fix::*;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
@@ -121,16 +122,23 @@ pub struct Checker {
     pub suppression: SuppressionManager,
     // Which assignment operator is preferred?
     pub assignment: RSyntaxKind,
+    // Per-rule options resolved from configuration
+    pub rule_options: ResolvedRuleOptions,
 }
 
 impl Checker {
-    fn new(suppression: SuppressionManager, assignment: RSyntaxKind) -> Self {
+    fn new(
+        suppression: SuppressionManager,
+        assignment: RSyntaxKind,
+        rule_options: ResolvedRuleOptions,
+    ) -> Self {
         Self {
             diagnostics: vec![],
             rule_set: RuleSet::empty(),
             minimum_r_version: None,
             suppression,
             assignment,
+            rule_options,
         }
     }
 
@@ -165,7 +173,7 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
 
     let suppression = SuppressionManager::from_node(syntax, contents);
 
-    let mut checker = Checker::new(suppression, config.assignment);
+    let mut checker = Checker::new(suppression, config.assignment, config.rule_options.clone());
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
 
@@ -237,7 +245,7 @@ pub fn check_document(expressions: &RExpressionList, checker: &mut Checker) -> a
 
     // Check for unreachable code at top level
     if checker.is_rule_enabled(Rule::UnreachableCode) {
-        for diagnostic in unreachable_code_top_level(&expressions)? {
+        for diagnostic in unreachable_code_top_level(&expressions, checker)? {
             checker.report_diagnostic(Some(diagnostic));
         }
     }

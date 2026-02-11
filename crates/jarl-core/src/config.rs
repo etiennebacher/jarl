@@ -1,6 +1,7 @@
 use crate::{
     description::Description,
     lints::all_rules_enabled_by_default,
+    rule_options::ResolvedRuleOptions,
     rule_set::{Category, Rule, RuleSet},
     settings::Settings,
 };
@@ -79,6 +80,8 @@ pub struct Config {
     /// Rules that are allowed to have fixes applied (from fixable setting)
     /// None means all rules with fixes can be applied
     pub fixable: Option<HashSet<String>>,
+    /// Resolved per-rule options
+    pub rule_options: ResolvedRuleOptions,
 }
 
 pub fn build_config(
@@ -150,6 +153,9 @@ pub fn build_config(
     };
 
     let assignment = parse_assignment(check_config, toml_settings)?;
+    let rule_options = toml_settings
+        .map(|s| s.linter.rule_options.clone())
+        .unwrap_or_default();
 
     Ok(Config {
         paths,
@@ -163,6 +169,7 @@ pub fn build_config(
         assignment,
         unfixable: unfixable_toml,
         fixable: fixable_toml,
+        rule_options,
     })
 }
 
