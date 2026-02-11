@@ -27,6 +27,7 @@ mod tests {
         1 | grep('i', x, value = TRUE)
           | -------------------------- `grep(..., value = TRUE)` can be simplified.
           |
+          = help: Use `grepv(...)` instead.
         Found 1 error.
         "
         );

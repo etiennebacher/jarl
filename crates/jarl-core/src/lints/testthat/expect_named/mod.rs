@@ -60,6 +60,7 @@ mod tests {
         1 | expect_equal(names(x), 'a')
           | --------------------------- `expect_named(x, n)` is better than `expect_equal(names(x), n)`.
           |
+          = help: Use `expect_named(x, n)` instead.
         Found 1 error.
         "
         );
@@ -128,6 +129,7 @@ mod tests {
         2 | | names(x), 'a')
           | |______________- `expect_named(x, n)` is better than `expect_equal(names(x), n)`.
           |
+          = help: Use `expect_named(x, n)` instead.
         Found 1 error.
         "
         );

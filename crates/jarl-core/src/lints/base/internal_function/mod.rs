@@ -26,6 +26,7 @@ mod tests {
         1 | foo:::bar()
           | --------- Accessing a package's internal function with `:::` is likely to break in the future.
           |
+          = help: Use public functions via `::` instead.
         Found 1 error.
         "
         );

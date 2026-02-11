@@ -40,6 +40,7 @@ mod tests {
         1 | if (class(x) == 'character') 1
           |     ----------------------- Comparing `class(x)` with `==` or `%in%` can be problematic.
           |
+          = help: Use `inherits(x, 'a')` instead.
         Found 1 error.
         "
         );
@@ -159,6 +160,7 @@ mod tests {
         1 | is_regression <- identical(class(x), 'lm')
           |                  ------------------------- Using `identical(class(x), 'a')` can be problematic.
           |
+          = help: Use `inherits(x, 'a')` instead.
         Found 1 error.
         "
         );

@@ -31,6 +31,7 @@ mod tests {
         1 | seq(length(x))
           | -------------- `seq(length(...))` can be wrong if the argument has length 0.
           |
+          = help: Use `seq_along(...)` instead.
         Found 1 error.
         "
         );
@@ -126,6 +127,7 @@ mod tests {
         3 | | foo(x)))
           | |________- `seq(length(...))` can be wrong if the argument has length 0.
           |
+          = help: Use `seq_along(...)` instead.
         Found 1 error.
         "
         );

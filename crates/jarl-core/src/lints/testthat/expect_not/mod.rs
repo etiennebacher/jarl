@@ -57,6 +57,7 @@ mod tests {
         1 | expect_true(!x)
           | --------------- `expect_true(!x)` is not as clear as `expect_false(x)`.
           |
+          = help: Use `expect_false(x)` instead.
         Found 1 error.
         "
         );

@@ -51,6 +51,7 @@ mod tests {
         1 | ifelse(x > 0 & y < 10, TRUE, FALSE)
           | ----------------------------------- This `ifelse()` is redundant.
           |
+          = help: Use `condition` directly.
         Found 1 error.
         "
         );

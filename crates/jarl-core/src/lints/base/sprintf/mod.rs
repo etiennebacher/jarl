@@ -55,6 +55,7 @@ mod tests {
         1 | sprintf('a')
           | ------------ `sprintf()` without special characters is useless.
           |
+          = help: Use directly the input of `sprintf()` instead.
         Found 1 error.
         "
         );
@@ -122,6 +123,7 @@ mod tests {
         1 | sprintf('%a')
           | ------------- Mismatch between number of special characters and number of arguments.
           |
+          = help: Found 1 special character(s) and 0 argument(s).
         Found 1 error.
         "
         );
@@ -236,6 +238,7 @@ mod tests {
         3 | | 'a')
           | |____- `sprintf()` without special characters is useless.
           |
+          = help: Use directly the input of `sprintf()` instead.
         Found 1 error.
         "
         );

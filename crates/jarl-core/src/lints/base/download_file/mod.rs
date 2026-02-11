@@ -48,6 +48,7 @@ mod tests {
         1 | download.file(x)
           | ---------------- `download.file()` without explicit `mode` can cause portability issues on Windows.
           |
+          = help: Use mode = 'wb' instead.
         Found 1 error.
         "
         );

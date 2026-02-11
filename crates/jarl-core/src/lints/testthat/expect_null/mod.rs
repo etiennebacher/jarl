@@ -50,6 +50,7 @@ mod tests {
         1 | expect_equal(x, NULL)
           | --------------------- `expect_equal(x, NULL)` is not as clear as `expect_null(x)`.
           |
+          = help: Use `expect_null(x)` instead.
         Found 1 error.
         "
         );

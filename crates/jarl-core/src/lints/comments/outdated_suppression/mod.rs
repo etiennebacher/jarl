@@ -58,6 +58,7 @@ x <- 1", "outdated_suppression,any_is_na"), @r"
         2 | # jarl-ignore any_is_na: <reason>
           | --------------------------------- This suppression comment is unused, no violation would be reported without it.
           |
+          = help: Remove this suppression comment or verify that it's still needed.
         Found 1 error.
         "
         );
@@ -118,12 +119,14 @@ x == NA", "outdated_suppression,any_is_na,equals_na"), @r"
         3 | x == NA
           | ------- Comparing to NA with `==`, `!=` or `%in%` is problematic.
           |
+          = help: Use `is.na()` instead.
         warning: outdated_suppression
          --> <test>:2:1
           |
         2 | # jarl-ignore any_is_na: <reason>
           | --------------------------------- This suppression comment is unused, no violation would be reported without it.
           |
+          = help: Remove this suppression comment or verify that it's still needed.
         Found 2 errors.
         "
         );

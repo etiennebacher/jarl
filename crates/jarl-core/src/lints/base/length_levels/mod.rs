@@ -20,6 +20,7 @@ mod tests {
         1 | 2:length(levels(x))
           |   ----------------- `length(levels(...))` is less readable than `nlevels(...)`.
           |
+          = help: Use `nlevels(...)` instead.
         Found 1 error.
         "
         );

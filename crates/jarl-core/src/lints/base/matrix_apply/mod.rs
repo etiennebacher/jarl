@@ -39,6 +39,7 @@ mod tests {
         1 | apply(x, 1, sum)
           | ---------------- `apply(x, 1, sum)` is inefficient.
           |
+          = help: Use `rowSums(x)` instead.
         Found 1 error.
         "
         );

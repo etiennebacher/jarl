@@ -310,15 +310,18 @@ pub fn format_diagnostics(text: &str, rule: &str, min_r_version: Option<&str>) -
 /// Format diagnostics as they would appear in the console for snapshot testing,
 /// with custom settings.
 ///
-/// This function uses annotate_snippets (same as CLI output) to format diagnostics
-/// with line numbers and highlighted ranges.
+/// This function uses the shared `render_diagnostic()` (same rendering logic as
+/// the CLI) to format diagnostics with line numbers, highlighted ranges, and
+/// suggestion footers.
 pub fn format_diagnostics_with_settings(
     text: &str,
     rule: &str,
     min_r_version: Option<&str>,
     settings: Option<Settings>,
 ) -> String {
-    use annotate_snippets::{Level, Renderer, Snippet};
+    use annotate_snippets::Renderer;
+
+    use crate::diagnostic::render_diagnostic;
 
     let diagnostics = check_code_with_settings(text, rule, min_r_version, settings);
 
@@ -332,25 +335,13 @@ pub fn format_diagnostics_with_settings(
     let mut output = String::new();
 
     for diagnostic in &diagnostics {
-        let start_offset = usize::from(diagnostic.range.start());
-        let end_offset = usize::from(diagnostic.range.end());
-
-        // Build the snippet annotation
-        let snippet = Snippet::source(text)
-            .origin("<test>")
-            .fold(true)
-            .annotation(
-                Level::Warning
-                    .span(start_offset..end_offset)
-                    .label(&diagnostic.message.body),
-            );
-
-        // Create the message
-        let message = Level::Warning
-            .title(&diagnostic.message.name)
-            .snippet(snippet);
-
-        let rendered = renderer.render(message);
+        let rendered = render_diagnostic(
+            text,
+            "<test>",
+            &diagnostic.message.name,
+            diagnostic,
+            &renderer,
+        );
         output.push_str(&format!("{}\n", rendered));
     }
 

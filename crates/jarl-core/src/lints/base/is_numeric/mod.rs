@@ -39,6 +39,7 @@ mod tests {
         1 | is.numeric(x) || is.integer(x)
           | ------------------------------ `is.numeric(x) || is.integer(x)` is redundant.
           |
+          = help: Use `is.numeric(x)` instead. Use `is.double(x)` to test for objects stored as 64-bit floating point
         Found 1 error.
         "
         );

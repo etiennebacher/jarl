@@ -30,6 +30,7 @@ mod tests {
         1 | any(is.na(x))
           | ------------- `any(is.na(...))` is inefficient.
           |
+          = help: Use `anyNA(...)` instead.
         Found 1 error.
         "
         );

@@ -34,6 +34,7 @@ mod tests {
         1 | !(x >= y)
           | --------- Do not use `!(x >= y)`.
           |
+          = help: Use `x < y` instead.
         Found 1 error.
         "
         );
@@ -129,6 +130,7 @@ mod tests {
         2 | !(x >= y)
           | --------- Do not use `!(x >= y)`.
           |
+          = help: Use `x < y` instead.
         Found 1 error.
         "
         );

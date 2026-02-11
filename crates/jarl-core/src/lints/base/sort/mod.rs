@@ -34,6 +34,7 @@ mod tests {
         1 | x[order(x)]
           | ----------- `x[order(x)]` is inefficient.
           |
+          = help: Use `sort(x)` instead.
         Found 1 error.
         "
         );

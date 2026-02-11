@@ -59,12 +59,14 @@ f <- function() {
         2 | # jarl-ignore-start any_is_na: <reason>
           | --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-end` comment at the same nesting level.
         warning: unmatched_range_suppression
          --> <test>:5:3
           |
         5 |   # jarl-ignore-end any_is_na
           |   --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-start` comment at the same nesting level.
         Found 2 errors.
         "
         );
@@ -185,12 +187,14 @@ f <- function() {
         3 |   # jarl-ignore-start any_is_na: <reason>
           |   --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-end` comment at the same nesting level.
         warning: unmatched_range_suppression
          --> <test>:6:1
           |
         6 | # jarl-ignore-end any_is_na
           | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-start` comment at the same nesting level.
         Found 2 errors.
         "
         );

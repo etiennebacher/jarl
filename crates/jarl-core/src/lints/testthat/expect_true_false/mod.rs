@@ -31,6 +31,7 @@ mod tests {
         1 | expect_equal(foo(x), TRUE)
           | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
           |
+          = help: Use `expect_true(x)` instead.
         Found 1 error.
         "
         );

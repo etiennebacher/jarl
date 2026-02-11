@@ -20,6 +20,7 @@ mod tests {
         1 | x == NaN
           | -------- Comparing to NaN with `==`, `!=` or `%in%` is problematic.
           |
+          = help: Use `is.nan()` instead.
         Found 1 error.
         "
         );

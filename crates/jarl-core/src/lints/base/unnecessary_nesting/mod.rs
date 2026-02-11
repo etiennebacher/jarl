@@ -214,6 +214,7 @@ if (x) {
         6 | | }
           | |_- There is no need for nested if conditions here.
           |
+          = help: Gather the two conditions with `&&` instead.
         Found 1 error.
         "
         );

@@ -20,6 +20,7 @@ mod tests {
         1 | sapply(x, length)
           | ----------------- Using `length()` on each element of a list is inefficient.
           |
+          = help: Use `lengths()` instead.
         Found 1 error.
         "
         );

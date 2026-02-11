@@ -34,6 +34,7 @@ mod tests {
         1 | sample(1:10, 2)
           | --------------- `sample(1:n, m, ...)` is less readable than `sample.int(n, m, ...)`.
           |
+          = help: Use `sample.int(n, m, ...)` instead.
         Found 1 error.
         "
         );

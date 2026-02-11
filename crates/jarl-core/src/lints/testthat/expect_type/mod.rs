@@ -70,6 +70,7 @@ mod tests {
         1 | expect_equal(typeof(x), 'double')
           | --------------------------------- `expect_equal(typeof(x), t)` can be hard to read.
           |
+          = help: Use `expect_type(x, t)` instead.
         Found 1 error.
         "
         );
@@ -143,6 +144,7 @@ mod tests {
         2 | | 'integer')
           | |__________- `expect_equal(typeof(x), t)` can be hard to read.
           |
+          = help: Use `expect_type(x, t)` instead.
         Found 1 error.
         "
         );

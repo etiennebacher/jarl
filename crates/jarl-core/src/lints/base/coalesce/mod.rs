@@ -50,6 +50,7 @@ mod tests {
         1 | if (is.null(x)) y else x
           | ------------------------ `if (is.null(x)) y else x` can be simplified.
           |
+          = help: Use `x %||% y` instead.
         Found 1 error.
         "
         );

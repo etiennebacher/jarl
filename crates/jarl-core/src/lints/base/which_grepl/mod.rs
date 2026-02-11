@@ -20,6 +20,7 @@ mod tests {
         1 | which(grepl('^a', x))
           | --------------------- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
+          = help: Use `grep(pattern, x)` instead.
         Found 1 error.
         "
         );

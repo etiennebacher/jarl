@@ -44,6 +44,7 @@ mod tests {
         1 | do.call(cbind.data.frame, x)
           | ---------------------------- `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
           |
+          = help: Use `list2DF(x)` instead.
         Found 1 error.
         "
         );
@@ -141,6 +142,7 @@ mod tests {
         3 | | cbind.data.frame, x)
           | |____________________- `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
           |
+          = help: Use `list2DF(x)` instead.
         Found 1 error.
         "
         );

@@ -38,6 +38,7 @@ mod tests {
         1 | if (all.equal(a, b, tolerance = 1e-3)) message('equal')
           |     --------------------------------- `all.equal()` can return a string instead of FALSE.
           |
+          = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
         Found 1 error.
         "
         );

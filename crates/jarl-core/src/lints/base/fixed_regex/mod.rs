@@ -68,6 +68,7 @@ mod tests {
         1 | grepl('abcdefg', x)
           | ------------------- Pattern contains no regex special characters but `fixed = TRUE` is not set.
           |
+          = help: Add `fixed = TRUE` for better performance.
         Found 1 error.
         "
         );
@@ -210,6 +211,7 @@ mod tests {
         4 | | )
           | |_- Pattern contains no regex special characters but `fixed = TRUE` is not set.
           |
+          = help: Add `fixed = TRUE` for better performance.
         Found 1 error.
         "
         );

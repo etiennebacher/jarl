@@ -67,6 +67,7 @@ mod tests {
         1 | substr(x, 1, 2) == 'ab'
           | ----------------------- Using `substr()` to detect an initial substring is hard to read and inefficient.
           |
+          = help: Use `startsWith()` instead.
         Found 1 error.
         "
         );
@@ -223,6 +224,7 @@ mod tests {
         3 | | 1, 2) == 'ab'
           | |_____________- Using `substr()` to detect an initial substring is hard to read and inefficient.
           |
+          = help: Use `startsWith()` instead.
         Found 1 error.
         "
         );

@@ -40,6 +40,7 @@ mod tests {
         1 | any(!x)
           | ------- `any(!x)` may be hard to read.
           |
+          = help: Use `!all(x)` instead.
         Found 1 error.
         "
         );

@@ -20,6 +20,7 @@ mod tests {
         1 | while (TRUE) { }
           | ------------ `while (TRUE)` is less clear than `repeat` for infinite loops.
           |
+          = help: Use `repeat {}` instead.
         Found 1 error.
         "
         );

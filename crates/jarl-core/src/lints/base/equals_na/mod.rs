@@ -20,6 +20,7 @@ mod tests {
         1 | x == NA
           | ------- Comparing to NA with `==`, `!=` or `%in%` is problematic.
           |
+          = help: Use `is.na()` instead.
         Found 1 error.
         "
         );

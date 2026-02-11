@@ -30,6 +30,7 @@ any(is.na(x))"), @r"
         2 | # jarl-ignore any_is_na
           | ----------------------- This comment isn't used by Jarl because it is missing an explanation.
           |
+          = help: Add an explanation after the colon, e.g., `# jarl-ignore rule: <reason>`.
         Found 1 error.
         "
         );

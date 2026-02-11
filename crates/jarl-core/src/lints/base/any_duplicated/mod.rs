@@ -30,6 +30,7 @@ mod tests {
         1 | any(duplicated(x))
           | ------------------ `any(duplicated(...))` is inefficient.
           |
+          = help: Use `anyDuplicated(...) > 0` instead.
         Found 1 error.
         "
         );

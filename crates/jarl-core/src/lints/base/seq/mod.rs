@@ -32,6 +32,7 @@ mod tests {
         1 | 1:length(x)
           | ----------- `1:length(...)` can be wrong if the RHS is 0.
           |
+          = help: Use `seq_along(...)` instead.
         Found 1 error.
         "
         );
@@ -198,6 +199,7 @@ mod tests {
         3 | | foo(x))
           | |_______- `1:length(...)` can be wrong if the RHS is 0.
           |
+          = help: Use `seq_along(...)` instead.
         Found 1 error.
         "
         );

@@ -48,6 +48,7 @@ x <- 1",
         1 | any(is.na(x)) # jarl-ignore any_is_na: <reason>
           |               --------------------------------- This comment isn't used by Jarl because end-of-line suppressions are not supported.
           |
+          = help: Move the suppression comment to its own line above the code you want to suppress.
         Found 1 error.
         "
         );

@@ -20,6 +20,7 @@ mod tests {
         1 | x == NULL
           | --------- Comparing to NULL with `==`, `!=` or `%in%` is problematic.
           |
+          = help: Use `is.null()` instead.
         Found 1 error.
         "
         );

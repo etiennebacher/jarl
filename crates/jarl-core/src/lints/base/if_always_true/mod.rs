@@ -52,6 +52,7 @@ mod tests {
         1 | if (TRUE) print('hi')
           |     ---- `if` condition always evaluates to `TRUE`.
           |
+          = help: Modify the `if` condition, or keep only the body.
         Found 1 error.
         "
         );
