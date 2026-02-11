@@ -20,7 +20,8 @@ any_is_na(x)"), @r"
           | ------------- This comment isn't used by Jarl because it is missing a rule to ignore.
           |
         Found 1 error.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 #jarl-ignore
@@ -32,7 +33,8 @@ any_is_na(x)"), @r"
           | ------------ This comment isn't used by Jarl because it is missing a rule to ignore.
           |
         Found 1 error.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 #jarl-ignore: <reason>
@@ -44,7 +46,8 @@ any_is_na(x)"), @r"
           | ---------------------- This comment isn't used by Jarl because it is missing a rule to ignore.
           |
         Found 1 error.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore : <reason>
@@ -56,6 +59,7 @@ any_is_na(x)"), @r"
           | ------------------------ This comment isn't used by Jarl because it is missing a rule to ignore.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 }

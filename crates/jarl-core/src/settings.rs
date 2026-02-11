@@ -5,12 +5,12 @@
 // MIT License - Posit PBC
 
 /// Resolved configuration settings used within jarl
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Settings {
     pub linter: LinterSettings,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct LinterSettings {
     pub select: Option<Vec<String>>,
     pub extend_select: Option<Vec<String>>,

@@ -66,7 +66,8 @@ f <- function() {
           |   --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
@@ -87,7 +88,8 @@ if (a) {
           |   --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
@@ -108,7 +110,8 @@ while (a) {
           |   --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
@@ -129,7 +132,8 @@ for (i in 1:10) {
           |   --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
@@ -150,7 +154,8 @@ repeat {
           |   --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
@@ -162,7 +167,8 @@ any(is.na(x))"), @r"
           | --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -186,7 +192,8 @@ f <- function() {
           | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 if (a) {
@@ -207,7 +214,8 @@ if (a) {
           | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 while (a) {
@@ -228,7 +236,8 @@ while (a) {
           | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 for (i in 1:10) {
@@ -249,7 +258,8 @@ for (i in 1:10) {
           | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 repeat {
@@ -270,7 +280,8 @@ repeat {
           | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 any(is.na(x))
@@ -282,6 +293,7 @@ any(is.na(x))
           | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 }

@@ -31,7 +31,8 @@ any(is.na(x))"), @r"
           | ----------------------- This comment isn't used by Jarl because it is missing an explanation.
           |
         Found 1 error.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore any_is_na:
@@ -43,9 +44,12 @@ any(is.na(x))"), @r"
           | ------------------------ This comment isn't used by Jarl because it is missing an explanation.
           |
         Found 1 error.
-        ");
+        "
+        );
 
-        insta::assert_snapshot!(snapshot_lint(
+        insta::assert_snapshot!(
+
+            snapshot_lint(
             "\n# jarl-ignore any_is_na:     \nany(is.na(x))"), @r"
         warning: unexplained_suppression
          --> <test>:2:1
@@ -54,6 +58,7 @@ any(is.na(x))"), @r"
           | ----------------------------- This comment isn't used by Jarl because it is missing an explanation.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 }

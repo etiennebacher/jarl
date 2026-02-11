@@ -48,7 +48,8 @@ any(is.na(x))"), @r"
           | -------------------------------- This comment isn't used by Jarl because it contains an unrecognized rule name.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -63,7 +64,8 @@ any(is.na(x))"), @r"
           | --------------------------------------------- This comment isn't used by Jarl because it contains an unrecognized rule name.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -79,7 +81,8 @@ any(is.na(x))
           | --------------------------------------- This comment isn't used by Jarl because it contains an unrecognized rule name.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -95,6 +98,7 @@ any(is.na(x))
           | --------------------------- This comment isn't used by Jarl because it contains an unrecognized rule name.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 }

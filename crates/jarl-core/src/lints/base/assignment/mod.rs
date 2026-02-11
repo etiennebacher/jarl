@@ -3,21 +3,122 @@ pub(crate) mod assignment;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "assignment", None)
+    }
 
     #[test]
     fn test_lint_assignment() {
-        use insta::assert_snapshot;
-
-        let expected_message = "Use `<-` for assignment";
-        expect_lint("blah=1", expected_message, "assignment", None);
-        expect_lint("blah = 1", expected_message, "assignment", None);
-        expect_lint("blah = fun(1)", expected_message, "assignment", None);
-        expect_lint("names(blah) = 'a'", expected_message, "assignment", None);
-        expect_lint("x[[1]] = 2", expected_message, "assignment", None);
-        expect_lint("fun((blah = fun(1)))", expected_message, "assignment", None);
-        expect_lint("1 -> fun", expected_message, "assignment", None);
-        expect_lint("1 -> names(fun)", expected_message, "assignment", None);
-        expect_lint("2 -> x[[1]]", expected_message, "assignment", None);
+        assert_snapshot!(
+            snapshot_lint("blah=1"),
+            @r"
+        warning: assignment
+         --> <test>:1:1
+          |
+        1 | blah=1
+          | ----- Use `<-` for assignment.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("blah = 1"),
+            @r"
+        warning: assignment
+         --> <test>:1:1
+          |
+        1 | blah = 1
+          | ------ Use `<-` for assignment.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("blah = fun(1)"),
+            @r"
+        warning: assignment
+         --> <test>:1:1
+          |
+        1 | blah = fun(1)
+          | ------ Use `<-` for assignment.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("names(blah) = 'a'"),
+            @r"
+        warning: assignment
+         --> <test>:1:1
+          |
+        1 | names(blah) = 'a'
+          | ------------- Use `<-` for assignment.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("x[[1]] = 2"),
+            @r"
+        warning: assignment
+         --> <test>:1:1
+          |
+        1 | x[[1]] = 2
+          | -------- Use `<-` for assignment.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("fun((blah = fun(1)))"),
+            @r"
+        warning: assignment
+         --> <test>:1:6
+          |
+        1 | fun((blah = fun(1)))
+          |      ------ Use `<-` for assignment.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("1 -> fun"),
+            @r"
+        warning: assignment
+         --> <test>:1:3
+          |
+        1 | 1 -> fun
+          |   ------ Use `<-` for assignment.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("1 -> names(fun)"),
+            @r"
+        warning: assignment
+         --> <test>:1:3
+          |
+        1 | 1 -> names(fun)
+          |   ------------- Use `<-` for assignment.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("2 -> x[[1]]"),
+            @r"
+        warning: assignment
+         --> <test>:1:3
+          |
+        1 | 2 -> x[[1]]
+          |   --------- Use `<-` for assignment.
+          |
+        Found 1 error.
+        "
+        );
 
         assert_snapshot!(
             "fix_output",

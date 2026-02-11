@@ -59,7 +59,8 @@ x <- 1", "outdated_suppression,any_is_na"), @r"
           | --------------------------------- This suppression comment is unused, no violation would be reported without it.
           |
         Found 1 error.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore any_is_na: <reason>
@@ -73,7 +74,8 @@ f <- function(x) {
           | --------------------------------- This suppression comment is unused, no violation would be reported without it.
           |
         Found 1 error.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-file any_is_na: <reason>
@@ -86,7 +88,8 @@ y <- 2", "outdated_suppression,any_is_na"), @r"
           | -------------------------------------- This suppression comment is unused, no violation would be reported without it.
           |
         Found 1 error.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
@@ -100,7 +103,8 @@ y <- 2", "outdated_suppression,any_is_na"), @r"
           | --------------------------------------- This suppression comment is unused, no violation would be reported without it.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -121,6 +125,7 @@ x == NA", "outdated_suppression,any_is_na,equals_na"), @r"
           | --------------------------------- This suppression comment is unused, no violation would be reported without it.
           |
         Found 2 errors.
-        ");
+        "
+        );
     }
 }
