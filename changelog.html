@@ -188,6 +188,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#development-version" id="toc-development-version" class="nav-link" data-scroll-target="#development-version">Development version</a>
   <ul class="collapse">
+  <li><a href="#deprecations" id="toc-deprecations" class="nav-link" data-scroll-target="#deprecations">Deprecations</a></li>
   <li><a href="#features" id="toc-features" class="nav-link" data-scroll-target="#features">Features</a></li>
   </ul></li>
   <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section">0.4.0</a>
@@ -242,6 +243,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h1>Changelog</h1>
 <section id="development-version" class="level2">
 <h2 class="anchored" data-anchor-id="development-version">Development version</h2>
+<section id="deprecations" class="level3">
+<h3 class="anchored" data-anchor-id="deprecations">Deprecations</h3>
+<ul>
+<li><p>The command-line argument <code>--assignment</code> and the <code>jarl.toml</code> argument <code>assignment</code> are both deprecated. Instead, you should use the following code in <code>jarl.toml</code>:</p>
+<pre><code>[lint.assignment]
+operator = "&lt;-" # or "="</code></pre>
+<p>More info on these rule-specific options in <code>jarl.toml</code> in the “Features” section below (#334).</p></li>
+</ul>
+</section>
 <section id="features" class="level3">
 <h3 class="anchored" data-anchor-id="features">Features</h3>
 <ul>
@@ -315,7 +325,7 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <li><p><code>fixed_regex</code> is now correctly classified as “Performance” instead of “Readability” rule internally (#279).</p></li>
 <li><p>Default values of function parameters are now analyzed too (#282).</p></li>
 <li><p><code>duplicated_arguments</code> doesn’t report anymore cases where argument names <code>"</code> and <code>'</code> were conflated, e.g.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="cf">switch</span>(x, <span class="st">`</span><span class="at">"</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"double"</span>, <span class="st">`</span><span class="at">'</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"single"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="cf">switch</span>(x, <span class="st">`</span><span class="at">"</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"double"</span>, <span class="st">`</span><span class="at">'</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"single"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>(#288).</p></li>
 </ul>
 </section>
@@ -356,10 +366,10 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <h3 class="anchored" data-anchor-id="fixes">Fixes</h3>
 <ul>
 <li><p><code># nolint</code> comments are now properly applied to nodes that are function arguments, e.g.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">foo</span>(</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># nolint</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(x))</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">foo</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># nolint</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(x))</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>does not report a violation anymore (#229).</p></li>
 </ul>
 </section>
