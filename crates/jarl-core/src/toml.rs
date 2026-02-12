@@ -13,9 +13,9 @@ use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 
+use crate::rule_options::ResolvedRuleOptions;
 use crate::rule_options::duplicated_arguments::DuplicatedArgumentsOptions;
 use crate::rule_options::unreachable_code::UnreachableCodeOptions;
-use crate::rule_options::ResolvedRuleOptions;
 use crate::settings::LinterSettings;
 use crate::settings::Settings;
 

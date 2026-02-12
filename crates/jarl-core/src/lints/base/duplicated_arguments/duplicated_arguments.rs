@@ -25,10 +25,7 @@ use biome_rowan::AstNode;
 /// ```r
 /// list(x = 1, x = 2)
 /// ```
-pub fn duplicated_arguments(
-    ast: &RCall,
-    checker: &Checker,
-) -> anyhow::Result<Option<Diagnostic>> {
+pub fn duplicated_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
 
     let fun_name = match function? {

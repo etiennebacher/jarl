@@ -20,7 +20,6 @@ use std::sync::Arc;
 use crate::analyze;
 use crate::config::Config;
 use crate::diagnostic::*;
-use crate::rule_options::ResolvedRuleOptions;
 use crate::fix::*;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
@@ -32,6 +31,7 @@ use crate::lints::comments::unexplained_suppression::unexplained_suppression::un
 use crate::lints::comments::unmatched_range_suppression::unmatched_range_suppression::{
     unmatched_range_suppression_end, unmatched_range_suppression_start,
 };
+use crate::rule_options::ResolvedRuleOptions;
 use crate::rule_set::RuleSet;
 use crate::utils::*;
 
