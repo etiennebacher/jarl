@@ -229,9 +229,7 @@ impl TomlOptions {
         // track whether the deprecated top-level string form was used.
         let (assignment_options, deprecated_assignment_syntax) = match &linter.assignment {
             Some(AssignmentConfig::Legacy(value)) => (
-                Some(AssignmentOptions {
-                    operator: Some(value.clone()),
-                }),
+                Some(AssignmentOptions { operator: Some(value.clone()) }),
                 true,
             ),
             Some(AssignmentConfig::Options(opts)) => (Some(opts.clone()), false),

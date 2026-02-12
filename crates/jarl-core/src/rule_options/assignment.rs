@@ -45,9 +45,7 @@ impl<'de> serde::de::Visitor<'de> for AssignmentConfigVisitor {
     type Value = AssignmentConfig;
 
     fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str(
-            "a string (e.g. `assignment = \"<-\"`) or a table (e.g. `[lint.assignment]`)",
-        )
+        f.write_str("a string (e.g. `assignment = \"<-\"`) or a table (e.g. `[lint.assignment]`)")
     }
 
     fn visit_str<E: serde::de::Error>(self, value: &str) -> Result<Self::Value, E> {
@@ -58,9 +56,8 @@ impl<'de> serde::de::Visitor<'de> for AssignmentConfigVisitor {
     where
         M: serde::de::MapAccess<'de>,
     {
-        let opts = AssignmentOptions::deserialize(
-            serde::de::value::MapAccessDeserializer::new(map),
-        )?;
+        let opts =
+            AssignmentOptions::deserialize(serde::de::value::MapAccessDeserializer::new(map))?;
         Ok(AssignmentConfig::Options(opts))
     }
 }

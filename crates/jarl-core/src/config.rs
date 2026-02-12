@@ -617,12 +617,8 @@ fn filter_rules_by_version(rules: &RuleSet, minimum_r_version: Option<(u32, u32,
 
 fn parse_assignment_cli(value: &str) -> Result<ResolvedAssignmentOptions> {
     match value {
-        "<-" => Ok(ResolvedAssignmentOptions {
-            operator: RSyntaxKind::ASSIGN,
-        }),
-        "=" => Ok(ResolvedAssignmentOptions {
-            operator: RSyntaxKind::EQUAL,
-        }),
+        "<-" => Ok(ResolvedAssignmentOptions { operator: RSyntaxKind::ASSIGN }),
+        "=" => Ok(ResolvedAssignmentOptions { operator: RSyntaxKind::EQUAL }),
         _ => Err(anyhow::anyhow!(
             "Invalid value in `--assignment`: {}",
             value
