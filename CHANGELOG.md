@@ -15,7 +15,7 @@
   [lint.duplicated-arguments]
   extend-skipped-functions = ["my_function", "list"]
   ```
-  (#333)
+  These options are listed in the [Configuration page](https://jarl.etiennebacher.com/config#with-a-config-file) (#333).
 
 ## 0.4.0
 
