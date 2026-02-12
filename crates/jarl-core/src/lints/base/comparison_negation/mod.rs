@@ -32,7 +32,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | !(x >= y)
-          | --------- Do not use `!(x >= y)`.
+          | --------- `!(x >= y)` can be simplified.
           |
           = help: Use `x < y` instead.
         Found 1 error.
@@ -45,7 +45,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | !(x > y)
-          | -------- Do not use `!(x > y)`.
+          | -------- `!(x > y)` can be simplified.
           |
           = help: Use `x <= y` instead.
         Found 1 error.
@@ -58,7 +58,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | !(x <= y)
-          | --------- Do not use `!(x <= y)`.
+          | --------- `!(x <= y)` can be simplified.
           |
           = help: Use `x > y` instead.
         Found 1 error.
@@ -71,7 +71,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | !(x < y)
-          | -------- Do not use `!(x < y)`.
+          | -------- `!(x < y)` can be simplified.
           |
           = help: Use `x >= y` instead.
         Found 1 error.
@@ -84,7 +84,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | !(x == y)
-          | --------- Do not use `!(x == y)`.
+          | --------- `!(x == y)` can be simplified.
           |
           = help: Use `x != y` instead.
         Found 1 error.
@@ -97,7 +97,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | !(x != y)
-          | --------- Do not use `!(x != y)`.
+          | --------- `!(x != y)` can be simplified.
           |
           = help: Use `x == y` instead.
         Found 1 error.
@@ -133,7 +133,7 @@ mod tests {
          --> <test>:2:1
           |
         2 | !(x >= y)
-          | --------- Do not use `!(x >= y)`.
+          | --------- `!(x >= y)` can be simplified.
           |
           = help: Use `x < y` instead.
         Found 1 error.
@@ -148,7 +148,7 @@ mod tests {
         1 | / !(x 
         2 | |  # hello there 
         3 | |  >= y)
-          | |______- Do not use `!(x >= y)`.
+          | |______- `!(x >= y)` can be simplified.
           |
           = help: Use `x < y` instead.
         Found 1 error.
@@ -161,7 +161,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | !(x >= y) # trailing comment
-          | --------- Do not use `!(x >= y)`.
+          | --------- `!(x >= y)` can be simplified.
           |
           = help: Use `x < y` instead.
         Found 1 error.
