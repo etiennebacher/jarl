@@ -36,7 +36,7 @@ mod tests {
          --> <test>:1:5
           |
         1 | if (all.equal(a, b, tolerance = 1e-3)) message('equal')
-          |     --------------------------------- `all.equal()` can return a string instead of FALSE.
+          |     --------------------------------- If `all.equal()` is false, it will return a string and not `FALSE`.
           |
           = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
         Found 1 error.
@@ -49,7 +49,7 @@ mod tests {
          --> <test>:1:5
           |
         1 | if (all.equal(a, b)) message('equal')
-          |     --------------- `all.equal()` can return a string instead of FALSE.
+          |     --------------- If `all.equal()` is false, it will return a string and not `FALSE`.
           |
           = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
         Found 1 error.
@@ -62,7 +62,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | !all.equal(a, b)
-          | ---------------- `all.equal()` can return a string instead of FALSE.
+          | ---------------- If `all.equal()` is false, it will return a string and not `FALSE`.
           |
           = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
         Found 1 error.
@@ -75,7 +75,7 @@ mod tests {
          --> <test>:1:8
           |
         1 | while (all.equal(a, b)) message('equal')
-          |        --------------- `all.equal()` can return a string instead of FALSE.
+          |        --------------- If `all.equal()` is false, it will return a string and not `FALSE`.
           |
           = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
         Found 1 error.

@@ -87,7 +87,7 @@ pub fn all_equal(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    let msg = "`all.equal()` can return a string instead of FALSE.".to_string();
+    let msg = "If `all.equal()` is false, it will return a string and not `FALSE`.".to_string();
     let mut range = ast.syntax().text_trimmed_range();
 
     let fix_content = if ast.parent_is_bang_unary() {
