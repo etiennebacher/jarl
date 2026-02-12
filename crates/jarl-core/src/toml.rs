@@ -14,6 +14,8 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use crate::rule_options::ResolvedRuleOptions;
+use crate::rule_options::assignment::AssignmentConfig;
+use crate::rule_options::assignment::AssignmentOptions;
 use crate::rule_options::duplicated_arguments::DuplicatedArgumentsOptions;
 use crate::rule_options::unreachable_code::UnreachableCodeOptions;
 use crate::settings::LinterSettings;
@@ -170,9 +172,9 @@ pub struct LinterTomlOptions {
     pub default_exclude: Option<bool>,
     /// # Assignment operator to use
     ///
-    /// This can be either `"<-"` or `"="`. Both are valid in R, so this
-    /// option is useful to ensure consistency in a project.
-    pub assignment: Option<String>,
+    /// Accepts either the legacy form `assignment = "<-"` (deprecated) or the
+    /// new table form `[lint.assignment]` with an `operator` field.
+    pub assignment: Option<AssignmentConfig>,
 
     /// # Options for the `duplicated_arguments` rule
     ///
@@ -223,16 +225,30 @@ impl TomlOptions {
     pub fn into_settings(self, _root: &Path) -> anyhow::Result<Settings> {
         let linter = self.lint.unwrap_or_default();
 
+        // Resolve the assignment config: extract the AssignmentOptions and
+        // track whether the deprecated top-level string form was used.
+        let (assignment_options, deprecated_assignment_syntax) = match &linter.assignment {
+            Some(AssignmentConfig::Legacy(value)) => (
+                Some(AssignmentOptions {
+                    operator: Some(value.clone()),
+                }),
+                true,
+            ),
+            Some(AssignmentConfig::Options(opts)) => (Some(opts.clone()), false),
+            None => (None, false),
+        };
+
         let linter = LinterSettings {
             select: linter.select,
             extend_select: linter.extend_select,
             ignore: linter.ignore,
-            assignment: linter.assignment,
             exclude: linter.exclude,
             default_exclude: linter.default_exclude,
             fixable: linter.fixable,
             unfixable: linter.unfixable,
+            deprecated_assignment_syntax,
             rule_options: ResolvedRuleOptions::resolve(
+                assignment_options.as_ref(),
                 linter.duplicated_arguments.as_ref(),
                 linter.unreachable_code.as_ref(),
             )?,

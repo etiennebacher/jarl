@@ -1,6 +1,9 @@
+pub mod assignment;
 pub mod duplicated_arguments;
 pub mod unreachable_code;
 
+use assignment::AssignmentOptions;
+use assignment::ResolvedAssignmentOptions;
 use duplicated_arguments::DuplicatedArgumentsOptions;
 use duplicated_arguments::ResolvedDuplicatedArgumentsOptions;
 use std::collections::HashSet;
@@ -52,16 +55,19 @@ pub fn resolve_with_extend(
 ///    `resolve()` in `into_settings()`.
 #[derive(Clone, Debug)]
 pub struct ResolvedRuleOptions {
+    pub assignment: ResolvedAssignmentOptions,
     pub duplicated_arguments: ResolvedDuplicatedArgumentsOptions,
     pub unreachable_code: ResolvedUnreachableCodeOptions,
 }
 
 impl ResolvedRuleOptions {
     pub fn resolve(
+        assignment: Option<&AssignmentOptions>,
         duplicated_arguments: Option<&DuplicatedArgumentsOptions>,
         unreachable_code: Option<&UnreachableCodeOptions>,
     ) -> anyhow::Result<Self> {
         Ok(Self {
+            assignment: ResolvedAssignmentOptions::resolve(assignment)?,
             duplicated_arguments: ResolvedDuplicatedArgumentsOptions::resolve(
                 duplicated_arguments,
             )?,
@@ -72,6 +78,6 @@ impl ResolvedRuleOptions {
 
 impl Default for ResolvedRuleOptions {
     fn default() -> Self {
-        Self::resolve(None, None).expect("default rule options should always resolve")
+        Self::resolve(None, None, None).expect("default rule options should always resolve")
     }
 }

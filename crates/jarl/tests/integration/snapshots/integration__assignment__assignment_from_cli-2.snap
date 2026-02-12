@@ -23,6 +23,7 @@ Found 2 errors.
 2 fixable with the `--fix` option.
 
 ----- stderr -----
+Warning: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
 
 ----- args -----
 check . --select assignment --assignment =

@@ -10,6 +10,8 @@ use air_workspace::resolve::PathResolver;
 use anyhow::Result;
 use std::{collections::HashSet, fs, path::PathBuf};
 
+use crate::rule_options::assignment::ResolvedAssignmentOptions;
+
 /// Parsed rule selection from CLI or TOML configuration.
 /// Contains selected rules, extended rules, and ignored rules.
 #[derive(Debug)]
@@ -72,9 +74,6 @@ pub struct Config {
     pub allow_dirty: bool,
     /// Apply fixes even if there is no version control system?
     pub allow_no_vcs: bool,
-    /// Which assignment operator to use? Can be `RSyntaxKind::ASSIGN` or
-    /// `RSyntaxKind::EQUAL`.
-    pub assignment: RSyntaxKind,
     /// Rules that should not have their fixes applied (from unfixable setting)
     pub unfixable: HashSet<String>,
     /// Rules that are allowed to have fixes applied (from fixable setting)
@@ -152,10 +151,14 @@ pub fn build_config(
         rules_to_apply
     };
 
-    let assignment = parse_assignment(check_config, toml_settings)?;
-    let rule_options = toml_settings
+    let mut rule_options = toml_settings
         .map(|s| s.linter.rule_options.clone())
         .unwrap_or_default();
+
+    // CLI --assignment overrides the TOML-resolved value
+    if let Some(cli_assignment) = &check_config.assignment {
+        rule_options.assignment = parse_assignment_cli(cli_assignment)?;
+    }
 
     Ok(Config {
         paths,
@@ -166,7 +169,6 @@ pub fn build_config(
         minimum_r_version,
         allow_dirty: check_config.allow_dirty,
         allow_no_vcs: check_config.allow_no_vcs,
-        assignment,
         unfixable: unfixable_toml,
         fixable: fixable_toml,
         rule_options,
@@ -613,50 +615,17 @@ fn filter_rules_by_version(rules: &RuleSet, minimum_r_version: Option<(u32, u32,
     }
 }
 
-fn parse_assignment(
-    check_config: &ArgsConfig,
-    toml_settings: Option<&Settings>,
-) -> Result<RSyntaxKind> {
-    let out: RSyntaxKind;
-
-    if let Some(assignment) = &check_config.assignment {
-        match assignment.as_str() {
-            "<-" => {
-                out = RSyntaxKind::ASSIGN;
-            }
-            "=" => {
-                out = RSyntaxKind::EQUAL;
-            }
-            _ => {
-                return Err(anyhow::anyhow!(
-                    "Invalid value in `--assignment`: {}",
-                    assignment
-                ));
-            }
-        }
-    } else if let Some(settings) = toml_settings {
-        let assignment = &settings.linter.assignment;
-        if let Some(assignment) = assignment {
-            match assignment.as_str() {
-                "<-" => {
-                    out = RSyntaxKind::ASSIGN;
-                }
-                "=" => {
-                    out = RSyntaxKind::EQUAL;
-                }
-                _ => {
-                    return Err(anyhow::anyhow!(
-                        "Invalid value in `--assignment`: {}",
-                        assignment
-                    ));
-                }
-            }
-        } else {
-            out = RSyntaxKind::ASSIGN;
-        }
-    } else {
-        out = RSyntaxKind::ASSIGN;
-    };
-
-    Ok(out)
+fn parse_assignment_cli(value: &str) -> Result<ResolvedAssignmentOptions> {
+    match value {
+        "<-" => Ok(ResolvedAssignmentOptions {
+            operator: RSyntaxKind::ASSIGN,
+        }),
+        "=" => Ok(ResolvedAssignmentOptions {
+            operator: RSyntaxKind::EQUAL,
+        }),
+        _ => Err(anyhow::anyhow!(
+            "Invalid value in `--assignment`: {}",
+            value
+        )),
+    }
 }

@@ -120,7 +120,7 @@ pub struct CheckCommand {
     #[arg(
         long,
         value_enum,
-        help = "Assignment operator to use, can be either `<-` or `=`."
+        help = "[DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`."
     )]
     pub assignment: Option<String>,
     #[arg(

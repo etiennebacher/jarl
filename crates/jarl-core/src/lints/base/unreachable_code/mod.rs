@@ -4,6 +4,7 @@ pub(crate) mod unreachable_code;
 #[cfg(test)]
 mod tests {
     use crate::rule_options::ResolvedRuleOptions;
+    use crate::rule_options::unreachable_code::ResolvedUnreachableCodeOptions;
     use crate::rule_options::unreachable_code::UnreachableCodeOptions;
     use crate::settings::{LinterSettings, Settings};
     use crate::utils_test::*;
@@ -21,7 +22,11 @@ mod tests {
     fn settings_with_options(options: UnreachableCodeOptions) -> Settings {
         Settings {
             linter: LinterSettings {
-                rule_options: ResolvedRuleOptions::resolve(None, Some(&options)).unwrap(),
+                rule_options: ResolvedRuleOptions {
+                    unreachable_code: ResolvedUnreachableCodeOptions::resolve(Some(&options))
+                        .unwrap(),
+                    ..Default::default()
+                },
                 ..Default::default()
             },
         }

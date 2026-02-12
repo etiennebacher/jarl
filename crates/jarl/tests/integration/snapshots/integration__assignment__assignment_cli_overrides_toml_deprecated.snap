@@ -24,6 +24,7 @@ Found 2 errors.
 
 ----- stderr -----
 Warning: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
+Warning: `assignment = "..."` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator = "..."` instead.
 
 ----- args -----
 check . --select assignment --assignment =

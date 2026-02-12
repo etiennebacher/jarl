@@ -1,6 +1,6 @@
 ---
 source: crates/jarl/tests/integration/assignment.rs
-expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--select\").arg(\"assignment\").arg(\"--assignment\").arg(\"<-\").run().normalize_os_executable_name()"
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--select\").arg(\"assignment\").run().normalize_os_executable_name()"
 ---
 success: false
 exit_code: 1
@@ -23,7 +23,7 @@ Found 2 errors.
 2 fixable with the `--fix` option.
 
 ----- stderr -----
-Warning: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
+Warning: `assignment = "..."` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator = "..."` instead.
 
 ----- args -----
-check . --select assignment --assignment <-
+check . --select assignment

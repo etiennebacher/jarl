@@ -85,6 +85,25 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
 
     let config = build_config(&check_config, &resolver, paths)?;
 
+    // Emit deprecation warnings for old assignment syntax
+    if check_config.assignment.is_some() {
+        eprintln!(
+            "{}: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.",
+            "Warning".yellow().bold()
+        );
+    }
+
+    // Check if the deprecated `assignment = "..."` top-level string form was used in TOML
+    for item in resolver.items() {
+        if item.value().linter.deprecated_assignment_syntax {
+            eprintln!(
+                "{}: `assignment = \"...\"` in `[lint]` is deprecated. \
+                 Use `[lint.assignment]` with `operator = \"...\"` instead.",
+                "Warning".yellow().bold()
+            );
+        }
+    }
+
     let file_results = jarl_core::check::check(config);
 
     let mut all_errors = Vec::new();

@@ -2,6 +2,17 @@
 
 ## Development version
 
+### Deprecations
+
+* The command-line argument `--assignment` and the `jarl.toml` argument `assignment`
+  are both deprecated. Instead, you should use the following code in `jarl.toml`:
+  ```
+  [lint.assignment]
+  operator = "<-" # or "="
+  ```
+  More info on these rule-specific sections in `jarl.toml` in the "Features"
+  section below (#334).
+
 ### Features
 
 * `jarl.toml` now accepts rule-specific options in subsections `[lint.<rule-name>]`,

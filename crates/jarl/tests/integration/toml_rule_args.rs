@@ -106,6 +106,34 @@ unknown-option = ["list"]
 }
 
 #[test]
+fn test_assignment_unknown_field_is_error() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint.assignment]
+unknown-option = "foo"
+"#,
+    )?;
+
+    std::fs::write(directory.join("test.R"), "x <- 1")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths()
+    );
+
+    Ok(())
+}
+
+#[test]
 fn test_unreachable_code_unknown_field_is_error() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();

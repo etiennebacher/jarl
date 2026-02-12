@@ -9,10 +9,10 @@ exit_code: 255
 ----- stderr -----
 jarl failed
   Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-TOML parse error at line 3, column 14
+TOML parse error at line 3, column 12
   |
-3 | assignment = 1
-  |              ^
+3 | operator = 1
+  |            ^
 invalid type: integer `1`, expected a string
 
 

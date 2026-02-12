@@ -6,8 +6,8 @@ use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
 use air_r_syntax::RExpressionList;
 use air_r_syntax::{
-    AnyRExpression, RBinaryExpressionFields, RForStatementFields, RIfStatementFields, RSyntaxKind,
-    RSyntaxNode, RWhileStatementFields,
+    AnyRExpression, RBinaryExpressionFields, RForStatementFields, RIfStatementFields, RSyntaxNode,
+    RWhileStatementFields,
 };
 use anyhow::{Context, Result};
 use biome_rowan::{AstNode, AstNodeList};
@@ -120,24 +120,17 @@ pub struct Checker {
     pub minimum_r_version: Option<(u32, u32, u32)>,
     // Tracks comment-based suppression directives like `# jarl-ignore`
     pub suppression: SuppressionManager,
-    // Which assignment operator is preferred?
-    pub assignment: RSyntaxKind,
     // Per-rule options resolved from configuration
     pub rule_options: ResolvedRuleOptions,
 }
 
 impl Checker {
-    fn new(
-        suppression: SuppressionManager,
-        assignment: RSyntaxKind,
-        rule_options: ResolvedRuleOptions,
-    ) -> Self {
+    fn new(suppression: SuppressionManager, rule_options: ResolvedRuleOptions) -> Self {
         Self {
             diagnostics: vec![],
             rule_set: RuleSet::empty(),
             minimum_r_version: None,
             suppression,
-            assignment,
             rule_options,
         }
     }
@@ -173,7 +166,7 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
 
     let suppression = SuppressionManager::from_node(syntax, contents);
 
-    let mut checker = Checker::new(suppression, config.assignment, config.rule_options.clone());
+    let mut checker = Checker::new(suppression, config.rule_options.clone());
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
 

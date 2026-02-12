@@ -229,16 +229,8 @@ default-exclude = true
 
 #### `assignment`
 
-This takes a single value (`"<-"` or `"="`) indicating the preferred assignment operator in the files to check.
-While `"<-"` is recommended by several style guides, using `"="` is equivalent in most cases and several popular projects use it.
-
-This parameter is only useful if the `assignment` rule is active.
-If `assignment = "<-"` (default), then any use of the `"="` operator to assign values will be reported, and vice-versa.
-
-```toml
-[lint]
-assignment = "<-"
-```
+**This argument is deprecated. Use the rule-specific argument `[lint.assignment]`
+instead (see below).**
 
 #### `fixable`
 
@@ -281,6 +273,23 @@ unfixable = []
 ```
 
 ### Rule-specific arguments
+
+#### `assignment`
+
+This takes a single value (`"<-"` or `"="`) indicating the preferred assignment
+operator in the files to check. If `assignment = "<-"` and if the `"assignment"`
+rule is enabled, then any use of the `"="` operator to assign values will be
+reported, and vice-versa.
+
+This option doesn't have a default value.
+
+```toml
+[lint]
+...
+
+[lint.assignment]
+operator = "<-" # or "="
+```
 
 #### `duplicated-arguments`
 

@@ -8,8 +8,13 @@ exit_code: 255
 
 ----- stderr -----
 jarl failed
-  Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
-Invalid value for `operator` in `[lint.assignment]`: "foo". Expected "<-" or "=".
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 14
+  |
+3 | assignment = 1
+  |              ^
+invalid type: integer `1`, expected a string (e.g. `assignment = "<-"`) or a table (e.g. `[lint.assignment]`)
+
 
 ----- args -----
 check . --select assignment
