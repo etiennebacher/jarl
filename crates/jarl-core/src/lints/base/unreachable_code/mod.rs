@@ -44,7 +44,9 @@ foo <- function() {
   x <- 5
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -52,7 +54,8 @@ foo <- function() {
           |   ------ This code is unreachable because it appears after a return statement.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -67,7 +70,9 @@ foo <- function(x) {
   x <- 1
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:8:3
           |
@@ -75,7 +80,8 @@ foo <- function(x) {
           |   ------ This code is unreachable because the preceding if/else terminates in all branches.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -88,7 +94,9 @@ foo <- function() {
   }
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:5:5
           |
@@ -96,7 +104,8 @@ foo <- function() {
           |     ------ This code is unreachable because it appears after a break statement.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -109,7 +118,9 @@ foo <- function() {
   }
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:5:5
           |
@@ -117,7 +128,8 @@ foo <- function() {
           |     ------ This code is unreachable because it appears after a next statement.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -161,7 +173,9 @@ foo <- function() {
   z <- 3
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:5:3
           |
@@ -170,7 +184,8 @@ foo <- function() {
           | |________- This code is unreachable because it appears after a return statement.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -184,7 +199,9 @@ outer <- function() {
   y <- 3
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:5:5
           |
@@ -192,7 +209,8 @@ outer <- function() {
           |     ------ This code is unreachable because it appears after a return statement.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -207,7 +225,9 @@ foo <- function() {
   }
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r#"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r#"
         warning: unreachable_code
          --> <test>:5:10
           |
@@ -219,7 +239,8 @@ foo <- function() {
           | |___- This code is in a branch that can never be executed.
           |
         Found 1 error.
-        "#);
+        "#
+        );
     }
 
     #[test]
@@ -234,7 +255,9 @@ foo <- function() {
   }
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r#"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r#"
         warning: unreachable_code
          --> <test>:3:14
           |
@@ -246,7 +269,8 @@ foo <- function() {
           | |___- This code is in a branch that can never be executed.
           |
         Found 1 error.
-        "#);
+        "#
+        );
     }
 
     #[test]
@@ -263,7 +287,9 @@ foo <- function(bar) {
   }
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:3:14
           |
@@ -276,7 +302,8 @@ foo <- function(bar) {
           | |___- This code is in a branch that can never be executed.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -317,7 +344,9 @@ foo <- function(bar) {
   1 + 1
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:5:5
           |
@@ -337,7 +366,8 @@ foo <- function(bar) {
            |   ----- This code is unreachable because the preceding if/else terminates in all branches.
            |
         Found 3 errors.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -369,7 +399,9 @@ foo <- function(bar) {
   }
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:5:5
           |
@@ -393,7 +425,8 @@ foo <- function(bar) {
            | |___- This code is unreachable because the preceding if/else terminates in all branches.
            |
         Found 3 errors.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -418,7 +451,9 @@ foo <- function() {
   1 + 1
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -426,7 +461,8 @@ foo <- function() {
           |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
           |
         Found 1 error.
-        ");
+        "
+        );
 
         let code = r#"
 foo <- function() {
@@ -434,7 +470,9 @@ foo <- function() {
   1 + 1
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -442,7 +480,8 @@ foo <- function() {
           |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
           |
         Found 1 error.
-        ");
+        "
+        );
 
         let code = r#"
 foo <- function() {
@@ -450,7 +489,9 @@ foo <- function() {
   1 + 1
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -458,7 +499,8 @@ foo <- function() {
           |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
           |
         Found 1 error.
-        ");
+        "
+        );
 
         let code = r#"
 foo <- function() {
@@ -466,7 +508,9 @@ foo <- function() {
   1 + 1
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -474,7 +518,8 @@ foo <- function() {
           |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
           |
         Found 1 error.
-        ");
+        "
+        );
 
         let code = r#"
 foo <- function() {
@@ -544,7 +589,9 @@ foo <- function(x) {
   return(3)
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
           --> <test>:15:3
            |
@@ -552,7 +599,8 @@ foo <- function(x) {
            |   --------- This code is unreachable because the preceding if/else terminates in all branches.
            |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -564,7 +612,9 @@ foo <- function(x) {
   1 + 1
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:5:3
           |
@@ -572,7 +622,8 @@ foo <- function(x) {
           |   ----- This code is unreachable because it appears after a return statement.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -594,7 +645,9 @@ foo <- \(x) {
   1 + 1
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -602,7 +655,8 @@ foo <- \(x) {
           |   ----- This code is unreachable because it appears after a return statement.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -614,7 +668,9 @@ foo <- function(x) {
   ); 3 + 1
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:5:6
           |
@@ -622,7 +678,8 @@ foo <- function(x) {
           |      ----- This code is unreachable because it appears after a return statement.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -656,7 +713,9 @@ foo <- function(x) {
   }
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:5:10
           |
@@ -703,7 +762,8 @@ foo <- function(x) {
            | |___- This code is in a branch that can never be executed.
            |
         Found 5 errors.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -737,7 +797,9 @@ foo <- function(x) {
   }
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:3:18
           |
@@ -784,7 +846,8 @@ foo <- function(x) {
            | |___- This code is in a branch that can never be executed.
            |
         Found 5 errors.
-        ");
+        "
+        );
     }
 
     // Top-level unreachable code tests
@@ -798,7 +861,9 @@ if (TRUE) {
   y <- 2
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:4:8
           |
@@ -809,7 +874,8 @@ if (TRUE) {
           | |_- This code is in a branch that can never be executed.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -820,7 +886,9 @@ for (i in 1:10) {
   x <- i
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -828,7 +896,8 @@ for (i in 1:10) {
           |   ------ This code is unreachable because it appears after a break statement.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -839,7 +908,9 @@ for (i in 1:10) {
   x <- i
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -847,7 +918,8 @@ for (i in 1:10) {
           |   ------ This code is unreachable because it appears after a next statement.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -856,7 +928,9 @@ for (i in 1:10) {
 stop("error")
 x <- 1
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:3:1
           |
@@ -864,7 +938,8 @@ x <- 1
           | ------ This code is unreachable because it appears after a `stop()` statement (or equivalent).
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -876,7 +951,9 @@ if (condition) {
   x <- 1
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -884,7 +961,8 @@ if (condition) {
           |   ------ This code is unreachable because it appears after a `stop()` statement (or equivalent).
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -897,7 +975,9 @@ if (condition) {
 }
 x <- 1
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:7:1
           |
@@ -905,7 +985,8 @@ x <- 1
           | ------ This code is unreachable because the preceding if/else terminates in all branches.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -921,7 +1002,9 @@ if (outer_condition) {
   x <- 1
 }
 "#;
-        insta::assert_snapshot!(snapshot_lint(code), @r"
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
         warning: unreachable_code
          --> <test>:8:3
           |
@@ -929,6 +1012,7 @@ if (outer_condition) {
           |   ------ This code is unreachable because the preceding if/else terminates in all branches.
           |
         Found 1 error.
-        ");
+        "
+        );
     }
 }

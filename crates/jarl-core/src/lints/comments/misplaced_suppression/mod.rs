@@ -39,7 +39,8 @@ x <- 1",
 
     #[test]
     fn test_lint_misplaced_suppression() {
-        insta::assert_snapshot!(snapshot_lint(
+        insta::assert_snapshot!(
+            snapshot_lint(
             "any(is.na(x)) # jarl-ignore any_is_na: <reason>"), @r"
         warning: misplaced_suppression
          --> <test>:1:15
@@ -47,8 +48,10 @@ x <- 1",
         1 | any(is.na(x)) # jarl-ignore any_is_na: <reason>
           |               --------------------------------- This comment isn't used by Jarl because end-of-line suppressions are not supported.
           |
+          = help: Move the suppression comment to its own line above the code you want to suppress.
         Found 1 error.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 any(
@@ -60,10 +63,14 @@ any(
         4 | ) # jarl-ignore any_is_na: <reason>
           |   --------------------------------- This comment isn't used by Jarl because end-of-line suppressions are not supported.
           |
+          = help: Move the suppression comment to its own line above the code you want to suppress.
         Found 1 error.
-        ");
+        "
+        );
 
-        insta::assert_snapshot!(snapshot_lint(
+        insta::assert_snapshot!(
+
+            snapshot_lint(
             "any(is.na(x)) # jarl-ignore-file any_is_na: <reason>"), @r"
         warning: misplaced_suppression
          --> <test>:1:15
@@ -71,10 +78,14 @@ any(
         1 | any(is.na(x)) # jarl-ignore-file any_is_na: <reason>
           |               -------------------------------------- This comment isn't used by Jarl because end-of-line suppressions are not supported.
           |
+          = help: Move the suppression comment to its own line above the code you want to suppress.
         Found 1 error.
-        ");
+        "
+        );
 
-        insta::assert_snapshot!(snapshot_lint(
+        insta::assert_snapshot!(
+
+            snapshot_lint(
             "any(is.na(x)) # jarl-ignore-start any_is_na: <reason>"), @r"
         warning: misplaced_suppression
          --> <test>:1:15
@@ -82,7 +93,9 @@ any(
         1 | any(is.na(x)) # jarl-ignore-start any_is_na: <reason>
           |               --------------------------------------- This comment isn't used by Jarl because end-of-line suppressions are not supported.
           |
+          = help: Move the suppression comment to its own line above the code you want to suppress.
         Found 1 error.
-        ");
+        "
+        );
     }
 }

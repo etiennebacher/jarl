@@ -47,8 +47,10 @@ any(is.na(x))"), @r"
         2 | # jarl-ignore any_isna: <reason>
           | -------------------------------- This comment isn't used by Jarl because it contains an unrecognized rule name.
           |
+          = help: Check the rule name for typos.
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -62,8 +64,10 @@ any(is.na(x))"), @r"
         2 | # jarl-ignore-file nonexistent_rule: <reason>
           | --------------------------------------------- This comment isn't used by Jarl because it contains an unrecognized rule name.
           |
+          = help: Check the rule name for typos.
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -78,8 +82,10 @@ any(is.na(x))
         2 | # jarl-ignore-start fake_rule: <reason>
           | --------------------------------------- This comment isn't used by Jarl because it contains an unrecognized rule name.
           |
+          = help: Check the rule name for typos.
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -94,7 +100,9 @@ any(is.na(x))
         4 | # jarl-ignore-end fake_rule
           | --------------------------- This comment isn't used by Jarl because it contains an unrecognized rule name.
           |
+          = help: Check the rule name for typos.
         Found 1 error.
-        ");
+        "
+        );
     }
 }

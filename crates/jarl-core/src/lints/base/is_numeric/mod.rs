@@ -3,6 +3,11 @@ pub(crate) mod is_numeric;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "is_numeric", None)
+    }
 
     #[test]
     fn test_no_lint_is_numeric() {
@@ -25,59 +30,97 @@ mod tests {
 
     #[test]
     fn test_lint_is_numeric() {
-        use insta::assert_snapshot;
-
-        let expected_message = "`is.numeric(x) || is.integer(x)` is redundant";
-        expect_lint(
-            "is.numeric(x) || is.integer(x)",
-            expected_message,
-            "is_numeric",
-            None,
+        assert_snapshot!(
+            snapshot_lint("is.numeric(x) || is.integer(x)"),
+            @r"
+        warning: is_numeric
+         --> <test>:1:1
+          |
+        1 | is.numeric(x) || is.integer(x)
+          | ------------------------------ `is.numeric(x) || is.integer(x)` is redundant.
+          |
+          = help: Use `is.numeric(x)` instead. Use `is.double(x)` to test for objects stored as 64-bit floating point
+        Found 1 error.
+        "
         );
 
         // order doesn't matter
-        expect_lint(
-            "is.integer(x) || is.numeric(x)",
-            expected_message,
-            "is_numeric",
-            None,
+        assert_snapshot!(
+            snapshot_lint("is.integer(x) || is.numeric(x)"),
+            @r"
+        warning: is_numeric
+         --> <test>:1:1
+          |
+        1 | is.integer(x) || is.numeric(x)
+          | ------------------------------ `is.numeric(x) || is.integer(x)` is redundant.
+          |
+          = help: Use `is.numeric(x)` instead. Use `is.double(x)` to test for objects stored as 64-bit floating point
+        Found 1 error.
+        "
         );
 
         // identical expressions match too
-        expect_lint(
-            "is.integer(DT$x) || is.numeric(DT$x)",
-            expected_message,
-            "is_numeric",
-            None,
+        assert_snapshot!(
+            snapshot_lint("is.integer(DT$x) || is.numeric(DT$x)"),
+            @r"
+        warning: is_numeric
+         --> <test>:1:1
+          |
+        1 | is.integer(DT$x) || is.numeric(DT$x)
+          | ------------------------------------ `is.numeric(x) || is.integer(x)` is redundant.
+          |
+          = help: Use `is.numeric(x)` instead. Use `is.double(x)` to test for objects stored as 64-bit floating point
+        Found 1 error.
+        "
         );
 
         // line breaks don't matter
-        expect_lint(
-            "
+        assert_snapshot!(snapshot_lint("
             if (
               is.integer(x)
               || is.numeric(x)
             ) TRUE
-          ",
-            expected_message,
-            "is_numeric",
-            None,
+          "), @r"
+        warning: is_numeric
+         --> <test>:3:15
+          |
+        3 | /               is.integer(x)
+        4 | |               || is.numeric(x)
+          | |______________________________- `is.numeric(x) || is.integer(x)` is redundant.
+          |
+          = help: Use `is.numeric(x)` instead. Use `is.double(x)` to test for objects stored as 64-bit floating point
+        Found 1 error.
+        "
         );
 
         // caught when nesting
-        expect_lint(
-            "all(y > 5) && (is.integer(x) || is.numeric(x))",
-            expected_message,
-            "is_numeric",
-            None,
+        assert_snapshot!(
+            snapshot_lint("all(y > 5) && (is.integer(x) || is.numeric(x))"),
+            @r"
+        warning: is_numeric
+         --> <test>:1:16
+          |
+        1 | all(y > 5) && (is.integer(x) || is.numeric(x))
+          |                ------------------------------ `is.numeric(x) || is.integer(x)` is redundant.
+          |
+          = help: Use `is.numeric(x)` instead. Use `is.double(x)` to test for objects stored as 64-bit floating point
+        Found 1 error.
+        "
         );
 
         // implicit nesting
-        expect_lint(
-            "is.integer(x) || is.numeric(x) || is.logical(x)",
-            expected_message,
-            "is_numeric",
-            None,
+        assert_snapshot!(
+            snapshot_lint("is.integer(x) || is.numeric(x) || is.logical(x)"),
+            @r"
+        warning: is_numeric
+         --> <test>:1:1
+          |
+        1 | is.integer(x) || is.numeric(x) || is.logical(x)
+          | ------------------------------ `is.numeric(x) || is.integer(x)` is redundant.
+          |
+          = help: Use `is.numeric(x)` instead. Use `is.double(x)` to test for objects stored as 64-bit floating point
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             "fix_output",
@@ -106,7 +149,6 @@ mod tests {
 
     #[test]
     fn test_is_numeric_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",

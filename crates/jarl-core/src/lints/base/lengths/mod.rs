@@ -3,21 +3,66 @@ pub(crate) mod lengths;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "lengths", None)
+    }
 
     #[test]
     fn test_lint_lengths() {
-        use insta::assert_snapshot;
-        let expected_message = "Use `lengths()` instead";
-
-        expect_lint("sapply(x, length)", expected_message, "lengths", None);
-        expect_lint("sapply(x, FUN = length)", expected_message, "lengths", None);
+        assert_snapshot!(
+            snapshot_lint("sapply(x, length)"),
+            @r"
+        warning: lengths
+         --> <test>:1:1
+          |
+        1 | sapply(x, length)
+          | ----------------- Using `length()` on each element of a list is inefficient.
+          |
+          = help: Use `lengths()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("sapply(x, FUN = length)"),
+            @r"
+        warning: lengths
+         --> <test>:1:1
+          |
+        1 | sapply(x, FUN = length)
+          | ----------------------- Using `length()` on each element of a list is inefficient.
+          |
+          = help: Use `lengths()` instead.
+        Found 1 error.
+        "
+        );
         // TODO: the fix in this case is broken
-        expect_lint("sapply(FUN = length, x)", expected_message, "lengths", None);
-        expect_lint(
-            "vapply(x, length, integer(1))",
-            expected_message,
-            "lengths",
-            None,
+        assert_snapshot!(
+            snapshot_lint("sapply(FUN = length, x)"),
+            @r"
+        warning: lengths
+         --> <test>:1:1
+          |
+        1 | sapply(FUN = length, x)
+          | ----------------------- Using `length()` on each element of a list is inefficient.
+          |
+          = help: Use `lengths()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("vapply(x, length, integer(1))"),
+            @r"
+        warning: lengths
+         --> <test>:1:1
+          |
+        1 | vapply(x, length, integer(1))
+          | ----------------------------- Using `length()` on each element of a list is inefficient.
+          |
+          = help: Use `lengths()` instead.
+        Found 1 error.
+        "
         );
 
         // TODO: block purrr's usage (argument name is now .f)
@@ -50,7 +95,6 @@ mod tests {
 
     #[test]
     fn test_lengths_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",

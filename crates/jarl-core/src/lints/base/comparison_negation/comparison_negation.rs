@@ -69,7 +69,7 @@ pub fn comparison_negation(ast: &RUnaryExpression) -> anyhow::Result<Option<Diag
     let diagnostic = Diagnostic::new(
         ViolationData::new(
             "comparison_negation".to_string(),
-            format!("Do not use `!(x {} y)`.", operator.text_trimmed()),
+            format!("`!(x {} y)` can be simplified.", operator.text_trimmed()),
             Some(format!("Use `x {} y` instead.", replacement_operator)),
         ),
         range,

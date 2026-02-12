@@ -3,6 +3,11 @@ pub(crate) mod expect_not;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "expect_not", None)
+    }
 
     #[test]
     fn test_no_lint_expect_not() {
@@ -43,33 +48,70 @@ mod tests {
 
     #[test]
     fn test_lint_expect_not() {
-        use insta::assert_snapshot;
-        let expected_message = "is not as clear as";
-
-        expect_lint("expect_true(!x)", expected_message, "expect_not", None);
-        expect_lint(
-            "testthat::expect_true(!x)",
-            expected_message,
-            "expect_not",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_true(!x)"),
+            @r"
+        warning: expect_not
+         --> <test>:1:1
+          |
+        1 | expect_true(!x)
+          | --------------- `expect_true(!x)` is not as clear as `expect_false(x)`.
+          |
+          = help: Use `expect_false(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_false(!foo(x))",
-            expected_message,
-            "expect_not",
-            None,
+        assert_snapshot!(
+            snapshot_lint("testthat::expect_true(!x)"),
+            @r"
+        warning: expect_not
+         --> <test>:1:1
+          |
+        1 | testthat::expect_true(!x)
+          | ------------------------- `expect_true(!x)` is not as clear as `expect_false(x)`.
+          |
+          = help: Use `expect_false(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_true(!(x && y))",
-            expected_message,
-            "expect_not",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_false(!foo(x))"),
+            @r"
+        warning: expect_not
+         --> <test>:1:1
+          |
+        1 | expect_false(!foo(x))
+          | --------------------- `expect_false(!x)` is not as clear as `expect_true(x)`.
+          |
+          = help: Use `expect_true(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_false(!is.na(x))",
-            expected_message,
-            "expect_not",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_true(!(x && y))"),
+            @r"
+        warning: expect_not
+         --> <test>:1:1
+          |
+        1 | expect_true(!(x && y))
+          | ---------------------- `expect_true(!x)` is not as clear as `expect_false(x)`.
+          |
+          = help: Use `expect_false(x)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("expect_false(!is.na(x))"),
+            @r"
+        warning: expect_not
+         --> <test>:1:1
+          |
+        1 | expect_false(!is.na(x))
+          | ----------------------- `expect_false(!x)` is not as clear as `expect_true(x)`.
+          |
+          = help: Use `expect_true(x)` instead.
+        Found 1 error.
+        "
         );
 
         assert_snapshot!(
@@ -91,7 +133,6 @@ mod tests {
 
     #[test]
     fn test_expect_not_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present
         assert_snapshot!(
             "no_fix_with_comments",

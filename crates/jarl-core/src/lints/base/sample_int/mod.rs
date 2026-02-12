@@ -3,6 +3,11 @@ pub(crate) mod sample_int;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "sample_int", None)
+    }
 
     #[test]
     fn test_no_lint_sample_int() {
@@ -20,23 +25,70 @@ mod tests {
 
     #[test]
     fn test_lint_sample_int() {
-        use insta::assert_snapshot;
-
-        let expected_message = "is less readable than `sample.int";
-        expect_lint("sample(1:10, 2)", expected_message, "sample_int", None);
-        expect_lint("sample(1L:10L, 2)", expected_message, "sample_int", None);
-        expect_lint("sample(1:n, 2)", expected_message, "sample_int", None);
-        expect_lint(
-            "sample(1:k, replace = TRUE)",
-            expected_message,
-            "sample_int",
-            None,
+        assert_snapshot!(
+            snapshot_lint("sample(1:10, 2)"),
+            @r"
+        warning: sample_int
+         --> <test>:1:1
+          |
+        1 | sample(1:10, 2)
+          | --------------- `sample(1:n, m, ...)` is less readable than `sample.int(n, m, ...)`.
+          |
+          = help: Use `sample.int(n, m, ...)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "sample(1:foo(x), prob = bar(x))",
-            expected_message,
-            "sample_int",
-            None,
+        assert_snapshot!(
+            snapshot_lint("sample(1L:10L, 2)"),
+            @r"
+        warning: sample_int
+         --> <test>:1:1
+          |
+        1 | sample(1L:10L, 2)
+          | ----------------- `sample(1:n, m, ...)` is less readable than `sample.int(n, m, ...)`.
+          |
+          = help: Use `sample.int(n, m, ...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("sample(1:n, 2)"),
+            @r"
+        warning: sample_int
+         --> <test>:1:1
+          |
+        1 | sample(1:n, 2)
+          | -------------- `sample(1:n, m, ...)` is less readable than `sample.int(n, m, ...)`.
+          |
+          = help: Use `sample.int(n, m, ...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("sample(1:k, replace = TRUE)"),
+            @r"
+        warning: sample_int
+         --> <test>:1:1
+          |
+        1 | sample(1:k, replace = TRUE)
+          | --------------------------- `sample(1:n, m, ...)` is less readable than `sample.int(n, m, ...)`.
+          |
+          = help: Use `sample.int(n, m, ...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("sample(1:foo(x), prob = bar(x))"),
+            @r"
+        warning: sample_int
+         --> <test>:1:1
+          |
+        1 | sample(1:foo(x), prob = bar(x))
+          | ------------------------------- `sample(1:n, m, ...)` is less readable than `sample.int(n, m, ...)`.
+          |
+          = help: Use `sample.int(n, m, ...)` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             "fix_output",
@@ -57,7 +109,6 @@ mod tests {
 
     #[test]
     fn test_sample_int_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",

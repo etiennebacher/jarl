@@ -3,35 +3,66 @@ pub(crate) mod numeric_leading_zero;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "numeric_leading_zero", None)
+    }
 
     #[test]
     fn test_lint_numeric_leading_zero() {
-        use insta::assert_snapshot;
-
-        let expected_message = "Include the leading zero";
-        expect_lint("a <- .1", expected_message, "numeric_leading_zero", None);
-        expect_lint("b <- -.2", expected_message, "numeric_leading_zero", None);
-        expect_lint(
-            "c <- .3 + 4.5i",
-            expected_message,
-            "numeric_leading_zero",
-            None,
+        assert_snapshot!(
+            snapshot_lint("a <- .1"),
+            @r"
+        warning: numeric_leading_zero
+         --> <test>:1:6
+          |
+        1 | a <- .1
+          |      -- Include the leading zero for fractional numeric constants.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("b <- -.2"),
+            @r"
+        warning: numeric_leading_zero
+         --> <test>:1:7
+          |
+        1 | b <- -.2
+          |       -- Include the leading zero for fractional numeric constants.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("c <- .3 + 4.5i"),
+            @r"
+        warning: numeric_leading_zero
+         --> <test>:1:6
+          |
+        1 | c <- .3 + 4.5i
+          |      -- Include the leading zero for fractional numeric constants.
+          |
+        Found 1 error.
+        "
         );
         // TODO: uncomment when tree-sitter bug is fixed
         // https://github.com/r-lib/tree-sitter-r/issues/190
-        // expect_lint(
-        //     "d <- 6.7 + .8i",
-        //     expected_message,
-        //     "numeric_leading_zero",
-        //     None,
-        // );
-        // expect_lint(
-        //     "d <- 6.7+.8i",
-        //     expected_message,
-        //     "numeric_leading_zero",
-        //     None,
-        // );
-        expect_lint("e <- .9e10", expected_message, "numeric_leading_zero", None);
+        // assert_snapshot!(snapshot_lint("d <- 6.7 + .8i"), @"");
+        // assert_snapshot!(snapshot_lint("d <- 6.7+.8i"), @"");
+        assert_snapshot!(
+            snapshot_lint("e <- .9e10"),
+            @r"
+        warning: numeric_leading_zero
+         --> <test>:1:6
+          |
+        1 | e <- .9e10
+          |      ----- Include the leading zero for fractional numeric constants.
+          |
+        Found 1 error.
+        "
+        );
         assert_snapshot!(
             "fix_output",
             get_fixed_text(

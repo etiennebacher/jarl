@@ -3,6 +3,11 @@ pub(crate) mod list2df;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "list2df", Some("4.0"))
+    }
 
     #[test]
     fn test_no_lint_list2df() {
@@ -30,46 +35,85 @@ mod tests {
 
     #[test]
     fn test_lint_list2df() {
-        use insta::assert_snapshot;
-
-        let expected_message = "Use `list2DF(x)` instead";
-        expect_lint(
-            "do.call(cbind.data.frame, x)",
-            expected_message,
-            "list2df",
-            Some("4.0"),
+        assert_snapshot!(
+            snapshot_lint("do.call(cbind.data.frame, x)"),
+            @r"
+        warning: list2df
+         --> <test>:1:1
+          |
+        1 | do.call(cbind.data.frame, x)
+          | ---------------------------- `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
+          |
+          = help: Use `list2DF(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "do.call(args = x, what = cbind.data.frame)",
-            expected_message,
-            "list2df",
-            Some("4.0"),
+        assert_snapshot!(
+            snapshot_lint("do.call(args = x, what = cbind.data.frame)"),
+            @r"
+        warning: list2df
+         --> <test>:1:1
+          |
+        1 | do.call(args = x, what = cbind.data.frame)
+          | ------------------------------------------ `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
+          |
+          = help: Use `list2DF(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "do.call(cbind.data.frame, args = x)",
-            expected_message,
-            "list2df",
-            Some("4.0"),
+        assert_snapshot!(
+            snapshot_lint("do.call(cbind.data.frame, args = x)"),
+            @r"
+        warning: list2df
+         --> <test>:1:1
+          |
+        1 | do.call(cbind.data.frame, args = x)
+          | ----------------------------------- `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
+          |
+          = help: Use `list2DF(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "do.call(cbind.data.frame, foo(bar(x)))",
-            expected_message,
-            "list2df",
-            Some("4.0"),
+        assert_snapshot!(
+            snapshot_lint("do.call(cbind.data.frame, foo(bar(x)))"),
+            @r"
+        warning: list2df
+         --> <test>:1:1
+          |
+        1 | do.call(cbind.data.frame, foo(bar(x)))
+          | -------------------------------------- `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
+          |
+          = help: Use `list2DF(x)` instead.
+        Found 1 error.
+        "
         );
 
         // Quoted function names
-        expect_lint(
-            "do.call('cbind.data.frame', x)",
-            expected_message,
-            "list2df",
-            Some("4.0"),
+        assert_snapshot!(
+            snapshot_lint("do.call('cbind.data.frame', x)"),
+            @r"
+        warning: list2df
+         --> <test>:1:1
+          |
+        1 | do.call('cbind.data.frame', x)
+          | ------------------------------ `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
+          |
+          = help: Use `list2DF(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "do.call(\"cbind.data.frame\", x)",
-            expected_message,
-            "list2df",
-            Some("4.0"),
+        assert_snapshot!(
+            snapshot_lint("do.call(\"cbind.data.frame\", x)"),
+            @r#"
+        warning: list2df
+         --> <test>:1:1
+          |
+        1 | do.call("cbind.data.frame", x)
+          | ------------------------------ `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
+          |
+          = help: Use `list2DF(x)` instead.
+        Found 1 error.
+        "#
         );
 
         assert_snapshot!(
@@ -91,13 +135,21 @@ mod tests {
 
     #[test]
     fn test_list2df_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
-        expect_lint(
-            "do.call(\n # a comment\ncbind.data.frame, x)",
-            "Use `list2DF(x)` instead",
-            "list2df",
-            Some("4.0"),
+        assert_snapshot!(
+            snapshot_lint("do.call(\n # a comment\ncbind.data.frame, x)"),
+            @r"
+        warning: list2df
+         --> <test>:1:1
+          |
+        1 | / do.call(
+        2 | |  # a comment
+        3 | | cbind.data.frame, x)
+          | |____________________- `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
+          |
+          = help: Use `list2DF(x)` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             "no_fix_with_comments",

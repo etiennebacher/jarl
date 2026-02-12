@@ -3,6 +3,11 @@ pub(crate) mod coalesce;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "coalesce", Some("4.4"))
+    }
 
     #[test]
     fn test_no_lint_coalesce() {
@@ -32,84 +37,165 @@ mod tests {
 
     #[test]
     fn test_lint_coalesce() {
-        use insta::assert_snapshot;
-        let expected_message = "Use `x %||% y` instead";
         let version = Some("4.4");
 
-        expect_lint(
-            "if (is.null(x)) y else x",
-            expected_message,
-            "coalesce",
-            version,
-        );
-        expect_lint(
-            "if (is.null(x)) { y } else x",
-            expected_message,
-            "coalesce",
-            version,
-        );
-        expect_lint(
-            "if (is.null(x)) y else { x }",
-            expected_message,
-            "coalesce",
-            version,
-        );
-        expect_lint(
-            "if (is.null(x)) { y } else { x }",
-            expected_message,
-            "coalesce",
-            version,
-        );
+        assert_snapshot!(
 
-        expect_lint(
-            "if (is.null(x[1])) y else x[1]",
-            expected_message,
-            "coalesce",
-            version,
-        );
-        expect_lint(
-            "if (is.null(foo(x))) y else foo(x)",
-            expected_message,
-            "coalesce",
-            version,
-        );
+            snapshot_lint("if (is.null(x)) y else x"),
 
-        expect_lint(
-            "if (!is.null(x)) x else y",
-            expected_message,
-            "coalesce",
-            version,
+            @r"
+        warning: coalesce
+         --> <test>:1:1
+          |
+        1 | if (is.null(x)) y else x
+          | ------------------------ `if (is.null(x)) y else x` can be simplified.
+          |
+          = help: Use `x %||% y` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "if (!is.null(x)) { x } else y",
-            expected_message,
-            "coalesce",
-            version,
+        assert_snapshot!(
+            snapshot_lint("if (is.null(x)) { y } else x"),
+            @r"
+        warning: coalesce
+         --> <test>:1:1
+          |
+        1 | if (is.null(x)) { y } else x
+          | ---------------------------- `if (is.null(x)) y else x` can be simplified.
+          |
+          = help: Use `x %||% y` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "if (!is.null(x)) x else { y }",
-            expected_message,
-            "coalesce",
-            version,
+        assert_snapshot!(
+            snapshot_lint("if (is.null(x)) y else { x }"),
+            @r"
+        warning: coalesce
+         --> <test>:1:1
+          |
+        1 | if (is.null(x)) y else { x }
+          | ---------------------------- `if (is.null(x)) y else x` can be simplified.
+          |
+          = help: Use `x %||% y` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "if (!is.null(x)) { x } else { y }",
-            expected_message,
-            "coalesce",
-            version,
+        assert_snapshot!(
+            snapshot_lint("if (is.null(x)) { y } else { x }"),
+            @r"
+        warning: coalesce
+         --> <test>:1:1
+          |
+        1 | if (is.null(x)) { y } else { x }
+          | -------------------------------- `if (is.null(x)) y else x` can be simplified.
+          |
+          = help: Use `x %||% y` instead.
+        Found 1 error.
+        "
         );
-
-        expect_lint(
-            "if (!is.null(x[1])) x[1] else y",
-            expected_message,
-            "coalesce",
-            version,
+        assert_snapshot!(
+            snapshot_lint("if (is.null(x[1])) y else x[1]"),
+            @r"
+        warning: coalesce
+         --> <test>:1:1
+          |
+        1 | if (is.null(x[1])) y else x[1]
+          | ------------------------------ `if (is.null(x)) y else x` can be simplified.
+          |
+          = help: Use `x %||% y` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "if (!is.null(foo(x))) foo(x) else y",
-            expected_message,
-            "coalesce",
-            version,
+        assert_snapshot!(
+            snapshot_lint("if (is.null(foo(x))) y else foo(x)"),
+            @r"
+        warning: coalesce
+         --> <test>:1:1
+          |
+        1 | if (is.null(foo(x))) y else foo(x)
+          | ---------------------------------- `if (is.null(x)) y else x` can be simplified.
+          |
+          = help: Use `x %||% y` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("if (!is.null(x)) x else y"),
+            @r"
+        warning: coalesce
+         --> <test>:1:1
+          |
+        1 | if (!is.null(x)) x else y
+          | ------------------------- `if (!is.null(x)) x else y` can be simplified.
+          |
+          = help: Use `x %||% y` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("if (!is.null(x)) { x } else y"),
+            @r"
+        warning: coalesce
+         --> <test>:1:1
+          |
+        1 | if (!is.null(x)) { x } else y
+          | ----------------------------- `if (!is.null(x)) x else y` can be simplified.
+          |
+          = help: Use `x %||% y` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("if (!is.null(x)) x else { y }"),
+            @r"
+        warning: coalesce
+         --> <test>:1:1
+          |
+        1 | if (!is.null(x)) x else { y }
+          | ----------------------------- `if (!is.null(x)) x else y` can be simplified.
+          |
+          = help: Use `x %||% y` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("if (!is.null(x)) { x } else { y }"),
+            @r"
+        warning: coalesce
+         --> <test>:1:1
+          |
+        1 | if (!is.null(x)) { x } else { y }
+          | --------------------------------- `if (!is.null(x)) x else y` can be simplified.
+          |
+          = help: Use `x %||% y` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("if (!is.null(x[1])) x[1] else y"),
+            @r"
+        warning: coalesce
+         --> <test>:1:1
+          |
+        1 | if (!is.null(x[1])) x[1] else y
+          | ------------------------------- `if (!is.null(x)) x else y` can be simplified.
+          |
+          = help: Use `x %||% y` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("if (!is.null(foo(x))) foo(x) else y"),
+            @r"
+        warning: coalesce
+         --> <test>:1:1
+          |
+        1 | if (!is.null(foo(x))) foo(x) else y
+          | ----------------------------------- `if (!is.null(x)) x else y` can be simplified.
+          |
+          = help: Use `x %||% y` instead.
+        Found 1 error.
+        "
         );
 
         assert_snapshot!(
@@ -139,7 +225,6 @@ mod tests {
 
     #[test]
     fn test_coalesce_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",

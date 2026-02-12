@@ -3,6 +3,11 @@ pub(crate) mod expect_length;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "expect_length", None)
+    }
 
     #[test]
     fn test_no_lint_expect_length() {
@@ -40,44 +45,83 @@ mod tests {
 
     #[test]
     fn test_lint_expect_length() {
-        use insta::assert_snapshot;
-        let lint_msg = "`expect_length(x, n)` is better than";
-
-        expect_lint(
-            "expect_equal(length(x), 2)",
-            lint_msg,
-            "expect_length",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(length(x), 2)"),
+            @r"
+        warning: expect_length
+         --> <test>:1:1
+          |
+        1 | expect_equal(length(x), 2)
+          | -------------------------- `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
+          |
+          = help: Use `expect_length(x, n)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "testthat::expect_equal(length(x), 2)",
-            lint_msg,
-            "expect_length",
-            None,
+        assert_snapshot!(
+            snapshot_lint("testthat::expect_equal(length(x), 2)"),
+            @r"
+        warning: expect_length
+         --> <test>:1:1
+          |
+        1 | testthat::expect_equal(length(x), 2)
+          | ------------------------------------ `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
+          |
+          = help: Use `expect_length(x, n)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_identical(length(x), 2)",
-            lint_msg,
-            "expect_length",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_identical(length(x), 2)"),
+            @r"
+        warning: expect_length
+         --> <test>:1:1
+          |
+        1 | expect_identical(length(x), 2)
+          | ------------------------------ `expect_length(x, n)` is better than `expect_identical(length(x), n)`.
+          |
+          = help: Use `expect_length(x, n)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_equal(2, length(x))",
-            lint_msg,
-            "expect_length",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(2, length(x))"),
+            @r"
+        warning: expect_length
+         --> <test>:1:1
+          |
+        1 | expect_equal(2, length(x))
+          | -------------------------- `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
+          |
+          = help: Use `expect_length(x, n)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_equal(2L, length(x))",
-            lint_msg,
-            "expect_length",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(2L, length(x))"),
+            @r"
+        warning: expect_length
+         --> <test>:1:1
+          |
+        1 | expect_equal(2L, length(x))
+          | --------------------------- `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
+          |
+          = help: Use `expect_length(x, n)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_equal(foo(y), length(x))",
-            lint_msg,
-            "expect_length",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(foo(y), length(x))"),
+            @r"
+        warning: expect_length
+         --> <test>:1:1
+          |
+        1 | expect_equal(foo(y), length(x))
+          | ------------------------------- `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
+          |
+          = help: Use `expect_length(x, n)` instead.
+        Found 1 error.
+        "
         );
 
         assert_snapshot!(
@@ -98,13 +142,20 @@ mod tests {
 
     #[test]
     fn test_expect_length_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present
-        expect_lint(
-            "expect_equal(# comment\nlength(x), 2L)",
-            "`expect_length(x, n)` is better than",
-            "expect_length",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(# comment\nlength(x), 2L)"),
+            @r"
+        warning: expect_length
+         --> <test>:1:1
+          |
+        1 | / expect_equal(# comment
+        2 | | length(x), 2L)
+          | |______________- `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
+          |
+          = help: Use `expect_length(x, n)` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             "no_fix_with_comments",

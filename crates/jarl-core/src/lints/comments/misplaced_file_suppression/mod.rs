@@ -40,8 +40,10 @@ any(is.na(x))"), @r"
         3 | # jarl-ignore-file any_is_na: explanation
           | ----------------------------------------- This comment isn't used by Jarl because `# jarl-ignore-file` must be at the top of the file.
           |
+          = help: Move this comment to the beginning of the file, before any code.
         Found 1 error.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-file any_is_na: reason 1
@@ -54,7 +56,9 @@ any(is.na(x))"), @r"
         4 | # jarl-ignore-file browser: reason 2
           | ------------------------------------ This comment isn't used by Jarl because `# jarl-ignore-file` must be at the top of the file.
           |
+          = help: Move this comment to the beginning of the file, before any code.
         Found 1 error.
-        ");
+        "
+        );
     }
 }

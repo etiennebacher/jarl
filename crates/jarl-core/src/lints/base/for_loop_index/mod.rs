@@ -3,6 +3,11 @@ pub(crate) mod for_loop_index;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "for_loop_index", None)
+    }
 
     #[test]
     fn test_no_lint_for_loop_index() {
@@ -24,33 +29,65 @@ mod tests {
 
     #[test]
     fn test_lint_for_loop_index() {
-        use insta::assert_snapshot;
-
-        let expected_message = "Don't re-use any sequence symbols as the index";
-        expect_lint("for (x in x) {}", expected_message, "for_loop_index", None);
-        expect_lint(
-            "for (x in foo(x)) {}",
-            expected_message,
-            "for_loop_index",
-            None,
+        assert_snapshot!(
+            snapshot_lint("for (x in x) {}"),
+            @r"
+        warning: for_loop_index
+         --> <test>:1:6
+          |
+        1 | for (x in x) {}
+          |      ------ Don't re-use any sequence symbols as the index symbol in a for loop.
+          |
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "for (x in foo(x = 1)) {}",
-            expected_message,
-            "for_loop_index",
-            None,
+        assert_snapshot!(
+            snapshot_lint("for (x in foo(x)) {}"),
+            @r"
+        warning: for_loop_index
+         --> <test>:1:6
+          |
+        1 | for (x in foo(x)) {}
+          |      ----------- Don't re-use any sequence symbols as the index symbol in a for loop.
+          |
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "for (x in foo(bar(y, baz(2, x)))) {}",
-            expected_message,
-            "for_loop_index",
-            None,
+        assert_snapshot!(
+            snapshot_lint("for (x in foo(x = 1)) {}"),
+            @r"
+        warning: for_loop_index
+         --> <test>:1:6
+          |
+        1 | for (x in foo(x = 1)) {}
+          |      --------------- Don't re-use any sequence symbols as the index symbol in a for loop.
+          |
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "for (x in foo(bar(y, baz(2, x = z)))) {}",
-            expected_message,
-            "for_loop_index",
-            None,
+        assert_snapshot!(
+            snapshot_lint("for (x in foo(bar(y, baz(2, x)))) {}"),
+            @r"
+        warning: for_loop_index
+         --> <test>:1:6
+          |
+        1 | for (x in foo(bar(y, baz(2, x)))) {}
+          |      --------------------------- Don't re-use any sequence symbols as the index symbol in a for loop.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("for (x in foo(bar(y, baz(2, x = z)))) {}"),
+            @r"
+        warning: for_loop_index
+         --> <test>:1:6
+          |
+        1 | for (x in foo(bar(y, baz(2, x = z)))) {}
+          |      ------------------------------- Don't re-use any sequence symbols as the index symbol in a for loop.
+          |
+        Found 1 error.
+        "
         );
 
         // No fixes

@@ -3,6 +3,11 @@ pub(crate) mod download_file;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "download_file", None)
+    }
 
     #[test]
     fn test_no_lint_download_file() {
@@ -34,62 +39,136 @@ mod tests {
 
     #[test]
     fn test_lint_download_file() {
-        let expected_message = "can cause portability issues";
-        expect_lint("download.file(x)", expected_message, "download_file", None);
-        expect_lint(
-            "utils::download.file(x)",
-            expected_message,
-            "download_file",
-            None,
+        assert_snapshot!(
+            snapshot_lint("download.file(x)"),
+            @r"
+        warning: download_file
+         --> <test>:1:1
+          |
+        1 | download.file(x)
+          | ---------------- `download.file()` without explicit `mode` can cause portability issues on Windows.
+          |
+          = help: Use mode = 'wb' instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "download.file(x, mode = 'a')",
-            expected_message,
-            "download_file",
-            None,
+        assert_snapshot!(
+            snapshot_lint("utils::download.file(x)"),
+            @r"
+        warning: download_file
+         --> <test>:1:1
+          |
+        1 | utils::download.file(x)
+          | ----------------------- `download.file()` without explicit `mode` can cause portability issues on Windows.
+          |
+          = help: Use mode = 'wb' instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "download.file(x, mode = 'w')",
-            expected_message,
-            "download_file",
-            None,
+        assert_snapshot!(
+            snapshot_lint("download.file(x, mode = 'a')"),
+            @r"
+        warning: download_file
+         --> <test>:1:1
+          |
+        1 | download.file(x, mode = 'a')
+          | ---------------------------- `download.file()` with `mode = 'a'` can cause portability issues on Windows.
+          |
+          = help: Use mode = 'ab' instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "download.file(x, mode = \"a\")",
-            expected_message,
-            "download_file",
-            None,
+        assert_snapshot!(
+            snapshot_lint("download.file(x, mode = 'w')"),
+            @r"
+        warning: download_file
+         --> <test>:1:1
+          |
+        1 | download.file(x, mode = 'w')
+          | ---------------------------- `download.file()` with `mode = 'w'` can cause portability issues on Windows.
+          |
+          = help: Use mode = 'wb' instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "download.file(x, mode = \"w\")",
-            expected_message,
-            "download_file",
-            None,
+        assert_snapshot!(
+            snapshot_lint("download.file(x, mode = \"a\")"),
+            @r#"
+        warning: download_file
+         --> <test>:1:1
+          |
+        1 | download.file(x, mode = "a")
+          | ---------------------------- `download.file()` with `mode = 'a'` can cause portability issues on Windows.
+          |
+          = help: Use mode = 'ab' instead.
+        Found 1 error.
+        "#
         );
-        expect_lint(
-            "download.file(x, y, z, w, 'a')",
-            expected_message,
-            "download_file",
-            None,
+        assert_snapshot!(
+            snapshot_lint("download.file(x, mode = \"w\")"),
+            @r#"
+        warning: download_file
+         --> <test>:1:1
+          |
+        1 | download.file(x, mode = "w")
+          | ---------------------------- `download.file()` with `mode = 'w'` can cause portability issues on Windows.
+          |
+          = help: Use mode = 'wb' instead.
+        Found 1 error.
+        "#
         );
-        expect_lint(
-            "download.file(x, y, z, w, 'w')",
-            expected_message,
-            "download_file",
-            None,
+        assert_snapshot!(
+            snapshot_lint("download.file(x, y, z, w, 'a')"),
+            @r"
+        warning: download_file
+         --> <test>:1:1
+          |
+        1 | download.file(x, y, z, w, 'a')
+          | ------------------------------ `download.file()` with `mode = 'a'` can cause portability issues on Windows.
+          |
+          = help: Use mode = 'ab' instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("download.file(x, y, z, w, 'w')"),
+            @r"
+        warning: download_file
+         --> <test>:1:1
+          |
+        1 | download.file(x, y, z, w, 'w')
+          | ------------------------------ `download.file()` with `mode = 'w'` can cause portability issues on Windows.
+          |
+          = help: Use mode = 'wb' instead.
+        Found 1 error.
+        "
         );
         // Only method = "wget" / "curl" don't trigger the lint.
-        expect_lint(
-            "download.file(x, y, z, method = 'foo', 'a')",
-            expected_message,
-            "download_file",
-            None,
+        assert_snapshot!(
+            snapshot_lint("download.file(x, y, z, method = 'foo', 'a')"),
+            @r"
+        warning: download_file
+         --> <test>:1:1
+          |
+        1 | download.file(x, y, z, method = 'foo', 'a')
+          | ------------------------------------------- `download.file()` without explicit `mode` can cause portability issues on Windows.
+          |
+          = help: Use mode = 'wb' instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "download.file(x, y, z, method = 'foo', 'w')",
-            expected_message,
-            "download_file",
-            None,
+        assert_snapshot!(
+            snapshot_lint("download.file(x, y, z, method = 'foo', 'w')"),
+            @r"
+        warning: download_file
+         --> <test>:1:1
+          |
+        1 | download.file(x, y, z, method = 'foo', 'w')
+          | ------------------------------------------- `download.file()` without explicit `mode` can cause portability issues on Windows.
+          |
+          = help: Use mode = 'wb' instead.
+        Found 1 error.
+        "
         );
     }
 }

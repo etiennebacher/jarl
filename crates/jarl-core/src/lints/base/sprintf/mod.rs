@@ -3,6 +3,11 @@ pub(crate) mod sprintf;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "sprintf", None)
+    }
 
     #[test]
     fn test_no_lint_sprintf() {
@@ -41,15 +46,59 @@ mod tests {
 
     #[test]
     fn test_lint_sprintf_no_arg() {
-        use insta::assert_snapshot;
-
-        let expected_message = "without special characters is useless";
-
-        expect_lint("sprintf('a')", expected_message, "sprintf", None);
-        expect_lint("sprintf(\"a\")", expected_message, "sprintf", None);
+        assert_snapshot!(
+            snapshot_lint("sprintf('a')"),
+            @r"
+        warning: sprintf
+         --> <test>:1:1
+          |
+        1 | sprintf('a')
+          | ------------ `sprintf()` without special characters is useless.
+          |
+          = help: Use directly the input of `sprintf()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("sprintf(\"a\")"),
+            @r#"
+        warning: sprintf
+         --> <test>:1:1
+          |
+        1 | sprintf("a")
+          | ------------ `sprintf()` without special characters is useless.
+          |
+          = help: Use directly the input of `sprintf()` instead.
+        Found 1 error.
+        "#
+        );
         // "%%" is used to escape the "%" symbol
-        expect_lint("sprintf('%%')", expected_message, "sprintf", None);
-        expect_lint("sprintf('%%', '')", expected_message, "sprintf", None);
+        assert_snapshot!(
+            snapshot_lint("sprintf('%%')"),
+            @r"
+        warning: sprintf
+         --> <test>:1:1
+          |
+        1 | sprintf('%%')
+          | ------------- `sprintf()` without special characters is useless.
+          |
+          = help: Use directly the input of `sprintf()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("sprintf('%%', '')"),
+            @r"
+        warning: sprintf
+         --> <test>:1:1
+          |
+        1 | sprintf('%%', '')
+          | ----------------- `sprintf()` without special characters is useless.
+          |
+          = help: Use directly the input of `sprintf()` instead.
+        Found 1 error.
+        "
+        );
 
         assert_snapshot!(
             "fix_output",
@@ -68,19 +117,45 @@ mod tests {
 
     #[test]
     fn test_lint_sprintf_mismatch() {
-        use insta::assert_snapshot;
-
-        let expected_message =
-            "Mismatch between number of special characters and number of arguments";
-
-        expect_lint("sprintf('%a')", expected_message, "sprintf", None);
-        expect_lint("sprintf('%a %s', 1)", expected_message, "sprintf", None);
+        assert_snapshot!(
+            snapshot_lint("sprintf('%a')"),
+            @r"
+        warning: sprintf
+         --> <test>:1:1
+          |
+        1 | sprintf('%a')
+          | ------------- Mismatch between number of special characters and number of arguments.
+          |
+          = help: Found 1 special character(s) and 0 argument(s).
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("sprintf('%a %s', 1)"),
+            @r"
+        warning: sprintf
+         --> <test>:1:1
+          |
+        1 | sprintf('%a %s', 1)
+          | ------------------- Mismatch between number of special characters and number of arguments.
+          |
+          = help: Found 2 special character(s) and 1 argument(s).
+        Found 1 error.
+        "
+        );
         // Mix of indexed and non-indexed special chars
-        expect_lint(
-            "sprintf('hello %1$s %s', '1', '2')",
-            expected_message,
-            "sprintf",
-            None,
+        assert_snapshot!(
+            snapshot_lint("sprintf('hello %1$s %s', '1', '2')"),
+            @r"
+        warning: sprintf
+         --> <test>:1:1
+          |
+        1 | sprintf('hello %1$s %s', '1', '2')
+          | ---------------------------------- Mismatch between number of special characters and number of arguments.
+          |
+          = help: Found 1 special character(s) and 2 argument(s).
+        Found 1 error.
+        "
         );
 
         // No fixes because this pattern generates an error at runtime. User
@@ -97,14 +172,54 @@ mod tests {
 
     #[test]
     fn test_lint_sprintf_wrong_special_chars() {
-        use insta::assert_snapshot;
-
-        let expected_message = "contains some invalid `%`";
-
-        expect_lint("sprintf('%y', 'a')", expected_message, "sprintf", None);
-        expect_lint("sprintf('%', 'a')", expected_message, "sprintf", None);
-        expect_lint("sprintf('1%', 'a')", expected_message, "sprintf", None);
-        expect_lint("sprintf('%s%', 'a')", expected_message, "sprintf", None);
+        assert_snapshot!(
+            snapshot_lint("sprintf('%y', 'a')"),
+            @r"
+        warning: sprintf
+         --> <test>:1:1
+          |
+        1 | sprintf('%y', 'a')
+          | ------------------ `sprintf()` contains some invalid `%`.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("sprintf('%', 'a')"),
+            @r"
+        warning: sprintf
+         --> <test>:1:1
+          |
+        1 | sprintf('%', 'a')
+          | ----------------- `sprintf()` contains some invalid `%`.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("sprintf('1%', 'a')"),
+            @r"
+        warning: sprintf
+         --> <test>:1:1
+          |
+        1 | sprintf('1%', 'a')
+          | ------------------ `sprintf()` contains some invalid `%`.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("sprintf('%s%', 'a')"),
+            @r"
+        warning: sprintf
+         --> <test>:1:1
+          |
+        1 | sprintf('%s%', 'a')
+          | ------------------- `sprintf()` contains some invalid `%`.
+          |
+        Found 1 error.
+        "
+        );
 
         // No fixes because this pattern generates an error at runtime. User
         // needs to fix it.
@@ -116,13 +231,21 @@ mod tests {
 
     #[test]
     fn test_sprintf_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
-        expect_lint(
-            "sprintf(\n # a comment \n'a')",
-            "without special characters is useless",
-            "sprintf",
-            None,
+        assert_snapshot!(
+            snapshot_lint("sprintf(\n # a comment \n'a')"),
+            @r"
+        warning: sprintf
+         --> <test>:1:1
+          |
+        1 | / sprintf(
+        2 | |  # a comment 
+        3 | | 'a')
+          | |____- `sprintf()` without special characters is useless.
+          |
+          = help: Use directly the input of `sprintf()` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             "no_fix_with_comments",

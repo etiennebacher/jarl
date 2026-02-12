@@ -3,6 +3,11 @@ pub(crate) mod seq;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "seq", None)
+    }
 
     #[test]
     fn test_no_lint_seq() {
@@ -18,24 +23,154 @@ mod tests {
 
     #[test]
     fn test_lint_seq() {
-        use insta::assert_snapshot;
+        assert_snapshot!(
+            snapshot_lint("1:length(x)"),
+            @r"
+        warning: seq
+         --> <test>:1:1
+          |
+        1 | 1:length(x)
+          | ----------- `1:length(...)` can be wrong if the RHS is 0.
+          |
+          = help: Use `seq_along(...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("1:nrow(x)"),
+            @r"
+        warning: seq
+         --> <test>:1:1
+          |
+        1 | 1:nrow(x)
+          | --------- `1:nrow(...)` can be wrong if the RHS is 0.
+          |
+          = help: Use `seq_len(nrow((...))` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("1:ncol(x)"),
+            @r"
+        warning: seq
+         --> <test>:1:1
+          |
+        1 | 1:ncol(x)
+          | --------- `1:ncol(...)` can be wrong if the RHS is 0.
+          |
+          = help: Use `seq_len(ncol(...))` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("1:NROW(x)"),
+            @r"
+        warning: seq
+         --> <test>:1:1
+          |
+        1 | 1:NROW(x)
+          | --------- `1:NROW(...)` can be wrong if the RHS is 0.
+          |
+          = help: Use `seq_len(NROW(...))` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("1:NCOL(x)"),
+            @r"
+        warning: seq
+         --> <test>:1:1
+          |
+        1 | 1:NCOL(x)
+          | --------- `1:NCOL(...)` can be wrong if the RHS is 0.
+          |
+          = help: Use `seq_len(NCOL(...))` instead.
+        Found 1 error.
+        "
+        );
 
-        let expected_message = "can be wrong if the RHS is 0";
+        assert_snapshot!(
 
-        expect_lint("1:length(x)", expected_message, "seq", None);
-        expect_lint("1:nrow(x)", expected_message, "seq", None);
-        expect_lint("1:ncol(x)", expected_message, "seq", None);
-        expect_lint("1:NROW(x)", expected_message, "seq", None);
-        expect_lint("1:NCOL(x)", expected_message, "seq", None);
+            snapshot_lint("1:base::length(x)"),
 
-        expect_lint("1:base::length(x)", expected_message, "seq", None);
+            @r"
+        warning: seq
+         --> <test>:1:1
+          |
+        1 | 1:base::length(x)
+          | ----------------- `1:length(...)` can be wrong if the RHS is 0.
+          |
+          = help: Use `seq_along(...)` instead.
+        Found 1 error.
+        "
+        );
 
         // Same with 1L
-        expect_lint("1L:length(x)", expected_message, "seq", None);
-        expect_lint("1L:nrow(x)", expected_message, "seq", None);
-        expect_lint("1L:ncol(x)", expected_message, "seq", None);
-        expect_lint("1L:NROW(x)", expected_message, "seq", None);
-        expect_lint("1L:NCOL(x)", expected_message, "seq", None);
+        assert_snapshot!(
+            snapshot_lint("1L:length(x)"),
+            @r"
+        warning: seq
+         --> <test>:1:1
+          |
+        1 | 1L:length(x)
+          | ------------ `1:length(...)` can be wrong if the RHS is 0.
+          |
+          = help: Use `seq_along(...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("1L:nrow(x)"),
+            @r"
+        warning: seq
+         --> <test>:1:1
+          |
+        1 | 1L:nrow(x)
+          | ---------- `1:nrow(...)` can be wrong if the RHS is 0.
+          |
+          = help: Use `seq_len(nrow((...))` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("1L:ncol(x)"),
+            @r"
+        warning: seq
+         --> <test>:1:1
+          |
+        1 | 1L:ncol(x)
+          | ---------- `1:ncol(...)` can be wrong if the RHS is 0.
+          |
+          = help: Use `seq_len(ncol(...))` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("1L:NROW(x)"),
+            @r"
+        warning: seq
+         --> <test>:1:1
+          |
+        1 | 1L:NROW(x)
+          | ---------- `1:NROW(...)` can be wrong if the RHS is 0.
+          |
+          = help: Use `seq_len(NROW(...))` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("1L:NCOL(x)"),
+            @r"
+        warning: seq
+         --> <test>:1:1
+          |
+        1 | 1L:NCOL(x)
+          | ---------- `1:NCOL(...)` can be wrong if the RHS is 0.
+          |
+          = help: Use `seq_len(NCOL(...))` instead.
+        Found 1 error.
+        "
+        );
 
         assert_snapshot!(
             "fix_output",
@@ -62,13 +197,21 @@ mod tests {
 
     #[test]
     fn test_seq_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
-        expect_lint(
-            "1:length(\n # a comment \nfoo(x))",
-            "can be wrong if the RHS is 0",
-            "seq",
-            None,
+        assert_snapshot!(
+            snapshot_lint("1:length(\n # a comment \nfoo(x))"),
+            @r"
+        warning: seq
+         --> <test>:1:1
+          |
+        1 | / 1:length(
+        2 | |  # a comment 
+        3 | | foo(x))
+          | |_______- `1:length(...)` can be wrong if the RHS is 0.
+          |
+          = help: Use `seq_along(...)` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             "no_fix_with_comments",

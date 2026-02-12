@@ -3,6 +3,11 @@ pub(crate) mod sort;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "sort", None)
+    }
 
     #[test]
     fn test_no_lint_sort() {
@@ -20,39 +25,83 @@ mod tests {
 
     #[test]
     fn test_lint_sort() {
-        use insta::assert_snapshot;
-
-        let expected_message = "Use `sort(x)` instead";
-        expect_lint("x[order(x)]", expected_message, "sort", None);
-        expect_lint(
-            "x[order(x, decreasing = TRUE)]",
-            expected_message,
-            "sort",
-            None,
+        assert_snapshot!(
+            snapshot_lint("x[order(x)]"),
+            @r"
+        warning: sort
+         --> <test>:1:1
+          |
+        1 | x[order(x)]
+          | ----------- `x[order(x)]` is inefficient.
+          |
+          = help: Use `sort(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "x[order(x, na.last = TRUE)]",
-            expected_message,
-            "sort",
-            None,
+        assert_snapshot!(
+            snapshot_lint("x[order(x, decreasing = TRUE)]"),
+            @r"
+        warning: sort
+         --> <test>:1:1
+          |
+        1 | x[order(x, decreasing = TRUE)]
+          | ------------------------------ `x[order(x)]` is inefficient.
+          |
+          = help: Use `sort(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "x[order(x, method = \"radix\")]",
-            expected_message,
-            "sort",
-            None,
+        assert_snapshot!(
+            snapshot_lint("x[order(x, na.last = TRUE)]"),
+            @r"
+        warning: sort
+         --> <test>:1:1
+          |
+        1 | x[order(x, na.last = TRUE)]
+          | --------------------------- `x[order(x)]` is inefficient.
+          |
+          = help: Use `sort(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "x[order(x, method = \"radix\", na.last = TRUE)]",
-            expected_message,
-            "sort",
-            None,
+        assert_snapshot!(
+            snapshot_lint("x[order(x, method = \"radix\")]"),
+            @r#"
+        warning: sort
+         --> <test>:1:1
+          |
+        1 | x[order(x, method = "radix")]
+          | ----------------------------- `x[order(x)]` is inefficient.
+          |
+          = help: Use `sort(x)` instead.
+        Found 1 error.
+        "#
         );
-        expect_lint(
-            "x[order(method = \"radix\", na.last = TRUE, x)]",
-            expected_message,
-            "sort",
-            None,
+        assert_snapshot!(
+            snapshot_lint("x[order(x, method = \"radix\", na.last = TRUE)]"),
+            @r#"
+        warning: sort
+         --> <test>:1:1
+          |
+        1 | x[order(x, method = "radix", na.last = TRUE)]
+          | --------------------------------------------- `x[order(x)]` is inefficient.
+          |
+          = help: Use `sort(x)` instead.
+        Found 1 error.
+        "#
+        );
+        assert_snapshot!(
+            snapshot_lint("x[order(method = \"radix\", na.last = TRUE, x)]"),
+            @r#"
+        warning: sort
+         --> <test>:1:1
+          |
+        1 | x[order(method = "radix", na.last = TRUE, x)]
+          | --------------------------------------------- `x[order(x)]` is inefficient.
+          |
+          = help: Use `sort(x)` instead.
+        Found 1 error.
+        "#
         );
         assert_snapshot!(
             "fix_output",
@@ -73,7 +122,6 @@ mod tests {
 
     #[test]
     fn test_sort_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",

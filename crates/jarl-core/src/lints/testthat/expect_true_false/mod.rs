@@ -3,6 +3,11 @@ pub(crate) mod expect_true_false;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "expect_true_false", None)
+    }
 
     #[test]
     fn test_no_lint_expect_true_false() {
@@ -17,44 +22,83 @@ mod tests {
 
     #[test]
     fn test_lint_expect_true_false() {
-        use insta::assert_snapshot;
-        let expected_message = "not as clear as";
-
-        expect_lint(
-            "expect_equal(foo(x), TRUE)",
-            expected_message,
-            "expect_true_false",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(foo(x), TRUE)"),
+            @r"
+        warning: expect_true_false
+         --> <test>:1:1
+          |
+        1 | expect_equal(foo(x), TRUE)
+          | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
+          |
+          = help: Use `expect_true(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "testthat::expect_equal(foo(x), TRUE)",
-            expected_message,
-            "expect_true_false",
-            None,
+        assert_snapshot!(
+            snapshot_lint("testthat::expect_equal(foo(x), TRUE)"),
+            @r"
+        warning: expect_true_false
+         --> <test>:1:1
+          |
+        1 | testthat::expect_equal(foo(x), TRUE)
+          | ------------------------------------ `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
+          |
+          = help: Use `expect_true(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_equal(TRUE, foo(x))",
-            expected_message,
-            "expect_true_false",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(TRUE, foo(x))"),
+            @r"
+        warning: expect_true_false
+         --> <test>:1:1
+          |
+        1 | expect_equal(TRUE, foo(x))
+          | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
+          |
+          = help: Use `expect_true(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_identical(x, FALSE)",
-            expected_message,
-            "expect_true_false",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_identical(x, FALSE)"),
+            @r"
+        warning: expect_true_false
+         --> <test>:1:1
+          |
+        1 | expect_identical(x, FALSE)
+          | -------------------------- `expect_identical(x, FALSE)` is not as clear as `expect_false(x)`.
+          |
+          = help: Use `expect_false(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_identical(FALSE, x)",
-            expected_message,
-            "expect_true_false",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_identical(FALSE, x)"),
+            @r"
+        warning: expect_true_false
+         --> <test>:1:1
+          |
+        1 | expect_identical(FALSE, x)
+          | -------------------------- `expect_identical(x, FALSE)` is not as clear as `expect_false(x)`.
+          |
+          = help: Use `expect_false(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_equal(is.numeric(x), FALSE)",
-            expected_message,
-            "expect_true_false",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(is.numeric(x), FALSE)"),
+            @r"
+        warning: expect_true_false
+         --> <test>:1:1
+          |
+        1 | expect_equal(is.numeric(x), FALSE)
+          | ---------------------------------- `expect_equal(x, FALSE)` is not as clear as `expect_false(x)`.
+          |
+          = help: Use `expect_false(x)` instead.
+        Found 1 error.
+        "
         );
 
         assert_snapshot!(
@@ -77,7 +121,6 @@ mod tests {
 
     #[test]
     fn test_expect_true_false_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",

@@ -1,3 +1,4 @@
+use annotate_snippets::{Level, Renderer, Snippet};
 use biome_rowan::TextRange;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -147,4 +148,39 @@ impl PartialOrd for Diagnostic {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
+}
+
+/// Render a single diagnostic as an annotated code snippet.
+///
+/// Uses `annotate_snippets` to produce a formatted message with the source
+/// context, warning label, and optional suggestion footer.
+///
+/// The `title` parameter allows callers to customize the message title
+/// (e.g. the CLI uses a hyperlinked rule name, while tests use the plain name).
+pub fn render_diagnostic(
+    source: &str,
+    origin: &str,
+    title: &str,
+    diagnostic: &Diagnostic,
+    renderer: &Renderer,
+) -> String {
+    let start_offset: usize = diagnostic.range.start().into();
+    let end_offset: usize = diagnostic.range.end().into();
+
+    let snippet = Snippet::source(source)
+        .origin(origin)
+        .fold(true)
+        .annotation(
+            Level::Warning
+                .span(start_offset..end_offset)
+                .label(&diagnostic.message.body),
+        );
+
+    let mut message = Level::Warning.title(title).snippet(snippet);
+
+    if let Some(suggestion_text) = &diagnostic.message.suggestion {
+        message = message.footer(Level::Help.title(suggestion_text));
+    }
+
+    format!("{}", renderer.render(message))
 }

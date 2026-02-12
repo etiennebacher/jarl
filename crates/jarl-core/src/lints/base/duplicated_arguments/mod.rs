@@ -3,6 +3,11 @@ pub(crate) mod duplicated_arguments;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "duplicated_arguments", None)
+    }
 
     #[test]
     fn test_no_lint_duplicated_arguments() {
@@ -33,48 +38,89 @@ mod tests {
 
     #[test]
     fn test_lint_duplicated_arguments() {
-        let expected_message = "Avoid duplicate arguments in function";
-        expect_lint(
-            "fun(arg = 1, arg = 2)",
-            expected_message,
-            "duplicated_arguments",
-            None,
+        assert_snapshot!(
+            snapshot_lint("fun(arg = 1, arg = 2)"),
+            @r#"
+        warning: duplicated_arguments
+         --> <test>:1:1
+          |
+        1 | fun(arg = 1, arg = 2)
+          | --------------------- Avoid duplicate arguments in function calls. Duplicated argument(s): "arg".
+          |
+        Found 1 error.
+        "#
         );
-        expect_lint(
-            "fun(arg = 1, 'arg' = 2)",
-            expected_message,
-            "duplicated_arguments",
-            None,
+        assert_snapshot!(
+            snapshot_lint("fun(arg = 1, 'arg' = 2)"),
+            @r#"
+        warning: duplicated_arguments
+         --> <test>:1:1
+          |
+        1 | fun(arg = 1, 'arg' = 2)
+          | ----------------------- Avoid duplicate arguments in function calls. Duplicated argument(s): "arg".
+          |
+        Found 1 error.
+        "#
         );
-        expect_lint(
-            "fun(arg = 1, `arg` = 2)",
-            expected_message,
-            "duplicated_arguments",
-            None,
+        assert_snapshot!(
+            snapshot_lint("fun(arg = 1, `arg` = 2)"),
+            @r#"
+        warning: duplicated_arguments
+         --> <test>:1:1
+          |
+        1 | fun(arg = 1, `arg` = 2)
+          | ----------------------- Avoid duplicate arguments in function calls. Duplicated argument(s): "arg".
+          |
+        Found 1 error.
+        "#
         );
-        expect_lint(
-            "'fun'(arg = 1, arg = 2)",
-            expected_message,
-            "duplicated_arguments",
-            None,
+        assert_snapshot!(
+            snapshot_lint("'fun'(arg = 1, arg = 2)"),
+            @r#"
+        warning: duplicated_arguments
+         --> <test>:1:1
+          |
+        1 | 'fun'(arg = 1, arg = 2)
+          | ----------------------- Avoid duplicate arguments in function calls. Duplicated argument(s): "arg".
+          |
+        Found 1 error.
+        "#
         );
-        expect_lint(
-            "list(a = 1, a = 2)",
-            expected_message,
-            "duplicated_arguments",
-            None,
+        assert_snapshot!(
+            snapshot_lint("list(a = 1, a = 2)"),
+            @r#"
+        warning: duplicated_arguments
+         --> <test>:1:1
+          |
+        1 | list(a = 1, a = 2)
+          | ------------------ Avoid duplicate arguments in function calls. Duplicated argument(s): "a".
+          |
+        Found 1 error.
+        "#
         );
-        expect_lint(
-            "foo(a = 1, a = function(x) 1)",
-            expected_message,
-            "duplicated_arguments",
-            None,
+        assert_snapshot!(
+            snapshot_lint("foo(a = 1, a = function(x) 1)"),
+            @r#"
+        warning: duplicated_arguments
+         --> <test>:1:1
+          |
+        1 | foo(a = 1, a = function(x) 1)
+          | ----------------------------- Avoid duplicate arguments in function calls. Duplicated argument(s): "a".
+          |
+        Found 1 error.
+        "#
         );
-        expect_lint(
-            "foo(a = 1, a = (function(x) x + 1))",
-            expected_message,
-            "duplicated_arguments",
-            None,
+        assert_snapshot!(
+            snapshot_lint("foo(a = 1, a = (function(x) x + 1))"),
+            @r#"
+        warning: duplicated_arguments
+         --> <test>:1:1
+          |
+        1 | foo(a = 1, a = (function(x) x + 1))
+          | ----------------------------------- Avoid duplicate arguments in function calls. Duplicated argument(s): "a".
+          |
+        Found 1 error.
+        "#
         );
         // TODO
         // assert!(expect_lint(
@@ -113,29 +159,47 @@ mod tests {
 
     #[test]
     fn test_duplicated_arguments_with_interceding_comments() {
-        let expected_message = "Avoid duplicate arguments in function";
-
-        expect_lint(
+        assert_snapshot!(
+            snapshot_lint(
             "fun(
                 arg # xxx
                 = 1,
                 arg # yyy
                 = 2
-              )",
-            expected_message,
-            "duplicated_arguments",
-            None,
+              )"), @r#"
+        warning: duplicated_arguments
+         --> <test>:1:1
+          |
+        1 | / fun(
+        2 | |                 arg # xxx
+        ... |
+        5 | |                 = 2
+        6 | |               )
+          | |_______________- Avoid duplicate arguments in function calls. Duplicated argument(s): "arg".
+          |
+        Found 1 error.
+        "#
         );
-        expect_lint(
+        assert_snapshot!(
+            snapshot_lint(
             "fun(
                 arg = # xxx
                 1,
                 arg = # yyy
                 2
-              )",
-            expected_message,
-            "duplicated_arguments",
-            None,
+              )"), @r#"
+        warning: duplicated_arguments
+         --> <test>:1:1
+          |
+        1 | / fun(
+        2 | |                 arg = # xxx
+        ... |
+        5 | |                 2
+        6 | |               )
+          | |_______________- Avoid duplicate arguments in function calls. Duplicated argument(s): "arg".
+          |
+        Found 1 error.
+        "#
         );
     }
 }

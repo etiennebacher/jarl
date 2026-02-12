@@ -3,6 +3,11 @@ pub(crate) mod unnecessary_nesting;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "unnecessary_nesting", None)
+    }
 
     #[test]
     fn test_no_lint_unnecessary_nesting() {
@@ -191,21 +196,30 @@ if (x) {
 
     #[test]
     fn test_lint_unnecessary_nesting() {
-        use insta::assert_snapshot;
-        let msg = "no need for nested if conditions";
-
-        expect_lint(
+        assert_snapshot!(
+            snapshot_lint(
             "
 if (x) {
   if (y) {
     1L
   }
-}",
-            msg,
-            "unnecessary_nesting",
-            None,
+}"), @r"
+        warning: unnecessary_nesting
+         --> <test>:2:1
+          |
+        2 | / if (x) {
+        3 | |   if (y) {
+        4 | |     1L
+        5 | |   }
+        6 | | }
+          | |_- There is no need for nested if conditions here.
+          |
+          = help: Gather the two conditions with `&&` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
+        assert_snapshot!(
+            snapshot_lint(
             "
 if (x) {
   if (y) {
@@ -213,10 +227,31 @@ if (x) {
       1L
     }
   }
-}",
-            msg,
-            "unnecessary_nesting",
-            None,
+}"), @r"
+        warning: unnecessary_nesting
+         --> <test>:2:1
+          |
+        2 | / if (x) {
+        3 | |   if (y) {
+        ... |
+        7 | |   }
+        8 | | }
+          | |_- There is no need for nested if conditions here.
+          |
+          = help: Gather the two conditions with `&&` instead.
+        warning: unnecessary_nesting
+         --> <test>:3:3
+          |
+        3 | /   if (y) {
+        4 | |     if (z) {
+        5 | |       1L
+        6 | |     }
+        7 | |   }
+          | |___- There is no need for nested if conditions here.
+          |
+          = help: Gather the two conditions with `&&` instead.
+        Found 2 errors.
+        "
         );
 
         assert_snapshot!(

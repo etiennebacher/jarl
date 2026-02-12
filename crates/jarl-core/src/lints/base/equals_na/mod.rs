@@ -3,23 +3,144 @@ pub(crate) mod equals_na;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "equals_na", None)
+    }
 
     #[test]
     fn test_lint_equals_na() {
-        use insta::assert_snapshot;
-
-        let expected_message = "Comparing to NA with";
-
-        expect_lint("x == NA", expected_message, "equals_na", None);
-        expect_lint("x == NA_integer_", expected_message, "equals_na", None);
-        expect_lint("x == NA_real_", expected_message, "equals_na", None);
-        expect_lint("x == NA_logical_", expected_message, "equals_na", None);
-        expect_lint("x == NA_character_", expected_message, "equals_na", None);
-        expect_lint("x == NA_complex_", expected_message, "equals_na", None);
-        expect_lint("x != NA", expected_message, "equals_na", None);
-        expect_lint("x %in% NA", expected_message, "equals_na", None);
-        expect_lint("foo(x(y)) == NA", expected_message, "equals_na", None);
-        expect_lint("NA == x", expected_message, "equals_na", None);
+        assert_snapshot!(
+            snapshot_lint("x == NA"),
+            @r"
+        warning: equals_na
+         --> <test>:1:1
+          |
+        1 | x == NA
+          | ------- Comparing to NA with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.na()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("x == NA_integer_"),
+            @r"
+        warning: equals_na
+         --> <test>:1:1
+          |
+        1 | x == NA_integer_
+          | ---------------- Comparing to NA with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.na()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("x == NA_real_"),
+            @r"
+        warning: equals_na
+         --> <test>:1:1
+          |
+        1 | x == NA_real_
+          | ------------- Comparing to NA with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.na()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("x == NA_logical_"),
+            @r"
+        warning: equals_na
+         --> <test>:1:1
+          |
+        1 | x == NA_logical_
+          | ---------------- Comparing to NA with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.na()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("x == NA_character_"),
+            @r"
+        warning: equals_na
+         --> <test>:1:1
+          |
+        1 | x == NA_character_
+          | ------------------ Comparing to NA with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.na()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("x == NA_complex_"),
+            @r"
+        warning: equals_na
+         --> <test>:1:1
+          |
+        1 | x == NA_complex_
+          | ---------------- Comparing to NA with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.na()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("x != NA"),
+            @r"
+        warning: equals_na
+         --> <test>:1:1
+          |
+        1 | x != NA
+          | ------- Comparing to NA with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.na()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("x %in% NA"),
+            @r"
+        warning: equals_na
+         --> <test>:1:1
+          |
+        1 | x %in% NA
+          | --------- Comparing to NA with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.na()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("foo(x(y)) == NA"),
+            @r"
+        warning: equals_na
+         --> <test>:1:1
+          |
+        1 | foo(x(y)) == NA
+          | --------------- Comparing to NA with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.na()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("NA == x"),
+            @r"
+        warning: equals_na
+         --> <test>:1:1
+          |
+        1 | NA == x
+          | ------- Comparing to NA with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.na()` instead.
+        Found 1 error.
+        "
+        );
 
         assert_snapshot!(
             "fix_output",
@@ -63,7 +184,6 @@ mod tests {
 
     #[test]
     fn test_equals_na_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",

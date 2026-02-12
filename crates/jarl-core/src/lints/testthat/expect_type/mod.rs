@@ -3,6 +3,11 @@ pub(crate) mod expect_type;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "expect_type", None)
+    }
 
     #[test]
     fn test_no_lint_expect_type() {
@@ -56,37 +61,60 @@ mod tests {
 
     #[test]
     fn test_lint_expect_type() {
-        use insta::assert_snapshot;
-
-        expect_lint(
-            "expect_equal(typeof(x), 'double')",
-            "`expect_equal(typeof(x), t)` can be hard to read",
-            "expect_type",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(typeof(x), 'double')"),
+            @r"
+        warning: expect_type
+         --> <test>:1:1
+          |
+        1 | expect_equal(typeof(x), 'double')
+          | --------------------------------- `expect_equal(typeof(x), t)` can be hard to read.
+          |
+          = help: Use `expect_type(x, t)` instead.
+        Found 1 error.
+        "
         );
-
         // expect_identical is treated the same as expect_equal
-        expect_lint(
-            "testthat::expect_identical(typeof(x), 'language')",
-            "`expect_identical(typeof(x), t)` can be hard to read",
-            "expect_type",
-            None,
+        assert_snapshot!(
+            snapshot_lint("testthat::expect_identical(typeof(x), 'language')"),
+            @r"
+        warning: expect_type
+         --> <test>:1:1
+          |
+        1 | testthat::expect_identical(typeof(x), 'language')
+          | ------------------------------------------------- `expect_identical(typeof(x), t)` can be hard to read.
+          |
+          = help: Use `expect_type(x, t)` instead.
+        Found 1 error.
+        "
         );
-
         // different equivalent usage
-        expect_lint(
-            "expect_true(is.complex(foo(x)))",
-            "`expect_true(is.<t>(x))` can be hard to read",
-            "expect_type",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_true(is.complex(foo(x)))"),
+            @r"
+        warning: expect_type
+         --> <test>:1:1
+          |
+        1 | expect_true(is.complex(foo(x)))
+          | ------------------------------- `expect_true(is.<t>(x))` can be hard to read.
+          |
+          = help: Use `expect_type(x, t)` instead.
+        Found 1 error.
+        "
         );
-
         // yoda test with clear expect_type replacement
-        expect_lint(
-            "expect_equal('integer', typeof(x))",
-            "`expect_equal(typeof(x), t)` can be hard to read",
-            "expect_type",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal('integer', typeof(x))"),
+            @r"
+        warning: expect_type
+         --> <test>:1:1
+          |
+        1 | expect_equal('integer', typeof(x))
+          | ---------------------------------- `expect_equal(typeof(x), t)` can be hard to read.
+          |
+          = help: Use `expect_type(x, t)` instead.
+        Found 1 error.
+        "
         );
 
         assert_snapshot!(
@@ -108,13 +136,20 @@ mod tests {
 
     #[test]
     fn test_expect_type_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
-        expect_lint(
-            "expect_equal(typeof(x), # comment\n'integer')",
-            "`expect_equal(typeof(x), t)` can be hard to read",
-            "expect_type",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(typeof(x), # comment\n'integer')"),
+            @r"
+        warning: expect_type
+         --> <test>:1:1
+          |
+        1 | / expect_equal(typeof(x), # comment
+        2 | | 'integer')
+          | |__________- `expect_equal(typeof(x), t)` can be hard to read.
+          |
+          = help: Use `expect_type(x, t)` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             "no_fix_with_comments",
