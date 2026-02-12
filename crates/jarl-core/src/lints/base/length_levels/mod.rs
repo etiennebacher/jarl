@@ -33,6 +33,7 @@ mod tests {
         1 | 2:length(levels(foo(a)))
           |   ---------------------- `length(levels(...))` is less readable than `nlevels(...)`.
           |
+          = help: Use `nlevels(...)` instead.
         Found 1 error.
         "
         );

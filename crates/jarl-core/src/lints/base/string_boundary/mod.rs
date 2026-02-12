@@ -80,6 +80,7 @@ mod tests {
         1 | substr(x, 1L, 2L) == 'ab'
           | ------------------------- Using `substr()` to detect an initial substring is hard to read and inefficient.
           |
+          = help: Use `startsWith()` instead.
         Found 1 error.
         "
         );
@@ -93,6 +94,7 @@ mod tests {
         1 | substr(x, 1L, end) == 'ab'
           | -------------------------- Using `substr()` to detect an initial substring is hard to read and inefficient.
           |
+          = help: Use `startsWith()` instead.
         Found 1 error.
         "
         );
@@ -106,6 +108,7 @@ mod tests {
         1 | substr(x, 1L, end) != 'ab'
           | -------------------------- Using `substr()` to detect an initial substring is hard to read and inefficient.
           |
+          = help: Use `startsWith()` instead.
         Found 1 error.
         "
         );
@@ -118,6 +121,7 @@ mod tests {
         1 | substr(x, 3, nchar(x)) != 'ab'
           | ------------------------------ Using `substr()` to detect a terminal substring is hard to read and inefficient.
           |
+          = help: Use `endsWith()` instead.
         Found 1 error.
         "
         );
@@ -131,6 +135,7 @@ mod tests {
         1 | 'ab' == substr(x, 1L, end)
           | -------------------------- Using `substr()` to detect an initial substring is hard to read and inefficient.
           |
+          = help: Use `startsWith()` instead.
         Found 1 error.
         "
         );
@@ -146,6 +151,7 @@ mod tests {
         1 | substring(x, nchar(x) - 4L, nchar(x)) == 'abcde'
           | ------------------------------------------------ Using `substring()` to detect a terminal substring is hard to read and inefficient.
           |
+          = help: Use `endsWith()` instead.
         Found 1 error.
         "
         );
@@ -159,6 +165,7 @@ mod tests {
         1 | substring(x, start, nchar(x)) == 'abcde'
           | ---------------------------------------- Using `substring()` to detect a terminal substring is hard to read and inefficient.
           |
+          = help: Use `endsWith()` instead.
         Found 1 error.
         "
         );
@@ -172,6 +179,7 @@ mod tests {
         1 | substring(colnames(x), start, nchar(colnames(x))) == 'abc'
           | ---------------------------------------------------------- Using `substring()` to detect a terminal substring is hard to read and inefficient.
           |
+          = help: Use `endsWith()` instead.
         Found 1 error.
         "
         );
@@ -185,6 +193,7 @@ mod tests {
         1 | substr(c('abc', 'def'), 1, 1) == c('a', 'a')
           | -------------------------------------------- Using `substr()` to detect an initial substring is hard to read and inefficient.
           |
+          = help: Use `startsWith()` instead.
         Found 1 error.
         "
         );

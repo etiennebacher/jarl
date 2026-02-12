@@ -51,6 +51,7 @@ mod tests {
         1 | if (all.equal(a, b)) message('equal')
           |     --------------- `all.equal()` can return a string instead of FALSE.
           |
+          = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
         Found 1 error.
         "
         );
@@ -63,6 +64,7 @@ mod tests {
         1 | !all.equal(a, b)
           | ---------------- `all.equal()` can return a string instead of FALSE.
           |
+          = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
         Found 1 error.
         "
         );
@@ -75,6 +77,7 @@ mod tests {
         1 | while (all.equal(a, b)) message('equal')
           |        --------------- `all.equal()` can return a string instead of FALSE.
           |
+          = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
         Found 1 error.
         "
         );
@@ -87,6 +90,7 @@ mod tests {
         1 | isFALSE(all.equal(a, b))
           | ------------------------ `isFALSE(all.equal())` always returns `FALSE`
           |
+          = help: Use `!isTRUE()` to check for differences instead.
         Found 1 error.
         "
         );

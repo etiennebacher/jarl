@@ -76,6 +76,7 @@ mod tests {
         1 | expect_equal(class(x), "data.frame")
           | ------------------------------------ `expect_equal(class(x), 'y')` may fail if `x` gets more classes in the future.
           |
+          = help: Use `expect_s3_class(x, 'y')` instead.
         Found 1 error.
         "#
         );
@@ -88,6 +89,7 @@ mod tests {
         1 | testthat::expect_equal(class(x), 'data.frame')
           | ---------------------------------------------- `expect_equal(class(x), 'y')` may fail if `x` gets more classes in the future.
           |
+          = help: Use `expect_s3_class(x, 'y')` instead.
         Found 1 error.
         "
         );
@@ -100,6 +102,7 @@ mod tests {
         1 | expect_equal('data.frame', class(x))
           | ------------------------------------ `expect_equal(class(x), 'y')` may fail if `x` gets more classes in the future.
           |
+          = help: Use `expect_s3_class(x, 'y')` instead.
         Found 1 error.
         "
         );

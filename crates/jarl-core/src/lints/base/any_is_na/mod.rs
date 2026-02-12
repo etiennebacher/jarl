@@ -43,6 +43,7 @@ mod tests {
         1 | any(is.na(foo(x)))
           | ------------------ `any(is.na(...))` is inefficient.
           |
+          = help: Use `anyNA(...)` instead.
         Found 1 error.
         "
         );
@@ -55,6 +56,7 @@ mod tests {
         1 | base::any(is.na(foo(x)))
           | ------------------------ `any(is.na(...))` is inefficient.
           |
+          = help: Use `anyNA(...)` instead.
         Found 1 error.
         "
         );
@@ -67,6 +69,7 @@ mod tests {
         1 | any(is.na(x), na.rm = TRUE)
           | --------------------------- `any(is.na(...))` is inefficient.
           |
+          = help: Use `anyNA(...)` instead.
         Found 1 error.
         "
         );
@@ -79,6 +82,7 @@ mod tests {
         1 | NA %in% x
           | --------- `NA %in% x` is inefficient.
           |
+          = help: Use `anyNA(x)` instead.
         Found 1 error.
         "
         );

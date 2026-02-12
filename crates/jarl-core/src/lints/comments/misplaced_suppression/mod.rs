@@ -63,6 +63,7 @@ any(
         4 | ) # jarl-ignore any_is_na: <reason>
           |   --------------------------------- This comment isn't used by Jarl because end-of-line suppressions are not supported.
           |
+          = help: Move the suppression comment to its own line above the code you want to suppress.
         Found 1 error.
         "
         );
@@ -77,6 +78,7 @@ any(
         1 | any(is.na(x)) # jarl-ignore-file any_is_na: <reason>
           |               -------------------------------------- This comment isn't used by Jarl because end-of-line suppressions are not supported.
           |
+          = help: Move the suppression comment to its own line above the code you want to suppress.
         Found 1 error.
         "
         );
@@ -91,6 +93,7 @@ any(
         1 | any(is.na(x)) # jarl-ignore-start any_is_na: <reason>
           |               --------------------------------------- This comment isn't used by Jarl because end-of-line suppressions are not supported.
           |
+          = help: Move the suppression comment to its own line above the code you want to suppress.
         Found 1 error.
         "
         );

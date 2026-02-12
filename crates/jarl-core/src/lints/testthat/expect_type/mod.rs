@@ -84,6 +84,7 @@ mod tests {
         1 | testthat::expect_identical(typeof(x), 'language')
           | ------------------------------------------------- `expect_identical(typeof(x), t)` can be hard to read.
           |
+          = help: Use `expect_type(x, t)` instead.
         Found 1 error.
         "
         );
@@ -97,6 +98,7 @@ mod tests {
         1 | expect_true(is.complex(foo(x)))
           | ------------------------------- `expect_true(is.<t>(x))` can be hard to read.
           |
+          = help: Use `expect_type(x, t)` instead.
         Found 1 error.
         "
         );
@@ -110,6 +112,7 @@ mod tests {
         1 | expect_equal('integer', typeof(x))
           | ---------------------------------- `expect_equal(typeof(x), t)` can be hard to read.
           |
+          = help: Use `expect_type(x, t)` instead.
         Found 1 error.
         "
         );

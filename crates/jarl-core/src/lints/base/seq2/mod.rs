@@ -44,6 +44,7 @@ mod tests {
         1 | base::seq(base::length(x))
           | -------------------------- `seq(length(...))` can be wrong if the argument has length 0.
           |
+          = help: Use `seq_along(...)` instead.
         Found 1 error.
         "
         );
@@ -56,6 +57,7 @@ mod tests {
         1 | seq(nrow(x))
           | ------------ `seq(nrow(...))` can be wrong if the argument has length 0.
           |
+          = help: Use `seq_len(nrow(...))` instead.
         Found 1 error.
         "
         );
@@ -68,6 +70,7 @@ mod tests {
         1 | seq(ncol(x))
           | ------------ `seq(ncol(...))` can be wrong if the argument has length 0.
           |
+          = help: Use `seq_len(ncol(...))` instead.
         Found 1 error.
         "
         );
@@ -80,6 +83,7 @@ mod tests {
         1 | seq(NROW(x))
           | ------------ `seq(NROW(...))` can be wrong if the argument has length 0.
           |
+          = help: Use `seq_len(NROW(...))` instead.
         Found 1 error.
         "
         );
@@ -92,6 +96,7 @@ mod tests {
         1 | seq(NCOL(x))
           | ------------ `seq(NCOL(...))` can be wrong if the argument has length 0.
           |
+          = help: Use `seq_len(NCOL(...))` instead.
         Found 1 error.
         "
         );

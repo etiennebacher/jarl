@@ -68,6 +68,7 @@ mod tests {
         1 | sprintf("a")
           | ------------ `sprintf()` without special characters is useless.
           |
+          = help: Use directly the input of `sprintf()` instead.
         Found 1 error.
         "#
         );
@@ -81,6 +82,7 @@ mod tests {
         1 | sprintf('%%')
           | ------------- `sprintf()` without special characters is useless.
           |
+          = help: Use directly the input of `sprintf()` instead.
         Found 1 error.
         "
         );
@@ -93,6 +95,7 @@ mod tests {
         1 | sprintf('%%', '')
           | ----------------- `sprintf()` without special characters is useless.
           |
+          = help: Use directly the input of `sprintf()` instead.
         Found 1 error.
         "
         );
@@ -136,6 +139,7 @@ mod tests {
         1 | sprintf('%a %s', 1)
           | ------------------- Mismatch between number of special characters and number of arguments.
           |
+          = help: Found 2 special character(s) and 1 argument(s).
         Found 1 error.
         "
         );
@@ -149,6 +153,7 @@ mod tests {
         1 | sprintf('hello %1$s %s', '1', '2')
           | ---------------------------------- Mismatch between number of special characters and number of arguments.
           |
+          = help: Found 1 special character(s) and 2 argument(s).
         Found 1 error.
         "
         );

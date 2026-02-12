@@ -54,6 +54,7 @@ mod tests {
         1 | is.integer(x) || is.numeric(x)
           | ------------------------------ `is.numeric(x) || is.integer(x)` is redundant.
           |
+          = help: Use `is.numeric(x)` instead. Use `is.double(x)` to test for objects stored as 64-bit floating point
         Found 1 error.
         "
         );
@@ -68,6 +69,7 @@ mod tests {
         1 | is.integer(DT$x) || is.numeric(DT$x)
           | ------------------------------------ `is.numeric(x) || is.integer(x)` is redundant.
           |
+          = help: Use `is.numeric(x)` instead. Use `is.double(x)` to test for objects stored as 64-bit floating point
         Found 1 error.
         "
         );
@@ -86,6 +88,7 @@ mod tests {
         4 | |               || is.numeric(x)
           | |______________________________- `is.numeric(x) || is.integer(x)` is redundant.
           |
+          = help: Use `is.numeric(x)` instead. Use `is.double(x)` to test for objects stored as 64-bit floating point
         Found 1 error.
         "
         );
@@ -100,6 +103,7 @@ mod tests {
         1 | all(y > 5) && (is.integer(x) || is.numeric(x))
           |                ------------------------------ `is.numeric(x) || is.integer(x)` is redundant.
           |
+          = help: Use `is.numeric(x)` instead. Use `is.double(x)` to test for objects stored as 64-bit floating point
         Found 1 error.
         "
         );
@@ -114,6 +118,7 @@ mod tests {
         1 | is.integer(x) || is.numeric(x) || is.logical(x)
           | ------------------------------ `is.numeric(x) || is.integer(x)` is redundant.
           |
+          = help: Use `is.numeric(x)` instead. Use `is.double(x)` to test for objects stored as 64-bit floating point
         Found 1 error.
         "
         );

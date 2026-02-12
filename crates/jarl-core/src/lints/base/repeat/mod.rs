@@ -33,6 +33,7 @@ mod tests {
         1 | for (i in 1:10) { while (TRUE) { if (i == 5) { break } } }
           |                   ------------ `while (TRUE)` is less clear than `repeat` for infinite loops.
           |
+          = help: Use `repeat {}` instead.
         Found 1 error.
         "
         );

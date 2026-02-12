@@ -47,6 +47,7 @@ mod tests {
         1 | sample(1L:10L, 2)
           | ----------------- `sample(1:n, m, ...)` is less readable than `sample.int(n, m, ...)`.
           |
+          = help: Use `sample.int(n, m, ...)` instead.
         Found 1 error.
         "
         );
@@ -59,6 +60,7 @@ mod tests {
         1 | sample(1:n, 2)
           | -------------- `sample(1:n, m, ...)` is less readable than `sample.int(n, m, ...)`.
           |
+          = help: Use `sample.int(n, m, ...)` instead.
         Found 1 error.
         "
         );
@@ -71,6 +73,7 @@ mod tests {
         1 | sample(1:k, replace = TRUE)
           | --------------------------- `sample(1:n, m, ...)` is less readable than `sample.int(n, m, ...)`.
           |
+          = help: Use `sample.int(n, m, ...)` instead.
         Found 1 error.
         "
         );
@@ -83,6 +86,7 @@ mod tests {
         1 | sample(1:foo(x), prob = bar(x))
           | ------------------------------- `sample(1:n, m, ...)` is less readable than `sample.int(n, m, ...)`.
           |
+          = help: Use `sample.int(n, m, ...)` instead.
         Found 1 error.
         "
         );

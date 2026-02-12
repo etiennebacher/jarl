@@ -81,6 +81,7 @@ mod tests {
         1 | grep('abcdefg', x)
           | ------------------ Pattern contains no regex special characters but `fixed = TRUE` is not set.
           |
+          = help: Add `fixed = TRUE` for better performance.
         Found 1 error.
         "
         );
@@ -93,6 +94,7 @@ mod tests {
         1 | regexec('abcdefg', x)
           | --------------------- Pattern contains no regex special characters but `fixed = TRUE` is not set.
           |
+          = help: Add `fixed = TRUE` for better performance.
         Found 1 error.
         "
         );
@@ -105,6 +107,7 @@ mod tests {
         1 | regexpr('abcdefg', x)
           | --------------------- Pattern contains no regex special characters but `fixed = TRUE` is not set.
           |
+          = help: Add `fixed = TRUE` for better performance.
         Found 1 error.
         "
         );
@@ -117,6 +120,7 @@ mod tests {
         1 | gsub('abcdefg', 'a', x)
           | ----------------------- Pattern contains no regex special characters but `fixed = TRUE` is not set.
           |
+          = help: Add `fixed = TRUE` for better performance.
         Found 1 error.
         "
         );
@@ -129,6 +133,7 @@ mod tests {
         1 | sub('abcdefg', 'a', x)
           | ---------------------- Pattern contains no regex special characters but `fixed = TRUE` is not set.
           |
+          = help: Add `fixed = TRUE` for better performance.
         Found 1 error.
         "
         );
@@ -141,6 +146,7 @@ mod tests {
         1 | gregexpr('abcdefg', x)
           | ---------------------- Pattern contains no regex special characters but `fixed = TRUE` is not set.
           |
+          = help: Add `fixed = TRUE` for better performance.
         Found 1 error.
         "
         );
@@ -156,6 +162,7 @@ mod tests {
         1 | gregexpr('a-z', y)
           | ------------------ Pattern contains no regex special characters but `fixed = TRUE` is not set.
           |
+          = help: Add `fixed = TRUE` for better performance.
         Found 1 error.
         "
         );
@@ -170,6 +177,7 @@ mod tests {
         1 | gregexpr(pattern = 'a-z', y)
           | ---------------------------- Pattern contains no regex special characters but `fixed = TRUE` is not set.
           |
+          = help: Add `fixed = TRUE` for better performance.
         Found 1 error.
         "
         );

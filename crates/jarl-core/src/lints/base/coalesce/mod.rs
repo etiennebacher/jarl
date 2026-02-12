@@ -63,6 +63,7 @@ mod tests {
         1 | if (is.null(x)) { y } else x
           | ---------------------------- `if (is.null(x)) y else x` can be simplified.
           |
+          = help: Use `x %||% y` instead.
         Found 1 error.
         "
         );
@@ -75,6 +76,7 @@ mod tests {
         1 | if (is.null(x)) y else { x }
           | ---------------------------- `if (is.null(x)) y else x` can be simplified.
           |
+          = help: Use `x %||% y` instead.
         Found 1 error.
         "
         );
@@ -87,6 +89,7 @@ mod tests {
         1 | if (is.null(x)) { y } else { x }
           | -------------------------------- `if (is.null(x)) y else x` can be simplified.
           |
+          = help: Use `x %||% y` instead.
         Found 1 error.
         "
         );
@@ -99,6 +102,7 @@ mod tests {
         1 | if (is.null(x[1])) y else x[1]
           | ------------------------------ `if (is.null(x)) y else x` can be simplified.
           |
+          = help: Use `x %||% y` instead.
         Found 1 error.
         "
         );
@@ -111,6 +115,7 @@ mod tests {
         1 | if (is.null(foo(x))) y else foo(x)
           | ---------------------------------- `if (is.null(x)) y else x` can be simplified.
           |
+          = help: Use `x %||% y` instead.
         Found 1 error.
         "
         );
@@ -123,6 +128,7 @@ mod tests {
         1 | if (!is.null(x)) x else y
           | ------------------------- `if (!is.null(x)) x else y` can be simplified.
           |
+          = help: Use `x %||% y` instead.
         Found 1 error.
         "
         );
@@ -135,6 +141,7 @@ mod tests {
         1 | if (!is.null(x)) { x } else y
           | ----------------------------- `if (!is.null(x)) x else y` can be simplified.
           |
+          = help: Use `x %||% y` instead.
         Found 1 error.
         "
         );
@@ -147,6 +154,7 @@ mod tests {
         1 | if (!is.null(x)) x else { y }
           | ----------------------------- `if (!is.null(x)) x else y` can be simplified.
           |
+          = help: Use `x %||% y` instead.
         Found 1 error.
         "
         );
@@ -159,6 +167,7 @@ mod tests {
         1 | if (!is.null(x)) { x } else { y }
           | --------------------------------- `if (!is.null(x)) x else y` can be simplified.
           |
+          = help: Use `x %||% y` instead.
         Found 1 error.
         "
         );
@@ -171,6 +180,7 @@ mod tests {
         1 | if (!is.null(x[1])) x[1] else y
           | ------------------------------- `if (!is.null(x)) x else y` can be simplified.
           |
+          = help: Use `x %||% y` instead.
         Found 1 error.
         "
         );
@@ -183,6 +193,7 @@ mod tests {
         1 | if (!is.null(foo(x))) foo(x) else y
           | ----------------------------------- `if (!is.null(x)) x else y` can be simplified.
           |
+          = help: Use `x %||% y` instead.
         Found 1 error.
         "
         );

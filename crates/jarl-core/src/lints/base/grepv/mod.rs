@@ -40,6 +40,7 @@ mod tests {
         1 | grep('i', x, TRUE, TRUE, TRUE)
           | ------------------------------ `grep(..., value = TRUE)` can be simplified.
           |
+          = help: Use `grepv(...)` instead.
         Found 1 error.
         "
         );
@@ -52,6 +53,7 @@ mod tests {
         1 | grep('i', x, TRUE, TRUE, TRUE, value = TRUE)
           | -------------------------------------------- `grep(..., value = TRUE)` can be simplified.
           |
+          = help: Use `grepv(...)` instead.
         Found 1 error.
         "
         );

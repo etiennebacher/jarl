@@ -64,6 +64,7 @@ mod tests {
         1 | ifelse(foo(bar(x)) == 'test', TRUE, FALSE)
           | ------------------------------------------ This `ifelse()` is redundant.
           |
+          = help: Use `condition` directly.
         Found 1 error.
         "
         );

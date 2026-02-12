@@ -74,6 +74,7 @@ f <- function(x) {
         2 | # jarl-ignore any_is_na: <reason>
           | --------------------------------- This suppression comment is unused, no violation would be reported without it.
           |
+          = help: Remove this suppression comment or verify that it's still needed.
         Found 1 error.
         "
         );
@@ -88,6 +89,7 @@ y <- 2", "outdated_suppression,any_is_na"), @r"
         2 | # jarl-ignore-file any_is_na: <reason>
           | -------------------------------------- This suppression comment is unused, no violation would be reported without it.
           |
+          = help: Remove this suppression comment or verify that it's still needed.
         Found 1 error.
         "
         );
@@ -103,6 +105,7 @@ y <- 2", "outdated_suppression,any_is_na"), @r"
         2 | # jarl-ignore-start any_is_na: <reason>
           | --------------------------------------- This suppression comment is unused, no violation would be reported without it.
           |
+          = help: Remove this suppression comment or verify that it's still needed.
         Found 1 error.
         "
         );

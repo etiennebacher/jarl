@@ -65,6 +65,7 @@ mod tests {
         1 | if (TRUE || x) { print('hi') }
           |     --------- `if` condition always evaluates to `TRUE`.
           |
+          = help: Modify the `if` condition, or keep only the body.
         Found 1 error.
         "
         );
@@ -77,6 +78,7 @@ mod tests {
         1 | if (x || TRUE) { print('hi') }
           |     --------- `if` condition always evaluates to `TRUE`.
           |
+          = help: Modify the `if` condition, or keep only the body.
         Found 1 error.
         "
         );
@@ -89,6 +91,7 @@ mod tests {
         1 | if (1) { print('hi') }
           |     - `if` condition always evaluates to `TRUE`.
           |
+          = help: Modify the `if` condition, or keep only the body.
         Found 1 error.
         "
         );
@@ -101,6 +104,7 @@ mod tests {
         1 | if (-1) { print('hi') }
           |     -- `if` condition always evaluates to `TRUE`.
           |
+          = help: Modify the `if` condition, or keep only the body.
         Found 1 error.
         "
         );
@@ -113,6 +117,7 @@ mod tests {
         1 | if (5.5) { print('hi') }
           |     --- `if` condition always evaluates to `TRUE`.
           |
+          = help: Modify the `if` condition, or keep only the body.
         Found 1 error.
         "
         );
@@ -125,6 +130,7 @@ mod tests {
         1 | if (0.1) { print('hi') }
           |     --- `if` condition always evaluates to `TRUE`.
           |
+          = help: Modify the `if` condition, or keep only the body.
         Found 1 error.
         "
         );
@@ -137,6 +143,7 @@ mod tests {
         1 | if (10 || x) { print('hi') }
           |     ------- `if` condition always evaluates to `TRUE`.
           |
+          = help: Modify the `if` condition, or keep only the body.
         Found 1 error.
         "
         );
@@ -149,6 +156,7 @@ mod tests {
         1 | if (!FALSE) { print('hi') }
           |     ------ `if` condition always evaluates to `TRUE`.
           |
+          = help: Modify the `if` condition, or keep only the body.
         Found 1 error.
         "
         );
@@ -161,6 +169,7 @@ mod tests {
         1 | if (Inf) { print('hi') }
           |     --- `if` condition always evaluates to `TRUE`.
           |
+          = help: Modify the `if` condition, or keep only the body.
         Found 1 error.
         "
         );
@@ -173,6 +182,7 @@ mod tests {
         1 | if (-Inf) { print('hi') }
           |     ---- `if` condition always evaluates to `TRUE`.
           |
+          = help: Modify the `if` condition, or keep only the body.
         Found 1 error.
         "
         );
@@ -186,6 +196,7 @@ mod tests {
         1 | if (x) { print('hi') } else if (TRUE) { print('bye') }
           |                                 ---- `if` condition always evaluates to `TRUE`.
           |
+          = help: Modify the `if` condition, or keep only the body.
         Found 1 error.
         "
         );

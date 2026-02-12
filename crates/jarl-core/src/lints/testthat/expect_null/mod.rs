@@ -63,6 +63,7 @@ mod tests {
         1 | testthat::expect_equal(x, NULL)
           | ------------------------------- `expect_equal(x, NULL)` is not as clear as `expect_null(x)`.
           |
+          = help: Use `expect_null(x)` instead.
         Found 1 error.
         "
         );
@@ -75,6 +76,7 @@ mod tests {
         1 | expect_identical(x, NULL)
           | ------------------------- `expect_identical(x, NULL)` is not as clear as `expect_null(x)`.
           |
+          = help: Use `expect_null(x)` instead.
         Found 1 error.
         "
         );
@@ -87,6 +89,7 @@ mod tests {
         1 | expect_equal(NULL, x)
           | --------------------- `expect_equal(x, NULL)` is not as clear as `expect_null(x)`.
           |
+          = help: Use `expect_null(x)` instead.
         Found 1 error.
         "
         );
@@ -99,6 +102,7 @@ mod tests {
         1 | expect_true(is.null(foo(x)))
           | ---------------------------- `expect_true(is.null(x))` is not as clear as `expect_null(x)`.
           |
+          = help: Use `expect_null(x)` instead.
         Found 1 error.
         "
         );

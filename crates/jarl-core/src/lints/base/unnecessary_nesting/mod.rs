@@ -238,6 +238,7 @@ if (x) {
         8 | | }
           | |_- There is no need for nested if conditions here.
           |
+          = help: Gather the two conditions with `&&` instead.
         warning: unnecessary_nesting
          --> <test>:3:3
           |
@@ -248,6 +249,7 @@ if (x) {
         7 | |   }
           | |___- There is no need for nested if conditions here.
           |
+          = help: Gather the two conditions with `&&` instead.
         Found 2 errors.
         "
         );

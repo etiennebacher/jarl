@@ -47,6 +47,7 @@ mod tests {
         1 | !(x > y)
           | -------- Do not use `!(x > y)`.
           |
+          = help: Use `x <= y` instead.
         Found 1 error.
         "
         );
@@ -59,6 +60,7 @@ mod tests {
         1 | !(x <= y)
           | --------- Do not use `!(x <= y)`.
           |
+          = help: Use `x > y` instead.
         Found 1 error.
         "
         );
@@ -71,6 +73,7 @@ mod tests {
         1 | !(x < y)
           | -------- Do not use `!(x < y)`.
           |
+          = help: Use `x >= y` instead.
         Found 1 error.
         "
         );
@@ -83,6 +86,7 @@ mod tests {
         1 | !(x == y)
           | --------- Do not use `!(x == y)`.
           |
+          = help: Use `x != y` instead.
         Found 1 error.
         "
         );
@@ -95,6 +99,7 @@ mod tests {
         1 | !(x != y)
           | --------- Do not use `!(x != y)`.
           |
+          = help: Use `x == y` instead.
         Found 1 error.
         "
         );
@@ -145,6 +150,7 @@ mod tests {
         3 | |  >= y)
           | |______- Do not use `!(x >= y)`.
           |
+          = help: Use `x < y` instead.
         Found 1 error.
         "
         );
@@ -157,6 +163,7 @@ mod tests {
         1 | !(x >= y) # trailing comment
           | --------- Do not use `!(x >= y)`.
           |
+          = help: Use `x < y` instead.
         Found 1 error.
         "
         );

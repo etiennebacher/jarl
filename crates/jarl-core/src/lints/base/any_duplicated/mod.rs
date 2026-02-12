@@ -43,6 +43,7 @@ mod tests {
         1 | any(duplicated(foo(x)))
           | ----------------------- `any(duplicated(...))` is inefficient.
           |
+          = help: Use `anyDuplicated(...) > 0` instead.
         Found 1 error.
         "
         );
@@ -55,6 +56,7 @@ mod tests {
         1 | any(duplicated(x), na.rm = TRUE)
           | -------------------------------- `any(duplicated(...))` is inefficient.
           |
+          = help: Use `anyDuplicated(...) > 0` instead.
         Found 1 error.
         "
         );
@@ -67,6 +69,7 @@ mod tests {
         1 | any(na.rm = TRUE, duplicated(x))
           | -------------------------------- `any(duplicated(...))` is inefficient.
           |
+          = help: Use `anyDuplicated(...) > 0` instead.
         Found 1 error.
         "
         );
@@ -79,12 +82,14 @@ mod tests {
         1 | any(duplicated(x)); 1 + 1; any(duplicated(y))
           | ------------------ `any(duplicated(...))` is inefficient.
           |
+          = help: Use `anyDuplicated(...) > 0` instead.
         warning: any_duplicated
          --> <test>:1:28
           |
         1 | any(duplicated(x)); 1 + 1; any(duplicated(y))
           |                            ------------------ `any(duplicated(...))` is inefficient.
           |
+          = help: Use `anyDuplicated(...) > 0` instead.
         Found 2 errors.
         "
         );
