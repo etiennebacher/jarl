@@ -309,4 +309,29 @@ mod tests {
         "#
         );
     }
+
+    #[test]
+    fn test_namespaced_value_in_config_does_not_match_plain_call() {
+        // If the user puts "mypkg::myfun" in the config, only the function name
+        // is matched (i.e. "myfun"), so a plain call to `myfun(...)` should NOT
+        // match "mypkg::myfun".
+        let settings = settings_with_options(DuplicatedArgumentsOptions {
+            skipped_functions: Some(vec!["mypkg::myfun".to_string()]),
+            extend_skipped_functions: None,
+        });
+
+        let code = r#"myfun(a = 1, a = 1)"#;
+        assert_snapshot!(
+            snapshot_lint_with_settings(code, settings),
+            @r#"
+        warning: duplicated_arguments
+         --> <test>:1:1
+          |
+        1 | myfun(a = 1, a = 1)
+          | ------------------- Avoid duplicate arguments in function calls. Duplicated argument(s): "a".
+          |
+        Found 1 error.
+        "#
+        );
+    }
 }

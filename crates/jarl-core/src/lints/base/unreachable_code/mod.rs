@@ -1200,4 +1200,23 @@ foo <- function() {
         "
         );
     }
+
+    #[test]
+    fn test_namespaced_value_in_config_does_not_match_plain_call() {
+        // If the user puts "mypkg::myfun" in the config, only the function name
+        // is matched (i.e. "myfun"), so a plain call to `myfun(...)` should NOT
+        // match "mypkg::myfun".
+        let settings = settings_with_options(UnreachableCodeOptions {
+            stopping_functions: Some(vec!["mypkg::myfun".to_string()]),
+            extend_stopping_functions: None,
+        });
+
+        let code = r#"
+foo <- function() {
+  myfun("error")
+  1 + 1
+}
+"#;
+        expect_no_lint_with_settings(code, "unreachable_code", None, settings);
+    }
 }

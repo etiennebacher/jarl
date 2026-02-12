@@ -288,6 +288,10 @@ Use `skipped-functions` to fully replace the default list of functions that are
 allowed to have duplicated arguments. Use `extend-skipped-functions` to add to
 the default list. Specifying both is an error.
 
+Function names in `skipped-functions` or `extend-skipped-functions` also match
+namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
+`rlang::list2()`.
+
 Default: `skipped-functions = ["c", "mutate", "summarize", "transmute"]`
 
 ```toml
@@ -304,6 +308,10 @@ skipped-functions = ["list"]
 Use `stopping-functions` to fully replace the default list of functions that are
 considered to stop execution (never return). Use `extend-stopping-functions` to
 add to the default list. Specifying both is an error.
+
+Function names in `stopping-functions` or `extend-stopping-functions` also match
+namespaced calls, e.g. `stopping-functions = ["abort"]` will consider `abort()`
+and `rlang::abort()` as stopping functions.
 
 Default: `stopping-functions = ["stop", ".Defunct", "abort", "cli_abort",
 "q", "quit"]`.
