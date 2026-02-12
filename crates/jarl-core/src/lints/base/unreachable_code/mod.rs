@@ -3,11 +3,28 @@ pub(crate) mod unreachable_code;
 
 #[cfg(test)]
 mod tests {
+    use crate::rule_options::ResolvedRuleOptions;
+    use crate::rule_options::unreachable_code::UnreachableCodeOptions;
+    use crate::settings::{LinterSettings, Settings};
     use crate::utils_test::*;
 
     /// Format diagnostics for snapshot testing
     fn snapshot_lint(code: &str) -> String {
         format_diagnostics(code, "unreachable_code", None)
+    }
+
+    fn snapshot_lint_with_settings(code: &str, settings: Settings) -> String {
+        format_diagnostics_with_settings(code, "unreachable_code", None, Some(settings))
+    }
+
+    /// Build a `Settings` with custom `UnreachableCodeOptions`.
+    fn settings_with_options(options: UnreachableCodeOptions) -> Settings {
+        Settings {
+            linter: LinterSettings {
+                rule_options: ResolvedRuleOptions::resolve(None, Some(&options)).unwrap(),
+                ..Default::default()
+            },
+        }
     }
 
     #[test]
@@ -1010,6 +1027,122 @@ if (outer_condition) {
           |
         8 |   x <- 1
           |   ------ This code is unreachable because the preceding if/else terminates in all branches.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    // ---- Rule-specific config tests ----
+
+    #[test]
+    fn test_stopping_functions_replaces_defaults() {
+        // With custom stopping-functions = ["my_stop"], only "my_stop" stops.
+        // Default "stop" should no longer trigger unreachable code.
+        let settings = settings_with_options(UnreachableCodeOptions {
+            stopping_functions: Some(vec!["my_stop".to_string()]),
+            extend_stopping_functions: None,
+        });
+
+        // "stop" is NOT in the custom list -> no longer considered stopping
+        let code = r#"
+foo <- function() {
+  stop("error")
+  1 + 1
+}
+"#;
+        expect_no_lint_with_settings(code, "unreachable_code", None, settings.clone());
+
+        // "my_stop" IS in the custom list -> triggers unreachable code
+        let code = r#"
+foo <- function() {
+  my_stop("error")
+  1 + 1
+}
+"#;
+        insta::assert_snapshot!(
+            snapshot_lint_with_settings(code, settings),
+            @r"
+        warning: unreachable_code
+         --> <test>:4:3
+          |
+        4 |   1 + 1
+          |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_extend_stopping_functions_adds_to_defaults() {
+        // extend-stopping-functions = ["my_stop"] -> defaults + "my_stop"
+        let settings = settings_with_options(UnreachableCodeOptions {
+            stopping_functions: None,
+            extend_stopping_functions: Some(vec!["my_stop".to_string()]),
+        });
+
+        // "my_stop" is in the extended list -> triggers unreachable code
+        let code = r#"
+foo <- function() {
+  my_stop("error")
+  1 + 1
+}
+"#;
+        insta::assert_snapshot!(
+            snapshot_lint_with_settings(code, settings.clone()),
+            @r"
+        warning: unreachable_code
+         --> <test>:4:3
+          |
+        4 |   1 + 1
+          |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
+          |
+        Found 1 error.
+        "
+        );
+
+        // Default "stop" still works
+        let code = r#"
+foo <- function() {
+  stop("error")
+  1 + 1
+}
+"#;
+        insta::assert_snapshot!(
+            snapshot_lint_with_settings(code, settings),
+            @r"
+        warning: unreachable_code
+         --> <test>:4:3
+          |
+        4 |   1 + 1
+          |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_extend_stopping_functions_top_level() {
+        // Custom stopping functions should also work at top level
+        let settings = settings_with_options(UnreachableCodeOptions {
+            stopping_functions: None,
+            extend_stopping_functions: Some(vec!["my_stop".to_string()]),
+        });
+
+        let code = r#"
+my_stop("fatal")
+x <- 1
+"#;
+        insta::assert_snapshot!(
+            snapshot_lint_with_settings(code, settings),
+            @r"
+        warning: unreachable_code
+         --> <test>:3:1
+          |
+        3 | x <- 1
+          | ------ This code is unreachable because it appears after a `stop()` statement (or equivalent).
           |
         Found 1 error.
         "

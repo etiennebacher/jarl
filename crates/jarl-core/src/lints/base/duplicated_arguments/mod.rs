@@ -2,11 +2,28 @@ pub(crate) mod duplicated_arguments;
 
 #[cfg(test)]
 mod tests {
+    use crate::rule_options::ResolvedRuleOptions;
+    use crate::rule_options::duplicated_arguments::DuplicatedArgumentsOptions;
+    use crate::settings::{LinterSettings, Settings};
     use crate::utils_test::*;
     use insta::assert_snapshot;
 
     fn snapshot_lint(code: &str) -> String {
         format_diagnostics(code, "duplicated_arguments", None)
+    }
+
+    fn snapshot_lint_with_settings(code: &str, settings: Settings) -> String {
+        format_diagnostics_with_settings(code, "duplicated_arguments", None, Some(settings))
+    }
+
+    /// Build a `Settings` with custom `DuplicatedArgumentsOptions`.
+    fn settings_with_options(options: DuplicatedArgumentsOptions) -> Settings {
+        Settings {
+            linter: LinterSettings {
+                rule_options: ResolvedRuleOptions::resolve(Some(&options), None).unwrap(),
+                ..Default::default()
+            },
+        }
     }
 
     #[test]
@@ -155,6 +172,79 @@ mod tests {
     #[test]
     fn test_duplicated_arguments_no_args() {
         expect_no_lint("foo()", "duplicated_arguments", None);
+    }
+
+    // ---- Rule-specific config tests ----
+
+    #[test]
+    fn test_skipped_functions_replaces_defaults() {
+        // With custom skipped-functions = ["list"], only "list" is skipped.
+        // Default-skipped "c" should now lint.
+        let settings = settings_with_options(DuplicatedArgumentsOptions {
+            skipped_functions: Some(vec!["list".to_string()]),
+            extend_skipped_functions: None,
+        });
+
+        // "list" is in the custom list -> no lint
+        expect_no_lint_with_settings(
+            "list(a = 1, a = 2)",
+            "duplicated_arguments",
+            None,
+            settings.clone(),
+        );
+
+        // "c" is NOT in the custom list -> now lints (was default-skipped)
+        assert_snapshot!(
+            snapshot_lint_with_settings("c(a = 1, a = 2)", settings),
+            @r#"
+        warning: duplicated_arguments
+         --> <test>:1:1
+          |
+        1 | c(a = 1, a = 2)
+          | --------------- Avoid duplicate arguments in function calls. Duplicated argument(s): "a".
+          |
+        Found 1 error.
+        "#
+        );
+    }
+
+    #[test]
+    fn test_extend_skipped_functions_adds_to_defaults() {
+        // extend-skipped-functions = ["my_fun"] -> defaults + "my_fun"
+        let settings = settings_with_options(DuplicatedArgumentsOptions {
+            skipped_functions: None,
+            extend_skipped_functions: Some(vec!["my_fun".to_string()]),
+        });
+
+        // "my_fun" is in the extended list -> no lint
+        expect_no_lint_with_settings(
+            "my_fun(a = 1, a = 2)",
+            "duplicated_arguments",
+            None,
+            settings.clone(),
+        );
+
+        // Default "c" is still skipped
+        expect_no_lint_with_settings(
+            "c(a = 1, a = 2)",
+            "duplicated_arguments",
+            None,
+            settings.clone(),
+        );
+
+        // "foo" is not in either list -> lints
+        assert_snapshot!(
+            snapshot_lint_with_settings("foo(a = 1, a = 2)", settings),
+            @r#"
+        warning: duplicated_arguments
+         --> <test>:1:1
+          |
+        1 | foo(a = 1, a = 2)
+          | ----------------- Avoid duplicate arguments in function calls. Duplicated argument(s): "a".
+          |
+        Found 1 error.
+        "#
+        );
     }
 
     #[test]
