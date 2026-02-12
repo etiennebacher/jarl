@@ -15,7 +15,7 @@ fn make_hyperlink(text: &str) -> String {
     )
 }
 
-use jarl_core::diagnostic::{render_diagnostic, Diagnostic};
+use jarl_core::diagnostic::{Diagnostic, render_diagnostic};
 
 fn show_hint_statistics(total_diagnostics: i32) {
     let n_violations = std::env::var("JARL_N_VIOLATIONS_HINT_STAT")
@@ -356,8 +356,7 @@ impl Emitter for FullEmitter {
                 diagnostic.message.name.clone()
             };
 
-            let rendered =
-                render_diagnostic(source, file_path, &title, diagnostic, &renderer);
+            let rendered = render_diagnostic(source, file_path, &title, diagnostic, &renderer);
             writeln!(writer, "{rendered}\n")?;
 
             if diagnostic.has_safe_fix() {
