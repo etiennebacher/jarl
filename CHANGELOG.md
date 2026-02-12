@@ -10,7 +10,7 @@
   [lint.assignment]
   operator = "<-" # or "="
   ```
-  More info on these rule-specific sections in `jarl.toml` in the "Features"
+  More info on these rule-specific options in `jarl.toml` in the "Features"
   section below (#334).
 
 ### Features
