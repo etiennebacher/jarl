@@ -1148,4 +1148,56 @@ x <- 1
         "
         );
     }
+
+    #[test]
+    fn test_namespaced_stopping_function() {
+        // The CFG builder strips namespace prefixes, so "abort" in the stopping
+        // functions list matches both `abort(...)` and `rlang::abort(...)`.
+        let code = r#"
+foo <- function() {
+  rlang::abort("error")
+  1 + 1
+}
+"#;
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r"
+        warning: unreachable_code
+         --> <test>:4:3
+          |
+        4 |   1 + 1
+          |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_namespaced_custom_stopping_function() {
+        // A custom stopping function also works when called with a namespace prefix.
+        let settings = settings_with_options(UnreachableCodeOptions {
+            stopping_functions: None,
+            extend_stopping_functions: Some(vec!["my_stop".to_string()]),
+        });
+
+        let code = r#"
+foo <- function() {
+  mypkg::my_stop("error")
+  1 + 1
+}
+"#;
+        insta::assert_snapshot!(
+            snapshot_lint_with_settings(code, settings),
+            @r"
+        warning: unreachable_code
+         --> <test>:4:3
+          |
+        4 |   1 + 1
+          |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
+          |
+        Found 1 error.
+        "
+        );
+    }
 }

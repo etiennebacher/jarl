@@ -277,7 +277,11 @@ impl<'a> CfgBuilder<'a> {
             }
             RSyntaxKind::R_CALL => {
                 // Check if this is a return, break, or next call
-                let fun_name = stmt.first_child().unwrap().text_trimmed().to_string();
+                let full_name = stmt.first_child().unwrap().text_trimmed().to_string();
+                // Strip namespace prefix: "rlang::abort" -> "abort", "stop" -> "stop"
+                let fun_name = full_name
+                    .rsplit_once("::")
+                    .map_or(full_name.as_str(), |(_, name)| name);
                 if fun_name == "return" {
                     self.build_return(current, stmt.clone());
                     current
@@ -287,7 +291,7 @@ impl<'a> CfgBuilder<'a> {
                 } else if fun_name == "next" {
                     self.build_next(current, stmt.clone());
                     current
-                } else if self.stopping_functions.contains(fun_name.as_str()) {
+                } else if self.stopping_functions.contains(fun_name) {
                     self.build_stop(current, stmt.clone());
                     current
                 } else {

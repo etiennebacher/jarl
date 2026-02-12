@@ -248,6 +248,23 @@ mod tests {
     }
 
     #[test]
+    fn test_skipped_functions_with_namespaced_call() {
+        // duplicated_arguments extracts just the RHS of pkg::fun, so
+        // skipping "my_fun" also skips "pkg::my_fun(...)".
+        let settings = settings_with_options(DuplicatedArgumentsOptions {
+            skipped_functions: None,
+            extend_skipped_functions: Some(vec!["my_fun".to_string()]),
+        });
+
+        expect_no_lint_with_settings(
+            "pkg::my_fun(a = 1, a = 2)",
+            "duplicated_arguments",
+            None,
+            settings,
+        );
+    }
+
+    #[test]
     fn test_duplicated_arguments_with_interceding_comments() {
         assert_snapshot!(
             snapshot_lint(
