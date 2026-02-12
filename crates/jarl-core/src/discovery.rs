@@ -117,7 +117,9 @@ pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<Disc
 // way of "inheriting" most top level configuration while slightly tweaking it in a nested directory.
 fn parse_settings(toml: &Path, root_directory: &Path) -> anyhow::Result<Settings> {
     let options = parse_jarl_toml(toml)?;
-    let settings = options.into_settings(root_directory)?;
+    let settings = options
+        .into_settings(root_directory)
+        .map_err(|err| anyhow::anyhow!("Invalid configuration in {}:\n{err}", toml.display()))?;
     Ok(settings)
 }
 
