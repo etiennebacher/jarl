@@ -22,6 +22,7 @@ use crate::lints::base::sample_int::sample_int::sample_int;
 use crate::lints::base::seq2::seq2::seq2;
 use crate::lints::base::sprintf::sprintf::sprintf;
 use crate::lints::base::system_file::system_file::system_file;
+use crate::lints::base::undesirable_function::undesirable_function::undesirable_function;
 use crate::lints::base::which_grepl::which_grepl::which_grepl;
 
 use crate::lints::testthat::expect_length::expect_length::expect_length;
@@ -113,6 +114,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled(Rule::SystemFile) {
         checker.report_diagnostic(system_file(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::UndesirableFunction) {
+        checker.report_diagnostic(undesirable_function(r_expr, checker)?);
     }
     if checker.is_rule_enabled(Rule::WhichGrepl) {
         checker.report_diagnostic(which_grepl(r_expr)?);

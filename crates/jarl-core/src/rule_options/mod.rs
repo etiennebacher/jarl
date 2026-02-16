@@ -1,5 +1,6 @@
 pub mod assignment;
 pub mod duplicated_arguments;
+pub mod undesirable_function;
 pub mod unreachable_code;
 
 use assignment::AssignmentOptions;
@@ -7,6 +8,8 @@ use assignment::ResolvedAssignmentOptions;
 use duplicated_arguments::DuplicatedArgumentsOptions;
 use duplicated_arguments::ResolvedDuplicatedArgumentsOptions;
 use std::collections::HashSet;
+use undesirable_function::ResolvedUndesirableFunctionOptions;
+use undesirable_function::UndesirableFunctionOptions;
 use unreachable_code::ResolvedUnreachableCodeOptions;
 use unreachable_code::UnreachableCodeOptions;
 
@@ -57,6 +60,7 @@ pub fn resolve_with_extend(
 pub struct ResolvedRuleOptions {
     pub assignment: ResolvedAssignmentOptions,
     pub duplicated_arguments: ResolvedDuplicatedArgumentsOptions,
+    pub undesirable_function: ResolvedUndesirableFunctionOptions,
     pub unreachable_code: ResolvedUnreachableCodeOptions,
 }
 
@@ -64,12 +68,16 @@ impl ResolvedRuleOptions {
     pub fn resolve(
         assignment: Option<&AssignmentOptions>,
         duplicated_arguments: Option<&DuplicatedArgumentsOptions>,
+        undesirable_function: Option<&UndesirableFunctionOptions>,
         unreachable_code: Option<&UnreachableCodeOptions>,
     ) -> anyhow::Result<Self> {
         Ok(Self {
             assignment: ResolvedAssignmentOptions::resolve(assignment)?,
             duplicated_arguments: ResolvedDuplicatedArgumentsOptions::resolve(
                 duplicated_arguments,
+            )?,
+            undesirable_function: ResolvedUndesirableFunctionOptions::resolve(
+                undesirable_function,
             )?,
             unreachable_code: ResolvedUnreachableCodeOptions::resolve(unreachable_code)?,
         })
@@ -78,6 +86,6 @@ impl ResolvedRuleOptions {
 
 impl Default for ResolvedRuleOptions {
     fn default() -> Self {
-        Self::resolve(None, None, None).expect("default rule options should always resolve")
+        Self::resolve(None, None, None, None).expect("default rule options should always resolve")
     }
 }

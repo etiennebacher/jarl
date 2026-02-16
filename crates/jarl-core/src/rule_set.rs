@@ -77,9 +77,26 @@ pub enum FixStatus {
     Unsafe,
 }
 
+/// Information about a deprecated rule.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DeprecationInfo {
+    pub version: &'static str,
+    pub replacement: &'static str,
+}
+
 macro_rules! declare_rules {
+    // Internal helper: expand deprecation info when present
+    (@deprecation $ver:literal, $repl:literal) => {
+        Some(DeprecationInfo { version: $ver, replacement: $repl })
+    };
+    // Internal helper: no deprecation info
+    (@deprecation) => {
+        None
+    };
+
     (
         $(
+            $(#[deprecated(version = $dep_ver:literal, replacement = $dep_repl:literal)])?
             $variant:ident => {
                 name: $name:literal,
                 categories: [$($category:ident),+ $(,)?],
@@ -129,6 +146,18 @@ macro_rules! declare_rules {
                 match self {
                     $(Self::$variant => $min_version),*
                 }
+            }
+
+            /// Get deprecation info for this rule, if deprecated
+            pub fn deprecation(self) -> Option<DeprecationInfo> {
+                match self {
+                    $(Self::$variant => declare_rules!(@deprecation $($dep_ver, $dep_repl)?),)*
+                }
+            }
+
+            /// Check if this rule is deprecated
+            pub fn is_deprecated(self) -> bool {
+                self.deprecation().is_some()
             }
 
             /// Check if the rule has a safe fix
@@ -225,6 +254,7 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    #[deprecated(version = "0.5.0", replacement = "undesirable_function")]
     Browser => {
         name: "browser",
         categories: [Corr],
@@ -550,6 +580,13 @@ declare_rules! {
     TrueFalseSymbol => {
         name: "true_false_symbol",
         categories: [Read],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    UndesirableFunction => {
+        name: "undesirable_function",
+        categories: [Corr],
         default: Enabled,
         fix: None,
         min_r_version: None,

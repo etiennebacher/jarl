@@ -8,13 +8,8 @@ exit_code: 255
 
 ----- stderr -----
 jarl failed
-  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-TOML parse error at line 4, column 1
-  |
-4 | unknown_field = ["value"]
-  | ^^^^^^^^^^^^^
-unknown field `unknown_field`, expected one of `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, `exclude`, `default-exclude`, `assignment`, `duplicated-arguments`, `unreachable-code`
-
+  Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+Unknown field `unknown_field` in `[lint]`. Expected one of: `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, `exclude`, `default-exclude`.
 
 ----- args -----
 check .
