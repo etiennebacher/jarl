@@ -23,7 +23,7 @@ docs <- lapply(rules, \(x) {
   }
 
   start <- grep("## What it does", content, fixed = TRUE)
-  end <- grep("(impl Violation for)|(pub fn)", content) - 1
+  end <- grep("(impl Violation for)|(pub fn )", content) - 1
   end <- end[1] # could be several "pub fn"
 
   doc <- content[start:end]

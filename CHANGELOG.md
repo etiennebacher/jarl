@@ -13,6 +13,9 @@
   More info on these rule-specific options in `jarl.toml` in the "Features"
   section below (#334).
 
+* The rule `"browser"` is deprecated. Calls to `browser()` are now detected with
+  the rule `"undesirable_function"` (#336).
+
 ### Features
 
 * `jarl.toml` now accepts rule-specific options in subsections `[lint.<rule-name>]`,
