@@ -441,3 +441,57 @@ fn test_extend_select_unknown_rule() -> anyhow::Result<()> {
     );
     Ok(())
 }
+
+#[test]
+fn test_deprecated_rule_warning_from_cli() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    let test_contents = "browser()";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    // Selecting `browser` via --select should emit a deprecation warning on stderr
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("browser")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_deprecated_rule_warning_from_toml() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    let test_contents = "browser()";
+    std::fs::write(directory.join(test_path), test_contents)?;
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+select = ["browser"]
+"#,
+    )?;
+
+    // Using `browser` in TOML select should emit a deprecation warning
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
