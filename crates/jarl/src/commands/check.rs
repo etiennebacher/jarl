@@ -180,11 +180,12 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         // TOML settings from all discovered configs
         for item in resolver.items() {
             let linter = &item.value().linter;
-            for opt_vec in [&linter.select, &linter.extend_select, &linter.ignore] {
-                if let Some(names) = opt_vec {
-                    for name in names {
-                        explicit_rule_names.insert(name.clone());
-                    }
+            for names in [&linter.select, &linter.extend_select, &linter.ignore]
+                .into_iter()
+                .flatten()
+            {
+                for name in names {
+                    explicit_rule_names.insert(name.clone());
                 }
             }
         }

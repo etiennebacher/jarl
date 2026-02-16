@@ -35,7 +35,11 @@ mod tests {
     #[test]
     fn test_no_lint_undesirable_function() {
         expect_no_lint("print('hello')", "undesirable_function", None);
-        expect_no_lint("function(browser = 'firefox')", "undesirable_function", None);
+        expect_no_lint(
+            "function(browser = 'firefox')",
+            "undesirable_function",
+            None,
+        );
         expect_no_lint("function(tool = browser)", "undesirable_function", None);
         expect_no_lint("# browser()", "undesirable_function", None);
     }
@@ -76,12 +80,7 @@ mod tests {
         });
 
         // "browser" is no longer in the list -> no lint
-        expect_no_lint_with_settings(
-            "browser()",
-            "undesirable_function",
-            None,
-            settings.clone(),
-        );
+        expect_no_lint_with_settings("browser()", "undesirable_function", None, settings.clone());
 
         // "debug" is in the custom list -> lints
         assert_snapshot!(
