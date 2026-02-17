@@ -31,6 +31,15 @@
   ```
   These options are listed in the [Configuration page](https://jarl.etiennebacher.com/config#with-a-config-file) (#333).
 
+* Jarl now also analyzes piped functions, e.g. the following code is now reported
+  by the `any_is_na` rule:
+  ```r
+  is.na(x) |> any()
+
+  x |> is.na() |> any()
+  ```
+  (#338).
+
 ## 0.4.0
 
 ### Breaking changes
