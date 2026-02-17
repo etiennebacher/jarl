@@ -3,6 +3,11 @@ pub(crate) mod redundant_ifelse;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "redundant_ifelse", None)
+    }
 
     #[test]
     fn test_no_lint_redundant_ifelse() {
@@ -36,22 +41,32 @@ mod tests {
 
     #[test]
     fn test_redundant_ifelse_complex_conditions() {
-        use insta::assert_snapshot;
-
         // Complex conditions should still be detected
-        let expected_message = "This `ifelse()` is redundant";
-
-        expect_lint(
-            "ifelse(x > 0 & y < 10, TRUE, FALSE)",
-            expected_message,
-            "redundant_ifelse",
-            None,
+        assert_snapshot!(
+            snapshot_lint("ifelse(x > 0 & y < 10, TRUE, FALSE)"),
+            @r"
+        warning: redundant_ifelse
+         --> <test>:1:1
+          |
+        1 | ifelse(x > 0 & y < 10, TRUE, FALSE)
+          | ----------------------------------- This `ifelse()` is redundant.
+          |
+          = help: Use `condition` directly.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "ifelse(foo(bar(x)) == 'test', TRUE, FALSE)",
-            expected_message,
-            "redundant_ifelse",
-            None,
+        assert_snapshot!(
+            snapshot_lint("ifelse(foo(bar(x)) == 'test', TRUE, FALSE)"),
+            @r"
+        warning: redundant_ifelse
+         --> <test>:1:1
+          |
+        1 | ifelse(foo(bar(x)) == 'test', TRUE, FALSE)
+          | ------------------------------------------ This `ifelse()` is redundant.
+          |
+          = help: Use `condition` directly.
+        Found 1 error.
+        "
         );
 
         assert_snapshot!(
@@ -71,8 +86,6 @@ mod tests {
 
     #[test]
     fn test_redundant_ifelse_with_comments_no_fix() {
-        use insta::assert_snapshot;
-
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",
@@ -90,8 +103,6 @@ mod tests {
 
     #[test]
     fn test_redundant_ifelse_all_variants() {
-        use insta::assert_snapshot;
-
         // Comprehensive test with all function variants and patterns
         assert_snapshot!(
             "all_variants",

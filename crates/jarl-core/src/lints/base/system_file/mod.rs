@@ -3,6 +3,11 @@ pub(crate) mod system_file;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "system_file", None)
+    }
 
     #[test]
     fn test_no_lint_system_file() {
@@ -15,20 +20,31 @@ mod tests {
 
     #[test]
     fn test_lint_system_file() {
-        use insta::assert_snapshot;
-        let expected_message = "system.file(file.path(...))` is redundant.";
-
-        expect_lint(
-            "system.file(file.path('path', 'to', 'data'), package = 'foo')",
-            expected_message,
-            "system_file",
-            None,
+        assert_snapshot!(
+            snapshot_lint("system.file(file.path('path', 'to', 'data'), package = 'foo')"),
+            @r"
+        warning: system_file
+         --> <test>:1:1
+          |
+        1 | system.file(file.path('path', 'to', 'data'), package = 'foo')
+          | ------------------------------------------------------------- `system.file(file.path(...))` is redundant.
+          |
+          = help: Use `system.file(...)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "base::system.file(file.path('path', 'to', 'data'), package = 'foo')",
-            expected_message,
-            "system_file",
-            None,
+        assert_snapshot!(
+            snapshot_lint("base::system.file(file.path('path', 'to', 'data'), package = 'foo')"),
+            @r"
+        warning: system_file
+         --> <test>:1:1
+          |
+        1 | base::system.file(file.path('path', 'to', 'data'), package = 'foo')
+          | ------------------------------------------------------------------- `system.file(file.path(...))` is redundant.
+          |
+          = help: Use `system.file(...)` instead.
+        Found 1 error.
+        "
         );
 
         assert_snapshot!(
@@ -43,13 +59,21 @@ mod tests {
 
     #[test]
     fn test_system_file_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
-        expect_lint(
-            "system.file(\n # a comment\nfile.path('path', 'to', 'data'), package = 'foo')",
-            "system.file(file.path(...))` is redundant.",
-            "system_file",
-            None,
+        assert_snapshot!(
+            snapshot_lint("system.file(\n # a comment\nfile.path('path', 'to', 'data'), package = 'foo')"),
+            @r"
+        warning: system_file
+         --> <test>:1:1
+          |
+        1 | / system.file(
+        2 | |  # a comment
+        3 | | file.path('path', 'to', 'data'), package = 'foo')
+          | |_________________________________________________- `system.file(file.path(...))` is redundant.
+          |
+          = help: Use `system.file(...)` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             "no_fix_with_comments",

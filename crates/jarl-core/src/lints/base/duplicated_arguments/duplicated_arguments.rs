@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
+use crate::check::Checker;
 use crate::diagnostic::*;
 use air_r_syntax::*;
 use anyhow::anyhow;
@@ -24,7 +25,7 @@ use biome_rowan::AstNode;
 /// ```r
 /// list(x = 1, x = 2)
 /// ```
-pub fn duplicated_arguments(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
+pub fn duplicated_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
 
     let fun_name = match function? {
@@ -57,9 +58,9 @@ pub fn duplicated_arguments(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     };
 
     // https://github.com/etiennebacher/jarl/issues/172
+    let skipped = &checker.rule_options.duplicated_arguments.skipped_functions;
     let is_whitelisted_prefix = fun_name.starts_with("cli_");
-    let whitelisted_funs = ["c", "mutate", "summarize", "transmute"];
-    if whitelisted_funs.contains(&fun_name.as_str()) || is_whitelisted_prefix {
+    if skipped.contains(&fun_name) || is_whitelisted_prefix {
         return Ok(None);
     }
 

@@ -3,6 +3,11 @@ pub(crate) mod matrix_apply;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "matrix_apply", None)
+    }
 
     #[test]
     fn test_no_lint_matrix_apply() {
@@ -25,49 +30,138 @@ mod tests {
 
     #[test]
     fn test_lint_matrix_apply() {
-        use insta::assert_snapshot;
+        assert_snapshot!(
+            snapshot_lint("apply(x, 1, sum)"),
+            @r"
+        warning: matrix_apply
+         --> <test>:1:1
+          |
+        1 | apply(x, 1, sum)
+          | ---------------- `apply(x, 1, sum)` is inefficient.
+          |
+          = help: Use `rowSums(x)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("base::apply(x, 1, sum)"),
+            @r"
+        warning: matrix_apply
+         --> <test>:1:1
+          |
+        1 | base::apply(x, 1, sum)
+          | ---------------------- `apply(x, 1, sum)` is inefficient.
+          |
+          = help: Use `rowSums(x)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("apply(x, MARGIN = 1, FUN = sum)"),
+            @r"
+        warning: matrix_apply
+         --> <test>:1:1
+          |
+        1 | apply(x, MARGIN = 1, FUN = sum)
+          | ------------------------------- `apply(x, 1, sum)` is inefficient.
+          |
+          = help: Use `rowSums(x)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("apply(x, 1L, sum)"),
+            @r"
+        warning: matrix_apply
+         --> <test>:1:1
+          |
+        1 | apply(x, 1L, sum)
+          | ----------------- `apply(x, 1, sum)` is inefficient.
+          |
+          = help: Use `rowSums(x)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("apply(x, 1, mean)"),
+            @r"
+        warning: matrix_apply
+         --> <test>:1:1
+          |
+        1 | apply(x, 1, mean)
+          | ----------------- `apply(x, 1, mean)` is inefficient.
+          |
+          = help: Use `rowMeans(x)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("apply(x, MARGIN = 1, FUN = mean)"),
+            @r"
+        warning: matrix_apply
+         --> <test>:1:1
+          |
+        1 | apply(x, MARGIN = 1, FUN = mean)
+          | -------------------------------- `apply(x, 1, mean)` is inefficient.
+          |
+          = help: Use `rowMeans(x)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("apply(x, 1L, mean)"),
+            @r"
+        warning: matrix_apply
+         --> <test>:1:1
+          |
+        1 | apply(x, 1L, mean)
+          | ------------------ `apply(x, 1, mean)` is inefficient.
+          |
+          = help: Use `rowMeans(x)` instead.
+        Found 1 error.
+        "
+        );
 
-        let expected_message = "is inefficient";
-        expect_lint("apply(x, 1, sum)", expected_message, "matrix_apply", None);
-        expect_lint(
-            "base::apply(x, 1, sum)",
-            expected_message,
-            "matrix_apply",
-            None,
-        );
-        expect_lint(
-            "apply(x, MARGIN = 1, FUN = sum)",
-            expected_message,
-            "matrix_apply",
-            None,
-        );
-        expect_lint("apply(x, 1L, sum)", expected_message, "matrix_apply", None);
-        expect_lint("apply(x, 1, mean)", expected_message, "matrix_apply", None);
-        expect_lint(
-            "apply(x, MARGIN = 1, FUN = mean)",
-            expected_message,
-            "matrix_apply",
-            None,
-        );
-        expect_lint("apply(x, 1L, mean)", expected_message, "matrix_apply", None);
+        assert_snapshot!(
 
-        expect_lint(
-            "apply(x, 1, sum, na.rm = TRUE)",
-            expected_message,
-            "matrix_apply",
-            None,
+            snapshot_lint("apply(x, 1, sum, na.rm = TRUE)"),
+
+            @r"
+        warning: matrix_apply
+         --> <test>:1:1
+          |
+        1 | apply(x, 1, sum, na.rm = TRUE)
+          | ------------------------------ `apply(x, 1, sum)` is inefficient.
+          |
+          = help: Use `rowSums(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "apply(x, 1, sum, na.rm = FALSE)",
-            expected_message,
-            "matrix_apply",
-            None,
+        assert_snapshot!(
+            snapshot_lint("apply(x, 1, sum, na.rm = FALSE)"),
+            @r"
+        warning: matrix_apply
+         --> <test>:1:1
+          |
+        1 | apply(x, 1, sum, na.rm = FALSE)
+          | ------------------------------- `apply(x, 1, sum)` is inefficient.
+          |
+          = help: Use `rowSums(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "apply(x, 1, sum, na.rm = foo)",
-            expected_message,
-            "matrix_apply",
-            None,
+        assert_snapshot!(
+            snapshot_lint("apply(x, 1, sum, na.rm = foo)"),
+            @r"
+        warning: matrix_apply
+         --> <test>:1:1
+          |
+        1 | apply(x, 1, sum, na.rm = foo)
+          | ----------------------------- `apply(x, 1, sum)` is inefficient.
+          |
+          = help: Use `rowSums(x)` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             "fix_output",
@@ -95,7 +189,6 @@ mod tests {
 
     #[test]
     fn test_matrix_apply_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",

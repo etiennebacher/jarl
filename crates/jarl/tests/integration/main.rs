@@ -21,3 +21,4 @@ mod rules;
 mod statistics;
 mod toml;
 mod toml_hierarchical;
+mod toml_rule_args;

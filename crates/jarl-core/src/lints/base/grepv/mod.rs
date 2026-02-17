@@ -3,6 +3,11 @@ pub(crate) mod grepv;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "grepv", Some("4.5"))
+    }
 
     #[test]
     fn test_no_lint_grepv() {
@@ -13,26 +18,44 @@ mod tests {
 
     #[test]
     fn test_lint_grepv() {
-        use insta::assert_snapshot;
-
-        let expected_message = "Use `grepv(...)`";
-        has_lint(
-            "grep('i', x, value = TRUE)",
-            expected_message,
-            "grepv",
-            Some("4.5"),
+        assert_snapshot!(
+            snapshot_lint("grep('i', x, value = TRUE)"),
+            @r"
+        warning: grepv
+         --> <test>:1:1
+          |
+        1 | grep('i', x, value = TRUE)
+          | -------------------------- `grep(..., value = TRUE)` can be simplified.
+          |
+          = help: Use `grepv(...)` instead.
+        Found 1 error.
+        "
         );
-        has_lint(
-            "grep('i', x, TRUE, TRUE, TRUE)",
-            expected_message,
-            "grepv",
-            Some("4.5"),
+        assert_snapshot!(
+            snapshot_lint("grep('i', x, TRUE, TRUE, TRUE)"),
+            @r"
+        warning: grepv
+         --> <test>:1:1
+          |
+        1 | grep('i', x, TRUE, TRUE, TRUE)
+          | ------------------------------ `grep(..., value = TRUE)` can be simplified.
+          |
+          = help: Use `grepv(...)` instead.
+        Found 1 error.
+        "
         );
-        has_lint(
-            "grep('i', x, TRUE, TRUE, TRUE, value = TRUE)",
-            expected_message,
-            "grepv",
-            Some("4.5"),
+        assert_snapshot!(
+            snapshot_lint("grep('i', x, TRUE, TRUE, TRUE, value = TRUE)"),
+            @r"
+        warning: grepv
+         --> <test>:1:1
+          |
+        1 | grep('i', x, TRUE, TRUE, TRUE, value = TRUE)
+          | -------------------------------------------- `grep(..., value = TRUE)` can be simplified.
+          |
+          = help: Use `grepv(...)` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             "fix_output",
@@ -54,7 +77,6 @@ mod tests {
 
     #[test]
     fn test_grepv_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",

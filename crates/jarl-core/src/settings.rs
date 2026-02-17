@@ -4,22 +4,27 @@
 //
 // MIT License - Posit PBC
 
+use crate::rule_options::ResolvedRuleOptions;
+
 /// Resolved configuration settings used within jarl
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Settings {
     pub linter: LinterSettings,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct LinterSettings {
     pub select: Option<Vec<String>>,
     pub extend_select: Option<Vec<String>>,
     pub ignore: Option<Vec<String>>,
-    pub assignment: Option<String>,
     pub exclude: Option<Vec<String>>,
     pub default_exclude: Option<bool>,
     pub fixable: Option<Vec<String>>,
     pub unfixable: Option<Vec<String>>,
+    /// Whether the deprecated `assignment = "<-"` top-level string form was
+    /// used in `[lint]`. When `true`, a deprecation warning should be emitted.
+    pub deprecated_assignment_syntax: bool,
+    pub rule_options: ResolvedRuleOptions,
 }
 
 impl Default for LinterSettings {
@@ -31,11 +36,12 @@ impl Default for LinterSettings {
             select: None,
             extend_select: None,
             ignore: None,
-            assignment: None,
             exclude: None,
             default_exclude: None,
             fixable: None,
             unfixable: None,
+            deprecated_assignment_syntax: false,
+            rule_options: ResolvedRuleOptions::default(),
         }
     }
 }

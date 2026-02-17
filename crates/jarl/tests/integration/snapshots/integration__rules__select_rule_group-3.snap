@@ -9,7 +9,7 @@ warning: all_equal
  --> test.R:3:1
   |
 3 | !all.equal(x, y)
-  | ---------------- `all.equal()` can return a string instead of FALSE.
+  | ---------------- If `all.equal()` is false, it will return a string and not `FALSE`.
   |
   = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
 

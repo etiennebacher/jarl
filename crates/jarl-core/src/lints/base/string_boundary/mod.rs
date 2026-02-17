@@ -3,6 +3,11 @@ pub(crate) mod string_boundary;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "string_boundary", None)
+    }
 
     #[test]
     fn test_no_lint_string_boundary() {
@@ -53,74 +58,144 @@ mod tests {
 
     #[test]
     fn test_lint_string_boundary() {
-        use insta::assert_snapshot;
-
-        expect_lint(
-            "substr(x, 1, 2) == 'ab'",
-            "Using `substr()` to detect an initial substring",
-            "string_boundary",
-            None,
+        assert_snapshot!(
+            snapshot_lint("substr(x, 1, 2) == 'ab'"),
+            @r"
+        warning: string_boundary
+         --> <test>:1:1
+          |
+        1 | substr(x, 1, 2) == 'ab'
+          | ----------------------- Using `substr()` to detect an initial substring is hard to read and inefficient.
+          |
+          = help: Use `startsWith()` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "substr(x, 1L, 2L) == 'ab'",
-            "Using `substr()` to detect an initial substring",
-            "string_boundary",
-            None,
+        assert_snapshot!(
+            snapshot_lint("substr(x, 1L, 2L) == 'ab'"),
+            @r"
+        warning: string_boundary
+         --> <test>:1:1
+          |
+        1 | substr(x, 1L, 2L) == 'ab'
+          | ------------------------- Using `substr()` to detect an initial substring is hard to read and inefficient.
+          |
+          = help: Use `startsWith()` instead.
+        Found 1 error.
+        "
         );
         // end doesn't matter, just anchoring to 1L
-        expect_lint(
-            "substr(x, 1L, end) == 'ab'",
-            "Using `substr()` to detect an initial substring",
-            "string_boundary",
-            None,
+        assert_snapshot!(
+            snapshot_lint("substr(x, 1L, end) == 'ab'"),
+            @r"
+        warning: string_boundary
+         --> <test>:1:1
+          |
+        1 | substr(x, 1L, end) == 'ab'
+          | -------------------------- Using `substr()` to detect an initial substring is hard to read and inefficient.
+          |
+          = help: Use `startsWith()` instead.
+        Found 1 error.
+        "
         );
         // != operator also works
-        expect_lint(
-            "substr(x, 1L, end) != 'ab'",
-            "Using `substr()` to detect an initial substring",
-            "string_boundary",
-            None,
+        assert_snapshot!(
+            snapshot_lint("substr(x, 1L, end) != 'ab'"),
+            @r"
+        warning: string_boundary
+         --> <test>:1:1
+          |
+        1 | substr(x, 1L, end) != 'ab'
+          | -------------------------- Using `substr()` to detect an initial substring is hard to read and inefficient.
+          |
+          = help: Use `startsWith()` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "substr(x, 3, nchar(x)) != 'ab'",
-            "Using `substr()` to detect a terminal substring",
-            "string_boundary",
-            None,
+        assert_snapshot!(
+            snapshot_lint("substr(x, 3, nchar(x)) != 'ab'"),
+            @r"
+        warning: string_boundary
+         --> <test>:1:1
+          |
+        1 | substr(x, 3, nchar(x)) != 'ab'
+          | ------------------------------ Using `substr()` to detect a terminal substring is hard to read and inefficient.
+          |
+          = help: Use `endsWith()` instead.
+        Found 1 error.
+        "
         );
         // Works in the other direction
-        expect_lint(
-            "'ab' == substr(x, 1L, end)",
-            "Using `substr()` to detect an initial substring",
-            "string_boundary",
-            None,
+        assert_snapshot!(
+            snapshot_lint("'ab' == substr(x, 1L, end)"),
+            @r"
+        warning: string_boundary
+         --> <test>:1:1
+          |
+        1 | 'ab' == substr(x, 1L, end)
+          | -------------------------- Using `substr()` to detect an initial substring is hard to read and inefficient.
+          |
+          = help: Use `startsWith()` instead.
+        Found 1 error.
+        "
         );
 
-        expect_lint(
-            "substring(x, nchar(x) - 4L, nchar(x)) == 'abcde'",
-            "Using `substring()` to detect a terminal substring",
-            "string_boundary",
-            None,
+        assert_snapshot!(
+
+            snapshot_lint("substring(x, nchar(x) - 4L, nchar(x)) == 'abcde'"),
+
+            @r"
+        warning: string_boundary
+         --> <test>:1:1
+          |
+        1 | substring(x, nchar(x) - 4L, nchar(x)) == 'abcde'
+          | ------------------------------------------------ Using `substring()` to detect a terminal substring is hard to read and inefficient.
+          |
+          = help: Use `endsWith()` instead.
+        Found 1 error.
+        "
         );
         // start doesn't matter, just anchoring to nchar(x)
-        expect_lint(
-            "substring(x, start, nchar(x)) == 'abcde'",
-            "Using `substring()` to detect a terminal substring",
-            "string_boundary",
-            None,
+        assert_snapshot!(
+            snapshot_lint("substring(x, start, nchar(x)) == 'abcde'"),
+            @r"
+        warning: string_boundary
+         --> <test>:1:1
+          |
+        1 | substring(x, start, nchar(x)) == 'abcde'
+          | ---------------------------------------- Using `substring()` to detect a terminal substring is hard to read and inefficient.
+          |
+          = help: Use `endsWith()` instead.
+        Found 1 error.
+        "
         );
         // more complicated expressions
-        expect_lint(
-            "substring(colnames(x), start, nchar(colnames(x))) == 'abc'",
-            "Using `substring()` to detect a terminal substring",
-            "string_boundary",
-            None,
+        assert_snapshot!(
+            snapshot_lint("substring(colnames(x), start, nchar(colnames(x))) == 'abc'"),
+            @r"
+        warning: string_boundary
+         --> <test>:1:1
+          |
+        1 | substring(colnames(x), start, nchar(colnames(x))) == 'abc'
+          | ---------------------------------------------------------- Using `substring()` to detect a terminal substring is hard to read and inefficient.
+          |
+          = help: Use `endsWith()` instead.
+        Found 1 error.
+        "
         );
         // comparing vectors
-        expect_lint(
-            "substr(c('abc', 'def'), 1, 1) == c('a', 'a')",
-            "Using `substr()` to detect an initial substring",
-            "string_boundary",
-            None,
+        assert_snapshot!(
+            snapshot_lint("substr(c('abc', 'def'), 1, 1) == c('a', 'a')"),
+            @r"
+        warning: string_boundary
+         --> <test>:1:1
+          |
+        1 | substr(c('abc', 'def'), 1, 1) == c('a', 'a')
+          | -------------------------------------------- Using `substr()` to detect an initial substring is hard to read and inefficient.
+          |
+          = help: Use `startsWith()` instead.
+        Found 1 error.
+        "
         );
 
         assert_snapshot!(
@@ -146,13 +221,21 @@ mod tests {
 
     #[test]
     fn test_string_boundary_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
-        expect_lint(
-            "substr(x, \n # a comment \n1, 2) == 'ab'",
-            "Using `substr()` to detect an initial substring",
-            "string_boundary",
-            None,
+        assert_snapshot!(
+            snapshot_lint("substr(x, \n # a comment \n1, 2) == 'ab'"),
+            @r"
+        warning: string_boundary
+         --> <test>:1:1
+          |
+        1 | / substr(x, 
+        2 | |  # a comment 
+        3 | | 1, 2) == 'ab'
+          | |_____________- Using `substr()` to detect an initial substring is hard to read and inefficient.
+          |
+          = help: Use `startsWith()` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             "no_fix_with_comments",

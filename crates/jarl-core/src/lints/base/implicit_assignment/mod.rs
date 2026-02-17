@@ -3,68 +3,133 @@ pub(crate) mod implicit_assignment;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "implicit_assignment", None)
+    }
 
     #[test]
     fn test_lint_implicit_assignment() {
-        expect_lint(
-            "if (x <- 1L) TRUE",
-            "in `if()` statements",
-            "implicit_assignment",
-            None,
+        assert_snapshot!(
+            snapshot_lint("if (x <- 1L) TRUE"),
+            @r"
+        warning: implicit_assignment
+         --> <test>:1:5
+          |
+        1 | if (x <- 1L) TRUE
+          |     ------- Avoid implicit assignments in `if()` statements.
+          |
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "if (1L -> x) TRUE",
-            "in `if()` statements",
-            "implicit_assignment",
-            None,
+        assert_snapshot!(
+            snapshot_lint("if (1L -> x) TRUE"),
+            @r"
+        warning: implicit_assignment
+         --> <test>:1:5
+          |
+        1 | if (1L -> x) TRUE
+          |     ------- Avoid implicit assignments in `if()` statements.
+          |
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "if (x <<- 1L) TRUE",
-            "in `if()` statements",
-            "implicit_assignment",
-            None,
+        assert_snapshot!(
+            snapshot_lint("if (x <<- 1L) TRUE"),
+            @r"
+        warning: implicit_assignment
+         --> <test>:1:5
+          |
+        1 | if (x <<- 1L) TRUE
+          |     -------- Avoid implicit assignments in `if()` statements.
+          |
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "if (1L ->> x) TRUE",
-            "in `if()` statements",
-            "implicit_assignment",
-            None,
+        assert_snapshot!(
+            snapshot_lint("if (1L ->> x) TRUE"),
+            @r"
+        warning: implicit_assignment
+         --> <test>:1:5
+          |
+        1 | if (1L ->> x) TRUE
+          |     -------- Avoid implicit assignments in `if()` statements.
+          |
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "if (A && (B <- foo())) { }",
-            "in `if()` statements",
-            "implicit_assignment",
-            None,
+        assert_snapshot!(
+            snapshot_lint("if (A && (B <- foo())) { }"),
+            @r"
+        warning: implicit_assignment
+         --> <test>:1:11
+          |
+        1 | if (A && (B <- foo())) { }
+          |           ---------- Avoid implicit assignments in `if()` statements.
+          |
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "while (x <- 0L) FALSE",
-            "in `while()` statements",
-            "implicit_assignment",
-            None,
+        assert_snapshot!(
+            snapshot_lint("while (x <- 0L) FALSE"),
+            @r"
+        warning: implicit_assignment
+         --> <test>:1:8
+          |
+        1 | while (x <- 0L) FALSE
+          |        ------- Avoid implicit assignments in `while()` statements.
+          |
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "while (0L -> x) FALSE",
-            "in `while()` statements",
-            "implicit_assignment",
-            None,
+        assert_snapshot!(
+            snapshot_lint("while (0L -> x) FALSE"),
+            @r"
+        warning: implicit_assignment
+         --> <test>:1:8
+          |
+        1 | while (0L -> x) FALSE
+          |        ------- Avoid implicit assignments in `while()` statements.
+          |
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "for (x in y <- 1:10) print(x)",
-            "in `for()` statements",
-            "implicit_assignment",
-            None,
+        assert_snapshot!(
+            snapshot_lint("for (x in y <- 1:10) print(x)"),
+            @r"
+        warning: implicit_assignment
+         --> <test>:1:11
+          |
+        1 | for (x in y <- 1:10) print(x)
+          |           --------- Avoid implicit assignments in `for()` statements.
+          |
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "for (x in 1:10 -> y) print(x)",
-            "in `for()` statements",
-            "implicit_assignment",
-            None,
+        assert_snapshot!(
+            snapshot_lint("for (x in 1:10 -> y) print(x)"),
+            @r"
+        warning: implicit_assignment
+         --> <test>:1:11
+          |
+        1 | for (x in 1:10 -> y) print(x)
+          |           --------- Avoid implicit assignments in `for()` statements.
+          |
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_true(x <- 1 > 2)",
-            "in function calls",
-            "implicit_assignment",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_true(x <- 1 > 2)"),
+            @r"
+        warning: implicit_assignment
+         --> <test>:1:13
+          |
+        1 | expect_true(x <- 1 > 2)
+          |             ---------- Avoid implicit assignments in function calls.
+          |
+        Found 1 error.
+        "
         );
     }
 

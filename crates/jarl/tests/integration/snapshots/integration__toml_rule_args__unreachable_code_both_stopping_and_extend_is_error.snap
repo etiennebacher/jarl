@@ -1,0 +1,15 @@
+---
+source: crates/jarl/tests/integration/toml_rule_args.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name().normalize_temp_paths()"
+---
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+Cannot specify both `stopping-functions` and `extend-stopping-functions` in `[lint.unreachable-code]`.
+
+----- args -----
+check .

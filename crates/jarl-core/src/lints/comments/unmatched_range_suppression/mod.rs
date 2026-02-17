@@ -59,14 +59,17 @@ f <- function() {
         2 | # jarl-ignore-start any_is_na: <reason>
           | --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-end` comment at the same nesting level.
         warning: unmatched_range_suppression
          --> <test>:5:3
           |
         5 |   # jarl-ignore-end any_is_na
           |   --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-start` comment at the same nesting level.
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
@@ -80,14 +83,17 @@ if (a) {
         2 | # jarl-ignore-start any_is_na: <reason>
           | --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-end` comment at the same nesting level.
         warning: unmatched_range_suppression
          --> <test>:5:3
           |
         5 |   # jarl-ignore-end any_is_na
           |   --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-start` comment at the same nesting level.
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
@@ -101,14 +107,17 @@ while (a) {
         2 | # jarl-ignore-start any_is_na: <reason>
           | --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-end` comment at the same nesting level.
         warning: unmatched_range_suppression
          --> <test>:5:3
           |
         5 |   # jarl-ignore-end any_is_na
           |   --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-start` comment at the same nesting level.
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
@@ -122,14 +131,17 @@ for (i in 1:10) {
         2 | # jarl-ignore-start any_is_na: <reason>
           | --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-end` comment at the same nesting level.
         warning: unmatched_range_suppression
          --> <test>:5:3
           |
         5 |   # jarl-ignore-end any_is_na
           |   --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-start` comment at the same nesting level.
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
@@ -143,14 +155,17 @@ repeat {
         2 | # jarl-ignore-start any_is_na: <reason>
           | --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-end` comment at the same nesting level.
         warning: unmatched_range_suppression
          --> <test>:5:3
           |
         5 |   # jarl-ignore-end any_is_na
           |   --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-start` comment at the same nesting level.
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
@@ -161,8 +176,10 @@ any(is.na(x))"), @r"
         2 | # jarl-ignore-start any_is_na: <reason>
           | --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-end` comment at the same nesting level.
         Found 1 error.
-        ");
+        "
+        );
     }
 
     #[test]
@@ -179,14 +196,17 @@ f <- function() {
         3 |   # jarl-ignore-start any_is_na: <reason>
           |   --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-end` comment at the same nesting level.
         warning: unmatched_range_suppression
          --> <test>:6:1
           |
         6 | # jarl-ignore-end any_is_na
           | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-start` comment at the same nesting level.
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 if (a) {
@@ -200,14 +220,17 @@ if (a) {
         3 |   # jarl-ignore-start any_is_na: <reason>
           |   --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-end` comment at the same nesting level.
         warning: unmatched_range_suppression
          --> <test>:6:1
           |
         6 | # jarl-ignore-end any_is_na
           | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-start` comment at the same nesting level.
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 while (a) {
@@ -221,14 +244,17 @@ while (a) {
         3 |   # jarl-ignore-start any_is_na: <reason>
           |   --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-end` comment at the same nesting level.
         warning: unmatched_range_suppression
          --> <test>:6:1
           |
         6 | # jarl-ignore-end any_is_na
           | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-start` comment at the same nesting level.
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 for (i in 1:10) {
@@ -242,14 +268,17 @@ for (i in 1:10) {
         3 |   # jarl-ignore-start any_is_na: <reason>
           |   --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-end` comment at the same nesting level.
         warning: unmatched_range_suppression
          --> <test>:6:1
           |
         6 | # jarl-ignore-end any_is_na
           | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-start` comment at the same nesting level.
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 repeat {
@@ -263,14 +292,17 @@ repeat {
         3 |   # jarl-ignore-start any_is_na: <reason>
           |   --------------------------------------- This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-end` comment at the same nesting level.
         warning: unmatched_range_suppression
          --> <test>:6:1
           |
         6 | # jarl-ignore-end any_is_na
           | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-start` comment at the same nesting level.
         Found 2 errors.
-        ");
+        "
+        );
 
         insta::assert_snapshot!(snapshot_lint("
 any(is.na(x))
@@ -281,7 +313,9 @@ any(is.na(x))
         3 | # jarl-ignore-end any_is_na
           | --------------------------- This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level.
           |
+          = help: Add a matching `jarl-ignore-start` comment at the same nesting level.
         Found 1 error.
-        ");
+        "
+        );
     }
 }

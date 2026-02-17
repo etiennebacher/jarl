@@ -3,6 +3,11 @@ pub(crate) mod outer_negation;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "outer_negation", None)
+    }
 
     #[test]
     fn test_no_lint_outer_negation() {
@@ -26,21 +31,57 @@ mod tests {
 
     #[test]
     fn test_lint_outer_negation() {
-        use insta::assert_snapshot;
-
-        expect_lint("any(!x)", "Use `!all(x)` instead", "outer_negation", None);
-        expect_lint(
-            "any(!(x + y))",
-            "Use `!all(x)` instead",
-            "outer_negation",
-            None,
+        assert_snapshot!(
+            snapshot_lint("any(!x)"),
+            @r"
+        warning: outer_negation
+         --> <test>:1:1
+          |
+        1 | any(!x)
+          | ------- `any(!x)` may be hard to read.
+          |
+          = help: Use `!all(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint("all(!x)", "Use `!any(x)` instead", "outer_negation", None);
-        expect_lint(
-            "all(!(x + y))",
-            "Use `!any(x)` instead",
-            "outer_negation",
-            None,
+        assert_snapshot!(
+            snapshot_lint("any(!(x + y))"),
+            @r"
+        warning: outer_negation
+         --> <test>:1:1
+          |
+        1 | any(!(x + y))
+          | ------------- `any(!x)` may be hard to read.
+          |
+          = help: Use `!all(x)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("all(!x)"),
+            @r"
+        warning: outer_negation
+         --> <test>:1:1
+          |
+        1 | all(!x)
+          | ------- `all(!x)` may be hard to read.
+          |
+          = help: Use `!any(x)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("all(!(x + y))"),
+            @r"
+        warning: outer_negation
+         --> <test>:1:1
+          |
+        1 | all(!(x + y))
+          | ------------- `all(!x)` may be hard to read.
+          |
+          = help: Use `!any(x)` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             "fix_output",
@@ -61,7 +102,6 @@ mod tests {
 
     #[test]
     fn test_outer_negation_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",

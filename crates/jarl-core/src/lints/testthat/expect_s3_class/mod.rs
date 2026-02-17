@@ -3,6 +3,11 @@ pub(crate) mod expect_s3_class;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "expect_s3_class", None)
+    }
 
     #[test]
     fn test_no_lint_expect_s3_class() {
@@ -49,32 +54,57 @@ mod tests {
 
     #[test]
     fn test_lint_expect_s3_class() {
-        use insta::assert_snapshot;
-        let lint_msg = "may fail if `x` gets more classes in the future";
-
-        expect_lint(
-            "expect_equal(class(x), 'data.frame')",
-            lint_msg,
-            "expect_s3_class",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(class(x), 'data.frame')"),
+            @r"
+        warning: expect_s3_class
+         --> <test>:1:1
+          |
+        1 | expect_equal(class(x), 'data.frame')
+          | ------------------------------------ `expect_equal(class(x), 'y')` may fail if `x` gets more classes in the future.
+          |
+          = help: Use `expect_s3_class(x, 'y')` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_equal(class(x), \"data.frame\")",
-            lint_msg,
-            "expect_s3_class",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(class(x), \"data.frame\")"),
+            @r#"
+        warning: expect_s3_class
+         --> <test>:1:1
+          |
+        1 | expect_equal(class(x), "data.frame")
+          | ------------------------------------ `expect_equal(class(x), 'y')` may fail if `x` gets more classes in the future.
+          |
+          = help: Use `expect_s3_class(x, 'y')` instead.
+        Found 1 error.
+        "#
         );
-        expect_lint(
-            "testthat::expect_equal(class(x), 'data.frame')",
-            lint_msg,
-            "expect_s3_class",
-            None,
+        assert_snapshot!(
+            snapshot_lint("testthat::expect_equal(class(x), 'data.frame')"),
+            @r"
+        warning: expect_s3_class
+         --> <test>:1:1
+          |
+        1 | testthat::expect_equal(class(x), 'data.frame')
+          | ---------------------------------------------- `expect_equal(class(x), 'y')` may fail if `x` gets more classes in the future.
+          |
+          = help: Use `expect_s3_class(x, 'y')` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_equal('data.frame', class(x))",
-            lint_msg,
-            "expect_s3_class",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal('data.frame', class(x))"),
+            @r"
+        warning: expect_s3_class
+         --> <test>:1:1
+          |
+        1 | expect_equal('data.frame', class(x))
+          | ------------------------------------ `expect_equal(class(x), 'y')` may fail if `x` gets more classes in the future.
+          |
+          = help: Use `expect_s3_class(x, 'y')` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             "fix_output",
@@ -93,13 +123,21 @@ mod tests {
 
     #[test]
     fn test_expect_s3_class_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present
-        expect_lint(
-            "expect_equal(class(x),\n # a comment \n'data.frame')",
-            "may fail if `x` gets more classes in the future",
-            "expect_s3_class",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(class(x),\n # a comment \n'data.frame')"),
+            @r"
+        warning: expect_s3_class
+         --> <test>:1:1
+          |
+        1 | / expect_equal(class(x),
+        2 | |  # a comment 
+        3 | | 'data.frame')
+          | |_____________- `expect_equal(class(x), 'y')` may fail if `x` gets more classes in the future.
+          |
+          = help: Use `expect_s3_class(x, 'y')` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             "no_fix_with_comments",

@@ -3,16 +3,75 @@ pub(crate) mod empty_assignment;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "empty_assignment", None)
+    }
 
     #[test]
     fn test_lint_empty_assignment() {
-        let expected_message = "Assign NULL explicitly or";
-
-        expect_lint("x <- {}", expected_message, "empty_assignment", None);
-        expect_lint("x = { }", expected_message, "empty_assignment", None);
-        expect_lint("{ } -> x", expected_message, "empty_assignment", None);
-        expect_lint("x <- {\n}", expected_message, "empty_assignment", None);
-        expect_lint("env$obj <- {}", expected_message, "empty_assignment", None);
+        assert_snapshot!(
+            snapshot_lint("x <- {}"),
+            @r"
+        warning: empty_assignment
+         --> <test>:1:1
+          |
+        1 | x <- {}
+          | ------- Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("x = { }"),
+            @r"
+        warning: empty_assignment
+         --> <test>:1:1
+          |
+        1 | x = { }
+          | ------- Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("{ } -> x"),
+            @r"
+        warning: empty_assignment
+         --> <test>:1:1
+          |
+        1 | { } -> x
+          | -------- Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("x <- {\n}"),
+            @r"
+        warning: empty_assignment
+         --> <test>:1:1
+          |
+        1 | / x <- {
+        2 | | }
+          | |_- Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("env$obj <- {}"),
+            @r"
+        warning: empty_assignment
+         --> <test>:1:1
+          |
+        1 | env$obj <- {}
+          | ------------- Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size.
+          |
+        Found 1 error.
+        "
+        );
     }
 
     #[test]

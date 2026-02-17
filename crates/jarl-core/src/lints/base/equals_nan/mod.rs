@@ -3,18 +3,79 @@ pub(crate) mod equals_nan;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "equals_nan", None)
+    }
 
     #[test]
     fn test_lint_equals_nan() {
-        use insta::assert_snapshot;
-
-        let expected_message = "Comparing to NaN with";
-
-        expect_lint("x == NaN", expected_message, "equals_nan", None);
-        expect_lint("x != NaN", expected_message, "equals_nan", None);
-        expect_lint("x %in% NaN", expected_message, "equals_nan", None);
-        expect_lint("foo(x(y)) == NaN", expected_message, "equals_nan", None);
-        expect_lint("NaN == x", expected_message, "equals_nan", None);
+        assert_snapshot!(
+            snapshot_lint("x == NaN"),
+            @r"
+        warning: equals_nan
+         --> <test>:1:1
+          |
+        1 | x == NaN
+          | -------- Comparing to NaN with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.nan()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("x != NaN"),
+            @r"
+        warning: equals_nan
+         --> <test>:1:1
+          |
+        1 | x != NaN
+          | -------- Comparing to NaN with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.nan()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("x %in% NaN"),
+            @r"
+        warning: equals_nan
+         --> <test>:1:1
+          |
+        1 | x %in% NaN
+          | ---------- Comparing to NaN with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.nan()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("foo(x(y)) == NaN"),
+            @r"
+        warning: equals_nan
+         --> <test>:1:1
+          |
+        1 | foo(x(y)) == NaN
+          | ---------------- Comparing to NaN with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.nan()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("NaN == x"),
+            @r"
+        warning: equals_nan
+         --> <test>:1:1
+          |
+        1 | NaN == x
+          | -------- Comparing to NaN with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.nan()` instead.
+        Found 1 error.
+        "
+        );
 
         assert_snapshot!(
             "fix_output",
@@ -49,7 +110,6 @@ mod tests {
 
     #[test]
     fn test_equals_nan_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",

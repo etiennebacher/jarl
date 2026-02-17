@@ -3,6 +3,11 @@ pub(crate) mod class_equals;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "class_equals", None)
+    }
 
     #[test]
     fn test_no_lint_class_equals() {
@@ -26,51 +31,96 @@ mod tests {
 
     #[test]
     fn test_lint_class_equals() {
-        use insta::assert_snapshot;
-
-        let expected_message = "Comparing `class(x)` with";
-
-        expect_lint(
-            "if (class(x) == 'character') 1",
-            expected_message,
-            "class_equals",
-            None,
+        assert_snapshot!(
+            snapshot_lint("if (class(x) == 'character') 1"),
+            @r"
+        warning: class_equals
+         --> <test>:1:5
+          |
+        1 | if (class(x) == 'character') 1
+          |     ----------------------- Comparing `class(x)` with `==` or `%in%` can be problematic.
+          |
+          = help: Use `inherits(x, 'a')` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "if (base::class(x) == 'character') 1",
-            expected_message,
-            "class_equals",
-            None,
+        assert_snapshot!(
+            snapshot_lint("if (base::class(x) == 'character') 1"),
+            @r"
+        warning: class_equals
+         --> <test>:1:5
+          |
+        1 | if (base::class(x) == 'character') 1
+          |     ----------------------------- Comparing `class(x)` with `==` or `%in%` can be problematic.
+          |
+          = help: Use `inherits(x, 'a')` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "if ('character' %in% class(x)) 1",
-            expected_message,
-            "class_equals",
-            None,
+        assert_snapshot!(
+            snapshot_lint("if ('character' %in% class(x)) 1"),
+            @r"
+        warning: class_equals
+         --> <test>:1:5
+          |
+        1 | if ('character' %in% class(x)) 1
+          |     ------------------------- Comparing `class(x)` with `==` or `%in%` can be problematic.
+          |
+          = help: Use `inherits(x, 'a')` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "if (class(x) %in% 'character') 1",
-            expected_message,
-            "class_equals",
-            None,
+        assert_snapshot!(
+            snapshot_lint("if (class(x) %in% 'character') 1"),
+            @r"
+        warning: class_equals
+         --> <test>:1:5
+          |
+        1 | if (class(x) %in% 'character') 1
+          |     ------------------------- Comparing `class(x)` with `==` or `%in%` can be problematic.
+          |
+          = help: Use `inherits(x, 'a')` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "if (class(x) != 'character') 1",
-            expected_message,
-            "class_equals",
-            None,
+        assert_snapshot!(
+            snapshot_lint("if (class(x) != 'character') 1"),
+            @r"
+        warning: class_equals
+         --> <test>:1:5
+          |
+        1 | if (class(x) != 'character') 1
+          |     ----------------------- Comparing `class(x)` with `==` or `%in%` can be problematic.
+          |
+          = help: Use `inherits(x, 'a')` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "while (class(x) != 'character') 1",
-            expected_message,
-            "class_equals",
-            None,
+        assert_snapshot!(
+            snapshot_lint("while (class(x) != 'character') 1"),
+            @r"
+        warning: class_equals
+         --> <test>:1:8
+          |
+        1 | while (class(x) != 'character') 1
+          |        ----------------------- Comparing `class(x)` with `==` or `%in%` can be problematic.
+          |
+          = help: Use `inherits(x, 'a')` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "x[if (class(x) == 'foo') 1 else 2]",
-            expected_message,
-            "class_equals",
-            None,
+        assert_snapshot!(
+            snapshot_lint("x[if (class(x) == 'foo') 1 else 2]"),
+            @r"
+        warning: class_equals
+         --> <test>:1:7
+          |
+        1 | x[if (class(x) == 'foo') 1 else 2]
+          |       ----------------- Comparing `class(x)` with `==` or `%in%` can be problematic.
+          |
+          = help: Use `inherits(x, 'a')` instead.
+        Found 1 error.
+        "
         );
 
         // No fixes because we can't infer if it is correct or not.
@@ -107,40 +157,70 @@ mod tests {
 
     #[test]
     fn test_lint_identical_class() {
-        use insta::assert_snapshot;
-
-        let expected_message = "Using `identical(class(x), 'a')`";
-
-        // Test identical() - these are always linted regardless of context
-        expect_lint(
-            "is_regression <- identical(class(x), 'lm')",
-            expected_message,
-            "class_equals",
-            None,
+        assert_snapshot!(
+            snapshot_lint("is_regression <- identical(class(x), 'lm')"),
+            @r"
+        warning: class_equals
+         --> <test>:1:18
+          |
+        1 | is_regression <- identical(class(x), 'lm')
+          |                  ------------------------- Using `identical(class(x), 'a')` can be problematic.
+          |
+          = help: Use `inherits(x, 'a')` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "is_regression <- identical('lm', class(x))",
-            expected_message,
-            "class_equals",
-            None,
+        assert_snapshot!(
+            snapshot_lint("is_regression <- identical('lm', class(x))"),
+            @r"
+        warning: class_equals
+         --> <test>:1:18
+          |
+        1 | is_regression <- identical('lm', class(x))
+          |                  ------------------------- Using `identical(class(x), 'a')` can be problematic.
+          |
+          = help: Use `inherits(x, 'a')` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "if (identical(class(x), 'character')) 1",
-            expected_message,
-            "class_equals",
-            None,
+        assert_snapshot!(
+            snapshot_lint("if (identical(class(x), 'character')) 1"),
+            @r"
+        warning: class_equals
+         --> <test>:1:5
+          |
+        1 | if (identical(class(x), 'character')) 1
+          |     -------------------------------- Using `identical(class(x), 'a')` can be problematic.
+          |
+          = help: Use `inherits(x, 'a')` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "if (identical('character', class(x))) 1",
-            expected_message,
-            "class_equals",
-            None,
+        assert_snapshot!(
+            snapshot_lint("if (identical('character', class(x))) 1"),
+            @r"
+        warning: class_equals
+         --> <test>:1:5
+          |
+        1 | if (identical('character', class(x))) 1
+          |     -------------------------------- Using `identical(class(x), 'a')` can be problematic.
+          |
+          = help: Use `inherits(x, 'a')` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "while (identical(class(x), 'foo')) 1",
-            expected_message,
-            "class_equals",
-            None,
+        assert_snapshot!(
+            snapshot_lint("while (identical(class(x), 'foo')) 1"),
+            @r"
+        warning: class_equals
+         --> <test>:1:8
+          |
+        1 | while (identical(class(x), 'foo')) 1
+          |        -------------------------- Using `identical(class(x), 'a')` can be problematic.
+          |
+          = help: Use `inherits(x, 'a')` instead.
+        Found 1 error.
+        "
         );
 
         assert_snapshot!(
@@ -161,7 +241,6 @@ mod tests {
 
     #[test]
     fn test_class_equals_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",

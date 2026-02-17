@@ -148,7 +148,7 @@ For example, if you use `=` as assignment operator, you can set `assignment = "=
 
 Note that Jarl cannot handle multiple config files, it will use the first one it finds.
 
-### Arguments
+### Top-level arguments
 
 #### `select`
 
@@ -229,16 +229,8 @@ default-exclude = true
 
 #### `assignment`
 
-This takes a single value (`"<-"` or `"="`) indicating the preferred assignment operator in the files to check.
-While `"<-"` is recommended by several style guides, using `"="` is equivalent in most cases and several popular projects use it.
-
-This parameter is only useful if the `assignment` rule is active.
-If `assignment = "<-"` (default), then any use of the `"="` operator to assign values will be reported, and vice-versa.
-
-```toml
-[lint]
-assignment = "<-"
-```
+**This argument is deprecated. Use the rule-specific argument `[lint.assignment]`
+instead (see below).**
 
 #### `fixable`
 
@@ -278,6 +270,68 @@ unfixable = ["PERF"]
 [lint]
 # Fix all violations.
 unfixable = []
+```
+
+### Rule-specific arguments
+
+#### `assignment`
+
+This takes a single value (`"<-"` or `"="`) indicating the preferred assignment
+operator in the files to check. If `assignment = "<-"` and if the `"assignment"`
+rule is enabled, then any use of the `"="` operator to assign values will be
+reported, and vice-versa.
+
+This option doesn't have a default value.
+
+```toml
+[lint]
+...
+
+[lint.assignment]
+operator = "<-" # or "="
+```
+
+#### `duplicated-arguments`
+
+Use `skipped-functions` to fully replace the default list of functions that are
+allowed to have duplicated arguments. Use `extend-skipped-functions` to add to
+the default list. Specifying both is an error.
+
+Function names in `skipped-functions` or `extend-skipped-functions` also match
+namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
+`rlang::list2()`.
+
+Default: `skipped-functions = ["c", "mutate", "summarize", "transmute"]`
+
+```toml
+[lint]
+...
+
+[lint.duplicated-arguments]
+# Ignore duplicated arguments in `list()` only.
+skipped-functions = ["list"]
+```
+
+#### `unreachable-code`
+
+Use `stopping-functions` to fully replace the default list of functions that are
+considered to stop execution (never return). Use `extend-stopping-functions` to
+add to the default list. Specifying both is an error.
+
+Function names in `stopping-functions` or `extend-stopping-functions` also match
+namespaced calls, e.g. `stopping-functions = ["abort"]` will consider `abort()`
+and `rlang::abort()` as stopping functions.
+
+Default: `stopping-functions = ["stop", ".Defunct", "abort", "cli_abort",
+"q", "quit"]`.
+
+```toml
+[lint]
+...
+
+[lint.unreachable-code]
+# Add a custom function to the list of stopping functions
+extend-stopping-functions = ["my_custom_stop"]
 ```
 
 ## Environment variables

@@ -3,6 +3,11 @@ pub(crate) mod expect_named;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "expect_named", None)
+    }
 
     #[test]
     fn test_no_lint_expect_named() {
@@ -46,33 +51,57 @@ mod tests {
 
     #[test]
     fn test_lint_expect_named() {
-        use insta::assert_snapshot;
-        let lint_msg = "`expect_named(x, n)` is better than";
-
-        expect_lint(
-            "expect_equal(names(x), 'a')",
-            lint_msg,
-            "expect_named",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(names(x), 'a')"),
+            @r"
+        warning: expect_named
+         --> <test>:1:1
+          |
+        1 | expect_equal(names(x), 'a')
+          | --------------------------- `expect_named(x, n)` is better than `expect_equal(names(x), n)`.
+          |
+          = help: Use `expect_named(x, n)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_equal(names(x), c('a', 'b'))",
-            lint_msg,
-            "expect_named",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(names(x), c('a', 'b'))"),
+            @r"
+        warning: expect_named
+         --> <test>:1:1
+          |
+        1 | expect_equal(names(x), c('a', 'b'))
+          | ----------------------------------- `expect_named(x, n)` is better than `expect_equal(names(x), n)`.
+          |
+          = help: Use `expect_named(x, n)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_identical(names(x), 'a')",
-            lint_msg,
-            "expect_named",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_identical(names(x), 'a')"),
+            @r"
+        warning: expect_named
+         --> <test>:1:1
+          |
+        1 | expect_identical(names(x), 'a')
+          | ------------------------------- `expect_named(x, n)` is better than `expect_identical(names(x), n)`.
+          |
+          = help: Use `expect_named(x, n)` instead.
+        Found 1 error.
+        "
         );
-
-        expect_lint(
-            "expect_equal(names(x), NULL)",
-            lint_msg,
-            "expect_named",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(names(x), NULL)"),
+            @r"
+        warning: expect_named
+         --> <test>:1:1
+          |
+        1 | expect_equal(names(x), NULL)
+          | ---------------------------- `expect_named(x, n)` is better than `expect_equal(names(x), n)`.
+          |
+          = help: Use `expect_named(x, n)` instead.
+        Found 1 error.
+        "
         );
 
         assert_snapshot!(
@@ -92,13 +121,20 @@ mod tests {
 
     #[test]
     fn test_expect_named_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present
-        expect_lint(
-            "expect_equal(# comment\nnames(x), 'a')",
-            "`expect_named(x, n)` is better than",
-            "expect_named",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(# comment\nnames(x), 'a')"),
+            @r"
+        warning: expect_named
+         --> <test>:1:1
+          |
+        1 | / expect_equal(# comment
+        2 | | names(x), 'a')
+          | |______________- `expect_named(x, n)` is better than `expect_equal(names(x), n)`.
+          |
+          = help: Use `expect_named(x, n)` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             "no_fix_with_comments",

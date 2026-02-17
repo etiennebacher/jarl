@@ -3,18 +3,79 @@ pub(crate) mod equals_null;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "equals_null", None)
+    }
 
     #[test]
     fn test_lint_equals_null() {
-        use insta::assert_snapshot;
-
-        let expected_message = "Comparing to NULL with";
-
-        expect_lint("x == NULL", expected_message, "equals_null", None);
-        expect_lint("x != NULL", expected_message, "equals_null", None);
-        expect_lint("x %in% NULL", expected_message, "equals_null", None);
-        expect_lint("foo(x(y)) == NULL", expected_message, "equals_null", None);
-        expect_lint("NULL == x", expected_message, "equals_null", None);
+        assert_snapshot!(
+            snapshot_lint("x == NULL"),
+            @r"
+        warning: equals_null
+         --> <test>:1:1
+          |
+        1 | x == NULL
+          | --------- Comparing to NULL with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.null()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("x != NULL"),
+            @r"
+        warning: equals_null
+         --> <test>:1:1
+          |
+        1 | x != NULL
+          | --------- Comparing to NULL with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.null()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("x %in% NULL"),
+            @r"
+        warning: equals_null
+         --> <test>:1:1
+          |
+        1 | x %in% NULL
+          | ----------- Comparing to NULL with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.null()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("foo(x(y)) == NULL"),
+            @r"
+        warning: equals_null
+         --> <test>:1:1
+          |
+        1 | foo(x(y)) == NULL
+          | ----------------- Comparing to NULL with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.null()` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("NULL == x"),
+            @r"
+        warning: equals_null
+         --> <test>:1:1
+          |
+        1 | NULL == x
+          | --------- Comparing to NULL with `==`, `!=` or `%in%` is problematic.
+          |
+          = help: Use `is.null()` instead.
+        Found 1 error.
+        "
+        );
 
         assert_snapshot!(
             "fix_output",
@@ -45,7 +106,6 @@ mod tests {
 
     #[test]
     fn test_equals_null_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",

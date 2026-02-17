@@ -62,7 +62,7 @@ Options:
           [default: full]
 
       --assignment <ASSIGNMENT>
-          Assignment operator to use, can be either `<-` or `=`.
+          [DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`.
 
       --no-default-exclude
           Do not apply the default set of file patterns that should be excluded.

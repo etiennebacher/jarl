@@ -1,0 +1,21 @@
+---
+source: crates/jarl/tests/integration/rules.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 1
+----- stdout -----
+warning: browser
+ --> test.R:1:1
+  |
+1 | browser()
+  | --------- Calls to `browser()` should be removed.
+  |
+
+Found 1 error.
+
+----- stderr -----
+Warning: Rule `browser` is deprecated since v0.5.0. Use `undesirable_function` instead.
+
+----- args -----
+check .

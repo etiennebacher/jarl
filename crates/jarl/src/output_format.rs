@@ -1,5 +1,5 @@
 use air_fs::relativize_path;
-use annotate_snippets::{Level, Renderer, Snippet};
+use annotate_snippets::Renderer;
 use clap::ValueEnum;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
@@ -15,7 +15,7 @@ fn make_hyperlink(text: &str) -> String {
     )
 }
 
-use jarl_core::diagnostic::Diagnostic;
+use jarl_core::diagnostic::{Diagnostic, render_diagnostic};
 
 fn show_hint_statistics(total_diagnostics: i32) {
     let n_violations = std::env::var("JARL_N_VIOLATIONS_HINT_STAT")
@@ -344,24 +344,10 @@ impl Emitter for FullEmitter {
                 continue; // Skip if file couldn't be read
             };
 
-            // Calculate the byte offset from TextRange
-            let start_offset = diagnostic.range.start().into();
-            let end_offset = diagnostic.range.end().into();
-
             // Get or compute relativized path
             let file_path = path_cache
                 .entry(&diagnostic.filename)
                 .or_insert_with(|| relativize_path(diagnostic.filename.clone()));
-
-            // Build the message with snippet
-            let snippet = Snippet::source(source)
-                .origin(file_path)
-                .fold(true)
-                .annotation(
-                    Level::Warning
-                        .span(start_offset..end_offset)
-                        .label(&diagnostic.message.body),
-                );
 
             // Create the main message with clickable rule name
             let title = if use_colors {
@@ -370,14 +356,7 @@ impl Emitter for FullEmitter {
                 diagnostic.message.name.clone()
             };
 
-            let mut message = Level::Warning.title(&title).snippet(snippet);
-
-            // Add suggestion as a footer message if present
-            if let Some(suggestion_text) = &diagnostic.message.suggestion {
-                message = message.footer(Level::Help.title(suggestion_text));
-            }
-
-            let rendered = renderer.render(message);
+            let rendered = render_diagnostic(source, file_path, &title, diagnostic, &renderer);
             writeln!(writer, "{rendered}\n")?;
 
             if diagnostic.has_safe_fix() {

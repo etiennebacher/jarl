@@ -3,6 +3,11 @@ pub(crate) mod all_equal;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "all_equal", None)
+    }
 
     #[test]
     fn test_no_lint_all_equal() {
@@ -24,34 +29,70 @@ mod tests {
 
     #[test]
     fn test_lint_all_equal() {
-        use insta::assert_snapshot;
-
-        let expected_message = "Wrap `all.equal()` in `isTRUE()`";
-        let expected_message_2 = "Use `!isTRUE()` to check for differences";
-        expect_lint(
-            "if (all.equal(a, b, tolerance = 1e-3)) message('equal')",
-            expected_message,
-            "all_equal",
-            None,
+        assert_snapshot!(
+            snapshot_lint("if (all.equal(a, b, tolerance = 1e-3)) message('equal')"),
+            @r"
+        warning: all_equal
+         --> <test>:1:5
+          |
+        1 | if (all.equal(a, b, tolerance = 1e-3)) message('equal')
+          |     --------------------------------- If `all.equal()` is false, it will return a string and not `FALSE`.
+          |
+          = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "if (all.equal(a, b)) message('equal')",
-            expected_message,
-            "all_equal",
-            None,
+        assert_snapshot!(
+            snapshot_lint("if (all.equal(a, b)) message('equal')"),
+            @r"
+        warning: all_equal
+         --> <test>:1:5
+          |
+        1 | if (all.equal(a, b)) message('equal')
+          |     --------------- If `all.equal()` is false, it will return a string and not `FALSE`.
+          |
+          = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
+        Found 1 error.
+        "
         );
-        expect_lint("!all.equal(a, b)", expected_message, "all_equal", None);
-        expect_lint(
-            "while (all.equal(a, b)) message('equal')",
-            expected_message,
-            "all_equal",
-            None,
+        assert_snapshot!(
+            snapshot_lint("!all.equal(a, b)"),
+            @r"
+        warning: all_equal
+         --> <test>:1:1
+          |
+        1 | !all.equal(a, b)
+          | ---------------- If `all.equal()` is false, it will return a string and not `FALSE`.
+          |
+          = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "isFALSE(all.equal(a, b))",
-            expected_message_2,
-            "all_equal",
-            None,
+        assert_snapshot!(
+            snapshot_lint("while (all.equal(a, b)) message('equal')"),
+            @r"
+        warning: all_equal
+         --> <test>:1:8
+          |
+        1 | while (all.equal(a, b)) message('equal')
+          |        --------------- If `all.equal()` is false, it will return a string and not `FALSE`.
+          |
+          = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("isFALSE(all.equal(a, b))"),
+            @r"
+        warning: all_equal
+         --> <test>:1:1
+          |
+        1 | isFALSE(all.equal(a, b))
+          | ------------------------ `isFALSE(all.equal())` always returns `FALSE`
+          |
+          = help: Use `!isTRUE()` to check for differences instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             "fix_output",
@@ -74,7 +115,6 @@ mod tests {
 
     #[test]
     fn test_all_equal_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",

@@ -21,7 +21,10 @@ pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> a
         checker.report_diagnostic(any_is_na_2(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::Assignment) {
-        checker.report_diagnostic(assignment(r_expr, checker.assignment)?);
+        checker.report_diagnostic(assignment(
+            r_expr,
+            checker.rule_options.assignment.operator,
+        )?);
     }
     if checker.is_rule_enabled(Rule::ClassEquals) {
         checker.report_diagnostic(class_equals(r_expr)?);

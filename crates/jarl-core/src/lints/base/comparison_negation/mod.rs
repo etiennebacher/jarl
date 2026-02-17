@@ -3,6 +3,11 @@ pub(crate) mod comparison_negation;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "comparison_negation", None)
+    }
 
     #[test]
     fn test_no_lint_comparison_negation() {
@@ -20,43 +25,83 @@ mod tests {
 
     #[test]
     fn test_lint_comparison_negation() {
-        use insta::assert_snapshot;
-
-        expect_lint(
-            "!(x >= y)",
-            "Use `x < y` instead",
-            "comparison_negation",
-            None,
+        assert_snapshot!(
+            snapshot_lint("!(x >= y)"),
+            @r"
+        warning: comparison_negation
+         --> <test>:1:1
+          |
+        1 | !(x >= y)
+          | --------- `!(x >= y)` can be simplified.
+          |
+          = help: Use `x < y` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "!(x > y)",
-            "Use `x <= y` instead",
-            "comparison_negation",
-            None,
+        assert_snapshot!(
+            snapshot_lint("!(x > y)"),
+            @r"
+        warning: comparison_negation
+         --> <test>:1:1
+          |
+        1 | !(x > y)
+          | -------- `!(x > y)` can be simplified.
+          |
+          = help: Use `x <= y` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "!(x <= y)",
-            "Use `x > y` instead",
-            "comparison_negation",
-            None,
+        assert_snapshot!(
+            snapshot_lint("!(x <= y)"),
+            @r"
+        warning: comparison_negation
+         --> <test>:1:1
+          |
+        1 | !(x <= y)
+          | --------- `!(x <= y)` can be simplified.
+          |
+          = help: Use `x > y` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "!(x < y)",
-            "Use `x >= y` instead",
-            "comparison_negation",
-            None,
+        assert_snapshot!(
+            snapshot_lint("!(x < y)"),
+            @r"
+        warning: comparison_negation
+         --> <test>:1:1
+          |
+        1 | !(x < y)
+          | -------- `!(x < y)` can be simplified.
+          |
+          = help: Use `x >= y` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "!(x == y)",
-            "Use `x != y` instead",
-            "comparison_negation",
-            None,
+        assert_snapshot!(
+            snapshot_lint("!(x == y)"),
+            @r"
+        warning: comparison_negation
+         --> <test>:1:1
+          |
+        1 | !(x == y)
+          | --------- `!(x == y)` can be simplified.
+          |
+          = help: Use `x != y` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "!(x != y)",
-            "Use `x == y` instead",
-            "comparison_negation",
-            None,
+        assert_snapshot!(
+            snapshot_lint("!(x != y)"),
+            @r"
+        warning: comparison_negation
+         --> <test>:1:1
+          |
+        1 | !(x != y)
+          | --------- `!(x != y)` can be simplified.
+          |
+          = help: Use `x == y` instead.
+        Found 1 error.
+        "
         );
 
         assert_snapshot!(
@@ -81,25 +126,46 @@ mod tests {
 
     #[test]
     fn test_comparison_negation_with_comments_no_fix() {
-        use insta::assert_snapshot;
-
-        expect_lint(
-            "# leading comment\n!(x >= y)",
-            "instead",
-            "comparison_negation",
-            None,
+        assert_snapshot!(
+            snapshot_lint("# leading comment\n!(x >= y)"),
+            @r"
+        warning: comparison_negation
+         --> <test>:2:1
+          |
+        2 | !(x >= y)
+          | --------- `!(x >= y)` can be simplified.
+          |
+          = help: Use `x < y` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "!(x \n # hello there \n >= y)",
-            "instead",
-            "comparison_negation",
-            None,
+        assert_snapshot!(
+            snapshot_lint("!(x \n # hello there \n >= y)"),
+            @r"
+        warning: comparison_negation
+         --> <test>:1:1
+          |
+        1 | / !(x 
+        2 | |  # hello there 
+        3 | |  >= y)
+          | |______- `!(x >= y)` can be simplified.
+          |
+          = help: Use `x < y` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "!(x >= y) # trailing comment",
-            "instead",
-            "comparison_negation",
-            None,
+        assert_snapshot!(
+            snapshot_lint("!(x >= y) # trailing comment"),
+            @r"
+        warning: comparison_negation
+         --> <test>:1:1
+          |
+        1 | !(x >= y) # trailing comment
+          | --------- `!(x >= y)` can be simplified.
+          |
+          = help: Use `x < y` instead.
+        Found 1 error.
+        "
         );
 
         // Should detect lint but skip fix when comments are present to avoid destroying them

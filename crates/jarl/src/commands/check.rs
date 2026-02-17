@@ -1,5 +1,6 @@
 use air_workspace::resolve::PathResolver;
 use jarl_core::discovery::{discover_r_file_paths, discover_settings};
+use jarl_core::rule_set::Rule;
 use jarl_core::{
     config::ArgsConfig,
     config::build_config,
@@ -11,6 +12,7 @@ use jarl_core::{
 use anyhow::Result;
 use colored::Colorize;
 use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::env;
 use std::path::PathBuf;
 use std::time::Instant;
@@ -85,6 +87,25 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
 
     let config = build_config(&check_config, &resolver, paths)?;
 
+    // Emit deprecation warnings for old assignment syntax
+    if check_config.assignment.is_some() {
+        eprintln!(
+            "{}: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.",
+            "Warning".yellow().bold()
+        );
+    }
+
+    // Check if the deprecated `assignment = "..."` top-level string form was used in TOML
+    for item in resolver.items() {
+        if item.value().linter.deprecated_assignment_syntax {
+            eprintln!(
+                "{}: `assignment = \"...\"` in `[lint]` is deprecated. \
+                 Use `[lint.assignment]` with `operator = \"...\"` instead.",
+                "Warning".yellow().bold()
+            );
+        }
+    }
+
     let file_results = jarl_core::check::check(config);
 
     let mut all_errors = Vec::new();
@@ -145,6 +166,44 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     );
 
     if !is_structured_format {
+        // Emit deprecation warnings for explicitly-used deprecated rules.
+        // Collect rule names from CLI args and TOML settings.
+        let mut explicit_rule_names: BTreeSet<String> = BTreeSet::new();
+
+        // CLI args (comma-separated)
+        for arg_str in [&args.select, &args.extend_select, &args.ignore] {
+            for name in arg_str.split(',').map(str::trim).filter(|s| !s.is_empty()) {
+                explicit_rule_names.insert(name.to_string());
+            }
+        }
+
+        // TOML settings from all discovered configs
+        for item in resolver.items() {
+            let linter = &item.value().linter;
+            for names in [&linter.select, &linter.extend_select, &linter.ignore]
+                .into_iter()
+                .flatten()
+            {
+                for name in names {
+                    explicit_rule_names.insert(name.clone());
+                }
+            }
+        }
+
+        for name in &explicit_rule_names {
+            if let Some(rule) = Rule::from_name(name)
+                && let Some(dep) = rule.deprecation()
+            {
+                eprintln!(
+                    "{}: Rule `{}` is deprecated since v{}. Use `{}` instead.",
+                    "Warning".yellow().bold(),
+                    name,
+                    dep.version,
+                    dep.replacement,
+                );
+            }
+        }
+
         // Inform the user if the config file used comes from a parent directory.
         if let Some(config_path) = parent_config_path {
             println!("\nUsed '{}'", config_path.display());

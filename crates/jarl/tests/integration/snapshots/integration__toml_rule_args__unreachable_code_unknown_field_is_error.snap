@@ -1,0 +1,20 @@
+---
+source: crates/jarl/tests/integration/toml_rule_args.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name().normalize_temp_paths()"
+---
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 5, column 1
+  |
+5 | unknown-option = ["stop"]
+  | ^^^^^^^^^^^^^^
+unknown field `unknown-option`, expected `stopping-functions` or `extend-stopping-functions`
+
+
+----- args -----
+check .

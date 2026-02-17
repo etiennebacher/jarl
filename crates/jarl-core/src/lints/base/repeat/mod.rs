@@ -3,18 +3,39 @@ pub(crate) mod repeat;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "repeat", None)
+    }
 
     #[test]
     fn test_lint_repeat() {
-        use insta::assert_snapshot;
-
-        let expected_message = "Use `repeat {}` instead";
-        expect_lint("while (TRUE) { }", expected_message, "repeat", None);
-        expect_lint(
-            "for (i in 1:10) { while (TRUE) { if (i == 5) { break } } }",
-            expected_message,
-            "repeat",
-            None,
+        assert_snapshot!(
+            snapshot_lint("while (TRUE) { }"),
+            @r"
+        warning: repeat
+         --> <test>:1:1
+          |
+        1 | while (TRUE) { }
+          | ------------ `while (TRUE)` is less clear than `repeat` for infinite loops.
+          |
+          = help: Use `repeat {}` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("for (i in 1:10) { while (TRUE) { if (i == 5) { break } } }"),
+            @r"
+        warning: repeat
+         --> <test>:1:19
+          |
+        1 | for (i in 1:10) { while (TRUE) { if (i == 5) { break } } }
+          |                   ------------ `while (TRUE)` is less clear than `repeat` for infinite loops.
+          |
+          = help: Use `repeat {}` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             "fix_output",
@@ -31,7 +52,6 @@ mod tests {
 
     #[test]
     fn test_repeat_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",

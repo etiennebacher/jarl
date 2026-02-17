@@ -3,23 +3,39 @@ pub(crate) mod length_levels;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "length_levels", None)
+    }
 
     #[test]
     fn test_lint_length_levels() {
-        use insta::assert_snapshot;
-        let expected_message = "Use `nlevels(...)` instead";
-
-        expect_lint(
-            "2:length(levels(x))",
-            expected_message,
-            "length_levels",
-            None,
+        assert_snapshot!(
+            snapshot_lint("2:length(levels(x))"),
+            @r"
+        warning: length_levels
+         --> <test>:1:3
+          |
+        1 | 2:length(levels(x))
+          |   ----------------- `length(levels(...))` is less readable than `nlevels(...)`.
+          |
+          = help: Use `nlevels(...)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "2:length(levels(foo(a)))",
-            expected_message,
-            "length_levels",
-            None,
+        assert_snapshot!(
+            snapshot_lint("2:length(levels(foo(a)))"),
+            @r"
+        warning: length_levels
+         --> <test>:1:3
+          |
+        1 | 2:length(levels(foo(a)))
+          |   ---------------------- `length(levels(...))` is less readable than `nlevels(...)`.
+          |
+          = help: Use `nlevels(...)` instead.
+        Found 1 error.
+        "
         );
 
         assert_snapshot!(
@@ -39,7 +55,6 @@ mod tests {
 
     #[test]
     fn test_length_levels_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",

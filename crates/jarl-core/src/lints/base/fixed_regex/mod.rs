@@ -3,6 +3,11 @@ pub(crate) mod fixed_regex;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "fixed_regex", None)
+    }
 
     #[test]
     fn test_no_lint_fixed_regex() {
@@ -54,25 +59,127 @@ mod tests {
 
     #[test]
     fn test_lint_fixed_regex() {
-        use insta::assert_snapshot;
-        let lint_msg = "Add `fixed = TRUE` for better performance";
+        assert_snapshot!(
+            snapshot_lint("grepl('abcdefg', x)"),
+            @r"
+        warning: fixed_regex
+         --> <test>:1:1
+          |
+        1 | grepl('abcdefg', x)
+          | ------------------- Pattern contains no regex special characters but `fixed = TRUE` is not set.
+          |
+          = help: Add `fixed = TRUE` for better performance.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("grep('abcdefg', x)"),
+            @r"
+        warning: fixed_regex
+         --> <test>:1:1
+          |
+        1 | grep('abcdefg', x)
+          | ------------------ Pattern contains no regex special characters but `fixed = TRUE` is not set.
+          |
+          = help: Add `fixed = TRUE` for better performance.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("regexec('abcdefg', x)"),
+            @r"
+        warning: fixed_regex
+         --> <test>:1:1
+          |
+        1 | regexec('abcdefg', x)
+          | --------------------- Pattern contains no regex special characters but `fixed = TRUE` is not set.
+          |
+          = help: Add `fixed = TRUE` for better performance.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("regexpr('abcdefg', x)"),
+            @r"
+        warning: fixed_regex
+         --> <test>:1:1
+          |
+        1 | regexpr('abcdefg', x)
+          | --------------------- Pattern contains no regex special characters but `fixed = TRUE` is not set.
+          |
+          = help: Add `fixed = TRUE` for better performance.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("gsub('abcdefg', 'a', x)"),
+            @r"
+        warning: fixed_regex
+         --> <test>:1:1
+          |
+        1 | gsub('abcdefg', 'a', x)
+          | ----------------------- Pattern contains no regex special characters but `fixed = TRUE` is not set.
+          |
+          = help: Add `fixed = TRUE` for better performance.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("sub('abcdefg', 'a', x)"),
+            @r"
+        warning: fixed_regex
+         --> <test>:1:1
+          |
+        1 | sub('abcdefg', 'a', x)
+          | ---------------------- Pattern contains no regex special characters but `fixed = TRUE` is not set.
+          |
+          = help: Add `fixed = TRUE` for better performance.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("gregexpr('abcdefg', x)"),
+            @r"
+        warning: fixed_regex
+         --> <test>:1:1
+          |
+        1 | gregexpr('abcdefg', x)
+          | ---------------------- Pattern contains no regex special characters but `fixed = TRUE` is not set.
+          |
+          = help: Add `fixed = TRUE` for better performance.
+        Found 1 error.
+        "
+        );
 
-        expect_lint("grepl('abcdefg', x)", lint_msg, "fixed_regex", None);
-        expect_lint("grep('abcdefg', x)", lint_msg, "fixed_regex", None);
-        expect_lint("regexec('abcdefg', x)", lint_msg, "fixed_regex", None);
-        expect_lint("regexpr('abcdefg', x)", lint_msg, "fixed_regex", None);
-        expect_lint("gsub('abcdefg', 'a', x)", lint_msg, "fixed_regex", None);
-        expect_lint("sub('abcdefg', 'a', x)", lint_msg, "fixed_regex", None);
-        expect_lint("gregexpr('abcdefg', x)", lint_msg, "fixed_regex", None);
+        assert_snapshot!(
 
-        expect_lint("gregexpr('a-z', y)", lint_msg, "fixed_regex", None);
+            snapshot_lint("gregexpr('a-z', y)"),
+
+            @r"
+        warning: fixed_regex
+         --> <test>:1:1
+          |
+        1 | gregexpr('a-z', y)
+          | ------------------ Pattern contains no regex special characters but `fixed = TRUE` is not set.
+          |
+          = help: Add `fixed = TRUE` for better performance.
+        Found 1 error.
+        "
+        );
 
         // naming the argument doesn't matter (if it's still used positionally)
-        expect_lint(
-            "gregexpr(pattern = 'a-z', y)",
-            lint_msg,
-            "fixed_regex",
-            None,
+        assert_snapshot!(
+            snapshot_lint("gregexpr(pattern = 'a-z', y)"),
+            @r"
+        warning: fixed_regex
+         --> <test>:1:1
+          |
+        1 | gregexpr(pattern = 'a-z', y)
+          | ---------------------------- Pattern contains no regex special characters but `fixed = TRUE` is not set.
+          |
+          = help: Add `fixed = TRUE` for better performance.
+        Found 1 error.
+        "
         );
 
         assert_snapshot!(
@@ -99,13 +206,22 @@ mod tests {
 
     #[test]
     fn test_fixed_regex_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
-        expect_lint(
-            "grep(\n  # comment\n  'hello', x\n)",
-            "Add `fixed = TRUE` for better performance",
-            "fixed_regex",
-            None,
+        assert_snapshot!(
+            snapshot_lint("grep(\n  # comment\n  'hello', x\n)"),
+            @r"
+        warning: fixed_regex
+         --> <test>:1:1
+          |
+        1 | / grep(
+        2 | |   # comment
+        3 | |   'hello', x
+        4 | | )
+          | |_- Pattern contains no regex special characters but `fixed = TRUE` is not set.
+          |
+          = help: Add `fixed = TRUE` for better performance.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             "no_fix_with_comments",

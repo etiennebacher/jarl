@@ -6,6 +6,7 @@
 //
 // MIT License - Posit PBC
 
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::fs;
@@ -13,6 +14,12 @@ use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 
+use crate::rule_options::ResolvedRuleOptions;
+use crate::rule_options::assignment::AssignmentConfig;
+use crate::rule_options::assignment::AssignmentOptions;
+use crate::rule_options::duplicated_arguments::DuplicatedArgumentsOptions;
+use crate::rule_options::undesirable_function::UndesirableFunctionOptions;
+use crate::rule_options::unreachable_code::UnreachableCodeOptions;
 use crate::settings::LinterSettings;
 use crate::settings::Settings;
 
@@ -44,7 +51,7 @@ pub fn parse_jarl_toml(path: &Path) -> Result<TomlOptions, ParseTomlError> {
     toml::from_str(&toml).map_err(|err| ParseTomlError::Deserialize(path.to_path_buf(), err))
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
+#[derive(Clone, Debug, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct TomlOptions {
@@ -58,9 +65,9 @@ pub struct TomlOptions {
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct GlobalTomlOptions {}
 
-#[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
+#[derive(Clone, Debug, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+#[serde(rename_all = "kebab-case")]
 pub struct LinterTomlOptions {
     /// # Rules to select
     ///
@@ -167,9 +174,38 @@ pub struct LinterTomlOptions {
     pub default_exclude: Option<bool>,
     /// # Assignment operator to use
     ///
-    /// This can be either `"<-"` or `"="`. Both are valid in R, so this
-    /// option is useful to ensure consistency in a project.
-    pub assignment: Option<String>,
+    /// Accepts either the legacy form `assignment = "<-"` (deprecated) or the
+    /// new table form `[lint.assignment]` with an `operator` field.
+    pub assignment: Option<AssignmentConfig>,
+
+    /// # Options for the `duplicated_arguments` rule
+    ///
+    /// Use `skipped-functions` to fully replace the default list of functions
+    /// that are allowed to have duplicated arguments. Use
+    /// `extend-skipped-functions` to add to the default list.
+    /// Specifying both is an error.
+    pub duplicated_arguments: Option<DuplicatedArgumentsOptions>,
+
+    /// # Options for the `undesirable_function` rule
+    ///
+    /// Use `functions` to fully replace the default list of undesirable functions.
+    /// Use `extend-functions` to add to the default list.
+    /// Specifying both is an error.
+    pub undesirable_function: Option<UndesirableFunctionOptions>,
+
+    /// # Options for the `unreachable_code` rule
+    ///
+    /// Use `stopping-functions` to fully replace the default list of functions
+    /// that are considered to stop execution (never return). Use
+    /// `extend-stopping-functions` to add to the default list.
+    /// Specifying both is an error.
+    pub unreachable_code: Option<UnreachableCodeOptions>,
+
+    /// Catch any unknown fields so we can produce a clean error message that
+    /// only lists the primary `[lint]` options (not every rule sub-table).
+    #[serde(flatten)]
+    #[cfg_attr(feature = "schemars", schemars(skip))]
+    pub(crate) unknown_fields: HashMap<String, toml::Value>,
 }
 
 /// Return the path to the `jarl.toml` or `.jarl.toml` file in a given directory.
@@ -204,15 +240,42 @@ impl TomlOptions {
     pub fn into_settings(self, _root: &Path) -> anyhow::Result<Settings> {
         let linter = self.lint.unwrap_or_default();
 
+        // Reject unknown fields in `[lint]` with a clean error message that
+        // only lists the primary options (not every rule sub-table name).
+        if let Some(field) = linter.unknown_fields.keys().next() {
+            return Err(anyhow::anyhow!(
+                "Unknown field `{field}` in `[lint]`. Expected one of: \
+                 `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, \
+                 `exclude`, `default-exclude`."
+            ));
+        }
+
+        // Resolve the assignment config: extract the AssignmentOptions and
+        // track whether the deprecated top-level string form was used.
+        let (assignment_options, deprecated_assignment_syntax) = match &linter.assignment {
+            Some(AssignmentConfig::Legacy(value)) => (
+                Some(AssignmentOptions { operator: Some(value.clone()) }),
+                true,
+            ),
+            Some(AssignmentConfig::Options(opts)) => (Some(opts.clone()), false),
+            None => (None, false),
+        };
+
         let linter = LinterSettings {
             select: linter.select,
             extend_select: linter.extend_select,
             ignore: linter.ignore,
-            assignment: linter.assignment,
             exclude: linter.exclude,
             default_exclude: linter.default_exclude,
             fixable: linter.fixable,
             unfixable: linter.unfixable,
+            deprecated_assignment_syntax,
+            rule_options: ResolvedRuleOptions::resolve(
+                assignment_options.as_ref(),
+                linter.duplicated_arguments.as_ref(),
+                linter.undesirable_function.as_ref(),
+                linter.unreachable_code.as_ref(),
+            )?,
         };
 
         Ok(Settings { linter })

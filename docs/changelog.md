@@ -1,5 +1,36 @@
 # Changelog
 
+## Development version
+
+### Deprecations
+
+* The command-line argument `--assignment` and the `jarl.toml` argument `assignment`
+  are both deprecated. Instead, you should use the following code in `jarl.toml`:
+  ```
+  [lint.assignment]
+  operator = "<-" # or "="
+  ```
+  More info on these rule-specific options in `jarl.toml` in the "Features"
+  section below (#334).
+
+* The rule `"browser"` is deprecated. Calls to `browser()` are now detected with
+  the rule `"undesirable_function"` (#336).
+
+### Features
+
+* `jarl.toml` now accepts rule-specific options in subsections `[lint.<rule-name>]`,
+  such as:
+  ```
+  [lint]
+  ...
+
+  # In the rule `duplicated_arguments`, do not report calls to `my_function()`
+  # and `list()` where multiple arguments have the same name.
+  [lint.duplicated-arguments]
+  extend-skipped-functions = ["my_function", "list"]
+  ```
+  These options are listed in the [Configuration page](https://jarl.etiennebacher.com/config#with-a-config-file) (#333).
+
 ## 0.4.0
 
 ### Breaking changes

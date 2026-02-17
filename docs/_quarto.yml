@@ -107,6 +107,7 @@ website:
       - rules/string_boundary.md
       - rules/system_file.md
       - rules/true_false_symbol.md
+      - rules/undesirable_function.md
       - rules/unexplained_suppression.md
       - rules/unmatched_range_suppression.md
       - rules/unnecessary_nesting.md

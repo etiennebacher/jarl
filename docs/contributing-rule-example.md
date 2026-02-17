@@ -307,90 +307,121 @@ At this point, if you have an R file with a couple of examples that should be re
 
 Tests for each rule are stored in `lints/base/<rule_name>/mod.rs`.
 It is important to test cases where we expect the rule that we just defined to be violated, *and* to test cases where we don't expect this violation.
-Looking at tests for `list2df`, there are three blocks:
+Looking at tests for `list2df`, there are four blocks:
 
-* first, we check cases where we don't expect rule violations:
+1. first, there is some setup that is common to all tests:
 
-```rust
-#[test]
-fn test_no_lint_list2df() {
-    expect_no_lint("cbind.data.frame(x, x)", "list2df", Some("4.0"));
-    [...]
+    ```rust
+    mod tests {
+        use crate::utils_test::*;
+        use insta::assert_snapshot;
 
-    // Ignored if R version unknown or below 4.0.0
-    expect_no_lint("do.call(cbind.data.frame, x)", "list2df", Some("3.5"));
-    [...]
+        fn snapshot_lint(code: &str) -> String {
+            format_diagnostics(code, "list2df", Some("4.0"))
+        }
+        [...]
+    ```
 
-    // Don't know how to handle additional comments
-    expect_no_lint(
-        "do.call(cbind.data.frame, x, quote = TRUE)",
-        "list2df",
-        Some("4.0"),
-    );
+    (Replace `"list2df"` and `Some("4.0")` as appropriate.)
 
-    // Ensure that wrong calls are not reported
-    expect_no_lint("do.call(cbind.data.frame)", "list2df", Some("4.0"));
-    [...]
-}
-```
+1. second, we check cases where we don't expect rule violations:
 
-* second, we check cases where we expect rule violations. We check first that the expected message is displayed, and then we check that the automated fix works correctly with a snapshot test:
+    ```rust
+    #[test]
+    fn test_no_lint_list2df() {
+        expect_no_lint("cbind.data.frame(x, x)", "list2df", Some("4.0"));
+        [...]
 
-```rust
-#[test]
-fn test_lint_list2df() {
-    use insta::assert_snapshot;
+        // Ignored if R version unknown or below 4.0.0
+        expect_no_lint("do.call(cbind.data.frame, x)", "list2df", Some("3.5"));
+        [...]
 
-    let expected_message = "Use `list2DF(x)` instead";
-    expect_lint(
-        "do.call(cbind.data.frame, x)",
-        expected_message,
-        "list2df",
-        Some("4.0"),
-    );
-    [...]
-
-    assert_snapshot!(
-        "fix_output",
-        get_fixed_text(
-            vec![
-                "do.call(cbind.data.frame, x)",
-                [...]
-            ],
+        // Don't know how to handle additional comments
+        expect_no_lint(
+            "do.call(cbind.data.frame, x, quote = TRUE)",
             "list2df",
-            Some("4.0")
-        )
-    );
-}
-```
+            Some("4.0"),
+        );
 
-* finally, if the rule has an automatic fix, we check that having a comment in the middle of the code in question does *not* modify this code. Handling comments in automatic fixes is difficult and is left as an objective for the future.
+        // Ensure that wrong calls are not reported
+        expect_no_lint("do.call(cbind.data.frame)", "list2df", Some("4.0"));
+        [...]
+    }
+    ```
 
-```rust
-#[test]
-fn test_list2df_with_comments_no_fix() {
-    use insta::assert_snapshot;
-    // Should detect lint but skip fix when comments are present to avoid destroying them
-    expect_lint(
-        "do.call(\n # a comment\ncbind.data.frame, x)",
-        "Use `list2DF(x)` instead",
-        "list2df",
-        Some("4.0"),
-    );
-    assert_snapshot!(
-        "no_fix_with_comments",
-        get_fixed_text(
-            vec![
-                "# leading comment\ndo.call(cbind.data.frame, x)",
-                "do.call(\n # a comment\ncbind.data.frame, x)",
-                "do.call(cbind.data.frame, x) # trailing comment",
-            ],
+1. third, we check cases where we expect rule violations.
+
+    - we use inline snapshot tests to ensure that the diagnostic is correctly reported. Note that when you write the test, you can leave the expected output as `@r""`. Running `cargo insta test` and `cargo insta accept` will replace the expected output as appropriate.
+
+    ```rust
+    #[test]
+    fn test_lint_list2df() {
+        assert_snapshot!(
+            snapshot_lint("do.call(cbind.data.frame, x)"),
+            @r"
+        warning: list2df
+         --> <test>:1:1
+          |
+        1 | do.call(cbind.data.frame, x)
+          | ---------------------------- `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
+          |
+          = help: Use `list2DF(x)` instead.
+        Found 1 error.
+        "
+        );
+
+        [...]
+    }
+    ```
+
+    - then, we use snapshots and the function `get_fixed_text()` to ensure that automatic fixes are correct:
+
+    ```rust
+    #[test]
+    fn test_lint_list2df() {
+        [...]
+
+        assert_snapshot!(
+            "fix_output",
+            get_fixed_text(
+                vec![
+                    "do.call(cbind.data.frame, x)",
+                    [...]
+                ],
+                "list2df",
+                Some("4.0")
+            )
+        );
+    }
+    ```
+
+1. finally, if the rule has an automatic fix, we check that having a comment in the middle of the code in question does *not* modify this code. Handling comments in automatic fixes is difficult and is left as an objective for the future.
+
+    ```rust
+    #[test]
+    fn test_list2df_with_comments_no_fix() {
+        use insta::assert_snapshot;
+        // Should detect lint but skip fix when comments are present to avoid destroying them
+        expect_lint(
+            "do.call(\n # a comment\ncbind.data.frame, x)",
+            "Use `list2DF(x)` instead",
             "list2df",
-            Some("4.0")
-        )
-    );
-}
-```
+            Some("4.0"),
+        );
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_fixed_text(
+                vec![
+                    "# leading comment\ndo.call(cbind.data.frame, x)",
+                    "do.call(\n # a comment\ncbind.data.frame, x)",
+                    "do.call(cbind.data.frame, x) # trailing comment",
+                ],
+                "list2df",
+                Some("4.0")
+            )
+        );
+    }
+    ```
 
 Since we have snapshot tests, we first need to run `cargo insta test` to generate the snapshots and then `cargo insta review` to review and validate them.
 After that, run `cargo test` to ensure that all tests pass.

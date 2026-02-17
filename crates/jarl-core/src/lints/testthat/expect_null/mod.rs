@@ -3,6 +3,11 @@ pub(crate) mod expect_null;
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "expect_null", None)
+    }
 
     #[test]
     fn test_no_lint_expect_null() {
@@ -36,38 +41,70 @@ mod tests {
 
     #[test]
     fn test_lint_expect_null() {
-        use insta::assert_snapshot;
-        let expected_message = "is not as clear as `expect_null(x)`";
-
-        expect_lint(
-            "expect_equal(x, NULL)",
-            expected_message,
-            "expect_null",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(x, NULL)"),
+            @r"
+        warning: expect_null
+         --> <test>:1:1
+          |
+        1 | expect_equal(x, NULL)
+          | --------------------- `expect_equal(x, NULL)` is not as clear as `expect_null(x)`.
+          |
+          = help: Use `expect_null(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "testthat::expect_equal(x, NULL)",
-            expected_message,
-            "expect_null",
-            None,
+        assert_snapshot!(
+            snapshot_lint("testthat::expect_equal(x, NULL)"),
+            @r"
+        warning: expect_null
+         --> <test>:1:1
+          |
+        1 | testthat::expect_equal(x, NULL)
+          | ------------------------------- `expect_equal(x, NULL)` is not as clear as `expect_null(x)`.
+          |
+          = help: Use `expect_null(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_identical(x, NULL)",
-            expected_message,
-            "expect_null",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_identical(x, NULL)"),
+            @r"
+        warning: expect_null
+         --> <test>:1:1
+          |
+        1 | expect_identical(x, NULL)
+          | ------------------------- `expect_identical(x, NULL)` is not as clear as `expect_null(x)`.
+          |
+          = help: Use `expect_null(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_equal(NULL, x)",
-            expected_message,
-            "expect_null",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_equal(NULL, x)"),
+            @r"
+        warning: expect_null
+         --> <test>:1:1
+          |
+        1 | expect_equal(NULL, x)
+          | --------------------- `expect_equal(x, NULL)` is not as clear as `expect_null(x)`.
+          |
+          = help: Use `expect_null(x)` instead.
+        Found 1 error.
+        "
         );
-        expect_lint(
-            "expect_true(is.null(foo(x)))",
-            expected_message,
-            "expect_null",
-            None,
+        assert_snapshot!(
+            snapshot_lint("expect_true(is.null(foo(x)))"),
+            @r"
+        warning: expect_null
+         --> <test>:1:1
+          |
+        1 | expect_true(is.null(foo(x)))
+          | ---------------------------- `expect_true(is.null(x))` is not as clear as `expect_null(x)`.
+          |
+          = help: Use `expect_null(x)` instead.
+        Found 1 error.
+        "
         );
 
         assert_snapshot!(
@@ -88,7 +125,6 @@ mod tests {
 
     #[test]
     fn test_expect_null_with_comments_no_fix() {
-        use insta::assert_snapshot;
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",
