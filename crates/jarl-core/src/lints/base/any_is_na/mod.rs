@@ -148,7 +148,6 @@ mod tests {
                 None
             )
         );
-
     }
 
     #[test]

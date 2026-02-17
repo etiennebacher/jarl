@@ -78,11 +78,7 @@ mod tests {
         );
         assert_snapshot!(
             "multiline_pipe",
-            get_fixed_text(
-                vec!["grepl('^a', x) |>\n  which()"],
-                "which_grepl",
-                None
-            )
+            get_fixed_text(vec!["grepl('^a', x) |>\n  which()"], "which_grepl", None)
         );
     }
 

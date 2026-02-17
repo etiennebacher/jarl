@@ -331,16 +331,16 @@ pub fn get_nested_functions_content(
     let left = left?;
 
     // Case A: `inner_fn(content) |> outer_fn()`
-    if let Some(inner_call) = left.as_r_call() {
-        if get_function_name(inner_call.as_fields().function?) == inner_fn {
-            let inner_content = inner_call
-                .as_fields()
-                .arguments?
-                .items()
-                .into_syntax()
-                .to_string();
-            return Ok(Some((inner_content, outer_syntax)));
-        }
+    if let Some(inner_call) = left.as_r_call()
+        && get_function_name(inner_call.as_fields().function?) == inner_fn
+    {
+        let inner_content = inner_call
+            .as_fields()
+            .arguments?
+            .items()
+            .into_syntax()
+            .to_string();
+        return Ok(Some((inner_content, outer_syntax)));
     }
 
     // Case B: `content |> inner_fn() |> outer_fn()`
@@ -351,20 +351,19 @@ pub fn get_nested_functions_content(
             operator: inner_op,
             right: inner_right,
         } = inner_binary.as_fields();
-        if inner_op?.kind() == RSyntaxKind::PIPE {
-            if let Some(inner_call) = inner_right?.as_r_call() {
-                if get_function_name(inner_call.as_fields().function?) == inner_fn {
-                    let has_unnamed_args = inner_call
-                        .as_fields()
-                        .arguments?
-                        .items()
-                        .into_iter()
-                        .any(|x| x.unwrap().name_clause().is_none());
-                    if !has_unnamed_args {
-                        let content = content_expr?.to_trimmed_string();
-                        return Ok(Some((content, outer_syntax)));
-                    }
-                }
+        if inner_op?.kind() == RSyntaxKind::PIPE
+            && let Some(inner_call) = inner_right?.as_r_call()
+            && get_function_name(inner_call.as_fields().function?) == inner_fn
+        {
+            let has_unnamed_args = inner_call
+                .as_fields()
+                .arguments?
+                .items()
+                .into_iter()
+                .any(|x| x.unwrap().name_clause().is_none());
+            if !has_unnamed_args {
+                let content = content_expr?.to_trimmed_string();
+                return Ok(Some((content, outer_syntax)));
             }
         }
     }
