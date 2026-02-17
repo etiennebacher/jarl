@@ -51,6 +51,24 @@ mod tests {
     #[test]
     fn test_no_lint_length_levels() {
         expect_no_lint("length(c(levels(x), 'a'))", "length_levels", None);
+        // Incomplete pipe chains should not trigger
+        expect_no_lint("x |> length()", "length_levels", None);
+        expect_no_lint("x |> levels()", "length_levels", None);
+    }
+
+    #[test]
+    fn test_lint_length_levels_piped() {
+        assert_snapshot!(
+            "multiline_pipe",
+            get_fixed_text(
+                vec![
+                    "levels(x) |>\n  length()",
+                    "x |>\n  levels() |>\n  length()",
+                ],
+                "length_levels",
+                None
+            )
+        );
     }
 
     #[test]

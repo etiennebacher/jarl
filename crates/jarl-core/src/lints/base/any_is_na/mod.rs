@@ -17,6 +17,9 @@ mod tests {
         expect_no_lint("any(!is.na(foo(x)))", "any_is_na", None);
         expect_no_lint("any()", "any_is_na", None);
         expect_no_lint("any(na.rm = TRUE)", "any_is_na", None);
+        // Incomplete pipe chains should not trigger
+        expect_no_lint("x |> any()", "any_is_na", None);
+        expect_no_lint("x |> is.na()", "any_is_na", None);
     }
 
     #[test]
@@ -88,6 +91,51 @@ mod tests {
         );
 
         assert_snapshot!(
+            snapshot_lint("is.na(x) |> \n any()"),
+            @r"
+        warning: any_is_na
+         --> <test>:1:1
+          |
+        1 | / is.na(x) |> 
+        2 | |  any()
+          | |______- `any(is.na(...))` is inefficient.
+          |
+          = help: Use `anyNA(...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("x |> \n is.na() |> \n any()"),
+            @r"
+        warning: any_is_na
+         --> <test>:1:1
+          |
+        1 | / x |> 
+        2 | |  is.na() |> 
+        3 | |  any()
+          | |______- `any(is.na(...))` is inefficient.
+          |
+          = help: Use `anyNA(...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("foo(x) |> \n is.na() |> \n any()"),
+            @r"
+        warning: any_is_na
+         --> <test>:1:1
+          |
+        1 | / foo(x) |> 
+        2 | |  is.na() |> 
+        3 | |  any()
+          | |______- `any(is.na(...))` is inefficient.
+          |
+          = help: Use `anyNA(...)` instead.
+        Found 1 error.
+        "
+        );
+
+        assert_snapshot!(
             "fix_output",
             get_fixed_text(
                 vec![
@@ -95,6 +143,23 @@ mod tests {
                     "NA %in% x",
                     "any(is.na(foo(x)))",
                     "any(is.na(x), na.rm = TRUE)",
+                ],
+                "any_is_na",
+                None
+            )
+        );
+
+    }
+
+    #[test]
+    fn test_lint_any_na_multiline_pipe() {
+        assert_snapshot!(
+            "multiline_pipe",
+            get_fixed_text(
+                vec![
+                    "is.na(x) |>\n  any()",
+                    "x |>\n  is.na() |>\n  any()",
+                    "foo(x) |>\n  is.na() |>\n  any()",
                 ],
                 "any_is_na",
                 None

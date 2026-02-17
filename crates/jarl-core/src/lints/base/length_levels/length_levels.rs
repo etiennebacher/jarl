@@ -1,7 +1,6 @@
 use crate::diagnostic::*;
 use crate::utils::{get_nested_functions_content, node_contains_comments};
 use air_r_syntax::*;
-use biome_rowan::AstNode;
 pub struct LengthLevels;
 
 /// ## What it does
@@ -40,21 +39,18 @@ impl Violation for LengthLevels {
 }
 
 pub fn length_levels(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let inner_content = get_nested_functions_content(ast, "length", "levels")?;
+    let (inner_content, outer_syntax) =
+        unwrap_or_return_none!(get_nested_functions_content(ast, "length", "levels")?);
 
-    if let Some(inner_content) = inner_content {
-        let range = ast.syntax().text_trimmed_range();
-        let diagnostic = Diagnostic::new(
-            LengthLevels,
-            range,
-            Fix {
-                content: format!("nlevels({inner_content})"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
-        );
-        return Ok(Some(diagnostic));
-    }
-    Ok(None)
+    let range = outer_syntax.text_trimmed_range();
+    Ok(Some(Diagnostic::new(
+        LengthLevels,
+        range,
+        Fix {
+            content: format!("nlevels({inner_content})"),
+            start: range.start().into(),
+            end: range.end().into(),
+            to_skip: node_contains_comments(&outer_syntax),
+        },
+    )))
 }

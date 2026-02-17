@@ -25,6 +25,9 @@ mod tests {
             None,
         );
         expect_no_lint("if (A) all.equal(x, y)", "all_equal", None);
+        // Incomplete pipe chains should not trigger
+        expect_no_lint("all.equal(a, b) |> isTRUE()", "all_equal", None);
+        expect_no_lint("x |> isFALSE()", "all_equal", None);
     }
 
     #[test]
@@ -108,6 +111,17 @@ mod tests {
   all.equal(a, b)
 ) message('equal')",
                 ],
+                "all_equal",
+            )
+        );
+    }
+
+    #[test]
+    fn test_lint_all_equal_piped() {
+        assert_snapshot!(
+            "multiline_pipe",
+            get_unsafe_fixed_text(
+                vec!["all.equal(a, b) |>\n  isFALSE()"],
                 "all_equal",
             )
         );

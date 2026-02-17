@@ -1,0 +1,11 @@
+---
+source: crates/jarl-core/src/lints/base/which_grepl/mod.rs
+expression: "get_fixed_text(vec![\"grepl('^a', x) |>\\n  which()\"], \"which_grepl\", None)"
+---
+OLD:
+====
+grepl('^a', x) |>
+  which()
+NEW:
+====
+grep('^a', x)

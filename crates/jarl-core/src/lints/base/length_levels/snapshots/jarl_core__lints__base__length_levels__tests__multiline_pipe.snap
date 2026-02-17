@@ -1,0 +1,20 @@
+---
+source: crates/jarl-core/src/lints/base/length_levels/mod.rs
+expression: "get_fixed_text(vec![\"levels(x) |>\\n  length()\",\n\"x |>\\n  levels() |>\\n  length()\",], \"length_levels\", None)"
+---
+OLD:
+====
+levels(x) |>
+  length()
+NEW:
+====
+nlevels(x)
+
+OLD:
+====
+x |>
+  levels() |>
+  length()
+NEW:
+====
+nlevels(x)

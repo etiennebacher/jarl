@@ -1,8 +1,8 @@
 use crate::diagnostic::Diagnostic;
 use crate::location::Location;
 use air_r_syntax::{
-    AnyRExpression, RArgument, RArgumentList, RCall, RCallFields, RExtractExpressionFields,
-    RSyntaxNode,
+    AnyRExpression, RArgument, RArgumentList, RBinaryExpression, RBinaryExpressionFields, RCall,
+    RCallFields, RExtractExpressionFields, RSyntaxKind, RSyntaxNode,
 };
 use anyhow::{Result, anyhow};
 use biome_rowan::AstNode;
@@ -278,53 +278,98 @@ pub fn get_function_namespace_prefix(function: AnyRExpression) -> Option<String>
     None
 }
 
-// Checks if an Rcall corresponds to a nested function of the form
-// `outer_fn(inner_fn(content))`. If so, it returns `content`, otherwise None.
+/// Checks if an `RCall` matches one of these patterns and returns `(content, syntax_node)`:
+///
+/// - `outer_fn(inner_fn(content))`: `syntax_node` is the outer call
+/// - `inner_fn(content) |> outer_fn()`: `syntax_node` is the pipe expression
+/// - `content |> inner_fn() |> outer_fn()`: `syntax_node` is the pipe expression
+///
+/// The returned `syntax_node` is the top-level node of the matched expression and should
+/// be used for the diagnostic range and comment checks.
 pub fn get_nested_functions_content(
     call: &RCall,
     outer_fn: &str,
     inner_fn: &str,
-) -> Result<Option<String>> {
+) -> Result<Option<(String, RSyntaxNode)>> {
     let RCallFields { function, arguments } = call.as_fields();
 
-    let function = function?;
-    let outer_fn_name = get_function_name(function);
-
-    if outer_fn_name != outer_fn {
+    if get_function_name(function?) != outer_fn {
         return Ok(None);
     }
 
-    let items = arguments?.items();
-
-    let unnamed_arg = items
+    // Try nested case: outer_fn(inner_fn(content))
+    let unnamed_arg = arguments?
+        .items()
         .into_iter()
         .find(|x| x.clone().unwrap().name_clause().is_none());
 
-    // any(na.rm = TRUE/FALSE) and any() are valid
-    if unnamed_arg.is_none() {
+    if let Some(arg) = unnamed_arg {
+        let value = arg?.value();
+        if let Some(inner) = value
+            && let Some(inner_call) = inner.as_r_call()
+            && get_function_name(inner_call.as_fields().function?) == inner_fn
+        {
+            let inner_content = inner_call
+                .as_fields()
+                .arguments?
+                .items()
+                .into_syntax()
+                .to_string();
+            return Ok(Some((inner_content, call.syntax().clone())));
+        }
+    }
+
+    // Try piped cases. The call must be on the right side of a pipe binary expression.
+    let parent_syntax = unwrap_or_return_none!(call.syntax().parent());
+    let parent_binary = unwrap_or_return_none!(RBinaryExpression::cast(parent_syntax));
+    let outer_syntax = parent_binary.syntax().clone();
+
+    let RBinaryExpressionFields { left, operator, .. } = parent_binary.as_fields();
+    if operator?.kind() != RSyntaxKind::PIPE {
         return Ok(None);
     }
+    let left = left?;
 
-    let value = unnamed_arg.unwrap()?.value();
-
-    if let Some(inner) = value
-        && let Some(inner2) = inner.as_r_call()
-    {
-        let RCallFields { function, arguments } = inner2.as_fields();
-
-        let function = function?;
-        let inner_fn_name = get_function_name(function);
-
-        if inner_fn_name != inner_fn {
-            return Ok(None);
+    // Case A: `inner_fn(content) |> outer_fn()`
+    if let Some(inner_call) = left.as_r_call() {
+        if get_function_name(inner_call.as_fields().function?) == inner_fn {
+            let inner_content = inner_call
+                .as_fields()
+                .arguments?
+                .items()
+                .into_syntax()
+                .to_string();
+            return Ok(Some((inner_content, outer_syntax)));
         }
-
-        let inner_content = arguments?.items().into_syntax().to_string();
-
-        Ok(Some(inner_content))
-    } else {
-        Ok(None)
     }
+
+    // Case B: `content |> inner_fn() |> outer_fn()`
+    // inner_fn() must have no explicit unnamed arguments since its input comes from the pipe.
+    if let Some(inner_binary) = left.as_r_binary_expression() {
+        let RBinaryExpressionFields {
+            left: content_expr,
+            operator: inner_op,
+            right: inner_right,
+        } = inner_binary.as_fields();
+        if inner_op?.kind() == RSyntaxKind::PIPE {
+            if let Some(inner_call) = inner_right?.as_r_call() {
+                if get_function_name(inner_call.as_fields().function?) == inner_fn {
+                    let has_unnamed_args = inner_call
+                        .as_fields()
+                        .arguments?
+                        .items()
+                        .into_iter()
+                        .any(|x| x.unwrap().name_clause().is_none());
+                    if !has_unnamed_args {
+                        let content = content_expr?.to_trimmed_string();
+                        return Ok(Some((content, outer_syntax)));
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(None)
 }
 
 /// Checks if a syntax node contains comments somewhere between subnodes.

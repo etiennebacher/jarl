@@ -52,10 +52,11 @@ use biome_rowan::AstNode;
 /// See `?all.equal`
 pub fn all_equal(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     // 1) Check for isFALSE(all.equal(...))
-    let inner_content = get_nested_functions_content(ast, "isFALSE", "all.equal")?;
-    if let Some(inner_content) = inner_content {
-        let range = ast.syntax().text_trimmed_range();
-        let diagnostic = Diagnostic::new(
+    if let Some((inner_content, outer_syntax)) =
+        get_nested_functions_content(ast, "isFALSE", "all.equal")?
+    {
+        let range = outer_syntax.text_trimmed_range();
+        return Ok(Some(Diagnostic::new(
             ViolationData::new(
                 "all_equal".to_string(),
                 "`isFALSE(all.equal())` always returns `FALSE`".to_string(),
@@ -66,11 +67,9 @@ pub fn all_equal(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
                 content: format!("!isTRUE(all.equal({inner_content}))"),
                 start: range.start().into(),
                 end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
+                to_skip: node_contains_comments(&outer_syntax),
             },
-        );
-
-        return Ok(Some(diagnostic));
+        )));
     }
 
     // 2) Check for other cases: if (all.equal()), while(all.equal()), etc.

@@ -30,28 +30,24 @@ use biome_rowan::AstNode;
 ///
 /// See `?anyNA`
 pub fn any_is_na(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let inner_content = get_nested_functions_content(ast, "any", "is.na")?;
+    let (inner_content, outer_syntax) =
+        unwrap_or_return_none!(get_nested_functions_content(ast, "any", "is.na")?);
 
-    if let Some(inner_content) = inner_content {
-        let range = ast.syntax().text_trimmed_range();
-        let diagnostic = Diagnostic::new(
-            ViolationData::new(
-                "any_is_na".to_string(),
-                "`any(is.na(...))` is inefficient.".to_string(),
-                Some("Use `anyNA(...)` instead.".to_string()),
-            ),
-            range,
-            Fix {
-                content: format!("anyNA({inner_content})"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
-        );
-        return Ok(Some(diagnostic));
-    }
-
-    Ok(None)
+    let range = outer_syntax.text_trimmed_range();
+    Ok(Some(Diagnostic::new(
+        ViolationData::new(
+            "any_is_na".to_string(),
+            "`any(is.na(...))` is inefficient.".to_string(),
+            Some("Use `anyNA(...)` instead.".to_string()),
+        ),
+        range,
+        Fix {
+            content: format!("anyNA({inner_content})"),
+            start: range.start().into(),
+            end: range.end().into(),
+            to_skip: node_contains_comments(&outer_syntax),
+        },
+    )))
 }
 
 pub fn any_is_na_2(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {

@@ -1,0 +1,11 @@
+---
+source: crates/jarl-core/src/lints/base/all_equal/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"all.equal(a, b) |>\\n  isFALSE()\"], \"all_equal\",)"
+---
+OLD:
+====
+all.equal(a, b) |>
+  isFALSE()
+NEW:
+====
+!isTRUE(all.equal(a, b))

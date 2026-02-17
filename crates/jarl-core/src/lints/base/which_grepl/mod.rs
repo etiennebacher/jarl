@@ -55,6 +55,21 @@ mod tests {
     fn test_no_lint_which_grepl() {
         expect_no_lint("which(grepl(p1, x) | grepl(p2, x))", "which_grepl", None);
         expect_no_lint("which(grep(p1, x))", "which_grepl", None);
+        // Incomplete pipe chains should not trigger
+        expect_no_lint("x |> which()", "which_grepl", None);
+        expect_no_lint("grepl('^a', x) |> sum()", "which_grepl", None);
+    }
+
+    #[test]
+    fn test_lint_which_grepl_piped() {
+        assert_snapshot!(
+            "multiline_pipe",
+            get_fixed_text(
+                vec!["grepl('^a', x) |>\n  which()"],
+                "which_grepl",
+                None
+            )
+        );
     }
 
     #[test]

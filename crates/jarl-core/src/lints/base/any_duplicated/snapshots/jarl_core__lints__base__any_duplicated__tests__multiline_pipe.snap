@@ -1,0 +1,20 @@
+---
+source: crates/jarl-core/src/lints/base/any_duplicated/mod.rs
+expression: "get_fixed_text(vec![\"duplicated(x) |>\\n  any()\",\n\"x |>\\n  duplicated() |>\\n  any()\",], \"any_duplicated\", None)"
+---
+OLD:
+====
+duplicated(x) |>
+  any()
+NEW:
+====
+anyDuplicated(x) > 0
+
+OLD:
+====
+x |>
+  duplicated() |>
+  any()
+NEW:
+====
+anyDuplicated(x) > 0
