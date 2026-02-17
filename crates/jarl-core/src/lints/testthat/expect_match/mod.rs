@@ -25,7 +25,7 @@ mod tests {
 
     #[test]
     fn test_lint_expect_match() {
-        let lint_msg = "expect_true(grepl(...))` is not as clear as expect_match(...).";
+        let lint_msg = "`expect_true(grepl(...))` is not as clear as expect_match(...).";
 
         expect_lint(
             "testthat::expect_true(grepl('Testing is fun', 'fun'))",

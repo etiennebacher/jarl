@@ -56,8 +56,10 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     }
 
     let args = ast.arguments()?.items();
-    let outer_args_count = args.iter().count();
+
+    // Get first argument
     let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
+
     let object_value = unwrap_or_return_none!(object.value());
 
     let grepl_call = unwrap_or_return_none!(object_value.as_r_call());
@@ -67,6 +69,8 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
+    // It all grepl args can be passed to expect_match, so keep them all for fix
+    // order matters for x and pattern, doesn't for the rest
     let grepl_args = grepl_call.arguments()?.items();
     let pattern_arg =
         unwrap_or_return_none!(get_arg_by_name_then_position(&grepl_args, "pattern", 1));
@@ -74,18 +78,21 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 
     let pattern_value = unwrap_or_return_none!(pattern_arg.value());
     let x_value = unwrap_or_return_none!(x_arg.value());
-    let object_text = x_value.to_trimmed_text().to_string();
+    let x_text = x_value.to_trimmed_text().to_string();
     let pattern_text = pattern_value.to_trimmed_text().to_string();
 
+    // Args outside of grepl (info and label) can be passed to expect_match
+    // but other linters don't seem to carry them in fix? not sure what to do here
+    // currently gives lint but no fix
+    let outer_args_count = args.iter().count();
     if outer_args_count > 1 {
-        let diagnostic = Diagnostic::new(ExpectMatch, range, Fix::empty());
-        return Ok(Some(diagnostic));
+        return Ok(Some(Diagnostic::new(ExpectMatch, range, Fix::empty())));
     }
 
     let pattern_range = pattern_arg.syntax().text_trimmed_range();
     let x_range = x_arg.syntax().text_trimmed_range();
+    // Get extra args, skipping x and pattern
     let mut extra_args: Vec<String> = Vec::new();
-
     for arg in grepl_args.iter() {
         let arg = arg.clone().unwrap();
         let arg_range = arg.syntax().text_trimmed_range();
@@ -95,14 +102,21 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         extra_args.push(arg.to_trimmed_text().to_string());
     }
 
+    // Preserve namespace prefix if present
     let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();
-    let mut parts = vec![object_text, pattern_text];
-    parts.extend(extra_args);
+
+    let mut grepl_args = vec![x_text, pattern_text];
+    grepl_args.extend(extra_args);
+
     let diagnostic = Diagnostic::new(
         ExpectMatch,
         range,
         Fix {
-            content: format!("{}expect_match({})", namespace_prefix, parts.join(", ")),
+            content: format!(
+                "{}expect_match({})",
+                namespace_prefix,
+                grepl_args.join(", ")
+            ),
             start: range.start().into(),
             end: range.end().into(),
             to_skip: node_contains_comments(ast.syntax()),
