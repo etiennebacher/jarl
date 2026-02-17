@@ -20,6 +20,11 @@ mod tests {
         // Incomplete pipe chains should not trigger
         expect_no_lint("x |> any()", "any_duplicated", None);
         expect_no_lint("x |> duplicated()", "any_duplicated", None);
+        expect_no_lint(
+            "x |> any() |> mean() |> duplicated()",
+            "any_duplicated",
+            None,
+        );
     }
 
     #[test]

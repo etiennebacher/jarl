@@ -27,6 +27,7 @@ mod tests {
         expect_no_lint("if (A) all.equal(x, y)", "all_equal", None);
         // Incomplete pipe chains should not trigger
         expect_no_lint("all.equal(a, b) |> isTRUE()", "all_equal", None);
+        expect_no_lint("all.equal(a, b) |> mean() |> isTRUE()", "all_equal", None);
         expect_no_lint("x |> isFALSE()", "all_equal", None);
     }
 
