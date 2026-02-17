@@ -119,6 +119,20 @@ mod tests {
     #[test]
     fn test_lint_all_equal_piped() {
         assert_snapshot!(
+            snapshot_lint("all.equal(a, b) |> \n isFALSE()"),
+            @r"
+        warning: all_equal
+         --> <test>:1:1
+          |
+        1 | / all.equal(a, b) |> 
+        2 | |  isFALSE()
+          | |__________- `isFALSE(all.equal())` always returns `FALSE`
+          |
+          = help: Use `!isTRUE()` to check for differences instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
             "multiline_pipe",
             get_unsafe_fixed_text(
                 vec!["all.equal(a, b) |>\n  isFALSE()"],

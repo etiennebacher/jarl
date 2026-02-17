@@ -113,6 +113,35 @@ mod tests {
     #[test]
     fn test_lint_any_duplicated_piped() {
         assert_snapshot!(
+            snapshot_lint("duplicated(x) |> \n any()"),
+            @r"
+        warning: any_duplicated
+         --> <test>:1:1
+          |
+        1 | / duplicated(x) |> 
+        2 | |  any()
+          | |______- `any(duplicated(...))` is inefficient.
+          |
+          = help: Use `anyDuplicated(...) > 0` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("x |> \n duplicated() |> \n any()"),
+            @r"
+        warning: any_duplicated
+         --> <test>:1:1
+          |
+        1 | / x |> 
+        2 | |  duplicated() |> 
+        3 | |  any()
+          | |______- `any(duplicated(...))` is inefficient.
+          |
+          = help: Use `anyDuplicated(...) > 0` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
             "multiline_pipe",
             get_fixed_text(
                 vec![

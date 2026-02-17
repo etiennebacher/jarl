@@ -63,6 +63,20 @@ mod tests {
     #[test]
     fn test_lint_which_grepl_piped() {
         assert_snapshot!(
+            snapshot_lint("grepl('^a', x) |> \n which()"),
+            @r"
+        warning: which_grepl
+         --> <test>:1:1
+          |
+        1 | / grepl('^a', x) |> 
+        2 | |  which()
+          | |________- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
+          |
+          = help: Use `grep(pattern, x)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
             "multiline_pipe",
             get_fixed_text(
                 vec!["grepl('^a', x) |>\n  which()"],
