@@ -97,10 +97,16 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlD
     // TODO: we shoudln't have to write the content to a tempfile to then read
     // it and get diagnostic. The check function should be able to take the R
     // code as a string.
-    // Write in-memory content to a temporary file for linting
+    // Write in-memory content to a temporary file for linting.
+    // Preserve the original extension so Rmd/Qmd files go through the correct
+    // code path (get_checks_rmd) rather than the plain-R path.
+    let ext = file_path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("R");
     let temp_dir = TempDir::new()?;
     let temp_dir = temp_dir.path();
-    let temp_file = temp_dir.join(format!("jarl_lsp_{}.R", std::process::id()));
+    let temp_file = temp_dir.join(format!("jarl_lsp_{}.{}", std::process::id(), ext));
 
     std::fs::write(&temp_file, content)
         .map_err(|e| anyhow!("Failed to write temporary file: {}", e))?;
