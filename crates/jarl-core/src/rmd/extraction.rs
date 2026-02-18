@@ -7,8 +7,10 @@ use std::sync::LazyLock;
 ///
 /// Captures group 1: the backtick sequence (e.g. "```").
 /// Accepts `{r}`, `{r label}`, `{r, options}`, etc.
+/// Leading spaces or tabs are allowed to support indented chunks (e.g. inside
+/// list items).
 static OPEN_FENCE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^(`{3,})\{[rR][^}]*\}").unwrap());
+    LazyLock::new(|| Regex::new(r"^[ \t]*(`{3,})\{[rR][^}]*\}").unwrap());
 
 /// An R code chunk extracted from an Rmd/Qmd document.
 #[derive(Debug)]
@@ -39,7 +41,7 @@ pub fn extract_r_chunks(content: &str) -> Vec<RCodeChunk> {
         let mut finished = false;
 
         if let Some((fence, code, start_byte)) = current.as_mut() {
-            if line.trim_end() == fence.as_str() {
+            if line.trim() == fence.as_str() {
                 // Closing fence found — emit the chunk.
                 let ignore = detect_ignore_chunk(code);
                 chunks.push(RCodeChunk {
@@ -240,11 +242,21 @@ mod tests {
     }
 
     #[test]
-    fn test_indented_fence_not_matched() {
-        // The regex is anchored at ^ so an indented fence is not an opening fence.
+    fn test_indented_fence_matched() {
+        // Leading spaces are allowed (e.g. a chunk inside a list item).
         let content = "  ```{r}\nany(is.na(x))\n  ```\n";
         let chunks = extract_r_chunks(content);
-        assert_eq!(chunks.len(), 0);
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0].code, "any(is.na(x))\n");
+    }
+
+    #[test]
+    fn test_indented_chunk_inside_list() {
+        // Realistic list-item scenario from R Markdown / Quarto.
+        let content = "* hello\n\n  ```{r}\n  any(is.na(1))\n  ```\n";
+        let chunks = extract_r_chunks(content);
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0].code, "  any(is.na(1))\n");
     }
 
     #[test]
