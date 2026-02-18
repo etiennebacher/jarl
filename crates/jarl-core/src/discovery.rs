@@ -11,6 +11,7 @@ use std::path::PathBuf;
 
 use crate::fs;
 use crate::fs::has_r_extension;
+use crate::fs::has_rmd_extension;
 use crate::settings::Settings;
 use crate::toml::find_jarl_toml_in_directory;
 use crate::toml::parse_jarl_toml;
@@ -315,8 +316,8 @@ impl ignore::ParallelVisitor for FilesVisitor<'_> {
             return ignore::WalkState::Continue;
         }
 
-        // Check if this is an R file (has .R extension)
-        if !is_directory && has_r_extension(path) {
+        // Check if this is an R or Rmd/Qmd file
+        if !is_directory && (has_r_extension(path) || has_rmd_extension(path)) {
             tracing::trace!("Included R file {path}", path = path.display());
             self.files.push(Ok(entry.into_path()));
             return ignore::WalkState::Continue;

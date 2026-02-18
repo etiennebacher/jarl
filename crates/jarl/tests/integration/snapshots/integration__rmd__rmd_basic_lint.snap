@@ -1,0 +1,21 @@
+---
+source: crates/jarl/tests/integration/rmd.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.Rmd:6:1
+  |
+6 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+
+----- stderr -----
+
+----- args -----
+check .

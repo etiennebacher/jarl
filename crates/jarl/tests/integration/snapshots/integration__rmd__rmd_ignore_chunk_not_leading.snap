@@ -1,0 +1,29 @@
+---
+source: crates/jarl/tests/integration/rmd.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name()"
+---
+success: false
+exit_code: 1
+----- stdout -----
+warning: blanket_suppression
+ --> test.Rmd:7:1
+  |
+7 | #| jarl-ignore-chunk
+  | -------------------- This comment isn't used by Jarl because it is missing a rule to ignore.
+  |
+  = help: Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`.
+
+warning: any_is_na
+ --> test.Rmd:8:1
+  |
+8 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 2 errors.
+
+----- stderr -----
+
+----- args -----
+check .

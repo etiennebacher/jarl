@@ -49,8 +49,9 @@ pub enum DirectiveParseResult {
 /// # jarl-ignore-end <rule>
 /// ```
 ///
-/// Also accepts without space after `#`:
+/// Also accepted (e.g. for Quarto/Rmd chunk option style comments):
 /// ```text
+/// #| jarl-ignore <rule>: <reason>
 /// #jarl-ignore <rule>: <reason>
 /// ```
 ///
@@ -58,6 +59,9 @@ pub enum DirectiveParseResult {
 /// - Rule name must be valid (validated against known rules)
 /// - Explanation is mandatory (except for `-end`)
 /// - One rule per directive
+/// - `#| jarl-ignore-chunk` is an Rmd/Qmd-specific chunk suppressor handled at
+///   extraction time. It is treated as `BlanketSuppression` here because it
+///   suppresses all rules without specifying which one.
 ///
 /// Returns:
 /// - `Some(Valid(directive))` - A valid directive was found
@@ -66,8 +70,10 @@ pub enum DirectiveParseResult {
 pub fn parse_comment_directive(text: &str) -> Option<DirectiveParseResult> {
     let text = text.trim_start();
 
-    // Accept both "# jarl-ignore" and "#jarl-ignore"
-    let text = if let Some(rest) = text.strip_prefix("# ") {
+    // Accept "#| ", "# ", or "#" as prefix (the "#|" form is used in Quarto/Rmd chunk options)
+    let text = if let Some(rest) = text.strip_prefix("#| ") {
+        rest
+    } else if let Some(rest) = text.strip_prefix("# ") {
         rest
     } else if let Some(rest) = text.strip_prefix('#') {
         rest
@@ -137,6 +143,13 @@ pub fn parse_comment_directive(text: &str) -> Option<DirectiveParseResult> {
         }
     } else if rest.is_empty() || rest.starts_with(':') {
         // Blanket suppression: `# jarl-ignore`, `#jarl-ignore`, or `# jarl-ignore:`
+        Some(DirectiveParseResult::BlanketSuppression)
+    } else if rest == "-chunk" || rest.starts_with("-chunk ") || rest.starts_with("-chunk:") {
+        // `#| jarl-ignore-chunk` — Rmd/Qmd chunk-level suppressor.
+        // Its chunk-skip effect is handled at extraction time (Rmd-only).
+        // In all other contexts (R files, non-leading position in a chunk) it
+        // is treated as a blanket suppression because it suppresses all rules
+        // without specifying which one.
         Some(DirectiveParseResult::BlanketSuppression)
     } else {
         // Not a valid directive (e.g., `# jarl-ignorefoo`)

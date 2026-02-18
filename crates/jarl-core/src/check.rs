@@ -10,7 +10,7 @@ use air_r_syntax::{
     RWhileStatementFields,
 };
 use anyhow::{Context, Result};
-use biome_rowan::{AstNode, AstNodeList};
+use biome_rowan::{AstNode, AstNodeList, TextSize};
 use rayon::prelude::*;
 use std::fs;
 use std::path::Path;
@@ -81,6 +81,11 @@ pub fn lint_only(path: &PathBuf, config: Arc<Config>) -> Result<Vec<Diagnostic>,
 }
 
 pub fn lint_fix(path: &PathBuf, config: Arc<Config>) -> Result<Vec<Diagnostic>, anyhow::Error> {
+    // Rmd/Qmd files never get autofixes applied.
+    if crate::fs::has_rmd_extension(path) {
+        return lint_only(path, config);
+    }
+
     let path = relativize_path(path);
 
     let mut has_skipped_fixes = true;
@@ -154,6 +159,10 @@ impl Checker {
 // If there are diagnostics to report, this is also where their range in the
 // string is converted to their location (row, column).
 pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Diagnostic>> {
+    if crate::fs::has_rmd_extension(file) {
+        return get_checks_rmd(contents, file, config);
+    }
+
     let parser_options = RParserOptions::default();
     let parsed = air_r_parser::parse(contents, parser_options);
 
@@ -229,6 +238,93 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
 
     Ok(diagnostics)
+}
+
+/// Lint an Rmd/Qmd file by extracting R code chunks and checking each one.
+///
+/// Key differences from regular R file linting:
+/// - No autofix (Quarto code annotations make position-based edits unsafe)
+/// - Diagnostic ranges are remapped from chunk-local byte offsets to file offsets
+/// - `#| jarl-ignore-chunk` silently skips an entire chunk
+/// - `#| jarl-ignore-file` suppression is applied across all chunks
+fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Diagnostic>> {
+    use std::collections::HashSet;
+
+    let chunks = crate::rmd::extract_r_chunks(contents);
+
+    struct ChunkState {
+        parsed: air_r_parser::Parse,
+        suppression: SuppressionManager,
+        start_byte: usize,
+    }
+
+    // ── Pass 1: parse each chunk, build suppression managers,
+    //    and collect file-level suppressed rules across all chunks ──
+    let mut file_suppressed: HashSet<Rule> = HashSet::new();
+    let mut states: Vec<Option<ChunkState>> = Vec::with_capacity(chunks.len());
+
+    for chunk in &chunks {
+        if chunk.ignore {
+            states.push(None);
+            continue;
+        }
+        let parsed = air_r_parser::parse(&chunk.code, RParserOptions::default());
+        if parsed.has_error() {
+            // Silently skip chunks with parse errors (e.g. documentation examples).
+            states.push(None);
+            continue;
+        }
+        let suppression = SuppressionManager::from_node(&parsed.syntax(), &chunk.code);
+        for fs in &suppression.file_suppressions {
+            file_suppressed.insert(fs.rule);
+        }
+        states.push(Some(ChunkState {
+            parsed,
+            suppression,
+            start_byte: chunk.start_byte,
+        }));
+    }
+
+    // ── Pass 2: run lints on each chunk using its pre-built suppression manager ──
+    let mut all_diagnostics: Vec<Diagnostic> = Vec::new();
+
+    for state in states {
+        let Some(ChunkState { parsed, suppression, start_byte }) = state else {
+            continue;
+        };
+
+        let expressions = &parsed.tree().expressions();
+        let mut checker = Checker::new(suppression, config.rule_options.clone());
+        checker.rule_set = config.rules_to_apply.clone();
+        checker.minimum_r_version = config.minimum_r_version;
+
+        for expr in expressions {
+            check_expression(&expr, &mut checker)?;
+        }
+        // check_document runs suppression filtering internally, so
+        // checker.diagnostics is the post-suppression list after this call.
+        check_document(expressions, &mut checker)?;
+
+        let offset = TextSize::from(start_byte as u32);
+        let diagnostics = checker.diagnostics.into_iter().map(|mut d| {
+            d.filename = file.to_path_buf();
+            d.fix = Fix::empty(); // no autofix for Rmd/Qmd
+            // Remap range from chunk-local byte offsets to original file offsets.
+            d.range = biome_rowan::TextRange::new(d.range.start() + offset, d.range.end() + offset);
+            d
+        });
+        all_diagnostics.extend(diagnostics);
+    }
+
+    // Apply cross-chunk jarl-ignore-file suppressions.
+    all_diagnostics.retain(|d| {
+        Rule::from_name(&d.message.name)
+            .map(|r| !file_suppressed.contains(&r))
+            .unwrap_or(true)
+    });
+
+    let loc_new_lines = crate::utils::find_new_lines_from_content(contents);
+    Ok(compute_lints_location(all_diagnostics, &loc_new_lines))
 }
 
 pub fn check_document(expressions: &RExpressionList, checker: &mut Checker) -> anyhow::Result<()> {

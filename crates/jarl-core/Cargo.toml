@@ -39,6 +39,9 @@ etcetera.workspace = true
 # Parallel processing
 rayon.workspace = true
 
+# Pattern matching
+regex.workspace = true
+
 # Disable default features because we just need basic ones and we absolutely
 # don't want this crate to pull openssl-sys as dependency as it prevents
 # cross-compiling in the release workflow: "Could not find directory of OpenSSL
