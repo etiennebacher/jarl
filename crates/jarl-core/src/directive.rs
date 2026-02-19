@@ -10,6 +10,11 @@ use crate::rule_set::Rule;
 pub enum LintDirective {
     /// Skip specific rule for the next node: `# jarl-ignore <rule>: <reason>`
     Ignore(Rule),
+    /// Skip entire chunk for a rule: `#| jarl-ignore-chunk <rule>: <reason>`
+    ///
+    /// In Rmd/Qmd files this suppresses the rule for the entire chunk (not just
+    /// the next expression). In plain `.R` files it behaves like `IgnoreFile`.
+    IgnoreChunk(Rule),
     /// Skip entire file for a rule: `# jarl-ignore-file <rule>: <reason>`
     IgnoreFile(Rule),
     /// Start a range suppression: `# jarl-ignore-start <rule>: <reason>`
@@ -59,9 +64,9 @@ pub enum DirectiveParseResult {
 /// - Rule name must be valid (validated against known rules)
 /// - Explanation is mandatory (except for `-end`)
 /// - One rule per directive
-/// - `#| jarl-ignore-chunk` is an Rmd/Qmd-specific chunk suppressor handled at
-///   extraction time. It is treated as `BlanketSuppression` here because it
-///   suppresses all rules without specifying which one.
+/// - `#| jarl-ignore-chunk <rule>: <reason>` suppresses the named rule for the
+///   entire chunk (all expressions), not just the next one.  Without a rule
+///   name (`#| jarl-ignore-chunk`) it is a blanket suppression.
 ///
 /// Returns:
 /// - `Some(Valid(directive))` - A valid directive was found
@@ -149,16 +154,14 @@ pub fn parse_comment_directive(text: &str) -> Option<DirectiveParseResult> {
         // → blanket suppression (missing rule).
         Some(DirectiveParseResult::BlanketSuppression)
     } else if let Some(after_chunk) = rest.strip_prefix("-chunk ") {
-        // `#| jarl-ignore-chunk <rule>: <reason>` — treated exactly like
-        // `# jarl-ignore <rule>: <reason>`.  The `#|` pipe-option style is
-        // common in Quarto/Rmd and "chunk" just signals it's a chunk-option
-        // style suppression comment.
+        // `#| jarl-ignore-chunk <rule>: <reason>` — suppresses the rule for
+        // the entire chunk (chunk-wide semantics).
         if after_chunk.starts_with(':') {
             Some(DirectiveParseResult::BlanketSuppression)
         } else {
             match parse_rule_with_explanation(after_chunk) {
                 RuleParseResult::Valid(rule) => {
-                    Some(DirectiveParseResult::Valid(LintDirective::Ignore(rule)))
+                    Some(DirectiveParseResult::Valid(LintDirective::IgnoreChunk(rule)))
                 }
                 RuleParseResult::MissingExplanation => {
                     Some(DirectiveParseResult::MissingExplanation)
