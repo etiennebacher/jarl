@@ -537,7 +537,10 @@ mod tests {
 
         let range = hits[0].range;
         assert_eq!(range.start.line, 4, "diagnostic should be on line 4");
-        assert_eq!(range.start.character, 0, "diagnostic should start at column 0");
+        assert_eq!(
+            range.start.character, 0,
+            "diagnostic should start at column 0"
+        );
     }
 
     #[test]
