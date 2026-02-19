@@ -105,6 +105,18 @@ pub struct FileSuppression {
     pub comment_range: TextRange,
 }
 
+/// Represents a chunk-level suppression (`#| jarl-ignore-chunk <rule>: reason`)
+///
+/// In Rmd/Qmd files this suppresses the rule for the entire chunk.
+/// In plain `.R` files it behaves identically to `FileSuppression`.
+#[derive(Debug, Clone)]
+pub struct ChunkSuppression {
+    /// The rule being suppressed
+    pub rule: Rule,
+    /// The range of the suppression comment
+    pub comment_range: TextRange,
+}
+
 /// Intermediate state used during single-pass comment collection
 struct CommentCollector {
     /// Track start positions per (rule, nesting_level) for building skip regions
@@ -114,6 +126,8 @@ struct CommentCollector {
     skip_regions: Vec<SkipRegion>,
     /// Rules suppressed at file level
     file_suppressions: Vec<FileSuppression>,
+    /// Rules suppressed at chunk level
+    chunk_suppressions: Vec<ChunkSuppression>,
     /// Node-level suppressions
     node_suppressions: Vec<NodeSuppression>,
     /// Blanket suppression locations
@@ -140,6 +154,7 @@ impl CommentCollector {
             starts: HashMap::new(),
             skip_regions: Vec::new(),
             file_suppressions: Vec::new(),
+            chunk_suppressions: Vec::new(),
             node_suppressions: Vec::new(),
             blanket_suppressions: Vec::new(),
             unexplained_suppressions: Vec::new(),
@@ -161,6 +176,8 @@ pub struct SuppressionManager {
     pub skip_regions: Vec<SkipRegion>,
     /// Rules suppressed at file level via jarl-ignore-file
     pub file_suppressions: Vec<FileSuppression>,
+    /// Rules suppressed at chunk level via #| jarl-ignore-chunk
+    pub chunk_suppressions: Vec<ChunkSuppression>,
     /// Node-level suppressions (# jarl-ignore rule: explanation)
     pub node_suppressions: Vec<NodeSuppression>,
     /// Fast path: true if there are any suppressions anywhere in the file
@@ -197,6 +214,7 @@ impl SuppressionManager {
                 comments: Comments::default(),
                 skip_regions: Vec::new(),
                 file_suppressions: Vec::new(),
+                chunk_suppressions: Vec::new(),
                 node_suppressions: Vec::new(),
                 has_any_suppressions: false,
                 blanket_suppressions: Vec::new(),
@@ -224,12 +242,14 @@ impl SuppressionManager {
 
         let has_any_suppressions = !collector.skip_regions.is_empty()
             || !collector.file_suppressions.is_empty()
+            || !collector.chunk_suppressions.is_empty()
             || collector.has_any_valid_directive;
 
         Self {
             comments,
             skip_regions: collector.skip_regions,
             file_suppressions: collector.file_suppressions,
+            chunk_suppressions: collector.chunk_suppressions,
             node_suppressions: collector.node_suppressions,
             has_any_suppressions,
             blanket_suppressions: collector.blanket_suppressions,
@@ -384,6 +404,14 @@ impl SuppressionManager {
                             collector.unmatched_end_suppressions.push(comment_range);
                         }
                     }
+                    LintDirective::IgnoreChunk(rule) => {
+                        // Chunk-level suppression: no placement restriction.
+                        // Suppresses the rule for the entire chunk (or entire
+                        // file when used in a plain .R file).
+                        collector
+                            .chunk_suppressions
+                            .push(ChunkSuppression { rule, comment_range });
+                    }
                     LintDirective::IgnoreFile(rule) => {
                         if allow_file_suppression {
                             collector
@@ -503,6 +531,11 @@ impl SuppressionManager {
             return true;
         }
 
+        // Check chunk-level suppressions
+        if self.chunk_suppressions.iter().any(|s| s.rule == rule) {
+            return true;
+        }
+
         // Check skip regions
         let node_range = node.text_trimmed_range();
         for region in &self.skip_regions {
@@ -547,6 +580,14 @@ impl SuppressionManager {
             }
         }
 
+        // Check chunk-level suppressions
+        for sup in &self.chunk_suppressions {
+            if sup.rule == rule {
+                self.used_suppressions.insert(sup.comment_range);
+                return true;
+            }
+        }
+
         // Check region-level suppressions
         for region in &self.skip_regions {
             if region.rule == rule && region.range.contains_range(diag.range) {
@@ -573,6 +614,13 @@ impl SuppressionManager {
 
         // Check file-level suppressions
         for sup in &self.file_suppressions {
+            if !self.used_suppressions.contains(&sup.comment_range) {
+                unused.push(sup.comment_range);
+            }
+        }
+
+        // Check chunk-level suppressions
+        for sup in &self.chunk_suppressions {
             if !self.used_suppressions.contains(&sup.comment_range) {
                 unused.push(sup.comment_range);
             }

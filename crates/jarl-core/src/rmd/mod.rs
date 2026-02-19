@@ -105,9 +105,15 @@ mod tests {
 
     #[test]
     fn test_ignore_chunk_with_rule_suppresses_rule() {
-        // `#| jarl-ignore-chunk rule: reason` should suppress `rule` for the
-        // expression it precedes, just like `# jarl-ignore rule: reason`.
-        let content = "```{r}\n#| jarl-ignore-chunk any_is_na: legacy code\nany(is.na(x))\n```\n";
+        // `#| jarl-ignore-chunk rule: reason` should suppress `rule` for ALL
+        // expressions in the chunk, not just the next one.
+        let content = concat!(
+            "```{r}\n",
+            "#| jarl-ignore-chunk any_is_na: legacy code\n",
+            "any(is.na(x))\n",
+            "any(is.na(y))\n",
+            "```\n",
+        );
         let diagnostics = check_rmd(content);
         let violations: Vec<_> = diagnostics
             .iter()
@@ -115,7 +121,55 @@ mod tests {
             .collect();
         assert!(
             violations.is_empty(),
-            "#| jarl-ignore-chunk rule: reason should suppress any_is_na"
+            "#| jarl-ignore-chunk rule: reason should suppress any_is_na for the entire chunk"
+        );
+    }
+
+    #[test]
+    fn test_ignore_chunk_does_not_cross_chunk() {
+        // `#| jarl-ignore-chunk` in chunk 1 must NOT suppress violations in chunk 2.
+        let content = concat!(
+            "```{r}\n",
+            "#| jarl-ignore-chunk any_is_na: only in this chunk\n",
+            "any(is.na(x))\n",
+            "```\n",
+            "\n",
+            "```{r}\n",
+            "any(is.na(y))\n",
+            "```\n",
+        );
+        let diagnostics = check_rmd(content);
+        let violations: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "any_is_na")
+            .collect();
+        assert_eq!(
+            violations.len(),
+            1,
+            "#| jarl-ignore-chunk should not suppress violations in a different chunk"
+        );
+    }
+
+    #[test]
+    fn test_ignore_chunk_anywhere_in_chunk() {
+        // The directive should work even when placed after some expressions,
+        // not just at the very top of the chunk.
+        let content = concat!(
+            "```{r}\n",
+            "x <- 1\n",
+            "#| jarl-ignore-chunk any_is_na: legacy\n",
+            "any(is.na(x))\n",
+            "any(is.na(y))\n",
+            "```\n",
+        );
+        let diagnostics = check_rmd(content);
+        let violations: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "any_is_na")
+            .collect();
+        assert!(
+            violations.is_empty(),
+            "#| jarl-ignore-chunk should suppress even when not at the top of the chunk"
         );
     }
 
