@@ -160,9 +160,9 @@ pub fn parse_comment_directive(text: &str) -> Option<DirectiveParseResult> {
             Some(DirectiveParseResult::BlanketSuppression)
         } else {
             match parse_rule_with_explanation(after_chunk) {
-                RuleParseResult::Valid(rule) => {
-                    Some(DirectiveParseResult::Valid(LintDirective::IgnoreChunk(rule)))
-                }
+                RuleParseResult::Valid(rule) => Some(DirectiveParseResult::Valid(
+                    LintDirective::IgnoreChunk(rule),
+                )),
                 RuleParseResult::MissingExplanation => {
                     Some(DirectiveParseResult::MissingExplanation)
                 }
