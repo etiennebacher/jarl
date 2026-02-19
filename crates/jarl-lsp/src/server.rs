@@ -1451,10 +1451,8 @@ x |>
     #[test]
     fn test_ignore_chunk_action_inserts_at_top_of_chunk() {
         // Directive is inserted at the very first line of the chunk.
-        let result = apply_jarl_ignore_chunk_at_cursor(
-            "```{r}\n<CURS>any(is.na(x))\n```\n",
-        )
-        .unwrap();
+        let result =
+            apply_jarl_ignore_chunk_at_cursor("```{r}\n<CURS>any(is.na(x))\n```\n").unwrap();
 
         insta::assert_snapshot!(result, @r"
         ```{r}
