@@ -484,6 +484,157 @@ mod tests {
         Ok(())
     }
 
+    // --- Rmd/Qmd indentation tests ---
+
+    /// Create a DocumentSnapshot for an Rmd/Qmd file using a fake on-disk path.
+    ///
+    /// The URI extension determines whether the code goes through `get_checks_rmd`.
+    fn create_rmd_snapshot(content: &str, ext: &str) -> DocumentSnapshot {
+        let uri = Url::parse(&format!("file:///test.{ext}")).unwrap();
+        let key = DocumentKey::from(uri);
+        let document = TextDocument::new(content.to_string(), 1);
+        DocumentSnapshot::new(
+            document,
+            key,
+            PositionEncoding::UTF8,
+            ClientCapabilities::default(),
+        )
+    }
+
+    /// Filter diagnostics by rule name stored in the `data` field.
+    fn diagnostics_for_rule<'a>(
+        diagnostics: &'a [lsp_types::Diagnostic],
+        rule: &str,
+    ) -> Vec<&'a lsp_types::Diagnostic> {
+        diagnostics
+            .iter()
+            .filter(|d| {
+                d.data
+                    .as_ref()
+                    .and_then(|v| v.get("rule_name"))
+                    .and_then(|r| r.as_str())
+                    == Some(rule)
+            })
+            .collect()
+    }
+
+    #[test]
+    fn test_rmd_non_indented_chunk_diagnostic_position() {
+        // Non-indented chunk: diagnostic should land at column 0.
+        //
+        // Line 0: "---"
+        // Line 1: "---"
+        // Line 2: ""
+        // Line 3: "```{r}"
+        // Line 4: "any(is.na(x))"  <- violation here (column 0)
+        // Line 5: "```"
+        let content = "---\n---\n\n```{r}\nany(is.na(x))\n```\n";
+        let snapshot = create_rmd_snapshot(content, "Rmd");
+        let diagnostics = lint_document(&snapshot).unwrap();
+
+        let hits = diagnostics_for_rule(&diagnostics, "any_is_na");
+        assert_eq!(hits.len(), 1, "expected exactly one any_is_na diagnostic");
+
+        let range = hits[0].range;
+        assert_eq!(range.start.line, 4, "diagnostic should be on line 4");
+        assert_eq!(range.start.character, 0, "diagnostic should start at column 0");
+    }
+
+    #[test]
+    fn test_rmd_indented_chunk_diagnostic_column() {
+        // 2-space indented chunk (typical list-item scenario).
+        //
+        // Line 0: "* hello"
+        // Line 1: ""
+        // Line 2: "  ```{r}"
+        // Line 3: "  any(is.na(x))"  <- violation here (column 2, after the indent)
+        // Line 4: "  ```"
+        let content = "* hello\n\n  ```{r}\n  any(is.na(x))\n  ```\n";
+        let snapshot = create_rmd_snapshot(content, "Rmd");
+        let diagnostics = lint_document(&snapshot).unwrap();
+
+        let hits = diagnostics_for_rule(&diagnostics, "any_is_na");
+        assert_eq!(hits.len(), 1, "expected exactly one any_is_na diagnostic");
+
+        let range = hits[0].range;
+        assert_eq!(range.start.line, 3, "diagnostic should be on line 3");
+        assert_eq!(
+            range.start.character, 2,
+            "diagnostic column must account for the 2-space indent"
+        );
+    }
+
+    #[test]
+    fn test_rmd_indented_chunk_second_line_violation() {
+        // Indented chunk where the violation is on the second line of code.
+        //
+        // Line 0: "* item"
+        // Line 1: ""
+        // Line 2: "  ```{r}"
+        // Line 3: "  x <- 1"        (clean)
+        // Line 4: "  any(is.na(x))"  <- violation here (line 4, column 2)
+        // Line 5: "  ```"
+        let content = "* item\n\n  ```{r}\n  x <- 1\n  any(is.na(x))\n  ```\n";
+        let snapshot = create_rmd_snapshot(content, "Rmd");
+        let diagnostics = lint_document(&snapshot).unwrap();
+
+        let hits = diagnostics_for_rule(&diagnostics, "any_is_na");
+        assert_eq!(hits.len(), 1, "expected exactly one any_is_na diagnostic");
+
+        let range = hits[0].range;
+        assert_eq!(range.start.line, 4, "diagnostic should be on line 4");
+        assert_eq!(
+            range.start.character, 2,
+            "diagnostic column must account for the 2-space indent"
+        );
+    }
+
+    #[test]
+    fn test_rmd_tab_indented_chunk_diagnostic_column() {
+        // Tab-indented chunk: diagnostic column should be 1 (one tab = one byte in UTF-8).
+        //
+        // Line 0: "\t```{r}"
+        // Line 1: "\tany(is.na(x))"  <- violation here (column 1, after the tab)
+        // Line 2: "\t```"
+        let content = "\t```{r}\n\tany(is.na(x))\n\t```\n";
+        let snapshot = create_rmd_snapshot(content, "Rmd");
+        let diagnostics = lint_document(&snapshot).unwrap();
+
+        let hits = diagnostics_for_rule(&diagnostics, "any_is_na");
+        assert_eq!(hits.len(), 1, "expected exactly one any_is_na diagnostic");
+
+        let range = hits[0].range;
+        assert_eq!(range.start.line, 1, "diagnostic should be on line 1");
+        assert_eq!(
+            range.start.character, 1,
+            "diagnostic column must account for the tab indent (1 byte)"
+        );
+    }
+
+    #[test]
+    fn test_qmd_indented_chunk_diagnostic_column() {
+        // Same indented-chunk test but with a .qmd extension.
+        //
+        // Line 0: "* hello"
+        // Line 1: ""
+        // Line 2: "  ```{r}"
+        // Line 3: "  any(is.na(x))"  <- violation here (column 2)
+        // Line 4: "  ```"
+        let content = "* hello\n\n  ```{r}\n  any(is.na(x))\n  ```\n";
+        let snapshot = create_rmd_snapshot(content, "qmd");
+        let diagnostics = lint_document(&snapshot).unwrap();
+
+        let hits = diagnostics_for_rule(&diagnostics, "any_is_na");
+        assert_eq!(hits.len(), 1, "expected exactly one any_is_na diagnostic");
+
+        let range = hits[0].range;
+        assert_eq!(range.start.line, 3, "diagnostic should be on line 3");
+        assert_eq!(
+            range.start.character, 2,
+            "diagnostic column must account for the 2-space indent"
+        );
+    }
+
     #[test]
     fn test_exclusion_with_custom_exclude_pattern() -> Result<(), Box<dyn std::error::Error>> {
         let directory = TempDir::new()?;
