@@ -8,8 +8,13 @@ exit_code: 255
 
 ----- stderr -----
 jarl failed
-  Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
-Unknown field `unknown_field` in `[lint]`. Expected one of: `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, `exclude`, `default-exclude`, `include`.
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 17
+  |
+3 | include = ["a", 1]
+  |                 ^
+invalid type: integer `1`, expected a string
+
 
 ----- args -----
 check .

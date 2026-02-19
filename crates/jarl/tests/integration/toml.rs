@@ -1511,3 +1511,244 @@ extend-select = ["FOO"]
 
     Ok(())
 }
+
+#[test]
+fn test_include_single_file() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+include = ["included.R"]
+"#,
+    )?;
+
+    // Only this file should be checked
+    std::fs::write(directory.join("included.R"), "any(is.na(x))")?;
+
+    // This file should NOT be checked (not in include list)
+    std::fs::write(directory.join("excluded.R"), "any(is.na(y))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_include_directory() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+include = ["R/"]
+"#,
+    )?;
+
+    // Files inside R/ should be checked
+    std::fs::create_dir(directory.join("R"))?;
+    std::fs::write(directory.join("R/utils.R"), "any(is.na(x))")?;
+
+    // Files outside R/ should NOT be checked
+    std::fs::write(directory.join("test.R"), "any(is.na(y))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_include_glob_pattern() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+include = ["R-*.R"]
+"#,
+    )?;
+
+    // These match the pattern
+    std::fs::write(directory.join("R-utils.R"), "any(is.na(x))")?;
+    std::fs::write(directory.join("R-helpers.R"), "any(is.na(y))")?;
+
+    // This does not match
+    std::fs::write(directory.join("test.R"), "any(is.na(z))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_include_empty_array() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // Empty include = no restriction, all files are checked
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+include = []
+"#,
+    )?;
+
+    std::fs::write(directory.join("test.R"), "any(is.na(x))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_include_and_exclude() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // A file in include but also in exclude should NOT be checked
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+include = ["R/"]
+exclude = ["R/generated.R"]
+"#,
+    )?;
+
+    std::fs::create_dir(directory.join("R"))?;
+    // Included by pattern, not excluded
+    std::fs::write(directory.join("R/utils.R"), "any(is.na(x))")?;
+    // Included by pattern, but also excluded → should NOT be checked
+    std::fs::write(directory.join("R/generated.R"), "any(is.na(y))")?;
+    // Not in include list → should NOT be checked
+    std::fs::write(directory.join("test.R"), "any(is.na(z))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_include_rmd_qmd_glob() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // Only Rmd and qmd files should be checked
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+include = ["**/*.{Rmd,qmd}"]
+"#,
+    )?;
+
+    // These should be checked (match the glob)
+    std::fs::write(
+        directory.join("report.Rmd"),
+        "---\ntitle: \"Test\"\n---\n\n```{r}\nany(is.na(x))\n```\n",
+    )?;
+    std::fs::write(
+        directory.join("analysis.qmd"),
+        "---\ntitle: \"Test\"\n---\n\n```{r}\nany(is.na(y))\n```\n",
+    )?;
+
+    // This should NOT be checked (does not match the glob)
+    std::fs::write(directory.join("plain.R"), "any(is.na(z))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_include_wrong_values() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+include = true
+"#,
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths()
+    );
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+include = ["a", 1]
+"#,
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths()
+    );
+
+    Ok(())
+}
