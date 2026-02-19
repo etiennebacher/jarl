@@ -9,13 +9,14 @@ use biome_rowan::TextRange;
 /// ## Why is this bad?
 ///
 /// In Quarto and R Markdown documents, `#|` comments are parsed as YAML chunk
-/// options.  The single-line form
+/// options. The single-line form
 ///
 /// ```r
 /// #| jarl-ignore-chunk any_is_na: <reason>
 /// ```
 ///
-/// is not idiomatic YAML.  The correct form is a YAML array:
+/// is not idiomatic YAML and therefore Quarto will not compile. The correct
+/// form is a YAML array:
 ///
 /// ```r
 /// #| jarl-ignore-chunk:
@@ -25,8 +26,7 @@ use biome_rowan::TextRange;
 /// ## Example
 ///
 /// ```r
-/// # This form is accepted but discouraged:
-/// #| jarl-ignore-chunk any_is_na: legacy code
+/// #| jarl-ignore-chunk any_is_na: <reason>
 /// any(is.na(x))
 /// ```
 ///
@@ -34,7 +34,7 @@ use biome_rowan::TextRange;
 ///
 /// ```r
 /// #| jarl-ignore-chunk:
-/// #|   - any_is_na: legacy code
+/// #|   - any_is_na: <reason>
 /// any(is.na(x))
 /// ```
 pub fn invalid_chunk_suppression(ranges: &[TextRange]) -> Vec<Diagnostic> {
