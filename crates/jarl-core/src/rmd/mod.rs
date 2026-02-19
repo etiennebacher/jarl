@@ -86,22 +86,6 @@ mod tests {
         assert!(violations.is_empty());
     }
 
-    // --- Chunk suppression ---
-
-    #[test]
-    fn test_ignore_chunk_skips_linting() {
-        let content = "```{r}\n#| jarl-ignore-chunk\nany(is.na(x))\n```\n";
-        let diagnostics = check_rmd(content);
-        let violations: Vec<_> = diagnostics
-            .iter()
-            .filter(|d| d.message.name == "any_is_na")
-            .collect();
-        assert!(
-            violations.is_empty(),
-            "#| jarl-ignore-chunk should skip the whole chunk"
-        );
-    }
-
     // --- Per-rule suppression ---
 
     #[test]
@@ -116,6 +100,39 @@ mod tests {
         assert!(
             violations.is_empty(),
             "#| jarl-ignore should suppress any_is_na"
+        );
+    }
+
+    #[test]
+    fn test_ignore_chunk_with_rule_suppresses_rule() {
+        // `#| jarl-ignore-chunk rule: reason` should suppress `rule` for the
+        // expression it precedes, just like `# jarl-ignore rule: reason`.
+        let content = "```{r}\n#| jarl-ignore-chunk any_is_na: legacy code\nany(is.na(x))\n```\n";
+        let diagnostics = check_rmd(content);
+        let violations: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "any_is_na")
+            .collect();
+        assert!(
+            violations.is_empty(),
+            "#| jarl-ignore-chunk rule: reason should suppress any_is_na"
+        );
+    }
+
+    #[test]
+    fn test_ignore_chunk_without_rule_does_not_suppress() {
+        // `#| jarl-ignore-chunk` without a rule name must NOT suppress any
+        // diagnostic. It is a blanket suppression and should leave any_is_na
+        // visible while itself triggering a BlanketSuppression lint.
+        let content = "```{r}\n#| jarl-ignore-chunk\nany(is.na(x))\n```\n";
+        let diagnostics = check_rmd(content);
+        let violations: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "any_is_na")
+            .collect();
+        assert!(
+            !violations.is_empty(),
+            "#| jarl-ignore-chunk without a rule should not suppress any_is_na"
         );
     }
 

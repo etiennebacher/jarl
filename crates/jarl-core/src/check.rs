@@ -264,10 +264,6 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     let mut states: Vec<Option<ChunkState>> = Vec::with_capacity(chunks.len());
 
     for chunk in &chunks {
-        if chunk.ignore {
-            states.push(None);
-            continue;
-        }
         let parsed = air_r_parser::parse(&chunk.code, RParserOptions::default());
         if parsed.has_error() {
             // Silently skip chunks with parse errors (e.g. documentation examples).

@@ -20,8 +20,6 @@ pub struct RCodeChunk {
     /// Byte offset in the original file where the chunk code starts.
     /// This is the byte immediately after the opening fence line's newline.
     pub start_byte: usize,
-    /// `true` if `#| jarl-ignore-chunk` was found in the leading `#|` lines.
-    pub ignore: bool,
 }
 
 /// Extract all executable R code chunks from Rmd/Qmd content.
@@ -43,11 +41,9 @@ pub fn extract_r_chunks(content: &str) -> Vec<RCodeChunk> {
         if let Some((fence, code, start_byte)) = current.as_mut() {
             if line.trim() == fence.as_str() {
                 // Closing fence found — emit the chunk.
-                let ignore = detect_ignore_chunk(code);
                 chunks.push(RCodeChunk {
                     code: std::mem::take(code),
                     start_byte: *start_byte,
-                    ignore,
                 });
                 finished = true;
             } else {
@@ -71,29 +67,6 @@ pub fn extract_r_chunks(content: &str) -> Vec<RCodeChunk> {
     chunks
 }
 
-/// Detect whether a chunk should be silently ignored.
-///
-/// Scans leading lines that start with `#|` (before any non-`#|`, non-empty
-/// line). Returns `true` if any of those lines is `#| jarl-ignore-chunk`.
-fn detect_ignore_chunk(code: &str) -> bool {
-    for line in code.lines() {
-        let trimmed = line.trim();
-        if trimmed.is_empty() {
-            continue;
-        }
-        if let Some(after_pipe) = line.strip_prefix("#|") {
-            let after_pipe = after_pipe.trim();
-            if after_pipe == "jarl-ignore-chunk" {
-                return true;
-            }
-        } else {
-            // First non-#| non-empty line: stop scanning.
-            break;
-        }
-    }
-    false
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -104,15 +77,6 @@ mod tests {
         let chunks = extract_r_chunks(content);
         assert_eq!(chunks.len(), 1);
         assert_eq!(chunks[0].code, "x <- 1\n");
-        assert!(!chunks[0].ignore);
-    }
-
-    #[test]
-    fn test_ignore_chunk() {
-        let content = "```{r}\n#| jarl-ignore-chunk\nx <- 1\n```\n";
-        let chunks = extract_r_chunks(content);
-        assert_eq!(chunks.len(), 1);
-        assert!(chunks[0].ignore);
     }
 
     #[test]
@@ -190,7 +154,6 @@ mod tests {
         let chunks = extract_r_chunks(content);
         assert_eq!(chunks.len(), 1);
         assert_eq!(chunks[0].code, "");
-        assert!(!chunks[0].ignore);
     }
 
     #[test]
@@ -201,36 +164,6 @@ mod tests {
         // Closing fence has no trailing newline, trim_end() still matches "```".
         assert_eq!(chunks.len(), 1);
         assert_eq!(chunks[0].code, "x <- 1\n");
-    }
-
-    #[test]
-    fn test_ignore_chunk_not_in_leading_position() {
-        // #| jarl-ignore-chunk must appear before any non-#| line.
-        let content = "```{r}\nx <- 1\n#| jarl-ignore-chunk\n```\n";
-        let chunks = extract_r_chunks(content);
-        assert_eq!(chunks.len(), 1);
-        assert!(
-            !chunks[0].ignore,
-            "ignore-chunk after code should not set ignore=true"
-        );
-    }
-
-    #[test]
-    fn test_ignore_chunk_with_other_pipe_options_before() {
-        // Other #| options before #| jarl-ignore-chunk are fine.
-        let content = "```{r}\n#| echo: false\n#| jarl-ignore-chunk\nx <- 1\n```\n";
-        let chunks = extract_r_chunks(content);
-        assert_eq!(chunks.len(), 1);
-        assert!(chunks[0].ignore);
-    }
-
-    #[test]
-    fn test_ignore_chunk_after_code_line_between_pipe_options() {
-        // A non-#| line before #| jarl-ignore-chunk blocks detection.
-        let content = "```{r}\n#| echo: false\nx <- 1\n#| jarl-ignore-chunk\n```\n";
-        let chunks = extract_r_chunks(content);
-        assert_eq!(chunks.len(), 1);
-        assert!(!chunks[0].ignore);
     }
 
     #[test]

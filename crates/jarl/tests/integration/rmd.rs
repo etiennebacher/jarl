@@ -61,7 +61,8 @@ fn test_qmd_basic_lint() -> anyhow::Result<()> {
 // Chunk suppression
 // ---------------------------------------------------------------------------
 
-/// `#| jarl-ignore-chunk` as the leading comment silently skips the chunk.
+/// `#| jarl-ignore-chunk` without a rule fires `blanket_suppression` and does
+/// NOT silence `any_is_na`.  A rule name and reason are required.
 #[test]
 fn test_rmd_ignore_chunk_suppresses() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
@@ -84,8 +85,32 @@ fn test_rmd_ignore_chunk_suppresses() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// `#| jarl-ignore-chunk` in a non-leading position (after real code) fires
-/// `blanket_suppression` and does not silence `any_is_na`.
+/// `#| jarl-ignore-chunk rule: reason` suppresses that rule for the following
+/// node, just like `# jarl-ignore rule: reason`.
+#[test]
+fn test_rmd_ignore_chunk_with_rule() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("test.Rmd"),
+        "```{r}\n#| jarl-ignore-chunk any_is_na: legacy code\nany(is.na(x))\n```\n",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+/// `#| jarl-ignore-chunk` without a rule fires `blanket_suppression` and does
+/// not silence `any_is_na`, regardless of its position in the chunk.
 #[test]
 fn test_rmd_ignore_chunk_not_leading() -> anyhow::Result<()> {
     let directory = TempDir::new()?;

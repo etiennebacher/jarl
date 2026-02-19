@@ -144,13 +144,29 @@ pub fn parse_comment_directive(text: &str) -> Option<DirectiveParseResult> {
     } else if rest.is_empty() || rest.starts_with(':') {
         // Blanket suppression: `# jarl-ignore`, `#jarl-ignore`, or `# jarl-ignore:`
         Some(DirectiveParseResult::BlanketSuppression)
-    } else if rest == "-chunk" || rest.starts_with("-chunk ") || rest.starts_with("-chunk:") {
-        // `#| jarl-ignore-chunk` — Rmd/Qmd chunk-level suppressor.
-        // Its chunk-skip effect is handled at extraction time (Rmd-only).
-        // In all other contexts (R files, non-leading position in a chunk) it
-        // is treated as a blanket suppression because it suppresses all rules
-        // without specifying which one.
+    } else if rest == "-chunk" || rest.starts_with("-chunk:") {
+        // `#| jarl-ignore-chunk` or `#| jarl-ignore-chunk:` without a rule name
+        // → blanket suppression (missing rule).
         Some(DirectiveParseResult::BlanketSuppression)
+    } else if let Some(after_chunk) = rest.strip_prefix("-chunk ") {
+        // `#| jarl-ignore-chunk <rule>: <reason>` — treated exactly like
+        // `# jarl-ignore <rule>: <reason>`.  The `#|` pipe-option style is
+        // common in Quarto/Rmd and "chunk" just signals it's a chunk-option
+        // style suppression comment.
+        if after_chunk.starts_with(':') {
+            Some(DirectiveParseResult::BlanketSuppression)
+        } else {
+            match parse_rule_with_explanation(after_chunk) {
+                RuleParseResult::Valid(rule) => {
+                    Some(DirectiveParseResult::Valid(LintDirective::Ignore(rule)))
+                }
+                RuleParseResult::MissingExplanation => {
+                    Some(DirectiveParseResult::MissingExplanation)
+                }
+                RuleParseResult::InvalidRuleName => Some(DirectiveParseResult::InvalidRuleName),
+                RuleParseResult::Invalid => None,
+            }
+        }
     } else {
         // Not a valid directive (e.g., `# jarl-ignorefoo`)
         None
