@@ -3,8 +3,8 @@ use biome_rowan::TextRange;
 
 /// ## What it does
 ///
-/// Checks for `#| jarl-ignore-chunk` comments that use the single-line
-/// form instead of the required Quarto YAML array form.
+/// Checks for `jarl-ignore-chunk` comments that use a single-line form
+/// instead of the required Quarto YAML array form.
 ///
 /// ## Why is this bad?
 ///
@@ -48,7 +48,7 @@ fn create_diagnostic(range: TextRange) -> Diagnostic {
     Diagnostic::new(
         ViolationData::new(
             "invalid_chunk_suppression".to_string(),
-            "This `#| jarl-ignore-chunk` comment uses the single-line form.".to_string(),
+            "This `jarl-ignore-chunk` comment is wrongly formatted.".to_string(),
             Some(
                 "Use the YAML array form instead:\n\
                  #| jarl-ignore-chunk:\n\

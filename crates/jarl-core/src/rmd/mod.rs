@@ -225,17 +225,26 @@ mod tests {
     }
 
     #[test]
-    fn test_regular_hash_form_does_not_trigger_invalid_chunk_suppression() {
-        // `# jarl-ignore-chunk rule: reason` (no `|`) must NOT fire the rule.
+    fn test_regular_hash_form_triggers_invalid_chunk_suppression() {
+        // `# jarl-ignore-chunk rule: reason` is not a valid suppression:
+        // jarl-ignore-chunk requires the YAML array form regardless of prefix.
         let content = "```{r}\n# jarl-ignore-chunk any_is_na: legacy\nany(is.na(x))\n```\n";
         let diagnostics = check_rmd(content);
+        // Must NOT suppress any_is_na.
+        let violations: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "any_is_na")
+            .collect();
+        assert!(!violations.is_empty(), "# form must not suppress any_is_na");
+        // Must fire invalid_chunk_suppression.
         let warnings: Vec<_> = diagnostics
             .iter()
             .filter(|d| d.message.name == "invalid_chunk_suppression")
             .collect();
-        assert!(
-            warnings.is_empty(),
-            "# form should not trigger invalid_chunk_suppression"
+        assert_eq!(
+            warnings.len(),
+            1,
+            "# form should trigger invalid_chunk_suppression"
         );
     }
 

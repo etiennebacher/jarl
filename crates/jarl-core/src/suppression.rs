@@ -464,20 +464,14 @@ impl SuppressionManager {
                             collector.unmatched_end_suppressions.push(comment_range);
                         }
                     }
-                    LintDirective::IgnoreChunk(rule) => {
-                        // `#| jarl-ignore-chunk <rule>: <reason>` — the `#|` prefix marks
-                        // this as a Quarto YAML chunk option, so only the YAML array form
-                        // is valid.  Treat it as invalid and do NOT suppress the rule.
-                        if text.trim_start().starts_with("#|") {
-                            collector.invalid_chunk_suppressions.push(comment_range);
-                        } else {
-                            // `# jarl-ignore-chunk <rule>: <reason>` — plain R comment,
-                            // suppresses the rule for the entire chunk (or the whole file
-                            // in a plain .R file).
-                            collector
-                                .chunk_suppressions
-                                .push(ChunkSuppression { rule, comment_range });
-                        }
+                    LintDirective::IgnoreChunk(_rule) => {
+                        // The only valid form of jarl-ignore-chunk is the YAML array:
+                        //   #| jarl-ignore-chunk:
+                        //   #|   - <rule>: <reason>
+                        // Any single-line form (with `#|` or plain `#`) is invalid.
+                        // Chunk suppressions from the YAML array are added directly in
+                        // `collect_all_directives`, never here.
+                        collector.invalid_chunk_suppressions.push(comment_range);
                     }
                     LintDirective::IgnoreFile(rule) => {
                         if allow_file_suppression {
