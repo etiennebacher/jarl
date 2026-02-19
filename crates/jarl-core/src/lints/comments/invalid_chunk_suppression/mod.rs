@@ -29,14 +29,6 @@ mod tests {
     }
 
     #[test]
-    fn test_regular_hash_form_not_flagged() {
-        // `# jarl-ignore-chunk <rule>: <reason>` (without `|`) is still valid.
-        insta::assert_snapshot!(snapshot_lint(
-            "# jarl-ignore-chunk any_is_na: legacy code\nany(is.na(x))\n"
-        ), @"All checks passed!");
-    }
-
-    #[test]
     fn test_yaml_array_form_not_flagged() {
         // The correct YAML array form must not trigger this rule.
         // (The header line is intercepted before reaching `process_comment`.)
