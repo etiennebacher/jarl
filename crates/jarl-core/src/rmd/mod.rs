@@ -89,8 +89,10 @@ mod tests {
     // --- Per-rule suppression ---
 
     #[test]
-    fn test_pipe_suppression_works() {
-        // `#| jarl-ignore rule: reason` should suppress that rule in the chunk.
+    fn test_pipe_suppression_not_supported() {
+        // `#| jarl-ignore rule: reason` is not a valid suppression comment in
+        // Quarto/Rmd: the `#|` prefix is only recognised for `jarl-ignore-chunk`.
+        // The directive is silently ignored and the violation is still reported.
         let content = "```{r}\n#| jarl-ignore any_is_na: legacy code\nany(is.na(x))\n```\n";
         let diagnostics = check_rmd(content);
         let violations: Vec<_> = diagnostics
@@ -98,18 +100,19 @@ mod tests {
             .filter(|d| d.message.name == "any_is_na")
             .collect();
         assert!(
-            violations.is_empty(),
-            "#| jarl-ignore should suppress any_is_na"
+            !violations.is_empty(),
+            "#| jarl-ignore must not suppress any_is_na"
         );
     }
 
     #[test]
     fn test_ignore_chunk_with_rule_suppresses_rule() {
-        // `#| jarl-ignore-chunk rule: reason` should suppress `rule` for ALL
-        // expressions in the chunk, not just the next one.
+        // The YAML array form should suppress `rule` for ALL expressions in the
+        // chunk, not just the next one.
         let content = concat!(
             "```{r}\n",
-            "#| jarl-ignore-chunk any_is_na: legacy code\n",
+            "#| jarl-ignore-chunk:\n",
+            "#|   - any_is_na: legacy code\n",
             "any(is.na(x))\n",
             "any(is.na(y))\n",
             "```\n",
@@ -121,16 +124,17 @@ mod tests {
             .collect();
         assert!(
             violations.is_empty(),
-            "#| jarl-ignore-chunk rule: reason should suppress any_is_na for the entire chunk"
+            "YAML array form should suppress any_is_na for the entire chunk"
         );
     }
 
     #[test]
     fn test_ignore_chunk_does_not_cross_chunk() {
-        // `#| jarl-ignore-chunk` in chunk 1 must NOT suppress violations in chunk 2.
+        // A chunk suppression in chunk 1 must NOT suppress violations in chunk 2.
         let content = concat!(
             "```{r}\n",
-            "#| jarl-ignore-chunk any_is_na: only in this chunk\n",
+            "#| jarl-ignore-chunk:\n",
+            "#|   - any_is_na: only in this chunk\n",
             "any(is.na(x))\n",
             "```\n",
             "\n",
@@ -146,7 +150,7 @@ mod tests {
         assert_eq!(
             violations.len(),
             1,
-            "#| jarl-ignore-chunk should not suppress violations in a different chunk"
+            "chunk suppression should not suppress violations in a different chunk"
         );
     }
 
@@ -157,7 +161,8 @@ mod tests {
         let content = concat!(
             "```{r}\n",
             "x <- 1\n",
-            "#| jarl-ignore-chunk any_is_na: legacy\n",
+            "#| jarl-ignore-chunk:\n",
+            "#|   - any_is_na: legacy\n",
             "any(is.na(x))\n",
             "any(is.na(y))\n",
             "```\n",
@@ -169,7 +174,7 @@ mod tests {
             .collect();
         assert!(
             violations.is_empty(),
-            "#| jarl-ignore-chunk should suppress even when not at the top of the chunk"
+            "chunk suppression should suppress even when not at the top of the chunk"
         );
     }
 
@@ -187,6 +192,122 @@ mod tests {
         assert!(
             !violations.is_empty(),
             "#| jarl-ignore-chunk without a rule should not suppress any_is_na"
+        );
+    }
+
+    // --- invalid_chunk_suppression: single-line form ---
+
+    #[test]
+    fn test_single_line_form_triggers_invalid_chunk_suppression() {
+        // `#| jarl-ignore-chunk rule: reason` is not a valid suppression.
+        // It fires `invalid_chunk_suppression` and does NOT suppress `any_is_na`.
+        let content = "```{r}\n#| jarl-ignore-chunk any_is_na: legacy\nany(is.na(x))\n```\n";
+        let diagnostics = check_rmd(content);
+        // any_is_na must NOT be suppressed.
+        let violations: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "any_is_na")
+            .collect();
+        assert!(
+            !violations.is_empty(),
+            "single-line #| form must not suppress any_is_na"
+        );
+        // invalid_chunk_suppression fires.
+        let warnings: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "invalid_chunk_suppression")
+            .collect();
+        assert_eq!(
+            warnings.len(),
+            1,
+            "single-line #| form should trigger invalid_chunk_suppression"
+        );
+    }
+
+    #[test]
+    fn test_regular_hash_form_does_not_trigger_invalid_chunk_suppression() {
+        // `# jarl-ignore-chunk rule: reason` (no `|`) must NOT fire the rule.
+        let content = "```{r}\n# jarl-ignore-chunk any_is_na: legacy\nany(is.na(x))\n```\n";
+        let diagnostics = check_rmd(content);
+        let warnings: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "invalid_chunk_suppression")
+            .collect();
+        assert!(
+            warnings.is_empty(),
+            "# form should not trigger invalid_chunk_suppression"
+        );
+    }
+
+    // --- Quarto YAML array form (#| jarl-ignore-chunk: / #|   - rule: reason) ---
+
+    #[test]
+    fn test_ignore_chunk_yaml_array_suppresses_rule() {
+        // The Quarto-idiomatic YAML array form should suppress the rule for the
+        // entire chunk.
+        let content = concat!(
+            "```{r}\n",
+            "#| jarl-ignore-chunk:\n",
+            "#|   - any_is_na: legacy code\n",
+            "any(is.na(x))\n",
+            "any(is.na(y))\n",
+            "```\n",
+        );
+        let diagnostics = check_rmd(content);
+        let violations: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "any_is_na")
+            .collect();
+        assert!(
+            violations.is_empty(),
+            "YAML array form should suppress any_is_na for the entire chunk"
+        );
+    }
+
+    #[test]
+    fn test_ignore_chunk_yaml_array_no_items_is_blanket() {
+        // `#| jarl-ignore-chunk:` with no following items should behave like a
+        // blanket suppression (does not suppress any_is_na).
+        let content = concat!(
+            "```{r}\n",
+            "#| jarl-ignore-chunk:\n",
+            "any(is.na(x))\n",
+            "```\n",
+        );
+        let diagnostics = check_rmd(content);
+        let violations: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "any_is_na")
+            .collect();
+        assert!(
+            !violations.is_empty(),
+            "#| jarl-ignore-chunk: with no items should not suppress any_is_na"
+        );
+    }
+
+    #[test]
+    fn test_ignore_chunk_yaml_array_does_not_cross_chunk() {
+        // YAML array suppression in chunk 1 must not affect chunk 2.
+        let content = concat!(
+            "```{r}\n",
+            "#| jarl-ignore-chunk:\n",
+            "#|   - any_is_na: only in this chunk\n",
+            "any(is.na(x))\n",
+            "```\n",
+            "\n",
+            "```{r}\n",
+            "any(is.na(y))\n",
+            "```\n",
+        );
+        let diagnostics = check_rmd(content);
+        let violations: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "any_is_na")
+            .collect();
+        assert_eq!(
+            violations.len(),
+            1,
+            "YAML array suppression should not cross chunk boundaries"
         );
     }
 

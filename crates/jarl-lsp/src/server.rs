@@ -706,16 +706,19 @@ impl Server {
         })?;
 
         // Skip if this rule is already suppressed for the whole chunk.
+        // Check both the legacy single-line form and the YAML-array form.
         let already_suppressed = chunk
             .code
-            .contains(&format!("jarl-ignore-chunk {rule_name}"));
+            .contains(&format!("jarl-ignore-chunk {rule_name}"))
+            || chunk.code.contains(&format!("- {rule_name}:"));
         if already_suppressed {
             return None;
         }
 
         // Insert at the very first byte of the chunk code (top of the chunk).
+        // Use the Quarto-idiomatic YAML array form so the comment is valid YAML.
         let insert_pos = Self::offset_to_position(content, chunk.start_byte);
-        let new_comment = format!("#| jarl-ignore-chunk {rule_name}: <reason>\n");
+        let new_comment = format!("#| jarl-ignore-chunk:\n#|   - {rule_name}: <reason>\n");
         let insert_range = types::Range::new(insert_pos, insert_pos);
 
         let text_edit = types::TextEdit { range: insert_range, new_text: new_comment };
@@ -1456,7 +1459,8 @@ x |>
 
         insta::assert_snapshot!(result, @r"
         ```{r}
-        #| jarl-ignore-chunk any_is_na: <reason>
+        #| jarl-ignore-chunk:
+        #|   - any_is_na: <reason>
         any(is.na(x))
         ```
         ");
@@ -1476,7 +1480,8 @@ x |>
 
         insta::assert_snapshot!(result, @r"
         ```{r}
-        #| jarl-ignore-chunk any_is_na: <reason>
+        #| jarl-ignore-chunk:
+        #|   - any_is_na: <reason>
         x <- 1
         any(is.na(x))
         ```
@@ -1510,19 +1515,15 @@ x |>
 
     #[test]
     fn test_ignore_chunk_action_skipped_when_already_suppressed() {
-        // If the chunk already contains `#| jarl-ignore-chunk any_is_na`, the
-        // action must return None (no duplicate directive).
+        // If the chunk already contains a YAML array suppression for any_is_na,
+        // lint_document must return no any_is_na diagnostic.
         let content = concat!(
             "```{r}\n",
-            "#| jarl-ignore-chunk any_is_na: existing reason\n",
+            "#| jarl-ignore-chunk:\n",
+            "#|   - any_is_na: existing reason\n",
             "any(is.na(x))\n",
             "```\n",
         );
-        // The suppression means lint_document returns no any_is_na diagnostic,
-        // so we can't use the cursor helper here.  Instead, verify the function
-        // returns None when we manually inject a diagnostic that matches.
-        // We test indirectly: with the suppression in place there is no
-        // diagnostic to offer an action for.
         let env = TestEnv::new_rmd(content);
         let snapshot = env.create_snapshot(content);
         let diagnostics = lint::lint_document(&snapshot).unwrap();
@@ -1539,6 +1540,35 @@ x |>
         assert!(
             any_is_na_diags.is_empty(),
             "suppressed any_is_na should produce no diagnostic"
+        );
+    }
+
+    #[test]
+    fn test_ignore_chunk_action_skipped_when_already_suppressed_yaml_array() {
+        // Same as above but using the YAML-array form inserted by the LSP.
+        let content = concat!(
+            "```{r}\n",
+            "#| jarl-ignore-chunk:\n",
+            "#|   - any_is_na: existing reason\n",
+            "any(is.na(x))\n",
+            "```\n",
+        );
+        let env = TestEnv::new_rmd(content);
+        let snapshot = env.create_snapshot(content);
+        let diagnostics = lint::lint_document(&snapshot).unwrap();
+        let any_is_na_diags: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| {
+                d.data
+                    .as_ref()
+                    .and_then(|v| v.get("rule_name"))
+                    .and_then(|r| r.as_str())
+                    == Some("any_is_na")
+            })
+            .collect();
+        assert!(
+            any_is_na_diags.is_empty(),
+            "YAML-array form should suppress any_is_na"
         );
     }
 

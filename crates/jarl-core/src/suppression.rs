@@ -11,7 +11,10 @@ use biome_rowan::{SyntaxTriviaPieceComments, TextRange};
 use std::collections::{HashMap, HashSet};
 
 use crate::diagnostic::Diagnostic;
-use crate::directive::{DirectiveParseResult, LintDirective, parse_comment_directive};
+use crate::directive::{
+    DirectiveParseResult, LintDirective, is_quarto_chunk_array_header, parse_comment_directive,
+    parse_quarto_chunk_array_item,
+};
 use crate::rule_set::Rule;
 
 /// Comment style for R that identifies suppression directives
@@ -132,6 +135,8 @@ struct CommentCollector {
     node_suppressions: Vec<NodeSuppression>,
     /// Blanket suppression locations
     blanket_suppressions: Vec<TextRange>,
+    /// Chunk suppressions using the single-line `#| jarl-ignore-chunk <rule>: <reason>` form
+    invalid_chunk_suppressions: Vec<TextRange>,
     /// Suppressions with missing explanations
     unexplained_suppressions: Vec<TextRange>,
     /// Misplaced file-level suppressions (not at top of file)
@@ -157,6 +162,7 @@ impl CommentCollector {
             chunk_suppressions: Vec::new(),
             node_suppressions: Vec::new(),
             blanket_suppressions: Vec::new(),
+            invalid_chunk_suppressions: Vec::new(),
             unexplained_suppressions: Vec::new(),
             misplaced_file_suppressions: Vec::new(),
             misplaced_suppressions: Vec::new(),
@@ -184,6 +190,9 @@ pub struct SuppressionManager {
     pub has_any_suppressions: bool,
     /// Locations of blanket suppression comments (e.g., `# jarl-ignore` without a rule)
     pub blanket_suppressions: Vec<TextRange>,
+    /// Chunk suppressions that use the single-line `#| jarl-ignore-chunk <rule>: <reason>`
+    /// form instead of the Quarto-idiomatic YAML array form.
+    pub invalid_chunk_suppressions: Vec<TextRange>,
     /// Unmatched start suppressions (no matching end at the same nesting level)
     pub unmatched_start_suppressions: Vec<TextRange>,
     /// Unmatched end suppressions (no matching start at the same nesting level)
@@ -218,6 +227,7 @@ impl SuppressionManager {
                 node_suppressions: Vec::new(),
                 has_any_suppressions: false,
                 blanket_suppressions: Vec::new(),
+                invalid_chunk_suppressions: Vec::new(),
                 unmatched_start_suppressions: Vec::new(),
                 unmatched_end_suppressions: Vec::new(),
                 unexplained_suppressions: Vec::new(),
@@ -253,6 +263,7 @@ impl SuppressionManager {
             node_suppressions: collector.node_suppressions,
             has_any_suppressions,
             blanket_suppressions: collector.blanket_suppressions,
+            invalid_chunk_suppressions: collector.invalid_chunk_suppressions,
             unmatched_start_suppressions: collector.unmatched_start_suppressions,
             unmatched_end_suppressions: collector.unmatched_end_suppressions,
             unexplained_suppressions: collector.unexplained_suppressions,
@@ -274,17 +285,66 @@ impl SuppressionManager {
     ) {
         let node_range = node.text_trimmed_range();
 
-        // Process leading comments (file suppressions only valid here)
-        for comment in comments.leading_comments(node) {
-            Self::process_comment(
-                comment.piece().text(),
-                comment.piece().text_range(),
-                node_range,
-                collector,
-                is_first_expression,
-                false, // not trailing
-                nesting_level,
-            );
+        // Process leading comments (file suppressions only valid here).
+        //
+        // We iterate with an index so that when we encounter a Quarto YAML
+        // array header (`#| jarl-ignore-chunk:`) we can look ahead and consume
+        // the subsequent list items (`#|   - rule: reason`) as a group.
+        let leading: Vec<_> = comments.leading_comments(node).iter().collect();
+        let mut i = 0;
+        while i < leading.len() {
+            let comment = &leading[i];
+            let text = comment.piece().text();
+            let comment_range = comment.piece().text_range();
+
+            if is_quarto_chunk_array_header(text) {
+                // YAML array block: consume the following `#|   - rule: reason` items.
+                let header_range = comment_range;
+                i += 1;
+                let mut found_any_item = false;
+                while i < leading.len() {
+                    let item = &leading[i];
+                    let item_text = item.piece().text();
+                    let item_range = item.piece().text_range();
+                    match parse_quarto_chunk_array_item(item_text) {
+                        Some(DirectiveParseResult::Valid(LintDirective::IgnoreChunk(rule))) => {
+                            found_any_item = true;
+                            collector.has_any_valid_directive = true;
+                            collector
+                                .chunk_suppressions
+                                .push(ChunkSuppression { rule, comment_range: item_range });
+                            i += 1;
+                        }
+                        Some(DirectiveParseResult::MissingExplanation) => {
+                            found_any_item = true;
+                            collector.unexplained_suppressions.push(item_range);
+                            i += 1;
+                        }
+                        Some(DirectiveParseResult::InvalidRuleName) => {
+                            found_any_item = true;
+                            collector.misnamed_suppressions.push(item_range);
+                            i += 1;
+                        }
+                        // Not an array item (or unrecognised result) — stop consuming.
+                        _ => break,
+                    }
+                }
+                if !found_any_item {
+                    // `#| jarl-ignore-chunk:` with no items — treat as blanket suppression.
+                    collector.blanket_suppressions.push(header_range);
+                }
+            } else {
+                Self::process_comment(
+                    text,
+                    comment_range,
+                    node_range,
+                    collector,
+                    is_first_expression,
+                    false, // not trailing
+                    nesting_level,
+                );
+                i += 1;
+            }
         }
 
         // Process trailing comments (end-of-line comments)
@@ -405,12 +465,19 @@ impl SuppressionManager {
                         }
                     }
                     LintDirective::IgnoreChunk(rule) => {
-                        // Chunk-level suppression: no placement restriction.
-                        // Suppresses the rule for the entire chunk (or entire
-                        // file when used in a plain .R file).
-                        collector
-                            .chunk_suppressions
-                            .push(ChunkSuppression { rule, comment_range });
+                        // `#| jarl-ignore-chunk <rule>: <reason>` — the `#|` prefix marks
+                        // this as a Quarto YAML chunk option, so only the YAML array form
+                        // is valid.  Treat it as invalid and do NOT suppress the rule.
+                        if text.trim_start().starts_with("#|") {
+                            collector.invalid_chunk_suppressions.push(comment_range);
+                        } else {
+                            // `# jarl-ignore-chunk <rule>: <reason>` — plain R comment,
+                            // suppresses the rule for the entire chunk (or the whole file
+                            // in a plain .R file).
+                            collector
+                                .chunk_suppressions
+                                .push(ChunkSuppression { rule, comment_range });
+                        }
                     }
                     LintDirective::IgnoreFile(rule) => {
                         if allow_file_suppression {

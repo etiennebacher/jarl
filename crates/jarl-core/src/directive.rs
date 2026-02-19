@@ -43,6 +43,62 @@ pub enum DirectiveParseResult {
     InvalidRuleName,
 }
 
+/// Check whether a comment is the opening line of a Quarto YAML array block
+/// for `jarl-ignore-chunk`.
+///
+/// The Quarto-idiomatic multi-line format is:
+///
+/// ```text
+/// #| jarl-ignore-chunk:
+/// #|   - any_is_na: reason
+/// #|   - any_duplicated: reason
+/// ```
+///
+/// This function matches the header line `#| jarl-ignore-chunk:` (with nothing
+/// meaningful after the colon).  The items are parsed separately by
+/// [`parse_quarto_chunk_array_item`].
+pub fn is_quarto_chunk_array_header(text: &str) -> bool {
+    text.trim() == "#| jarl-ignore-chunk:"
+}
+
+/// Parse one item of a Quarto YAML array block for `jarl-ignore-chunk`.
+///
+/// Matches lines of the form `#|   - <rule>: <reason>` (the `#|` prefix
+/// followed by any amount of whitespace, a `-` list marker, whitespace, and
+/// then the rule/reason pair).
+///
+/// Returns:
+/// - `Some(Valid(IgnoreChunk(rule)))` — valid item
+/// - `Some(MissingExplanation)` — rule recognised but no reason supplied
+/// - `Some(InvalidRuleName)` — text looks like an item but rule is unknown
+/// - `None` — not a YAML array item (stops the look-ahead)
+pub fn parse_quarto_chunk_array_item(text: &str) -> Option<DirectiveParseResult> {
+    let text = text.trim();
+    // Must start with "#|"
+    let rest = text.strip_prefix("#|")?;
+    // Trim leading whitespace after "#|"
+    let rest = rest.trim_start();
+    // Must start with "-" (YAML list item marker)
+    let rest = rest.strip_prefix('-')?;
+    // Must be followed by whitespace or end-of-string
+    if !rest.starts_with(char::is_whitespace) && !rest.is_empty() {
+        return None;
+    }
+    let rest = rest.trim_start();
+    if rest.is_empty() {
+        return None;
+    }
+    // `rest` is now "<rule>: <reason>"
+    Some(match parse_rule_with_explanation(rest) {
+        RuleParseResult::Valid(rule) => {
+            DirectiveParseResult::Valid(LintDirective::IgnoreChunk(rule))
+        }
+        RuleParseResult::MissingExplanation => DirectiveParseResult::MissingExplanation,
+        RuleParseResult::InvalidRuleName => DirectiveParseResult::InvalidRuleName,
+        RuleParseResult::Invalid => return None,
+    })
+}
+
 /// Parse a comment directive
 ///
 /// Supported formats:
@@ -54,19 +110,28 @@ pub enum DirectiveParseResult {
 /// # jarl-ignore-end <rule>
 /// ```
 ///
-/// Also accepted (e.g. for Quarto/Rmd chunk option style comments):
+/// In Quarto and R Markdown, `#|` marks a YAML chunk option, so it is only
+/// recognised by jarl for `jarl-ignore-chunk`.  All other directives
+/// (`jarl-ignore`, `jarl-ignore-file`, `jarl-ignore-start`,
+/// `jarl-ignore-end`) must use a plain `#` comment prefix.
+///
+/// For suppressing a rule across an entire Quarto/Rmd chunk, use the YAML
+/// array form (handled by [`is_quarto_chunk_array_header`] /
+/// [`parse_quarto_chunk_array_item`]):
+///
 /// ```text
-/// #| jarl-ignore <rule>: <reason>
-/// #jarl-ignore <rule>: <reason>
+/// #| jarl-ignore-chunk:
+/// #|   - <rule>: <reason>
+/// #|   - <rule>: <reason>
 /// ```
+///
+/// The plain-comment form `# jarl-ignore-chunk <rule>: <reason>` is also
+/// accepted (without the `#|` prefix).
 ///
 /// Notes:
 /// - Rule name must be valid (validated against known rules)
 /// - Explanation is mandatory (except for `-end`)
 /// - One rule per directive
-/// - `#| jarl-ignore-chunk <rule>: <reason>` suppresses the named rule for the
-///   entire chunk (all expressions), not just the next one.  Without a rule
-///   name (`#| jarl-ignore-chunk`) it is a blanket suppression.
 ///
 /// Returns:
 /// - `Some(Valid(directive))` - A valid directive was found
@@ -75,13 +140,15 @@ pub enum DirectiveParseResult {
 pub fn parse_comment_directive(text: &str) -> Option<DirectiveParseResult> {
     let text = text.trim_start();
 
-    // Accept "#| ", "# ", or "#" as prefix (the "#|" form is used in Quarto/Rmd chunk options)
-    let text = if let Some(rest) = text.strip_prefix("#| ") {
-        rest
+    // Detect the comment prefix.  The `#|` form is a Quarto YAML chunk option
+    // and is only recognised for `jarl-ignore-chunk`; all other directives
+    // require a plain `#` or `# ` prefix.
+    let (text, is_quarto_pipe) = if let Some(rest) = text.strip_prefix("#| ") {
+        (rest, true)
     } else if let Some(rest) = text.strip_prefix("# ") {
-        rest
+        (rest, false)
     } else if let Some(rest) = text.strip_prefix('#') {
-        rest
+        (rest, false)
     } else {
         return None;
     };
@@ -89,8 +156,12 @@ pub fn parse_comment_directive(text: &str) -> Option<DirectiveParseResult> {
     // Must start with "jarl-ignore"
     let rest = text.strip_prefix("jarl-ignore")?;
 
-    // Determine the directive type based on what follows
+    // Determine the directive type based on what follows.
+    // Non-chunk directives are not valid with the `#|` prefix.
     if let Some(after_file) = rest.strip_prefix("-file ") {
+        if is_quarto_pipe {
+            return None;
+        }
         // `# jarl-ignore-file <rule>: <reason>`
         match parse_rule_with_explanation(after_file) {
             RuleParseResult::Valid(rule) => {
@@ -101,6 +172,9 @@ pub fn parse_comment_directive(text: &str) -> Option<DirectiveParseResult> {
             RuleParseResult::Invalid => None,
         }
     } else if let Some(after_start) = rest.strip_prefix("-start ") {
+        if is_quarto_pipe {
+            return None;
+        }
         // `# jarl-ignore-start <rule>: <reason>`
         match parse_rule_with_explanation(after_start) {
             RuleParseResult::Valid(rule) => Some(DirectiveParseResult::Valid(
@@ -111,6 +185,9 @@ pub fn parse_comment_directive(text: &str) -> Option<DirectiveParseResult> {
             RuleParseResult::Invalid => None,
         }
     } else if let Some(after_end) = rest.strip_prefix("-end ") {
+        if is_quarto_pipe {
+            return None;
+        }
         // `# jarl-ignore-end <rule>` - no explanation required, but tolerate one
         // Strip any explanation (everything after colon) if present
         let rule_part = match after_end.find(':') {
@@ -130,6 +207,9 @@ pub fn parse_comment_directive(text: &str) -> Option<DirectiveParseResult> {
             }
         }
     } else if let Some(after_ignore) = rest.strip_prefix(' ') {
+        if is_quarto_pipe {
+            return None;
+        }
         // `# jarl-ignore <rule>: <reason>`
         // If after_ignore starts with `:`, it's a blanket suppression (no rule name)
         if after_ignore.starts_with(':') {
@@ -147,6 +227,9 @@ pub fn parse_comment_directive(text: &str) -> Option<DirectiveParseResult> {
             }
         }
     } else if rest.is_empty() || rest.starts_with(':') {
+        if is_quarto_pipe {
+            return None;
+        }
         // Blanket suppression: `# jarl-ignore`, `#jarl-ignore`, or `# jarl-ignore:`
         Some(DirectiveParseResult::BlanketSuppression)
     } else if rest == "-chunk" || rest.starts_with("-chunk:") {

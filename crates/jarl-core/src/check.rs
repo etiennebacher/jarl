@@ -23,6 +23,7 @@ use crate::diagnostic::*;
 use crate::fix::*;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
+use crate::lints::comments::invalid_chunk_suppression::invalid_chunk_suppression::invalid_chunk_suppression;
 use crate::lints::comments::misnamed_suppression::misnamed_suppression::misnamed_suppression;
 use crate::lints::comments::misplaced_file_suppression::misplaced_file_suppression::misplaced_file_suppression;
 use crate::lints::comments::misplaced_suppression::misplaced_suppression::misplaced_suppression;
@@ -340,6 +341,15 @@ pub fn check_document(expressions: &RExpressionList, checker: &mut Checker) -> a
     // Report blanket suppression comments (file-level, done once)
     if checker.is_rule_enabled(Rule::BlanketSuppression) {
         let diagnostics = blanket_suppression(&checker.suppression.blanket_suppressions);
+        for diagnostic in diagnostics {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    }
+
+    // Report chunk suppressions that use the single-line `#|` form
+    if checker.is_rule_enabled(Rule::InvalidChunkSuppression) {
+        let diagnostics =
+            invalid_chunk_suppression(&checker.suppression.invalid_chunk_suppressions);
         for diagnostic in diagnostics {
             checker.report_diagnostic(Some(diagnostic));
         }

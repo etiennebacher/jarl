@@ -85,8 +85,8 @@ fn test_rmd_ignore_chunk_suppresses() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// `#| jarl-ignore-chunk rule: reason` suppresses that rule for the following
-/// node, just like `# jarl-ignore rule: reason`.
+/// The Quarto YAML array form of `jarl-ignore-chunk` suppresses the rule for
+/// the entire chunk and produces no warnings.
 #[test]
 fn test_rmd_ignore_chunk_with_rule() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
@@ -94,7 +94,13 @@ fn test_rmd_ignore_chunk_with_rule() -> anyhow::Result<()> {
 
     std::fs::write(
         directory.join("test.Rmd"),
-        "```{r}\n#| jarl-ignore-chunk any_is_na: legacy code\nany(is.na(x))\n```\n",
+        concat!(
+            "```{r}\n",
+            "#| jarl-ignore-chunk:\n",
+            "#|   - any_is_na: legacy code\n",
+            "any(is.na(x))\n",
+            "```\n",
+        ),
     )?;
 
     insta::assert_snapshot!(
@@ -109,17 +115,53 @@ fn test_rmd_ignore_chunk_with_rule() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// `#| jarl-ignore-chunk` without a rule fires `blanket_suppression` and does
-/// not silence `any_is_na`, regardless of its position in the chunk.
 #[test]
-fn test_rmd_ignore_chunk_not_leading() -> anyhow::Result<()> {
+fn test_rmd_ignore_chunk_yaml_multiple() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();
 
-    // Line 5: fence, 6: code, 7: #| jarl-ignore-chunk, 8: violation.
     std::fs::write(
         directory.join("test.Rmd"),
-        "---\ntitle: \"Test\"\n---\n\n```{r}\nx <- 1\n#| jarl-ignore-chunk\nany(is.na(x))\n```\n",
+        concat!(
+            "```{r}\n",
+            "#| jarl-ignore-chunk:\n",
+            "#|   - any_is_na: legacy code\n",
+            "#|   - any_duplicated: legacy code\n",
+            "any(is.na(x))\n",
+            "any(duplicated(x))\n",
+            "```\n",
+        ),
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_rmd_ignore_chunk_yaml_misplaced() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("test.Rmd"),
+        concat!(
+            "```{r}\n",
+            "1 + 1\n",
+            "#| jarl-ignore-chunk:\n",
+            "#|   - any_is_na: legacy code\n",
+            "#|   - any_duplicated: legacy code\n",
+            "any(is.na(x))\n",
+            "any(duplicated(x))\n",
+            "```\n",
+        ),
     )?;
 
     insta::assert_snapshot!(
@@ -138,7 +180,9 @@ fn test_rmd_ignore_chunk_not_leading() -> anyhow::Result<()> {
 // Per-rule suppression (`#| jarl-ignore rule: reason`)
 // ---------------------------------------------------------------------------
 
-/// `#| jarl-ignore rule: reason` suppresses that rule for the following node.
+/// `#| jarl-ignore rule: reason` is not a valid suppression comment — the `#|`
+/// prefix is only recognised for `jarl-ignore-chunk`.  The violation is still
+/// reported.
 #[test]
 fn test_rmd_pipe_suppression() -> anyhow::Result<()> {
     let directory = TempDir::new()?;

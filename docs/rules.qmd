@@ -75,6 +75,7 @@ dat <- as.data.frame(
     c("if_always_true", "readability, suspicious", "❌", ""),
     c("implicit_assignment", "readability", "❌", ""),
     c("internal_function", "suspicious", "❌", ""),
+    c("invalid_chunk_suppression", "comments", "❌", ""),
     c("is_numeric", "readability", "✅", ""),
     c("length_levels", "readability", "✅", ""),
     c("length_test", "correctness", "✅", ""),

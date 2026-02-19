@@ -254,6 +254,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    InvalidChunkSuppression => {
+        name: "invalid_chunk_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     #[deprecated(version = "0.5.0", replacement = "undesirable_function")]
     Browser => {
         name: "browser",
