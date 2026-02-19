@@ -486,19 +486,27 @@ mod tests {
 
     // --- Rmd/Qmd indentation tests ---
 
-    /// Create a DocumentSnapshot for an Rmd/Qmd file using a fake on-disk path.
+    /// Lint Rmd/Qmd content and return the LSP diagnostics.
     ///
-    /// The URI extension determines whether the code goes through `get_checks_rmd`.
-    fn create_rmd_snapshot(content: &str, ext: &str) -> DocumentSnapshot {
-        let uri = Url::parse(&format!("file:///test.{ext}")).unwrap();
+    /// Writes the content to a real temporary file so that `Url::from_file_path`
+    /// produces a valid URI on all platforms (including Windows, where a fake
+    /// `file:///test.Rmd` path would cause `to_file_path()` to fail and return
+    /// no diagnostics).
+    fn lint_rmd_content(content: &str, ext: &str) -> Vec<lsp_types::Diagnostic> {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join(format!("test.{ext}"));
+        std::fs::write(&file_path, content).unwrap();
+
+        let uri = lsp_types::Url::from_file_path(&file_path).unwrap();
         let key = DocumentKey::from(uri);
         let document = TextDocument::new(content.to_string(), 1);
-        DocumentSnapshot::new(
+        let snapshot = DocumentSnapshot::new(
             document,
             key,
             PositionEncoding::UTF8,
             ClientCapabilities::default(),
-        )
+        );
+        lint_document(&snapshot).unwrap()
     }
 
     /// Filter diagnostics by rule name stored in the `data` field.
@@ -529,8 +537,7 @@ mod tests {
         // Line 4: "any(is.na(x))"  <- violation here (column 0)
         // Line 5: "```"
         let content = "---\n---\n\n```{r}\nany(is.na(x))\n```\n";
-        let snapshot = create_rmd_snapshot(content, "Rmd");
-        let diagnostics = lint_document(&snapshot).unwrap();
+        let diagnostics = lint_rmd_content(content, "Rmd");
 
         let hits = diagnostics_for_rule(&diagnostics, "any_is_na");
         assert_eq!(hits.len(), 1, "expected exactly one any_is_na diagnostic");
@@ -553,8 +560,7 @@ mod tests {
         // Line 3: "  any(is.na(x))"  <- violation here (column 2, after the indent)
         // Line 4: "  ```"
         let content = "* hello\n\n  ```{r}\n  any(is.na(x))\n  ```\n";
-        let snapshot = create_rmd_snapshot(content, "Rmd");
-        let diagnostics = lint_document(&snapshot).unwrap();
+        let diagnostics = lint_rmd_content(content, "Rmd");
 
         let hits = diagnostics_for_rule(&diagnostics, "any_is_na");
         assert_eq!(hits.len(), 1, "expected exactly one any_is_na diagnostic");
@@ -578,8 +584,7 @@ mod tests {
         // Line 4: "  any(is.na(x))"  <- violation here (line 4, column 2)
         // Line 5: "  ```"
         let content = "* item\n\n  ```{r}\n  x <- 1\n  any(is.na(x))\n  ```\n";
-        let snapshot = create_rmd_snapshot(content, "Rmd");
-        let diagnostics = lint_document(&snapshot).unwrap();
+        let diagnostics = lint_rmd_content(content, "Rmd");
 
         let hits = diagnostics_for_rule(&diagnostics, "any_is_na");
         assert_eq!(hits.len(), 1, "expected exactly one any_is_na diagnostic");
@@ -600,8 +605,7 @@ mod tests {
         // Line 1: "\tany(is.na(x))"  <- violation here (column 1, after the tab)
         // Line 2: "\t```"
         let content = "\t```{r}\n\tany(is.na(x))\n\t```\n";
-        let snapshot = create_rmd_snapshot(content, "Rmd");
-        let diagnostics = lint_document(&snapshot).unwrap();
+        let diagnostics = lint_rmd_content(content, "Rmd");
 
         let hits = diagnostics_for_rule(&diagnostics, "any_is_na");
         assert_eq!(hits.len(), 1, "expected exactly one any_is_na diagnostic");
@@ -624,8 +628,7 @@ mod tests {
         // Line 3: "  any(is.na(x))"  <- violation here (column 2)
         // Line 4: "  ```"
         let content = "* hello\n\n  ```{r}\n  any(is.na(x))\n  ```\n";
-        let snapshot = create_rmd_snapshot(content, "qmd");
-        let diagnostics = lint_document(&snapshot).unwrap();
+        let diagnostics = lint_rmd_content(content, "qmd");
 
         let hits = diagnostics_for_rule(&diagnostics, "any_is_na");
         assert_eq!(hits.len(), 1, "expected exactly one any_is_na diagnostic");
