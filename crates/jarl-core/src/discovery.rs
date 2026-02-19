@@ -219,7 +219,44 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
     let mut visitor_builder = FilesVisitorBuilder::new(&state);
     walker.visit(&mut visitor_builder);
 
-    state.finish()
+    let mut files = state.finish();
+
+    // Post-filter: if include patterns are set, only keep files matching at least one.
+    if use_linter_settings && let Some(settings_item) = resolver.items().first() {
+        let settings = settings_item.value();
+        if let Some(include_patterns) = &settings.linter.include
+            && !include_patterns.is_empty()
+        {
+            let root = settings_item.path();
+            let mut override_builder = ignore::overrides::OverrideBuilder::new(root);
+            for pattern in include_patterns {
+                // Convert directory patterns like "R/" → "R/**" so they match
+                // the files inside, not just the directory entry itself.
+                let file_pattern = if pattern.ends_with('/') {
+                    format!("{}**", pattern)
+                } else {
+                    pattern.clone()
+                };
+                if let Err(e) = override_builder.add(&file_pattern) {
+                    tracing::warn!("Failed to add include pattern '{}': {}", pattern, e);
+                }
+            }
+            if let Ok(overrides) = override_builder.build() {
+                files.retain(|result| match result {
+                    Ok(path) => {
+                        let relative = path.strip_prefix(root).unwrap_or(path.as_path());
+                        matches!(
+                            overrides.matched(relative, false),
+                            ignore::Match::Whitelist(_)
+                        )
+                    }
+                    Err(_) => true,
+                });
+            }
+        }
+    }
+
+    files
 }
 
 /// Shared state across the threads of the walker

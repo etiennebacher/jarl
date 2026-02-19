@@ -40,6 +40,8 @@
   ```
   (#338).
 
+* New option `include` in `jarl.toml`, to complement `exclude` (#349).
+
 ## 0.4.0
 
 ### Breaking changes
