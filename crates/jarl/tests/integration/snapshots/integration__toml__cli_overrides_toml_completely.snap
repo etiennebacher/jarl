@@ -2,6 +2,7 @@
 source: crates/jarl/tests/integration/toml.rs
 expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--select\").arg(\"length_levels,any_duplicated\").arg(\"--ignore\").arg(\"length_levels\").run().normalize_os_executable_name().normalize_temp_paths()"
 ---
+
 success: true
 exit_code: 0
 ----- stdout -----

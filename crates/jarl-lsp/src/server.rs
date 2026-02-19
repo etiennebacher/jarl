@@ -879,7 +879,7 @@ select = ["ALL"]
     fn test_fix_one_violation() {
         let result = apply_fix_at_cursor(r#"<CURS>any(is.na(x))"#).unwrap();
 
-        insta::assert_snapshot!(result, @r#"anyNA(x)"#);
+        insta::assert_snapshot!(result, @"anyNA(x)");
     }
 
     #[test]
@@ -891,10 +891,10 @@ select = ["ALL"]
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r#"
+        insta::assert_snapshot!(result, @r"
         x = 1
         x <- 2
-        "#);
+        ");
     }
 
     #[test]
@@ -906,9 +906,7 @@ select = ["ALL"]
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r#"
-        anyDuplicated(x) > 0
-        "#);
+        insta::assert_snapshot!(result, @"anyDuplicated(x) > 0");
     }
 
     #[test]
@@ -944,10 +942,10 @@ select = ["ALL"]
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r#"
-# jarl-ignore any_is_na: <reason>
-any(is.na(x))
-"#);
+        insta::assert_snapshot!(result, @r"
+        # jarl-ignore any_is_na: <reason>
+        any(is.na(x))
+        ");
     }
 
     #[test]
@@ -959,10 +957,10 @@ x <- foo(<CURS>any(is.na(x)))
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r#"
-# jarl-ignore any_is_na: <reason>
-x <- foo(any(is.na(x)))
-"#);
+        insta::assert_snapshot!(result, @r"
+        # jarl-ignore any_is_na: <reason>
+        x <- foo(any(is.na(x)))
+        ");
     }
 
     #[test]
@@ -992,11 +990,11 @@ x = 1
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r#"
+        insta::assert_snapshot!(result, @r"
         # jarl-ignore foo: some reason
         # jarl-ignore assignment: <reason>
         x = 1
-        "#);
+        ");
     }
 
     #[test]
@@ -1010,12 +1008,12 @@ f <- function() {
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r#"
+        insta::assert_snapshot!(result, @r"
         f <- function() {
           # jarl-ignore assignment: <reason>
           x = 1
         }
-        "#);
+        ");
     }
 
     #[test]
@@ -1183,10 +1181,10 @@ if (x) {
         .unwrap();
 
         insta::assert_snapshot!(result, @r"
-if (x) {
-  # jarl-ignore any_is_na: <reason>
-  any(is.na(x))
-}
+        if (x) {
+          # jarl-ignore any_is_na: <reason>
+          any(is.na(x))
+        }
         ");
     }
 
@@ -1202,11 +1200,11 @@ for (<CURS>x in x) {
         .unwrap();
 
         insta::assert_snapshot!(result, @r"
-# jarl-ignore for_loop_index: <reason>
-for (x in x) {
-    print(1)
-}
-            ");
+        # jarl-ignore for_loop_index: <reason>
+        for (x in x) {
+            print(1)
+        }
+        ");
     }
 
     #[test]
@@ -1240,11 +1238,11 @@ while (<CURS>TRUE) {
         .unwrap();
 
         insta::assert_snapshot!(result, @r"
-# jarl-ignore repeat: <reason>
-while (TRUE) {
-    print(1)
-}
-            ");
+        # jarl-ignore repeat: <reason>
+        while (TRUE) {
+            print(1)
+        }
+        ");
     }
 
     #[test]
@@ -1310,11 +1308,11 @@ x |>
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r#"
+        insta::assert_snapshot!(result, @r"
         # jarl-ignore
         # jarl-ignore assignment: <reason>
         x = 1
-        "#);
+        ");
     }
 
     // =========================================================================
@@ -1366,9 +1364,7 @@ x |>
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r#"
-        héllo <- 1
-        "#);
+        insta::assert_snapshot!(result, @"héllo <- 1");
     }
 
     #[test]
@@ -1379,9 +1375,7 @@ x |>
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r#"
-        数据 <- 2
-        "#);
+        insta::assert_snapshot!(result, @"数据 <- 2");
     }
 
     // =========================================================================

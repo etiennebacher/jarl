@@ -2,6 +2,7 @@
 source: crates/jarl/tests/integration/toml_hierarchical.rs
 expression: "&mut\nCommand::new(binary_path()).current_dir(root_path).arg(\"check\").arg(\"project/script.R\").run().normalize_os_executable_name().normalize_temp_paths()"
 ---
+
 success: false
 exit_code: 1
 ----- stdout -----
