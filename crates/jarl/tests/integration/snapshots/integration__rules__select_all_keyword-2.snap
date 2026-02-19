@@ -2,6 +2,7 @@
 source: crates/jarl/tests/integration/rules.rs
 expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--select\").arg(\"ALL\").arg(\"--ignore\").arg(\"TESTTHAT\").run().normalize_os_executable_name()"
 ---
+
 success: false
 exit_code: 1
 ----- stdout -----

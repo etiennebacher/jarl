@@ -2,6 +2,7 @@
 source: crates/jarl/tests/integration/toml.rs
 expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--ignore\").arg(\"any_is_na\").run().normalize_os_executable_name().normalize_temp_paths()"
 ---
+
 success: false
 exit_code: 1
 ----- stdout -----

@@ -2,6 +2,7 @@
 source: crates/jarl/tests/integration/help.rs
 expression: "Command::new(binary_path()).arg(\"-h\").run().normalize_os_executable_name()"
 ---
+
 success: true
 exit_code: 0
 ----- stdout -----
