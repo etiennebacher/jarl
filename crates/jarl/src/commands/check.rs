@@ -5,8 +5,11 @@ use jarl_core::{
     config::ArgsConfig,
     config::build_config,
     diagnostic::Diagnostic,
+    fs::has_rmd_extension,
     settings::Settings,
-    suppression_edit::{create_suppression_edit, format_suppression_comments},
+    suppression_edit::{
+        create_suppression_edit, create_suppression_edit_in_rmd, format_suppression_comments,
+    },
 };
 
 use anyhow::Result;
@@ -276,12 +279,19 @@ fn add_jarl_ignore_comments(
         // Compute suppression edits for each diagnostic
         // Store (offset, indent, needs_leading_newline, rule_name) to merge rules at same offset
         let mut raw_edits: Vec<(usize, String, bool, String)> = Vec::new();
+        let is_rmd = has_rmd_extension(&path);
         for diagnostic in &diagnostics {
             let start: usize = diagnostic.range.start().into();
             let end: usize = diagnostic.range.end().into();
             let rule_name = &diagnostic.message.name;
 
-            if let Some(edit) = create_suppression_edit(&content, start, end, rule_name, reason) {
+            let edit = if is_rmd {
+                create_suppression_edit_in_rmd(&content, start, end, rule_name, reason)
+            } else {
+                create_suppression_edit(&content, start, end, rule_name, reason)
+            };
+
+            if let Some(edit) = edit {
                 raw_edits.push((
                     edit.insert_point.offset,
                     edit.insert_point.indent,

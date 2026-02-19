@@ -409,6 +409,47 @@ pub fn parse_existing_suppression(line: &str) -> Option<(String, Option<Vec<Stri
     None
 }
 
+/// Create a suppression edit for a diagnostic located inside an Rmd/Qmd file.
+///
+/// Finds the R chunk that contains the diagnostic (using its file-level byte
+/// range), computes the insertion point within that chunk, and remaps the
+/// resulting offset back to the file level so the edit can be applied directly
+/// to the original file content.
+///
+/// The inserted comment uses the standard `# jarl-ignore <rule>: <reason>`
+/// form (not the `#|` pipe-option style).
+///
+/// Returns `None` if no chunk contains the diagnostic range or if the chunk
+/// code cannot be parsed.
+pub fn create_suppression_edit_in_rmd(
+    file_content: &str,
+    diagnostic_start: usize,
+    diagnostic_end: usize,
+    rule_name: &str,
+    explanation: &str,
+) -> Option<SuppressionEdit> {
+    let chunks = crate::rmd::extract_r_chunks(file_content);
+    for chunk in &chunks {
+        let chunk_end = chunk.start_byte + chunk.code.len();
+        if diagnostic_start >= chunk.start_byte && diagnostic_start <= chunk_end {
+            let local_start = diagnostic_start - chunk.start_byte;
+            let local_end = diagnostic_end.saturating_sub(chunk.start_byte);
+            let mut insert_point =
+                compute_suppression_insert_point(&chunk.code, local_start, local_end)?;
+            // Remap chunk-local offset to file-level offset.
+            insert_point.offset += chunk.start_byte;
+            let comment_text = format_suppression_comments(
+                &[rule_name],
+                explanation,
+                &insert_point.indent,
+                insert_point.needs_leading_newline,
+            );
+            return Some(SuppressionEdit { insert_point, comment_text });
+        }
+    }
+    None
+}
+
 /// Create a complete suppression edit for a diagnostic.
 ///
 /// This is the main entry point for creating suppression comments.

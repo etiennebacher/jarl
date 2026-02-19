@@ -529,3 +529,87 @@ fn test_add_jarl_ignore_multiline_condition() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_add_jarl_ignore_rmd_basic_insertion() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.Rmd";
+    std::fs::write(
+        directory.join(test_path),
+        "---\ntitle: Test\n---\n\n```{r}\nany(is.na(x))\n```\n",
+    )?;
+
+    let output = Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--add-jarl-ignore")
+        .run()
+        .normalize_os_executable_name()
+        .normalize_temp_paths();
+
+    insta::assert_snapshot!("rmd_basic_insertion_output", output);
+
+    let content = std::fs::read_to_string(directory.join(test_path))?;
+    insta::assert_snapshot!("rmd_basic_insertion_file_content", content);
+
+    Ok(())
+}
+
+#[test]
+fn test_add_jarl_ignore_rmd_multiple_chunks() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.Rmd";
+    std::fs::write(
+        directory.join(test_path),
+        "```{r}\nany(is.na(x))\n```\n\n```{r}\n1 + 1\nany(is.na(y))\n```\n",
+    )?;
+
+    let output = Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--add-jarl-ignore")
+        .run()
+        .normalize_os_executable_name()
+        .normalize_temp_paths();
+
+    insta::assert_snapshot!("rmd_multiple_chunks_output", output);
+
+    let content = std::fs::read_to_string(directory.join(test_path))?;
+    insta::assert_snapshot!("rmd_multiple_chunks_file_content", content);
+
+    Ok(())
+}
+
+#[test]
+fn test_add_jarl_ignore_qmd_insertion() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.qmd";
+    std::fs::write(
+        directory.join(test_path),
+        "---\ntitle: Test\n---\n\n```{r}\nany(is.na(x))\n```\n",
+    )?;
+
+    let output = Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--add-jarl-ignore")
+        .run()
+        .normalize_os_executable_name()
+        .normalize_temp_paths();
+
+    insta::assert_snapshot!("qmd_insertion_output", output);
+
+    let content = std::fs::read_to_string(directory.join(test_path))?;
+    insta::assert_snapshot!("qmd_insertion_file_content", content);
+
+    Ok(())
+}
