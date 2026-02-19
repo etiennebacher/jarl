@@ -579,12 +579,30 @@ impl Server {
         let fix: crate::lint::DiagnosticFix = serde_json::from_value(fix_data.clone()).ok()?;
         let rule_name = &fix.rule_name;
 
-        // Use the core infrastructure to compute the insertion point with proper hoisting
-        let insert_point = suppression_edit::compute_suppression_insert_point(
-            content,
-            fix.diagnostic_start,
-            fix.diagnostic_end,
-        )?;
+        // For Rmd/Qmd files we need to locate the right chunk before computing
+        // the insertion point; for plain R files we use the normal path.
+        let is_rmd = snapshot
+            .file_path()
+            .as_deref()
+            .is_some_and(jarl_core::fs::has_rmd_extension);
+
+        let insert_point = if is_rmd {
+            suppression_edit::create_suppression_edit_in_rmd(
+                content,
+                fix.diagnostic_start,
+                fix.diagnostic_end,
+                rule_name,
+                "<reason>",
+            )?
+            .insert_point
+        } else {
+            // Use the core infrastructure to compute the insertion point with proper hoisting
+            suppression_edit::compute_suppression_insert_point(
+                content,
+                fix.diagnostic_start,
+                fix.diagnostic_end,
+            )?
+        };
 
         // Check if there's already a jarl-ignore comment that covers this rule
         if insert_point.line > 0
