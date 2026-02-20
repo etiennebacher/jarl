@@ -115,7 +115,7 @@ pub fn compute_package_duplicate_assignments(
         .filter_map(|path| {
             let root = path.parent()?;
             let rel_path = PathBuf::from(crate::fs::relativize_path(path));
-            let root_key = crate::fs::relativize_path(&root);
+            let root_key = crate::fs::relativize_path(root);
             // Use the fast text scan — the full parser runs later in the main
             // lint pass so each file is only parsed once.
             let content = std::fs::read_to_string(path).ok()?;
