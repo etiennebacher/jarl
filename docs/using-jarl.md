@@ -64,7 +64,7 @@ It is possible to save settings in a `jarl.toml` file. See the [Configuration pa
 
 It is sometimes needed to ignore diagnostics on certain lines of code, for instance in case of (hopefully rare) false positives.
 Jarl supports this via `# jarl-ignore` comments (aka *suppression comments*, because they are used to suppress diagnostics).
-In short, Jarl provides three types of suppression comments:
+In short, Jarl provides four types of suppression comments:
 
 - standard comments: `# jarl-ignore <rule-name>: <reason>`
 - range comments: `# jarl-ignore-start <rule-name>: <reason>` and `# jarl-ignore-end <rule-name>`
@@ -354,7 +354,7 @@ Moreover, the comment `# jarl-ignore-file` must be located in the first R code c
 See the section above on "Ignoring diagnostics" for more details.
 
 By default, Jarl checks R code chunks in R Markdown and Quarto documents.
-To select or ignore particular file extensions, you may use glob patterns in the command line or in `jarl.toml`:
+To select or ignore particular file extensions, you can use glob patterns in the command line or in `jarl.toml`:
 
 * in the command line:
 
