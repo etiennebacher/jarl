@@ -23,13 +23,29 @@ fn test_rmd_basic_lint() -> anyhow::Result<()> {
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.Rmd:6:1
+  |
+6 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+
+----- stderr -----
+"
+                        );
 
     Ok(())
 }
@@ -46,13 +62,29 @@ fn test_qmd_basic_lint() -> anyhow::Result<()> {
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.qmd:6:1
+  |
+6 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+
+----- stderr -----
+"
+                        );
 
     Ok(())
 }
@@ -74,13 +106,37 @@ fn test_rmd_ignore_chunk_suppresses() -> anyhow::Result<()> {
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: blanket_suppression
+ --> test.Rmd:2:1
+  |
+2 | #| jarl-ignore-chunk
+  | -------------------- This comment isn't used by Jarl because it is missing a rule to ignore.
+  |
+  = help: Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`.
+
+warning: any_is_na
+ --> test.Rmd:3:1
+  |
+3 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 2 errors.
+
+----- stderr -----
+"
+                        );
 
     Ok(())
 }
@@ -104,13 +160,21 @@ fn test_rmd_ignore_chunk_with_rule() -> anyhow::Result<()> {
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
+                        );
 
     Ok(())
 }
@@ -134,13 +198,21 @@ fn test_rmd_ignore_chunk_yaml_multiple() -> anyhow::Result<()> {
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
+                        );
 
     Ok(())
 }
@@ -165,13 +237,21 @@ fn test_rmd_ignore_chunk_yaml_misplaced() -> anyhow::Result<()> {
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
+                        );
 
     Ok(())
 }
@@ -194,13 +274,29 @@ fn test_rmd_pipe_suppression() -> anyhow::Result<()> {
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.Rmd:3:1
+  |
+3 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+
+----- stderr -----
+"
+                        );
 
     Ok(())
 }
@@ -220,15 +316,31 @@ fn test_rmd_fix_not_applied() -> anyhow::Result<()> {
 
     // Run with --fix; redirects to lint_only for Rmd, so file is unchanged.
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg("test.Rmd")
-            .arg("--fix")
-            .arg("--allow-no-vcs")
-            .run()
-            .normalize_os_executable_name()
-    );
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg("test.Rmd")
+                                .arg("--fix")
+                                .arg("--allow-no-vcs")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.Rmd:2:1
+  |
+2 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+
+----- stderr -----
+"
+                        );
 
     let after = std::fs::read_to_string(directory.join("test.Rmd"))?;
     assert_eq!(after, original, "Rmd file must not be modified by --fix");

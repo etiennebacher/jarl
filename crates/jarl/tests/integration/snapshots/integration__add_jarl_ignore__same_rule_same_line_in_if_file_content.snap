@@ -1,9 +1,0 @@
----
-source: crates/jarl/tests/integration/add_jarl_ignore.rs
-expression: content
----
-if (
-    # jarl-ignore redundant_equals: <reason>
-    x == TRUE || y == TRUE) {
-  1
-}
