@@ -75,7 +75,7 @@ mod tests {
         assert!(assignments.is_empty());
     }
 
-    // ── find_package_root ─────────────────────────────────────────────────
+    // ── is_in_r_package ─────────────────────────────────────────────────
 
     #[test]
     fn test_find_package_root_basic() {
@@ -86,8 +86,8 @@ mod tests {
         let file = r_dir.join("foo.R");
         fs::write(&file, "").unwrap();
 
-        let root = find_package_root(&file);
-        assert_eq!(root, Some(dir.path().to_path_buf()));
+        let in_pkg = is_in_r_package(&file).unwrap_or(false);
+        assert!(in_pkg);
     }
 
     #[test]
@@ -98,8 +98,8 @@ mod tests {
         let file = r_dir.join("foo.R");
         fs::write(&file, "").unwrap();
 
-        let root = find_package_root(&file);
-        assert!(root.is_none(), "no DESCRIPTION → no package root");
+        let in_pkg = is_in_r_package(&file).unwrap_or(false);
+        assert!(!in_pkg, "no DESCRIPTION so not in package");
     }
 
     #[test]
@@ -109,8 +109,8 @@ mod tests {
         let file = dir.path().join("foo.R");
         fs::write(&file, "").unwrap();
 
-        let root = find_package_root(&file);
-        assert!(root.is_none(), "file not inside R/ → no package root");
+        let in_pkg = is_in_r_package(&file).unwrap_or(false);
+        assert!(!in_pkg, "file not inside R/ so not in package");
     }
 
     // ── compute_package_duplicate_assignments ─────────────────────────────

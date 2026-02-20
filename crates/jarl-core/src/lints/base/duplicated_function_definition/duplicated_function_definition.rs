@@ -3,32 +3,17 @@ use rayon::prelude::*;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-/// Returns the package root directory if `file` is an R package source file.
-///
-/// A file qualifies if:
-/// - Its immediate parent directory is named `"R"`
-/// - A `DESCRIPTION` file exists in some ancestor directory
-///
-/// Returns `None` for Rmd/Qmd files or files not inside a package `R/` directory.
-pub fn find_package_root(file: &Path) -> Option<PathBuf> {
+pub fn is_in_r_package(file: &Path) -> Option<bool> {
     // The file's direct parent must be named "R"
     let parent = file.parent()?;
     let parent_name = parent.file_name()?.to_str()?;
     if parent_name != "R" {
-        return None;
+        return Some(false);
     }
 
-    // Walk upwards from the grandparent looking for a DESCRIPTION file
-    let mut current = parent.parent()?;
-    loop {
-        if current.join("DESCRIPTION").exists() {
-            return Some(current.to_path_buf());
-        }
-        match current.parent() {
-            Some(p) => current = p,
-            None => return None,
-        }
-    }
+    // At this point, the parent is "R" so we search for "DESCRIPTION" in its
+    // parent folder.
+    Some(parent.parent()?.join("DESCRIPTION").exists())
 }
 
 /// Fast line-based scan for top-level function assignments.
@@ -122,12 +107,13 @@ pub fn compute_package_duplicate_assignments(
     paths: &[PathBuf],
 ) -> HashMap<PathBuf, Vec<(String, TextRange, String)>> {
     // For each R-package file, resolve its package root and collect top-level
-    // function assignments. .
+    // function assignments.
     let file_data: Vec<FileEntry> = paths
         .par_iter()
-        .filter(|p| !crate::fs::has_rmd_extension(p) && crate::fs::has_r_extension(p))
+        .filter(|p| crate::fs::has_r_extension(p))
+        .filter(|p| is_in_r_package(p).unwrap_or(false))
         .filter_map(|path| {
-            let root = find_package_root(path)?;
+            let root = path.parent()?;
             let rel_path = PathBuf::from(crate::fs::relativize_path(path));
             let root_key = crate::fs::relativize_path(&root);
             // Use the fast text scan — the full parser runs later in the main
