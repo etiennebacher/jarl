@@ -33,7 +33,6 @@ use std::path::{Path, PathBuf};
 /// # Function "foo" is defined in two different scripts in the same package,
 /// # which is likely due to a mistake.
 /// ```
-
 pub fn is_in_r_package(file: &Path) -> Option<bool> {
     // The file's direct parent must be named "R"
     let parent = file.parent()?;
