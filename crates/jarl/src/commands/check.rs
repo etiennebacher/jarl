@@ -103,14 +103,6 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         groups.entry(key).or_default().push(path);
     }
 
-    // Emit deprecation warning for old --assignment CLI flag
-    if check_config.assignment.is_some() {
-        eprintln!(
-            "{}: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.",
-            "Warning".yellow().bold()
-        );
-    }
-
     let mut file_results = Vec::new();
     for (dir_key, group_paths) in groups {
         let settings = dir_key
@@ -178,18 +170,25 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         OutputFormat::Json | OutputFormat::Github
     );
 
-    if !is_structured_format {
-        // Check if the deprecated `assignment = "..."` top-level string form was used in TOML
-        for item in resolver.items() {
-            if item.value().linter.deprecated_assignment_syntax {
-                eprintln!(
-                    "{}: `assignment = \"...\"` in `[lint]` is deprecated. \
+    // Check if the deprecated `--assignment` CLI flag was used
+    if check_config.assignment.is_some() {
+        eprintln!(
+            "{}: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.",
+            "Warning".yellow().bold()
+        );
+    }
+    // Check if the deprecated `assignment = "..."` top-level string form was used in TOML
+    for item in resolver.items() {
+        if item.value().linter.deprecated_assignment_syntax {
+            eprintln!(
+                "{}: `assignment = \"...\"` in `[lint]` is deprecated. \
                      Use `[lint.assignment]` with `operator = \"...\"` instead.",
-                    "Warning".yellow().bold()
-                );
-            }
+                "Warning".yellow().bold()
+            );
         }
+    }
 
+    if !is_structured_format {
         // Emit deprecation warnings for explicitly-used deprecated rules.
         // Collect rule names from CLI args and TOML settings.
         let mut explicit_rule_names: BTreeSet<String> = BTreeSet::new();
