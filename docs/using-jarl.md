@@ -64,11 +64,16 @@ It is possible to save settings in a `jarl.toml` file. See the [Configuration pa
 
 It is sometimes needed to ignore diagnostics on certain lines of code, for instance in case of (hopefully rare) false positives.
 Jarl supports this via `# jarl-ignore` comments (aka *suppression comments*, because they are used to suppress diagnostics).
-In short, Jarl provides three types of suppression comments:
+In short, Jarl provides four types of suppression comments:
 
 - standard comments: `# jarl-ignore <rule-name>: <reason>`
 - range comments: `# jarl-ignore-start <rule-name>: <reason>` and `# jarl-ignore-end <rule-name>`
 - file comments: `# jarl-ignore-file <rule-name>: <reason>`
+- chunk comments:
+  ```
+  #| jarl-ignore-chunk:
+  #|   - <rule-name>: <reason>
+  ```
 
 These comments must follow several rules regarding their syntax and their placement.
 
@@ -184,6 +189,31 @@ f <- function(x, y) {
 z <- any(is.na(x))
 ```
 
+---
+
+**Chunk comments** are only valid for R Markdown and Quarto files.
+They apply to the entire chunk in which they are located (note that the other suppression comments also work in R code chunks).
+Because of the way Quarto works, `#| jarl-ignore-chunk` must be an array.
+For example, this doesn't work:
+
+```
+#| jarl-ignore-chunk any_is_na: <reason>
+```
+
+But this does:
+
+```
+#| jarl-ignore-chunk:
+#|   - any_is_na: <reason>
+```
+Because an array is required, one can list several rules and their reasons:
+
+```
+#| jarl-ignore-chunk:
+#|   - any_is_na: <reason>
+#|   - any_duplicated: <another reason>
+```
+
 ### How can I check that my suppression comments are correct?
 
 By default, Jarl comes with several checks for suppression comments.
@@ -191,6 +221,8 @@ Those are not different from other rules so they can be deactivated, but it is r
 The checks on suppression comments are listed below:
 
 - `blanket_suppression`: reports comments that don't specify a rule, e.g., `# jarl-ignore: <reason>`.
+
+- `invalid_chunk_suppression`: reports chunk comments that are wrongly formatted (available in R Markdown and Quarto files only), e.g., `#| jarl-ignore-chunk any_is_na: <reason>`.
 
 - `misnamed_suppression`: reports comments where the rule doesn't exist, e.g., `# jarl-ignore unknown_rule: <reason>`.
 
@@ -306,6 +338,46 @@ Jarl's suppression comment system is quite different from [`lintr`'s](https://li
 The good news is that the syntax is so different that one can safely use `lintr` and Jarl in the same project and be sure that their suppression comments will not conflict.
 If you wish to transition `lintr` comments to Jarl, the best way to do so is probably to do a global "search and replace" to remove `# nolint` comments, and then use `--add-jarl-ignore` in the command line to add Jarl's comments.
 
+
+## R Markdown and Quarto
+
+As of 0.5.0, Jarl can check R code chunks in R Markdown and Quarto documents.
+This comes with a few limitations:
+
+* automatic fixes are not available;
+* inline R code isn't analyzed, only code chunks;
+* features from the editor integration, such as highlighting diagnostics, are only available when the file is open in source mode, not in visual mode.
+
+Suppression comments such as `# jarl-ignore` are supported in R code chunks.
+In Quarto and R Markdown files, you can also use the comment `#| jarl-ignore-chunk` to ignore specific rules on entire chunks.
+Moreover, the comment `# jarl-ignore-file` must be located in the first R code chunk, before any R code.
+See the section above on "Ignoring diagnostics" for more details.
+
+By default, Jarl checks R code chunks in R Markdown and Quarto documents.
+To select or ignore particular file extensions, you can use glob patterns in the command line or in `jarl.toml`:
+
+* in the command line:
+
+  ```
+  # Analyze R files only, not R Markdown and Quarto files
+  jarl check **/*.R
+
+  # Analyze R Markdown and Quarto files only, not R files
+  jarl check **/*.{Rmd,rmd,qmd}
+  ```
+
+* in `jarl.toml`:
+
+  ```
+  [lint]
+  ...
+
+  # Analyze R files only, not R Markdown and Quarto files
+  include = ["**/*.R"]
+
+  # Analyze R Markdown and Quarto files only, not R files
+  include = ["**/*.{Rmd,rmd,qmd}"]
+  ```
 
 ## Dealing with R versions
 

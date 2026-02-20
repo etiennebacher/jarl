@@ -40,6 +40,10 @@
   ```
   (#338).
 
+* Jarl now checks R code chunks in Quarto and R Markdown documents. More
+  information in the ["R Markdown and Quarto"](https://jarl.etiennebacher.com/using-jarl#r-markdown-and-quarto)
+  section (#50).
+
 * New option `include` in `jarl.toml`, to complement `exclude` (#349).
 
 ## 0.4.0
