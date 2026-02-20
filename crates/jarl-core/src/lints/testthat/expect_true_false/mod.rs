@@ -29,9 +29,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_equal(foo(x), TRUE)
-          | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
           |
-          = help: Use `expect_true(x)` instead.
+        help: Use `expect_true(x)` instead.
         Found 1 error.
         "
         );
@@ -42,9 +42,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | testthat::expect_equal(foo(x), TRUE)
-          | ------------------------------------ `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
           |
-          = help: Use `expect_true(x)` instead.
+        help: Use `expect_true(x)` instead.
         Found 1 error.
         "
         );
@@ -55,9 +55,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_equal(TRUE, foo(x))
-          | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
           |
-          = help: Use `expect_true(x)` instead.
+        help: Use `expect_true(x)` instead.
         Found 1 error.
         "
         );
@@ -68,9 +68,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_identical(x, FALSE)
-          | -------------------------- `expect_identical(x, FALSE)` is not as clear as `expect_false(x)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_identical(x, FALSE)` is not as clear as `expect_false(x)`.
           |
-          = help: Use `expect_false(x)` instead.
+        help: Use `expect_false(x)` instead.
         Found 1 error.
         "
         );
@@ -81,9 +81,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_identical(FALSE, x)
-          | -------------------------- `expect_identical(x, FALSE)` is not as clear as `expect_false(x)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_identical(x, FALSE)` is not as clear as `expect_false(x)`.
           |
-          = help: Use `expect_false(x)` instead.
+        help: Use `expect_false(x)` instead.
         Found 1 error.
         "
         );
@@ -94,9 +94,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_equal(is.numeric(x), FALSE)
-          | ---------------------------------- `expect_equal(x, FALSE)` is not as clear as `expect_false(x)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_equal(x, FALSE)` is not as clear as `expect_false(x)`.
           |
-          = help: Use `expect_false(x)` instead.
+        help: Use `expect_false(x)` instead.
         Found 1 error.
         "
         );

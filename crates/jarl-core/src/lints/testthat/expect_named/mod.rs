@@ -58,9 +58,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_equal(names(x), 'a')
-          | --------------------------- `expect_named(x, n)` is better than `expect_equal(names(x), n)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_named(x, n)` is better than `expect_equal(names(x), n)`.
           |
-          = help: Use `expect_named(x, n)` instead.
+        help: Use `expect_named(x, n)` instead.
         Found 1 error.
         "
         );
@@ -71,9 +71,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_equal(names(x), c('a', 'b'))
-          | ----------------------------------- `expect_named(x, n)` is better than `expect_equal(names(x), n)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_named(x, n)` is better than `expect_equal(names(x), n)`.
           |
-          = help: Use `expect_named(x, n)` instead.
+        help: Use `expect_named(x, n)` instead.
         Found 1 error.
         "
         );
@@ -84,9 +84,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_identical(names(x), 'a')
-          | ------------------------------- `expect_named(x, n)` is better than `expect_identical(names(x), n)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_named(x, n)` is better than `expect_identical(names(x), n)`.
           |
-          = help: Use `expect_named(x, n)` instead.
+        help: Use `expect_named(x, n)` instead.
         Found 1 error.
         "
         );
@@ -97,9 +97,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_equal(names(x), NULL)
-          | ---------------------------- `expect_named(x, n)` is better than `expect_equal(names(x), n)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_named(x, n)` is better than `expect_equal(names(x), n)`.
           |
-          = help: Use `expect_named(x, n)` instead.
+        help: Use `expect_named(x, n)` instead.
         Found 1 error.
         "
         );
@@ -130,9 +130,9 @@ mod tests {
           |
         1 | / expect_equal(# comment
         2 | | names(x), 'a')
-          | |______________- `expect_named(x, n)` is better than `expect_equal(names(x), n)`.
+          | |______________^ `expect_named(x, n)` is better than `expect_equal(names(x), n)`.
           |
-          = help: Use `expect_named(x, n)` instead.
+        help: Use `expect_named(x, n)` instead.
         Found 1 error.
         "
         );

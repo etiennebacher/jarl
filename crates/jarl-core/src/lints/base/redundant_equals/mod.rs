@@ -18,8 +18,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | a == TRUE
-          | --------- Using == on a logical vector is redundant.
-          |
+          | ^^^^^^^^^ Using == on a logical vector is redundant.
         Found 1 error.
         "
         );
@@ -30,8 +29,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | TRUE == a
-          | --------- Using == on a logical vector is redundant.
-          |
+          | ^^^^^^^^^ Using == on a logical vector is redundant.
         Found 1 error.
         "
         );
@@ -42,8 +40,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | a == FALSE
-          | ---------- Using == on a logical vector is redundant.
-          |
+          | ^^^^^^^^^^ Using == on a logical vector is redundant.
         Found 1 error.
         "
         );
@@ -54,8 +51,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | FALSE == a
-          | ---------- Using == on a logical vector is redundant.
-          |
+          | ^^^^^^^^^^ Using == on a logical vector is redundant.
         Found 1 error.
         "
         );
@@ -66,8 +62,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | a != TRUE
-          | --------- Using == on a logical vector is redundant.
-          |
+          | ^^^^^^^^^ Using == on a logical vector is redundant.
         Found 1 error.
         "
         );
@@ -78,8 +73,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | TRUE != a
-          | --------- Using == on a logical vector is redundant.
-          |
+          | ^^^^^^^^^ Using == on a logical vector is redundant.
         Found 1 error.
         "
         );
@@ -90,8 +84,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | a != FALSE
-          | ---------- Using == on a logical vector is redundant.
-          |
+          | ^^^^^^^^^^ Using == on a logical vector is redundant.
         Found 1 error.
         "
         );
@@ -102,8 +95,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | FALSE != a
-          | ---------- Using == on a logical vector is redundant.
-          |
+          | ^^^^^^^^^^ Using == on a logical vector is redundant.
         Found 1 error.
         "
         );

@@ -24,9 +24,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | foo:::bar()
-          | --------- Accessing a package's internal function with `:::` is likely to break in the future.
+          | ^^^^^^^^^ Accessing a package's internal function with `:::` is likely to break in the future.
           |
-          = help: Use public functions via `::` instead.
+        help: Use public functions via `::` instead.
         Found 1 error.
         "
         );
@@ -37,9 +37,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | foo:::bar
-          | --------- Accessing a package's internal function with `:::` is likely to break in the future.
+          | ^^^^^^^^^ Accessing a package's internal function with `:::` is likely to break in the future.
           |
-          = help: Use public functions via `::` instead.
+        help: Use public functions via `::` instead.
         Found 1 error.
         "
         );

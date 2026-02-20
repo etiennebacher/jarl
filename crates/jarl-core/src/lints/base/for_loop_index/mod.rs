@@ -36,8 +36,7 @@ mod tests {
          --> <test>:1:6
           |
         1 | for (x in x) {}
-          |      ------ Don't re-use any sequence symbols as the index symbol in a for loop.
-          |
+          |      ^^^^^^ Don't re-use any sequence symbols as the index symbol in a for loop.
         Found 1 error.
         "
         );
@@ -48,8 +47,7 @@ mod tests {
          --> <test>:1:6
           |
         1 | for (x in foo(x)) {}
-          |      ----------- Don't re-use any sequence symbols as the index symbol in a for loop.
-          |
+          |      ^^^^^^^^^^^ Don't re-use any sequence symbols as the index symbol in a for loop.
         Found 1 error.
         "
         );
@@ -60,8 +58,7 @@ mod tests {
          --> <test>:1:6
           |
         1 | for (x in foo(x = 1)) {}
-          |      --------------- Don't re-use any sequence symbols as the index symbol in a for loop.
-          |
+          |      ^^^^^^^^^^^^^^^ Don't re-use any sequence symbols as the index symbol in a for loop.
         Found 1 error.
         "
         );
@@ -72,8 +69,7 @@ mod tests {
          --> <test>:1:6
           |
         1 | for (x in foo(bar(y, baz(2, x)))) {}
-          |      --------------------------- Don't re-use any sequence symbols as the index symbol in a for loop.
-          |
+          |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Don't re-use any sequence symbols as the index symbol in a for loop.
         Found 1 error.
         "
         );
@@ -84,8 +80,7 @@ mod tests {
          --> <test>:1:6
           |
         1 | for (x in foo(bar(y, baz(2, x = z)))) {}
-          |      ------------------------------- Don't re-use any sequence symbols as the index symbol in a for loop.
-          |
+          |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Don't re-use any sequence symbols as the index symbol in a for loop.
         Found 1 error.
         "
         );

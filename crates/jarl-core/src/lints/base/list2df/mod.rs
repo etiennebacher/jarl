@@ -42,9 +42,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | do.call(cbind.data.frame, x)
-          | ---------------------------- `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
           |
-          = help: Use `list2DF(x)` instead.
+        help: Use `list2DF(x)` instead.
         Found 1 error.
         "
         );
@@ -55,9 +55,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | do.call(args = x, what = cbind.data.frame)
-          | ------------------------------------------ `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
           |
-          = help: Use `list2DF(x)` instead.
+        help: Use `list2DF(x)` instead.
         Found 1 error.
         "
         );
@@ -68,9 +68,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | do.call(cbind.data.frame, args = x)
-          | ----------------------------------- `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
           |
-          = help: Use `list2DF(x)` instead.
+        help: Use `list2DF(x)` instead.
         Found 1 error.
         "
         );
@@ -81,9 +81,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | do.call(cbind.data.frame, foo(bar(x)))
-          | -------------------------------------- `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
           |
-          = help: Use `list2DF(x)` instead.
+        help: Use `list2DF(x)` instead.
         Found 1 error.
         "
         );
@@ -96,9 +96,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | do.call('cbind.data.frame', x)
-          | ------------------------------ `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
           |
-          = help: Use `list2DF(x)` instead.
+        help: Use `list2DF(x)` instead.
         Found 1 error.
         "
         );
@@ -109,9 +109,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | do.call("cbind.data.frame", x)
-          | ------------------------------ `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
           |
-          = help: Use `list2DF(x)` instead.
+        help: Use `list2DF(x)` instead.
         Found 1 error.
         "#
         );
@@ -145,9 +145,9 @@ mod tests {
         1 | / do.call(
         2 | |  # a comment
         3 | | cbind.data.frame, x)
-          | |____________________- `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
+          | |____________________^ `do.call(cbind.data.frame, x)` is inefficient and can be hard to read.
           |
-          = help: Use `list2DF(x)` instead.
+        help: Use `list2DF(x)` instead.
         Found 1 error.
         "
         );

@@ -29,9 +29,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | seq(length(x))
-          | -------------- `seq(length(...))` can be wrong if the argument has length 0.
+          | ^^^^^^^^^^^^^^ `seq(length(...))` can be wrong if the argument has length 0.
           |
-          = help: Use `seq_along(...)` instead.
+        help: Use `seq_along(...)` instead.
         Found 1 error.
         "
         );
@@ -42,9 +42,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | base::seq(base::length(x))
-          | -------------------------- `seq(length(...))` can be wrong if the argument has length 0.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^ `seq(length(...))` can be wrong if the argument has length 0.
           |
-          = help: Use `seq_along(...)` instead.
+        help: Use `seq_along(...)` instead.
         Found 1 error.
         "
         );
@@ -55,9 +55,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | seq(nrow(x))
-          | ------------ `seq(nrow(...))` can be wrong if the argument has length 0.
+          | ^^^^^^^^^^^^ `seq(nrow(...))` can be wrong if the argument has length 0.
           |
-          = help: Use `seq_len(nrow(...))` instead.
+        help: Use `seq_len(nrow(...))` instead.
         Found 1 error.
         "
         );
@@ -68,9 +68,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | seq(ncol(x))
-          | ------------ `seq(ncol(...))` can be wrong if the argument has length 0.
+          | ^^^^^^^^^^^^ `seq(ncol(...))` can be wrong if the argument has length 0.
           |
-          = help: Use `seq_len(ncol(...))` instead.
+        help: Use `seq_len(ncol(...))` instead.
         Found 1 error.
         "
         );
@@ -81,9 +81,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | seq(NROW(x))
-          | ------------ `seq(NROW(...))` can be wrong if the argument has length 0.
+          | ^^^^^^^^^^^^ `seq(NROW(...))` can be wrong if the argument has length 0.
           |
-          = help: Use `seq_len(NROW(...))` instead.
+        help: Use `seq_len(NROW(...))` instead.
         Found 1 error.
         "
         );
@@ -94,9 +94,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | seq(NCOL(x))
-          | ------------ `seq(NCOL(...))` can be wrong if the argument has length 0.
+          | ^^^^^^^^^^^^ `seq(NCOL(...))` can be wrong if the argument has length 0.
           |
-          = help: Use `seq_len(NCOL(...))` instead.
+        help: Use `seq_len(NCOL(...))` instead.
         Found 1 error.
         "
         );
@@ -130,9 +130,9 @@ mod tests {
         1 | / seq(length(
         2 | |  # a comment 
         3 | | foo(x)))
-          | |________- `seq(length(...))` can be wrong if the argument has length 0.
+          | |________^ `seq(length(...))` can be wrong if the argument has length 0.
           |
-          = help: Use `seq_along(...)` instead.
+        help: Use `seq_along(...)` instead.
         Found 1 error.
         "
         );

@@ -30,9 +30,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | 1:length(x)
-          | ----------- `1:length(...)` can be wrong if the RHS is 0.
+          | ^^^^^^^^^^^ `1:length(...)` can be wrong if the RHS is 0.
           |
-          = help: Use `seq_along(...)` instead.
+        help: Use `seq_along(...)` instead.
         Found 1 error.
         "
         );
@@ -43,9 +43,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | 1:nrow(x)
-          | --------- `1:nrow(...)` can be wrong if the RHS is 0.
+          | ^^^^^^^^^ `1:nrow(...)` can be wrong if the RHS is 0.
           |
-          = help: Use `seq_len(nrow((...))` instead.
+        help: Use `seq_len(nrow((...))` instead.
         Found 1 error.
         "
         );
@@ -56,9 +56,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | 1:ncol(x)
-          | --------- `1:ncol(...)` can be wrong if the RHS is 0.
+          | ^^^^^^^^^ `1:ncol(...)` can be wrong if the RHS is 0.
           |
-          = help: Use `seq_len(ncol(...))` instead.
+        help: Use `seq_len(ncol(...))` instead.
         Found 1 error.
         "
         );
@@ -69,9 +69,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | 1:NROW(x)
-          | --------- `1:NROW(...)` can be wrong if the RHS is 0.
+          | ^^^^^^^^^ `1:NROW(...)` can be wrong if the RHS is 0.
           |
-          = help: Use `seq_len(NROW(...))` instead.
+        help: Use `seq_len(NROW(...))` instead.
         Found 1 error.
         "
         );
@@ -82,9 +82,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | 1:NCOL(x)
-          | --------- `1:NCOL(...)` can be wrong if the RHS is 0.
+          | ^^^^^^^^^ `1:NCOL(...)` can be wrong if the RHS is 0.
           |
-          = help: Use `seq_len(NCOL(...))` instead.
+        help: Use `seq_len(NCOL(...))` instead.
         Found 1 error.
         "
         );
@@ -98,9 +98,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | 1:base::length(x)
-          | ----------------- `1:length(...)` can be wrong if the RHS is 0.
+          | ^^^^^^^^^^^^^^^^^ `1:length(...)` can be wrong if the RHS is 0.
           |
-          = help: Use `seq_along(...)` instead.
+        help: Use `seq_along(...)` instead.
         Found 1 error.
         "
         );
@@ -113,9 +113,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | 1L:length(x)
-          | ------------ `1:length(...)` can be wrong if the RHS is 0.
+          | ^^^^^^^^^^^^ `1:length(...)` can be wrong if the RHS is 0.
           |
-          = help: Use `seq_along(...)` instead.
+        help: Use `seq_along(...)` instead.
         Found 1 error.
         "
         );
@@ -126,9 +126,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | 1L:nrow(x)
-          | ---------- `1:nrow(...)` can be wrong if the RHS is 0.
+          | ^^^^^^^^^^ `1:nrow(...)` can be wrong if the RHS is 0.
           |
-          = help: Use `seq_len(nrow((...))` instead.
+        help: Use `seq_len(nrow((...))` instead.
         Found 1 error.
         "
         );
@@ -139,9 +139,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | 1L:ncol(x)
-          | ---------- `1:ncol(...)` can be wrong if the RHS is 0.
+          | ^^^^^^^^^^ `1:ncol(...)` can be wrong if the RHS is 0.
           |
-          = help: Use `seq_len(ncol(...))` instead.
+        help: Use `seq_len(ncol(...))` instead.
         Found 1 error.
         "
         );
@@ -152,9 +152,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | 1L:NROW(x)
-          | ---------- `1:NROW(...)` can be wrong if the RHS is 0.
+          | ^^^^^^^^^^ `1:NROW(...)` can be wrong if the RHS is 0.
           |
-          = help: Use `seq_len(NROW(...))` instead.
+        help: Use `seq_len(NROW(...))` instead.
         Found 1 error.
         "
         );
@@ -165,9 +165,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | 1L:NCOL(x)
-          | ---------- `1:NCOL(...)` can be wrong if the RHS is 0.
+          | ^^^^^^^^^^ `1:NCOL(...)` can be wrong if the RHS is 0.
           |
-          = help: Use `seq_len(NCOL(...))` instead.
+        help: Use `seq_len(NCOL(...))` instead.
         Found 1 error.
         "
         );
@@ -207,9 +207,9 @@ mod tests {
         1 | / 1:length(
         2 | |  # a comment 
         3 | | foo(x))
-          | |_______- `1:length(...)` can be wrong if the RHS is 0.
+          | |_______^ `1:length(...)` can be wrong if the RHS is 0.
           |
-          = help: Use `seq_along(...)` instead.
+        help: Use `seq_along(...)` instead.
         Found 1 error.
         "
         );

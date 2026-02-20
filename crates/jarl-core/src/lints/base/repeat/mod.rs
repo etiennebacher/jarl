@@ -18,9 +18,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | while (TRUE) { }
-          | ------------ `while (TRUE)` is less clear than `repeat` for infinite loops.
+          | ^^^^^^^^^^^^ `while (TRUE)` is less clear than `repeat` for infinite loops.
           |
-          = help: Use `repeat {}` instead.
+        help: Use `repeat {}` instead.
         Found 1 error.
         "
         );
@@ -31,9 +31,9 @@ mod tests {
          --> <test>:1:19
           |
         1 | for (i in 1:10) { while (TRUE) { if (i == 5) { break } } }
-          |                   ------------ `while (TRUE)` is less clear than `repeat` for infinite loops.
+          |                   ^^^^^^^^^^^^ `while (TRUE)` is less clear than `repeat` for infinite loops.
           |
-          = help: Use `repeat {}` instead.
+        help: Use `repeat {}` instead.
         Found 1 error.
         "
         );

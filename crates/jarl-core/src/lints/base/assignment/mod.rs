@@ -39,8 +39,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | blah=1
-          | ----- Use `<-` for assignment.
-          |
+          | ^^^^^ Use `<-` for assignment.
         Found 1 error.
         "
         );
@@ -51,8 +50,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | blah = 1
-          | ------ Use `<-` for assignment.
-          |
+          | ^^^^^^ Use `<-` for assignment.
         Found 1 error.
         "
         );
@@ -63,8 +61,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | blah = fun(1)
-          | ------ Use `<-` for assignment.
-          |
+          | ^^^^^^ Use `<-` for assignment.
         Found 1 error.
         "
         );
@@ -75,8 +72,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | names(blah) = 'a'
-          | ------------- Use `<-` for assignment.
-          |
+          | ^^^^^^^^^^^^^ Use `<-` for assignment.
         Found 1 error.
         "
         );
@@ -87,8 +83,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | x[[1]] = 2
-          | -------- Use `<-` for assignment.
-          |
+          | ^^^^^^^^ Use `<-` for assignment.
         Found 1 error.
         "
         );
@@ -99,8 +94,7 @@ mod tests {
          --> <test>:1:6
           |
         1 | fun((blah = fun(1)))
-          |      ------ Use `<-` for assignment.
-          |
+          |      ^^^^^^ Use `<-` for assignment.
         Found 1 error.
         "
         );
@@ -111,8 +105,7 @@ mod tests {
          --> <test>:1:3
           |
         1 | 1 -> fun
-          |   ------ Use `<-` for assignment.
-          |
+          |   ^^^^^^ Use `<-` for assignment.
         Found 1 error.
         "
         );
@@ -123,8 +116,7 @@ mod tests {
          --> <test>:1:3
           |
         1 | 1 -> names(fun)
-          |   ------------- Use `<-` for assignment.
-          |
+          |   ^^^^^^^^^^^^^ Use `<-` for assignment.
         Found 1 error.
         "
         );
@@ -135,8 +127,7 @@ mod tests {
          --> <test>:1:3
           |
         1 | 2 -> x[[1]]
-          |   --------- Use `<-` for assignment.
-          |
+          |   ^^^^^^^^^ Use `<-` for assignment.
         Found 1 error.
         "
         );
@@ -194,8 +185,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | y <- 1
-          | ---- Use `=` for assignment.
-          |
+          | ^^^^ Use `=` for assignment.
         Found 1 error.
         "
         );
@@ -208,8 +198,7 @@ mod tests {
          --> <test>:1:3
           |
         1 | 1 -> z
-          |   ---- Use `=` for assignment.
-          |
+          |   ^^^^ Use `=` for assignment.
         Found 1 error.
         "
         );
@@ -236,8 +225,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | x = 1
-          | --- Use `<-` for assignment.
-          |
+          | ^^^ Use `<-` for assignment.
         Found 1 error.
         "
         );

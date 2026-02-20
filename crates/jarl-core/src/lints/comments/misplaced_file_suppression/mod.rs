@@ -38,9 +38,9 @@ any(is.na(x))"), @r"
          --> <test>:3:1
           |
         3 | # jarl-ignore-file any_is_na: explanation
-          | ----------------------------------------- This comment isn't used by Jarl because `# jarl-ignore-file` must be at the top of the file.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ This comment isn't used by Jarl because `# jarl-ignore-file` must be at the top of the file.
           |
-          = help: Move this comment to the beginning of the file, before any code.
+        help: Move this comment to the beginning of the file, before any code.
         Found 1 error.
         "
         );
@@ -54,9 +54,9 @@ any(is.na(x))"), @r"
          --> <test>:4:1
           |
         4 | # jarl-ignore-file browser: reason 2
-          | ------------------------------------ This comment isn't used by Jarl because `# jarl-ignore-file` must be at the top of the file.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ This comment isn't used by Jarl because `# jarl-ignore-file` must be at the top of the file.
           |
-          = help: Move this comment to the beginning of the file, before any code.
+        help: Move this comment to the beginning of the file, before any code.
         Found 1 error.
         "
         );

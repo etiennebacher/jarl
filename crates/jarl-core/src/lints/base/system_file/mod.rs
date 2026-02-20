@@ -27,9 +27,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | system.file(file.path('path', 'to', 'data'), package = 'foo')
-          | ------------------------------------------------------------- `system.file(file.path(...))` is redundant.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `system.file(file.path(...))` is redundant.
           |
-          = help: Use `system.file(...)` instead.
+        help: Use `system.file(...)` instead.
         Found 1 error.
         "
         );
@@ -40,9 +40,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | base::system.file(file.path('path', 'to', 'data'), package = 'foo')
-          | ------------------------------------------------------------------- `system.file(file.path(...))` is redundant.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `system.file(file.path(...))` is redundant.
           |
-          = help: Use `system.file(...)` instead.
+        help: Use `system.file(...)` instead.
         Found 1 error.
         "
         );
@@ -69,9 +69,9 @@ mod tests {
         1 | / system.file(
         2 | |  # a comment
         3 | | file.path('path', 'to', 'data'), package = 'foo')
-          | |_________________________________________________- `system.file(file.path(...))` is redundant.
+          | |_________________________________________________^ `system.file(file.path(...))` is redundant.
           |
-          = help: Use `system.file(...)` instead.
+        help: Use `system.file(...)` instead.
         Found 1 error.
         "
         );

@@ -31,9 +31,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | any(is.na(x))
-          | ------------- `any(is.na(...))` is inefficient.
+          | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
           |
-          = help: Use `anyNA(...)` instead.
+        help: Use `anyNA(...)` instead.
         Found 1 error.
         "
         );
@@ -44,9 +44,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | any(is.na(foo(x)))
-          | ------------------ `any(is.na(...))` is inefficient.
+          | ^^^^^^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
           |
-          = help: Use `anyNA(...)` instead.
+        help: Use `anyNA(...)` instead.
         Found 1 error.
         "
         );
@@ -57,9 +57,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | base::any(is.na(foo(x)))
-          | ------------------------ `any(is.na(...))` is inefficient.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
           |
-          = help: Use `anyNA(...)` instead.
+        help: Use `anyNA(...)` instead.
         Found 1 error.
         "
         );
@@ -70,9 +70,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | any(is.na(x), na.rm = TRUE)
-          | --------------------------- `any(is.na(...))` is inefficient.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
           |
-          = help: Use `anyNA(...)` instead.
+        help: Use `anyNA(...)` instead.
         Found 1 error.
         "
         );
@@ -83,9 +83,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | NA %in% x
-          | --------- `NA %in% x` is inefficient.
+          | ^^^^^^^^^ `NA %in% x` is inefficient.
           |
-          = help: Use `anyNA(x)` instead.
+        help: Use `anyNA(x)` instead.
         Found 1 error.
         "
         );
@@ -98,9 +98,9 @@ mod tests {
           |
         1 | / is.na(x) |> 
         2 | |  any()
-          | |______- `any(is.na(...))` is inefficient.
+          | |______^ `any(is.na(...))` is inefficient.
           |
-          = help: Use `anyNA(...)` instead.
+        help: Use `anyNA(...)` instead.
         Found 1 error.
         "
         );
@@ -113,9 +113,9 @@ mod tests {
         1 | / x |> 
         2 | |  is.na() |> 
         3 | |  any()
-          | |______- `any(is.na(...))` is inefficient.
+          | |______^ `any(is.na(...))` is inefficient.
           |
-          = help: Use `anyNA(...)` instead.
+        help: Use `anyNA(...)` instead.
         Found 1 error.
         "
         );
@@ -128,9 +128,9 @@ mod tests {
         1 | / foo(x) |> 
         2 | |  is.na() |> 
         3 | |  any()
-          | |______- `any(is.na(...))` is inefficient.
+          | |______^ `any(is.na(...))` is inefficient.
           |
-          = help: Use `anyNA(...)` instead.
+        help: Use `anyNA(...)` instead.
         Found 1 error.
         "
         );

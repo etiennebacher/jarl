@@ -46,9 +46,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file(x)
-          | ---------------- `download.file()` without explicit `mode` can cause portability issues on Windows.
+          | ^^^^^^^^^^^^^^^^ `download.file()` without explicit `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+        help: Use mode = 'wb' instead.
         Found 1 error.
         "
         );
@@ -59,9 +59,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | utils::download.file(x)
-          | ----------------------- `download.file()` without explicit `mode` can cause portability issues on Windows.
+          | ^^^^^^^^^^^^^^^^^^^^^^^ `download.file()` without explicit `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+        help: Use mode = 'wb' instead.
         Found 1 error.
         "
         );
@@ -72,9 +72,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file(x, mode = 'a')
-          | ---------------------------- `download.file()` with `mode = 'a'` can cause portability issues on Windows.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `download.file()` with `mode = 'a'` can cause portability issues on Windows.
           |
-          = help: Use mode = 'ab' instead.
+        help: Use mode = 'ab' instead.
         Found 1 error.
         "
         );
@@ -85,9 +85,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file(x, mode = 'w')
-          | ---------------------------- `download.file()` with `mode = 'w'` can cause portability issues on Windows.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `download.file()` with `mode = 'w'` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+        help: Use mode = 'wb' instead.
         Found 1 error.
         "
         );
@@ -98,9 +98,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file(x, mode = "a")
-          | ---------------------------- `download.file()` with `mode = 'a'` can cause portability issues on Windows.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `download.file()` with `mode = 'a'` can cause portability issues on Windows.
           |
-          = help: Use mode = 'ab' instead.
+        help: Use mode = 'ab' instead.
         Found 1 error.
         "#
         );
@@ -111,9 +111,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file(x, mode = "w")
-          | ---------------------------- `download.file()` with `mode = 'w'` can cause portability issues on Windows.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `download.file()` with `mode = 'w'` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+        help: Use mode = 'wb' instead.
         Found 1 error.
         "#
         );
@@ -124,9 +124,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file(x, y, z, w, 'a')
-          | ------------------------------ `download.file()` with `mode = 'a'` can cause portability issues on Windows.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `download.file()` with `mode = 'a'` can cause portability issues on Windows.
           |
-          = help: Use mode = 'ab' instead.
+        help: Use mode = 'ab' instead.
         Found 1 error.
         "
         );
@@ -137,9 +137,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file(x, y, z, w, 'w')
-          | ------------------------------ `download.file()` with `mode = 'w'` can cause portability issues on Windows.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `download.file()` with `mode = 'w'` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+        help: Use mode = 'wb' instead.
         Found 1 error.
         "
         );
@@ -151,9 +151,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file(x, y, z, method = 'foo', 'a')
-          | ------------------------------------------- `download.file()` without explicit `mode` can cause portability issues on Windows.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `download.file()` without explicit `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+        help: Use mode = 'wb' instead.
         Found 1 error.
         "
         );
@@ -164,9 +164,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | download.file(x, y, z, method = 'foo', 'w')
-          | ------------------------------------------- `download.file()` without explicit `mode` can cause portability issues on Windows.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `download.file()` without explicit `mode` can cause portability issues on Windows.
           |
-          = help: Use mode = 'wb' instead.
+        help: Use mode = 'wb' instead.
         Found 1 error.
         "
         );

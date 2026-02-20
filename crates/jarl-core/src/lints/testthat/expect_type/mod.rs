@@ -68,9 +68,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_equal(typeof(x), 'double')
-          | --------------------------------- `expect_equal(typeof(x), t)` can be hard to read.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_equal(typeof(x), t)` can be hard to read.
           |
-          = help: Use `expect_type(x, t)` instead.
+        help: Use `expect_type(x, t)` instead.
         Found 1 error.
         "
         );
@@ -82,9 +82,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | testthat::expect_identical(typeof(x), 'language')
-          | ------------------------------------------------- `expect_identical(typeof(x), t)` can be hard to read.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_identical(typeof(x), t)` can be hard to read.
           |
-          = help: Use `expect_type(x, t)` instead.
+        help: Use `expect_type(x, t)` instead.
         Found 1 error.
         "
         );
@@ -96,9 +96,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_true(is.complex(foo(x)))
-          | ------------------------------- `expect_true(is.<t>(x))` can be hard to read.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_true(is.<t>(x))` can be hard to read.
           |
-          = help: Use `expect_type(x, t)` instead.
+        help: Use `expect_type(x, t)` instead.
         Found 1 error.
         "
         );
@@ -110,9 +110,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_equal('integer', typeof(x))
-          | ---------------------------------- `expect_equal(typeof(x), t)` can be hard to read.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_equal(typeof(x), t)` can be hard to read.
           |
-          = help: Use `expect_type(x, t)` instead.
+        help: Use `expect_type(x, t)` instead.
         Found 1 error.
         "
         );
@@ -145,9 +145,9 @@ mod tests {
           |
         1 | / expect_equal(typeof(x), # comment
         2 | | 'integer')
-          | |__________- `expect_equal(typeof(x), t)` can be hard to read.
+          | |__________^ `expect_equal(typeof(x), t)` can be hard to read.
           |
-          = help: Use `expect_type(x, t)` instead.
+        help: Use `expect_type(x, t)` instead.
         Found 1 error.
         "
         );

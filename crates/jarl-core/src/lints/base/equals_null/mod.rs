@@ -18,9 +18,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x == NULL
-          | --------- Comparing to NULL with `==`, `!=` or `%in%` is problematic.
+          | ^^^^^^^^^ Comparing to NULL with `==`, `!=` or `%in%` is problematic.
           |
-          = help: Use `is.null()` instead.
+        help: Use `is.null()` instead.
         Found 1 error.
         "
         );
@@ -31,9 +31,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x != NULL
-          | --------- Comparing to NULL with `==`, `!=` or `%in%` is problematic.
+          | ^^^^^^^^^ Comparing to NULL with `==`, `!=` or `%in%` is problematic.
           |
-          = help: Use `is.null()` instead.
+        help: Use `is.null()` instead.
         Found 1 error.
         "
         );
@@ -44,9 +44,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x %in% NULL
-          | ----------- Comparing to NULL with `==`, `!=` or `%in%` is problematic.
+          | ^^^^^^^^^^^ Comparing to NULL with `==`, `!=` or `%in%` is problematic.
           |
-          = help: Use `is.null()` instead.
+        help: Use `is.null()` instead.
         Found 1 error.
         "
         );
@@ -57,9 +57,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | foo(x(y)) == NULL
-          | ----------------- Comparing to NULL with `==`, `!=` or `%in%` is problematic.
+          | ^^^^^^^^^^^^^^^^^ Comparing to NULL with `==`, `!=` or `%in%` is problematic.
           |
-          = help: Use `is.null()` instead.
+        help: Use `is.null()` instead.
         Found 1 error.
         "
         );
@@ -70,9 +70,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | NULL == x
-          | --------- Comparing to NULL with `==`, `!=` or `%in%` is problematic.
+          | ^^^^^^^^^ Comparing to NULL with `==`, `!=` or `%in%` is problematic.
           |
-          = help: Use `is.null()` instead.
+        help: Use `is.null()` instead.
         Found 1 error.
         "
         );

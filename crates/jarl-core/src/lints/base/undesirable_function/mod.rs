@@ -53,8 +53,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | browser()
-          | --------- `browser()` is listed as an undesirable function.
-          |
+          | ^^^^^^^^^ `browser()` is listed as an undesirable function.
         Found 1 error.
         "
         );
@@ -65,8 +64,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | utils::browser()
-          | ---------------- `browser()` is listed as an undesirable function.
-          |
+          | ^^^^^^^^^^^^^^^^ `browser()` is listed as an undesirable function.
         Found 1 error.
         "
         );
@@ -90,8 +88,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | debug(x)
-          | -------- `debug()` is listed as an undesirable function.
-          |
+          | ^^^^^^^^ `debug()` is listed as an undesirable function.
         Found 1 error.
         "
         );
@@ -112,8 +109,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | browser()
-          | --------- `browser()` is listed as an undesirable function.
-          |
+          | ^^^^^^^^^ `browser()` is listed as an undesirable function.
         Found 1 error.
         "
         );
@@ -126,8 +122,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | debug(x)
-          | -------- `debug()` is listed as an undesirable function.
-          |
+          | ^^^^^^^^ `debug()` is listed as an undesirable function.
         Found 1 error.
         "
         );

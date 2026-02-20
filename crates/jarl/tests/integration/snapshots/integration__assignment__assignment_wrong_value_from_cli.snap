@@ -2,13 +2,11 @@
 source: crates/jarl/tests/integration/assignment.rs
 expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--select\").arg(\"assignment\").arg(\"--assignment\").arg(\"foo\").run().normalize_os_executable_name()"
 ---
-
 success: false
 exit_code: 255
 ----- stdout -----
 
 ----- stderr -----
-Warning: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
 jarl failed
   Cause: Invalid value in `--assignment`: foo
 

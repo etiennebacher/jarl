@@ -18,8 +18,7 @@ mod tests {
          --> <test>:1:5
           |
         1 | if (x <- 1L) TRUE
-          |     ------- Avoid implicit assignments in `if()` statements.
-          |
+          |     ^^^^^^^ Avoid implicit assignments in `if()` statements.
         Found 1 error.
         "
         );
@@ -30,8 +29,7 @@ mod tests {
          --> <test>:1:5
           |
         1 | if (1L -> x) TRUE
-          |     ------- Avoid implicit assignments in `if()` statements.
-          |
+          |     ^^^^^^^ Avoid implicit assignments in `if()` statements.
         Found 1 error.
         "
         );
@@ -42,8 +40,7 @@ mod tests {
          --> <test>:1:5
           |
         1 | if (x <<- 1L) TRUE
-          |     -------- Avoid implicit assignments in `if()` statements.
-          |
+          |     ^^^^^^^^ Avoid implicit assignments in `if()` statements.
         Found 1 error.
         "
         );
@@ -54,8 +51,7 @@ mod tests {
          --> <test>:1:5
           |
         1 | if (1L ->> x) TRUE
-          |     -------- Avoid implicit assignments in `if()` statements.
-          |
+          |     ^^^^^^^^ Avoid implicit assignments in `if()` statements.
         Found 1 error.
         "
         );
@@ -66,8 +62,7 @@ mod tests {
          --> <test>:1:11
           |
         1 | if (A && (B <- foo())) { }
-          |           ---------- Avoid implicit assignments in `if()` statements.
-          |
+          |           ^^^^^^^^^^ Avoid implicit assignments in `if()` statements.
         Found 1 error.
         "
         );
@@ -78,8 +73,7 @@ mod tests {
          --> <test>:1:8
           |
         1 | while (x <- 0L) FALSE
-          |        ------- Avoid implicit assignments in `while()` statements.
-          |
+          |        ^^^^^^^ Avoid implicit assignments in `while()` statements.
         Found 1 error.
         "
         );
@@ -90,8 +84,7 @@ mod tests {
          --> <test>:1:8
           |
         1 | while (0L -> x) FALSE
-          |        ------- Avoid implicit assignments in `while()` statements.
-          |
+          |        ^^^^^^^ Avoid implicit assignments in `while()` statements.
         Found 1 error.
         "
         );
@@ -102,8 +95,7 @@ mod tests {
          --> <test>:1:11
           |
         1 | for (x in y <- 1:10) print(x)
-          |           --------- Avoid implicit assignments in `for()` statements.
-          |
+          |           ^^^^^^^^^ Avoid implicit assignments in `for()` statements.
         Found 1 error.
         "
         );
@@ -114,8 +106,7 @@ mod tests {
          --> <test>:1:11
           |
         1 | for (x in 1:10 -> y) print(x)
-          |           --------- Avoid implicit assignments in `for()` statements.
-          |
+          |           ^^^^^^^^^ Avoid implicit assignments in `for()` statements.
         Found 1 error.
         "
         );
@@ -126,8 +117,7 @@ mod tests {
          --> <test>:1:13
           |
         1 | expect_true(x <- 1 > 2)
-          |             ---------- Avoid implicit assignments in function calls.
-          |
+          |             ^^^^^^^^^^ Avoid implicit assignments in function calls.
         Found 1 error.
         "
         );

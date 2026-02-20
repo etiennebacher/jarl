@@ -38,9 +38,9 @@ mod tests {
          --> <test>:1:5
           |
         1 | if (class(x) == 'character') 1
-          |     ----------------------- Comparing `class(x)` with `==` or `%in%` can be problematic.
+          |     ^^^^^^^^^^^^^^^^^^^^^^^ Comparing `class(x)` with `==` or `%in%` can be problematic.
           |
-          = help: Use `inherits(x, 'a')` instead.
+        help: Use `inherits(x, 'a')` instead.
         Found 1 error.
         "
         );
@@ -51,9 +51,9 @@ mod tests {
          --> <test>:1:5
           |
         1 | if (base::class(x) == 'character') 1
-          |     ----------------------------- Comparing `class(x)` with `==` or `%in%` can be problematic.
+          |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Comparing `class(x)` with `==` or `%in%` can be problematic.
           |
-          = help: Use `inherits(x, 'a')` instead.
+        help: Use `inherits(x, 'a')` instead.
         Found 1 error.
         "
         );
@@ -64,9 +64,9 @@ mod tests {
          --> <test>:1:5
           |
         1 | if ('character' %in% class(x)) 1
-          |     ------------------------- Comparing `class(x)` with `==` or `%in%` can be problematic.
+          |     ^^^^^^^^^^^^^^^^^^^^^^^^^ Comparing `class(x)` with `==` or `%in%` can be problematic.
           |
-          = help: Use `inherits(x, 'a')` instead.
+        help: Use `inherits(x, 'a')` instead.
         Found 1 error.
         "
         );
@@ -77,9 +77,9 @@ mod tests {
          --> <test>:1:5
           |
         1 | if (class(x) %in% 'character') 1
-          |     ------------------------- Comparing `class(x)` with `==` or `%in%` can be problematic.
+          |     ^^^^^^^^^^^^^^^^^^^^^^^^^ Comparing `class(x)` with `==` or `%in%` can be problematic.
           |
-          = help: Use `inherits(x, 'a')` instead.
+        help: Use `inherits(x, 'a')` instead.
         Found 1 error.
         "
         );
@@ -90,9 +90,9 @@ mod tests {
          --> <test>:1:5
           |
         1 | if (class(x) != 'character') 1
-          |     ----------------------- Comparing `class(x)` with `==` or `%in%` can be problematic.
+          |     ^^^^^^^^^^^^^^^^^^^^^^^ Comparing `class(x)` with `==` or `%in%` can be problematic.
           |
-          = help: Use `inherits(x, 'a')` instead.
+        help: Use `inherits(x, 'a')` instead.
         Found 1 error.
         "
         );
@@ -103,9 +103,9 @@ mod tests {
          --> <test>:1:8
           |
         1 | while (class(x) != 'character') 1
-          |        ----------------------- Comparing `class(x)` with `==` or `%in%` can be problematic.
+          |        ^^^^^^^^^^^^^^^^^^^^^^^ Comparing `class(x)` with `==` or `%in%` can be problematic.
           |
-          = help: Use `inherits(x, 'a')` instead.
+        help: Use `inherits(x, 'a')` instead.
         Found 1 error.
         "
         );
@@ -116,9 +116,9 @@ mod tests {
          --> <test>:1:7
           |
         1 | x[if (class(x) == 'foo') 1 else 2]
-          |       ----------------- Comparing `class(x)` with `==` or `%in%` can be problematic.
+          |       ^^^^^^^^^^^^^^^^^ Comparing `class(x)` with `==` or `%in%` can be problematic.
           |
-          = help: Use `inherits(x, 'a')` instead.
+        help: Use `inherits(x, 'a')` instead.
         Found 1 error.
         "
         );
@@ -164,9 +164,9 @@ mod tests {
          --> <test>:1:18
           |
         1 | is_regression <- identical(class(x), 'lm')
-          |                  ------------------------- Using `identical(class(x), 'a')` can be problematic.
+          |                  ^^^^^^^^^^^^^^^^^^^^^^^^^ Using `identical(class(x), 'a')` can be problematic.
           |
-          = help: Use `inherits(x, 'a')` instead.
+        help: Use `inherits(x, 'a')` instead.
         Found 1 error.
         "
         );
@@ -177,9 +177,9 @@ mod tests {
          --> <test>:1:18
           |
         1 | is_regression <- identical('lm', class(x))
-          |                  ------------------------- Using `identical(class(x), 'a')` can be problematic.
+          |                  ^^^^^^^^^^^^^^^^^^^^^^^^^ Using `identical(class(x), 'a')` can be problematic.
           |
-          = help: Use `inherits(x, 'a')` instead.
+        help: Use `inherits(x, 'a')` instead.
         Found 1 error.
         "
         );
@@ -190,9 +190,9 @@ mod tests {
          --> <test>:1:5
           |
         1 | if (identical(class(x), 'character')) 1
-          |     -------------------------------- Using `identical(class(x), 'a')` can be problematic.
+          |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Using `identical(class(x), 'a')` can be problematic.
           |
-          = help: Use `inherits(x, 'a')` instead.
+        help: Use `inherits(x, 'a')` instead.
         Found 1 error.
         "
         );
@@ -203,9 +203,9 @@ mod tests {
          --> <test>:1:5
           |
         1 | if (identical('character', class(x))) 1
-          |     -------------------------------- Using `identical(class(x), 'a')` can be problematic.
+          |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Using `identical(class(x), 'a')` can be problematic.
           |
-          = help: Use `inherits(x, 'a')` instead.
+        help: Use `inherits(x, 'a')` instead.
         Found 1 error.
         "
         );
@@ -216,9 +216,9 @@ mod tests {
          --> <test>:1:8
           |
         1 | while (identical(class(x), 'foo')) 1
-          |        -------------------------- Using `identical(class(x), 'a')` can be problematic.
+          |        ^^^^^^^^^^^^^^^^^^^^^^^^^^ Using `identical(class(x), 'a')` can be problematic.
           |
-          = help: Use `inherits(x, 'a')` instead.
+        help: Use `inherits(x, 'a')` instead.
         Found 1 error.
         "
         );

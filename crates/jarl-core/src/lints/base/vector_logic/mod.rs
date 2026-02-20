@@ -41,8 +41,7 @@ mod tests {
          --> <test>:1:5
           |
         1 | if (TRUE & FALSE) 1
-          |     ------------ `&` in `if()` statements can be inefficient.
-          |
+          |     ^^^^^^^^^^^^ `&` in `if()` statements can be inefficient.
         Found 1 error.
         "
         );
@@ -53,8 +52,7 @@ mod tests {
          --> <test>:1:5
           |
         1 | if (TRUE | FALSE) 1
-          |     ------------ `|` in `if()` statements can be inefficient.
-          |
+          |     ^^^^^^^^^^^^ `|` in `if()` statements can be inefficient.
         Found 1 error.
         "
         );
@@ -65,8 +63,7 @@ mod tests {
          --> <test>:1:5
           |
         1 | if (TRUE | FALSE & TRUE) 1
-          |     ------------------- `|` in `if()` statements can be inefficient.
-          |
+          |     ^^^^^^^^^^^^^^^^^^^ `|` in `if()` statements can be inefficient.
         Found 1 error.
         "
         );
@@ -77,8 +74,7 @@ mod tests {
          --> <test>:1:8
           |
         1 | while (TRUE & FALSE) 1
-          |        ------------ `&` in `while()` statements can be inefficient.
-          |
+          |        ^^^^^^^^^^^^ `&` in `while()` statements can be inefficient.
         Found 1 error.
         "
         );
@@ -89,8 +85,7 @@ mod tests {
          --> <test>:1:8
           |
         1 | while (TRUE | FALSE) 1
-          |        ------------ `|` in `while()` statements can be inefficient.
-          |
+          |        ^^^^^^^^^^^^ `|` in `while()` statements can be inefficient.
         Found 1 error.
         "
         );
@@ -101,8 +96,7 @@ mod tests {
          --> <test>:1:5
           |
         1 | if ((x > 1) & (y < 2)) 1
-          |     ----------------- `&` in `if()` statements can be inefficient.
-          |
+          |     ^^^^^^^^^^^^^^^^^ `&` in `if()` statements can be inefficient.
         Found 1 error.
         "
         );

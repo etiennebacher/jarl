@@ -18,8 +18,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | x <- {}
-          | ------- Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size.
-          |
+          | ^^^^^^^ Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size.
         Found 1 error.
         "
         );
@@ -30,8 +29,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | x = { }
-          | ------- Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size.
-          |
+          | ^^^^^^^ Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size.
         Found 1 error.
         "
         );
@@ -42,8 +40,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | { } -> x
-          | -------- Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size.
-          |
+          | ^^^^^^^^ Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size.
         Found 1 error.
         "
         );
@@ -55,8 +52,7 @@ mod tests {
           |
         1 | / x <- {
         2 | | }
-          | |_- Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size.
-          |
+          | |_^ Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size.
         Found 1 error.
         "
         );
@@ -67,8 +63,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | env$obj <- {}
-          | ------------- Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size.
-          |
+          | ^^^^^^^^^^^^^ Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size.
         Found 1 error.
         "
         );
