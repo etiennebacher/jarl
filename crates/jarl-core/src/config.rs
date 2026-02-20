@@ -6,7 +6,6 @@ use crate::{
     settings::Settings,
 };
 use air_r_syntax::RSyntaxKind;
-use air_workspace::resolve::PathResolver;
 use anyhow::Result;
 use std::{collections::HashSet, fs, path::PathBuf};
 
@@ -85,24 +84,10 @@ pub struct Config {
 
 pub fn build_config(
     check_config: &ArgsConfig,
-    resolver: &PathResolver<Settings>,
+    settings: Option<&Settings>,
     paths: Vec<PathBuf>,
 ) -> Result<Config> {
-    let root_path = resolver
-        .items()
-        .iter()
-        .map(|x| x.path())
-        .collect::<Vec<_>>();
-
-    if root_path.len() > 1 {
-        todo!("Don't know how to handle multiple TOML")
-    }
-
-    let toml_settings = if root_path.len() == 1 {
-        Some(resolver.items().first().unwrap().value())
-    } else {
-        None
-    };
+    let toml_settings = settings;
 
     // Determining the minimum R version has to come first since if it is
     // unknown then only rules that don't have a version restriction are

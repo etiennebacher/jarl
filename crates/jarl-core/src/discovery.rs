@@ -52,7 +52,7 @@ fn get_user_config_dir() -> Option<PathBuf> {
 /// For each `path`, we:
 /// - Walk up its ancestors until the user config directory, looking for a `jarl.toml`
 /// - If no config found in ancestors, fall back to checking the user config directory
-/// - TODO(hierarchical): Walk down its children, looking for nested `jarl.toml`s
+/// - If `path` is a directory, also walk down into it to find any nested `jarl.toml`s
 pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<DiscoveredSettings>> {
     let paths: Vec<PathBuf> = paths.iter().map(fs::normalize_path).collect();
 
@@ -106,10 +106,73 @@ pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<Disc
         }
     }
 
-    // TODO(hierarchical): Also iterate into the directories and collect `jarl.toml`
-    // found nested withing the directories for hierarchical support
+    // For directory inputs, also walk down to discover any nested jarl.toml files.
+    // This enables hierarchical configuration: files in subdirectories use the
+    // nearest jarl.toml above them rather than always falling back to the root one.
+    let mut already_found: FxHashSet<PathBuf> = discovered_settings
+        .iter()
+        .map(|ds| ds.directory.clone())
+        .collect();
+
+    for path in &paths {
+        if path.is_dir() {
+            discover_nested_settings(path, &mut already_found, &mut discovered_settings)?;
+        }
+    }
 
     Ok(discovered_settings)
+}
+
+/// Walk down into `root`, collecting any nested `jarl.toml` files not yet in `already_found`.
+fn discover_nested_settings(
+    root: &Path,
+    already_found: &mut FxHashSet<PathBuf>,
+    discovered_settings: &mut Vec<DiscoveredSettings>,
+) -> anyhow::Result<()> {
+    let walker = ignore::WalkBuilder::new(root)
+        .hidden(true)
+        .parents(true)
+        .ignore(false)
+        .git_ignore(true)
+        .git_global(true)
+        .git_exclude(true)
+        .build();
+
+    for result in walker {
+        let entry = match result {
+            Ok(entry) => entry,
+            Err(_) => continue,
+        };
+
+        let path = entry.path();
+
+        // Skip the root itself; its config was already handled by the ancestor walk above
+        if path == root {
+            continue;
+        }
+
+        // Only check directories for nested jarl.toml files
+        if entry.file_type().is_none_or(|ft| !ft.is_dir()) {
+            continue;
+        }
+
+        // Skip if this directory's config was already discovered
+        if already_found.contains(path) {
+            continue;
+        }
+
+        if let Some(toml) = find_jarl_toml_in_directory(path) {
+            already_found.insert(path.to_path_buf());
+            let settings = parse_settings(&toml, path)?;
+            discovered_settings.push(DiscoveredSettings {
+                directory: path.to_path_buf(),
+                settings,
+                config_path: Some(toml),
+            });
+        }
+    }
+
+    Ok(())
 }
 
 /// Parse [Settings] from a given `jarl.toml`

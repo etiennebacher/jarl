@@ -133,7 +133,8 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlD
         assignment: None,
     };
 
-    let config = build_config(&check_config, &resolver, paths)?;
+    let toml_settings = resolver.items().first().map(|item| item.value());
+    let config = build_config(&check_config, toml_settings, paths)?;
 
     let diagnostics = jarl_core::check::check(config);
     let mut all_diagnostics: Vec<JarlDiagnostic> = diagnostics

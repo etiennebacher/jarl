@@ -1752,3 +1752,142 @@ include = ["a", 1]
 
     Ok(())
 }
+
+// --- Hierarchical configuration tests ---
+
+/// When a subdirectory has its own jarl.toml, `jarl check .` should use the
+/// nearest config for each file: root files use the root config, subfolder
+/// files use the subfolder config.
+#[test]
+fn test_hierarchical_toml_dir_uses_nearest_config() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // Root config: only flag any_is_na
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+select = ["any_is_na"]
+"#,
+    )?;
+    std::fs::write(
+        directory.join("root.R"),
+        "any(is.na(x))\nany(duplicated(x))",
+    )?;
+
+    // Subfolder config: only flag any_duplicated
+    std::fs::create_dir(directory.join("subfolder"))?;
+    std::fs::write(
+        directory.join("subfolder/jarl.toml"),
+        r#"
+[lint]
+select = ["any_duplicated"]
+"#,
+    )?;
+    std::fs::write(
+        directory.join("subfolder/sub.R"),
+        "any(is.na(x))\nany(duplicated(x))",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths()
+    );
+
+    Ok(())
+}
+
+/// When a subdirectory has no jarl.toml of its own, files there should fall
+/// back to the nearest ancestor config (i.e. the root jarl.toml).
+#[test]
+fn test_hierarchical_toml_subdir_inherits_root_config() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // Root config: only flag any_is_na
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+select = ["any_is_na"]
+"#,
+    )?;
+    std::fs::write(
+        directory.join("root.R"),
+        "any(is.na(x))\nany(duplicated(x))",
+    )?;
+
+    // Subfolder with no jarl.toml — should inherit root config
+    std::fs::create_dir(directory.join("subfolder"))?;
+    std::fs::write(
+        directory.join("subfolder/sub.R"),
+        "any(is.na(x))\nany(duplicated(x))",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths()
+    );
+
+    Ok(())
+}
+
+/// Passing individual file paths (e.g. from shell glob expansion) should work
+/// the same as `jarl check .`: each file uses the nearest jarl.toml above it.
+#[test]
+fn test_hierarchical_toml_individual_files_use_nearest_config() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // Root config: only flag any_is_na
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+select = ["any_is_na"]
+"#,
+    )?;
+    std::fs::write(
+        directory.join("root.R"),
+        "any(is.na(x))\nany(duplicated(x))",
+    )?;
+
+    // Subfolder config: only flag any_duplicated
+    std::fs::create_dir(directory.join("subfolder"))?;
+    std::fs::write(
+        directory.join("subfolder/jarl.toml"),
+        r#"
+[lint]
+select = ["any_duplicated"]
+"#,
+    )?;
+    std::fs::write(
+        directory.join("subfolder/sub.R"),
+        "any(is.na(x))\nany(duplicated(x))",
+    )?;
+
+    // Pass both files explicitly, as a shell glob would expand them
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg("root.R")
+            .arg("subfolder/sub.R")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths()
+    );
+
+    Ok(())
+}

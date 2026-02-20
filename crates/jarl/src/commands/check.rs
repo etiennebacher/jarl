@@ -16,6 +16,7 @@ use anyhow::Result;
 use colored::Colorize;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use std::collections::HashMap;
 use std::env;
 use std::path::PathBuf;
 use std::time::Instant;
@@ -44,13 +45,17 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     // override each discovered settings' `default_exclude` to `false` so the
     // default patterns from `DEFAULT_EXCLUDE_PATTERNS` are not applied during
     // discovery.
-    for mut ds in discover_settings(&args.files)? {
+    let discovered = discover_settings(&args.files)?;
+    let single_config = discovered.len() == 1;
+
+    for mut ds in discovered {
         if args.no_default_exclude {
             ds.settings.linter.default_exclude = Some(false);
         }
 
-        // Check if config is from a parent directory (not CWD)
-        if let (Some(config_path), Some(current_dir)) = (&ds.config_path, &cwd)
+        // Only track parent config path when there's a single config (informative for that case)
+        if single_config
+            && let (Some(config_path), Some(current_dir)) = (&ds.config_path, &cwd)
             && let Some(config_dir) = config_path.parent()
             && config_dir != current_dir
         {
@@ -88,7 +93,15 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         assignment: args.assignment,
     };
 
-    let config = build_config(&check_config, &resolver, paths)?;
+    // Group paths by their closest resolved config directory, so each file is
+    // checked with the settings from the nearest jarl.toml.
+    let mut groups: HashMap<Option<PathBuf>, Vec<PathBuf>> = HashMap::new();
+    for path in paths {
+        let key = resolver
+            .resolve(&path)
+            .map(|item| item.path().to_path_buf());
+        groups.entry(key).or_default().push(path);
+    }
 
     // Emit deprecation warnings for old assignment syntax
     if check_config.assignment.is_some() {
@@ -109,7 +122,15 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         }
     }
 
-    let file_results = jarl_core::check::check(config);
+    let mut file_results = Vec::new();
+    for (dir_key, group_paths) in groups {
+        let settings = dir_key
+            .as_deref()
+            .and_then(|dir| resolver.items().iter().find(|item| item.path() == dir))
+            .map(|item| item.value());
+        let config = build_config(&check_config, settings, group_paths)?;
+        file_results.extend(jarl_core::check::check(config));
+    }
 
     let mut all_errors = Vec::new();
     let mut all_diagnostics = Vec::new();

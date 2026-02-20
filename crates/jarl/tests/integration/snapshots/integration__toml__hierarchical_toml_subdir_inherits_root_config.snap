@@ -1,0 +1,31 @@
+---
+source: crates/jarl/tests/integration/toml.rs
+expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name().normalize_temp_paths()"
+---
+
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> root.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_is_na
+ --> subfolder/sub.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+
+----- args -----
+check .

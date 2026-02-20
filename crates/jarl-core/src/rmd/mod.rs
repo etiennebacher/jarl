@@ -5,13 +5,11 @@ pub use extraction::{RCodeChunk, extract_r_chunks};
 mod tests {
     use std::fs;
 
-    use air_workspace::resolve::PathResolver;
     use tempfile::Builder;
 
     use crate::check::get_checks;
     use crate::config::{ArgsConfig, build_config};
     use crate::diagnostic::Diagnostic;
-    use crate::settings::Settings;
 
     /// Run `get_checks` on a temporary `.Rmd` file with the default rule set.
     fn check_rmd(content: &str) -> Vec<Diagnostic> {
@@ -37,9 +35,8 @@ mod tests {
             assignment: None,
         };
 
-        let resolver = PathResolver::new(Settings::default());
-        let config = build_config(&check_config, &resolver, vec![path.clone()])
-            .expect("Failed to build config");
+        let config =
+            build_config(&check_config, None, vec![path.clone()]).expect("Failed to build config");
 
         get_checks(content, &path, &config).expect("get_checks failed")
     }
@@ -362,8 +359,7 @@ mod tests {
             allow_no_vcs: true,
             assignment: None,
         };
-        let resolver = PathResolver::new(Settings::default());
-        let config = build_config(&check_config, &resolver, vec![path.clone()]).unwrap();
+        let config = build_config(&check_config, None, vec![path.clone()]).unwrap();
         let result = get_checks(content, &path, &config);
         assert!(
             result.is_ok(),
