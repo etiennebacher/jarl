@@ -24,14 +24,14 @@ fn test_clean_git_repo() -> anyhow::Result<()> {
     create_commit(file_path, repo)?;
 
     insta::assert_snapshot!(
-                                    &mut Command::new(binary_path())
-                                        .current_dir(directory)
-                                        .arg("check")
-                                        .arg(".")
-                                        .arg("--fix")
-                                        .run()
-                                        .normalize_os_executable_name(),
-                                    @r"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--fix")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -39,7 +39,7 @@ All checks passed!
 
 ----- stderr -----
 "
-                                );
+    );
     Ok(())
 }
 
@@ -56,13 +56,13 @@ fn test_dirty_git_repo_does_not_block_lint() -> anyhow::Result<()> {
     let _ = Repository::init(directory)?;
 
     insta::assert_snapshot!(
-                                    &mut Command::new(binary_path())
-                                        .current_dir(directory)
-                                        .arg("check")
-                                        .arg(".")
-                                        .run()
-                                        .normalize_os_executable_name(),
-                                    @r"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -79,7 +79,7 @@ Found 1 error.
 
 ----- stderr -----
 "
-                                );
+    );
     Ok(())
 }
 
@@ -100,27 +100,25 @@ fn test_dirty_git_repo_blocks_fix() -> anyhow::Result<()> {
     let _ = Repository::init(directory)?;
 
     insta::assert_snapshot!(
-                                    &mut Command::new(binary_path())
-                                        .current_dir(directory)
-                                        .arg("check")
-                                        .arg(".")
-                                        .arg("--fix")
-                                        .run()
-                                        .normalize_os_executable_name(),
-                                    @r"
-success: false
-exit_code: 255
------ stdout -----
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--fix")
+            .run()
+            .normalize_os_executable_name(),
+        @r"
+    success: false
+    exit_code: 255
+    ----- stdout -----
 
------ stderr -----
-Error: `jarl check --fix` can potentially perform destructive changes but the working directory of this project has uncommitted changes, so no fixes were applied. 
-To apply the fixes, either add `--allow-dirty` to the call, or commit the changes to these files:
+    ----- stderr -----
+    Error: `jarl check --fix` can potentially perform destructive changes but the working directory of this project has uncommitted changes, so no fixes were applied. 
+    To apply the fixes, either add `--allow-dirty` to the call, or commit the changes to these files:
 
-  * demos/ (dirty)
-
-
-"
-                                );
+      * demos/ (dirty)
+    "
+    );
     Ok(())
 }
 
@@ -137,15 +135,15 @@ fn test_dirty_git_repo_allow_dirty() -> anyhow::Result<()> {
     let _ = Repository::init(directory)?;
 
     insta::assert_snapshot!(
-                                    &mut Command::new(binary_path())
-                                        .current_dir(directory)
-                                        .arg("check")
-                                        .arg(".")
-                                        .arg("--fix")
-                                        .arg("--allow-dirty")
-                                        .run()
-                                        .normalize_os_executable_name(),
-                                    @r"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--fix")
+            .arg("--allow-dirty")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -153,7 +151,7 @@ All checks passed!
 
 ----- stderr -----
 "
-                                );
+    );
     Ok(())
 }
 
@@ -182,27 +180,25 @@ fn test_mixed_dirty_status_blocks_fix() -> anyhow::Result<()> {
 
     // Try to fix both subdirs - should fail because one has dirty changes
     insta::assert_snapshot!(
-                                    &mut Command::new(binary_path())
-                                        .current_dir(directory)
-                                        .arg("check")
-                                        .arg(".")
-                                        .arg("--fix")
-                                        .run()
-                                        .normalize_os_executable_name(),
-                                    @r"
-success: false
-exit_code: 255
------ stdout -----
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--fix")
+            .run()
+            .normalize_os_executable_name(),
+        @r"
+    success: false
+    exit_code: 255
+    ----- stdout -----
 
------ stderr -----
-Error: `jarl check --fix` can potentially perform destructive changes but the working directory of this project has uncommitted changes, so no fixes were applied. 
-To apply the fixes, either add `--allow-dirty` to the call, or commit the changes to these files:
+    ----- stderr -----
+    Error: `jarl check --fix` can potentially perform destructive changes but the working directory of this project has uncommitted changes, so no fixes were applied. 
+    To apply the fixes, either add `--allow-dirty` to the call, or commit the changes to these files:
 
-  * test.R (dirty)
-
-
-"
-                                );
+      * test.R (dirty)
+    "
+    );
     Ok(())
 }
 
@@ -233,14 +229,14 @@ fn test_two_clean_subdirs() -> anyhow::Result<()> {
     // Parent folder is not a git repo, but all files in subfolders are covered
     // by Git (even if the repos are different).
     insta::assert_snapshot!(
-                                    &mut Command::new(binary_path())
-                                        .current_dir(directory)
-                                        .arg("check")
-                                        .arg(".")
-                                        .arg("--fix")
-                                        .run()
-                                        .normalize_os_executable_name(),
-                                    @r"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--fix")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -248,6 +244,6 @@ All checks passed!
 
 ----- stderr -----
 "
-                                );
+    );
     Ok(())
 }

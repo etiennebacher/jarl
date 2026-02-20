@@ -6,11 +6,11 @@ use crate::helpers::binary_path;
 #[test]
 fn test_help() {
     insta::assert_snapshot!(
-                                    Command::new(binary_path())
-                                        .arg("help")
-                                        .run()
-                                        .normalize_os_executable_name(),
-                                    @r"
+        Command::new(binary_path())
+            .arg("help")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -34,13 +34,13 @@ For help with a specific command, see: `jarl help <command>`.
 
 ----- stderr -----
 "
-                                );
+    );
     insta::assert_snapshot!(
-                                    Command::new(binary_path())
-                                        .arg("--help")
-                                        .run()
-                                        .normalize_os_executable_name(),
-                                    @r"
+        Command::new(binary_path())
+            .arg("--help")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -64,13 +64,13 @@ For help with a specific command, see: `jarl help <command>`.
 
 ----- stderr -----
 "
-                                );
+    );
     insta::assert_snapshot!(
-                                    Command::new(binary_path())
-                                        .arg("-h")
-                                        .run()
-                                        .normalize_os_executable_name(),
-                                    @r"
+        Command::new(binary_path())
+            .arg("-h")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -94,7 +94,7 @@ For help with a specific command, see: `jarl help <command>`.
 
 ----- stderr -----
 "
-                                );
+    );
 }
 
 #[test]
@@ -106,87 +106,87 @@ fn test_help_check() {
             .run()
             .normalize_os_executable_name(),
         @r#"
-success: true
-exit_code: 0
------ stdout -----
-Check a set of files or directories
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    Check a set of files or directories
 
-Usage: jarl check [OPTIONS] <FILES>...
+    Usage: jarl check [OPTIONS] <FILES>...
 
-Arguments:
-  <FILES>...
-          List of files or directories to check or fix lints, for example `jarl check .`.
+    Arguments:
+      <FILES>...
+              List of files or directories to check or fix lints, for example `jarl check .`.
 
-Options:
-  -f, --fix
-          Automatically fix issues detected by the linter.
+    Options:
+      -f, --fix
+              Automatically fix issues detected by the linter.
 
-  -u, --unsafe-fixes
-          Include fixes that may not retain the original intent of the  code.
+      -u, --unsafe-fixes
+              Include fixes that may not retain the original intent of the  code.
 
-      --fix-only
-          Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
+          --fix-only
+              Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
 
-      --allow-dirty
-          Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
+          --allow-dirty
+              Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
 
-      --allow-no-vcs
-          Apply fixes even if there is no version control system.
+          --allow-no-vcs
+              Apply fixes even if there is no version control system.
 
-  -s, --select <SELECT>
-          Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF".
-          
-          [default: ]
+      -s, --select <SELECT>
+              Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF".
+              
+              [default: ]
 
-  -e, --extend-select <EXTEND_SELECT>
-          Like `--select` but adds additional rules in addition to those already specified.
-          
-          [default: ]
+      -e, --extend-select <EXTEND_SELECT>
+              Like `--select` but adds additional rules in addition to those already specified.
+              
+              [default: ]
 
-  -i, --ignore <IGNORE>
-          Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF".
-          
-          [default: ]
+      -i, --ignore <IGNORE>
+              Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF".
+              
+              [default: ]
 
-  -w, --with-timing
-          Show the time taken by the function.
+      -w, --with-timing
+              Show the time taken by the function.
 
-  -m, --min-r-version <MIN_R_VERSION>
-          The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
+      -m, --min-r-version <MIN_R_VERSION>
+              The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
 
-      --output-format <OUTPUT_FORMAT>
-          Output serialization format for violations.
+          --output-format <OUTPUT_FORMAT>
+              Output serialization format for violations.
 
-          Possible values:
-          - full:    Print diagnostics with full context using annotated code snippets
-          - concise: Print diagnostics in a concise format, one per line
-          - github:  Print diagnostics as GitHub format
-          - json:    Print diagnostics as JSON
-          
-          [default: full]
+              Possible values:
+              - full:    Print diagnostics with full context using annotated code snippets
+              - concise: Print diagnostics in a concise format, one per line
+              - github:  Print diagnostics as GitHub format
+              - json:    Print diagnostics as JSON
+              
+              [default: full]
 
-      --assignment <ASSIGNMENT>
-          [DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`.
+          --assignment <ASSIGNMENT>
+              [DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`.
 
-      --no-default-exclude
-          Do not apply the default set of file patterns that should be excluded.
+          --no-default-exclude
+              Do not apply the default set of file patterns that should be excluded.
 
-      --statistics
-          Show counts for every rule with at least one violation.
+          --statistics
+              Show counts for every rule with at least one violation.
 
-      --add-jarl-ignore[=<REASON>]
-          Automatically insert a `# jarl-ignore` comment to suppress all violations.
-          The default reason can be customized with `--add-jarl-ignore="my_reason"`.
+          --add-jarl-ignore[=<REASON>]
+              Automatically insert a `# jarl-ignore` comment to suppress all violations.
+              The default reason can be customized with `--add-jarl-ignore="my_reason"`.
 
-  -h, --help
-          Print help (see a summary with '-h')
+      -h, --help
+              Print help (see a summary with '-h')
 
-Global options:
-      --log-level <LOG_LEVEL>
-          The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+    Global options:
+          --log-level <LOG_LEVEL>
+              The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
 
------ stderr -----
-"#
+    ----- stderr -----
+    "#
     );
     insta::assert_snapshot!(
         Command::new(binary_path())
