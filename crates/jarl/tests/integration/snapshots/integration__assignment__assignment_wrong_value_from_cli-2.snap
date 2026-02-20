@@ -7,6 +7,7 @@ exit_code: 255
 ----- stdout -----
 
 ----- stderr -----
+Warning: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
 jarl failed
   Cause: Invalid value in `--assignment`: 1
 
