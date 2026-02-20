@@ -2023,7 +2023,7 @@
     "href": "rules/browser.html",
     "title": "browser",
     "section": "",
-    "text": "Checks for lingering presence of browser() which should not be present in released code.\n\n\n\nbrowser() interrupts the execution of an expression and allows the inspection of the environment where browser() was called from. This is helpful while developing a function, but is not expected to be called by the user. Does not remove the call as it does not have a suitable replacement.\n\n\n\ndo_something &lt;- function(abc = 1) {\n   xyz &lt;- abc + 1\n   browser()      # This should be removed.\n   xyz\n}\n\n\n\nSee ?browser",
+    "text": "Checks for lingering presence of browser() which should not be present in released code.\nThis rule is deprecated and will be removed in a future version. Use the rule undesirable_function and configure it to report calls to browser() instead.\n\n\n\nbrowser() interrupts the execution of an expression and allows the inspection of the environment where browser() was called from. This is helpful while developing a function, but is not expected to be called by the user. Does not remove the call as it does not have a suitable replacement.\n\n\n\ndo_something &lt;- function(abc = 1) {\n   xyz &lt;- abc + 1\n   browser()      # This should be removed.\n   xyz\n}\n\n\n\nSee ?browser",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -2035,7 +2035,7 @@
     "href": "rules/browser.html#what-it-does",
     "title": "browser",
     "section": "",
-    "text": "Checks for lingering presence of browser() which should not be present in released code.",
+    "text": "Checks for lingering presence of browser() which should not be present in released code.\nThis rule is deprecated and will be removed in a future version. Use the rule undesirable_function and configure it to report calls to browser() instead.",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -3415,7 +3415,7 @@
     "href": "rules.html",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\ncomments (COMM): mistakes in the suppression comments (# jarl-ignore).\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_syc26pi341415uury5ax",
+    "text": "All rules belong to at least one category:\n\ncomments (COMM): mistakes in the suppression comments (# jarl-ignore).\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_ecimqnt9g47sxl1vof8q",
     "crumbs": [
       "Rules"
     ]
@@ -3425,7 +3425,7 @@
     "href": "rules.html#overview",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\ncomments (COMM): mistakes in the suppression comments (# jarl-ignore).\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_syc26pi341415uury5ax",
+    "text": "All rules belong to at least one category:\n\ncomments (COMM): mistakes in the suppression comments (# jarl-ignore).\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_ecimqnt9g47sxl1vof8q",
     "crumbs": [
       "Rules"
     ]
