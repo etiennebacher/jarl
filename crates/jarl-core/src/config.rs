@@ -86,9 +86,9 @@ pub struct Config {
     /// Resolved per-rule options
     pub rule_options: ResolvedRuleOptions,
     /// Pre-computed per-file duplicate top-level assignment data.
-    /// Keyed by relativized file path. Value is a list of (name, lhs_range)
-    /// pairs that should be flagged as duplicates.
-    pub package_duplicate_assignments: HashMap<PathBuf, Vec<(String, TextRange)>>,
+    /// Keyed by relativized file path. Value is a list of `(name, lhs_range,
+    /// help)` triples where `help` points to the first definition.
+    pub package_duplicate_assignments: HashMap<PathBuf, Vec<(String, TextRange, String)>>,
 }
 
 pub fn build_config(

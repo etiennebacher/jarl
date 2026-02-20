@@ -38,7 +38,10 @@ mod tests {
         fs::write(&file, "foo <- 1\nbar <- 'hello'\n").unwrap();
 
         let assignments = collect_top_level_assignments(&file);
-        assert!(assignments.is_empty(), "non-function assignments should be ignored");
+        assert!(
+            assignments.is_empty(),
+            "non-function assignments should be ignored"
+        );
     }
 
     #[test]

@@ -33,12 +33,22 @@ pub fn find_package_root(file: &Path) -> Option<PathBuf> {
     }
 }
 
-/// Parse `file` and return `(name, lhs_range)` for each top-level `<-` or `=`
-/// assignment whose left-hand side is a simple identifier.
+/// Convert a byte offset within `content` to a 1-based `(line, col)` pair.
+fn byte_offset_to_line_col(content: &str, offset: usize) -> (u32, u32) {
+    let prefix = &content[..offset];
+    let line = prefix.chars().filter(|&c| c == '\n').count() as u32 + 1;
+    let col_start = prefix.rfind('\n').map(|n| n + 1).unwrap_or(0);
+    let col = (offset - col_start) as u32 + 1;
+    (line, col)
+}
+
+/// Parse `file` and return `(name, lhs_range, line, col)` for each top-level
+/// `<-` or `=` assignment whose left-hand side is a simple identifier.
 ///
 /// Only top-level (not nested inside functions / blocks) expressions are
 /// considered. `<<-` and right-assignment forms are excluded.
-pub fn collect_top_level_assignments(file: &Path) -> Vec<(String, TextRange)> {
+/// `line` and `col` are 1-based positions of the LHS identifier.
+pub fn collect_top_level_assignments(file: &Path) -> Vec<(String, TextRange, u32, u32)> {
     let Ok(content) = std::fs::read_to_string(file) else {
         return vec![];
     };
@@ -72,7 +82,9 @@ pub fn collect_top_level_assignments(file: &Path) -> Vec<(String, TextRange)> {
             if let AnyRExpression::RIdentifier(ident) = lhs {
                 let name = ident.syntax().text_trimmed().to_string();
                 let range = ident.syntax().text_trimmed_range();
-                assignments.push((name, range));
+                let offset: usize = range.start().into();
+                let (line, col) = byte_offset_to_line_col(&content, offset);
+                assignments.push((name, range, line, col));
             }
         }
     }
@@ -82,19 +94,22 @@ pub fn collect_top_level_assignments(file: &Path) -> Vec<(String, TextRange)> {
 
 /// Group R-package files by package root, detect names assigned more than once
 /// (across files or within a file), and return a per-file map of
-/// `(name, lhs_range)` pairs that should be flagged.
+/// `(name, lhs_range, help)` triples that should be flagged.
+///
+/// `help` is a human-readable string indicating where the first definition
+/// was found, e.g. `"other definition at R/aaa.R:1:1"`.
 ///
 /// Files within each package are processed in alphabetical order by their
 /// relativized path. The **first** occurrence of each name is never flagged;
 /// all subsequent occurrences are flagged.
 // (root_key, rel_path, assignments) per package file
-type FileEntry = (String, PathBuf, Vec<(String, TextRange)>);
+type FileEntry = (String, PathBuf, Vec<(String, TextRange, u32, u32)>);
 // per-package sorted list: (rel_path, assignments)
-type PackageFiles = Vec<(PathBuf, Vec<(String, TextRange)>)>;
+type PackageFiles = Vec<(PathBuf, Vec<(String, TextRange, u32, u32)>)>;
 
 pub fn compute_package_duplicate_assignments(
     paths: &[PathBuf],
-) -> HashMap<PathBuf, Vec<(String, TextRange)>> {
+) -> HashMap<PathBuf, Vec<(String, TextRange, String)>> {
     // For each R-package file, resolve its package root and collect top-level
     // function assignments. .
     let file_data: Vec<FileEntry> = paths
@@ -118,27 +133,32 @@ pub fn compute_package_duplicate_assignments(
             .push((rel_path, assignments));
     }
 
-    let mut result: HashMap<PathBuf, Vec<(String, TextRange)>> = HashMap::new();
+    let mut result: HashMap<PathBuf, Vec<(String, TextRange, String)>> = HashMap::new();
 
     for (_root_key, mut file_data) in packages {
         // Sort alphabetically by the relativized path for deterministic ordering
         file_data.sort_by(|a, b| a.0.cmp(&b.0));
 
-        // Track the first occurrence of each name across the whole package
-        let mut seen: HashMap<String, ()> = HashMap::new();
+        // Track the first occurrence of each name: (file, line, col)
+        let mut seen: HashMap<String, (PathBuf, u32, u32)> = HashMap::new();
 
         for (rel_path, assignments) in file_data {
-            let mut file_duplicates: Vec<(String, TextRange)> = Vec::new();
+            let mut file_duplicates: Vec<(String, TextRange, String)> = Vec::new();
 
-            for (name, range) in assignments {
+            for (name, range, line, col) in assignments {
                 match seen.entry(name.clone()) {
-                    std::collections::hash_map::Entry::Occupied(_) => {
-                        // This is a duplicate: flag it
-                        file_duplicates.push((name, range));
+                    std::collections::hash_map::Entry::Occupied(e) => {
+                        // This is a duplicate: flag it with a pointer to the first definition
+                        let (first_file, first_line, first_col) = e.get();
+                        let help = format!(
+                            "other definition at {}:{first_line}:{first_col}",
+                            first_file.display()
+                        );
+                        file_duplicates.push((name, range, help));
                     }
                     std::collections::hash_map::Entry::Vacant(e) => {
-                        // First occurrence: record it, do not flag
-                        e.insert(());
+                        // First occurrence: record its location, do not flag
+                        e.insert((rel_path.clone(), line, col));
                     }
                 }
             }

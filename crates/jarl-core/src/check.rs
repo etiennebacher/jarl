@@ -139,8 +139,9 @@ pub struct Checker {
     // Per-rule options resolved from configuration
     pub rule_options: ResolvedRuleOptions,
     // Pre-computed duplicate top-level assignments for this file (from
-    // cross-file package analysis). Each entry is (name, lhs_range).
-    pub package_duplicate_assignments: Vec<(String, biome_rowan::TextRange)>,
+    // cross-file package analysis). Each entry is (name, lhs_range, help)
+    // where help points to the first definition.
+    pub package_duplicate_assignments: Vec<(String, biome_rowan::TextRange, String)>,
 }
 
 impl Checker {
@@ -478,12 +479,12 @@ pub fn check_document(expressions: &RExpressionList, checker: &mut Checker) -> a
     // This must come before suppression filtering so that # jarl-ignore
     // and # jarl-ignore-file comments can suppress these diagnostics.
     if checker.is_rule_enabled(Rule::DuplicateTopLevelAssignment) {
-        for (name, range) in &checker.package_duplicate_assignments.clone() {
+        for (name, range, help) in &checker.package_duplicate_assignments.clone() {
             checker.report_diagnostic(Some(Diagnostic::new(
                 ViolationData::new(
                     "duplicate_top_level_assignment".to_string(),
                     format!("`{name}` is defined more than once in this package."),
-                    None,
+                    Some(help.clone()),
                 ),
                 *range,
                 Fix::empty(),

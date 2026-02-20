@@ -33,15 +33,15 @@ fn test_same_file_duplicate_assignment() -> anyhow::Result<()> {
     )?;
 
     insta::assert_snapshot!(
-                &mut Command::new(binary_path())
-                    .current_dir(directory)
-                    .arg("check")
-                    .arg(".")
-                    .arg("--select")
-                    .arg("duplicate_top_level_assignment")
-                    .run()
-                    .normalize_os_executable_name(),
-                @r"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("duplicate_top_level_assignment")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -51,12 +51,13 @@ warning: duplicate_top_level_assignment
 2 | foo <- function() 2
   | --- `foo` is defined more than once in this package.
   |
+  = help: other definition at R/foo.R:1:1
 
 Found 1 error.
 
 ----- stderr -----
 "
-            );
+    );
 
     Ok(())
 }
@@ -75,15 +76,15 @@ fn test_cross_file_duplicate_assignment() -> anyhow::Result<()> {
     std::fs::write(r_dir.join("bbb.R"), "foo <- function() 2\n")?;
 
     insta::assert_snapshot!(
-                &mut Command::new(binary_path())
-                    .current_dir(directory)
-                    .arg("check")
-                    .arg(".")
-                    .arg("--select")
-                    .arg("duplicate_top_level_assignment")
-                    .run()
-                    .normalize_os_executable_name(),
-                @r"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("duplicate_top_level_assignment")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -93,12 +94,13 @@ warning: duplicate_top_level_assignment
 1 | foo <- function() 2
   | --- `foo` is defined more than once in this package.
   |
+  = help: other definition at R/aaa.R:1:1
 
 Found 1 error.
 
 ----- stderr -----
 "
-            );
+    );
 
     Ok(())
 }
@@ -116,15 +118,15 @@ fn test_no_lint_outside_package() -> anyhow::Result<()> {
     std::fs::write(r_dir.join("foo.R"), "foo <- 1\nfoo <- 2\n")?;
 
     insta::assert_snapshot!(
-                &mut Command::new(binary_path())
-                    .current_dir(directory)
-                    .arg("check")
-                    .arg(".")
-                    .arg("--select")
-                    .arg("duplicate_top_level_assignment")
-                    .run()
-                    .normalize_os_executable_name(),
-                @r"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("duplicate_top_level_assignment")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -132,7 +134,7 @@ All checks passed!
 
 ----- stderr -----
 "
-            );
+    );
 
     Ok(())
 }
@@ -148,15 +150,15 @@ fn test_ignore_duplicate_top_level_assignment() -> anyhow::Result<()> {
     std::fs::write(r_dir.join("foo.R"), "foo <- 1\nfoo <- 2\n")?;
 
     insta::assert_snapshot!(
-                &mut Command::new(binary_path())
-                    .current_dir(directory)
-                    .arg("check")
-                    .arg(".")
-                    .arg("--ignore")
-                    .arg("duplicate_top_level_assignment")
-                    .run()
-                    .normalize_os_executable_name(),
-                @r"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--ignore")
+            .arg("duplicate_top_level_assignment")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -164,7 +166,7 @@ All checks passed!
 
 ----- stderr -----
 "
-            );
+    );
 
     Ok(())
 }
