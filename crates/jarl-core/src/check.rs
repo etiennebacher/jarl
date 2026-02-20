@@ -21,6 +21,7 @@ use crate::analyze;
 use crate::config::Config;
 use crate::diagnostic::*;
 use crate::fix::*;
+use crate::lints::base::duplicate_top_level_assignment::duplicate_top_level_assignment::compute_package_duplicate_assignments;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
 use crate::lints::comments::invalid_chunk_suppression::invalid_chunk_suppression::invalid_chunk_suppression;
@@ -36,7 +37,7 @@ use crate::rule_options::ResolvedRuleOptions;
 use crate::rule_set::RuleSet;
 use crate::utils::*;
 
-pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
+pub fn check(mut config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
     // Ensure that all paths are covered by VCS. This is conservative because
     // technically we could apply fixes on those that are covered by VCS and
     // error for the others, but I'd rather be on the safe side and force the
@@ -47,6 +48,15 @@ pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Err
             let first_path = path_strings.first().unwrap().clone();
             return vec![(first_path, Err(e))];
         }
+    }
+
+    // Pre-compute cross-file duplicate assignments for the package rule.
+    // This must happen before the config is wrapped in Arc.
+    if config
+        .rules_to_apply
+        .contains(&Rule::DuplicateTopLevelAssignment)
+    {
+        config.package_duplicate_assignments = compute_package_duplicate_assignments(&config.paths);
     }
 
     // Wrap config in Arc to avoid expensive clones in parallel execution
@@ -128,6 +138,9 @@ pub struct Checker {
     pub suppression: SuppressionManager,
     // Per-rule options resolved from configuration
     pub rule_options: ResolvedRuleOptions,
+    // Pre-computed duplicate top-level assignments for this file (from
+    // cross-file package analysis). Each entry is (name, lhs_range).
+    pub package_duplicate_assignments: Vec<(String, biome_rowan::TextRange)>,
 }
 
 impl Checker {
@@ -138,6 +151,7 @@ impl Checker {
             minimum_r_version: None,
             suppression,
             rule_options,
+            package_duplicate_assignments: vec![],
         }
     }
 
@@ -179,6 +193,11 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     let mut checker = Checker::new(suppression, config.rule_options.clone());
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
+    checker.package_duplicate_assignments = config
+        .package_duplicate_assignments
+        .get(file)
+        .cloned()
+        .unwrap_or_default();
 
     // We run checks at expression-level. This gathers all violations, no matter
     // whether they are suppressed or not. They are filtered out in the next
@@ -452,6 +471,23 @@ pub fn check_document(expressions: &RExpressionList, checker: &mut Checker) -> a
             unmatched_range_suppression_end(&checker.suppression.unmatched_end_suppressions);
         for diagnostic in end_diagnostics {
             checker.report_diagnostic(Some(diagnostic));
+        }
+    }
+
+    // Emit package-level duplicate top-level assignment diagnostics.
+    // This must come before suppression filtering so that # jarl-ignore
+    // and # jarl-ignore-file comments can suppress these diagnostics.
+    if checker.is_rule_enabled(Rule::DuplicateTopLevelAssignment) {
+        for (name, range) in &checker.package_duplicate_assignments.clone() {
+            checker.report_diagnostic(Some(Diagnostic::new(
+                ViolationData::new(
+                    "duplicate_top_level_assignment".to_string(),
+                    format!("`{name}` is defined more than once in this package."),
+                    None,
+                ),
+                *range,
+                Fix::empty(),
+            )));
         }
     }
 

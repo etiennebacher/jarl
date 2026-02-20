@@ -7,6 +7,7 @@ pub(crate) mod class_equals;
 pub(crate) mod coalesce;
 pub(crate) mod comparison_negation;
 pub(crate) mod download_file;
+pub(crate) mod duplicate_top_level_assignment;
 pub(crate) mod duplicated_arguments;
 pub(crate) mod empty_assignment;
 pub(crate) mod equals_na;

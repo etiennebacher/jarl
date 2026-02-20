@@ -15,14 +15,14 @@ fn test_no_git_repo_does_not_block_lint() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--fix")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @r"
+                                    &mut Command::new(binary_path())
+                                        .current_dir(directory)
+                                        .arg("check")
+                                        .arg(".")
+                                        .arg("--fix")
+                                        .run()
+                                        .normalize_os_executable_name(),
+                                    @r"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -31,7 +31,7 @@ exit_code: 255
 Error: `jarl check --fix` can potentially perform destructive changes but no Version Control System (e.g. Git) was found on this project, so no fixes were applied. 
 Add `--allow-no-vcs` to the call to apply the fixes.
 "
-                        );
+                                );
     Ok(())
 }
 
@@ -50,14 +50,14 @@ fn test_no_git_repo_blocks_fix() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path_2), test_contents)?;
 
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--fix")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @r"
+                                    &mut Command::new(binary_path())
+                                        .current_dir(directory)
+                                        .arg("check")
+                                        .arg(".")
+                                        .arg("--fix")
+                                        .run()
+                                        .normalize_os_executable_name(),
+                                    @r"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -66,7 +66,7 @@ exit_code: 255
 Error: `jarl check --fix` can potentially perform destructive changes but no Version Control System (e.g. Git) was found on this project, so no fixes were applied. 
 Add `--allow-no-vcs` to the call to apply the fixes.
 "
-                        );
+                                );
     Ok(())
 }
 
@@ -81,15 +81,15 @@ fn test_no_git_repo_allow_no_vcs() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--fix")
-                                .arg("--allow-no-vcs")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @r"
+                                    &mut Command::new(binary_path())
+                                        .current_dir(directory)
+                                        .arg("check")
+                                        .arg(".")
+                                        .arg("--fix")
+                                        .arg("--allow-no-vcs")
+                                        .run()
+                                        .normalize_os_executable_name(),
+                                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -97,7 +97,7 @@ All checks passed!
 
 ----- stderr -----
 "
-                        );
+                                );
     Ok(())
 }
 
@@ -122,14 +122,14 @@ fn test_mixed_vcs_coverage_blocks_fix() -> anyhow::Result<()> {
 
     // Try to fix both subdirs - should fail because one is not in VCS
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--fix")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @r"
+                                    &mut Command::new(binary_path())
+                                        .current_dir(directory)
+                                        .arg("check")
+                                        .arg(".")
+                                        .arg("--fix")
+                                        .run()
+                                        .normalize_os_executable_name(),
+                                    @r"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -138,6 +138,6 @@ exit_code: 255
 Error: `jarl check --fix` can potentially perform destructive changes but no Version Control System (e.g. Git) was found on this project, so no fixes were applied. 
 Add `--allow-no-vcs` to the call to apply the fixes.
 "
-                        );
+                                );
     Ok(())
 }

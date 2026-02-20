@@ -7,7 +7,12 @@ use crate::{
 };
 use air_r_syntax::RSyntaxKind;
 use anyhow::Result;
-use std::{collections::HashSet, fs, path::PathBuf};
+use biome_rowan::TextRange;
+use std::{
+    collections::{HashMap, HashSet},
+    fs,
+    path::PathBuf,
+};
 
 use crate::rule_options::assignment::ResolvedAssignmentOptions;
 
@@ -80,6 +85,10 @@ pub struct Config {
     pub fixable: Option<HashSet<String>>,
     /// Resolved per-rule options
     pub rule_options: ResolvedRuleOptions,
+    /// Pre-computed per-file duplicate top-level assignment data.
+    /// Keyed by relativized file path. Value is a list of (name, lhs_range)
+    /// pairs that should be flagged as duplicates.
+    pub package_duplicate_assignments: HashMap<PathBuf, Vec<(String, TextRange)>>,
 }
 
 pub fn build_config(
@@ -155,6 +164,7 @@ pub fn build_config(
         unfixable: unfixable_toml,
         fixable: fixable_toml,
         rule_options,
+        package_duplicate_assignments: HashMap::new(),
     })
 }
 

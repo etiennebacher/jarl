@@ -6,11 +6,11 @@ use crate::helpers::binary_path;
 #[test]
 fn test_help() {
     insta::assert_snapshot!(
-                            Command::new(binary_path())
-                                .arg("help")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @r"
+                                    Command::new(binary_path())
+                                        .arg("help")
+                                        .run()
+                                        .normalize_os_executable_name(),
+                                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -34,13 +34,13 @@ For help with a specific command, see: `jarl help <command>`.
 
 ----- stderr -----
 "
-                        );
+                                );
     insta::assert_snapshot!(
-                            Command::new(binary_path())
-                                .arg("--help")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @r"
+                                    Command::new(binary_path())
+                                        .arg("--help")
+                                        .run()
+                                        .normalize_os_executable_name(),
+                                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -64,13 +64,13 @@ For help with a specific command, see: `jarl help <command>`.
 
 ----- stderr -----
 "
-                        );
+                                );
     insta::assert_snapshot!(
-                            Command::new(binary_path())
-                                .arg("-h")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @r"
+                                    Command::new(binary_path())
+                                        .arg("-h")
+                                        .run()
+                                        .normalize_os_executable_name(),
+                                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -94,7 +94,7 @@ For help with a specific command, see: `jarl help <command>`.
 
 ----- stderr -----
 "
-                        );
+                                );
 }
 
 #[test]

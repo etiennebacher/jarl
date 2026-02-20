@@ -22,17 +22,17 @@ y <- 2
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--select")
-                                .arg("assignment")
-                                .arg("--assignment")
-                                .arg("<-")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @r"
+                                    &mut Command::new(binary_path())
+                                        .current_dir(directory)
+                                        .arg("check")
+                                        .arg(".")
+                                        .arg("--select")
+                                        .arg("assignment")
+                                        .arg("--assignment")
+                                        .arg("<-")
+                                        .run()
+                                        .normalize_os_executable_name(),
+                                    @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -56,20 +56,20 @@ Found 2 errors.
 ----- stderr -----
 Warning: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
 "
-                        );
+                                );
 
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--select")
-                                .arg("assignment")
-                                .arg("--assignment")
-                                .arg("=")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @r"
+                                    &mut Command::new(binary_path())
+                                        .current_dir(directory)
+                                        .arg("check")
+                                        .arg(".")
+                                        .arg("--select")
+                                        .arg("assignment")
+                                        .arg("--assignment")
+                                        .arg("=")
+                                        .run()
+                                        .normalize_os_executable_name(),
+                                    @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -93,7 +93,7 @@ Found 2 errors.
 ----- stderr -----
 Warning: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
 "
-                        );
+                                );
 
     Ok(())
 }
@@ -111,17 +111,17 @@ y <- 2
 ";
     std::fs::write(directory.join(test_path), test_contents)?;
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--select")
-                                .arg("assignment")
-                                .arg("--assignment")
-                                .arg("foo")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @r"success: false
+                                    &mut Command::new(binary_path())
+                                        .current_dir(directory)
+                                        .arg("check")
+                                        .arg(".")
+                                        .arg("--select")
+                                        .arg("assignment")
+                                        .arg("--assignment")
+                                        .arg("foo")
+                                        .run()
+                                        .normalize_os_executable_name(),
+                                    @r"success: false
 exit_code: 255
 ----- stdout -----
 
@@ -129,20 +129,20 @@ exit_code: 255
 jarl failed
   Cause: Invalid value in `--assignment`: foo
 "
-                        );
+                                );
 
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--select")
-                                .arg("assignment")
-                                .arg("--assignment")
-                                .arg("1")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @r"success: false
+                                    &mut Command::new(binary_path())
+                                        .current_dir(directory)
+                                        .arg("check")
+                                        .arg(".")
+                                        .arg("--select")
+                                        .arg("assignment")
+                                        .arg("--assignment")
+                                        .arg("1")
+                                        .run()
+                                        .normalize_os_executable_name(),
+                                    @r"success: false
 exit_code: 255
 ----- stdout -----
 
@@ -150,7 +150,7 @@ exit_code: 255
 jarl failed
   Cause: Invalid value in `--assignment`: 1
 "
-                        );
+                                );
 
     Ok(())
 }
@@ -180,15 +180,15 @@ operator = "<-"
 "#,
     )?;
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--select")
-                                .arg("assignment")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @r"
+                                    &mut Command::new(binary_path())
+                                        .current_dir(directory)
+                                        .arg("check")
+                                        .arg(".")
+                                        .arg("--select")
+                                        .arg("assignment")
+                                        .run()
+                                        .normalize_os_executable_name(),
+                                    @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -211,7 +211,7 @@ Found 2 errors.
 
 ----- stderr -----
 "
-                        );
+                                );
 
     std::fs::write(
         directory.join("jarl.toml"),
@@ -221,15 +221,15 @@ operator = "="
 "#,
     )?;
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--select")
-                                .arg("assignment")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @r"
+                                    &mut Command::new(binary_path())
+                                        .current_dir(directory)
+                                        .arg("check")
+                                        .arg(".")
+                                        .arg("--select")
+                                        .arg("assignment")
+                                        .run()
+                                        .normalize_os_executable_name(),
+                                    @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -252,7 +252,7 @@ Found 2 errors.
 
 ----- stderr -----
 "
-                        );
+                                );
 
     Ok(())
 }
@@ -307,16 +307,16 @@ operator = 1
 "#,
     )?;
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--select")
-                                .arg("assignment")
-                                .run()
-                                .normalize_os_executable_name()
-                                .normalize_temp_paths(),
-                            @r"
+                                    &mut Command::new(binary_path())
+                                        .current_dir(directory)
+                                        .arg("check")
+                                        .arg(".")
+                                        .arg("--select")
+                                        .arg("assignment")
+                                        .run()
+                                        .normalize_os_executable_name()
+                                        .normalize_temp_paths(),
+                                    @r"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -331,7 +331,7 @@ TOML parse error at line 3, column 12
 invalid type: integer `1`, expected a string
 
 "
-                        );
+                                );
 
     Ok(())
 }
@@ -360,17 +360,17 @@ operator = "<-"
 "#,
     )?;
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--select")
-                                .arg("assignment")
-                                .arg("--assignment")
-                                .arg("=")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @r"
+                                    &mut Command::new(binary_path())
+                                        .current_dir(directory)
+                                        .arg("check")
+                                        .arg(".")
+                                        .arg("--select")
+                                        .arg("assignment")
+                                        .arg("--assignment")
+                                        .arg("=")
+                                        .run()
+                                        .normalize_os_executable_name(),
+                                    @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -394,7 +394,7 @@ Found 2 errors.
 ----- stderr -----
 Warning: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
 "
-                        );
+                                );
     Ok(())
 }
 
