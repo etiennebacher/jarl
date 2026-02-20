@@ -84,11 +84,9 @@ pub struct Config {
 
 pub fn build_config(
     check_config: &ArgsConfig,
-    settings: Option<&Settings>,
+    toml_settings: Option<&Settings>,
     paths: Vec<PathBuf>,
 ) -> Result<Config> {
-    let toml_settings = settings;
-
     // Determining the minimum R version has to come first since if it is
     // unknown then only rules that don't have a version restriction are
     // selected.
