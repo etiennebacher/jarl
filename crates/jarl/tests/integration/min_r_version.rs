@@ -18,13 +18,13 @@ fn test_min_r_version_from_cli_only() -> anyhow::Result<()> {
     // By default, if we don't know the min R version, we disable rules that
     // only exist starting from a specific version.
     insta::assert_snapshot!(
-                    &mut Command::new(binary_path())
-                        .current_dir(directory)
-                        .arg("check")
-                        .arg(".")
-                        .run()
-                        .normalize_os_executable_name(),
-                    @r"
+                        &mut Command::new(binary_path())
+                            .current_dir(directory)
+                            .arg("check")
+                            .arg(".")
+                            .run()
+                            .normalize_os_executable_name(),
+                        @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -32,20 +32,20 @@ All checks passed!
 
 ----- stderr -----
 "
-                );
+                    );
 
     // This should not report a lint (the project could be using 4.4.0 so
     // grepv() wouldn't exist).
     insta::assert_snapshot!(
-                    &mut Command::new(binary_path())
-                        .current_dir(directory)
-                        .arg("check")
-                        .arg(".")
-                        .arg("--min-r-version")
-                        .arg("4.4.0")
-                        .run()
-                        .normalize_os_executable_name(),
-                    @r"
+                        &mut Command::new(binary_path())
+                            .current_dir(directory)
+                            .arg("check")
+                            .arg(".")
+                            .arg("--min-r-version")
+                            .arg("4.4.0")
+                            .run()
+                            .normalize_os_executable_name(),
+                        @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -53,18 +53,18 @@ All checks passed!
 
 ----- stderr -----
 "
-                );
+                    );
     // This should report a lint.
     insta::assert_snapshot!(
-                    &mut Command::new(binary_path())
-                        .current_dir(directory)
-                        .arg("check")
-                        .arg(".")
-                        .arg("--min-r-version")
-                        .arg("4.6.0")
-                        .run()
-                        .normalize_os_executable_name(),
-                    @r"
+                        &mut Command::new(binary_path())
+                            .current_dir(directory)
+                            .arg("check")
+                            .arg(".")
+                            .arg("--min-r-version")
+                            .arg("4.6.0")
+                            .run()
+                            .normalize_os_executable_name(),
+                        @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -81,7 +81,7 @@ Found 1 error.
 
 ----- stderr -----
 "
-                );
+                    );
 
     Ok(())
 }
@@ -106,13 +106,13 @@ Version: 1.0.0
 Depends: R (>= 4.4.0), utils, stats"#,
     )?;
     insta::assert_snapshot!(
-                    &mut Command::new(binary_path())
-                        .current_dir(directory)
-                        .arg("check")
-                        .arg(".")
-                        .run()
-                        .normalize_os_executable_name(),
-                    @r"
+                        &mut Command::new(binary_path())
+                            .current_dir(directory)
+                            .arg("check")
+                            .arg(".")
+                            .run()
+                            .normalize_os_executable_name(),
+                        @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -120,7 +120,7 @@ All checks passed!
 
 ----- stderr -----
 "
-                );
+                    );
 
     // This should report a lint.
     std::fs::write(
@@ -130,13 +130,13 @@ Version: 1.0.0
 Depends: R (>= 4.6.0), utils, stats"#,
     )?;
     insta::assert_snapshot!(
-                    &mut Command::new(binary_path())
-                        .current_dir(directory)
-                        .arg("check")
-                        .arg(".")
-                        .run()
-                        .normalize_os_executable_name(),
-                    @r"
+                        &mut Command::new(binary_path())
+                            .current_dir(directory)
+                            .arg("check")
+                            .arg(".")
+                            .run()
+                            .normalize_os_executable_name(),
+                        @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -153,7 +153,7 @@ Found 1 error.
 
 ----- stderr -----
 "
-                );
+                    );
 
     Ok(())
 }
