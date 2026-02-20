@@ -38,6 +38,8 @@ Jarl could fix this to be `!isTRUE(all.equal(x, y))` instead, but this would cha
 By default, only safe fixes are applied.
 To apply the unsafe fixes, use `--unsafe-fixes`, e.g. `jarl check . --fix --unsafe-fixes`.
 
+Note that Jarl is not a code formatter, so automatic fixes may not match your expected code style.
+
 ## Selecting and ignoring rules
 
 We can apply a subset of rules using the `--select` and `--ignore` parameters:
