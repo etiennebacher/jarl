@@ -1,4 +1,4 @@
-use annotate_snippets::{Level, Renderer, Snippet};
+use annotate_snippets::{AnnotationKind, Group, Level, Renderer, Snippet};
 use biome_rowan::TextRange;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -159,7 +159,7 @@ impl PartialOrd for Diagnostic {
 /// (e.g. the CLI uses a hyperlinked rule name, while tests use the plain name).
 pub fn render_diagnostic(
     source: &str,
-    origin: &str,
+    path: &str,
     title: &str,
     diagnostic: &Diagnostic,
     renderer: &Renderer,
@@ -167,20 +167,20 @@ pub fn render_diagnostic(
     let start_offset: usize = diagnostic.range.start().into();
     let end_offset: usize = diagnostic.range.end().into();
 
-    let snippet = Snippet::source(source)
-        .origin(origin)
-        .fold(true)
-        .annotation(
-            Level::Warning
-                .span(start_offset..end_offset)
-                .label(&diagnostic.message.body),
-        );
+    let snippet = Snippet::source(source).path(path).fold(true).annotation(
+        AnnotationKind::Primary
+            .span(start_offset..end_offset)
+            .label(&diagnostic.message.body),
+    );
 
-    let mut message = Level::Warning.title(title).snippet(snippet);
+    let primary_group = Group::with_title(Level::WARNING.secondary_title(title)).element(snippet);
+    let mut groups = vec![primary_group];
 
     if let Some(suggestion_text) = &diagnostic.message.suggestion {
-        message = message.footer(Level::Help.title(suggestion_text));
+        groups.push(Group::with_title(
+            Level::HELP.primary_title(suggestion_text.as_str()),
+        ));
     }
 
-    format!("{}", renderer.render(message))
+    renderer.render(groups.as_slice()).to_string()
 }

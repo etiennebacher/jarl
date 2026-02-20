@@ -49,7 +49,7 @@ regex.workspace = true
 git2 = {version  = "0.20.2", default-features = false}
 
 schemars = { workspace = true, optional = true }
-annotate-snippets = "0.11"
+annotate-snippets = "0.12"
 
 [dev-dependencies]
 insta.workspace = true

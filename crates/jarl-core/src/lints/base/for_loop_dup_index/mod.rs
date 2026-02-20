@@ -62,9 +62,9 @@ mod tests {
          --> <test>:2:22
           |
         2 |                 for (x in 1:4) {
-          |                      -------- This index variable is already used in a parent `for` loop.
+          |                      ^^^^^^^^ This index variable is already used in a parent `for` loop.
           |
-          = help: Rename this index variable to avoid unexpected results.
+        help: Rename this index variable to avoid unexpected results.
         Found 1 error.
         "
         );
@@ -79,9 +79,9 @@ mod tests {
          --> <test>:2:24
           |
         2 |                 for (  x    in 1:4) {
-          |                        ----------- This index variable is already used in a parent `for` loop.
+          |                        ^^^^^^^^^^^ This index variable is already used in a parent `for` loop.
           |
-          = help: Rename this index variable to avoid unexpected results.
+        help: Rename this index variable to avoid unexpected results.
         Found 1 error.
         "
         );
@@ -98,9 +98,9 @@ mod tests {
          --> <test>:4:22
           |
         4 |                 for (i in 1:4) {
-          |                      -------- This index variable is already used in a parent `for` loop.
+          |                      ^^^^^^^^ This index variable is already used in a parent `for` loop.
           |
-          = help: Rename this index variable to avoid unexpected results.
+        help: Rename this index variable to avoid unexpected results.
         Found 1 error.
         "
         );
@@ -117,9 +117,9 @@ mod tests {
          --> <test>:3:26
           |
         3 |                     for (i in 1:5) {
-          |                          -------- This index variable is already used in a parent `for` loop.
+          |                          ^^^^^^^^ This index variable is already used in a parent `for` loop.
           |
-          = help: Rename this index variable to avoid unexpected results.
+        help: Rename this index variable to avoid unexpected results.
         Found 1 error.
         "
         );
@@ -136,9 +136,9 @@ mod tests {
          --> <test>:2:22
           |
         2 |                 for (i in 1:4) {
-          |                      -------- This index variable is already used in a parent `for` loop.
+          |                      ^^^^^^^^ This index variable is already used in a parent `for` loop.
           |
-          = help: Rename this index variable to avoid unexpected results.
+        help: Rename this index variable to avoid unexpected results.
         Found 1 error.
         "
         );

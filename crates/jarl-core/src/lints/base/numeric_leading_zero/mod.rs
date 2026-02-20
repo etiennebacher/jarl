@@ -18,8 +18,7 @@ mod tests {
          --> <test>:1:6
           |
         1 | a <- .1
-          |      -- Include the leading zero for fractional numeric constants.
-          |
+          |      ^^ Include the leading zero for fractional numeric constants.
         Found 1 error.
         "
         );
@@ -30,8 +29,7 @@ mod tests {
          --> <test>:1:7
           |
         1 | b <- -.2
-          |       -- Include the leading zero for fractional numeric constants.
-          |
+          |       ^^ Include the leading zero for fractional numeric constants.
         Found 1 error.
         "
         );
@@ -42,8 +40,7 @@ mod tests {
          --> <test>:1:6
           |
         1 | c <- .3 + 4.5i
-          |      -- Include the leading zero for fractional numeric constants.
-          |
+          |      ^^ Include the leading zero for fractional numeric constants.
         Found 1 error.
         "
         );
@@ -58,8 +55,7 @@ mod tests {
          --> <test>:1:6
           |
         1 | e <- .9e10
-          |      ----- Include the leading zero for fractional numeric constants.
-          |
+          |      ^^^^^ Include the leading zero for fractional numeric constants.
         Found 1 error.
         "
         );

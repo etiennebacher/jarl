@@ -18,8 +18,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | length(x != 0)
-          | -------------- Checking the length of a logical vector is likely a mistake
-          |
+          | ^^^^^^^^^^^^^^ Checking the length of a logical vector is likely a mistake
         Found 1 error.
         "
         );
@@ -30,8 +29,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | length(x >= 0)
-          | -------------- Checking the length of a logical vector is likely a mistake
-          |
+          | ^^^^^^^^^^^^^^ Checking the length of a logical vector is likely a mistake
         Found 1 error.
         "
         );
@@ -42,8 +40,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | length(x <= 0)
-          | -------------- Checking the length of a logical vector is likely a mistake
-          |
+          | ^^^^^^^^^^^^^^ Checking the length of a logical vector is likely a mistake
         Found 1 error.
         "
         );
@@ -54,8 +51,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | length(x > 0)
-          | ------------- Checking the length of a logical vector is likely a mistake
-          |
+          | ^^^^^^^^^^^^^ Checking the length of a logical vector is likely a mistake
         Found 1 error.
         "
         );
@@ -66,8 +62,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | length(x < 0)
-          | ------------- Checking the length of a logical vector is likely a mistake
-          |
+          | ^^^^^^^^^^^^^ Checking the length of a logical vector is likely a mistake
         Found 1 error.
         "
         );
@@ -78,8 +73,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | length(x < 0)
-          | ------------- Checking the length of a logical vector is likely a mistake
-          |
+          | ^^^^^^^^^^^^^ Checking the length of a logical vector is likely a mistake
         Found 1 error.
         "
         );
@@ -90,8 +84,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | length(x + y == 2)
-          | ------------------ Checking the length of a logical vector is likely a mistake
-          |
+          | ^^^^^^^^^^^^^^^^^^ Checking the length of a logical vector is likely a mistake
         Found 1 error.
         "
         );

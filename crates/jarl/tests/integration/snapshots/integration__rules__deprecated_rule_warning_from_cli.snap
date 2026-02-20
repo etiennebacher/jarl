@@ -2,7 +2,6 @@
 source: crates/jarl/tests/integration/rules.rs
 expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--select\").arg(\"browser\").run().normalize_os_executable_name()"
 ---
-
 success: false
 exit_code: 1
 ----- stdout -----
@@ -10,8 +9,7 @@ warning: browser
  --> test.R:1:1
   |
 1 | browser()
-  | --------- Calls to `browser()` should be removed.
-  |
+  | ^^^^^^^^^ Calls to `browser()` should be removed.
 
 Found 1 error.
 

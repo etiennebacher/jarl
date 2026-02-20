@@ -52,9 +52,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_equal(length(x), 2)
-          | -------------------------- `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
           |
-          = help: Use `expect_length(x, n)` instead.
+        help: Use `expect_length(x, n)` instead.
         Found 1 error.
         "
         );
@@ -65,9 +65,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | testthat::expect_equal(length(x), 2)
-          | ------------------------------------ `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
           |
-          = help: Use `expect_length(x, n)` instead.
+        help: Use `expect_length(x, n)` instead.
         Found 1 error.
         "
         );
@@ -78,9 +78,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_identical(length(x), 2)
-          | ------------------------------ `expect_length(x, n)` is better than `expect_identical(length(x), n)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_length(x, n)` is better than `expect_identical(length(x), n)`.
           |
-          = help: Use `expect_length(x, n)` instead.
+        help: Use `expect_length(x, n)` instead.
         Found 1 error.
         "
         );
@@ -91,9 +91,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_equal(2, length(x))
-          | -------------------------- `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
           |
-          = help: Use `expect_length(x, n)` instead.
+        help: Use `expect_length(x, n)` instead.
         Found 1 error.
         "
         );
@@ -104,9 +104,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_equal(2L, length(x))
-          | --------------------------- `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
           |
-          = help: Use `expect_length(x, n)` instead.
+        help: Use `expect_length(x, n)` instead.
         Found 1 error.
         "
         );
@@ -117,9 +117,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_equal(foo(y), length(x))
-          | ------------------------------- `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
           |
-          = help: Use `expect_length(x, n)` instead.
+        help: Use `expect_length(x, n)` instead.
         Found 1 error.
         "
         );
@@ -151,9 +151,9 @@ mod tests {
           |
         1 | / expect_equal(# comment
         2 | | length(x), 2L)
-          | |______________- `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
+          | |______________^ `expect_length(x, n)` is better than `expect_equal(length(x), n)`.
           |
-          = help: Use `expect_length(x, n)` instead.
+        help: Use `expect_length(x, n)` instead.
         Found 1 error.
         "
         );

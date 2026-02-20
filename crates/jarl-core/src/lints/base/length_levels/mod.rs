@@ -18,9 +18,9 @@ mod tests {
          --> <test>:1:3
           |
         1 | 2:length(levels(x))
-          |   ----------------- `length(levels(...))` is less readable than `nlevels(...)`.
+          |   ^^^^^^^^^^^^^^^^^ `length(levels(...))` is less readable than `nlevels(...)`.
           |
-          = help: Use `nlevels(...)` instead.
+        help: Use `nlevels(...)` instead.
         Found 1 error.
         "
         );
@@ -31,9 +31,9 @@ mod tests {
          --> <test>:1:3
           |
         1 | 2:length(levels(foo(a)))
-          |   ---------------------- `length(levels(...))` is less readable than `nlevels(...)`.
+          |   ^^^^^^^^^^^^^^^^^^^^^^ `length(levels(...))` is less readable than `nlevels(...)`.
           |
-          = help: Use `nlevels(...)` instead.
+        help: Use `nlevels(...)` instead.
         Found 1 error.
         "
         );
@@ -66,9 +66,9 @@ mod tests {
           |
         1 | / levels(x) |> 
         2 | |  length()
-          | |_________- `length(levels(...))` is less readable than `nlevels(...)`.
+          | |_________^ `length(levels(...))` is less readable than `nlevels(...)`.
           |
-          = help: Use `nlevels(...)` instead.
+        help: Use `nlevels(...)` instead.
         Found 1 error.
         "
         );
@@ -81,9 +81,9 @@ mod tests {
         1 | / x |> 
         2 | |  levels() |> 
         3 | |  length()
-          | |_________- `length(levels(...))` is less readable than `nlevels(...)`.
+          | |_________^ `length(levels(...))` is less readable than `nlevels(...)`.
           |
-          = help: Use `nlevels(...)` instead.
+        help: Use `nlevels(...)` instead.
         Found 1 error.
         "
         );

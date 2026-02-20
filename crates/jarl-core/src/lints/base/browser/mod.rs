@@ -25,8 +25,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | browser()
-          | --------- Calls to `browser()` should be removed.
-          |
+          | ^^^^^^^^^ Calls to `browser()` should be removed.
         Found 1 error.
         "
         );
@@ -37,8 +36,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | utils::browser()
-          | ---------------- Calls to `browser()` should be removed.
-          |
+          | ^^^^^^^^^^^^^^^^ Calls to `browser()` should be removed.
         Found 1 error.
         "
         );
@@ -49,8 +47,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | browser(text = 'remove before commit')
-          | -------------------------------------- Calls to `browser()` should be removed.
-          |
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Calls to `browser()` should be removed.
         Found 1 error.
         "
         );
@@ -61,8 +58,7 @@ mod tests {
          --> <test>:1:15
           |
         1 | if (x > 10) { browser(text = 'x is large') }
-          |               ---------------------------- Calls to `browser()` should be removed.
-          |
+          |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Calls to `browser()` should be removed.
         Found 1 error.
         "
         );
@@ -76,8 +72,7 @@ mod tests {
          --> <test>:1:15
           |
         1 | ( x < 10 ) || browser('big x')
-          |               ---------------- Calls to `browser()` should be removed.
-          |
+          |               ^^^^^^^^^^^^^^^^ Calls to `browser()` should be removed.
         Found 1 error.
         "
         );

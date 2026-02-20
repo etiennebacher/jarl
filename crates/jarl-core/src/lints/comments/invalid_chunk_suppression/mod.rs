@@ -18,11 +18,11 @@ mod tests {
          --> <test>:1:1
           |
         1 | #| jarl-ignore-chunk any_is_na: legacy code
-          | ------------------------------------------- This `jarl-ignore-chunk` comment is wrongly formatted.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ This `jarl-ignore-chunk` comment is wrongly formatted.
           |
-          = help: Use the YAML array form instead:
-                  #| jarl-ignore-chunk:
-                  #|   - <rule>: <reason>
+        help: Use the YAML array form instead:
+              #| jarl-ignore-chunk:
+              #|   - <rule>: <reason>
         Found 1 error.
         "
         );
@@ -38,11 +38,11 @@ mod tests {
          --> <test>:1:1
           |
         1 | # jarl-ignore-chunk any_is_na: legacy code
-          | ------------------------------------------ This `jarl-ignore-chunk` comment is wrongly formatted.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ This `jarl-ignore-chunk` comment is wrongly formatted.
           |
-          = help: Use the YAML array form instead:
-                  #| jarl-ignore-chunk:
-                  #|   - <rule>: <reason>
+        help: Use the YAML array form instead:
+              #| jarl-ignore-chunk:
+              #|   - <rule>: <reason>
         Found 1 error.
         "
         );

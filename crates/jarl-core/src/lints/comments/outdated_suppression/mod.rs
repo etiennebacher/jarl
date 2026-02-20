@@ -56,9 +56,9 @@ x <- 1", "outdated_suppression,any_is_na"), @r"
          --> <test>:2:1
           |
         2 | # jarl-ignore any_is_na: <reason>
-          | --------------------------------- This suppression comment is unused, no violation would be reported without it.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ This suppression comment is unused, no violation would be reported without it.
           |
-          = help: Remove this suppression comment or verify that it's still needed.
+        help: Remove this suppression comment or verify that it's still needed.
         Found 1 error.
         "
         );
@@ -72,9 +72,9 @@ f <- function(x) {
          --> <test>:2:1
           |
         2 | # jarl-ignore any_is_na: <reason>
-          | --------------------------------- This suppression comment is unused, no violation would be reported without it.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ This suppression comment is unused, no violation would be reported without it.
           |
-          = help: Remove this suppression comment or verify that it's still needed.
+        help: Remove this suppression comment or verify that it's still needed.
         Found 1 error.
         "
         );
@@ -87,9 +87,9 @@ y <- 2", "outdated_suppression,any_is_na"), @r"
          --> <test>:2:1
           |
         2 | # jarl-ignore-file any_is_na: <reason>
-          | -------------------------------------- This suppression comment is unused, no violation would be reported without it.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ This suppression comment is unused, no violation would be reported without it.
           |
-          = help: Remove this suppression comment or verify that it's still needed.
+        help: Remove this suppression comment or verify that it's still needed.
         Found 1 error.
         "
         );
@@ -103,9 +103,9 @@ y <- 2", "outdated_suppression,any_is_na"), @r"
          --> <test>:2:1
           |
         2 | # jarl-ignore-start any_is_na: <reason>
-          | --------------------------------------- This suppression comment is unused, no violation would be reported without it.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ This suppression comment is unused, no violation would be reported without it.
           |
-          = help: Remove this suppression comment or verify that it's still needed.
+        help: Remove this suppression comment or verify that it's still needed.
         Found 1 error.
         "
         );
@@ -120,16 +120,16 @@ x == NA", "outdated_suppression,any_is_na,equals_na"), @r"
          --> <test>:3:1
           |
         3 | x == NA
-          | ------- Comparing to NA with `==`, `!=` or `%in%` is problematic.
+          | ^^^^^^^ Comparing to NA with `==`, `!=` or `%in%` is problematic.
           |
-          = help: Use `is.na()` instead.
+        help: Use `is.na()` instead.
         warning: outdated_suppression
          --> <test>:2:1
           |
         2 | # jarl-ignore any_is_na: <reason>
-          | --------------------------------- This suppression comment is unused, no violation would be reported without it.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ This suppression comment is unused, no violation would be reported without it.
           |
-          = help: Remove this suppression comment or verify that it's still needed.
+        help: Remove this suppression comment or verify that it's still needed.
         Found 2 errors.
         "
         );

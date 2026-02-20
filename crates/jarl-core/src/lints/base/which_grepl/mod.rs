@@ -18,9 +18,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | which(grepl('^a', x))
-          | --------------------- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
+          | ^^^^^^^^^^^^^^^^^^^^^ `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
-          = help: Use `grep(pattern, x)` instead.
+        help: Use `grep(pattern, x)` instead.
         Found 1 error.
         "
         );
@@ -31,9 +31,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | which(grepl('^a', x, perl = TRUE, fixed = TRUE))
-          | ------------------------------------------------ `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
-          = help: Use `grep(pattern, x)` instead.
+        help: Use `grep(pattern, x)` instead.
         Found 1 error.
         "
         );
@@ -70,9 +70,9 @@ mod tests {
           |
         1 | / grepl('^a', x) |> 
         2 | |  which()
-          | |________- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
+          | |________^ `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
-          = help: Use `grep(pattern, x)` instead.
+        help: Use `grep(pattern, x)` instead.
         Found 1 error.
         "
         );

@@ -53,9 +53,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | sprintf('a')
-          | ------------ `sprintf()` without special characters is useless.
+          | ^^^^^^^^^^^^ `sprintf()` without special characters is useless.
           |
-          = help: Use directly the input of `sprintf()` instead.
+        help: Use directly the input of `sprintf()` instead.
         Found 1 error.
         "
         );
@@ -66,9 +66,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | sprintf("a")
-          | ------------ `sprintf()` without special characters is useless.
+          | ^^^^^^^^^^^^ `sprintf()` without special characters is useless.
           |
-          = help: Use directly the input of `sprintf()` instead.
+        help: Use directly the input of `sprintf()` instead.
         Found 1 error.
         "#
         );
@@ -80,9 +80,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | sprintf('%%')
-          | ------------- `sprintf()` without special characters is useless.
+          | ^^^^^^^^^^^^^ `sprintf()` without special characters is useless.
           |
-          = help: Use directly the input of `sprintf()` instead.
+        help: Use directly the input of `sprintf()` instead.
         Found 1 error.
         "
         );
@@ -93,9 +93,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | sprintf('%%', '')
-          | ----------------- `sprintf()` without special characters is useless.
+          | ^^^^^^^^^^^^^^^^^ `sprintf()` without special characters is useless.
           |
-          = help: Use directly the input of `sprintf()` instead.
+        help: Use directly the input of `sprintf()` instead.
         Found 1 error.
         "
         );
@@ -124,9 +124,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | sprintf('%a')
-          | ------------- Mismatch between number of special characters and number of arguments.
+          | ^^^^^^^^^^^^^ Mismatch between number of special characters and number of arguments.
           |
-          = help: Found 1 special character(s) and 0 argument(s).
+        help: Found 1 special character(s) and 0 argument(s).
         Found 1 error.
         "
         );
@@ -137,9 +137,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | sprintf('%a %s', 1)
-          | ------------------- Mismatch between number of special characters and number of arguments.
+          | ^^^^^^^^^^^^^^^^^^^ Mismatch between number of special characters and number of arguments.
           |
-          = help: Found 2 special character(s) and 1 argument(s).
+        help: Found 2 special character(s) and 1 argument(s).
         Found 1 error.
         "
         );
@@ -151,9 +151,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | sprintf('hello %1$s %s', '1', '2')
-          | ---------------------------------- Mismatch between number of special characters and number of arguments.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Mismatch between number of special characters and number of arguments.
           |
-          = help: Found 1 special character(s) and 2 argument(s).
+        help: Found 1 special character(s) and 2 argument(s).
         Found 1 error.
         "
         );
@@ -179,8 +179,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | sprintf('%y', 'a')
-          | ------------------ `sprintf()` contains some invalid `%`.
-          |
+          | ^^^^^^^^^^^^^^^^^^ `sprintf()` contains some invalid `%`.
         Found 1 error.
         "
         );
@@ -191,8 +190,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | sprintf('%', 'a')
-          | ----------------- `sprintf()` contains some invalid `%`.
-          |
+          | ^^^^^^^^^^^^^^^^^ `sprintf()` contains some invalid `%`.
         Found 1 error.
         "
         );
@@ -203,8 +201,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | sprintf('1%', 'a')
-          | ------------------ `sprintf()` contains some invalid `%`.
-          |
+          | ^^^^^^^^^^^^^^^^^^ `sprintf()` contains some invalid `%`.
         Found 1 error.
         "
         );
@@ -215,8 +212,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | sprintf('%s%', 'a')
-          | ------------------- `sprintf()` contains some invalid `%`.
-          |
+          | ^^^^^^^^^^^^^^^^^^^ `sprintf()` contains some invalid `%`.
         Found 1 error.
         "
         );
@@ -241,9 +237,9 @@ mod tests {
         1 | / sprintf(
         2 | |  # a comment 
         3 | | 'a')
-          | |____- `sprintf()` without special characters is useless.
+          | |____^ `sprintf()` without special characters is useless.
           |
-          = help: Use directly the input of `sprintf()` instead.
+        help: Use directly the input of `sprintf()` instead.
         Found 1 error.
         "
         );

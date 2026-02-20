@@ -17,9 +17,9 @@ any_is_na(x)"), @r"
          --> <test>:2:1
           |
         2 | # jarl-ignore
-          | ------------- This comment isn't used by Jarl because it is missing a rule to ignore.
+          | ^^^^^^^^^^^^^ This comment isn't used by Jarl because it is missing a rule to ignore.
           |
-          = help: Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`.
+        help: Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`.
         Found 1 error.
         "
         );
@@ -31,9 +31,9 @@ any_is_na(x)"), @r"
          --> <test>:2:1
           |
         2 | #jarl-ignore
-          | ------------ This comment isn't used by Jarl because it is missing a rule to ignore.
+          | ^^^^^^^^^^^^ This comment isn't used by Jarl because it is missing a rule to ignore.
           |
-          = help: Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`.
+        help: Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`.
         Found 1 error.
         "
         );
@@ -45,9 +45,9 @@ any_is_na(x)"), @r"
          --> <test>:2:1
           |
         2 | #jarl-ignore: <reason>
-          | ---------------------- This comment isn't used by Jarl because it is missing a rule to ignore.
+          | ^^^^^^^^^^^^^^^^^^^^^^ This comment isn't used by Jarl because it is missing a rule to ignore.
           |
-          = help: Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`.
+        help: Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`.
         Found 1 error.
         "
         );
@@ -59,9 +59,9 @@ any_is_na(x)"), @r"
          --> <test>:2:1
           |
         2 | # jarl-ignore : <reason>
-          | ------------------------ This comment isn't used by Jarl because it is missing a rule to ignore.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^ This comment isn't used by Jarl because it is missing a rule to ignore.
           |
-          = help: Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`.
+        help: Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`.
         Found 1 error.
         "
         );

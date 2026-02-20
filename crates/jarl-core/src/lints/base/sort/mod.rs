@@ -32,9 +32,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x[order(x)]
-          | ----------- `x[order(x)]` is inefficient.
+          | ^^^^^^^^^^^ `x[order(x)]` is inefficient.
           |
-          = help: Use `sort(x)` instead.
+        help: Use `sort(x)` instead.
         Found 1 error.
         "
         );
@@ -45,9 +45,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x[order(x, decreasing = TRUE)]
-          | ------------------------------ `x[order(x)]` is inefficient.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `x[order(x)]` is inefficient.
           |
-          = help: Use `sort(x)` instead.
+        help: Use `sort(x)` instead.
         Found 1 error.
         "
         );
@@ -58,9 +58,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x[order(x, na.last = TRUE)]
-          | --------------------------- `x[order(x)]` is inefficient.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `x[order(x)]` is inefficient.
           |
-          = help: Use `sort(x)` instead.
+        help: Use `sort(x)` instead.
         Found 1 error.
         "
         );
@@ -71,9 +71,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x[order(x, method = "radix")]
-          | ----------------------------- `x[order(x)]` is inefficient.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `x[order(x)]` is inefficient.
           |
-          = help: Use `sort(x)` instead.
+        help: Use `sort(x)` instead.
         Found 1 error.
         "#
         );
@@ -84,9 +84,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x[order(x, method = "radix", na.last = TRUE)]
-          | --------------------------------------------- `x[order(x)]` is inefficient.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `x[order(x)]` is inefficient.
           |
-          = help: Use `sort(x)` instead.
+        help: Use `sort(x)` instead.
         Found 1 error.
         "#
         );
@@ -97,9 +97,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x[order(method = "radix", na.last = TRUE, x)]
-          | --------------------------------------------- `x[order(x)]` is inefficient.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `x[order(x)]` is inefficient.
           |
-          = help: Use `sort(x)` instead.
+        help: Use `sort(x)` instead.
         Found 1 error.
         "#
         );

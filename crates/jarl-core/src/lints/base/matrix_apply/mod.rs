@@ -37,9 +37,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | apply(x, 1, sum)
-          | ---------------- `apply(x, 1, sum)` is inefficient.
+          | ^^^^^^^^^^^^^^^^ `apply(x, 1, sum)` is inefficient.
           |
-          = help: Use `rowSums(x)` instead.
+        help: Use `rowSums(x)` instead.
         Found 1 error.
         "
         );
@@ -50,9 +50,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | base::apply(x, 1, sum)
-          | ---------------------- `apply(x, 1, sum)` is inefficient.
+          | ^^^^^^^^^^^^^^^^^^^^^^ `apply(x, 1, sum)` is inefficient.
           |
-          = help: Use `rowSums(x)` instead.
+        help: Use `rowSums(x)` instead.
         Found 1 error.
         "
         );
@@ -63,9 +63,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | apply(x, MARGIN = 1, FUN = sum)
-          | ------------------------------- `apply(x, 1, sum)` is inefficient.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `apply(x, 1, sum)` is inefficient.
           |
-          = help: Use `rowSums(x)` instead.
+        help: Use `rowSums(x)` instead.
         Found 1 error.
         "
         );
@@ -76,9 +76,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | apply(x, 1L, sum)
-          | ----------------- `apply(x, 1, sum)` is inefficient.
+          | ^^^^^^^^^^^^^^^^^ `apply(x, 1, sum)` is inefficient.
           |
-          = help: Use `rowSums(x)` instead.
+        help: Use `rowSums(x)` instead.
         Found 1 error.
         "
         );
@@ -89,9 +89,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | apply(x, 1, mean)
-          | ----------------- `apply(x, 1, mean)` is inefficient.
+          | ^^^^^^^^^^^^^^^^^ `apply(x, 1, mean)` is inefficient.
           |
-          = help: Use `rowMeans(x)` instead.
+        help: Use `rowMeans(x)` instead.
         Found 1 error.
         "
         );
@@ -102,9 +102,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | apply(x, MARGIN = 1, FUN = mean)
-          | -------------------------------- `apply(x, 1, mean)` is inefficient.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `apply(x, 1, mean)` is inefficient.
           |
-          = help: Use `rowMeans(x)` instead.
+        help: Use `rowMeans(x)` instead.
         Found 1 error.
         "
         );
@@ -115,9 +115,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | apply(x, 1L, mean)
-          | ------------------ `apply(x, 1, mean)` is inefficient.
+          | ^^^^^^^^^^^^^^^^^^ `apply(x, 1, mean)` is inefficient.
           |
-          = help: Use `rowMeans(x)` instead.
+        help: Use `rowMeans(x)` instead.
         Found 1 error.
         "
         );
@@ -131,9 +131,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | apply(x, 1, sum, na.rm = TRUE)
-          | ------------------------------ `apply(x, 1, sum)` is inefficient.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `apply(x, 1, sum)` is inefficient.
           |
-          = help: Use `rowSums(x)` instead.
+        help: Use `rowSums(x)` instead.
         Found 1 error.
         "
         );
@@ -144,9 +144,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | apply(x, 1, sum, na.rm = FALSE)
-          | ------------------------------- `apply(x, 1, sum)` is inefficient.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `apply(x, 1, sum)` is inefficient.
           |
-          = help: Use `rowSums(x)` instead.
+        help: Use `rowSums(x)` instead.
         Found 1 error.
         "
         );
@@ -157,9 +157,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | apply(x, 1, sum, na.rm = foo)
-          | ----------------------------- `apply(x, 1, sum)` is inefficient.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `apply(x, 1, sum)` is inefficient.
           |
-          = help: Use `rowSums(x)` instead.
+        help: Use `rowSums(x)` instead.
         Found 1 error.
         "
         );

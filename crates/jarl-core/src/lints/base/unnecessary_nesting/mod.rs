@@ -212,9 +212,9 @@ if (x) {
         4 | |     1L
         5 | |   }
         6 | | }
-          | |_- There is no need for nested if conditions here.
+          | |_^ There is no need for nested if conditions here.
           |
-          = help: Gather the two conditions with `&&` instead.
+        help: Gather the two conditions with `&&` instead.
         Found 1 error.
         "
         );
@@ -233,12 +233,13 @@ if (x) {
           |
         2 | / if (x) {
         3 | |   if (y) {
+        4 | |     if (z) {
+        5 | |       1L
         ... |
-        7 | |   }
         8 | | }
-          | |_- There is no need for nested if conditions here.
+          | |_^ There is no need for nested if conditions here.
           |
-          = help: Gather the two conditions with `&&` instead.
+        help: Gather the two conditions with `&&` instead.
         warning: unnecessary_nesting
          --> <test>:3:3
           |
@@ -247,9 +248,9 @@ if (x) {
         5 | |       1L
         6 | |     }
         7 | |   }
-          | |___- There is no need for nested if conditions here.
+          | |___^ There is no need for nested if conditions here.
           |
-          = help: Gather the two conditions with `&&` instead.
+        help: Gather the two conditions with `&&` instead.
         Found 2 errors.
         "
         );

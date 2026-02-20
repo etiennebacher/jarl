@@ -2,7 +2,6 @@
 source: crates/jarl/tests/integration/assignment.rs
 expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").arg(\"--select\").arg(\"assignment\").arg(\"--assignment\").arg(\"1\").run().normalize_os_executable_name()"
 ---
-
 success: false
 exit_code: 255
 ----- stdout -----

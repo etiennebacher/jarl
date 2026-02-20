@@ -73,8 +73,7 @@ foo <- function() {
          --> <test>:4:3
           |
         4 |   x <- 5
-          |   ------ This code is unreachable because it appears after a return statement.
-          |
+          |   ^^^^^^ This code is unreachable because it appears after a return statement.
         Found 1 error.
         "
         );
@@ -99,8 +98,7 @@ foo <- function(x) {
          --> <test>:8:3
           |
         8 |   x <- 1
-          |   ------ This code is unreachable because the preceding if/else terminates in all branches.
-          |
+          |   ^^^^^^ This code is unreachable because the preceding if/else terminates in all branches.
         Found 1 error.
         "
         );
@@ -123,8 +121,7 @@ foo <- function() {
          --> <test>:5:5
           |
         5 |     x <- i
-          |     ------ This code is unreachable because it appears after a break statement.
-          |
+          |     ^^^^^^ This code is unreachable because it appears after a break statement.
         Found 1 error.
         "
         );
@@ -147,8 +144,7 @@ foo <- function() {
          --> <test>:5:5
           |
         5 |     x <- i
-          |     ------ This code is unreachable because it appears after a next statement.
-          |
+          |     ^^^^^^ This code is unreachable because it appears after a next statement.
         Found 1 error.
         "
         );
@@ -203,8 +199,7 @@ foo <- function() {
           |
         5 | /   y <- 2
         6 | |   z <- 3
-          | |________- This code is unreachable because it appears after a return statement.
-          |
+          | |________^ This code is unreachable because it appears after a return statement.
         Found 1 error.
         "
         );
@@ -228,8 +223,7 @@ outer <- function() {
          --> <test>:5:5
           |
         5 |     x <- 2
-          |     ------ This code is unreachable because it appears after a return statement.
-          |
+          |     ^^^^^^ This code is unreachable because it appears after a return statement.
         Found 1 error.
         "
         );
@@ -254,12 +248,11 @@ foo <- function() {
          --> <test>:5:10
           |
         5 |     } else {
-          |  __________-
+          |  __________^
         6 | |     x <- 1
         7 | |     "b"
         8 | |   }
-          | |___- This code is in a branch that can never be executed.
-          |
+          | |___^ This code is in a branch that can never be executed.
         Found 1 error.
         "#
         );
@@ -284,12 +277,11 @@ foo <- function() {
          --> <test>:3:14
           |
         3 |     if (FALSE) {
-          |  ______________-
+          |  ______________^
         4 | |     x <- 1
         5 | |     "a"
         6 | |   } else {
-          | |___- This code is in a branch that can never be executed.
-          |
+          | |___^ This code is in a branch that can never be executed.
         Found 1 error.
         "#
         );
@@ -316,13 +308,13 @@ foo <- function(bar) {
          --> <test>:3:14
           |
         3 |     if (FALSE) {
-          |  ______________-
+          |  ______________^
         4 | |     1 + 1
-        ... |
+        5 | |     if (a) {
+        6 | |       2 + 2
         7 | |     }
         8 | |   } else {
-          | |___- This code is in a branch that can never be executed.
-          |
+          | |___^ This code is in a branch that can never be executed.
         Found 1 error.
         "
         );
@@ -373,20 +365,17 @@ foo <- function(bar) {
          --> <test>:5:5
           |
         5 |     x <- 2
-          |     ------ This code is unreachable because it appears after a return statement.
-          |
+          |     ^^^^^^ This code is unreachable because it appears after a return statement.
         warning: unreachable_code
          --> <test>:8:5
           |
         8 |     x <- 3
-          |     ------ This code is unreachable because it appears after a return statement.
-          |
+          |     ^^^^^^ This code is unreachable because it appears after a return statement.
         warning: unreachable_code
           --> <test>:10:3
            |
         10 |   1 + 1
-           |   ----- This code is unreachable because the preceding if/else terminates in all branches.
-           |
+           |   ^^^^^ This code is unreachable because the preceding if/else terminates in all branches.
         Found 3 errors.
         "
         );
@@ -428,24 +417,22 @@ foo <- function(bar) {
          --> <test>:5:5
           |
         5 |     x <- 2
-          |     ------ This code is unreachable because it appears after a return statement.
-          |
+          |     ^^^^^^ This code is unreachable because it appears after a return statement.
         warning: unreachable_code
          --> <test>:8:5
           |
         8 |     x <- 3
-          |     ------ This code is unreachable because it appears after a return statement.
-          |
+          |     ^^^^^^ This code is unreachable because it appears after a return statement.
         warning: unreachable_code
           --> <test>:10:3
            |
         10 | /   while (bar) {
         11 | |     return(bar) # comment
+        12 | |     5 + 3
         ...  |
         20 | |     5 + 4
         21 | |   }
-           | |___- This code is unreachable because the preceding if/else terminates in all branches.
-           |
+           | |___^ This code is unreachable because the preceding if/else terminates in all branches.
         Found 3 errors.
         "
         );
@@ -480,8 +467,7 @@ foo <- function() {
          --> <test>:4:3
           |
         4 |   1 + 1
-          |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
-          |
+          |   ^^^^^ This code is unreachable because it appears after a `stop()` statement (or equivalent).
         Found 1 error.
         "
         );
@@ -499,8 +485,7 @@ foo <- function() {
          --> <test>:4:3
           |
         4 |   1 + 1
-          |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
-          |
+          |   ^^^^^ This code is unreachable because it appears after a `stop()` statement (or equivalent).
         Found 1 error.
         "
         );
@@ -518,8 +503,7 @@ foo <- function() {
          --> <test>:4:3
           |
         4 |   1 + 1
-          |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
-          |
+          |   ^^^^^ This code is unreachable because it appears after a `stop()` statement (or equivalent).
         Found 1 error.
         "
         );
@@ -537,8 +521,7 @@ foo <- function() {
          --> <test>:4:3
           |
         4 |   1 + 1
-          |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
-          |
+          |   ^^^^^ This code is unreachable because it appears after a `stop()` statement (or equivalent).
         Found 1 error.
         "
         );
@@ -618,8 +601,7 @@ foo <- function(x) {
           --> <test>:15:3
            |
         15 |   return(3)
-           |   --------- This code is unreachable because the preceding if/else terminates in all branches.
-           |
+           |   ^^^^^^^^^ This code is unreachable because the preceding if/else terminates in all branches.
         Found 1 error.
         "
         );
@@ -641,8 +623,7 @@ foo <- function(x) {
          --> <test>:5:3
           |
         5 |   1 + 1
-          |   ----- This code is unreachable because it appears after a return statement.
-          |
+          |   ^^^^^ This code is unreachable because it appears after a return statement.
         Found 1 error.
         "
         );
@@ -674,8 +655,7 @@ foo <- \(x) {
          --> <test>:4:3
           |
         4 |   1 + 1
-          |   ----- This code is unreachable because it appears after a return statement.
-          |
+          |   ^^^^^ This code is unreachable because it appears after a return statement.
         Found 1 error.
         "
         );
@@ -697,8 +677,7 @@ foo <- function(x) {
          --> <test>:5:6
           |
         5 |   ); 3 + 1
-          |      ----- This code is unreachable because it appears after a return statement.
-          |
+          |      ^^^^^ This code is unreachable because it appears after a return statement.
         Found 1 error.
         "
         );
@@ -742,47 +721,42 @@ foo <- function(x) {
          --> <test>:5:10
           |
         5 |     } else {
-          |  __________-
+          |  __________^
         6 | |     2
         7 | |   }
-          | |___- This code is in a branch that can never be executed.
-          |
+          | |___^ This code is in a branch that can never be executed.
         warning: unreachable_code
           --> <test>:10:10
            |
         10 |     } else {
-           |  __________-
+           |  __________^
         11 | |     2
         12 | |   }
-           | |___- This code is in a branch that can never be executed.
-           |
+           | |___^ This code is in a branch that can never be executed.
         warning: unreachable_code
           --> <test>:15:10
            |
         15 |     } else {
-           |  __________-
+           |  __________^
         16 | |     2
         17 | |   }
-           | |___- This code is in a branch that can never be executed.
-           |
+           | |___^ This code is in a branch that can never be executed.
         warning: unreachable_code
           --> <test>:20:10
            |
         20 |     } else {
-           |  __________-
+           |  __________^
         21 | |     2
         22 | |   }
-           | |___- This code is in a branch that can never be executed.
-           |
+           | |___^ This code is in a branch that can never be executed.
         warning: unreachable_code
           --> <test>:25:10
            |
         25 |     } else {
-           |  __________-
+           |  __________^
         26 | |     2
         27 | |   }
-           | |___- This code is in a branch that can never be executed.
-           |
+           | |___^ This code is in a branch that can never be executed.
         Found 5 errors.
         "
         );
@@ -826,47 +800,42 @@ foo <- function(x) {
          --> <test>:3:18
           |
         3 |     if (FALSE & x) {
-          |  __________________-
+          |  __________________^
         4 | |     1
         5 | |   } else {
-          | |___- This code is in a branch that can never be executed.
-          |
+          | |___^ This code is in a branch that can never be executed.
         warning: unreachable_code
           --> <test>:8:19
            |
          8 |     if (FALSE && x) {
-           |  ___________________-
+           |  ___________________^
          9 | |     1
         10 | |   } else {
-           | |___- This code is in a branch that can never be executed.
-           |
+           | |___^ This code is in a branch that can never be executed.
         warning: unreachable_code
           --> <test>:13:18
            |
         13 |     if (x & FALSE) {
-           |  __________________-
+           |  __________________^
         14 | |     1
         15 | |   } else {
-           | |___- This code is in a branch that can never be executed.
-           |
+           | |___^ This code is in a branch that can never be executed.
         warning: unreachable_code
           --> <test>:18:19
            |
         18 |     if (x && FALSE) {
-           |  ___________________-
+           |  ___________________^
         19 | |     1
         20 | |   } else {
-           | |___- This code is in a branch that can never be executed.
-           |
+           | |___^ This code is in a branch that can never be executed.
         warning: unreachable_code
           --> <test>:23:29
            |
         23 |     if (FALSE & (x && FALSE)) {
-           |  _____________________________-
+           |  _____________________________^
         24 | |     1
         25 | |   } else {
-           | |___- This code is in a branch that can never be executed.
-           |
+           | |___^ This code is in a branch that can never be executed.
         Found 5 errors.
         "
         );
@@ -890,11 +859,10 @@ if (TRUE) {
          --> <test>:4:8
           |
         4 |   } else {
-          |  ________-
+          |  ________^
         5 | |   y <- 2
         6 | | }
-          | |_- This code is in a branch that can never be executed.
-          |
+          | |_^ This code is in a branch that can never be executed.
         Found 1 error.
         "
         );
@@ -915,8 +883,7 @@ for (i in 1:10) {
          --> <test>:4:3
           |
         4 |   x <- i
-          |   ------ This code is unreachable because it appears after a break statement.
-          |
+          |   ^^^^^^ This code is unreachable because it appears after a break statement.
         Found 1 error.
         "
         );
@@ -937,8 +904,7 @@ for (i in 1:10) {
          --> <test>:4:3
           |
         4 |   x <- i
-          |   ------ This code is unreachable because it appears after a next statement.
-          |
+          |   ^^^^^^ This code is unreachable because it appears after a next statement.
         Found 1 error.
         "
         );
@@ -957,8 +923,7 @@ x <- 1
          --> <test>:3:1
           |
         3 | x <- 1
-          | ------ This code is unreachable because it appears after a `stop()` statement (or equivalent).
-          |
+          | ^^^^^^ This code is unreachable because it appears after a `stop()` statement (or equivalent).
         Found 1 error.
         "
         );
@@ -980,8 +945,7 @@ if (condition) {
          --> <test>:4:3
           |
         4 |   x <- 1
-          |   ------ This code is unreachable because it appears after a `stop()` statement (or equivalent).
-          |
+          |   ^^^^^^ This code is unreachable because it appears after a `stop()` statement (or equivalent).
         Found 1 error.
         "
         );
@@ -1004,8 +968,7 @@ x <- 1
          --> <test>:7:1
           |
         7 | x <- 1
-          | ------ This code is unreachable because the preceding if/else terminates in all branches.
-          |
+          | ^^^^^^ This code is unreachable because the preceding if/else terminates in all branches.
         Found 1 error.
         "
         );
@@ -1031,8 +994,7 @@ if (outer_condition) {
          --> <test>:8:3
           |
         8 |   x <- 1
-          |   ------ This code is unreachable because the preceding if/else terminates in all branches.
-          |
+          |   ^^^^^^ This code is unreachable because the preceding if/else terminates in all branches.
         Found 1 error.
         "
         );
@@ -1072,8 +1034,7 @@ foo <- function() {
          --> <test>:4:3
           |
         4 |   1 + 1
-          |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
-          |
+          |   ^^^^^ This code is unreachable because it appears after a `stop()` statement (or equivalent).
         Found 1 error.
         "
         );
@@ -1101,8 +1062,7 @@ foo <- function() {
          --> <test>:4:3
           |
         4 |   1 + 1
-          |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
-          |
+          |   ^^^^^ This code is unreachable because it appears after a `stop()` statement (or equivalent).
         Found 1 error.
         "
         );
@@ -1121,8 +1081,7 @@ foo <- function() {
          --> <test>:4:3
           |
         4 |   1 + 1
-          |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
-          |
+          |   ^^^^^ This code is unreachable because it appears after a `stop()` statement (or equivalent).
         Found 1 error.
         "
         );
@@ -1147,8 +1106,7 @@ x <- 1
          --> <test>:3:1
           |
         3 | x <- 1
-          | ------ This code is unreachable because it appears after a `stop()` statement (or equivalent).
-          |
+          | ^^^^^^ This code is unreachable because it appears after a `stop()` statement (or equivalent).
         Found 1 error.
         "
         );
@@ -1171,8 +1129,7 @@ foo <- function() {
          --> <test>:4:3
           |
         4 |   1 + 1
-          |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
-          |
+          |   ^^^^^ This code is unreachable because it appears after a `stop()` statement (or equivalent).
         Found 1 error.
         "
         );
@@ -1199,8 +1156,7 @@ foo <- function() {
          --> <test>:4:3
           |
         4 |   1 + 1
-          |   ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
-          |
+          |   ^^^^^ This code is unreachable because it appears after a `stop()` statement (or equivalent).
         Found 1 error.
         "
         );

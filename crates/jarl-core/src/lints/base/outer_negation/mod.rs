@@ -38,9 +38,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | any(!x)
-          | ------- `any(!x)` may be hard to read.
+          | ^^^^^^^ `any(!x)` may be hard to read.
           |
-          = help: Use `!all(x)` instead.
+        help: Use `!all(x)` instead.
         Found 1 error.
         "
         );
@@ -51,9 +51,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | any(!(x + y))
-          | ------------- `any(!x)` may be hard to read.
+          | ^^^^^^^^^^^^^ `any(!x)` may be hard to read.
           |
-          = help: Use `!all(x)` instead.
+        help: Use `!all(x)` instead.
         Found 1 error.
         "
         );
@@ -64,9 +64,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | all(!x)
-          | ------- `all(!x)` may be hard to read.
+          | ^^^^^^^ `all(!x)` may be hard to read.
           |
-          = help: Use `!any(x)` instead.
+        help: Use `!any(x)` instead.
         Found 1 error.
         "
         );
@@ -77,9 +77,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | all(!(x + y))
-          | ------------- `all(!x)` may be hard to read.
+          | ^^^^^^^^^^^^^ `all(!x)` may be hard to read.
           |
-          = help: Use `!any(x)` instead.
+        help: Use `!any(x)` instead.
         Found 1 error.
         "
         );

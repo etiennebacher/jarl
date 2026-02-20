@@ -2,7 +2,6 @@
 source: crates/jarl/tests/integration/toml.rs
 expression: "&mut\nCommand::new(binary_path()).current_dir(directory).arg(\"check\").arg(\".\").run().normalize_os_executable_name()"
 ---
-
 success: false
 exit_code: 1
 ----- stdout -----
@@ -10,9 +9,9 @@ warning: any_is_na
  --> included.R:1:1
   |
 1 | any(is.na(d))
-  | ------------- `any(is.na(...))` is inefficient.
+  | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
   |
-  = help: Use `anyNA(...)` instead.
+help: Use `anyNA(...)` instead.
 
 Found 1 error.
 1 fixable with the `--fix` option.

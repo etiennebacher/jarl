@@ -18,9 +18,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | sapply(x, length)
-          | ----------------- Using `length()` on each element of a list is inefficient.
+          | ^^^^^^^^^^^^^^^^^ Using `length()` on each element of a list is inefficient.
           |
-          = help: Use `lengths()` instead.
+        help: Use `lengths()` instead.
         Found 1 error.
         "
         );
@@ -31,9 +31,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | sapply(x, FUN = length)
-          | ----------------------- Using `length()` on each element of a list is inefficient.
+          | ^^^^^^^^^^^^^^^^^^^^^^^ Using `length()` on each element of a list is inefficient.
           |
-          = help: Use `lengths()` instead.
+        help: Use `lengths()` instead.
         Found 1 error.
         "
         );
@@ -45,9 +45,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | sapply(FUN = length, x)
-          | ----------------------- Using `length()` on each element of a list is inefficient.
+          | ^^^^^^^^^^^^^^^^^^^^^^^ Using `length()` on each element of a list is inefficient.
           |
-          = help: Use `lengths()` instead.
+        help: Use `lengths()` instead.
         Found 1 error.
         "
         );
@@ -58,9 +58,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | vapply(x, length, integer(1))
-          | ----------------------------- Using `length()` on each element of a list is inefficient.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Using `length()` on each element of a list is inefficient.
           |
-          = help: Use `lengths()` instead.
+        help: Use `lengths()` instead.
         Found 1 error.
         "
         );

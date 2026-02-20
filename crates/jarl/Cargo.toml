@@ -50,7 +50,7 @@ tracing-subscriber = "0.3.20"
 # cross-compiling in the release workflow: "Could not find directory of OpenSSL
 # installation, and this `-sys` crate cannot proceed without this knowledge."
 git2 = {version  = "0.20.2", default-features = false}
-annotate-snippets = "0.11"
+annotate-snippets = "0.12"
 
 [dev-dependencies]
 tempfile.workspace = true

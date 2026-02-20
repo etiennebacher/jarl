@@ -18,9 +18,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x == NaN
-          | -------- Comparing to NaN with `==`, `!=` or `%in%` is problematic.
+          | ^^^^^^^^ Comparing to NaN with `==`, `!=` or `%in%` is problematic.
           |
-          = help: Use `is.nan()` instead.
+        help: Use `is.nan()` instead.
         Found 1 error.
         "
         );
@@ -31,9 +31,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x != NaN
-          | -------- Comparing to NaN with `==`, `!=` or `%in%` is problematic.
+          | ^^^^^^^^ Comparing to NaN with `==`, `!=` or `%in%` is problematic.
           |
-          = help: Use `is.nan()` instead.
+        help: Use `is.nan()` instead.
         Found 1 error.
         "
         );
@@ -44,9 +44,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x %in% NaN
-          | ---------- Comparing to NaN with `==`, `!=` or `%in%` is problematic.
+          | ^^^^^^^^^^ Comparing to NaN with `==`, `!=` or `%in%` is problematic.
           |
-          = help: Use `is.nan()` instead.
+        help: Use `is.nan()` instead.
         Found 1 error.
         "
         );
@@ -57,9 +57,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | foo(x(y)) == NaN
-          | ---------------- Comparing to NaN with `==`, `!=` or `%in%` is problematic.
+          | ^^^^^^^^^^^^^^^^ Comparing to NaN with `==`, `!=` or `%in%` is problematic.
           |
-          = help: Use `is.nan()` instead.
+        help: Use `is.nan()` instead.
         Found 1 error.
         "
         );
@@ -70,9 +70,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | NaN == x
-          | -------- Comparing to NaN with `==`, `!=` or `%in%` is problematic.
+          | ^^^^^^^^ Comparing to NaN with `==`, `!=` or `%in%` is problematic.
           |
-          = help: Use `is.nan()` instead.
+        help: Use `is.nan()` instead.
         Found 1 error.
         "
         );
