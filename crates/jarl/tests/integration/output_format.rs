@@ -19,13 +19,13 @@ fn test_output_default() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path_2), test_contents_2)?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -50,7 +50,7 @@ Found 2 errors.
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -69,15 +69,15 @@ fn test_output_concise() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path_2), test_contents_2)?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .arg("--output-format")
-                            .arg("concise")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .arg("--output-format")
+                                .arg("concise")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -89,7 +89,7 @@ Found 2 errors.
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -108,15 +108,15 @@ fn test_output_full() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path_2), test_contents_2)?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .arg("--output-format")
-                            .arg("full")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .arg("--output-format")
+                                .arg("full")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -141,7 +141,7 @@ Found 2 errors.
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -310,15 +310,15 @@ fn test_output_github() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path_2), test_contents_2)?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .arg("--output-format")
-                            .arg("github")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .arg("--output-format")
+                                .arg("github")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -327,20 +327,20 @@ exit_code: 1
 
 ----- stderr -----
 "
-                    );
+                        );
 
     // Additional info such as timing isn't included in output, #254
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .arg("--output-format")
-                            .arg("github")
-                            .arg("--with-timing")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .arg("--output-format")
+                                .arg("github")
+                                .arg("--with-timing")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -349,7 +349,7 @@ exit_code: 1
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -368,15 +368,15 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path_2), test_contents_2)?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .arg("--output-format")
-                            .arg("full")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .arg("--output-format")
+                                .arg("full")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -395,18 +395,18 @@ Found 1 error.
 Error: Failed to parse test2.R due to syntax errors.
 
 "
-                    );
+                        );
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .arg("--output-format")
-                            .arg("concise")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .arg("--output-format")
+                                .arg("concise")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -418,7 +418,7 @@ Found 1 error.
 ----- stderr -----
 Error: Failed to parse test2.R due to syntax errors.
 "
-                    );
+                        );
 
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
@@ -470,15 +470,15 @@ exit_code: 255
     );
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .arg("--output-format")
-                            .arg("github")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .arg("--output-format")
+                                .arg("github")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -486,7 +486,7 @@ exit_code: 255
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }

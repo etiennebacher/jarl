@@ -19,13 +19,13 @@ any(is.na(x))
     )?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -33,7 +33,7 @@ All checks passed!
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -54,13 +54,13 @@ any(is.na(z))
     )?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -68,7 +68,7 @@ All checks passed!
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -94,13 +94,13 @@ any(is.na(w))
     )?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -125,7 +125,7 @@ Found 2 errors.
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -148,13 +148,13 @@ any(is.na(y))
     )?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -171,7 +171,7 @@ Found 1 error.
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -192,15 +192,15 @@ x = any(is.na(y))
     )?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .arg("--extend-select")
-                            .arg("assignment")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .arg("--extend-select")
+                                .arg("assignment")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -208,7 +208,7 @@ All checks passed!
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -231,13 +231,13 @@ foo(
     )?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -245,7 +245,7 @@ All checks passed!
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -270,13 +270,13 @@ any(is.na(z))
     )?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -309,7 +309,7 @@ Found 3 errors.
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }

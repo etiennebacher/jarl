@@ -23,13 +23,13 @@ fn test_rmd_basic_lint() -> anyhow::Result<()> {
     )?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -45,7 +45,7 @@ Found 1 error.
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -62,13 +62,13 @@ fn test_qmd_basic_lint() -> anyhow::Result<()> {
     )?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -84,7 +84,7 @@ Found 1 error.
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -106,13 +106,13 @@ fn test_rmd_ignore_chunk_suppresses() -> anyhow::Result<()> {
     )?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -136,7 +136,7 @@ Found 2 errors.
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -160,13 +160,13 @@ fn test_rmd_ignore_chunk_with_rule() -> anyhow::Result<()> {
     )?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -174,7 +174,7 @@ All checks passed!
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -198,13 +198,13 @@ fn test_rmd_ignore_chunk_yaml_multiple() -> anyhow::Result<()> {
     )?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -212,7 +212,7 @@ All checks passed!
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -237,13 +237,13 @@ fn test_rmd_ignore_chunk_yaml_misplaced() -> anyhow::Result<()> {
     )?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -251,7 +251,7 @@ All checks passed!
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -274,13 +274,13 @@ fn test_rmd_pipe_suppression() -> anyhow::Result<()> {
     )?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -296,7 +296,7 @@ Found 1 error.
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -316,15 +316,15 @@ fn test_rmd_fix_not_applied() -> anyhow::Result<()> {
 
     // Run with --fix; redirects to lint_only for Rmd, so file is unchanged.
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg("test.Rmd")
-                            .arg("--fix")
-                            .arg("--allow-no-vcs")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg("test.Rmd")
+                                .arg("--fix")
+                                .arg("--allow-no-vcs")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -340,7 +340,7 @@ Found 1 error.
 
 ----- stderr -----
 "
-                    );
+                        );
 
     let after = std::fs::read_to_string(directory.join("test.Rmd"))?;
     assert_eq!(after, original, "Rmd file must not be modified by --fix");

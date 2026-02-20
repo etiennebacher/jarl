@@ -32,14 +32,14 @@ any(is.na(x))
     std::fs::write(directory.join(test_path_2), test_contents_2)?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .arg("--statistics")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .arg("--statistics")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -50,7 +50,7 @@ Rules with `[*]` have an automatic fix.
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -65,14 +65,14 @@ fn test_stats_no_violation() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .arg("--statistics")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .arg("--statistics")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -80,7 +80,7 @@ All checks passed!
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -113,15 +113,15 @@ any(is.na(x))
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .arg("--output-format")
-                            .arg("concise")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .arg("--output-format")
+                                .arg("concise")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -150,7 +150,7 @@ More than 15 errors reported, use `--statistics` to get the count by rule.
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
@@ -183,16 +183,16 @@ any(is.na(x))
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-                        &mut Command::new(binary_path())
-                            .current_dir(directory)
-                            .arg("check")
-                            .arg(".")
-                            .arg("--output-format")
-                            .arg("concise")
-                            .env("JARL_N_VIOLATIONS_HINT_STAT", "25")
-                            .run()
-                            .normalize_os_executable_name(),
-                        @r"
+                            &mut Command::new(binary_path())
+                                .current_dir(directory)
+                                .arg("check")
+                                .arg(".")
+                                .arg("--output-format")
+                                .arg("concise")
+                                .env("JARL_N_VIOLATIONS_HINT_STAT", "25")
+                                .run()
+                                .normalize_os_executable_name(),
+                            @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -219,7 +219,7 @@ Found 17 errors.
 
 ----- stderr -----
 "
-                    );
+                        );
 
     Ok(())
 }
