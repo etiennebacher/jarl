@@ -23,14 +23,39 @@ fn test_empty_toml_uses_all_rules() -> anyhow::Result<()> {
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -54,14 +79,22 @@ select = []
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
+        );
 
     std::fs::write(
         directory.join("jarl.toml"),
@@ -82,7 +115,16 @@ select = [""]
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `select` in 'jarl.toml': "" (empty or whitespace-only not allowed)
+"#
     );
 
     Ok(())
@@ -107,14 +149,39 @@ ignore = []
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     std::fs::write(
         directory.join("jarl.toml"),
@@ -134,7 +201,16 @@ ignore = [""]
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `ignore` in 'jarl.toml': "" (empty or whitespace-only not allowed)
+"#
     );
 
     Ok(())
@@ -159,13 +235,30 @@ select = ["any_is_na"]
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -193,13 +286,38 @@ any(duplicated(x))
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:2:1
+  |
+2 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: all_equal
+ --> test.R:4:1
+  |
+4 | !all.equal(x, y)
+  | ---------------- If `all.equal()` is false, it will return a string and not `FALSE`.
+  |
+  = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
+
+Found 2 errors.
+1 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -223,14 +341,31 @@ ignore = ["any_duplicated"]
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -257,14 +392,39 @@ length(levels(x))"#;
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -294,16 +454,33 @@ length(levels(x))"#;
     // TODO: not sure this is correct, length_levels is ignored but since it's
     // put explicitly in the CLI maybe it should raise?
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .arg("--select")
-            .arg("any_duplicated,length_levels")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .arg("--select")
+                .arg("any_duplicated,length_levels")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -331,16 +508,33 @@ length(levels(x))"#;
 
     // CLI ignore should add to TOML ignore, using TOML select
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .arg("--ignore")
-            .arg("any_is_na")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .arg("--ignore")
+                .arg("any_is_na")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -368,18 +562,26 @@ length(levels(x))"#;
 
     // Both CLI select and ignore should completely override TOML
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .arg("--select")
-            .arg("length_levels,any_duplicated")
-            .arg("--ignore")
-            .arg("length_levels")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .arg("--select")
+                .arg("length_levels,any_duplicated")
+                .arg("--ignore")
+                .arg("length_levels")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -403,14 +605,23 @@ select = ["any_is_na", "foo"]
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `select` in 'jarl.toml': foo
+"
+        );
 
     Ok(())
 }
@@ -434,14 +645,23 @@ ignore = ["foo", "bar"]
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `ignore` in 'jarl.toml': foo, bar
+"
+        );
 
     Ok(())
 }
@@ -465,14 +685,29 @@ select = ["any_is_na"
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 2, column 6
+  |
+2 | [lint
+  |      ^
+unclosed table, expected `]`
+
+"
+        );
 
     Ok(())
 }
@@ -497,14 +732,24 @@ unknown_field = ["value"]
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+Unknown field `unknown_field` in `[lint]`. Expected one of: `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, `exclude`, `default-exclude`, `include`.
+"
+        );
 
     Ok(())
 }
@@ -527,13 +772,38 @@ fn test_toml_without_linter_section() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -563,7 +833,16 @@ ignore = ["any_duplicated", "", "any_is_na"]
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `ignore` in 'jarl.toml': "" (empty or whitespace-only not allowed)
+"#
     );
 
     Ok(())
@@ -594,7 +873,16 @@ select = ["any_is_na", "   ", "any_duplicated"]
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `select` in 'jarl.toml': "" (empty or whitespace-only not allowed)
+"#
     );
 
     Ok(())
@@ -611,13 +899,38 @@ fn test_no_toml_file_uses_all_rules() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -641,13 +954,21 @@ fn test_default_exclude_works() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: true
+exit_code: 0
+----- stdout -----
+Warning: No R files found under the given path(s).
+
+----- stderr -----
+"
+        );
 
     // "default-exclude" specified by the user
     std::fs::write(
@@ -659,13 +980,38 @@ default-exclude = false
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> cpp11.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> cpp11.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -685,14 +1031,29 @@ default-exclude = 1
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 19
+  |
+3 | default-exclude = 1
+  |                   ^
+invalid type: integer `1`, expected a boolean
+
+"
+        );
 
     // "default-exclude" specified by the user
     std::fs::write(
@@ -710,7 +1071,22 @@ default-exclude = ["a"]
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 19
+  |
+3 | default-exclude = ["a"]
+  |                   ^^^^^
+invalid type: sequence, expected a boolean
+
+"#
     );
 
     Ok(())
@@ -740,13 +1116,30 @@ exclude = ["excluded.R"]
     std::fs::write(directory.join(included_path), included_contents)?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> included.R:1:1
+  |
+1 | any(is.na(y))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -772,13 +1165,30 @@ exclude = ["excluded_dir/"]
     std::fs::write(directory.join("included.R"), "any(is.na(y))")?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> included.R:1:1
+  |
+1 | any(is.na(y))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -803,13 +1213,30 @@ exclude = ["test-*.R"]
     std::fs::write(directory.join("normal.R"), "any(is.na(z))")?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> normal.R:1:1
+  |
+1 | any(is.na(z))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -837,13 +1264,30 @@ exclude = ["excluded.R", "temp/", "*.tmp.R"]
     std::fs::write(directory.join("included.R"), "any(is.na(d))")?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> included.R:1:1
+  |
+1 | any(is.na(d))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -871,13 +1315,38 @@ exclude = ["custom_exclude.R"]
     std::fs::write(directory.join("normal.R"), "any(is.na(z))")?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> cpp11.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_is_na
+ --> normal.R:1:1
+  |
+1 | any(is.na(z))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -907,13 +1376,30 @@ exclude = ["**/test/**"]
     std::fs::write(directory.join("other/main.R"), "any(is.na(z))")?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> other/main.R:1:1
+  |
+1 | any(is.na(z))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -934,13 +1420,30 @@ exclude = []
     std::fs::write(directory.join("test.R"), "any(is.na(x))")?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -959,14 +1462,29 @@ exclude = true
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 11
+  |
+3 | exclude = true
+  |           ^^^^
+invalid type: boolean `true`, expected a sequence
+
+"
+        );
 
     std::fs::write(
         directory.join("jarl.toml"),
@@ -977,14 +1495,29 @@ exclude = 1
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 11
+  |
+3 | exclude = 1
+  |           ^
+invalid type: integer `1`, expected a sequence
+
+"
+        );
 
     std::fs::write(
         directory.join("jarl.toml"),
@@ -1001,7 +1534,22 @@ exclude = ["a", 1]
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 17
+  |
+3 | exclude = ["a", 1]
+  |                 ^
+invalid type: integer `1`, expected a string
+
+"#
     );
 
     Ok(())
@@ -1027,19 +1575,39 @@ fixable = ["any_is_na"]
 
     // Keep the snapshot to show that the unfixable violation is still reported.
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .arg("--fix")
-            .arg("--allow-no-vcs")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .arg("--fix")
+                .arg("--allow-no-vcs")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 1 error.
+
+----- stderr -----
+"
+        );
 
     // Only any_is_na should be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!(fixed_contents);
+    insta::assert_snapshot!(fixed_contents,
+            @r"anyNA(x)
+any(duplicated(x))
+"
+        );
 
     Ok(())
 }
@@ -1073,7 +1641,11 @@ unfixable = ["any_is_na"]
 
     // Only any_duplicated should be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!(fixed_contents);
+    insta::assert_snapshot!(fixed_contents,
+            @r"any(is.na(x))
+anyDuplicated(x) > 0
+"
+        );
 
     Ok(())
 }
@@ -1107,7 +1679,12 @@ fixable = ["PERF"]
 
     // Only PERF rules should be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!(fixed_contents);
+    insta::assert_snapshot!(fixed_contents,
+            @r"anyNA(x)
+anyDuplicated(x) > 0
+length(levels(x))
+"
+        );
 
     Ok(())
 }
@@ -1141,7 +1718,12 @@ unfixable = ["PERF"]
 
     // PERF rules should not be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!(fixed_contents);
+    insta::assert_snapshot!(fixed_contents,
+            @r"any(is.na(x))
+any(duplicated(x))
+nlevels(x)
+"
+        );
 
     Ok(())
 }
@@ -1176,7 +1758,11 @@ unfixable = ["any_is_na"]
 
     // any_is_na should not be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!(fixed_contents);
+    insta::assert_snapshot!(fixed_contents,
+            @r"any(is.na(x))
+anyDuplicated(x) > 0
+"
+        );
 
     Ok(())
 }
@@ -1212,7 +1798,11 @@ unfixable = ["any_duplicated"]
 
     // any_is_na should not be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!(fixed_contents);
+    insta::assert_snapshot!(fixed_contents,
+            @r"anyNA(x)
+any(duplicated(x))
+"
+        );
 
     Ok(())
 }
@@ -1245,7 +1835,11 @@ fixable = []
         .normalize_os_executable_name();
 
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!(fixed_contents);
+    insta::assert_snapshot!(fixed_contents,
+            @r"any(is.na(x))
+any(duplicated(x))
+"
+        );
 
     Ok(())
 }
@@ -1279,7 +1873,11 @@ unfixable = []
         .normalize_os_executable_name();
 
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!(fixed_contents);
+    insta::assert_snapshot!(fixed_contents,
+            @r"anyNA(x)
+anyDuplicated(x) > 0
+"
+        );
 
     Ok(())
 }
@@ -1303,13 +1901,22 @@ fixable = ["invalid_rule_name"]
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `fixable` in 'jarl.toml': invalid_rule_name
+"
+        );
 
     Ok(())
 }
@@ -1333,13 +1940,22 @@ unfixable = ["invalid_rule_name"]
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `unfixable` in 'jarl.toml': invalid_rule_name
+"
+        );
 
     Ok(())
 }
@@ -1364,13 +1980,38 @@ fixable = ["any_is_na"]
     // TODO: I guess here the message should say that only 1 violation is
     // fixable.
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -1404,7 +2045,12 @@ fixable = ["any_is_na"]
         .normalize_os_executable_name();
 
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!(fixed_contents);
+    insta::assert_snapshot!(fixed_contents,
+            @r"anyNA(x)
+any(duplicated(x))
+length(levels(x))
+"
+        );
 
     Ok(())
 }
@@ -1432,13 +2078,38 @@ expect_equal(foo(x), TRUE)
 
     // Should detect both default rules (any_is_na) and TESTTHAT rules (expect_true_false)
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:2:1
+  |
+2 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: expect_true_false
+ --> test.R:3:1
+  |
+3 | expect_equal(foo(x), TRUE)
+  | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
+  |
+  = help: Use `expect_true(x)` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -1470,13 +2141,38 @@ expect_equal(foo(x), TRUE)
     // Should detect any_is_na (from select) and expect_true_false (from extend-select)
     // but NOT any_duplicated (not in select or extend-select)
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:2:1
+  |
+2 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: expect_true_false
+ --> test.R:4:1
+  |
+4 | expect_equal(foo(x), TRUE)
+  | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
+  |
+  = help: Use `expect_true(x)` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -1501,13 +2197,22 @@ extend-select = ["FOO"]
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `extend-select` in 'jarl.toml': FOO
+"
+        );
 
     Ok(())
 }
@@ -1532,13 +2237,30 @@ include = ["included.R"]
     std::fs::write(directory.join("excluded.R"), "any(is.na(y))")?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> included.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -1564,13 +2286,30 @@ include = ["R/"]
     std::fs::write(directory.join("test.R"), "any(is.na(y))")?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> R/utils.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -1596,13 +2335,38 @@ include = ["R-*.R"]
     std::fs::write(directory.join("test.R"), "any(is.na(z))")?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> R-helpers.R:1:1
+  |
+1 | any(is.na(y))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_is_na
+ --> R-utils.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -1624,13 +2388,30 @@ include = []
     std::fs::write(directory.join("test.R"), "any(is.na(x))")?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -1659,13 +2440,30 @@ exclude = ["R/generated.R"]
     std::fs::write(directory.join("test.R"), "any(is.na(z))")?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> R/utils.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -1698,13 +2496,37 @@ include = ["**/*.{Rmd,qmd}"]
     std::fs::write(directory.join("plain.R"), "any(is.na(z))")?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> analysis.qmd:6:1
+  |
+6 | any(is.na(y))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_is_na
+ --> report.Rmd:6:1
+  |
+6 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 2 errors.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -1723,14 +2545,29 @@ include = true
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 11
+  |
+3 | include = true
+  |           ^^^^
+invalid type: boolean `true`, expected a sequence
+
+"
+        );
 
     std::fs::write(
         directory.join("jarl.toml"),
@@ -1747,7 +2584,22 @@ include = ["a", 1]
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 17
+  |
+3 | include = ["a", 1]
+  |                 ^
+invalid type: integer `1`, expected a string
+
+"#
     );
 
     Ok(())
@@ -1791,14 +2643,39 @@ select = ["any_duplicated"]
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> root.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> subfolder/sub.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -1831,14 +2708,39 @@ select = ["any_is_na"]
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> root.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_is_na
+ --> subfolder/sub.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -1879,15 +2781,40 @@ select = ["any_duplicated"]
 
     // Pass both files explicitly, as a shell glob would expand them
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg("root.R")
-            .arg("subfolder/sub.R")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg("root.R")
+                .arg("subfolder/sub.R")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> root.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> subfolder/sub.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }

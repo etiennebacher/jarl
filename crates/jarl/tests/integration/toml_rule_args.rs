@@ -24,14 +24,24 @@ extend-skipped-functions = ["my_fun"]
     std::fs::write(directory.join("test.R"), "list(a = 1, a = 2)")?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+Cannot specify both `skipped-functions` and `extend-skipped-functions` in `[lint.duplicated-arguments]`.
+"
+        );
 
     Ok(())
 }
@@ -63,14 +73,24 @@ foo <- function() {
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(directory)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+Cannot specify both `stopping-functions` and `extend-stopping-functions` in `[lint.unreachable-code]`.
+"
+        );
 
     Ok(())
 }
@@ -99,7 +119,22 @@ unknown-option = ["list"]
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 5, column 1
+  |
+5 | unknown-option = ["list"]
+  | ^^^^^^^^^^^^^^
+unknown field `unknown-option`, expected `skipped-functions` or `extend-skipped-functions`
+
+"#
     );
 
     Ok(())
@@ -127,7 +162,22 @@ unknown-option = "foo"
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 1
+  |
+3 | unknown-option = "foo"
+  | ^^^^^^^^^^^^^^
+unknown field `unknown-option`, expected `operator`
+
+"#
     );
 
     Ok(())
@@ -157,7 +207,22 @@ unknown-option = ["stop"]
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 5, column 1
+  |
+5 | unknown-option = ["stop"]
+  | ^^^^^^^^^^^^^^
+unknown field `unknown-option`, expected `stopping-functions` or `extend-stopping-functions`
+
+"#
     );
 
     Ok(())

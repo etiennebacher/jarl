@@ -1,5 +1,0 @@
----
-source: crates/jarl/tests/integration/add_jarl_ignore.rs
-expression: content
----
-any(is.na(x))

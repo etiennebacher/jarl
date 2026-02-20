@@ -92,14 +92,11 @@ exit_code: {}
 ----- stdout -----
 {}
 ----- stderr -----
-{}
------ args -----
 {}",
             self.status.success(),
             self.status.code().unwrap_or(1),
             stdout,
             stderr,
-            self.arguments,
         ))
     }
 }

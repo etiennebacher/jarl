@@ -23,15 +23,39 @@ fn test_look_for_toml_in_parent_directories() -> anyhow::Result<()> {
     // At this point, there is no TOML to detect in the current or parent
     // directory, so both violations should be reported.
     insta::assert_snapshot!(
-        "no_toml_anywhere",
-        &mut Command::new(binary_path())
-            .current_dir(&subdir)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(&subdir)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     // Place a TOML in the root directory, which is the parent directory of
     // the current project.
@@ -46,15 +70,33 @@ ignore = ["any_is_na"]
     // Now, this should find the TOML in the parent directory and report only
     // one violation.
     insta::assert_snapshot!(
-        "parent_toml_found",
-        &mut Command::new(binary_path())
-            .current_dir(&subdir)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(&subdir)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+Used '[TEMP_DIR]/jarl.toml'
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -96,15 +138,31 @@ ignore = ["any_duplicated"]
 
     // This sould ignore any_duplicated because it's in the closest TOML.
     insta::assert_snapshot!(
-        "should_ignore_any_duplicated",
-        &mut Command::new(binary_path())
-            .current_dir(subdir)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(subdir)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -121,15 +179,39 @@ fn test_no_toml_uses_defaults() -> anyhow::Result<()> {
 
     // Should use default settings (both lints fire)
     insta::assert_snapshot!(
-        "no_config_uses_defaults",
-        &mut Command::new(binary_path())
-            .current_dir(root_path)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(root_path)
+                .arg("check")
+                .arg(".")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
@@ -158,15 +240,33 @@ ignore = ["any_duplicated"]
 
     // Run from root but specify file path explicitly
     insta::assert_snapshot!(
-        "explicit_path_finds_parent_config",
-        &mut Command::new(binary_path())
-            .current_dir(root_path)
-            .arg("check")
-            .arg("project/script.R")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths()
-    );
+            &mut Command::new(binary_path())
+                .current_dir(root_path)
+                .arg("check")
+                .arg("project/script.R")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> project/script.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+Used '[TEMP_DIR]/project/jarl.toml'
+
+----- stderr -----
+"
+        );
 
     Ok(())
 }
