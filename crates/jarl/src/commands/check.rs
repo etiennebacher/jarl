@@ -103,23 +103,12 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         groups.entry(key).or_default().push(path);
     }
 
-    // Emit deprecation warnings for old assignment syntax
+    // Emit deprecation warning for old --assignment CLI flag
     if check_config.assignment.is_some() {
         eprintln!(
             "{}: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.",
             "Warning".yellow().bold()
         );
-    }
-
-    // Check if the deprecated `assignment = "..."` top-level string form was used in TOML
-    for item in resolver.items() {
-        if item.value().linter.deprecated_assignment_syntax {
-            eprintln!(
-                "{}: `assignment = \"...\"` in `[lint]` is deprecated. \
-                 Use `[lint.assignment]` with `operator = \"...\"` instead.",
-                "Warning".yellow().bold()
-            );
-        }
     }
 
     let mut file_results = Vec::new();
@@ -190,6 +179,17 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     );
 
     if !is_structured_format {
+        // Check if the deprecated `assignment = "..."` top-level string form was used in TOML
+        for item in resolver.items() {
+            if item.value().linter.deprecated_assignment_syntax {
+                eprintln!(
+                    "{}: `assignment = \"...\"` in `[lint]` is deprecated. \
+                     Use `[lint.assignment]` with `operator = \"...\"` instead.",
+                    "Warning".yellow().bold()
+                );
+            }
+        }
+
         // Emit deprecation warnings for explicitly-used deprecated rules.
         // Collect rule names from CLI args and TOML settings.
         let mut explicit_rule_names: BTreeSet<String> = BTreeSet::new();
