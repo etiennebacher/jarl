@@ -1,6 +1,4 @@
-use air_r_parser::RParserOptions;
-use air_r_syntax::{AnyRExpression, RBinaryExpressionFields, RSyntaxKind};
-use biome_rowan::{AstNode, TextRange};
+use biome_rowan::{TextRange, TextSize};
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -33,63 +31,76 @@ pub fn find_package_root(file: &Path) -> Option<PathBuf> {
     }
 }
 
-/// Convert a byte offset within `content` to a 1-based `(line, col)` pair.
-fn byte_offset_to_line_col(content: &str, offset: usize) -> (u32, u32) {
-    let prefix = &content[..offset];
-    let line = prefix.chars().filter(|&c| c == '\n').count() as u32 + 1;
-    let col_start = prefix.rfind('\n').map(|n| n + 1).unwrap_or(0);
-    let col = (offset - col_start) as u32 + 1;
-    (line, col)
-}
-
-/// Parse `file` and return `(name, lhs_range, line, col)` for each top-level
-/// `<-` or `=` assignment whose left-hand side is a simple identifier.
+/// Fast line-based scan for top-level function assignments.
 ///
-/// Only top-level (not nested inside functions / blocks) expressions are
-/// considered. `<<-` and right-assignment forms are excluded.
-/// `line` and `col` are 1-based positions of the LHS identifier.
-pub fn collect_top_level_assignments(file: &Path) -> Vec<(String, TextRange, u32, u32)> {
-    let Ok(content) = std::fs::read_to_string(file) else {
-        return vec![];
-    };
+/// Avoids a full R parse, making this roughly 10× cheaper. Used in the
+/// pre-computation step so each file is only fully parsed once (in the main
+/// lint pass).
+///
+/// Limitation: misses the rare pattern where `function` is on a different line
+/// than `<-` (e.g. `foo <-\n  function(...)`).
+pub fn scan_top_level_assignments(content: &str) -> Vec<(String, TextRange, u32, u32)> {
+    let mut results = Vec::new();
+    let mut byte_offset: usize = 0;
+    let mut line_no: u32 = 1;
 
-    let parsed = air_r_parser::parse(&content, RParserOptions::default());
-    if parsed.has_error() {
-        return vec![];
-    }
+    for line_with_ending in content.split_inclusive('\n') {
+        // Strip \r\n or \n to get the line without its terminator
+        let line = line_with_ending
+            .trim_end_matches('\n')
+            .trim_end_matches('\r');
+        let trimmed = line.trim_start();
+        let leading = line.len() - trimmed.len();
 
-    let mut assignments = Vec::new();
+        // Only look at unindented lines. In R packages, all top-level function
+        // definitions are at column 1. Indented lines are inside function bodies
+        // or control-flow blocks and must not be collected.
+        if leading == 0 && !trimmed.is_empty() && !trimmed.starts_with('#') {
+            // Parse the leading identifier (R: alphanumeric + '.' + '_')
+            let ident_end = trimmed
+                .find(|c: char| !c.is_alphanumeric() && c != '.' && c != '_')
+                .unwrap_or(trimmed.len());
 
-    for expr in parsed.tree().expressions() {
-        if let AnyRExpression::RBinaryExpression(binary) = expr {
-            let RBinaryExpressionFields { left, operator, right } = binary.as_fields();
+            if ident_end > 0 {
+                let name = &trimmed[..ident_end];
+                let after_ident = trimmed[ident_end..].trim_start();
 
-            let Ok(op) = operator else { continue };
+                // Match <- or = (but not ==)
+                let after_op = if let Some(rest) = after_ident.strip_prefix("<-") {
+                    Some(rest.trim_start())
+                } else if after_ident.starts_with('=') && !after_ident.starts_with("==") {
+                    Some(after_ident[1..].trim_start())
+                } else {
+                    None
+                };
 
-            // Only <- (ASSIGN) and = (EQUAL) operators
-            if !matches!(op.kind(), RSyntaxKind::ASSIGN | RSyntaxKind::EQUAL) {
-                continue;
-            }
-            // Only flag assignments where the RHS is a function definition
-            let Ok(rhs) = right else { continue };
-            if rhs.as_r_function_definition().is_none() {
-                continue;
-            }
+                if let Some(rhs) = after_op {
+                    // `function` keyword (not `functionalities` etc.) or `\` lambda
+                    let is_function = rhs.starts_with("function")
+                        && rhs[8..]
+                            .chars()
+                            .next()
+                            .is_none_or(|c| !c.is_alphanumeric() && c != '.' && c != '_');
+                    let is_lambda = rhs.starts_with('\\');
 
-            let Ok(lhs) = left else { continue };
-
-            // Only flag simple identifier targets
-            if let AnyRExpression::RIdentifier(ident) = lhs {
-                let name = ident.syntax().text_trimmed().to_string();
-                let range = ident.syntax().text_trimmed_range();
-                let offset: usize = range.start().into();
-                let (line, col) = byte_offset_to_line_col(&content, offset);
-                assignments.push((name, range, line, col));
+                    if is_function || is_lambda {
+                        let lhs_start = byte_offset + leading;
+                        let lhs_end = lhs_start + ident_end;
+                        let range = TextRange::new(
+                            TextSize::from(lhs_start as u32),
+                            TextSize::from(lhs_end as u32),
+                        );
+                        results.push((name.to_string(), range, line_no, (leading + 1) as u32));
+                    }
+                }
             }
         }
+
+        byte_offset += line_with_ending.len();
+        line_no += 1;
     }
 
-    assignments
+    results
 }
 
 /// Group R-package files by package root, detect names assigned more than once
@@ -119,7 +130,10 @@ pub fn compute_package_duplicate_assignments(
             let root = find_package_root(path)?;
             let rel_path = PathBuf::from(crate::fs::relativize_path(path));
             let root_key = crate::fs::relativize_path(&root);
-            let assignments = collect_top_level_assignments(path);
+            // Use the fast text scan — the full parser runs later in the main
+            // lint pass so each file is only parsed once.
+            let content = std::fs::read_to_string(path).ok()?;
+            let assignments = scan_top_level_assignments(&content);
             Some((root_key, rel_path, assignments))
         })
         .collect();

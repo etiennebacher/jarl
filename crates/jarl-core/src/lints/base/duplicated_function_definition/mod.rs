@@ -6,38 +6,26 @@ mod tests {
     use std::fs;
     use tempfile::TempDir;
 
-    // ── collect_top_level_assignments ──────────────────────────────────────
+    // ── scan_top_level_assignments ─────────────────────────────────────────
 
     #[test]
-    fn test_collect_arrow_assignment() {
-        let dir = TempDir::new().unwrap();
-        let file = dir.path().join("foo.R");
-        fs::write(&file, "foo <- function() 1\nbar <- function() 2\n").unwrap();
-
-        let assignments = collect_top_level_assignments(&file);
+    fn test_scan_arrow_assignment() {
+        let assignments = scan_top_level_assignments("foo <- function() 1\nbar <- function() 2\n");
         assert_eq!(assignments.len(), 2);
         assert_eq!(assignments[0].0, "foo");
         assert_eq!(assignments[1].0, "bar");
     }
 
     #[test]
-    fn test_collect_equals_assignment() {
-        let dir = TempDir::new().unwrap();
-        let file = dir.path().join("foo.R");
-        fs::write(&file, "foo = function() 1\n").unwrap();
-
-        let assignments = collect_top_level_assignments(&file);
+    fn test_scan_equals_assignment() {
+        let assignments = scan_top_level_assignments("foo = function() 1\n");
         assert_eq!(assignments.len(), 1);
         assert_eq!(assignments[0].0, "foo");
     }
 
     #[test]
-    fn test_ignores_non_function_assignments() {
-        let dir = TempDir::new().unwrap();
-        let file = dir.path().join("foo.R");
-        fs::write(&file, "foo <- 1\nbar <- 'hello'\n").unwrap();
-
-        let assignments = collect_top_level_assignments(&file);
+    fn test_scan_ignores_non_function_assignments() {
+        let assignments = scan_top_level_assignments("foo <- 1\nbar <- 'hello'\n");
         assert!(
             assignments.is_empty(),
             "non-function assignments should be ignored"
@@ -45,45 +33,46 @@ mod tests {
     }
 
     #[test]
-    fn test_ignores_super_assignment() {
-        let dir = TempDir::new().unwrap();
-        let file = dir.path().join("foo.R");
-        fs::write(&file, "foo <<- 1\n").unwrap();
-
-        let assignments = collect_top_level_assignments(&file);
+    fn test_scan_ignores_super_assignment() {
+        let assignments = scan_top_level_assignments("foo <<- function() 1\n");
         assert!(assignments.is_empty(), "<<- should be ignored");
     }
 
     #[test]
-    fn test_ignores_right_assignment() {
-        let dir = TempDir::new().unwrap();
-        let file = dir.path().join("foo.R");
-        fs::write(&file, "1 -> foo\n").unwrap();
-
-        let assignments = collect_top_level_assignments(&file);
+    fn test_scan_ignores_right_assignment() {
+        let assignments = scan_top_level_assignments("function() 1 -> foo\n");
         assert!(assignments.is_empty(), "right-assignment should be ignored");
     }
 
     #[test]
-    fn test_ignores_subscript_lhs() {
-        let dir = TempDir::new().unwrap();
-        let file = dir.path().join("foo.R");
-        fs::write(&file, "foo[1] <- 1\nfoo[[1]] <- 2\n").unwrap();
-
-        let assignments = collect_top_level_assignments(&file);
+    fn test_scan_ignores_subscript_lhs() {
+        // foo[1] and foo[[1]]: the `[` immediately after `foo` means no `<-` follows
+        let assignments =
+            scan_top_level_assignments("foo[1] <- function() 1\nfoo[[1]] <- function() 2\n");
         assert!(assignments.is_empty(), "subscript LHS should be ignored");
     }
 
     #[test]
-    fn test_ignores_nested_in_function_body() {
-        let dir = TempDir::new().unwrap();
-        let file = dir.path().join("foo.R");
-        fs::write(&file, "f <- function() {\n  x <- 1\n}\n").unwrap();
-
-        // Only the top-level assignment of `f` is collected, not `x` inside the body
-        let assignments = collect_top_level_assignments(&file);
+    fn test_scan_ignores_indented_lines() {
+        // Indented function assignments (inside a body) must not be collected.
+        let assignments =
+            scan_top_level_assignments("outer <- function() {\n  inner <- function() 1\n}\n");
         assert_eq!(assignments.len(), 1);
-        assert_eq!(assignments[0].0, "f");
+        assert_eq!(assignments[0].0, "outer");
+    }
+
+    #[test]
+    fn test_scan_lambda() {
+        let assignments = scan_top_level_assignments("foo <- \\(x) x + 1\n");
+        assert_eq!(assignments.len(), 1);
+        assert_eq!(assignments[0].0, "foo");
+    }
+
+    #[test]
+    fn test_scan_function_keyword_prefix() {
+        // `functionalities <- 1` should not be matched as a function assignment
+        let assignments = scan_top_level_assignments("functionalities <- 1\n");
+        assert!(assignments.is_empty());
     }
 
     // ── find_package_root ─────────────────────────────────────────────────
