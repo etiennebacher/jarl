@@ -15,13 +15,13 @@ fn test_no_default_exclude() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-                &mut Command::new(binary_path())
-                    .current_dir(directory)
-                    .arg("check")
-                    .arg(".")
-                    .run()
-                    .normalize_os_executable_name(),
-                @r"
+                    &mut Command::new(binary_path())
+                        .current_dir(directory)
+                        .arg("check")
+                        .arg(".")
+                        .run()
+                        .normalize_os_executable_name(),
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -29,17 +29,17 @@ Warning: No R files found under the given path(s).
 
 ----- stderr -----
 "
-            );
+                );
 
     insta::assert_snapshot!(
-                &mut Command::new(binary_path())
-                    .current_dir(directory)
-                    .arg("check")
-                    .arg(".")
-                    .arg("--no-default-exclude")
-                    .run()
-                    .normalize_os_executable_name(),
-                @r"
+                    &mut Command::new(binary_path())
+                        .current_dir(directory)
+                        .arg("check")
+                        .arg(".")
+                        .arg("--no-default-exclude")
+                        .run()
+                        .normalize_os_executable_name(),
+                    @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -56,7 +56,7 @@ Found 1 error.
 
 ----- stderr -----
 "
-            );
+                );
 
     Ok(())
 }
@@ -77,14 +77,14 @@ default-exclude = true
 "#,
     )?;
     insta::assert_snapshot!(
-                &mut Command::new(binary_path())
-                    .current_dir(directory)
-                    .arg("check")
-                    .arg(".")
-                    .arg("--no-default-exclude")
-                    .run()
-                    .normalize_os_executable_name(),
-                @r"
+                    &mut Command::new(binary_path())
+                        .current_dir(directory)
+                        .arg("check")
+                        .arg(".")
+                        .arg("--no-default-exclude")
+                        .run()
+                        .normalize_os_executable_name(),
+                    @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -101,6 +101,6 @@ Found 1 error.
 
 ----- stderr -----
 "
-            );
+                );
     Ok(())
 }
