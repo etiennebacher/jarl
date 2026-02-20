@@ -29,7 +29,7 @@ fn test_rmd_basic_lint() -> anyhow::Result<()> {
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -68,7 +68,7 @@ fn test_qmd_basic_lint() -> anyhow::Result<()> {
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -112,7 +112,7 @@ fn test_rmd_ignore_chunk_suppresses() -> anyhow::Result<()> {
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -166,7 +166,7 @@ fn test_rmd_ignore_chunk_with_rule() -> anyhow::Result<()> {
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -204,7 +204,7 @@ fn test_rmd_ignore_chunk_yaml_multiple() -> anyhow::Result<()> {
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -243,7 +243,7 @@ fn test_rmd_ignore_chunk_yaml_misplaced() -> anyhow::Result<()> {
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -280,7 +280,7 @@ fn test_rmd_pipe_suppression() -> anyhow::Result<()> {
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -324,7 +324,7 @@ fn test_rmd_fix_not_applied() -> anyhow::Result<()> {
                                 .arg("--allow-no-vcs")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----

@@ -25,7 +25,7 @@ fn test_output_default() -> anyhow::Result<()> {
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -77,7 +77,7 @@ fn test_output_concise() -> anyhow::Result<()> {
                                 .arg("concise")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -116,7 +116,7 @@ fn test_output_full() -> anyhow::Result<()> {
                                 .arg("full")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -318,7 +318,7 @@ fn test_output_github() -> anyhow::Result<()> {
                                 .arg("github")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -340,7 +340,7 @@ exit_code: 1
                                 .arg("--with-timing")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -376,7 +376,7 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
                                 .arg("full")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -406,7 +406,7 @@ Error: Failed to parse test2.R due to syntax errors.
                                 .arg("concise")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -478,7 +478,7 @@ exit_code: 255
                                 .arg("github")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----

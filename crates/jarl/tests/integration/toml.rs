@@ -30,7 +30,7 @@ fn test_empty_toml_uses_all_rules() -> anyhow::Result<()> {
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -86,7 +86,7 @@ select = []
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -156,7 +156,7 @@ ignore = []
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -241,7 +241,7 @@ select = ["any_is_na"]
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -292,7 +292,7 @@ any(duplicated(x))
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -348,7 +348,7 @@ ignore = ["any_duplicated"]
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -399,7 +399,7 @@ length(levels(x))"#;
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -463,7 +463,7 @@ length(levels(x))"#;
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -517,7 +517,7 @@ length(levels(x))"#;
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -573,7 +573,7 @@ length(levels(x))"#;
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -612,7 +612,7 @@ select = ["any_is_na", "foo"]
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -652,7 +652,7 @@ ignore = ["foo", "bar"]
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -692,7 +692,7 @@ select = ["any_is_na"
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -739,7 +739,7 @@ unknown_field = ["value"]
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -778,7 +778,7 @@ fn test_toml_without_linter_section() -> anyhow::Result<()> {
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -905,7 +905,7 @@ fn test_no_toml_file_uses_all_rules() -> anyhow::Result<()> {
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -960,7 +960,7 @@ fn test_default_exclude_works() -> anyhow::Result<()> {
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -986,7 +986,7 @@ default-exclude = false
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -1038,7 +1038,7 @@ default-exclude = 1
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -1122,7 +1122,7 @@ exclude = ["excluded.R"]
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -1171,7 +1171,7 @@ exclude = ["excluded_dir/"]
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -1219,7 +1219,7 @@ exclude = ["test-*.R"]
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -1270,7 +1270,7 @@ exclude = ["excluded.R", "temp/", "*.tmp.R"]
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -1321,7 +1321,7 @@ exclude = ["custom_exclude.R"]
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -1382,7 +1382,7 @@ exclude = ["**/test/**"]
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -1426,7 +1426,7 @@ exclude = []
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -1469,7 +1469,7 @@ exclude = true
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -1502,7 +1502,7 @@ exclude = 1
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -1583,7 +1583,7 @@ fixable = ["any_is_na"]
                                 .arg("--allow-no-vcs")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -1604,7 +1604,7 @@ Found 1 error.
     // Only any_is_na should be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(fixed_contents,
-                            @r"anyNA(x)
+                            @"anyNA(x)
 any(duplicated(x))
 "
                         );
@@ -1642,7 +1642,7 @@ unfixable = ["any_is_na"]
     // Only any_duplicated should be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(fixed_contents,
-                            @r"any(is.na(x))
+                            @"any(is.na(x))
 anyDuplicated(x) > 0
 "
                         );
@@ -1680,7 +1680,7 @@ fixable = ["PERF"]
     // Only PERF rules should be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(fixed_contents,
-                            @r"anyNA(x)
+                            @"anyNA(x)
 anyDuplicated(x) > 0
 length(levels(x))
 "
@@ -1719,7 +1719,7 @@ unfixable = ["PERF"]
     // PERF rules should not be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(fixed_contents,
-                            @r"any(is.na(x))
+                            @"any(is.na(x))
 any(duplicated(x))
 nlevels(x)
 "
@@ -1759,7 +1759,7 @@ unfixable = ["any_is_na"]
     // any_is_na should not be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(fixed_contents,
-                            @r"any(is.na(x))
+                            @"any(is.na(x))
 anyDuplicated(x) > 0
 "
                         );
@@ -1799,7 +1799,7 @@ unfixable = ["any_duplicated"]
     // any_is_na should not be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(fixed_contents,
-                            @r"anyNA(x)
+                            @"anyNA(x)
 any(duplicated(x))
 "
                         );
@@ -1836,7 +1836,7 @@ fixable = []
 
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(fixed_contents,
-                            @r"any(is.na(x))
+                            @"any(is.na(x))
 any(duplicated(x))
 "
                         );
@@ -1874,7 +1874,7 @@ unfixable = []
 
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(fixed_contents,
-                            @r"anyNA(x)
+                            @"anyNA(x)
 anyDuplicated(x) > 0
 "
                         );
@@ -1907,7 +1907,7 @@ fixable = ["invalid_rule_name"]
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -1946,7 +1946,7 @@ unfixable = ["invalid_rule_name"]
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -1986,7 +1986,7 @@ fixable = ["any_is_na"]
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -2046,7 +2046,7 @@ fixable = ["any_is_na"]
 
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(fixed_contents,
-                            @r"anyNA(x)
+                            @"anyNA(x)
 any(duplicated(x))
 length(levels(x))
 "
@@ -2084,7 +2084,7 @@ expect_equal(foo(x), TRUE)
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -2147,7 +2147,7 @@ expect_equal(foo(x), TRUE)
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -2203,7 +2203,7 @@ extend-select = ["FOO"]
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -2243,7 +2243,7 @@ include = ["included.R"]
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -2292,7 +2292,7 @@ include = ["R/"]
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -2341,7 +2341,7 @@ include = ["R-*.R"]
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -2394,7 +2394,7 @@ include = []
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -2446,7 +2446,7 @@ exclude = ["R/generated.R"]
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -2502,7 +2502,7 @@ include = ["**/*.{Rmd,qmd}"]
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -2552,7 +2552,7 @@ include = true
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -2650,7 +2650,7 @@ select = ["any_duplicated"]
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -2715,7 +2715,7 @@ select = ["any_is_na"]
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -2789,7 +2789,7 @@ select = ["any_duplicated"]
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----

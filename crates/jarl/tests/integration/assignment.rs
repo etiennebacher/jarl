@@ -32,7 +32,7 @@ y <- 2
                                 .arg("<-")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -69,7 +69,7 @@ Warning: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml inst
                                 .arg("=")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -121,7 +121,7 @@ y <- 2
                                 .arg("foo")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"success: false
+                            @"success: false
 exit_code: 255
 ----- stdout -----
 
@@ -142,7 +142,7 @@ jarl failed
                                 .arg("1")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"success: false
+                            @"success: false
 exit_code: 255
 ----- stdout -----
 
@@ -188,7 +188,7 @@ operator = "<-"
                                 .arg("assignment")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -229,7 +229,7 @@ operator = "="
                                 .arg("assignment")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -316,7 +316,7 @@ operator = 1
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -370,7 +370,7 @@ operator = "<-"
                                 .arg("=")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----

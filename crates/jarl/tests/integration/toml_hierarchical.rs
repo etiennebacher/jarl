@@ -30,7 +30,7 @@ fn test_look_for_toml_in_parent_directories() -> anyhow::Result<()> {
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -77,7 +77,7 @@ ignore = ["any_is_na"]
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -145,7 +145,7 @@ ignore = ["any_duplicated"]
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -186,7 +186,7 @@ fn test_no_toml_uses_defaults() -> anyhow::Result<()> {
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -247,7 +247,7 @@ ignore = ["any_duplicated"]
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----

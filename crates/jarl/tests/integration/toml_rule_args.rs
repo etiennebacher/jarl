@@ -31,7 +31,7 @@ extend-skipped-functions = ["my_fun"]
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -80,7 +80,7 @@ foo <- function() {
                                 .run()
                                 .normalize_os_executable_name()
                                 .normalize_temp_paths(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----

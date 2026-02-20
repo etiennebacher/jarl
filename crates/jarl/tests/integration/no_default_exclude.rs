@@ -21,7 +21,7 @@ fn test_no_default_exclude() -> anyhow::Result<()> {
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -39,7 +39,7 @@ Warning: No R files found under the given path(s).
                                 .arg("--no-default-exclude")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -84,7 +84,7 @@ default-exclude = true
                                 .arg("--no-default-exclude")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----

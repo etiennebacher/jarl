@@ -39,7 +39,7 @@ any(is.na(x))
                                 .arg("--statistics")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -72,7 +72,7 @@ fn test_stats_no_violation() -> anyhow::Result<()> {
                                 .arg("--statistics")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -121,7 +121,7 @@ any(is.na(x))
                                 .arg("concise")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -192,7 +192,7 @@ any(is.na(x))
                                 .env("JARL_N_VIOLATIONS_HINT_STAT", "25")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----

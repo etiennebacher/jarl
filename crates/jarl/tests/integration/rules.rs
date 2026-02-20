@@ -22,7 +22,7 @@ fn test_one_non_existing_selected_rule() -> anyhow::Result<()> {
                                 .arg("foo")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -53,7 +53,7 @@ fn test_several_non_existing_selected_rules() -> anyhow::Result<()> {
                                 .arg("foo,any_is_na,barbaz")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -84,7 +84,7 @@ fn test_one_non_existing_ignored_rule() -> anyhow::Result<()> {
                                 .arg("foo")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -115,7 +115,7 @@ fn test_several_non_existing_ignored_rules() -> anyhow::Result<()> {
                                 .arg("foo,any_is_na,barbaz")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -149,7 +149,7 @@ fn test_selected_and_ignored() -> anyhow::Result<()> {
                                 .arg("any_is_na")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -186,7 +186,7 @@ fn test_correct_rule_selection_and_exclusion() -> anyhow::Result<()> {
                                 .arg("any_duplicated")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -230,7 +230,7 @@ any(is.na(x))
                                 .arg("SUSP")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -259,7 +259,7 @@ Found 1 error.
                                 .arg("any_is_na,SUSP")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -296,7 +296,7 @@ Found 2 errors.
                                 .arg("all_equal,SUSP")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -340,7 +340,7 @@ any(is.na(x))
                                 .arg("SUSP")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -369,7 +369,7 @@ Found 1 error.
                                 .arg("any_is_na,SUSP")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -389,7 +389,7 @@ All checks passed!
                                 .arg("all_equal,SUSP")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -430,7 +430,7 @@ fn test_invalid_rule_group() -> anyhow::Result<()> {
                                 .arg("FOOBAR,SUSP")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -467,7 +467,7 @@ any(is.na(x))
                                 .arg("SUSP")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -488,7 +488,7 @@ All checks passed!
                                 .arg("PERF")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -531,7 +531,7 @@ expect_equal(foo(x), TRUE)
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -575,7 +575,7 @@ expect_equal(foo(x), TRUE)
                                 .arg("ALL")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -614,7 +614,7 @@ Found 2 errors.
                                 .arg("TESTTHAT")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -658,7 +658,7 @@ expect_equal(foo(x), TRUE)
                                 .arg("TESTTHAT")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -695,7 +695,7 @@ Found 2 errors.
                                 .arg("expect_true_false")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -743,7 +743,7 @@ fn test_extend_select_unknown_rule() -> anyhow::Result<()> {
                                 .arg("FOO")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -775,7 +775,7 @@ fn test_deprecated_rule_warning_from_cli() -> anyhow::Result<()> {
                                 .arg("browser")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -821,7 +821,7 @@ select = ["browser"]
                                 .arg(".")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----

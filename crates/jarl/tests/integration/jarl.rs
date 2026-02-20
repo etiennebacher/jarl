@@ -67,7 +67,7 @@ fn test_no_r_files() -> anyhow::Result<()> {
                                 .arg("--allow-no-vcs")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -95,7 +95,7 @@ fn test_parsing_error() -> anyhow::Result<()> {
                                 .arg("--allow-no-vcs")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -127,7 +127,7 @@ fn test_parsing_error_for_some_files() -> anyhow::Result<()> {
                                 .arg("--allow-no-vcs")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -169,7 +169,7 @@ fn test_parsing_weird_raw_strings() -> anyhow::Result<()> {
                                 .arg("--allow-no-vcs")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -197,7 +197,7 @@ fn test_parsing_braced_anonymous_function() -> anyhow::Result<()> {
                                 .arg("--allow-no-vcs")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -225,7 +225,7 @@ fn test_no_lints() -> anyhow::Result<()> {
                                 .arg("--allow-no-vcs")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -254,7 +254,7 @@ fn test_one_lint() -> anyhow::Result<()> {
                                 .arg("--allow-no-vcs")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -293,7 +293,7 @@ fn test_several_lints_one_file() -> anyhow::Result<()> {
                                 .arg("--allow-no-vcs")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -344,7 +344,7 @@ fn test_several_lints_several_files() -> anyhow::Result<()> {
                                 .arg("--allow-no-vcs")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -440,7 +440,7 @@ fn test_corner_case() -> anyhow::Result<()> {
                                 .arg("--allow-no-vcs")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -532,7 +532,7 @@ Found 1 error.
                                 .arg("--allow-no-vcs")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -553,7 +553,7 @@ All checks passed!
                                 .arg("--allow-no-vcs")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -574,7 +574,7 @@ All checks passed!
                                 .arg("--allow-no-vcs")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -608,7 +608,7 @@ fn test_safe_and_unsafe_lints() -> anyhow::Result<()> {
                                 .arg("--allow-no-vcs")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -655,7 +655,7 @@ fn test_newline_character_in_string() -> anyhow::Result<()> {
                                 .arg("--allow-no-vcs")
                                 .run()
                                 .normalize_os_executable_name(),
-                            @r"
+                            @"
 success: false
 exit_code: 1
 ----- stdout -----
