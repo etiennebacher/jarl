@@ -1,8 +1,8 @@
-pub(crate) mod duplicate_top_level_assignment;
+pub(crate) mod duplicated_function_definition;
 
 #[cfg(test)]
 mod tests {
-    use super::duplicate_top_level_assignment::*;
+    use super::duplicated_function_definition::*;
     use std::fs;
     use tempfile::TempDir;
 

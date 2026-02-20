@@ -304,8 +304,8 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
-    DuplicateTopLevelAssignment => {
-        name: "duplicate_top_level_assignment",
+    DuplicatedFunctionDefinition => {
+        name: "duplicated_function_definition",
         categories: [Corr],
         default: Enabled,
         fix: None,

@@ -21,7 +21,7 @@ use crate::analyze;
 use crate::config::Config;
 use crate::diagnostic::*;
 use crate::fix::*;
-use crate::lints::base::duplicate_top_level_assignment::duplicate_top_level_assignment::compute_package_duplicate_assignments;
+use crate::lints::base::duplicated_function_definition::duplicated_function_definition::compute_package_duplicate_assignments;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
 use crate::lints::comments::invalid_chunk_suppression::invalid_chunk_suppression::invalid_chunk_suppression;
@@ -54,7 +54,7 @@ pub fn check(mut config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow:
     // This must happen before the config is wrapped in Arc.
     if config
         .rules_to_apply
-        .contains(&Rule::DuplicateTopLevelAssignment)
+        .contains(&Rule::DuplicatedFunctionDefinition)
     {
         config.package_duplicate_assignments = compute_package_duplicate_assignments(&config.paths);
     }
@@ -478,11 +478,11 @@ pub fn check_document(expressions: &RExpressionList, checker: &mut Checker) -> a
     // Emit package-level duplicate top-level assignment diagnostics.
     // This must come before suppression filtering so that # jarl-ignore
     // and # jarl-ignore-file comments can suppress these diagnostics.
-    if checker.is_rule_enabled(Rule::DuplicateTopLevelAssignment) {
+    if checker.is_rule_enabled(Rule::DuplicatedFunctionDefinition) {
         for (name, range, help) in &checker.package_duplicate_assignments.clone() {
             checker.report_diagnostic(Some(Diagnostic::new(
                 ViolationData::new(
-                    "duplicate_top_level_assignment".to_string(),
+                    "duplicated_function_definition".to_string(),
                     format!("`{name}` is defined more than once in this package."),
                     Some(help.clone()),
                 ),
