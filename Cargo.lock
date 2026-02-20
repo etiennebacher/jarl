@@ -941,7 +941,7 @@ checksum = "92ecc6618181def0457392ccd0ee51198e065e016d1d527a7ac1b6dc7c1f09d2"
 
 [[package]]
 name = "jarl"
-version = "0.4.0"
+version = "0.5.0-alpha.1"
 dependencies = [
  "annotate-snippets",
  "anyhow",
@@ -963,7 +963,7 @@ dependencies = [
 
 [[package]]
 name = "jarl-core"
-version = "0.4.0"
+version = "0.5.0-alpha.1"
 dependencies = [
  "air_r_parser",
  "air_r_syntax",
@@ -990,7 +990,7 @@ dependencies = [
 
 [[package]]
 name = "jarl-lsp"
-version = "0.4.0"
+version = "0.5.0-alpha.1"
 dependencies = [
  "anyhow",
  "crossbeam",
