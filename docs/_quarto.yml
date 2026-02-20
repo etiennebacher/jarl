@@ -84,6 +84,7 @@ website:
       - rules/if_always_true.md
       - rules/implicit_assignment.md
       - rules/internal_function.md
+      - rules/invalid_chunk_suppression.md
       - rules/is_numeric.md
       - rules/length_levels.md
       - rules/length_test.md
