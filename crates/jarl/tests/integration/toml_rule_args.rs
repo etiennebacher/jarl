@@ -24,14 +24,14 @@ extend-skipped-functions = ["my_fun"]
     std::fs::write(directory.join("test.R"), "list(a = 1, a = 2)")?;
 
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .run()
-                                .normalize_os_executable_name()
-                                .normalize_temp_paths(),
-                            @"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -41,7 +41,7 @@ jarl failed
   Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
 Cannot specify both `skipped-functions` and `extend-skipped-functions` in `[lint.duplicated-arguments]`.
 "
-                        );
+    );
 
     Ok(())
 }
@@ -73,14 +73,14 @@ foo <- function() {
     )?;
 
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .run()
-                                .normalize_os_executable_name()
-                                .normalize_temp_paths(),
-                            @"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -90,7 +90,7 @@ jarl failed
   Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
 Cannot specify both `stopping-functions` and `extend-stopping-functions` in `[lint.unreachable-code]`.
 "
-                        );
+    );
 
     Ok(())
 }

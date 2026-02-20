@@ -60,14 +60,14 @@ fn test_no_r_files() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--allow-no-vcs")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -75,7 +75,7 @@ Warning: No R files found under the given path(s).
 
 ----- stderr -----
 "
-                        );
+    );
 
     Ok(())
 }
@@ -88,14 +88,14 @@ fn test_parsing_error() -> anyhow::Result<()> {
     let path = "test.R";
     std::fs::write(directory.join(path), "f <-")?;
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--allow-no-vcs")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -103,7 +103,7 @@ exit_code: 255
 ----- stderr -----
 Error: Failed to parse test.R due to syntax errors.
 "
-                        );
+    );
 
     Ok(())
 }
@@ -120,14 +120,14 @@ fn test_parsing_error_for_some_files() -> anyhow::Result<()> {
     std::fs::write(directory.join(path), "any(is.na(x))")?;
 
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--allow-no-vcs")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -146,7 +146,7 @@ Found 1 error.
 Error: Failed to parse test.R due to syntax errors.
 
 "
-                        );
+    );
 
     Ok(())
 }
@@ -162,14 +162,14 @@ fn test_parsing_weird_raw_strings() -> anyhow::Result<()> {
         "c(r\"(abc(\\w+))\")\nr\"(c(\"\\dots\"))\"",
     )?;
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--allow-no-vcs")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -177,7 +177,7 @@ All checks passed!
 
 ----- stderr -----
 "
-                        );
+    );
 
     Ok(())
 }
@@ -190,14 +190,14 @@ fn test_parsing_braced_anonymous_function() -> anyhow::Result<()> {
     let path = "test.R";
     std::fs::write(directory.join(path), "{ a }(10)")?;
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--allow-no-vcs")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -205,7 +205,7 @@ All checks passed!
 
 ----- stderr -----
 "
-                        );
+    );
 
     Ok(())
 }
@@ -218,14 +218,14 @@ fn test_no_lints() -> anyhow::Result<()> {
     let path = "test.R";
     std::fs::write(directory.join(path), "any(x)")?;
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--allow-no-vcs")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -233,7 +233,7 @@ All checks passed!
 
 ----- stderr -----
 "
-                        );
+    );
 
     Ok(())
 }
@@ -247,14 +247,14 @@ fn test_one_lint() -> anyhow::Result<()> {
     let test_contents = "any(is.na(x))";
     std::fs::write(directory.join(test_path), test_contents)?;
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--allow-no-vcs")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -271,7 +271,7 @@ Found 1 error.
 
 ----- stderr -----
 "
-                        );
+    );
 
     Ok(())
 }
@@ -286,14 +286,14 @@ fn test_several_lints_one_file() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--allow-no-vcs")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -318,7 +318,7 @@ Found 2 errors.
 
 ----- stderr -----
 "
-                        );
+    );
 
     Ok(())
 }
@@ -337,14 +337,14 @@ fn test_several_lints_several_files() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path_2), test_contents_2)?;
 
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--allow-no-vcs")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -369,7 +369,7 @@ Found 2 errors.
 
 ----- stderr -----
 "
-                        );
+    );
 
     Ok(())
 }
@@ -433,14 +433,14 @@ fn test_corner_case() -> anyhow::Result<()> {
     let test_contents = "x %>% length()";
     std::fs::write(directory.join(test_path), test_contents)?;
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--allow-no-vcs")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -448,7 +448,7 @@ All checks passed!
 
 ----- stderr -----
 "
-                        );
+    );
 
     Ok(())
 }
@@ -522,17 +522,17 @@ Found 1 error.
 
     std::fs::write(directory.join(test_path), test_contents)?;
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--fix")
-                                .arg("--unsafe-fixes")
-                                .arg("--fix-only")
-                                .arg("--allow-no-vcs")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--fix")
+            .arg("--unsafe-fixes")
+            .arg("--fix-only")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -540,20 +540,20 @@ All checks passed!
 
 ----- stderr -----
 "
-                        );
+    );
 
     std::fs::write(directory.join(test_path), test_contents)?;
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--fix")
-                                .arg("--fix-only")
-                                .arg("--allow-no-vcs")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--fix")
+            .arg("--fix-only")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -561,20 +561,20 @@ All checks passed!
 
 ----- stderr -----
 "
-                        );
+    );
 
     std::fs::write(directory.join(test_path), test_contents)?;
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--unsafe-fixes")
-                                .arg("--fix-only")
-                                .arg("--allow-no-vcs")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--unsafe-fixes")
+            .arg("--fix-only")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -582,7 +582,7 @@ All checks passed!
 
 ----- stderr -----
 "
-                        );
+    );
 
     Ok(())
 }
@@ -601,14 +601,14 @@ fn test_safe_and_unsafe_lints() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path_2), test_contents_2)?;
 
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--allow-no-vcs")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -633,7 +633,7 @@ Found 2 errors.
 
 ----- stderr -----
 "
-                        );
+    );
 
     Ok(())
 }
@@ -648,14 +648,14 @@ fn test_newline_character_in_string() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-                            &mut Command::new(binary_path())
-                                .current_dir(directory)
-                                .arg("check")
-                                .arg(".")
-                                .arg("--allow-no-vcs")
-                                .run()
-                                .normalize_os_executable_name(),
-                            @"
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -672,7 +672,7 @@ Found 1 error.
 
 ----- stderr -----
 "
-                        );
+    );
 
     Ok(())
 }
