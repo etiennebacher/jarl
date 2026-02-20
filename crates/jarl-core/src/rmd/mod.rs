@@ -412,6 +412,182 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_ignore_file_in_first_chunk_no_violations_in_first_chunk() {
+        // jarl-ignore-file in the first chunk (no code there) should suppress
+        // the rule in other chunks and must NOT trigger outdated_suppression.
+        let content = concat!(
+            "```{r}\n",
+            "# jarl-ignore-file any_is_na: whole document\n",
+            "# jarl-ignore-file any_duplicated: whole document\n",
+            "```\n",
+            "\n",
+            "```{r}\n",
+            "any(is.na(1))\n",
+            "any(duplicated(1))\n",
+            "```\n",
+        );
+        let diagnostics = check_rmd(content);
+        // Violations are suppressed.
+        let violations: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "any_is_na" || d.message.name == "any_duplicated")
+            .collect();
+        assert!(
+            violations.is_empty(),
+            "jarl-ignore-file should suppress cross-chunk violations"
+        );
+        // No outdated_suppression should fire either.
+        let outdated: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "outdated_suppression")
+            .collect();
+        assert!(
+            outdated.is_empty(),
+            "jarl-ignore-file used cross-chunk must not trigger outdated_suppression"
+        );
+    }
+
+    #[test]
+    fn test_ignore_file_in_second_chunk_is_misplaced() {
+        // jarl-ignore-file in a non-first R chunk should trigger
+        // misplaced_file_suppression and must NOT suppress any violations.
+        let content = concat!(
+            "```{r}\n",
+            "x <- 1\n",
+            "```\n",
+            "\n",
+            "```{r}\n",
+            "# jarl-ignore-file any_is_na: should be misplaced\n",
+            "any(is.na(1))\n",
+            "```\n",
+        );
+        let diagnostics = check_rmd(content);
+        // The violation must still be reported (suppression is misplaced).
+        let violations: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "any_is_na")
+            .collect();
+        assert_eq!(
+            violations.len(),
+            1,
+            "misplaced jarl-ignore-file must not suppress any_is_na"
+        );
+        // And misplaced_file_suppression must fire.
+        let misplaced: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "misplaced_file_suppression")
+            .collect();
+        assert_eq!(
+            misplaced.len(),
+            1,
+            "jarl-ignore-file in a non-first chunk must fire misplaced_file_suppression"
+        );
+    }
+
+    #[test]
+    fn test_ignore_file_after_code_in_first_chunk_is_misplaced() {
+        // jarl-ignore-file that appears after code in the first chunk is misplaced.
+        let content = concat!(
+            "```{r}\n",
+            "x <- 1\n",
+            "# jarl-ignore-file any_is_na: should be misplaced\n",
+            "any(is.na(1))\n",
+            "```\n",
+        );
+        let diagnostics = check_rmd(content);
+        let violations: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "any_is_na")
+            .collect();
+        assert_eq!(
+            violations.len(),
+            1,
+            "misplaced jarl-ignore-file must not suppress any_is_na"
+        );
+        let misplaced: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "misplaced_file_suppression")
+            .collect();
+        assert_eq!(
+            misplaced.len(),
+            1,
+            "jarl-ignore-file after code must fire misplaced_file_suppression"
+        );
+    }
+
+    #[test]
+    fn test_ignore_file_valid_when_first_r_chunk_follows_python_chunk() {
+        // A Python chunk before the first R chunk does not affect validity:
+        // jarl-ignore-file is still accepted in the first R chunk.
+        let content = concat!(
+            "```{python}\n",
+            "x = 1\n",
+            "```\n",
+            "\n",
+            "```{r}\n",
+            "# jarl-ignore-file any_is_na: whole document\n",
+            "```\n",
+            "\n",
+            "```{r}\n",
+            "any(is.na(1))\n",
+            "```\n",
+        );
+        let diagnostics = check_rmd(content);
+        // Violation suppressed.
+        let violations: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "any_is_na")
+            .collect();
+        assert!(
+            violations.is_empty(),
+            "jarl-ignore-file in first R chunk should suppress even when preceded by a Python chunk"
+        );
+        // No misplaced_file_suppression.
+        let misplaced: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "misplaced_file_suppression")
+            .collect();
+        assert!(
+            misplaced.is_empty(),
+            "first R chunk is valid for jarl-ignore-file regardless of preceding non-R chunks"
+        );
+        // No outdated_suppression either.
+        let outdated: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "outdated_suppression")
+            .collect();
+        assert!(
+            outdated.is_empty(),
+            "jarl-ignore-file used cross-chunk must not trigger outdated_suppression"
+        );
+    }
+
+    #[test]
+    fn test_ignore_file_truly_unused_still_reports_outdated() {
+        // jarl-ignore-file in the first chunk where the suppressed rule has no
+        // violations anywhere must still trigger outdated_suppression.
+        let content = concat!(
+            "```{r}\n",
+            "# jarl-ignore-file any_is_na: whole document\n",
+            "```\n",
+            "\n",
+            "```{r}\n",
+            "x <- 1\n",
+            "```\n",
+        );
+        let diagnostics = check_rmd(content);
+        let outdated: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.message.name == "outdated_suppression")
+            .collect();
+        assert_eq!(
+            outdated.len(),
+            1,
+            "truly unused jarl-ignore-file must still trigger outdated_suppression"
+        );
+    }
+
     // --- No autofix ---
 
     #[test]

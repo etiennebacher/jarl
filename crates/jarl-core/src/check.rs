@@ -262,18 +262,41 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     // ── Pass 1: parse each chunk, build suppression managers,
     //    and collect file-level suppressed rules across all chunks ──
     let mut file_suppressed: HashSet<Rule> = HashSet::new();
+    // Maps each file-level suppression comment to its rule, using file-level byte
+    // offsets (chunk-local offset + chunk start_byte). Used later to remove
+    // spurious outdated_suppression diagnostics for cross-chunk suppressions.
+    let mut file_suppression_ranges: Vec<(biome_rowan::TextRange, Rule)> = Vec::new();
     let mut states: Vec<Option<ChunkState>> = Vec::with_capacity(chunks.len());
 
-    for chunk in &chunks {
+    for (chunk_index, chunk) in chunks.iter().enumerate() {
         let parsed = air_r_parser::parse(&chunk.code, RParserOptions::default());
         if parsed.has_error() {
             // Silently skip chunks with parse errors (e.g. documentation examples).
             states.push(None);
             continue;
         }
-        let suppression = SuppressionManager::from_node(&parsed.syntax(), &chunk.code);
+        let mut suppression = SuppressionManager::from_node(&parsed.syntax(), &chunk.code);
+
+        // `# jarl-ignore-file` is only valid in the first R chunk (before any code).
+        // In subsequent chunks it behaves like any other misplaced file suppression.
+        if chunk_index > 0 {
+            for fs in suppression.file_suppressions.drain(..) {
+                suppression
+                    .misplaced_file_suppressions
+                    .push(fs.comment_range);
+            }
+        }
+
+        let offset = TextSize::from(chunk.start_byte as u32);
         for fs in &suppression.file_suppressions {
             file_suppressed.insert(fs.rule);
+            file_suppression_ranges.push((
+                biome_rowan::TextRange::new(
+                    fs.comment_range.start() + offset,
+                    fs.comment_range.end() + offset,
+                ),
+                fs.rule,
+            ));
         }
         states.push(Some(ChunkState {
             parsed,
@@ -311,6 +334,36 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
             d
         });
         all_diagnostics.extend(diagnostics);
+    }
+
+    // A `# jarl-ignore-file` comment in one chunk can suppress violations in
+    // other chunks. From the perspective of the chunk that contains the comment,
+    // there are no local violations to suppress, so `check_document` marks the
+    // suppression as unused and emits an `outdated_suppression` diagnostic.
+    // Before the cross-chunk filter below removes the actual violations, we
+    // identify which file-suppression comments are genuinely used cross-chunk
+    // and remove the spurious outdated_suppression diagnostics for them.
+    if !file_suppression_ranges.is_empty() {
+        // Rules that have at least one real violation somewhere in the document.
+        let rules_violated: HashSet<Rule> = all_diagnostics
+            .iter()
+            .filter(|d| d.message.name != "outdated_suppression")
+            .filter_map(|d| Rule::from_name(&d.message.name))
+            .filter(|r| file_suppressed.contains(r))
+            .collect();
+
+        if !rules_violated.is_empty() {
+            // File-level suppression comment ranges that are actively used cross-chunk.
+            let used_file_ranges: HashSet<biome_rowan::TextRange> = file_suppression_ranges
+                .iter()
+                .filter(|(_, rule)| rules_violated.contains(rule))
+                .map(|(range, _)| *range)
+                .collect();
+
+            all_diagnostics.retain(|d| {
+                !(d.message.name == "outdated_suppression" && used_file_ranges.contains(&d.range))
+            });
+        }
     }
 
     // Apply cross-chunk jarl-ignore-file suppressions.
