@@ -12,7 +12,7 @@ mod tests {
     fn test_collect_arrow_assignment() {
         let dir = TempDir::new().unwrap();
         let file = dir.path().join("foo.R");
-        fs::write(&file, "foo <- 1\nbar <- 2\n").unwrap();
+        fs::write(&file, "foo <- function() 1\nbar <- function() 2\n").unwrap();
 
         let assignments = collect_top_level_assignments(&file);
         assert_eq!(assignments.len(), 2);
@@ -24,11 +24,21 @@ mod tests {
     fn test_collect_equals_assignment() {
         let dir = TempDir::new().unwrap();
         let file = dir.path().join("foo.R");
-        fs::write(&file, "foo = 1\n").unwrap();
+        fs::write(&file, "foo = function() 1\n").unwrap();
 
         let assignments = collect_top_level_assignments(&file);
         assert_eq!(assignments.len(), 1);
         assert_eq!(assignments[0].0, "foo");
+    }
+
+    #[test]
+    fn test_ignores_non_function_assignments() {
+        let dir = TempDir::new().unwrap();
+        let file = dir.path().join("foo.R");
+        fs::write(&file, "foo <- 1\nbar <- 'hello'\n").unwrap();
+
+        let assignments = collect_top_level_assignments(&file);
+        assert!(assignments.is_empty(), "non-function assignments should be ignored");
     }
 
     #[test]
@@ -121,7 +131,7 @@ mod tests {
         fs::write(dir.path().join("DESCRIPTION"), "Package: test").unwrap();
 
         let file = r_dir.join("foo.R");
-        fs::write(&file, "foo <- 1\nfoo <- 2\n").unwrap();
+        fs::write(&file, "foo <- function() 1\nfoo <- function() 2\n").unwrap();
 
         let result = compute_package_duplicate_assignments(std::slice::from_ref(&file));
 
@@ -142,11 +152,11 @@ mod tests {
 
         // aaa.R comes alphabetically first → defines `foo` first (not flagged)
         let file_a = r_dir.join("aaa.R");
-        fs::write(&file_a, "foo <- 1\n").unwrap();
+        fs::write(&file_a, "foo <- function() 1\n").unwrap();
 
         // bbb.R comes second → its `foo` is a duplicate
         let file_b = r_dir.join("bbb.R");
-        fs::write(&file_b, "foo <- 2\n").unwrap();
+        fs::write(&file_b, "foo <- function() 2\n").unwrap();
 
         let result = compute_package_duplicate_assignments(&[file_a.clone(), file_b.clone()]);
 
@@ -169,7 +179,7 @@ mod tests {
         fs::create_dir(&r_dir).unwrap();
 
         let file = r_dir.join("foo.R");
-        fs::write(&file, "foo <- 1\nfoo <- 2\n").unwrap();
+        fs::write(&file, "foo <- function() 1\nfoo <- function() 2\n").unwrap();
 
         let result = compute_package_duplicate_assignments(std::slice::from_ref(&file));
 
@@ -187,9 +197,9 @@ mod tests {
         fs::write(dir.path().join("DESCRIPTION"), "Package: test").unwrap();
 
         let file_a = r_dir.join("a.R");
-        fs::write(&file_a, "foo <- 1\n").unwrap();
+        fs::write(&file_a, "foo <- function() 1\n").unwrap();
         let file_b = r_dir.join("b.R");
-        fs::write(&file_b, "bar <- 2\n").unwrap();
+        fs::write(&file_b, "bar <- function() 2\n").unwrap();
 
         let result = compute_package_duplicate_assignments(&[file_a.clone(), file_b.clone()]);
 

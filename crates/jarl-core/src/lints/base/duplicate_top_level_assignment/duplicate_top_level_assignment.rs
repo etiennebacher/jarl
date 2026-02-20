@@ -1,6 +1,7 @@
 use air_r_parser::RParserOptions;
 use air_r_syntax::{AnyRExpression, RBinaryExpressionFields, RSyntaxKind};
 use biome_rowan::{AstNode, TextRange};
+use rayon::prelude::*;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
@@ -51,12 +52,17 @@ pub fn collect_top_level_assignments(file: &Path) -> Vec<(String, TextRange)> {
 
     for expr in parsed.tree().expressions() {
         if let AnyRExpression::RBinaryExpression(binary) = expr {
-            let RBinaryExpressionFields { left, operator, .. } = binary.as_fields();
+            let RBinaryExpressionFields { left, operator, right } = binary.as_fields();
 
             let Ok(op) = operator else { continue };
 
             // Only <- (ASSIGN) and = (EQUAL) operators
             if !matches!(op.kind(), RSyntaxKind::ASSIGN | RSyntaxKind::EQUAL) {
+                continue;
+            }
+            // Only flag assignments where the RHS is a function definition
+            let Ok(rhs) = right else { continue };
+            if rhs.as_r_function_definition().is_none() {
                 continue;
             }
 
@@ -81,45 +87,47 @@ pub fn collect_top_level_assignments(file: &Path) -> Vec<(String, TextRange)> {
 /// Files within each package are processed in alphabetical order by their
 /// relativized path. The **first** occurrence of each name is never flagged;
 /// all subsequent occurrences are flagged.
+// (root_key, rel_path, assignments) per package file
+type FileEntry = (String, PathBuf, Vec<(String, TextRange)>);
+// per-package sorted list: (rel_path, assignments)
+type PackageFiles = Vec<(PathBuf, Vec<(String, TextRange)>)>;
+
 pub fn compute_package_duplicate_assignments(
     paths: &[PathBuf],
 ) -> HashMap<PathBuf, Vec<(String, TextRange)>> {
-    // Group files by package root.
-    // We store pairs of (relativized_path, original_path) so that the map keys
-    // match the `file` argument passed to `get_checks()`.
-    let mut packages: HashMap<String, Vec<(PathBuf, PathBuf)>> = HashMap::new();
-
-    for path in paths {
-        // Rmd/Qmd files are excluded from this rule
-        if crate::fs::has_rmd_extension(path) {
-            continue;
-        }
-        // Only R files with .R extension inside a package R/ directory
-        if !crate::fs::has_r_extension(path) {
-            continue;
-        }
-        if let Some(root) = find_package_root(path) {
+    // For each R-package file, resolve its package root and collect top-level
+    // function assignments. .
+    let file_data: Vec<FileEntry> = paths
+        .par_iter()
+        .filter(|p| !crate::fs::has_rmd_extension(p) && crate::fs::has_r_extension(p))
+        .filter_map(|path| {
+            let root = find_package_root(path)?;
             let rel_path = PathBuf::from(crate::fs::relativize_path(path));
-            // Use the string form of the relativized root as the grouping key
             let root_key = crate::fs::relativize_path(&root);
-            packages
-                .entry(root_key)
-                .or_default()
-                .push((rel_path, path.clone()));
-        }
+            let assignments = collect_top_level_assignments(path);
+            Some((root_key, rel_path, assignments))
+        })
+        .collect();
+
+    // Group by package root, sort filesalphabetically, and detect duplicate names.
+    let mut packages: HashMap<String, PackageFiles> = HashMap::new();
+    for (root_key, rel_path, assignments) in file_data {
+        packages
+            .entry(root_key)
+            .or_default()
+            .push((rel_path, assignments));
     }
 
     let mut result: HashMap<PathBuf, Vec<(String, TextRange)>> = HashMap::new();
 
-    for (_root_key, mut file_pairs) in packages {
+    for (_root_key, mut file_data) in packages {
         // Sort alphabetically by the relativized path for deterministic ordering
-        file_pairs.sort_by(|a, b| a.0.cmp(&b.0));
+        file_data.sort_by(|a, b| a.0.cmp(&b.0));
 
         // Track the first occurrence of each name across the whole package
         let mut seen: HashMap<String, ()> = HashMap::new();
 
-        for (rel_path, orig_path) in &file_pairs {
-            let assignments = collect_top_level_assignments(orig_path);
+        for (rel_path, assignments) in file_data {
             let mut file_duplicates: Vec<(String, TextRange)> = Vec::new();
 
             for (name, range) in assignments {
@@ -136,7 +144,7 @@ pub fn compute_package_duplicate_assignments(
             }
 
             if !file_duplicates.is_empty() {
-                result.insert(rel_path.clone(), file_duplicates);
+                result.insert(rel_path, file_duplicates);
             }
         }
     }
