@@ -57,6 +57,7 @@ dat <- as.data.frame(
     c("comparison_negation", "readability", "✅", ""),
     c("download_file", "suspicious", "❌", ""),
     c("duplicated_arguments", "suspicious", "❌", ""),
+    c("duplicated_function_definition", "correctness", "❌", ""),
     c("empty_assignment", "readability", "❌", ""),
     c("equals_na", "correctness", "✅", ""),
     c("equals_nan", "correctness", "✅", ""),
