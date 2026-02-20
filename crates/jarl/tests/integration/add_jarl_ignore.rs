@@ -23,8 +23,8 @@ fn test_add_jarl_ignore_reason_with_newlines() -> anyhow::Result<()> {
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -33,11 +33,12 @@ exit_code: 255
 jarl failed
   Cause: --add-jarl-ignore=<reason> cannot contain newline characters.
 "
-        );
+                );
 
     // Check the file content - newlines should be converted to spaces
     let content = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!( content,
+    insta::assert_snapshot!(
+        content,
         @r"any(is.na(x))
     "
     );
@@ -63,8 +64,8 @@ fn test_add_jarl_ignore_basic() -> anyhow::Result<()> {
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -74,15 +75,16 @@ Summary: Added 1 suppression comment(s) across 1 file(s).
 
 ----- stderr -----
 "
-        );
+                );
 
     // Check the file content after modification
     let content = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!( content,
-            @r"# jarl-ignore any_is_na: <reason>
+    insta::assert_snapshot!(
+                content,
+                    @r"# jarl-ignore any_is_na: <reason>
 any(is.na(x))
 "
-        );
+                );
 
     Ok(())
 }
@@ -105,8 +107,8 @@ fn test_add_jarl_ignore_custom_reason() -> anyhow::Result<()> {
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -116,15 +118,16 @@ Summary: Added 1 suppression comment(s) across 1 file(s).
 
 ----- stderr -----
 "
-        );
+                );
 
     // Check the file content after modification
     let content = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!( content,
-            @r"# jarl-ignore any_is_na: known issue in legacy code
+    insta::assert_snapshot!(
+                content,
+                    @r"# jarl-ignore any_is_na: known issue in legacy code
 any(is.na(x))
 "
-        );
+                );
 
     Ok(())
 }
@@ -152,8 +155,8 @@ any(duplicated(y))
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -163,16 +166,17 @@ Summary: Added 2 suppression comment(s) across 1 file(s).
 
 ----- stderr -----
 "
-        );
+                );
 
     let content = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!( content,
-            @r"# jarl-ignore any_is_na: <reason>
+    insta::assert_snapshot!(
+                content,
+                    @r"# jarl-ignore any_is_na: <reason>
 any(is.na(x))
 # jarl-ignore any_duplicated: <reason>
 any(duplicated(y))
 "
-        );
+                );
 
     Ok(())
 }
@@ -195,8 +199,8 @@ fn test_add_jarl_ignore_multiple_files() -> anyhow::Result<()> {
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -207,20 +211,22 @@ Summary: Added 2 suppression comment(s) across 2 file(s).
 
 ----- stderr -----
 "
-        );
+                );
 
     let content1 = std::fs::read_to_string(directory.join("file1.R"))?;
     let content2 = std::fs::read_to_string(directory.join("file2.R"))?;
-    insta::assert_snapshot!( content1,
-            @r"# jarl-ignore any_is_na: <reason>
+    insta::assert_snapshot!(
+                content1,
+                    @r"# jarl-ignore any_is_na: <reason>
 any(is.na(x))
 "
-        );
-    insta::assert_snapshot!( content2,
-            @r"# jarl-ignore any_duplicated: <reason>
+                );
+    insta::assert_snapshot!(
+                content2,
+                    @r"# jarl-ignore any_duplicated: <reason>
 any(duplicated(y))
 "
-        );
+                );
 
     Ok(())
 }
@@ -243,8 +249,8 @@ fn test_add_jarl_ignore_no_violations() -> anyhow::Result<()> {
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -252,7 +258,7 @@ Info: No violations found, no suppression comments added.
 
 ----- stderr -----
 "
-        );
+                );
 
     // File should be unchanged
     let content = std::fs::read_to_string(directory.join(test_path))?;
@@ -290,8 +296,8 @@ fn test_add_jarl_ignore_idempotent() -> anyhow::Result<()> {
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -299,17 +305,18 @@ Info: No violations found, no suppression comments added.
 
 ----- stderr -----
 "
-        );
+                );
 
     let content_after_second = std::fs::read_to_string(directory.join(test_path))?;
 
     // Content should be unchanged after second run
     assert_eq!(content_after_first, content_after_second);
-    insta::assert_snapshot!( content_after_second,
-            @r"# jarl-ignore any_is_na: <reason>
+    insta::assert_snapshot!(
+                content_after_second,
+                    @r"# jarl-ignore any_is_na: <reason>
 any(is.na(x))
 "
-        );
+                );
 
     Ok(())
 }
@@ -336,8 +343,8 @@ fn test_add_jarl_ignore_nested_violation() -> anyhow::Result<()> {
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -347,14 +354,15 @@ Summary: Added 1 suppression comment(s) across 1 file(s).
 
 ----- stderr -----
 "
-        );
+                );
 
     let content = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!( content,
-            @r"# jarl-ignore any_is_na: <reason>
+    insta::assert_snapshot!(
+                content,
+                    @r"# jarl-ignore any_is_na: <reason>
 x <- foo(any(is.na(y)))
 "
-        );
+                );
 
     Ok(())
 }
@@ -383,8 +391,8 @@ fn test_add_jarl_ignore_with_indentation() -> anyhow::Result<()> {
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -394,16 +402,17 @@ Summary: Added 1 suppression comment(s) across 1 file(s).
 
 ----- stderr -----
 "
-        );
+                );
 
     let content = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!( content,
-            @r"f <- function() {
+    insta::assert_snapshot!(
+                content,
+                    @r"f <- function() {
   # jarl-ignore any_is_na: <reason>
   any(is.na(x))
 }
 "
-        );
+                );
 
     Ok(())
 }
@@ -434,8 +443,8 @@ fn test_add_jarl_ignore_function_parameter() -> anyhow::Result<()> {
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -445,18 +454,19 @@ Summary: Added 1 suppression comment(s) across 1 file(s).
 
 ----- stderr -----
 "
-        );
+                );
 
     let content = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!( content,
-            @r"f <- function(
+    insta::assert_snapshot!(
+                content,
+                    @r"f <- function(
     # jarl-ignore any_is_na: <reason>
     a = any(is.na(x))
 ) {
   1
 }
 "
-        );
+                );
 
     Ok(())
 }
@@ -485,8 +495,8 @@ fn test_add_jarl_ignore_inline_condition() -> anyhow::Result<()> {
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -496,17 +506,18 @@ Summary: Added 1 suppression comment(s) across 1 file(s).
 
 ----- stderr -----
 "
-        );
+                );
 
     let content = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!( content,
-            @r"if (
+    insta::assert_snapshot!(
+                content,
+                    @r"if (
     # jarl-ignore any_is_na: <reason>
     any(is.na(x))) {
   print(1)
 }
 "
-        );
+                );
 
     Ok(())
 }
@@ -536,8 +547,8 @@ fn test_add_jarl_ignore_pipe_chain() -> anyhow::Result<()> {
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -547,10 +558,11 @@ Summary: Added 1 suppression comment(s) across 1 file(s).
 
 ----- stderr -----
 "
-        );
+                );
 
     let content = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!( content,
+    insta::assert_snapshot!(
+        content,
         @r#"x |>
   foo() |>
   # jarl-ignore download_file: <reason>
@@ -581,8 +593,8 @@ fn test_add_jarl_ignore_same_rule_same_line() -> anyhow::Result<()> {
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -592,25 +604,26 @@ Summary: Added 2 suppression comment(s) across 1 file(s).
 
 ----- stderr -----
 "
-        );
+                );
 
     let content = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!( content,
-            @r"# jarl-ignore redundant_equals: <reason>
+    insta::assert_snapshot!(
+                content,
+                    @r"# jarl-ignore redundant_equals: <reason>
 # jarl-ignore any_is_na: <reason>
 z <- x == TRUE && any(is.na(y))
 "
-        );
+                );
 
     insta::assert_snapshot!(
-            Command::new(binary_path())
-                                    .current_dir(directory)
-                                    .arg("check")
-                                    .arg(".")
-                                    .run()
-                                    .normalize_os_executable_name()
-                                    .normalize_temp_paths(),
-    @r"
+                    Command::new(binary_path())
+                                            .current_dir(directory)
+                                            .arg("check")
+                                            .arg(".")
+                                            .run()
+                                            .normalize_os_executable_name()
+                                            .normalize_temp_paths(),
+            @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -618,7 +631,7 @@ All checks passed!
 
 ----- stderr -----
 "
-        );
+                );
 
     Ok(())
 }
@@ -648,8 +661,8 @@ fn test_add_jarl_ignore_same_rule_same_line_in_if_condition() -> anyhow::Result<
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -659,27 +672,28 @@ Summary: Added 1 suppression comment(s) across 1 file(s).
 
 ----- stderr -----
 "
-        );
+                );
 
     let content = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!( content,
-            @r"if (
+    insta::assert_snapshot!(
+                content,
+                    @r"if (
     # jarl-ignore redundant_equals: <reason>
     x == TRUE || y == TRUE) {
   1
 }
 "
-        );
+                );
 
     insta::assert_snapshot!(
-            Command::new(binary_path())
-                                    .current_dir(directory)
-                                    .arg("check")
-                                    .arg(".")
-                                    .run()
-                                    .normalize_os_executable_name()
-                                    .normalize_temp_paths(),
-    @r"
+                    Command::new(binary_path())
+                                            .current_dir(directory)
+                                            .arg("check")
+                                            .arg(".")
+                                            .run()
+                                            .normalize_os_executable_name()
+                                            .normalize_temp_paths(),
+            @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -687,7 +701,7 @@ All checks passed!
 
 ----- stderr -----
 "
-        );
+                );
 
     Ok(())
 }
@@ -717,8 +731,8 @@ fn test_add_jarl_ignore_different_rules_same_line() -> anyhow::Result<()> {
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -728,28 +742,29 @@ Summary: Added 2 suppression comment(s) across 1 file(s).
 
 ----- stderr -----
 "
-        );
+                );
 
     let content = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!( content,
-            @r"if (
+    insta::assert_snapshot!(
+                content,
+                    @r"if (
     # jarl-ignore redundant_equals: <reason>
     # jarl-ignore any_is_na: <reason>
     x == TRUE || any(is.na(y))) {
   1
 }
 "
-        );
+                );
 
     insta::assert_snapshot!(
-            Command::new(binary_path())
-                                    .current_dir(directory)
-                                    .arg("check")
-                                    .arg(".")
-                                    .run()
-                                    .normalize_os_executable_name()
-                                    .normalize_temp_paths(),
-    @r"
+                    Command::new(binary_path())
+                                            .current_dir(directory)
+                                            .arg("check")
+                                            .arg(".")
+                                            .run()
+                                            .normalize_os_executable_name()
+                                            .normalize_temp_paths(),
+            @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -757,7 +772,7 @@ All checks passed!
 
 ----- stderr -----
 "
-        );
+                );
 
     Ok(())
 }
@@ -790,8 +805,8 @@ fn test_add_jarl_ignore_multiline_condition() -> anyhow::Result<()> {
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -801,11 +816,12 @@ Summary: Added 1 suppression comment(s) across 1 file(s).
 
 ----- stderr -----
 "
-        );
+                );
 
     let content = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!( content,
-            @r"if (
+    insta::assert_snapshot!(
+                content,
+                    @r"if (
   # jarl-ignore redundant_equals: <reason>
   super_long_variable_name == TRUE ||
     super_long_variable_name_again == TRUE
@@ -813,17 +829,17 @@ Summary: Added 1 suppression comment(s) across 1 file(s).
   1
 }
 "
-        );
+                );
 
     insta::assert_snapshot!(
-            Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .run()
-                .normalize_os_executable_name()
-                .normalize_temp_paths(),
-    @r"
+                    Command::new(binary_path())
+                        .current_dir(directory)
+                        .arg("check")
+                        .arg(".")
+                        .run()
+                        .normalize_os_executable_name()
+                        .normalize_temp_paths(),
+            @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -831,7 +847,7 @@ All checks passed!
 
 ----- stderr -----
 "
-        );
+                );
 
     Ok(())
 }
@@ -857,8 +873,8 @@ fn test_add_jarl_ignore_rmd_basic_insertion() -> anyhow::Result<()> {
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -868,11 +884,12 @@ Summary: Added 1 suppression comment(s) across 1 file(s).
 
 ----- stderr -----
 "
-        );
+                );
 
     let content = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!( content,
-            @r"---
+    insta::assert_snapshot!(
+                content,
+                    @r"---
 title: Test
 ---
 
@@ -881,7 +898,7 @@ title: Test
 any(is.na(x))
 ```
 "
-        );
+                );
 
     Ok(())
 }
@@ -907,8 +924,8 @@ fn test_add_jarl_ignore_rmd_multiple_chunks() -> anyhow::Result<()> {
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -918,11 +935,12 @@ Summary: Added 2 suppression comment(s) across 1 file(s).
 
 ----- stderr -----
 "
-        );
+                );
 
     let content = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!( content,
-            @r"```{r}
+    insta::assert_snapshot!(
+                content,
+                    @r"```{r}
 # jarl-ignore any_is_na: <reason>
 any(is.na(x))
 ```
@@ -933,7 +951,7 @@ any(is.na(x))
 any(is.na(y))
 ```
 "
-        );
+                );
 
     Ok(())
 }
@@ -959,8 +977,8 @@ fn test_add_jarl_ignore_qmd_insertion() -> anyhow::Result<()> {
         .normalize_temp_paths();
 
     insta::assert_snapshot!(
-            output,
-            @r"
+                    output,
+                    @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -970,11 +988,12 @@ Summary: Added 1 suppression comment(s) across 1 file(s).
 
 ----- stderr -----
 "
-        );
+                );
 
     let content = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!( content,
-            @r"---
+    insta::assert_snapshot!(
+                content,
+                    @r"---
 title: Test
 ---
 
@@ -983,7 +1002,7 @@ title: Test
 any(is.na(x))
 ```
 "
-        );
+                );
 
     Ok(())
 }

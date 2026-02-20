@@ -14,15 +14,15 @@ fn test_one_non_existing_selected_rule() -> anyhow::Result<()> {
     let test_contents = "any(is.na(x))";
     std::fs::write(directory.join(test_path), test_contents)?;
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--select")
-                .arg("foo")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--select")
+                    .arg("foo")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -31,7 +31,7 @@ exit_code: 255
 jarl failed
   Cause: Unknown rules in `--select`: foo
 "
-        );
+            );
 
     Ok(())
 }
@@ -45,15 +45,15 @@ fn test_several_non_existing_selected_rules() -> anyhow::Result<()> {
     let test_contents = "any(is.na(x))";
     std::fs::write(directory.join(test_path), test_contents)?;
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--select")
-                .arg("foo,any_is_na,barbaz")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--select")
+                    .arg("foo,any_is_na,barbaz")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -62,7 +62,7 @@ exit_code: 255
 jarl failed
   Cause: Unknown rules in `--select`: foo, barbaz
 "
-        );
+            );
 
     Ok(())
 }
@@ -76,15 +76,15 @@ fn test_one_non_existing_ignored_rule() -> anyhow::Result<()> {
     let test_contents = "any(is.na(x))";
     std::fs::write(directory.join(test_path), test_contents)?;
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--ignore")
-                .arg("foo")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--ignore")
+                    .arg("foo")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -93,7 +93,7 @@ exit_code: 255
 jarl failed
   Cause: Unknown rules in `--ignore`: foo
 "
-        );
+            );
 
     Ok(())
 }
@@ -107,15 +107,15 @@ fn test_several_non_existing_ignored_rules() -> anyhow::Result<()> {
     let test_contents = "any(is.na(x))";
     std::fs::write(directory.join(test_path), test_contents)?;
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--ignore")
-                .arg("foo,any_is_na,barbaz")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--ignore")
+                    .arg("foo,any_is_na,barbaz")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -124,7 +124,7 @@ exit_code: 255
 jarl failed
   Cause: Unknown rules in `--ignore`: foo, barbaz
 "
-        );
+            );
 
     Ok(())
 }
@@ -139,17 +139,17 @@ fn test_selected_and_ignored() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--select")
-                .arg("any_is_na")
-                .arg("--ignore")
-                .arg("any_is_na")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--select")
+                    .arg("any_is_na")
+                    .arg("--ignore")
+                    .arg("any_is_na")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -157,7 +157,7 @@ All checks passed!
 
 ----- stderr -----
 "
-        );
+            );
 
     Ok(())
 }
@@ -176,17 +176,17 @@ fn test_correct_rule_selection_and_exclusion() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path_2), test_contents_2)?;
 
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--select")
-                .arg("any_is_na")
-                .arg("--ignore")
-                .arg("any_duplicated")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--select")
+                    .arg("any_is_na")
+                    .arg("--ignore")
+                    .arg("any_duplicated")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -203,7 +203,7 @@ Found 1 error.
 
 ----- stderr -----
 "
-        );
+            );
 
     Ok(())
 }
@@ -222,15 +222,15 @@ any(is.na(x))
 
     // Works with only group name
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--select")
-                .arg("SUSP")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--select")
+                    .arg("SUSP")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -247,19 +247,19 @@ Found 1 error.
 
 ----- stderr -----
 "
-        );
+            );
 
     // Can mix group name and rule name
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--select")
-                .arg("any_is_na,SUSP")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--select")
+                    .arg("any_is_na,SUSP")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -284,19 +284,19 @@ Found 2 errors.
 
 ----- stderr -----
 "
-        );
+            );
 
     // Can mix group name and rule name that is part of the same group
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--select")
-                .arg("all_equal,SUSP")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--select")
+                    .arg("all_equal,SUSP")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -313,7 +313,7 @@ Found 1 error.
 
 ----- stderr -----
 "
-        );
+            );
 
     Ok(())
 }
@@ -332,15 +332,15 @@ any(is.na(x))
 
     // Works with only group name
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--ignore")
-                .arg("SUSP")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--ignore")
+                    .arg("SUSP")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -357,19 +357,19 @@ Found 1 error.
 
 ----- stderr -----
 "
-        );
+            );
 
     // Can mix group name and rule name
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--ignore")
-                .arg("any_is_na,SUSP")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--ignore")
+                    .arg("any_is_na,SUSP")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -377,19 +377,19 @@ All checks passed!
 
 ----- stderr -----
 "
-        );
+            );
 
     // Can mix group name and rule name that is part of the same group
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--ignore")
-                .arg("all_equal,SUSP")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--ignore")
+                    .arg("all_equal,SUSP")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -406,7 +406,7 @@ Found 1 error.
 
 ----- stderr -----
 "
-        );
+            );
 
     Ok(())
 }
@@ -422,15 +422,15 @@ fn test_invalid_rule_group() -> anyhow::Result<()> {
 
     // Works with only group name
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--ignore")
-                .arg("FOOBAR,SUSP")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--ignore")
+                    .arg("FOOBAR,SUSP")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -439,7 +439,7 @@ exit_code: 255
 jarl failed
   Cause: Unknown rules in `--ignore`: FOOBAR
 "
-        );
+            );
 
     Ok(())
 }
@@ -457,17 +457,17 @@ any(is.na(x))
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--select")
-                .arg("SUSP")
-                .arg("--ignore")
-                .arg("SUSP")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--select")
+                    .arg("SUSP")
+                    .arg("--ignore")
+                    .arg("SUSP")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: true
 exit_code: 0
 ----- stdout -----
@@ -475,20 +475,20 @@ All checks passed!
 
 ----- stderr -----
 "
-        );
+            );
 
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--select")
-                .arg("SUSP")
-                .arg("--ignore")
-                .arg("PERF")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--select")
+                    .arg("SUSP")
+                    .arg("--ignore")
+                    .arg("PERF")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -505,7 +505,7 @@ Found 1 error.
 
 ----- stderr -----
 "
-        );
+            );
 
     Ok(())
 }
@@ -525,13 +525,13 @@ expect_equal(foo(x), TRUE)
     // The rule group TESTTHAT is disabled by default, so the second line is not
     // reported.
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -548,7 +548,7 @@ Found 1 error.
 
 ----- stderr -----
 "
-        );
+            );
 
     Ok(())
 }
@@ -567,15 +567,15 @@ expect_equal(foo(x), TRUE)
 
     // Using ALL should select all rules including opt-in ones like TESTTHAT
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--select")
-                .arg("ALL")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--select")
+                    .arg("ALL")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -600,21 +600,21 @@ Found 2 errors.
 
 ----- stderr -----
 "
-        );
+            );
 
     // ALL can be combined with ignore
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--select")
-                .arg("ALL")
-                .arg("--ignore")
-                .arg("TESTTHAT")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--select")
+                    .arg("ALL")
+                    .arg("--ignore")
+                    .arg("TESTTHAT")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -631,7 +631,7 @@ Found 1 error.
 
 ----- stderr -----
 "
-        );
+            );
 
     Ok(())
 }
@@ -650,15 +650,15 @@ expect_equal(foo(x), TRUE)
 
     // With extend-select TESTTHAT, both default rules and TESTTHAT rules are active
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--extend-select")
-                .arg("TESTTHAT")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--extend-select")
+                    .arg("TESTTHAT")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -683,19 +683,19 @@ Found 2 errors.
 
 ----- stderr -----
 "
-        );
+            );
 
     // extend-select can also be used with specific rule names
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--extend-select")
-                .arg("expect_true_false")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--extend-select")
+                    .arg("expect_true_false")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -720,7 +720,7 @@ Found 2 errors.
 
 ----- stderr -----
 "
-        );
+            );
 
     Ok(())
 }
@@ -735,15 +735,15 @@ fn test_extend_select_unknown_rule() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--extend-select")
-                .arg("FOO")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--extend-select")
+                    .arg("FOO")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 255
 ----- stdout -----
@@ -752,7 +752,7 @@ exit_code: 255
 jarl failed
   Cause: Unknown rules in `--extend-select`: FOO
 "
-        );
+            );
     Ok(())
 }
 
@@ -767,15 +767,15 @@ fn test_deprecated_rule_warning_from_cli() -> anyhow::Result<()> {
 
     // Selecting `browser` via --select should emit a deprecation warning on stderr
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .arg("--select")
-                .arg("browser")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .arg("--select")
+                    .arg("browser")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -791,7 +791,7 @@ Found 1 error.
 ----- stderr -----
 Warning: Rule `browser` is deprecated since v0.5.0. Use `undesirable_function` instead.
 "
-        );
+            );
 
     Ok(())
 }
@@ -815,13 +815,13 @@ select = ["browser"]
 
     // Using `browser` in TOML select should emit a deprecation warning
     insta::assert_snapshot!(
-            &mut Command::new(binary_path())
-                .current_dir(directory)
-                .arg("check")
-                .arg(".")
-                .run()
-                .normalize_os_executable_name(),
-            @r"
+                &mut Command::new(binary_path())
+                    .current_dir(directory)
+                    .arg("check")
+                    .arg(".")
+                    .run()
+                    .normalize_os_executable_name(),
+                @r"
 success: false
 exit_code: 1
 ----- stdout -----
@@ -837,7 +837,7 @@ Found 1 error.
 ----- stderr -----
 Warning: Rule `browser` is deprecated since v0.5.0. Use `undesirable_function` instead.
 "
-        );
+            );
 
     Ok(())
 }
