@@ -67,6 +67,7 @@ website:
       - rules/comparison_negation.md
       - rules/download_file.md
       - rules/duplicated_arguments.md
+      - rules/duplicated_function_definition.md
       - rules/equals_na.md
       - rules/equals_nan.md
       - rules/equals_null.md

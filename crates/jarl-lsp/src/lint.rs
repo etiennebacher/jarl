@@ -134,7 +134,17 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlD
     };
 
     let toml_settings = resolver.items().first().map(|item| item.value());
-    let config = build_config(&check_config, toml_settings, paths)?;
+    let mut config = build_config(&check_config, toml_settings, paths)?;
+
+    // Pre-compute package-level duplicate assignments using the real file path.
+    // The temp file lives outside the package tree, so the normal code path in
+    // `check()` would find nothing.
+    if config
+        .rules_to_apply
+        .contains(&jarl_core::rule_set::Rule::DuplicatedFunctionDefinition)
+    {
+        precompute_package_duplicates(&mut config, file_path, &temp_file);
+    }
 
     let diagnostics = jarl_core::check::check(config);
     let mut all_diagnostics: Vec<JarlDiagnostic> = diagnostics
@@ -162,6 +172,57 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlD
     }
 
     Ok(all_diagnostics)
+}
+
+/// Pre-compute package-level duplicate function assignments into `config`.
+///
+/// The LSP lints a temporary copy of the file that lives outside the real
+/// package tree, so `compute_package_duplicate_assignments` (which checks
+/// `is_in_r_package`) would find nothing for the temp file. This function
+/// runs the analysis on the real package files and re-keys the result for
+/// the current file so it matches the temp file path that `get_checks` will
+/// look up.
+fn precompute_package_duplicates(
+    config: &mut jarl_core::config::Config,
+    real_path: &Path,
+    temp_path: &Path,
+) {
+    use jarl_core::check::{compute_package_duplicate_assignments, is_in_r_package};
+
+    if !is_in_r_package(real_path).unwrap_or(false) {
+        return;
+    }
+
+    let Some(r_dir) = real_path.parent() else {
+        return;
+    };
+
+    let Ok(entries) = std::fs::read_dir(r_dir) else {
+        return;
+    };
+
+    let package_files: Vec<std::path::PathBuf> = entries
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| jarl_core::fs::has_r_extension(p))
+        .collect();
+
+    let package_dupes = compute_package_duplicate_assignments(&package_files);
+
+    // Re-key: the checker looks up diagnostics by the relativized temp path,
+    // but the analysis was done with real paths.
+    let real_rel = std::path::PathBuf::from(jarl_core::fs::relativize_path(real_path));
+    let temp_rel = std::path::PathBuf::from(jarl_core::fs::relativize_path(temp_path));
+
+    for (key, value) in package_dupes {
+        if key == real_rel {
+            config
+                .package_duplicate_assignments
+                .insert(temp_rel.clone(), value);
+        } else {
+            config.package_duplicate_assignments.insert(key, value);
+        }
+    }
 }
 
 /// Convert a Jarl diagnostic to LSP diagnostic format with fix information
@@ -639,6 +700,120 @@ mod tests {
         assert_eq!(
             range.start.character, 2,
             "diagnostic column must account for the 2-space indent"
+        );
+    }
+
+    // --- Package-level duplicate function definition tests ---
+
+    /// Create a minimal R package in a temp dir and return (temp_dir, R/ path).
+    /// The TempDir is returned to keep it alive for the duration of the test.
+    fn create_test_package() -> (TempDir, std::path::PathBuf) {
+        let dir = TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("DESCRIPTION"),
+            "Package: testpkg\nVersion: 0.1.0\n",
+        )
+        .unwrap();
+        let r_dir = dir.path().join("R");
+        std::fs::create_dir(&r_dir).unwrap();
+        (dir, r_dir)
+    }
+
+    /// Create a snapshot backed by a real file on disk.
+    fn create_snapshot_for_file(file_path: &std::path::Path, content: &str) -> DocumentSnapshot {
+        let uri = Url::from_file_path(file_path).unwrap();
+        let key = DocumentKey::from(uri);
+        let document = TextDocument::new(content.to_string(), 1);
+        DocumentSnapshot::new(
+            document,
+            key,
+            PositionEncoding::UTF8,
+            ClientCapabilities::default(),
+        )
+    }
+
+    #[test]
+    fn test_duplicate_function_same_file() {
+        let (_dir, r_dir) = create_test_package();
+
+        let content = "foo <- function() 1\nfoo <- function() 2\n";
+        let file = r_dir.join("foo.R");
+        std::fs::write(&file, content).unwrap();
+
+        let snapshot = create_snapshot_for_file(&file, content);
+        let diagnostics = lint_document(&snapshot).unwrap();
+
+        let hits = diagnostics_for_rule(&diagnostics, "duplicated_function_definition");
+        assert_eq!(
+            hits.len(),
+            1,
+            "expected one duplicate diagnostic, got: {hits:?}"
+        );
+        assert!(
+            hits[0].message.contains("`foo` is defined more than once"),
+            "message should mention `foo`, got: {}",
+            hits[0].message
+        );
+    }
+
+    #[test]
+    fn test_duplicate_function_cross_file() {
+        let (_dir, r_dir) = create_test_package();
+
+        // aaa.R defines `foo` first (alphabetically), bbb.R is the duplicate
+        std::fs::write(r_dir.join("aaa.R"), "foo <- function() 1\n").unwrap();
+        let content = "foo <- function() 2\n";
+        let file = r_dir.join("bbb.R");
+        std::fs::write(&file, content).unwrap();
+
+        let snapshot = create_snapshot_for_file(&file, content);
+        let diagnostics = lint_document(&snapshot).unwrap();
+
+        let hits = diagnostics_for_rule(&diagnostics, "duplicated_function_definition");
+        assert_eq!(
+            hits.len(),
+            1,
+            "expected one duplicate diagnostic on bbb.R, got: {hits:?}"
+        );
+    }
+
+    #[test]
+    fn test_no_duplicate_outside_package() {
+        // No DESCRIPTION so not a package, rule should not fire
+        let dir = TempDir::new().unwrap();
+        let r_dir = dir.path().join("R");
+        std::fs::create_dir(&r_dir).unwrap();
+
+        let content = "foo <- function() 1\nfoo <- function() 2\n";
+        let file = r_dir.join("foo.R");
+        std::fs::write(&file, content).unwrap();
+
+        let snapshot = create_snapshot_for_file(&file, content);
+        let diagnostics = lint_document(&snapshot).unwrap();
+
+        let hits = diagnostics_for_rule(&diagnostics, "duplicated_function_definition");
+        assert!(
+            hits.is_empty(),
+            "should not flag duplicates outside a package, got: {hits:?}"
+        );
+    }
+
+    #[test]
+    fn test_no_duplicate_unique_names() {
+        let (_dir, r_dir) = create_test_package();
+
+        std::fs::write(r_dir.join("aaa.R"), "foo <- function() 1\n").unwrap();
+        let content = "bar <- function() 2\n";
+        let file = r_dir.join("bbb.R");
+        std::fs::write(&file, content).unwrap();
+
+        let snapshot = create_snapshot_for_file(&file, content);
+        let diagnostics = lint_document(&snapshot).unwrap();
+
+        let hits = diagnostics_for_rule(&diagnostics, "duplicated_function_definition");
+        assert!(
+            hits.is_empty(),
+            "unique names should not be flagged, got: {hits:?}"
         );
     }
 

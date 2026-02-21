@@ -304,6 +304,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    DuplicatedFunctionDefinition => {
+        name: "duplicated_function_definition",
+        categories: [Corr],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     EmptyAssignment => {
         name: "empty_assignment",
         categories: [Read],

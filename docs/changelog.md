@@ -52,6 +52,7 @@
 
 * New rules:
 
+  - `duplicated_function_definition` (#358)
   - `invalid_chunk_suppression` (#350)
   - `undesirable_function` (replaces `browser`) (#336)
 
