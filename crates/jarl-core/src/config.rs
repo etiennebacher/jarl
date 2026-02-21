@@ -89,6 +89,11 @@ pub struct Config {
     /// Keyed by relativized file path. Value is a list of `(name, lhs_range,
     /// help)` triples where `help` points to the first definition.
     pub package_duplicate_assignments: HashMap<PathBuf, Vec<(String, TextRange, String)>>,
+    /// Pre-computed per-file unused internal function data.
+    /// Keyed by relativized file path. Value is a list of `(name, lhs_range,
+    /// help)` triples for functions that are defined but never called and not
+    /// exported.
+    pub package_unused_internal_functions: HashMap<PathBuf, Vec<(String, TextRange, String)>>,
 }
 
 pub fn build_config(
@@ -165,6 +170,7 @@ pub fn build_config(
         fixable: fixable_toml,
         rule_options,
         package_duplicate_assignments: HashMap::new(),
+        package_unused_internal_functions: HashMap::new(),
     })
 }
 
