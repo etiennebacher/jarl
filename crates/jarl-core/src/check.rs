@@ -21,7 +21,9 @@ use crate::analyze;
 use crate::config::Config;
 use crate::diagnostic::*;
 use crate::fix::*;
-use crate::lints::base::duplicated_function_definition::duplicated_function_definition::compute_package_duplicate_assignments;
+// Re-exported so the LSP can pre-compute package duplicates before calling `check()`.
+pub use crate::lints::base::duplicated_function_definition::duplicated_function_definition::compute_package_duplicate_assignments;
+pub use crate::lints::base::duplicated_function_definition::duplicated_function_definition::is_in_r_package;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
 use crate::lints::comments::invalid_chunk_suppression::invalid_chunk_suppression::invalid_chunk_suppression;
@@ -52,9 +54,12 @@ pub fn check(mut config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow:
 
     // Pre-compute cross-file duplicate assignments for the package rule.
     // This must happen before the config is wrapped in Arc.
+    // Skip if already pre-populated (e.g. by the LSP which needs special
+    // handling because it lints a temp file outside the real package tree).
     if config
         .rules_to_apply
         .contains(&Rule::DuplicatedFunctionDefinition)
+        && config.package_duplicate_assignments.is_empty()
     {
         config.package_duplicate_assignments = compute_package_duplicate_assignments(&config.paths);
     }
