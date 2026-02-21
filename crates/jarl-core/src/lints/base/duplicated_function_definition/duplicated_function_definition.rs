@@ -181,7 +181,7 @@ pub fn compute_package_duplicate_assignments(
                         // This is a duplicate: flag it with a pointer to the first definition
                         let (first_file, first_line, first_col) = e.get();
                         let help = format!(
-                            "other definition at {}:{first_line}:{first_col}",
+                            "Other definition at {}:{first_line}:{first_col}",
                             first_file.display()
                         );
                         file_duplicates.push((name, range, help));
