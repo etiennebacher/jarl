@@ -74,6 +74,24 @@ mod tests {
         assert!(!exports.contains("print.myclass"));
     }
 
+    #[test]
+    fn test_parse_s3method_with_if_guard() {
+        let content = "if (getRversion() >= \"4.4.0\") S3method(sort_by, data.table)\n";
+        let exports = parse_namespace_exports(content, &[]);
+        assert!(
+            exports.contains("sort_by.data.table"),
+            "expected sort_by.data.table, got: {:?}",
+            exports
+        );
+    }
+
+    #[test]
+    fn test_parse_export_with_if_guard() {
+        let content = "if (getRversion() >= \"4.4.0\") export(sort_by)\n";
+        let exports = parse_namespace_exports(content, &[]);
+        assert!(exports.contains("sort_by"));
+    }
+
     // ── scan_symbols ─────────────────────────────────────────────────────
 
     #[test]

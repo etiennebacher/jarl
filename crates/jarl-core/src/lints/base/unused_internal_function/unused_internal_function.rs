@@ -40,6 +40,31 @@ use crate::lints::base::duplicated_function_definition::duplicated_function_defi
 // # fine. But if nothing ever called `helper`, it would be flagged.
 // ```
 
+/// Find a NAMESPACE directive (e.g. `S3method`, `export`) in a line and
+/// return its parenthesized arguments. Handles lines where the directive is
+/// preceded by an `if (...)` guard, e.g.:
+///   `if (getRversion() >= "4.4.0") S3method(sort_by, data.table)`
+fn extract_directive<'a>(line: &'a str, directive: &str) -> Option<&'a str> {
+    // Find `directive(` in the line
+    let dir_with_paren = format!("{directive}(");
+    let start = line.find(&dir_with_paren)?;
+    let args_start = start + dir_with_paren.len();
+
+    // Make sure the directive is not part of a longer word
+    // (e.g. "exportPattern" should not match "export")
+    if start > 0 {
+        let prev = line.as_bytes()[start - 1];
+        if prev.is_ascii_alphanumeric() || prev == b'_' {
+            return None;
+        }
+    }
+
+    // Find the matching closing paren
+    let rest = &line[args_start..];
+    let end = rest.rfind(')')?;
+    Some(&rest[..end])
+}
+
 /// Parse a NAMESPACE file and return the set of exported function names.
 ///
 /// Handles both `export(name)` directives and `exportPattern(regex)` directives.
@@ -56,95 +81,74 @@ pub fn parse_namespace_exports(content: &str, all_names: &[&str]) -> HashSet<Str
             continue;
         }
 
-        // export(name1, name2, ...)
-        if let Some(inner) = trimmed
-            .strip_prefix("export(")
-            .and_then(|s| s.strip_suffix(')'))
-        {
-            for name in inner.split(',') {
-                let name = name.trim().trim_matches('"').trim_matches('\'');
-                if !name.is_empty() {
-                    exports.insert(name.to_string());
-                }
-            }
-            continue;
-        }
-
-        // exportPattern(regex)
-        if let Some(inner) = trimmed
-            .strip_prefix("exportPattern(")
-            .and_then(|s| s.strip_suffix(')'))
-        {
-            let pattern = inner.trim().trim_matches('"').trim_matches('\'');
-            if let Ok(re) = Regex::new(pattern) {
-                for &name in all_names {
-                    if re.is_match(name) {
-                        exports.insert(name.to_string());
+        // NAMESPACE directives may be wrapped in `if (...)` guards, e.g.
+        //   if (getRversion() >= "4.4.0") S3method(sort_by, data.table)
+        // We extract the inner `directive(...)` by finding the directive
+        // keyword anywhere in the line.
+        for directive in [
+            "export",
+            "exportPattern",
+            "S3method",
+            "exportMethods",
+            "exportClasses",
+        ] {
+            if let Some(inner) = extract_directive(trimmed, directive) {
+                match directive {
+                    "export" => {
+                        for name in inner.split(',') {
+                            let name = name.trim().trim_matches('"').trim_matches('\'');
+                            if !name.is_empty() {
+                                exports.insert(name.to_string());
+                            }
+                        }
                     }
-                }
-            }
-            continue;
-        }
-
-        // S3method(generic, class) or S3method(pkg::generic, class) or
-        // S3method(generic, class, method_fn)
-        //
-        // The function implementing the method is `generic.class` by default,
-        // or `method_fn` if a third argument is provided.
-        // When the generic is qualified with a package (`pkg::generic`), we
-        // strip the namespace prefix to get the bare generic name.
-        if let Some(inner) = trimmed
-            .strip_prefix("S3method(")
-            .and_then(|s| s.strip_suffix(')'))
-        {
-            let parts: Vec<&str> = inner.splitn(4, ',').collect();
-            if parts.len() >= 2 {
-                let raw_generic = parts[0].trim().trim_matches('"').trim_matches('\'');
-                let class = parts[1].trim().trim_matches('"').trim_matches('\'');
-
-                // Strip optional pkg:: or pkg::: prefix
-                let generic = raw_generic
-                    .rsplit_once("::")
-                    .map(|(_, g)| g)
-                    .unwrap_or(raw_generic);
-
-                if parts.len() >= 3 {
-                    // Explicit method function name (third argument)
-                    let method_fn = parts[2].trim().trim_matches('"').trim_matches('\'');
-                    if !method_fn.is_empty() {
-                        exports.insert(method_fn.to_string());
+                    "exportPattern" => {
+                        let pattern = inner.trim().trim_matches('"').trim_matches('\'');
+                        if let Ok(re) = Regex::new(pattern) {
+                            for &name in all_names {
+                                if re.is_match(name) {
+                                    exports.insert(name.to_string());
+                                }
+                            }
+                        }
                     }
-                } else {
-                    exports.insert(format!("{generic}.{class}"));
-                }
-            }
-            continue;
-        }
+                    "S3method" => {
+                        // S3method(generic, class) or
+                        // S3method(pkg::generic, class) or
+                        // S3method(generic, class, method_fn)
+                        let parts: Vec<&str> = inner.splitn(4, ',').collect();
+                        if parts.len() >= 2 {
+                            let raw_generic = parts[0].trim().trim_matches('"').trim_matches('\'');
+                            let class = parts[1].trim().trim_matches('"').trim_matches('\'');
 
-        // exportMethods(name) — S4 method exports
-        if let Some(inner) = trimmed
-            .strip_prefix("exportMethods(")
-            .and_then(|s| s.strip_suffix(')'))
-        {
-            for name in inner.split(',') {
-                let name = name.trim().trim_matches('"').trim_matches('\'');
-                if !name.is_empty() {
-                    exports.insert(name.to_string());
-                }
-            }
-            continue;
-        }
+                            // Strip optional pkg:: or pkg::: prefix
+                            let generic = raw_generic
+                                .rsplit_once("::")
+                                .map(|(_, g)| g)
+                                .unwrap_or(raw_generic);
 
-        // exportClasses(name) — S4 class exports
-        if let Some(inner) = trimmed
-            .strip_prefix("exportClasses(")
-            .and_then(|s| s.strip_suffix(')'))
-        {
-            for name in inner.split(',') {
-                let name = name.trim().trim_matches('"').trim_matches('\'');
-                if !name.is_empty() {
-                    exports.insert(name.to_string());
+                            if parts.len() >= 3 {
+                                let method_fn =
+                                    parts[2].trim().trim_matches('"').trim_matches('\'');
+                                if !method_fn.is_empty() {
+                                    exports.insert(method_fn.to_string());
+                                }
+                            } else {
+                                exports.insert(format!("{generic}.{class}"));
+                            }
+                        }
+                    }
+                    "exportMethods" | "exportClasses" => {
+                        for name in inner.split(',') {
+                            let name = name.trim().trim_matches('"').trim_matches('\'');
+                            if !name.is_empty() {
+                                exports.insert(name.to_string());
+                            }
+                        }
+                    }
+                    _ => {}
                 }
+                break;
             }
         }
     }
