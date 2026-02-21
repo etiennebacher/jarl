@@ -25,6 +25,7 @@ use crate::fix::*;
 pub use crate::lints::base::duplicated_function_definition::duplicated_function_definition::compute_package_duplicate_assignments;
 pub use crate::lints::base::duplicated_function_definition::duplicated_function_definition::is_in_r_package;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
+pub use crate::lints::base::unused_internal_function::unused_internal_function::compute_package_unused_internal_functions;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
 use crate::lints::comments::invalid_chunk_suppression::invalid_chunk_suppression::invalid_chunk_suppression;
 use crate::lints::comments::misnamed_suppression::misnamed_suppression::misnamed_suppression;
@@ -62,6 +63,16 @@ pub fn check(mut config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow:
         && config.package_duplicate_assignments.is_empty()
     {
         config.package_duplicate_assignments = compute_package_duplicate_assignments(&config.paths);
+    }
+
+    // Pre-compute cross-file unused internal functions for the package rule.
+    if config
+        .rules_to_apply
+        .contains(&Rule::UnusedInternalFunction)
+        && config.package_unused_internal_functions.is_empty()
+    {
+        config.package_unused_internal_functions =
+            compute_package_unused_internal_functions(&config.paths);
     }
 
     // Wrap config in Arc to avoid expensive clones in parallel execution
@@ -147,6 +158,9 @@ pub struct Checker {
     // cross-file package analysis). Each entry is (name, lhs_range, help)
     // where help points to the first definition.
     pub package_duplicate_assignments: Vec<(String, biome_rowan::TextRange, String)>,
+    // Pre-computed unused internal functions for this file (from
+    // cross-file package analysis). Each entry is (name, lhs_range, help).
+    pub package_unused_internal_functions: Vec<(String, biome_rowan::TextRange, String)>,
 }
 
 impl Checker {
@@ -158,6 +172,7 @@ impl Checker {
             suppression,
             rule_options,
             package_duplicate_assignments: vec![],
+            package_unused_internal_functions: vec![],
         }
     }
 
@@ -201,6 +216,11 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     checker.minimum_r_version = config.minimum_r_version;
     checker.package_duplicate_assignments = config
         .package_duplicate_assignments
+        .get(file)
+        .cloned()
+        .unwrap_or_default();
+    checker.package_unused_internal_functions = config
+        .package_unused_internal_functions
         .get(file)
         .cloned()
         .unwrap_or_default();
@@ -489,6 +509,21 @@ pub fn check_document(expressions: &RExpressionList, checker: &mut Checker) -> a
                 ViolationData::new(
                     "duplicated_function_definition".to_string(),
                     format!("`{name}` is defined more than once in this package."),
+                    Some(help.clone()),
+                ),
+                *range,
+                Fix::empty(),
+            )));
+        }
+    }
+
+    // Emit package-level unused internal function diagnostics.
+    if checker.is_rule_enabled(Rule::UnusedInternalFunction) {
+        for (name, range, help) in &checker.package_unused_internal_functions.clone() {
+            checker.report_diagnostic(Some(Diagnostic::new(
+                ViolationData::new(
+                    "unused_internal_function".to_string(),
+                    format!("`{name}` is defined but never called in this package."),
                     Some(help.clone()),
                 ),
                 *range,
