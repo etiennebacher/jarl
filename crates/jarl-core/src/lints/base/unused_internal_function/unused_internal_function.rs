@@ -298,6 +298,13 @@ pub fn compute_package_unused_internal_functions(
             ".First.lib",
         ]);
 
+        // Collect all symbols across all files in the package (used for
+        // S3 method heuristic below).
+        let all_symbols: HashSet<&str> = file_data
+            .iter()
+            .flat_map(|(_, _, _, syms)| syms.keys().map(|s| s.as_str()))
+            .collect();
+
         // Step 4: for each defined function, check if its name appears
         // anywhere else in the package. A name counts as "used" if:
         //   - it appears in any OTHER file as a symbol, OR
@@ -321,6 +328,23 @@ pub fn compute_package_unused_internal_functions(
                 // Skip R package hook functions (.onLoad, .onAttach, etc.)
                 if package_hooks.contains(name.as_str()) {
                     continue;
+                }
+
+                // Skip probable internal S3 methods. If a function name
+                // contains a dot, it may be an S3 method dispatched implicitly
+                // (e.g. `print.myclass` is called when `print()` runs on an
+                // object of class "myclass"). Since class names can contain
+                // dots (e.g. `data.table`), we try every split point: for
+                // `sort_by.data.table` we check if `sort_by` or `sort_by.data`
+                // appears as a symbol in the package. If any prefix matches,
+                // assume it could be S3 dispatch and skip.
+                if name.contains('.') {
+                    let is_probable_s3 = name
+                        .match_indices('.')
+                        .any(|(pos, _)| all_symbols.contains(&name[..pos]));
+                    if is_probable_s3 {
+                        continue;
+                    }
                 }
 
                 // Used in another file?

@@ -194,6 +194,52 @@ mod tests {
     }
 
     #[test]
+    fn test_internal_s3_method_not_flagged() {
+        let dir = TempDir::new().unwrap();
+        let r_dir = dir.path().join("R");
+        fs::create_dir(&r_dir).unwrap();
+        fs::write(dir.path().join("DESCRIPTION"), "Package: test").unwrap();
+        fs::write(dir.path().join("NAMESPACE"), "export(public_fn)\n").unwrap();
+
+        // print.myclass is an internal S3 method; print() is called elsewhere
+        let file_a = r_dir.join("public.R");
+        fs::write(&file_a, "public_fn <- function(x) print(x)\n").unwrap();
+
+        let file_b = r_dir.join("methods.R");
+        fs::write(&file_b, "print.myclass <- function(x, ...) cat(x)\n").unwrap();
+
+        let result = compute_package_unused_internal_functions(&[file_a.clone(), file_b.clone()]);
+
+        assert!(
+            result.is_empty(),
+            "print.myclass is a probable S3 method, should not be flagged"
+        );
+    }
+
+    #[test]
+    fn test_internal_s3_method_dotted_class_not_flagged() {
+        let dir = TempDir::new().unwrap();
+        let r_dir = dir.path().join("R");
+        fs::create_dir(&r_dir).unwrap();
+        fs::write(dir.path().join("DESCRIPTION"), "Package: test").unwrap();
+        fs::write(dir.path().join("NAMESPACE"), "export(public_fn)\n").unwrap();
+
+        // sort_by.data.table — generic is `sort_by`, class is `data.table`
+        let file_a = r_dir.join("public.R");
+        fs::write(&file_a, "public_fn <- function(x) sort_by(x)\n").unwrap();
+
+        let file_b = r_dir.join("methods.R");
+        fs::write(&file_b, "sort_by.data.table <- function(x, ...) x\n").unwrap();
+
+        let result = compute_package_unused_internal_functions(&[file_a.clone(), file_b.clone()]);
+
+        assert!(
+            result.is_empty(),
+            "sort_by.data.table is a probable S3 method, should not be flagged"
+        );
+    }
+
+    #[test]
     fn test_same_file_usage_not_flagged() {
         let dir = TempDir::new().unwrap();
         let r_dir = dir.path().join("R");
