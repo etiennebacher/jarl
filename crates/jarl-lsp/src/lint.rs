@@ -139,7 +139,12 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlD
     // Pre-compute package-level duplicate assignments using the real file path.
     // The temp file lives outside the package tree, so the normal code path in
     // `check()` would find nothing.
-    precompute_package_duplicates(&mut config, file_path, &temp_file);
+    if config
+        .rules_to_apply
+        .contains(&jarl_core::rule_set::Rule::DuplicatedFunctionDefinition)
+    {
+        precompute_package_duplicates(&mut config, file_path, &temp_file);
+    }
 
     let diagnostics = jarl_core::check::check(config);
     let mut all_diagnostics: Vec<JarlDiagnostic> = diagnostics
