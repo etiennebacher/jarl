@@ -1,4 +1,4 @@
-use crate::check::Checker;
+use crate::checker::Checker;
 use crate::diagnostic::*;
 use air_r_syntax::*;
 
