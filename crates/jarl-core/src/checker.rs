@@ -23,6 +23,9 @@ pub struct Checker {
     // cross-file package analysis). Each entry is (name, lhs_range, help)
     // where help points to the first definition.
     pub package_duplicate_assignments: Vec<(String, biome_rowan::TextRange, String)>,
+    // Pre-computed unused internal functions for this file (from
+    // cross-file package analysis). Each entry is (name, lhs_range, help).
+    pub package_unused_internal_functions: Vec<(String, biome_rowan::TextRange, String)>,
 }
 
 impl Checker {
@@ -34,6 +37,7 @@ impl Checker {
             suppression,
             rule_options,
             package_duplicate_assignments: vec![],
+            package_unused_internal_functions: vec![],
         }
     }
 
