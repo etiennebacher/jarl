@@ -130,5 +130,20 @@ pub(crate) fn check_document(
         }
     }
 
+    // Emit package-level unused internal function diagnostics.
+    if checker.is_rule_enabled(Rule::UnusedInternalFunction) {
+        for (name, range, help) in &checker.package_unused_internal_functions.clone() {
+            checker.report_diagnostic(Some(Diagnostic::new(
+                ViolationData::new(
+                    "unused_internal_function".to_string(),
+                    format!("`{name}` is defined but never called in this package."),
+                    Some(help.clone()),
+                ),
+                *range,
+                Fix::empty(),
+            )));
+        }
+    }
+
     Ok(())
 }
