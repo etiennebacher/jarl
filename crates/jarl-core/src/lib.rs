@@ -11,6 +11,7 @@ pub mod utils;
 
 pub mod analyze;
 pub mod check;
+pub mod checker;
 pub mod config;
 pub mod description;
 pub mod diagnostic;
