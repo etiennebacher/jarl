@@ -19,8 +19,9 @@ use crate::config::Config;
 use crate::diagnostic::*;
 use crate::fix::*;
 // Re-exported so the LSP can pre-compute package duplicates before calling `check()`.
-pub use crate::lints::base::duplicated_function_definition::duplicated_function_definition::compute_package_duplicate_assignments;
-pub use crate::lints::base::duplicated_function_definition::duplicated_function_definition::is_in_r_package;
+pub use crate::lints::base::duplicated_function_definition::duplicated_function_definition::{
+    compute_package_duplicate_assignments, is_in_r_package,
+};
 use crate::lints::base::unused_internal_function::unused_internal_function::compute_package_unused_internal_functions;
 use crate::utils::*;
 
