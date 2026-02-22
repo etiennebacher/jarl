@@ -396,29 +396,29 @@ fn test_not_all_fixable_lints() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @r#"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: duplicated_arguments
- --> test2.R:1:1
-  |
-1 | list(x = 1, x = 2)
-  | ------------------ Avoid duplicate arguments in function calls. Duplicated argument(s): "x".
-  |
+    warning: duplicated_arguments
+     --> test2.R:1:1
+      |
+    1 | list(x = 1, x = 2)
+      | ------------------ Avoid duplicated arguments in function calls. Duplicated argument(s): "x".
+      |
 
-Found 2 errors.
-1 fixable with the `--fix` option.
+    Found 2 errors.
+    1 fixable with the `--fix` option.
 
------ stderr -----
-"#
+    ----- stderr -----
+    "#
     );
 
     Ok(())
@@ -476,20 +476,20 @@ fn test_fix_options() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @r#"
-success: false
-exit_code: 1
------ stdout -----
-warning: duplicated_arguments
- --> test.R:3:1
-  |
-3 | list(x = 1, x = 2)
-  | ------------------ Avoid duplicate arguments in function calls. Duplicated argument(s): "x".
-  |
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: duplicated_arguments
+     --> test.R:3:1
+      |
+    3 | list(x = 1, x = 2)
+      | ------------------ Avoid duplicated arguments in function calls. Duplicated argument(s): "x".
+      |
 
-Found 1 error.
+    Found 1 error.
 
------ stderr -----
-"#
+    ----- stderr -----
+    "#
     );
 
     std::fs::write(directory.join(test_path), test_contents)?;
@@ -504,20 +504,20 @@ Found 1 error.
             .run()
             .normalize_os_executable_name(),
         @r#"
-success: false
-exit_code: 1
------ stdout -----
-warning: duplicated_arguments
- --> test.R:3:1
-  |
-3 | list(x = 1, x = 2)
-  | ------------------ Avoid duplicate arguments in function calls. Duplicated argument(s): "x".
-  |
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: duplicated_arguments
+     --> test.R:3:1
+      |
+    3 | list(x = 1, x = 2)
+      | ------------------ Avoid duplicated arguments in function calls. Duplicated argument(s): "x".
+      |
 
-Found 1 error.
+    Found 1 error.
 
------ stderr -----
-"#
+    ----- stderr -----
+    "#
     );
 
     std::fs::write(directory.join(test_path), test_contents)?;
