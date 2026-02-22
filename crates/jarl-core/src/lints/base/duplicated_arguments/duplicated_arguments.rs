@@ -98,7 +98,7 @@ pub fn duplicated_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Op
             ViolationData::new(
                 "duplicated_arguments".to_string(),
                 [
-                    "Avoid duplicate arguments in function calls. Duplicated argument(s): ",
+                    "Avoid duplicated arguments in function calls. Duplicated argument(s): ",
                     &duplicated_arg_names
                         .iter()
                         .map(|s| format!("\"{s}\""))
