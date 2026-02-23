@@ -1,31 +1,21 @@
 ---
 source: crates/jarl-core/src/lints/testthat/expect_match/mod.rs
-assertion_line: 81
-expression: "get_fixed_text(vec![\"expect_true(grepl(# comment\\n'Testing is fun', 'fun'))\",\n\"expect_true(grepl('Testing is fun', # comment\\n'fun'))\",\n\"expect_true(grepl('Testing is fun', 'fun', # comment\\nperl = TRUE))\",],\n\"expect_match\", None,)"
+expression: "get_fixed_text(vec![\"expect_true(grepl(# comment\\n'fun', 'Testing is fun'))\",\n\"expect_true(grepl('fun', 'Testing is fun', # comment\\nperl = TRUE))\",],\n\"expect_match\", None,)"
 ---
 OLD:
 ====
 expect_true(grepl(# comment
-'Testing is fun', 'fun'))
+'fun', 'Testing is fun'))
 NEW:
 ====
 expect_true(grepl(# comment
-'Testing is fun', 'fun'))
+'fun', 'Testing is fun'))
 
 OLD:
 ====
-expect_true(grepl('Testing is fun', # comment
-'fun'))
-NEW:
-====
-expect_true(grepl('Testing is fun', # comment
-'fun'))
-
-OLD:
-====
-expect_true(grepl('Testing is fun', 'fun', # comment
+expect_true(grepl('fun', 'Testing is fun', # comment
 perl = TRUE))
 NEW:
 ====
-expect_true(grepl('Testing is fun', 'fun', # comment
+expect_true(grepl('fun', 'Testing is fun', # comment
 perl = TRUE))
