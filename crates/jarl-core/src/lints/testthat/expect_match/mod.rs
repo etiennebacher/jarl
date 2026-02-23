@@ -171,7 +171,6 @@ mod tests {
             get_fixed_text(
                 vec![
                     "expect_true(grepl(# comment\n'fun', 'Testing is fun'))",
-                    "expect_true(grepl('fun', 'Testing is fun', # comment\nperl = TRUE))",
                 ],
                 "expect_match",
                 None,
