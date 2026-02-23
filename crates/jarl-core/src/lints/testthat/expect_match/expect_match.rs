@@ -61,8 +61,8 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         get_nested_functions_content(ast, "expect_true", "grepl")?
         && outer_syntax.kind() == RSyntaxKind::R_BINARY_EXPRESSION
     {
-        // Ignore negated pipe (e.g. `!grepl(...) |> expect_true()`).
-        // This is handled by the expect_not lint and already ignored outside of pipe
+        // Ignore negated pipe (e.g. `!grepl(...) |> expect_true()`) false positive
+        // This would be covered by `expect_no_match` or `expect_not`
         if let Some(parent) = outer_syntax.parent()
             && let Some(unary) = RUnaryExpression::cast(parent)
             && let Ok(operator) = unary.operator()
@@ -90,7 +90,6 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     }
 
     // It all grepl args can be passed to expect_match, so keep them all for fix
-    // order matters for x and pattern, doesn't for the rest
     let grepl_args = grepl_call.arguments()?.items();
     let pattern_arg =
         unwrap_or_return_none!(get_arg_by_name_then_position(&grepl_args, "pattern", 1));
@@ -101,9 +100,7 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let x_text = x_value.to_trimmed_text().to_string();
     let pattern_text = pattern_value.to_trimmed_text().to_string();
 
-    // Args outside of grepl (info and label) can be passed to expect_match
-    // but other linters don't seem to carry them in fix? not sure what to do here
-    // currently gives lint but no fix
+    // Give lint but no fix if expect_true has additional args
     let outer_args_count = args.iter().count();
     if outer_args_count > 1 {
         return Ok(Some(Diagnostic::new(ExpectMatch, range, Fix::empty())));
