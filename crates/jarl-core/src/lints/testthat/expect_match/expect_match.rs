@@ -39,7 +39,7 @@ impl Violation for ExpectMatch {
     }
 
     fn body(&self) -> String {
-        "`expect_true(grepl(...))` is not as clear as expect_match(...).".to_string()
+        "`expect_true(grepl(...))` is not as clear as `expect_match(...)`.".to_string()
     }
 
     fn suggestion(&self) -> Option<String> {
