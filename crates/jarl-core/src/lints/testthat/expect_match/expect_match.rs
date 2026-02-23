@@ -89,7 +89,7 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    // It all grepl args can be passed to expect_match, so keep them all for fix
+    // All grepl args can be passed to expect_match, so keep them all for fix
     let grepl_args = grepl_call.arguments()?.items();
     let pattern_arg =
         unwrap_or_return_none!(get_arg_by_name_then_position(&grepl_args, "pattern", 1));
