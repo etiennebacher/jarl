@@ -25,13 +25,13 @@ pub struct ExpectMatch;
 ///
 /// ```r
 /// expect_true(grepl("foo", x))
-/// expect_true(base::grepl("bar", x))
+/// expect_true(base::grepl("bar", x, perl = FALSE, fixed = FALSE))
 /// ```
 ///
 /// Use instead:
 /// ```r
 /// expect_match(x, "foo")
-/// expect_match(x, "bar")
+/// expect_match(x, "bar", perl = FALSE, fixed = FALSE)
 /// ```
 impl Violation for ExpectMatch {
     fn name(&self) -> String {
