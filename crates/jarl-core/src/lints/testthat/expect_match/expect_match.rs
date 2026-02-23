@@ -1,7 +1,7 @@
 use crate::diagnostic::*;
 use crate::utils::{
     get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
-    node_contains_comments,
+    get_nested_functions_content, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
@@ -53,6 +53,26 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let function_name = get_function_name(function.clone());
     if function_name != "expect_true" {
         return Ok(None);
+    }
+
+    // For pipe cases (`grepl(...) |> expect_true()`), lint but skip fix.
+    // Fix seems reasonably complex as x & pattern position are swapped
+    if let Some((_inner_content, outer_syntax)) =
+        get_nested_functions_content(ast, "expect_true", "grepl")?
+        && outer_syntax.kind() == RSyntaxKind::R_BINARY_EXPRESSION
+    {
+        // Ignore negated pipe (e.g. `!grepl(...) |> expect_true()`).
+        // This is handled by the expect_not lint and already ignored outside of pipe
+        if let Some(parent) = outer_syntax.parent()
+            && let Some(unary) = RUnaryExpression::cast(parent)
+            && let Ok(operator) = unary.operator()
+            && operator.kind() == RSyntaxKind::BANG
+        {
+            return Ok(None);
+        }
+
+        let range = outer_syntax.text_trimmed_range();
+        return Ok(Some(Diagnostic::new(ExpectMatch, range, Fix::empty())));
     }
 
     let args = ast.arguments()?.items();
