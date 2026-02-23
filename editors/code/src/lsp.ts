@@ -121,10 +121,16 @@ export class Lsp {
 		let middleware: Middleware = {};
 
 		let clientOptions: lc.LanguageClientOptions = {
-			// Look for R files only
 			documentSelector: [
+				// R files
 				{ language: "r", scheme: "file" },
 				{ language: "r", pattern: "**/*.{r,R}" },
+				// R Markdown files (language ID registered by REditorSupport.r or Positron)
+				{ language: "rmd", scheme: "file" },
+				{ pattern: "**/*.{Rmd,rmd}", scheme: "file" },
+				// Quarto files (language ID registered by the Quarto extension or Positron)
+				{ language: "quarto", scheme: "file" },
+				{ pattern: "**/*.{qmd,Qmd}", scheme: "file" },
 			],
 			outputChannel: this.channel,
 			initializationOptions: initializationOptions,

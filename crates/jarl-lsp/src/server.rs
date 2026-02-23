@@ -507,6 +507,13 @@ impl Server {
                 {
                     actions.push(types::CodeActionOrCommand::CodeAction(action));
                 }
+
+                // Add chunk-level ignore action (Rmd/Qmd only)
+                if let Some(action) =
+                    Self::diagnostic_to_jarl_ignore_chunk_action(&diagnostic, snapshot)
+                {
+                    actions.push(types::CodeActionOrCommand::CodeAction(action));
+                }
             }
         }
 
@@ -579,12 +586,30 @@ impl Server {
         let fix: crate::lint::DiagnosticFix = serde_json::from_value(fix_data.clone()).ok()?;
         let rule_name = &fix.rule_name;
 
-        // Use the core infrastructure to compute the insertion point with proper hoisting
-        let insert_point = suppression_edit::compute_suppression_insert_point(
-            content,
-            fix.diagnostic_start,
-            fix.diagnostic_end,
-        )?;
+        // For Rmd/Qmd files we need to locate the right chunk before computing
+        // the insertion point; for plain R files we use the normal path.
+        let is_rmd = snapshot
+            .file_path()
+            .as_deref()
+            .is_some_and(jarl_core::fs::has_rmd_extension);
+
+        let insert_point = if is_rmd {
+            suppression_edit::create_suppression_edit_in_rmd(
+                content,
+                fix.diagnostic_start,
+                fix.diagnostic_end,
+                rule_name,
+                "<reason>",
+            )?
+            .insert_point
+        } else {
+            // Use the core infrastructure to compute the insertion point with proper hoisting
+            suppression_edit::compute_suppression_insert_point(
+                content,
+                fix.diagnostic_start,
+                fix.diagnostic_end,
+            )?
+        };
 
         // Check if there's already a jarl-ignore comment that covers this rule
         if insert_point.line > 0
@@ -649,6 +674,72 @@ impl Server {
         })
     }
 
+    /// Create a code action to add a `#| jarl-ignore-chunk` comment for a rule.
+    ///
+    /// This action is only offered for Rmd/Qmd files.  It inserts the directive
+    /// at the very beginning of the chunk so it is easy to spot, and suppresses
+    /// the named rule for every expression in that chunk.
+    fn diagnostic_to_jarl_ignore_chunk_action(
+        diagnostic: &types::Diagnostic,
+        snapshot: &DocumentSnapshot,
+    ) -> Option<types::CodeAction> {
+        // Only meaningful for Rmd/Qmd files.
+        let is_rmd = snapshot
+            .file_path()
+            .as_deref()
+            .is_some_and(jarl_core::fs::has_rmd_extension);
+        if !is_rmd {
+            return None;
+        }
+
+        let content = snapshot.content();
+
+        let fix_data = diagnostic.data.as_ref()?;
+        let fix: crate::lint::DiagnosticFix = serde_json::from_value(fix_data.clone()).ok()?;
+        let rule_name = &fix.rule_name;
+
+        // Find the chunk that contains the diagnostic.
+        let chunks = jarl_core::rmd::extract_r_chunks(content);
+        let chunk = chunks.iter().find(|c| {
+            let chunk_end = c.start_byte + c.code.len();
+            fix.diagnostic_start >= c.start_byte && fix.diagnostic_start <= chunk_end
+        })?;
+
+        // Skip if this rule is already suppressed for the whole chunk.
+        // Check both the legacy single-line form and the YAML-array form.
+        let already_suppressed = chunk
+            .code
+            .contains(&format!("jarl-ignore-chunk {rule_name}"))
+            || chunk.code.contains(&format!("- {rule_name}:"));
+        if already_suppressed {
+            return None;
+        }
+
+        // Insert at the very first byte of the chunk code (top of the chunk).
+        // Use the Quarto-idiomatic YAML array form so the comment is valid YAML.
+        let insert_pos = Self::offset_to_position(content, chunk.start_byte);
+        let new_comment = format!("#| jarl-ignore-chunk:\n#|   - {rule_name}: <reason>\n");
+        let insert_range = types::Range::new(insert_pos, insert_pos);
+
+        let text_edit = types::TextEdit { range: insert_range, new_text: new_comment };
+
+        let mut changes = std::collections::HashMap::new();
+        changes.insert(snapshot.uri().clone(), vec![text_edit]);
+
+        let workspace_edit = types::WorkspaceEdit { changes: Some(changes), ..Default::default() };
+
+        Some(types::CodeAction {
+            title: format!("Ignore all violations of `{rule_name}` in this chunk."),
+            kind: Some(types::CodeActionKind::QUICKFIX),
+            diagnostics: Some(vec![diagnostic.clone()]),
+            edit: Some(workspace_edit),
+            command: None,
+            is_preferred: Some(false),
+            disabled: None,
+            data: None,
+        })
+    }
+
     /// Convert a byte offset to an LSP Position
     fn offset_to_position(content: &str, offset: usize) -> types::Position {
         let before = &content[..offset.min(content.len())];
@@ -690,6 +781,14 @@ mod tests {
 
     impl TestEnv {
         fn new(content: &str) -> Self {
+            Self::new_with_extension(content, "R")
+        }
+
+        fn new_rmd(content: &str) -> Self {
+            Self::new_with_extension(content, "Rmd")
+        }
+
+        fn new_with_extension(content: &str, ext: &str) -> Self {
             let dir = TempDir::new().unwrap();
             let dir_path = dir.path();
 
@@ -704,8 +803,7 @@ select = ["ALL"]
             )
             .unwrap();
 
-            // Create the R file
-            let file_path = dir_path.join("test.R");
+            let file_path = dir_path.join(format!("test.{ext}"));
             std::fs::write(&file_path, content).unwrap();
 
             Self { _dir: dir, file_path }
@@ -858,6 +956,40 @@ select = ["ALL"]
         Some(result)
     }
 
+    /// Apply a jarl-ignore-chunk action at the cursor position for an Rmd file.
+    fn apply_jarl_ignore_chunk_at_cursor(source_with_cursor: &str) -> Option<String> {
+        let cursor_pos = source_with_cursor.find(CURSOR)?;
+        let content = source_with_cursor.replace(CURSOR, "");
+
+        let env = TestEnv::new_rmd(&content);
+        let snapshot = env.create_snapshot(&content);
+
+        // Run the linter to get real diagnostics
+        let diagnostics = lint::lint_document(&snapshot).ok()?;
+
+        // Find the diagnostic at cursor position
+        let cursor_lsp_pos = offset_to_position(&content, cursor_pos);
+        let diagnostic = diagnostics
+            .iter()
+            .find(|d| position_in_range(cursor_lsp_pos, &d.range))?;
+
+        // Get the chunk-ignore action
+        let action = Server::diagnostic_to_jarl_ignore_chunk_action(diagnostic, &snapshot)?;
+        let edit = action.edit?;
+        let changes = edit.changes?;
+        let text_edits = changes.values().next()?;
+
+        // Apply edits
+        let mut result = content.clone();
+        for text_edit in text_edits.iter().rev() {
+            let start = position_to_offset(&result, text_edit.range.start);
+            let end = position_to_offset(&result, text_edit.range.end);
+            result.replace_range(start..end, &text_edit.new_text);
+        }
+
+        Some(result)
+    }
+
     // =========================================================================
     // Server creation test
     // =========================================================================
@@ -879,7 +1011,7 @@ select = ["ALL"]
     fn test_fix_one_violation() {
         let result = apply_fix_at_cursor(r#"<CURS>any(is.na(x))"#).unwrap();
 
-        insta::assert_snapshot!(result, @r#"anyNA(x)"#);
+        insta::assert_snapshot!(result, @"anyNA(x)");
     }
 
     #[test]
@@ -891,10 +1023,10 @@ select = ["ALL"]
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r#"
+        insta::assert_snapshot!(result, @r"
         x = 1
         x <- 2
-        "#);
+        ");
     }
 
     #[test]
@@ -906,9 +1038,7 @@ select = ["ALL"]
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r#"
-        anyDuplicated(x) > 0
-        "#);
+        insta::assert_snapshot!(result, @"anyDuplicated(x) > 0");
     }
 
     #[test]
@@ -944,10 +1074,10 @@ select = ["ALL"]
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r#"
-# jarl-ignore any_is_na: <reason>
-any(is.na(x))
-"#);
+        insta::assert_snapshot!(result, @r"
+        # jarl-ignore any_is_na: <reason>
+        any(is.na(x))
+        ");
     }
 
     #[test]
@@ -959,10 +1089,10 @@ x <- foo(<CURS>any(is.na(x)))
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r#"
-# jarl-ignore any_is_na: <reason>
-x <- foo(any(is.na(x)))
-"#);
+        insta::assert_snapshot!(result, @r"
+        # jarl-ignore any_is_na: <reason>
+        x <- foo(any(is.na(x)))
+        ");
     }
 
     #[test]
@@ -992,11 +1122,11 @@ x = 1
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r#"
+        insta::assert_snapshot!(result, @r"
         # jarl-ignore foo: some reason
         # jarl-ignore assignment: <reason>
         x = 1
-        "#);
+        ");
     }
 
     #[test]
@@ -1010,12 +1140,12 @@ f <- function() {
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r#"
+        insta::assert_snapshot!(result, @r"
         f <- function() {
           # jarl-ignore assignment: <reason>
           x = 1
         }
-        "#);
+        ");
     }
 
     #[test]
@@ -1183,10 +1313,10 @@ if (x) {
         .unwrap();
 
         insta::assert_snapshot!(result, @r"
-if (x) {
-  # jarl-ignore any_is_na: <reason>
-  any(is.na(x))
-}
+        if (x) {
+          # jarl-ignore any_is_na: <reason>
+          any(is.na(x))
+        }
         ");
     }
 
@@ -1202,11 +1332,11 @@ for (<CURS>x in x) {
         .unwrap();
 
         insta::assert_snapshot!(result, @r"
-# jarl-ignore for_loop_index: <reason>
-for (x in x) {
-    print(1)
-}
-            ");
+        # jarl-ignore for_loop_index: <reason>
+        for (x in x) {
+            print(1)
+        }
+        ");
     }
 
     #[test]
@@ -1240,11 +1370,11 @@ while (<CURS>TRUE) {
         .unwrap();
 
         insta::assert_snapshot!(result, @r"
-# jarl-ignore repeat: <reason>
-while (TRUE) {
-    print(1)
-}
-            ");
+        # jarl-ignore repeat: <reason>
+        while (TRUE) {
+            print(1)
+        }
+        ");
     }
 
     #[test]
@@ -1310,11 +1440,136 @@ x |>
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r#"
+        insta::assert_snapshot!(result, @r"
         # jarl-ignore
         # jarl-ignore assignment: <reason>
         x = 1
-        "#);
+        ");
+    }
+
+    // =========================================================================
+    // jarl-ignore-chunk action tests (Rmd/Qmd only)
+    // =========================================================================
+
+    #[test]
+    fn test_ignore_chunk_action_inserts_at_top_of_chunk() {
+        // Directive is inserted at the very first line of the chunk.
+        let result =
+            apply_jarl_ignore_chunk_at_cursor("```{r}\n<CURS>any(is.na(x))\n```\n").unwrap();
+
+        insta::assert_snapshot!(result, @r"
+        ```{r}
+        #| jarl-ignore-chunk:
+        #|   - any_is_na: <reason>
+        any(is.na(x))
+        ```
+        ");
+    }
+
+    #[test]
+    fn test_ignore_chunk_action_inserts_at_top_even_when_cursor_is_mid_chunk() {
+        // Even if the cursor (violation) is on the second expression, the
+        // directive is still prepended at the very first line of the chunk.
+        let result = apply_jarl_ignore_chunk_at_cursor(concat!(
+            "```{r}\n",
+            "x <- 1\n",
+            "<CURS>any(is.na(x))\n",
+            "```\n",
+        ))
+        .unwrap();
+
+        insta::assert_snapshot!(result, @r"
+        ```{r}
+        #| jarl-ignore-chunk:
+        #|   - any_is_na: <reason>
+        x <- 1
+        any(is.na(x))
+        ```
+        ");
+    }
+
+    #[test]
+    fn test_ignore_chunk_action_not_offered_for_plain_r_files() {
+        // For plain .R files the action must return None.
+        let content = "any(is.na(x))\n";
+        let env = TestEnv::new(content);
+        let snapshot = env.create_snapshot(content);
+
+        let diagnostics = lint::lint_document(&snapshot).unwrap();
+        let diagnostic = diagnostics
+            .iter()
+            .find(|d| {
+                d.data
+                    .as_ref()
+                    .and_then(|v| v.get("rule_name"))
+                    .and_then(|r| r.as_str())
+                    == Some("any_is_na")
+            })
+            .unwrap();
+
+        assert!(
+            Server::diagnostic_to_jarl_ignore_chunk_action(diagnostic, &snapshot).is_none(),
+            "chunk action must not be offered for plain .R files"
+        );
+    }
+
+    #[test]
+    fn test_ignore_chunk_action_skipped_when_already_suppressed() {
+        // If the chunk already contains a YAML array suppression for any_is_na,
+        // lint_document must return no any_is_na diagnostic.
+        let content = concat!(
+            "```{r}\n",
+            "#| jarl-ignore-chunk:\n",
+            "#|   - any_is_na: existing reason\n",
+            "any(is.na(x))\n",
+            "```\n",
+        );
+        let env = TestEnv::new_rmd(content);
+        let snapshot = env.create_snapshot(content);
+        let diagnostics = lint::lint_document(&snapshot).unwrap();
+        let any_is_na_diags: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| {
+                d.data
+                    .as_ref()
+                    .and_then(|v| v.get("rule_name"))
+                    .and_then(|r| r.as_str())
+                    == Some("any_is_na")
+            })
+            .collect();
+        assert!(
+            any_is_na_diags.is_empty(),
+            "suppressed any_is_na should produce no diagnostic"
+        );
+    }
+
+    #[test]
+    fn test_ignore_chunk_action_skipped_when_already_suppressed_yaml_array() {
+        // Same as above but using the YAML-array form inserted by the LSP.
+        let content = concat!(
+            "```{r}\n",
+            "#| jarl-ignore-chunk:\n",
+            "#|   - any_is_na: existing reason\n",
+            "any(is.na(x))\n",
+            "```\n",
+        );
+        let env = TestEnv::new_rmd(content);
+        let snapshot = env.create_snapshot(content);
+        let diagnostics = lint::lint_document(&snapshot).unwrap();
+        let any_is_na_diags: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| {
+                d.data
+                    .as_ref()
+                    .and_then(|v| v.get("rule_name"))
+                    .and_then(|r| r.as_str())
+                    == Some("any_is_na")
+            })
+            .collect();
+        assert!(
+            any_is_na_diags.is_empty(),
+            "YAML-array form should suppress any_is_na"
+        );
     }
 
     // =========================================================================
@@ -1366,9 +1621,7 @@ x |>
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r#"
-        héllo <- 1
-        "#);
+        insta::assert_snapshot!(result, @"héllo <- 1");
     }
 
     #[test]
@@ -1379,9 +1632,7 @@ x |>
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r#"
-        数据 <- 2
-        "#);
+        insta::assert_snapshot!(result, @"数据 <- 2");
     }
 
     // =========================================================================

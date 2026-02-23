@@ -30,7 +30,15 @@ fn test_clean_git_repo() -> anyhow::Result<()> {
             .arg(".")
             .arg("--fix")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
     Ok(())
 }
@@ -53,7 +61,24 @@ fn test_dirty_git_repo_does_not_block_lint() -> anyhow::Result<()> {
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> demos/test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
     Ok(())
 }
@@ -81,7 +106,18 @@ fn test_dirty_git_repo_blocks_fix() -> anyhow::Result<()> {
             .arg(".")
             .arg("--fix")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @r"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    Error: `jarl check --fix` can potentially perform destructive changes but the working directory of this project has uncommitted changes, so no fixes were applied. 
+    To apply the fixes, either add `--allow-dirty` to the call, or commit the changes to these files:
+
+      * demos/ (dirty)
+    "
     );
     Ok(())
 }
@@ -106,7 +142,15 @@ fn test_dirty_git_repo_allow_dirty() -> anyhow::Result<()> {
             .arg("--fix")
             .arg("--allow-dirty")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
     Ok(())
 }
@@ -142,7 +186,18 @@ fn test_mixed_dirty_status_blocks_fix() -> anyhow::Result<()> {
             .arg(".")
             .arg("--fix")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @r"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    Error: `jarl check --fix` can potentially perform destructive changes but the working directory of this project has uncommitted changes, so no fixes were applied. 
+    To apply the fixes, either add `--allow-dirty` to the call, or commit the changes to these files:
+
+      * test.R (dirty)
+    "
     );
     Ok(())
 }
@@ -180,7 +235,15 @@ fn test_two_clean_subdirs() -> anyhow::Result<()> {
             .arg(".")
             .arg("--fix")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
     Ok(())
 }

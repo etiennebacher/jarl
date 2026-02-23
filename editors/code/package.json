@@ -27,8 +27,13 @@
 	],
 	"activationEvents": [
 		"onLanguage:r",
+		"onLanguage:rmd",
+		"onLanguage:quarto",
 		"workspaceContains:*.r",
 		"workspaceContains:*.R",
+		"workspaceContains:*.Rmd",
+		"workspaceContains:*.rmd",
+		"workspaceContains:*.qmd",
 		"workspaceContains:jarl.toml",
 		"workspaceContains:.jarl.toml",
 		"workspaceContains:DESCRIPTION",

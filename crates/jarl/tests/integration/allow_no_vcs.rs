@@ -21,7 +21,16 @@ fn test_no_git_repo_does_not_block_lint() -> anyhow::Result<()> {
             .arg(".")
             .arg("--fix")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @r"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    Error: `jarl check --fix` can potentially perform destructive changes but no Version Control System (e.g. Git) was found on this project, so no fixes were applied. 
+    Add `--allow-no-vcs` to the call to apply the fixes.
+    "
     );
     Ok(())
 }
@@ -47,7 +56,16 @@ fn test_no_git_repo_blocks_fix() -> anyhow::Result<()> {
             .arg(".")
             .arg("--fix")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @r"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    Error: `jarl check --fix` can potentially perform destructive changes but no Version Control System (e.g. Git) was found on this project, so no fixes were applied. 
+    Add `--allow-no-vcs` to the call to apply the fixes.
+    "
     );
     Ok(())
 }
@@ -70,7 +88,15 @@ fn test_no_git_repo_allow_no_vcs() -> anyhow::Result<()> {
             .arg("--fix")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
     Ok(())
 }
@@ -102,7 +128,16 @@ fn test_mixed_vcs_coverage_blocks_fix() -> anyhow::Result<()> {
             .arg(".")
             .arg("--fix")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @r"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    Error: `jarl check --fix` can potentially perform destructive changes but no Version Control System (e.g. Git) was found on this project, so no fixes were applied. 
+    Add `--allow-no-vcs` to the call to apply the fixes.
+    "
     );
     Ok(())
 }

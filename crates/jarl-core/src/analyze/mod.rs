@@ -1,6 +1,8 @@
 pub(crate) mod anyvalue;
 pub(crate) mod binary_expression;
 pub(crate) mod call;
+pub(crate) mod document;
+pub(crate) mod expression;
 pub(crate) mod for_loop;
 pub(crate) mod function_definition;
 pub(crate) mod identifier;

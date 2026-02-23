@@ -8,6 +8,7 @@ pub(crate) mod coalesce;
 pub(crate) mod comparison_negation;
 pub(crate) mod download_file;
 pub(crate) mod duplicated_arguments;
+pub(crate) mod duplicated_function_definition;
 pub(crate) mod empty_assignment;
 pub(crate) mod equals_na;
 pub(crate) mod equals_nan;

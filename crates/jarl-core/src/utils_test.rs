@@ -55,10 +55,11 @@ fn has_no_lint(
     };
 
     let resolver = setup_resolver(temp_file.path(), settings);
+    let toml_settings = resolver.items().first().map(|item| item.value());
 
     let config = crate::config::build_config(
         &check_config,
-        &resolver,
+        toml_settings,
         vec![temp_file.path().to_path_buf()],
     )
     .expect("Failed to build config");
@@ -107,10 +108,11 @@ fn apply_fixes(
     };
 
     let resolver = setup_resolver(temp_file.path(), settings);
+    let toml_settings = resolver.items().first().map(|item| item.value());
 
     let config = crate::config::build_config(
         &check_config,
-        &resolver,
+        toml_settings,
         vec![temp_file.path().to_path_buf()],
     )
     .expect("Failed to build config");
@@ -151,10 +153,11 @@ fn check_code_with_settings(
     };
 
     let resolver = setup_resolver(temp_file.path(), settings);
+    let toml_settings = resolver.items().first().map(|item| item.value());
 
     let config = crate::config::build_config(
         &check_config,
-        &resolver,
+        toml_settings,
         vec![temp_file.path().to_path_buf()],
     )
     .expect("Failed to build config");

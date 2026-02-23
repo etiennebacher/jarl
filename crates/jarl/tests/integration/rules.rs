@@ -21,7 +21,16 @@ fn test_one_non_existing_selected_rule() -> anyhow::Result<()> {
             .arg("--select")
             .arg("foo")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in `--select`: foo
+"
     );
 
     Ok(())
@@ -43,7 +52,16 @@ fn test_several_non_existing_selected_rules() -> anyhow::Result<()> {
             .arg("--select")
             .arg("foo,any_is_na,barbaz")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in `--select`: foo, barbaz
+"
     );
 
     Ok(())
@@ -65,7 +83,16 @@ fn test_one_non_existing_ignored_rule() -> anyhow::Result<()> {
             .arg("--ignore")
             .arg("foo")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in `--ignore`: foo
+"
     );
 
     Ok(())
@@ -87,7 +114,16 @@ fn test_several_non_existing_ignored_rules() -> anyhow::Result<()> {
             .arg("--ignore")
             .arg("foo,any_is_na,barbaz")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in `--ignore`: foo, barbaz
+"
     );
 
     Ok(())
@@ -112,7 +148,15 @@ fn test_selected_and_ignored() -> anyhow::Result<()> {
             .arg("--ignore")
             .arg("any_is_na")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -141,7 +185,24 @@ fn test_correct_rule_selection_and_exclusion() -> anyhow::Result<()> {
             .arg("--ignore")
             .arg("any_duplicated")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -168,7 +229,24 @@ any(is.na(x))
             .arg("--select")
             .arg("SUSP")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: all_equal
+ --> test.R:3:1
+  |
+3 | !all.equal(x, y)
+  | ---------------- If `all.equal()` is false, it will return a string and not `FALSE`.
+  |
+  = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
+
+Found 1 error.
+1 fix is available with the `--fix --unsafe-fixes` option.
+
+----- stderr -----
+"
     );
 
     // Can mix group name and rule name
@@ -180,7 +258,32 @@ any(is.na(x))
             .arg("--select")
             .arg("any_is_na,SUSP")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:2:1
+  |
+2 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: all_equal
+ --> test.R:3:1
+  |
+3 | !all.equal(x, y)
+  | ---------------- If `all.equal()` is false, it will return a string and not `FALSE`.
+  |
+  = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
+
+Found 2 errors.
+1 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).
+
+----- stderr -----
+"
     );
 
     // Can mix group name and rule name that is part of the same group
@@ -192,7 +295,24 @@ any(is.na(x))
             .arg("--select")
             .arg("all_equal,SUSP")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: all_equal
+ --> test.R:3:1
+  |
+3 | !all.equal(x, y)
+  | ---------------- If `all.equal()` is false, it will return a string and not `FALSE`.
+  |
+  = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
+
+Found 1 error.
+1 fix is available with the `--fix --unsafe-fixes` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -219,7 +339,24 @@ any(is.na(x))
             .arg("--ignore")
             .arg("SUSP")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:2:1
+  |
+2 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     // Can mix group name and rule name
@@ -231,7 +368,15 @@ any(is.na(x))
             .arg("--ignore")
             .arg("any_is_na,SUSP")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
 
     // Can mix group name and rule name that is part of the same group
@@ -243,7 +388,24 @@ any(is.na(x))
             .arg("--ignore")
             .arg("all_equal,SUSP")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:2:1
+  |
+2 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -267,7 +429,16 @@ fn test_invalid_rule_group() -> anyhow::Result<()> {
             .arg("--ignore")
             .arg("FOOBAR,SUSP")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in `--ignore`: FOOBAR
+"
     );
 
     Ok(())
@@ -295,7 +466,15 @@ any(is.na(x))
             .arg("--ignore")
             .arg("SUSP")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
 
     insta::assert_snapshot!(
@@ -308,7 +487,24 @@ any(is.na(x))
             .arg("--ignore")
             .arg("PERF")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: all_equal
+ --> test.R:3:1
+  |
+3 | !all.equal(x, y)
+  | ---------------- If `all.equal()` is false, it will return a string and not `FALSE`.
+  |
+  = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
+
+Found 1 error.
+1 fix is available with the `--fix --unsafe-fixes` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -334,7 +530,24 @@ expect_equal(foo(x), TRUE)
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:2:1
+  |
+2 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -361,7 +574,32 @@ expect_equal(foo(x), TRUE)
             .arg("--select")
             .arg("ALL")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:2:1
+  |
+2 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: expect_true_false
+ --> test.R:3:1
+  |
+3 | expect_equal(foo(x), TRUE)
+  | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
+  |
+  = help: Use `expect_true(x)` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     // ALL can be combined with ignore
@@ -375,7 +613,24 @@ expect_equal(foo(x), TRUE)
             .arg("--ignore")
             .arg("TESTTHAT")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:2:1
+  |
+2 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -402,7 +657,32 @@ expect_equal(foo(x), TRUE)
             .arg("--extend-select")
             .arg("TESTTHAT")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:2:1
+  |
+2 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: expect_true_false
+ --> test.R:3:1
+  |
+3 | expect_equal(foo(x), TRUE)
+  | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
+  |
+  = help: Use `expect_true(x)` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     // extend-select can also be used with specific rule names
@@ -414,7 +694,32 @@ expect_equal(foo(x), TRUE)
             .arg("--extend-select")
             .arg("expect_true_false")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:2:1
+  |
+2 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: expect_true_false
+ --> test.R:3:1
+  |
+3 | expect_equal(foo(x), TRUE)
+  | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
+  |
+  = help: Use `expect_true(x)` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -437,7 +742,16 @@ fn test_extend_select_unknown_rule() -> anyhow::Result<()> {
             .arg("--extend-select")
             .arg("FOO")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in `--extend-select`: FOO
+"
     );
     Ok(())
 }
@@ -460,7 +774,23 @@ fn test_deprecated_rule_warning_from_cli() -> anyhow::Result<()> {
             .arg("--select")
             .arg("browser")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: browser
+ --> test.R:1:1
+  |
+1 | browser()
+  | --------- Calls to `browser()` should be removed.
+  |
+
+Found 1 error.
+
+----- stderr -----
+Warning: Rule `browser` is deprecated since v0.5.0. Use `undesirable_function` instead.
+"
     );
 
     Ok(())
@@ -490,7 +820,23 @@ select = ["browser"]
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: browser
+ --> test.R:1:1
+  |
+1 | browser()
+  | --------- Calls to `browser()` should be removed.
+  |
+
+Found 1 error.
+
+----- stderr -----
+Warning: Rule `browser` is deprecated since v0.5.0. Use `undesirable_function` instead.
+"
     );
 
     Ok(())

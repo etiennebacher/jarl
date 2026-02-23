@@ -19,6 +19,16 @@ pub fn is_r_extension(extension: &str) -> bool {
     matches!(extension, "r" | "R")
 }
 
+pub fn has_rmd_extension(path: &Path) -> bool {
+    path.extension()
+        .and_then(OsStr::to_str)
+        .is_some_and(is_rmd_extension)
+}
+
+pub fn is_rmd_extension(ext: &str) -> bool {
+    matches!(ext, "rmd" | "Rmd" | "qmd" | "Qmd")
+}
+
 /// Convert any path to an absolute path (based on the current working
 /// directory).
 pub fn normalize_path<P: AsRef<Path>>(path: P) -> PathBuf {

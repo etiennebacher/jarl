@@ -6,9 +6,13 @@ use crate::{
     settings::Settings,
 };
 use air_r_syntax::RSyntaxKind;
-use air_workspace::resolve::PathResolver;
 use anyhow::Result;
-use std::{collections::HashSet, fs, path::PathBuf};
+use biome_rowan::TextRange;
+use std::{
+    collections::{HashMap, HashSet},
+    fs,
+    path::PathBuf,
+};
 
 use crate::rule_options::assignment::ResolvedAssignmentOptions;
 
@@ -81,29 +85,17 @@ pub struct Config {
     pub fixable: Option<HashSet<String>>,
     /// Resolved per-rule options
     pub rule_options: ResolvedRuleOptions,
+    /// Pre-computed per-file duplicate top-level assignment data.
+    /// Keyed by relativized file path. Value is a list of `(name, lhs_range,
+    /// help)` triples where `help` points to the first definition.
+    pub package_duplicate_assignments: HashMap<PathBuf, Vec<(String, TextRange, String)>>,
 }
 
 pub fn build_config(
     check_config: &ArgsConfig,
-    resolver: &PathResolver<Settings>,
+    toml_settings: Option<&Settings>,
     paths: Vec<PathBuf>,
 ) -> Result<Config> {
-    let root_path = resolver
-        .items()
-        .iter()
-        .map(|x| x.path())
-        .collect::<Vec<_>>();
-
-    if root_path.len() > 1 {
-        todo!("Don't know how to handle multiple TOML")
-    }
-
-    let toml_settings = if root_path.len() == 1 {
-        Some(resolver.items().first().unwrap().value())
-    } else {
-        None
-    };
-
     // Determining the minimum R version has to come first since if it is
     // unknown then only rules that don't have a version restriction are
     // selected.
@@ -172,6 +164,7 @@ pub fn build_config(
         unfixable: unfixable_toml,
         fixable: fixable_toml,
         rule_options,
+        package_duplicate_assignments: HashMap::new(),
     })
 }
 

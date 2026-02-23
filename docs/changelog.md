@@ -31,14 +31,30 @@
   ```
   These options are listed in the [Configuration page](https://jarl.etiennebacher.com/config#with-a-config-file) (#333).
 
-* Jarl now also analyzes piped functions, e.g. the following code is now reported
-  by the `any_is_na` rule:
+* Jarl now also analyzes piped functions, e.g. the following code is reported by
+  the `any_is_na` rule:
   ```r
   is.na(x) |> any()
 
   x |> is.na() |> any()
   ```
   (#338).
+
+* Jarl now checks R code chunks in Quarto and R Markdown documents. More
+  information in the ["R Markdown and Quarto"](https://jarl.etiennebacher.com/using-jarl#r-markdown-and-quarto)
+  section (#50).
+
+* Added support for multiple `jarl.toml`, i.e. each file now uses the nearest
+  `jarl.toml`. For example, Jarl can check a folder where several subfolders have
+  their own `jarl.toml` (before, this would error). (#353)
+
+* New option `include` in `jarl.toml`, to complement `exclude` (#349).
+
+* New rules:
+
+  - `duplicated_function_definition` (#358)
+  - `invalid_chunk_suppression` (#350)
+  - `undesirable_function` (replaces `browser`) (#336)
 
 ## 0.4.0
 

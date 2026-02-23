@@ -23,7 +23,15 @@ fn test_min_r_version_from_cli_only() -> anyhow::Result<()> {
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
 
     // This should not report a lint (the project could be using 4.4.0 so
@@ -36,7 +44,15 @@ fn test_min_r_version_from_cli_only() -> anyhow::Result<()> {
             .arg("--min-r-version")
             .arg("4.4.0")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
     // This should report a lint.
     insta::assert_snapshot!(
@@ -47,7 +63,24 @@ fn test_min_r_version_from_cli_only() -> anyhow::Result<()> {
             .arg("--min-r-version")
             .arg("4.6.0")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: grepv
+ --> test.R:1:1
+  |
+1 | grep('a.*', x, value = TRUE)
+  | ---------------------------- `grep(..., value = TRUE)` can be simplified.
+  |
+  = help: Use `grepv(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -78,7 +111,15 @@ Depends: R (>= 4.4.0), utils, stats"#,
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
 
     // This should report a lint.
@@ -94,7 +135,24 @@ Depends: R (>= 4.6.0), utils, stats"#,
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: grepv
+ --> test.R:1:1
+  |
+1 | grep('a.*', x, value = TRUE)
+  | ---------------------------- `grep(..., value = TRUE)` can be simplified.
+  |
+  = help: Use `grepv(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())

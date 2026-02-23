@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/cargo-test.yml
       - Cargo.toml
+      - Cargo.lock
       - dist-workspace.toml
       - crates/**/src/**
       - crates/**/tests/**
@@ -17,6 +18,7 @@ on:
     paths:
       - .github/workflows/cargo-test.yml
       - Cargo.toml
+      - Cargo.lock
       - dist-workspace.toml
       - crates/**/src/**
       - crates/**/tests/**

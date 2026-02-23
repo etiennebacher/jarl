@@ -5,14 +5,18 @@ use jarl_core::{
     config::ArgsConfig,
     config::build_config,
     diagnostic::Diagnostic,
+    fs::has_rmd_extension,
     settings::Settings,
-    suppression_edit::{create_suppression_edit, format_suppression_comments},
+    suppression_edit::{
+        create_suppression_edit, create_suppression_edit_in_rmd, format_suppression_comments,
+    },
 };
 
 use anyhow::Result;
 use colored::Colorize;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use std::collections::HashMap;
 use std::env;
 use std::path::PathBuf;
 use std::time::Instant;
@@ -41,13 +45,17 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     // override each discovered settings' `default_exclude` to `false` so the
     // default patterns from `DEFAULT_EXCLUDE_PATTERNS` are not applied during
     // discovery.
-    for mut ds in discover_settings(&args.files)? {
+    let discovered = discover_settings(&args.files)?;
+    let single_config = discovered.len() == 1;
+
+    for mut ds in discovered {
         if args.no_default_exclude {
             ds.settings.linter.default_exclude = Some(false);
         }
 
-        // Check if config is from a parent directory (not CWD)
-        if let (Some(config_path), Some(current_dir)) = (&ds.config_path, &cwd)
+        // Only track parent config path when there's a single config (informative for that case)
+        if single_config
+            && let (Some(config_path), Some(current_dir)) = (&ds.config_path, &cwd)
             && let Some(config_dir) = config_path.parent()
             && config_dir != current_dir
         {
@@ -85,28 +93,25 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         assignment: args.assignment,
     };
 
-    let config = build_config(&check_config, &resolver, paths)?;
-
-    // Emit deprecation warnings for old assignment syntax
-    if check_config.assignment.is_some() {
-        eprintln!(
-            "{}: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.",
-            "Warning".yellow().bold()
-        );
+    // Group paths by their closest resolved config directory, so each file is
+    // checked with the settings from the nearest jarl.toml.
+    let mut groups: HashMap<Option<PathBuf>, Vec<PathBuf>> = HashMap::new();
+    for path in paths {
+        let key = resolver
+            .resolve(&path)
+            .map(|item| item.path().to_path_buf());
+        groups.entry(key).or_default().push(path);
     }
 
-    // Check if the deprecated `assignment = "..."` top-level string form was used in TOML
-    for item in resolver.items() {
-        if item.value().linter.deprecated_assignment_syntax {
-            eprintln!(
-                "{}: `assignment = \"...\"` in `[lint]` is deprecated. \
-                 Use `[lint.assignment]` with `operator = \"...\"` instead.",
-                "Warning".yellow().bold()
-            );
-        }
+    let mut file_results = Vec::new();
+    for (dir_key, group_paths) in groups {
+        let settings = dir_key
+            .as_deref()
+            .and_then(|dir| resolver.items().iter().find(|item| item.path() == dir))
+            .map(|item| item.value());
+        let config = build_config(&check_config, settings, group_paths)?;
+        file_results.extend(jarl_core::check::check(config));
     }
-
-    let file_results = jarl_core::check::check(config);
 
     let mut all_errors = Vec::new();
     let mut all_diagnostics = Vec::new();
@@ -164,6 +169,24 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         args.output_format,
         OutputFormat::Json | OutputFormat::Github
     );
+
+    // Check if the deprecated `--assignment` CLI flag was used
+    if check_config.assignment.is_some() {
+        eprintln!(
+            "{}: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.",
+            "Warning".yellow().bold()
+        );
+    }
+    // Check if the deprecated `assignment = "..."` top-level string form was used in TOML
+    for item in resolver.items() {
+        if item.value().linter.deprecated_assignment_syntax {
+            eprintln!(
+                "{}: `assignment = \"...\"` in `[lint]` is deprecated. \
+                     Use `[lint.assignment]` with `operator = \"...\"` instead.",
+                "Warning".yellow().bold()
+            );
+        }
+    }
 
     if !is_structured_format {
         // Emit deprecation warnings for explicitly-used deprecated rules.
@@ -276,12 +299,19 @@ fn add_jarl_ignore_comments(
         // Compute suppression edits for each diagnostic
         // Store (offset, indent, needs_leading_newline, rule_name) to merge rules at same offset
         let mut raw_edits: Vec<(usize, String, bool, String)> = Vec::new();
+        let is_rmd = has_rmd_extension(&path);
         for diagnostic in &diagnostics {
             let start: usize = diagnostic.range.start().into();
             let end: usize = diagnostic.range.end().into();
             let rule_name = &diagnostic.message.name;
 
-            if let Some(edit) = create_suppression_edit(&content, start, end, rule_name, reason) {
+            let edit = if is_rmd {
+                create_suppression_edit_in_rmd(&content, start, end, rule_name, reason)
+            } else {
+                create_suppression_edit(&content, start, end, rule_name, reason)
+            };
+
+            if let Some(edit) = edit {
                 raw_edits.push((
                     edit.insert_point.offset,
                     edit.insert_point.indent,

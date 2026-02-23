@@ -31,7 +31,31 @@ y <- 2
             .arg("--assignment")
             .arg("<-")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: assignment
+ --> test.R:2:1
+  |
+2 | x = 1
+  | --- Use `<-` for assignment.
+  |
+
+warning: assignment
+ --> test.R:4:3
+  |
+4 | 3 -> z
+  |   ---- Use `<-` for assignment.
+  |
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+Warning: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
+"
     );
 
     insta::assert_snapshot!(
@@ -44,7 +68,31 @@ y <- 2
             .arg("--assignment")
             .arg("=")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: assignment
+ --> test.R:3:1
+  |
+3 | y <- 2
+  | ---- Use `=` for assignment.
+  |
+
+warning: assignment
+ --> test.R:4:3
+  |
+4 | 3 -> z
+  |   ---- Use `=` for assignment.
+  |
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+Warning: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
+"
     );
 
     Ok(())
@@ -72,7 +120,15 @@ y <- 2
             .arg("--assignment")
             .arg("foo")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Invalid value in `--assignment`: foo
+"
     );
 
     insta::assert_snapshot!(
@@ -85,7 +141,15 @@ y <- 2
             .arg("--assignment")
             .arg("1")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Invalid value in `--assignment`: 1
+"
     );
 
     Ok(())
@@ -123,7 +187,30 @@ operator = "<-"
             .arg("--select")
             .arg("assignment")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: assignment
+ --> test.R:2:1
+  |
+2 | x = 1
+  | --- Use `<-` for assignment.
+  |
+
+warning: assignment
+ --> test.R:4:3
+  |
+4 | 3 -> z
+  |   ---- Use `<-` for assignment.
+  |
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     std::fs::write(
@@ -141,7 +228,30 @@ operator = "="
             .arg("--select")
             .arg("assignment")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: assignment
+ --> test.R:3:1
+  |
+3 | y <- 2
+  | ---- Use `=` for assignment.
+  |
+
+warning: assignment
+ --> test.R:4:3
+  |
+4 | 3 -> z
+  |   ---- Use `=` for assignment.
+  |
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -176,7 +286,17 @@ operator = "foo"
             .arg("assignment")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+Invalid value for `operator` in `[lint.assignment]`: "foo". Expected "<-" or "=".
+"#
     );
 
     std::fs::write(
@@ -195,7 +315,22 @@ operator = 1
             .arg("assignment")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 12
+  |
+3 | operator = 1
+  |            ^
+invalid type: integer `1`, expected a string
+
+"
     );
 
     Ok(())
@@ -234,7 +369,31 @@ operator = "<-"
             .arg("--assignment")
             .arg("=")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: assignment
+ --> test.R:3:1
+  |
+3 | y <- 2
+  | ---- Use `=` for assignment.
+  |
+
+warning: assignment
+ --> test.R:4:3
+  |
+4 | 3 -> z
+  |   ---- Use `=` for assignment.
+  |
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+Warning: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
+"
     );
     Ok(())
 }
@@ -271,7 +430,31 @@ assignment = "<-"
             .arg("--select")
             .arg("assignment")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @r#"
+success: false
+exit_code: 1
+----- stdout -----
+warning: assignment
+ --> test.R:2:1
+  |
+2 | x = 1
+  | --- Use `<-` for assignment.
+  |
+
+warning: assignment
+ --> test.R:4:3
+  |
+4 | 3 -> z
+  |   ---- Use `<-` for assignment.
+  |
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+Warning: `assignment = "..."` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator = "..."` instead.
+"#
     );
 
     std::fs::write(
@@ -289,7 +472,31 @@ assignment = "="
             .arg("--select")
             .arg("assignment")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @r#"
+success: false
+exit_code: 1
+----- stdout -----
+warning: assignment
+ --> test.R:3:1
+  |
+3 | y <- 2
+  | ---- Use `=` for assignment.
+  |
+
+warning: assignment
+ --> test.R:4:3
+  |
+4 | 3 -> z
+  |   ---- Use `=` for assignment.
+  |
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+Warning: `assignment = "..."` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator = "..."` instead.
+"#
     );
 
     Ok(())
@@ -324,7 +531,17 @@ assignment = "foo"
             .arg("assignment")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+Invalid value for `operator` in `[lint.assignment]`: "foo". Expected "<-" or "=".
+"#
     );
 
     std::fs::write(
@@ -343,7 +560,22 @@ assignment = 1
             .arg("assignment")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 14
+  |
+3 | assignment = 1
+  |              ^
+invalid type: integer `1`, expected a string (e.g. `assignment = "<-"`) or a table (e.g. `[lint.assignment]`)
+
+"#
     );
 
     Ok(())
@@ -378,7 +610,32 @@ assignment = "<-"
             .arg("--assignment")
             .arg("=")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @r#"
+success: false
+exit_code: 1
+----- stdout -----
+warning: assignment
+ --> test.R:3:1
+  |
+3 | y <- 2
+  | ---- Use `=` for assignment.
+  |
+
+warning: assignment
+ --> test.R:4:3
+  |
+4 | 3 -> z
+  |   ---- Use `=` for assignment.
+  |
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+Warning: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
+Warning: `assignment = "..."` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator = "..."` instead.
+"#
     );
     Ok(())
 }

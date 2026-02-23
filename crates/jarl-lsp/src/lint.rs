@@ -97,10 +97,16 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlD
     // TODO: we shoudln't have to write the content to a tempfile to then read
     // it and get diagnostic. The check function should be able to take the R
     // code as a string.
-    // Write in-memory content to a temporary file for linting
+    // Write in-memory content to a temporary file for linting.
+    // Preserve the original extension so Rmd/Qmd files go through the correct
+    // code path (get_checks_rmd) rather than the plain-R path.
+    let ext = file_path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("R");
     let temp_dir = TempDir::new()?;
     let temp_dir = temp_dir.path();
-    let temp_file = temp_dir.join(format!("jarl_lsp_{}.R", std::process::id()));
+    let temp_file = temp_dir.join(format!("jarl_lsp_{}.{}", std::process::id(), ext));
 
     std::fs::write(&temp_file, content)
         .map_err(|e| anyhow!("Failed to write temporary file: {}", e))?;
@@ -127,7 +133,18 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlD
         assignment: None,
     };
 
-    let config = build_config(&check_config, &resolver, paths)?;
+    let toml_settings = resolver.items().first().map(|item| item.value());
+    let mut config = build_config(&check_config, toml_settings, paths)?;
+
+    // Pre-compute package-level duplicate assignments using the real file path.
+    // The temp file lives outside the package tree, so the normal code path in
+    // `check()` would find nothing.
+    if config
+        .rules_to_apply
+        .contains(&jarl_core::rule_set::Rule::DuplicatedFunctionDefinition)
+    {
+        precompute_package_duplicates(&mut config, file_path, &temp_file);
+    }
 
     let diagnostics = jarl_core::check::check(config);
     let mut all_diagnostics: Vec<JarlDiagnostic> = diagnostics
@@ -155,6 +172,57 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlD
     }
 
     Ok(all_diagnostics)
+}
+
+/// Pre-compute package-level duplicate function assignments into `config`.
+///
+/// The LSP lints a temporary copy of the file that lives outside the real
+/// package tree, so `compute_package_duplicate_assignments` (which checks
+/// `is_in_r_package`) would find nothing for the temp file. This function
+/// runs the analysis on the real package files and re-keys the result for
+/// the current file so it matches the temp file path that `get_checks` will
+/// look up.
+fn precompute_package_duplicates(
+    config: &mut jarl_core::config::Config,
+    real_path: &Path,
+    temp_path: &Path,
+) {
+    use jarl_core::check::{compute_package_duplicate_assignments, is_in_r_package};
+
+    if !is_in_r_package(real_path).unwrap_or(false) {
+        return;
+    }
+
+    let Some(r_dir) = real_path.parent() else {
+        return;
+    };
+
+    let Ok(entries) = std::fs::read_dir(r_dir) else {
+        return;
+    };
+
+    let package_files: Vec<std::path::PathBuf> = entries
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| jarl_core::fs::has_r_extension(p))
+        .collect();
+
+    let package_dupes = compute_package_duplicate_assignments(&package_files);
+
+    // Re-key: the checker looks up diagnostics by the relativized temp path,
+    // but the analysis was done with real paths.
+    let real_rel = std::path::PathBuf::from(jarl_core::fs::relativize_path(real_path));
+    let temp_rel = std::path::PathBuf::from(jarl_core::fs::relativize_path(temp_path));
+
+    for (key, value) in package_dupes {
+        if key == real_rel {
+            config
+                .package_duplicate_assignments
+                .insert(temp_rel.clone(), value);
+        } else {
+            config.package_duplicate_assignments.insert(key, value);
+        }
+    }
 }
 
 /// Convert a Jarl diagnostic to LSP diagnostic format with fix information
@@ -476,6 +544,277 @@ mod tests {
         );
 
         Ok(())
+    }
+
+    // --- Rmd/Qmd indentation tests ---
+
+    /// Lint Rmd/Qmd content and return the LSP diagnostics.
+    ///
+    /// Writes the content to a real temporary file so that `Url::from_file_path`
+    /// produces a valid URI on all platforms (including Windows, where a fake
+    /// `file:///test.Rmd` path would cause `to_file_path()` to fail and return
+    /// no diagnostics).
+    fn lint_rmd_content(content: &str, ext: &str) -> Vec<lsp_types::Diagnostic> {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join(format!("test.{ext}"));
+        std::fs::write(&file_path, content).unwrap();
+
+        let uri = lsp_types::Url::from_file_path(&file_path).unwrap();
+        let key = DocumentKey::from(uri);
+        let document = TextDocument::new(content.to_string(), 1);
+        let snapshot = DocumentSnapshot::new(
+            document,
+            key,
+            PositionEncoding::UTF8,
+            ClientCapabilities::default(),
+        );
+        lint_document(&snapshot).unwrap()
+    }
+
+    /// Filter diagnostics by rule name stored in the `data` field.
+    fn diagnostics_for_rule<'a>(
+        diagnostics: &'a [lsp_types::Diagnostic],
+        rule: &str,
+    ) -> Vec<&'a lsp_types::Diagnostic> {
+        diagnostics
+            .iter()
+            .filter(|d| {
+                d.data
+                    .as_ref()
+                    .and_then(|v| v.get("rule_name"))
+                    .and_then(|r| r.as_str())
+                    == Some(rule)
+            })
+            .collect()
+    }
+
+    #[test]
+    fn test_rmd_non_indented_chunk_diagnostic_position() {
+        // Non-indented chunk: diagnostic should land at column 0.
+        //
+        // Line 0: "---"
+        // Line 1: "---"
+        // Line 2: ""
+        // Line 3: "```{r}"
+        // Line 4: "any(is.na(x))"  <- violation here (column 0)
+        // Line 5: "```"
+        let content = "---\n---\n\n```{r}\nany(is.na(x))\n```\n";
+        let diagnostics = lint_rmd_content(content, "Rmd");
+
+        let hits = diagnostics_for_rule(&diagnostics, "any_is_na");
+        assert_eq!(hits.len(), 1, "expected exactly one any_is_na diagnostic");
+
+        let range = hits[0].range;
+        assert_eq!(range.start.line, 4, "diagnostic should be on line 4");
+        assert_eq!(
+            range.start.character, 0,
+            "diagnostic should start at column 0"
+        );
+    }
+
+    #[test]
+    fn test_rmd_indented_chunk_diagnostic_column() {
+        // 2-space indented chunk (typical list-item scenario).
+        //
+        // Line 0: "* hello"
+        // Line 1: ""
+        // Line 2: "  ```{r}"
+        // Line 3: "  any(is.na(x))"  <- violation here (column 2, after the indent)
+        // Line 4: "  ```"
+        let content = "* hello\n\n  ```{r}\n  any(is.na(x))\n  ```\n";
+        let diagnostics = lint_rmd_content(content, "Rmd");
+
+        let hits = diagnostics_for_rule(&diagnostics, "any_is_na");
+        assert_eq!(hits.len(), 1, "expected exactly one any_is_na diagnostic");
+
+        let range = hits[0].range;
+        assert_eq!(range.start.line, 3, "diagnostic should be on line 3");
+        assert_eq!(
+            range.start.character, 2,
+            "diagnostic column must account for the 2-space indent"
+        );
+    }
+
+    #[test]
+    fn test_rmd_indented_chunk_second_line_violation() {
+        // Indented chunk where the violation is on the second line of code.
+        //
+        // Line 0: "* item"
+        // Line 1: ""
+        // Line 2: "  ```{r}"
+        // Line 3: "  x <- 1"        (clean)
+        // Line 4: "  any(is.na(x))"  <- violation here (line 4, column 2)
+        // Line 5: "  ```"
+        let content = "* item\n\n  ```{r}\n  x <- 1\n  any(is.na(x))\n  ```\n";
+        let diagnostics = lint_rmd_content(content, "Rmd");
+
+        let hits = diagnostics_for_rule(&diagnostics, "any_is_na");
+        assert_eq!(hits.len(), 1, "expected exactly one any_is_na diagnostic");
+
+        let range = hits[0].range;
+        assert_eq!(range.start.line, 4, "diagnostic should be on line 4");
+        assert_eq!(
+            range.start.character, 2,
+            "diagnostic column must account for the 2-space indent"
+        );
+    }
+
+    #[test]
+    fn test_rmd_tab_indented_chunk_diagnostic_column() {
+        // Tab-indented chunk: diagnostic column should be 1 (one tab = one byte in UTF-8).
+        //
+        // Line 0: "\t```{r}"
+        // Line 1: "\tany(is.na(x))"  <- violation here (column 1, after the tab)
+        // Line 2: "\t```"
+        let content = "\t```{r}\n\tany(is.na(x))\n\t```\n";
+        let diagnostics = lint_rmd_content(content, "Rmd");
+
+        let hits = diagnostics_for_rule(&diagnostics, "any_is_na");
+        assert_eq!(hits.len(), 1, "expected exactly one any_is_na diagnostic");
+
+        let range = hits[0].range;
+        assert_eq!(range.start.line, 1, "diagnostic should be on line 1");
+        assert_eq!(
+            range.start.character, 1,
+            "diagnostic column must account for the tab indent (1 byte)"
+        );
+    }
+
+    #[test]
+    fn test_qmd_indented_chunk_diagnostic_column() {
+        // Same indented-chunk test but with a .qmd extension.
+        //
+        // Line 0: "* hello"
+        // Line 1: ""
+        // Line 2: "  ```{r}"
+        // Line 3: "  any(is.na(x))"  <- violation here (column 2)
+        // Line 4: "  ```"
+        let content = "* hello\n\n  ```{r}\n  any(is.na(x))\n  ```\n";
+        let diagnostics = lint_rmd_content(content, "qmd");
+
+        let hits = diagnostics_for_rule(&diagnostics, "any_is_na");
+        assert_eq!(hits.len(), 1, "expected exactly one any_is_na diagnostic");
+
+        let range = hits[0].range;
+        assert_eq!(range.start.line, 3, "diagnostic should be on line 3");
+        assert_eq!(
+            range.start.character, 2,
+            "diagnostic column must account for the 2-space indent"
+        );
+    }
+
+    // --- Package-level duplicate function definition tests ---
+
+    /// Create a minimal R package in a temp dir and return (temp_dir, R/ path).
+    /// The TempDir is returned to keep it alive for the duration of the test.
+    fn create_test_package() -> (TempDir, std::path::PathBuf) {
+        let dir = TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("DESCRIPTION"),
+            "Package: testpkg\nVersion: 0.1.0\n",
+        )
+        .unwrap();
+        let r_dir = dir.path().join("R");
+        std::fs::create_dir(&r_dir).unwrap();
+        (dir, r_dir)
+    }
+
+    /// Create a snapshot backed by a real file on disk.
+    fn create_snapshot_for_file(file_path: &std::path::Path, content: &str) -> DocumentSnapshot {
+        let uri = Url::from_file_path(file_path).unwrap();
+        let key = DocumentKey::from(uri);
+        let document = TextDocument::new(content.to_string(), 1);
+        DocumentSnapshot::new(
+            document,
+            key,
+            PositionEncoding::UTF8,
+            ClientCapabilities::default(),
+        )
+    }
+
+    #[test]
+    fn test_duplicate_function_same_file() {
+        let (_dir, r_dir) = create_test_package();
+
+        let content = "foo <- function() 1\nfoo <- function() 2\n";
+        let file = r_dir.join("foo.R");
+        std::fs::write(&file, content).unwrap();
+
+        let snapshot = create_snapshot_for_file(&file, content);
+        let diagnostics = lint_document(&snapshot).unwrap();
+
+        let hits = diagnostics_for_rule(&diagnostics, "duplicated_function_definition");
+        assert_eq!(
+            hits.len(),
+            1,
+            "expected one duplicate diagnostic, got: {hits:?}"
+        );
+        assert!(
+            hits[0].message.contains("`foo` is defined more than once"),
+            "message should mention `foo`, got: {}",
+            hits[0].message
+        );
+    }
+
+    #[test]
+    fn test_duplicate_function_cross_file() {
+        let (_dir, r_dir) = create_test_package();
+
+        // aaa.R defines `foo` first (alphabetically), bbb.R is the duplicate
+        std::fs::write(r_dir.join("aaa.R"), "foo <- function() 1\n").unwrap();
+        let content = "foo <- function() 2\n";
+        let file = r_dir.join("bbb.R");
+        std::fs::write(&file, content).unwrap();
+
+        let snapshot = create_snapshot_for_file(&file, content);
+        let diagnostics = lint_document(&snapshot).unwrap();
+
+        let hits = diagnostics_for_rule(&diagnostics, "duplicated_function_definition");
+        assert_eq!(
+            hits.len(),
+            1,
+            "expected one duplicate diagnostic on bbb.R, got: {hits:?}"
+        );
+    }
+
+    #[test]
+    fn test_no_duplicate_outside_package() {
+        // No DESCRIPTION so not a package, rule should not fire
+        let dir = TempDir::new().unwrap();
+        let r_dir = dir.path().join("R");
+        std::fs::create_dir(&r_dir).unwrap();
+
+        let content = "foo <- function() 1\nfoo <- function() 2\n";
+        let file = r_dir.join("foo.R");
+        std::fs::write(&file, content).unwrap();
+
+        let snapshot = create_snapshot_for_file(&file, content);
+        let diagnostics = lint_document(&snapshot).unwrap();
+
+        let hits = diagnostics_for_rule(&diagnostics, "duplicated_function_definition");
+        assert!(
+            hits.is_empty(),
+            "should not flag duplicates outside a package, got: {hits:?}"
+        );
+    }
+
+    #[test]
+    fn test_no_duplicate_unique_names() {
+        let (_dir, r_dir) = create_test_package();
+
+        std::fs::write(r_dir.join("aaa.R"), "foo <- function() 1\n").unwrap();
+        let content = "bar <- function() 2\n";
+        let file = r_dir.join("bbb.R");
+        std::fs::write(&file, content).unwrap();
+
+        let snapshot = create_snapshot_for_file(&file, content);
+        let diagnostics = lint_document(&snapshot).unwrap();
+
+        let hits = diagnostics_for_rule(&diagnostics, "duplicated_function_definition");
+        assert!(
+            hits.is_empty(),
+            "unique names should not be flagged, got: {hits:?}"
+        );
     }
 
     #[test]

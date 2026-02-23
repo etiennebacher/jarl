@@ -69,7 +69,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | fun(arg = 1, arg = 2)
-          | --------------------- Avoid duplicate arguments in function calls. Duplicated argument(s): "arg".
+          | --------------------- Avoid duplicated arguments in function calls. Duplicated argument(s): "arg".
           |
         Found 1 error.
         "#
@@ -81,7 +81,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | fun(arg = 1, 'arg' = 2)
-          | ----------------------- Avoid duplicate arguments in function calls. Duplicated argument(s): "arg".
+          | ----------------------- Avoid duplicated arguments in function calls. Duplicated argument(s): "arg".
           |
         Found 1 error.
         "#
@@ -93,7 +93,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | fun(arg = 1, `arg` = 2)
-          | ----------------------- Avoid duplicate arguments in function calls. Duplicated argument(s): "arg".
+          | ----------------------- Avoid duplicated arguments in function calls. Duplicated argument(s): "arg".
           |
         Found 1 error.
         "#
@@ -105,7 +105,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | 'fun'(arg = 1, arg = 2)
-          | ----------------------- Avoid duplicate arguments in function calls. Duplicated argument(s): "arg".
+          | ----------------------- Avoid duplicated arguments in function calls. Duplicated argument(s): "arg".
           |
         Found 1 error.
         "#
@@ -117,7 +117,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | list(a = 1, a = 2)
-          | ------------------ Avoid duplicate arguments in function calls. Duplicated argument(s): "a".
+          | ------------------ Avoid duplicated arguments in function calls. Duplicated argument(s): "a".
           |
         Found 1 error.
         "#
@@ -129,7 +129,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | foo(a = 1, a = function(x) 1)
-          | ----------------------------- Avoid duplicate arguments in function calls. Duplicated argument(s): "a".
+          | ----------------------------- Avoid duplicated arguments in function calls. Duplicated argument(s): "a".
           |
         Found 1 error.
         "#
@@ -141,7 +141,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | foo(a = 1, a = (function(x) x + 1))
-          | ----------------------------------- Avoid duplicate arguments in function calls. Duplicated argument(s): "a".
+          | ----------------------------------- Avoid duplicated arguments in function calls. Duplicated argument(s): "a".
           |
         Found 1 error.
         "#
@@ -208,7 +208,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | c(a = 1, a = 2)
-          | --------------- Avoid duplicate arguments in function calls. Duplicated argument(s): "a".
+          | --------------- Avoid duplicated arguments in function calls. Duplicated argument(s): "a".
           |
         Found 1 error.
         "#
@@ -247,7 +247,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | foo(a = 1, a = 2)
-          | ----------------- Avoid duplicate arguments in function calls. Duplicated argument(s): "a".
+          | ----------------- Avoid duplicated arguments in function calls. Duplicated argument(s): "a".
           |
         Found 1 error.
         "#
@@ -289,7 +289,7 @@ mod tests {
         ... |
         5 | |                 = 2
         6 | |               )
-          | |_______________- Avoid duplicate arguments in function calls. Duplicated argument(s): "arg".
+          | |_______________- Avoid duplicated arguments in function calls. Duplicated argument(s): "arg".
           |
         Found 1 error.
         "#
@@ -310,7 +310,7 @@ mod tests {
         ... |
         5 | |                 2
         6 | |               )
-          | |_______________- Avoid duplicate arguments in function calls. Duplicated argument(s): "arg".
+          | |_______________- Avoid duplicated arguments in function calls. Duplicated argument(s): "arg".
           |
         Found 1 error.
         "#
@@ -335,7 +335,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | myfun(a = 1, a = 1)
-          | ------------------- Avoid duplicate arguments in function calls. Duplicated argument(s): "a".
+          | ------------------- Avoid duplicated arguments in function calls. Duplicated argument(s): "a".
           |
         Found 1 error.
         "#

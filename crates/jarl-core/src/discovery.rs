@@ -11,6 +11,7 @@ use std::path::PathBuf;
 
 use crate::fs;
 use crate::fs::has_r_extension;
+use crate::fs::has_rmd_extension;
 use crate::settings::Settings;
 use crate::toml::find_jarl_toml_in_directory;
 use crate::toml::parse_jarl_toml;
@@ -51,7 +52,7 @@ fn get_user_config_dir() -> Option<PathBuf> {
 /// For each `path`, we:
 /// - Walk up its ancestors until the user config directory, looking for a `jarl.toml`
 /// - If no config found in ancestors, fall back to checking the user config directory
-/// - TODO(hierarchical): Walk down its children, looking for nested `jarl.toml`s
+/// - If `path` is a directory, also walk down into it to find any nested `jarl.toml`s
 pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<DiscoveredSettings>> {
     let paths: Vec<PathBuf> = paths.iter().map(fs::normalize_path).collect();
 
@@ -105,10 +106,73 @@ pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<Disc
         }
     }
 
-    // TODO(hierarchical): Also iterate into the directories and collect `jarl.toml`
-    // found nested withing the directories for hierarchical support
+    // For directory inputs, also walk down to discover any nested jarl.toml files.
+    // This enables hierarchical configuration: files in subdirectories use the
+    // nearest jarl.toml above them rather than always falling back to the root one.
+    let mut already_found: FxHashSet<PathBuf> = discovered_settings
+        .iter()
+        .map(|ds| ds.directory.clone())
+        .collect();
+
+    for path in &paths {
+        if path.is_dir() {
+            discover_nested_settings(path, &mut already_found, &mut discovered_settings)?;
+        }
+    }
 
     Ok(discovered_settings)
+}
+
+/// Walk down into `root`, collecting any nested `jarl.toml` files not yet in `already_found`.
+fn discover_nested_settings(
+    root: &Path,
+    already_found: &mut FxHashSet<PathBuf>,
+    discovered_settings: &mut Vec<DiscoveredSettings>,
+) -> anyhow::Result<()> {
+    let walker = ignore::WalkBuilder::new(root)
+        .hidden(true)
+        .parents(true)
+        .ignore(false)
+        .git_ignore(true)
+        .git_global(true)
+        .git_exclude(true)
+        .build();
+
+    for result in walker {
+        let entry = match result {
+            Ok(entry) => entry,
+            Err(_) => continue,
+        };
+
+        let path = entry.path();
+
+        // Skip the root itself; its config was already handled by the ancestor walk above
+        if path == root {
+            continue;
+        }
+
+        // Only check directories for nested jarl.toml files
+        if entry.file_type().is_none_or(|ft| !ft.is_dir()) {
+            continue;
+        }
+
+        // Skip if this directory's config was already discovered
+        if already_found.contains(path) {
+            continue;
+        }
+
+        if let Some(toml) = find_jarl_toml_in_directory(path) {
+            already_found.insert(path.to_path_buf());
+            let settings = parse_settings(&toml, path)?;
+            discovered_settings.push(DiscoveredSettings {
+                directory: path.to_path_buf(),
+                settings,
+                config_path: Some(toml),
+            });
+        }
+    }
+
+    Ok(())
 }
 
 /// Parse [Settings] from a given `jarl.toml`
@@ -218,7 +282,44 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
     let mut visitor_builder = FilesVisitorBuilder::new(&state);
     walker.visit(&mut visitor_builder);
 
-    state.finish()
+    let mut files = state.finish();
+
+    // Post-filter: if include patterns are set, only keep files matching at least one.
+    if use_linter_settings && let Some(settings_item) = resolver.items().first() {
+        let settings = settings_item.value();
+        if let Some(include_patterns) = &settings.linter.include
+            && !include_patterns.is_empty()
+        {
+            let root = settings_item.path();
+            let mut override_builder = ignore::overrides::OverrideBuilder::new(root);
+            for pattern in include_patterns {
+                // Convert directory patterns like "R/" → "R/**" so they match
+                // the files inside, not just the directory entry itself.
+                let file_pattern = if pattern.ends_with('/') {
+                    format!("{}**", pattern)
+                } else {
+                    pattern.clone()
+                };
+                if let Err(e) = override_builder.add(&file_pattern) {
+                    tracing::warn!("Failed to add include pattern '{}': {}", pattern, e);
+                }
+            }
+            if let Ok(overrides) = override_builder.build() {
+                files.retain(|result| match result {
+                    Ok(path) => {
+                        let relative = path.strip_prefix(root).unwrap_or(path.as_path());
+                        matches!(
+                            overrides.matched(relative, false),
+                            ignore::Match::Whitelist(_)
+                        )
+                    }
+                    Err(_) => true,
+                });
+            }
+        }
+    }
+
+    files
 }
 
 /// Shared state across the threads of the walker
@@ -315,8 +416,8 @@ impl ignore::ParallelVisitor for FilesVisitor<'_> {
             return ignore::WalkState::Continue;
         }
 
-        // Check if this is an R file (has .R extension)
-        if !is_directory && has_r_extension(path) {
+        // Check if this is an R or Rmd/Qmd file
+        if !is_directory && (has_r_extension(path) || has_rmd_extension(path)) {
             tracing::trace!("Included R file {path}", path = path.display());
             self.files.push(Ok(entry.into_path()));
             return ignore::WalkState::Continue;

@@ -65,7 +65,7 @@ Options:
           [default: full]
 
       --assignment <ASSIGNMENT>
-          Assignment operator to use, can be either `<-` or `=`.
+          [DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`.
 
       --no-default-exclude
           Do not apply the default set of file patterns that should be excluded.
@@ -79,6 +79,10 @@ Options:
 
   -h, --help
           Print help (see a summary with '-h')
+
+Global options:
+      --log-level <LOG_LEVEL>
+          The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
 ```
 
 You can pass multiple options at once, for instance
@@ -186,6 +190,30 @@ This has the same capabilities as `--ignore`, so it is possible to pass rule nam
 ```toml
 [lint]
 ignore = ["PERF", "length_test"]
+```
+
+#### `include`
+
+Files and/or directories that are checked. By default, Jarl checks all files
+with a `.R`, `.qmd`, `.Rmd`, or `.rmd` extension.
+
+When both `include` and `exclude` are specified, a file is checked only
+if it matches at least one `include` pattern and does not match any
+`exclude` pattern.
+
+This takes a list relative paths to ignore:
+
+```toml
+[lint]
+include = ["foo.R", "tests/"]
+```
+
+It also supports glob patterns:
+
+```toml
+[lint]
+# Check only Rmd and qmd files
+include = ["**/*{.Rmd,qmd}"]
 ```
 
 #### `exclude`

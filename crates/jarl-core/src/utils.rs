@@ -27,6 +27,14 @@ macro_rules! unwrap_or_return_none {
     };
 }
 
+/// Find byte positions of newline characters in a string.
+///
+/// Used by Rmd/Qmd linting to compute line/column locations in the original
+/// file after position remapping from chunk space to file space.
+pub fn find_new_lines_from_content(content: &str) -> Vec<usize> {
+    content.match_indices('\n').map(|(i, _)| i).collect()
+}
+
 /// Find the positions of the new line characters in the given AST.
 pub fn find_new_lines(ast: &RSyntaxNode) -> Result<Vec<usize>> {
     match ast.first_child() {

@@ -11,6 +11,7 @@ pub mod utils;
 
 pub mod analyze;
 pub mod check;
+pub mod checker;
 pub mod config;
 pub mod description;
 pub mod diagnostic;
@@ -21,6 +22,7 @@ pub mod fix;
 pub mod fs;
 pub mod lints;
 pub mod location;
+pub mod rmd;
 pub mod rule_options;
 pub mod rule_set;
 pub mod settings;

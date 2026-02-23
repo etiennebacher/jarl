@@ -29,7 +29,32 @@ fn test_empty_toml_uses_all_rules() -> anyhow::Result<()> {
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -60,7 +85,15 @@ select = []
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
 
     std::fs::write(
@@ -82,7 +115,16 @@ select = [""]
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `select` in 'jarl.toml': "" (empty or whitespace-only not allowed)
+"#
     );
 
     Ok(())
@@ -113,7 +155,32 @@ ignore = []
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     std::fs::write(
@@ -134,7 +201,16 @@ ignore = [""]
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `ignore` in 'jarl.toml': "" (empty or whitespace-only not allowed)
+"#
     );
 
     Ok(())
@@ -164,7 +240,24 @@ select = ["any_is_na"]
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -198,7 +291,32 @@ any(duplicated(x))
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:2:1
+  |
+2 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: all_equal
+ --> test.R:4:1
+  |
+4 | !all.equal(x, y)
+  | ---------------- If `all.equal()` is false, it will return a string and not `FALSE`.
+  |
+  = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
+
+Found 2 errors.
+1 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -229,7 +347,24 @@ ignore = ["any_duplicated"]
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -263,7 +398,32 @@ length(levels(x))"#;
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -302,7 +462,24 @@ length(levels(x))"#;
             .arg("any_duplicated,length_levels")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -339,7 +516,24 @@ length(levels(x))"#;
             .arg("any_is_na")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -378,7 +572,15 @@ length(levels(x))"#;
             .arg("length_levels")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -409,7 +611,16 @@ select = ["any_is_na", "foo"]
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `select` in 'jarl.toml': foo
+"
     );
 
     Ok(())
@@ -440,7 +651,16 @@ ignore = ["foo", "bar"]
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `ignore` in 'jarl.toml': foo, bar
+"
     );
 
     Ok(())
@@ -471,7 +691,22 @@ select = ["any_is_na"
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 2, column 6
+  |
+2 | [lint
+  |      ^
+unclosed table, expected `]`
+
+"
     );
 
     Ok(())
@@ -503,7 +738,17 @@ unknown_field = ["value"]
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+Unknown field `unknown_field` in `[lint]`. Expected one of: `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, `exclude`, `default-exclude`, `include`.
+"
     );
 
     Ok(())
@@ -532,7 +777,32 @@ fn test_toml_without_linter_section() -> anyhow::Result<()> {
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -563,7 +833,16 @@ ignore = ["any_duplicated", "", "any_is_na"]
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `ignore` in 'jarl.toml': "" (empty or whitespace-only not allowed)
+"#
     );
 
     Ok(())
@@ -594,7 +873,16 @@ select = ["any_is_na", "   ", "any_duplicated"]
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `select` in 'jarl.toml': "" (empty or whitespace-only not allowed)
+"#
     );
 
     Ok(())
@@ -616,7 +904,32 @@ fn test_no_toml_file_uses_all_rules() -> anyhow::Result<()> {
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -646,7 +959,15 @@ fn test_default_exclude_works() -> anyhow::Result<()> {
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+Warning: No R files found under the given path(s).
+
+----- stderr -----
+"
     );
 
     // "default-exclude" specified by the user
@@ -664,7 +985,32 @@ default-exclude = false
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> cpp11.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> cpp11.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -691,7 +1037,22 @@ default-exclude = 1
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 19
+  |
+3 | default-exclude = 1
+  |                   ^
+invalid type: integer `1`, expected a boolean
+
+"
     );
 
     // "default-exclude" specified by the user
@@ -710,7 +1071,22 @@ default-exclude = ["a"]
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 19
+  |
+3 | default-exclude = ["a"]
+  |                   ^^^^^
+invalid type: sequence, expected a boolean
+
+"#
     );
 
     Ok(())
@@ -745,7 +1121,24 @@ exclude = ["excluded.R"]
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> included.R:1:1
+  |
+1 | any(is.na(y))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -777,7 +1170,24 @@ exclude = ["excluded_dir/"]
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> included.R:1:1
+  |
+1 | any(is.na(y))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -808,7 +1218,24 @@ exclude = ["test-*.R"]
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> normal.R:1:1
+  |
+1 | any(is.na(z))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -842,7 +1269,24 @@ exclude = ["excluded.R", "temp/", "*.tmp.R"]
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> included.R:1:1
+  |
+1 | any(is.na(d))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -876,7 +1320,32 @@ exclude = ["custom_exclude.R"]
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> cpp11.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_is_na
+ --> normal.R:1:1
+  |
+1 | any(is.na(z))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -912,7 +1381,24 @@ exclude = ["**/test/**"]
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> other/main.R:1:1
+  |
+1 | any(is.na(z))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -939,7 +1425,24 @@ exclude = []
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -965,7 +1468,22 @@ exclude = true
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 11
+  |
+3 | exclude = true
+  |           ^^^^
+invalid type: boolean `true`, expected a sequence
+
+"
     );
 
     std::fs::write(
@@ -983,7 +1501,22 @@ exclude = 1
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 11
+  |
+3 | exclude = 1
+  |           ^
+invalid type: integer `1`, expected a sequence
+
+"
     );
 
     std::fs::write(
@@ -1001,7 +1534,22 @@ exclude = ["a", 1]
             .arg(".")
             .run()
             .normalize_os_executable_name()
-            .normalize_temp_paths()
+            .normalize_temp_paths(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 17
+  |
+3 | exclude = ["a", 1]
+  |                 ^
+invalid type: integer `1`, expected a string
+
+"#
     );
 
     Ok(())
@@ -1034,12 +1582,32 @@ fixable = ["any_is_na"]
             .arg("--fix")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 1 error.
+
+----- stderr -----
+"
     );
 
     // Only any_is_na should be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!(fixed_contents);
+    insta::assert_snapshot!(fixed_contents,
+        @"anyNA(x)
+any(duplicated(x))
+"
+    );
 
     Ok(())
 }
@@ -1073,7 +1641,11 @@ unfixable = ["any_is_na"]
 
     // Only any_duplicated should be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!(fixed_contents);
+    insta::assert_snapshot!(fixed_contents,
+        @"any(is.na(x))
+anyDuplicated(x) > 0
+"
+    );
 
     Ok(())
 }
@@ -1107,7 +1679,12 @@ fixable = ["PERF"]
 
     // Only PERF rules should be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!(fixed_contents);
+    insta::assert_snapshot!(fixed_contents,
+        @"anyNA(x)
+anyDuplicated(x) > 0
+length(levels(x))
+"
+    );
 
     Ok(())
 }
@@ -1141,7 +1718,12 @@ unfixable = ["PERF"]
 
     // PERF rules should not be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!(fixed_contents);
+    insta::assert_snapshot!(fixed_contents,
+        @"any(is.na(x))
+any(duplicated(x))
+nlevels(x)
+"
+    );
 
     Ok(())
 }
@@ -1176,7 +1758,11 @@ unfixable = ["any_is_na"]
 
     // any_is_na should not be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!(fixed_contents);
+    insta::assert_snapshot!(fixed_contents,
+        @"any(is.na(x))
+anyDuplicated(x) > 0
+"
+    );
 
     Ok(())
 }
@@ -1212,7 +1798,11 @@ unfixable = ["any_duplicated"]
 
     // any_is_na should not be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!(fixed_contents);
+    insta::assert_snapshot!(fixed_contents,
+        @"anyNA(x)
+any(duplicated(x))
+"
+    );
 
     Ok(())
 }
@@ -1245,7 +1835,11 @@ fixable = []
         .normalize_os_executable_name();
 
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!(fixed_contents);
+    insta::assert_snapshot!(fixed_contents,
+        @"any(is.na(x))
+any(duplicated(x))
+"
+    );
 
     Ok(())
 }
@@ -1279,7 +1873,11 @@ unfixable = []
         .normalize_os_executable_name();
 
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!(fixed_contents);
+    insta::assert_snapshot!(fixed_contents,
+        @"anyNA(x)
+anyDuplicated(x) > 0
+"
+    );
 
     Ok(())
 }
@@ -1308,7 +1906,16 @@ fixable = ["invalid_rule_name"]
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `fixable` in 'jarl.toml': invalid_rule_name
+"
     );
 
     Ok(())
@@ -1338,7 +1945,16 @@ unfixable = ["invalid_rule_name"]
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `unfixable` in 'jarl.toml': invalid_rule_name
+"
     );
 
     Ok(())
@@ -1369,7 +1985,32 @@ fixable = ["any_is_na"]
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -1404,7 +2045,12 @@ fixable = ["any_is_na"]
         .normalize_os_executable_name();
 
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
-    insta::assert_snapshot!(fixed_contents);
+    insta::assert_snapshot!(fixed_contents,
+        @"anyNA(x)
+any(duplicated(x))
+length(levels(x))
+"
+    );
 
     Ok(())
 }
@@ -1437,7 +2083,32 @@ expect_equal(foo(x), TRUE)
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:2:1
+  |
+2 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: expect_true_false
+ --> test.R:3:1
+  |
+3 | expect_equal(foo(x), TRUE)
+  | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
+  |
+  = help: Use `expect_true(x)` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -1475,7 +2146,32 @@ expect_equal(foo(x), TRUE)
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:2:1
+  |
+2 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: expect_true_false
+ --> test.R:4:1
+  |
+4 | expect_equal(foo(x), TRUE)
+  | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
+  |
+  = help: Use `expect_true(x)` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -1506,7 +2202,618 @@ extend-select = ["FOO"]
             .arg("check")
             .arg(".")
             .run()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Unknown rules in field `extend-select` in 'jarl.toml': FOO
+"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_include_single_file() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+include = ["included.R"]
+"#,
+    )?;
+
+    // Only this file should be checked
+    std::fs::write(directory.join("included.R"), "any(is.na(x))")?;
+
+    // This file should NOT be checked (not in include list)
+    std::fs::write(directory.join("excluded.R"), "any(is.na(y))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> included.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_include_directory() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+include = ["R/"]
+"#,
+    )?;
+
+    // Files inside R/ should be checked
+    std::fs::create_dir(directory.join("R"))?;
+    std::fs::write(directory.join("R/utils.R"), "any(is.na(x))")?;
+
+    // Files outside R/ should NOT be checked
+    std::fs::write(directory.join("test.R"), "any(is.na(y))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> R/utils.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_include_glob_pattern() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+include = ["R-*.R"]
+"#,
+    )?;
+
+    // These match the pattern
+    std::fs::write(directory.join("R-utils.R"), "any(is.na(x))")?;
+    std::fs::write(directory.join("R-helpers.R"), "any(is.na(y))")?;
+
+    // This does not match
+    std::fs::write(directory.join("test.R"), "any(is.na(z))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> R-helpers.R:1:1
+  |
+1 | any(is.na(y))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_is_na
+ --> R-utils.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_include_empty_array() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // Empty include = no restriction, all files are checked
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+include = []
+"#,
+    )?;
+
+    std::fs::write(directory.join("test.R"), "any(is.na(x))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_include_and_exclude() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // A file in include but also in exclude should NOT be checked
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+include = ["R/"]
+exclude = ["R/generated.R"]
+"#,
+    )?;
+
+    std::fs::create_dir(directory.join("R"))?;
+    // Included by pattern, not excluded
+    std::fs::write(directory.join("R/utils.R"), "any(is.na(x))")?;
+    // Included by pattern, but also excluded → should NOT be checked
+    std::fs::write(directory.join("R/generated.R"), "any(is.na(y))")?;
+    // Not in include list → should NOT be checked
+    std::fs::write(directory.join("test.R"), "any(is.na(z))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> R/utils.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_include_rmd_qmd_glob() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // Only Rmd and qmd files should be checked
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+include = ["**/*.{Rmd,qmd}"]
+"#,
+    )?;
+
+    // These should be checked (match the glob)
+    std::fs::write(
+        directory.join("report.Rmd"),
+        "---\ntitle: \"Test\"\n---\n\n```{r}\nany(is.na(x))\n```\n",
+    )?;
+    std::fs::write(
+        directory.join("analysis.qmd"),
+        "---\ntitle: \"Test\"\n---\n\n```{r}\nany(is.na(y))\n```\n",
+    )?;
+
+    // This should NOT be checked (does not match the glob)
+    std::fs::write(directory.join("plain.R"), "any(is.na(z))")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> analysis.qmd:6:1
+  |
+6 | any(is.na(y))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_is_na
+ --> report.Rmd:6:1
+  |
+6 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 2 errors.
+
+----- stderr -----
+"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_include_wrong_values() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+include = true
+"#,
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
             .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 11
+  |
+3 | include = true
+  |           ^^^^
+invalid type: boolean `true`, expected a sequence
+
+"
+    );
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+include = ["a", 1]
+"#,
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+jarl failed
+  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+TOML parse error at line 3, column 17
+  |
+3 | include = ["a", 1]
+  |                 ^
+invalid type: integer `1`, expected a string
+
+"#
+    );
+
+    Ok(())
+}
+
+// --- Hierarchical configuration tests ---
+
+/// When a subdirectory has its own jarl.toml, `jarl check .` should use the
+/// nearest config for each file: root files use the root config, subfolder
+/// files use the subfolder config.
+#[test]
+fn test_hierarchical_toml_dir_uses_nearest_config() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // Root config: only flag any_is_na
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+select = ["any_is_na"]
+"#,
+    )?;
+    std::fs::write(
+        directory.join("root.R"),
+        "any(is.na(x))\nany(duplicated(x))",
+    )?;
+
+    // Subfolder config: only flag any_duplicated
+    std::fs::create_dir(directory.join("subfolder"))?;
+    std::fs::write(
+        directory.join("subfolder/jarl.toml"),
+        r#"
+[lint]
+select = ["any_duplicated"]
+"#,
+    )?;
+    std::fs::write(
+        directory.join("subfolder/sub.R"),
+        "any(is.na(x))\nany(duplicated(x))",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> root.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> subfolder/sub.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
+    );
+
+    Ok(())
+}
+
+/// When a subdirectory has no jarl.toml of its own, files there should fall
+/// back to the nearest ancestor config (i.e. the root jarl.toml).
+#[test]
+fn test_hierarchical_toml_subdir_inherits_root_config() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // Root config: only flag any_is_na
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+select = ["any_is_na"]
+"#,
+    )?;
+    std::fs::write(
+        directory.join("root.R"),
+        "any(is.na(x))\nany(duplicated(x))",
+    )?;
+
+    // Subfolder with no jarl.toml — should inherit root config
+    std::fs::create_dir(directory.join("subfolder"))?;
+    std::fs::write(
+        directory.join("subfolder/sub.R"),
+        "any(is.na(x))\nany(duplicated(x))",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> root.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_is_na
+ --> subfolder/sub.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
+    );
+
+    Ok(())
+}
+
+/// Passing individual file paths (e.g. from shell glob expansion) should work
+/// the same as `jarl check .`: each file uses the nearest jarl.toml above it.
+#[test]
+fn test_hierarchical_toml_individual_files_use_nearest_config() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // Root config: only flag any_is_na
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+select = ["any_is_na"]
+"#,
+    )?;
+    std::fs::write(
+        directory.join("root.R"),
+        "any(is.na(x))\nany(duplicated(x))",
+    )?;
+
+    // Subfolder config: only flag any_duplicated
+    std::fs::create_dir(directory.join("subfolder"))?;
+    std::fs::write(
+        directory.join("subfolder/jarl.toml"),
+        r#"
+[lint]
+select = ["any_duplicated"]
+"#,
+    )?;
+    std::fs::write(
+        directory.join("subfolder/sub.R"),
+        "any(is.na(x))\nany(duplicated(x))",
+    )?;
+
+    // Pass both files explicitly, as a shell glob would expand them
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg("root.R")
+            .arg("subfolder/sub.R")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> root.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> subfolder/sub.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())

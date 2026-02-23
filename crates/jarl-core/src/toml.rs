@@ -118,6 +118,28 @@ pub struct LinterTomlOptions {
     /// `--fix` in the CLI.
     pub unfixable: Option<Vec<String>>,
 
+    /// # Patterns to include in checking
+    ///
+    /// By default, jarl checks all files with a `.R`, `.qmd`, `.Rmd`, or `.rmd`
+    /// extension discovered in the provided paths. Use this option to restrict
+    /// checking to files that match at least one of the supplied patterns. An
+    /// empty list or a missing option means no restriction, i.e. all discovered
+    /// files are checked.
+    ///
+    /// Include patterns follow the same format as `exclude` patterns (gitignore
+    /// style, resolved relative to the `jarl.toml` directory). For example:
+    ///
+    /// - `R/` only checks files inside the `R/` directory.
+    ///
+    /// - `test-*.R` only checks files whose name matches `test-*.R`.
+    ///
+    /// - `**/*.{Rmd,qmd}` only checks Rmd and qmd files.
+    ///
+    /// When both `include` and `exclude` are specified, a file is checked only
+    /// if it matches at least one `include` pattern and does not match any
+    /// `exclude` pattern.
+    pub include: Option<Vec<String>>,
+
     /// # Patterns to exclude from checking
     ///
     /// By default, jarl will refuse to check files matched by patterns listed in
@@ -246,7 +268,7 @@ impl TomlOptions {
             return Err(anyhow::anyhow!(
                 "Unknown field `{field}` in `[lint]`. Expected one of: \
                  `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, \
-                 `exclude`, `default-exclude`."
+                 `exclude`, `default-exclude`, `include`."
             ));
         }
 
@@ -265,6 +287,7 @@ impl TomlOptions {
             select: linter.select,
             extend_select: linter.extend_select,
             ignore: linter.ignore,
+            include: linter.include,
             exclude: linter.exclude,
             default_exclude: linter.default_exclude,
             fixable: linter.fixable,

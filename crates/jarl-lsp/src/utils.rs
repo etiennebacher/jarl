@@ -145,6 +145,19 @@ pub fn should_exclude_file_based_on_settings(
         return true;
     }
 
+    // Check include patterns: if set and the file doesn't match any, exclude it.
+    if let Some(include_patterns) = &settings.linter.include
+        && !include_patterns.is_empty()
+    {
+        let path_str = file_path.to_string_lossy();
+        let is_included = include_patterns
+            .iter()
+            .any(|p| matches_pattern(&path_str, p));
+        if !is_included {
+            return true;
+        }
+    }
+
     false
 }
 

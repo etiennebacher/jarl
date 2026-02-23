@@ -14,7 +14,42 @@ fn test_must_pass_path() -> anyhow::Result<()> {
             .current_dir(directory)
             .arg("check")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @r#"
+success: false
+exit_code: 2
+----- stdout -----
+
+----- stderr -----
+Check a set of files or directories
+
+Usage: jarl check [OPTIONS] <FILES>...
+
+Arguments:
+  <FILES>...  List of files or directories to check or fix lints, for example `jarl check .`.
+
+Options:
+  -f, --fix                            Automatically fix issues detected by the linter.
+  -u, --unsafe-fixes                   Include fixes that may not retain the original intent of the  code.
+      --fix-only                       Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
+      --allow-dirty                    Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
+      --allow-no-vcs                   Apply fixes even if there is no version control system.
+  -s, --select <SELECT>                Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ]
+  -e, --extend-select <EXTEND_SELECT>  Like `--select` but adds additional rules in addition to those already specified. [default: ]
+  -i, --ignore <IGNORE>                Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ]
+  -w, --with-timing                    Show the time taken by the function.
+  -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
+      --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: full] [possible values: full, concise, github, json]
+      --assignment <ASSIGNMENT>        [DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`.
+      --no-default-exclude             Do not apply the default set of file patterns that should be excluded.
+      --statistics                     Show counts for every rule with at least one violation.
+      --add-jarl-ignore[=<REASON>]     Automatically insert a `# jarl-ignore` comment to suppress all violations.
+                                       The default reason can be customized with `--add-jarl-ignore="my_reason"`.
+  -h, --help                           Print help (see more with '--help')
+
+Global options:
+      --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+"#
     );
 
     Ok(())
@@ -31,7 +66,15 @@ fn test_no_r_files() -> anyhow::Result<()> {
             .arg(".")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+Warning: No R files found under the given path(s).
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -51,7 +94,15 @@ fn test_parsing_error() -> anyhow::Result<()> {
             .arg(".")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+
+----- stderr -----
+Error: Failed to parse test.R due to syntax errors.
+"
     );
 
     Ok(())
@@ -75,7 +126,26 @@ fn test_parsing_error_for_some_files() -> anyhow::Result<()> {
             .arg(".")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 255
+----- stdout -----
+warning: any_is_na
+ --> test2.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+Error: Failed to parse test.R due to syntax errors.
+
+"
     );
 
     Ok(())
@@ -98,7 +168,15 @@ fn test_parsing_weird_raw_strings() -> anyhow::Result<()> {
             .arg(".")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -118,7 +196,15 @@ fn test_parsing_braced_anonymous_function() -> anyhow::Result<()> {
             .arg(".")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -138,7 +224,15 @@ fn test_no_lints() -> anyhow::Result<()> {
             .arg(".")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -159,7 +253,24 @@ fn test_one_lint() -> anyhow::Result<()> {
             .arg(".")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -181,7 +292,32 @@ fn test_several_lints_one_file() -> anyhow::Result<()> {
             .arg(".")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> test.R:2:1
+  |
+2 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -207,7 +343,32 @@ fn test_several_lints_several_files() -> anyhow::Result<()> {
             .arg(".")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: any_duplicated
+ --> test2.R:1:1
+  |
+1 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
+
+Found 2 errors.
+2 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -233,7 +394,31 @@ fn test_not_all_fixable_lints() -> anyhow::Result<()> {
             .arg(".")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @r#"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+    warning: duplicated_arguments
+     --> test2.R:1:1
+      |
+    1 | list(x = 1, x = 2)
+      | ------------------ Avoid duplicated arguments in function calls. Duplicated argument(s): "x".
+      |
+
+    Found 2 errors.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "#
     );
 
     Ok(())
@@ -254,7 +439,15 @@ fn test_corner_case() -> anyhow::Result<()> {
             .arg(".")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -281,7 +474,22 @@ fn test_fix_options() -> anyhow::Result<()> {
             .arg("--fix")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @r#"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: duplicated_arguments
+     --> test.R:3:1
+      |
+    3 | list(x = 1, x = 2)
+      | ------------------ Avoid duplicated arguments in function calls. Duplicated argument(s): "x".
+      |
+
+    Found 1 error.
+
+    ----- stderr -----
+    "#
     );
 
     std::fs::write(directory.join(test_path), test_contents)?;
@@ -294,7 +502,22 @@ fn test_fix_options() -> anyhow::Result<()> {
             .arg("--unsafe-fixes")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @r#"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: duplicated_arguments
+     --> test.R:3:1
+      |
+    3 | list(x = 1, x = 2)
+      | ------------------ Avoid duplicated arguments in function calls. Duplicated argument(s): "x".
+      |
+
+    Found 1 error.
+
+    ----- stderr -----
+    "#
     );
 
     std::fs::write(directory.join(test_path), test_contents)?;
@@ -308,7 +531,15 @@ fn test_fix_options() -> anyhow::Result<()> {
             .arg("--fix-only")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
 
     std::fs::write(directory.join(test_path), test_contents)?;
@@ -321,7 +552,15 @@ fn test_fix_options() -> anyhow::Result<()> {
             .arg("--fix-only")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
 
     std::fs::write(directory.join(test_path), test_contents)?;
@@ -334,7 +573,15 @@ fn test_fix_options() -> anyhow::Result<()> {
             .arg("--fix-only")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: true
+exit_code: 0
+----- stdout -----
+All checks passed!
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -360,7 +607,32 @@ fn test_safe_and_unsafe_lints() -> anyhow::Result<()> {
             .arg(".")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:1:1
+  |
+1 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+warning: all_equal
+ --> test2.R:1:1
+  |
+1 | !all.equal(x, y)
+  | ---------------- If `all.equal()` is false, it will return a string and not `FALSE`.
+  |
+  = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
+
+Found 2 errors.
+1 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).
+
+----- stderr -----
+"
     );
 
     Ok(())
@@ -382,7 +654,24 @@ fn test_newline_character_in_string() -> anyhow::Result<()> {
             .arg(".")
             .arg("--allow-no-vcs")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+success: false
+exit_code: 1
+----- stdout -----
+warning: any_is_na
+ --> test.R:2:1
+  |
+2 | any(is.na(x))
+  | ------------- `any(is.na(...))` is inefficient.
+  |
+  = help: Use `anyNA(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
+
+----- stderr -----
+"
     );
 
     Ok(())
