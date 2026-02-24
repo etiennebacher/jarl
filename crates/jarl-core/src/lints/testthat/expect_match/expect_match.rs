@@ -1,7 +1,7 @@
 use crate::diagnostic::*;
 use crate::utils::{
-    drop_arg_by_name_or_position, get_arg_by_name_then_position, get_function_name,
-    get_function_namespace_prefix, get_nested_functions_content, node_contains_comments,
+    get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
+    get_nested_functions_content, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
@@ -95,10 +95,12 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         unwrap_or_return_none!(get_arg_by_name_then_position(&grepl_args, "pattern", 1));
     let x_arg = unwrap_or_return_none!(get_arg_by_name_then_position(&grepl_args, "x", 2));
 
-    let pattern_value = unwrap_or_return_none!(pattern_arg.value());
-    let x_value = unwrap_or_return_none!(x_arg.value());
-    let x_text = x_value.to_trimmed_text().to_string();
-    let pattern_text = pattern_value.to_trimmed_text().to_string();
+    let x_text = unwrap_or_return_none!(x_arg.value())
+        .to_trimmed_text()
+        .to_string();
+    let pattern_text = unwrap_or_return_none!(pattern_arg.value())
+        .to_trimmed_text()
+        .to_string();
 
     // Give lint but no fix if expect_true has additional args
     let outer_args_count = args.iter().count();
@@ -106,14 +108,17 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(Some(Diagnostic::new(ExpectMatch, range, Fix::empty())));
     }
 
-    // Drop `x` & filter out `pattern`, the remaining can be passed to expect_match
-    let remaining_args = unwrap_or_return_none!(drop_arg_by_name_or_position(&grepl_args, "x", 2));
-    let pattern_range = pattern_arg.syntax().text_trimmed_range();
-    let optional_args = remaining_args
+    // Collect remaining args (neither `x` nor `pattern`) to pass to expect_match
+    let optional_args: Vec<String> = grepl_args
         .iter()
-        .filter(|arg| arg.syntax().text_trimmed_range() != pattern_range)
+        .flatten()
+        .filter(|arg| {
+            let range = arg.syntax().text_trimmed_range();
+            range != pattern_arg.syntax().text_trimmed_range()
+                && range != x_arg.syntax().text_trimmed_range()
+        })
         .map(|arg| arg.syntax().text_trimmed().to_string())
-        .collect::<Vec<_>>();
+        .collect();
 
     let inner_content = [x_text, pattern_text]
         .into_iter()
