@@ -306,6 +306,99 @@ mod tests {
     }
 
     #[test]
+    fn test_function_used_in_tests_not_flagged() {
+        let dir = TempDir::new().unwrap();
+        let r_dir = dir.path().join("R");
+        fs::create_dir(&r_dir).unwrap();
+        let tests_dir = dir.path().join("tests").join("testthat");
+        fs::create_dir_all(&tests_dir).unwrap();
+        fs::write(dir.path().join("DESCRIPTION"), "Package: test").unwrap();
+        fs::write(dir.path().join("NAMESPACE"), "export(public_fn)\n").unwrap();
+
+        let file_a = r_dir.join("public.R");
+        fs::write(&file_a, "public_fn <- function() 1\n").unwrap();
+
+        let file_b = r_dir.join("internal.R");
+        fs::write(&file_b, "internal_helper <- function() 2\n").unwrap();
+
+        // internal_helper is used only in a test file
+        let test_file = tests_dir.join("test-internal.R");
+        fs::write(&test_file, "test_that('works', { internal_helper() })\n").unwrap();
+
+        let result = compute_package_unused_internal_functions(&[file_a.clone(), file_b.clone()]);
+
+        let has_internal = result
+            .values()
+            .any(|v| v.iter().any(|(n, _, _)| n == "internal_helper"));
+        assert!(
+            !has_internal,
+            "internal_helper is used in tests/, should not be flagged"
+        );
+    }
+
+    #[test]
+    fn test_function_used_in_inst_not_flagged() {
+        let dir = TempDir::new().unwrap();
+        let r_dir = dir.path().join("R");
+        fs::create_dir(&r_dir).unwrap();
+        let inst_dir = dir.path().join("inst").join("tinytest");
+        fs::create_dir_all(&inst_dir).unwrap();
+        fs::write(dir.path().join("DESCRIPTION"), "Package: test").unwrap();
+        fs::write(dir.path().join("NAMESPACE"), "export(public_fn)\n").unwrap();
+
+        let file_a = r_dir.join("public.R");
+        fs::write(&file_a, "public_fn <- function() 1\n").unwrap();
+
+        let file_b = r_dir.join("internal.R");
+        fs::write(&file_b, "inst_helper <- function() 2\n").unwrap();
+
+        // inst_helper is used only in an inst/ file
+        let inst_file = inst_dir.join("test_inst.R");
+        fs::write(&inst_file, "expect_equal(inst_helper(), 2)\n").unwrap();
+
+        let result = compute_package_unused_internal_functions(&[file_a.clone(), file_b.clone()]);
+
+        let has_inst = result
+            .values()
+            .any(|v| v.iter().any(|(n, _, _)| n == "inst_helper"));
+        assert!(
+            !has_inst,
+            "inst_helper is used in inst/tinytest, should not be flagged"
+        );
+    }
+
+    #[test]
+    fn test_function_used_in_inst_not_tinytest_flagged() {
+        let dir = TempDir::new().unwrap();
+        let r_dir = dir.path().join("R");
+        fs::create_dir(&r_dir).unwrap();
+        let inst_dir = dir.path().join("inst").join("foobar");
+        fs::create_dir_all(&inst_dir).unwrap();
+        fs::write(dir.path().join("DESCRIPTION"), "Package: test").unwrap();
+        fs::write(dir.path().join("NAMESPACE"), "export(public_fn)\n").unwrap();
+
+        let file_a = r_dir.join("public.R");
+        fs::write(&file_a, "public_fn <- function() 1\n").unwrap();
+
+        let file_b = r_dir.join("internal.R");
+        fs::write(&file_b, "inst_helper <- function() 2\n").unwrap();
+
+        // inst_helper is used only in an inst/ file
+        let inst_file = inst_dir.join("test_inst.R");
+        fs::write(&inst_file, "expect_equal(inst_helper(), 2)\n").unwrap();
+
+        let result = compute_package_unused_internal_functions(&[file_a.clone(), file_b.clone()]);
+
+        let has_inst = result
+            .values()
+            .any(|v| v.iter().any(|(n, _, _)| n == "inst_helper"));
+        assert!(
+            has_inst,
+            "inst_helper is used in inst/ but not in inst/tinytest, should be flagged"
+        );
+    }
+
+    #[test]
     fn test_non_package_files_ignored() {
         let dir = TempDir::new().unwrap();
         let r_dir = dir.path().join("R");

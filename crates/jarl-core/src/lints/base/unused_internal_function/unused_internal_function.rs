@@ -2,7 +2,7 @@ use biome_rowan::TextRange;
 use rayon::prelude::*;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::lints::base::duplicated_function_definition::duplicated_function_definition::{
     is_in_r_package, scan_top_level_assignments,
@@ -11,7 +11,8 @@ use crate::lints::base::duplicated_function_definition::duplicated_function_defi
 // ## What it does
 //
 // Checks for internal (non-exported) functions in an R package that are never
-// called anywhere in the package.
+// called anywhere in the package (including `inst/tinytest` and `tests/`
+// directories).
 //
 // ## Why is this bad?
 //
@@ -217,13 +218,34 @@ type FileData = (
     HashMap<String, usize>,
 );
 
+/// Recursively collect all `.R` files under `dir`.
+fn collect_r_files(dir: &Path) -> Vec<PathBuf> {
+    let mut files = Vec::new();
+    let mut stack = vec![dir.to_path_buf()];
+    while let Some(current) = stack.pop() {
+        let entries = match std::fs::read_dir(&current) {
+            Ok(entries) => entries,
+            Err(_) => continue,
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push(path);
+            } else if crate::fs::has_r_extension(&path) {
+                files.push(path);
+            }
+        }
+    }
+    files
+}
+
 /// Pre-compute unused internal functions across an R package.
 ///
 /// Returns a map from relativized file path to a list of
 /// `(name, lhs_range, help)` triples for functions that are:
 /// 1. Defined as top-level assignments in `R/`
 /// 2. Not exported in `NAMESPACE`
-/// 3. Never appear as an identifier in any file in the package
+/// 3. Never appear as an identifier in any file in `R/`, `inst/`, or `tests/`
 pub fn compute_package_unused_internal_functions(
     paths: &[PathBuf],
 ) -> HashMap<PathBuf, Vec<(String, TextRange, String)>> {
@@ -283,6 +305,29 @@ pub fn compute_package_unused_internal_functions(
             }
         } else {
             continue;
+        };
+
+        // Scan inst/ and tests/ for symbol usage so that internal functions
+        // referenced only from test or example code are not flagged.
+        let extra_symbols: Vec<HashMap<String, usize>> = {
+            let package_root = file_data
+                .first()
+                .and_then(|(_, abs, _, _)| abs.parent())
+                .and_then(|r_dir| r_dir.parent());
+            let mut syms = Vec::new();
+            if let Some(root) = package_root {
+                for dir_name in &["inst/tinytest", "tests"] {
+                    let dir = root.join(dir_name);
+                    if dir.is_dir() {
+                        for file_path in collect_r_files(&dir) {
+                            if let Ok(content) = std::fs::read_to_string(&file_path) {
+                                syms.push(scan_symbols(&content));
+                            }
+                        }
+                    }
+                }
+            }
+            syms
         };
 
         // R package hook functions that are called by the runtime, not by
@@ -347,11 +392,12 @@ pub fn compute_package_unused_internal_functions(
                     }
                 }
 
-                // Used in another file?
+                // Used in another R/ file, or in inst/tinytest, or in tests/?
                 let used_in_other_file = file_data
                     .iter()
                     .enumerate()
-                    .any(|(j, (_, _, _, syms))| j != i && syms.contains_key(name));
+                    .any(|(j, (_, _, _, syms))| j != i && syms.contains_key(name))
+                    || extra_symbols.iter().any(|syms| syms.contains_key(name));
 
                 // Used in the same file beyond its own definition(s)?
                 // Each definition contributes exactly one occurrence of the
