@@ -72,6 +72,7 @@ website:
       - rules/equals_nan.md
       - rules/equals_null.md
       - rules/expect_length.md
+      - rules/expect_match.md
       - rules/expect_named.md
       - rules/expect_not.md
       - rules/expect_null.md

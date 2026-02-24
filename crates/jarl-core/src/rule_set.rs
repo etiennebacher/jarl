@@ -346,6 +346,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    ExpectMatch => {
+        name: "expect_match",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
     ExpectNamed => {
         name: "expect_named",
         categories: [Testthat],
