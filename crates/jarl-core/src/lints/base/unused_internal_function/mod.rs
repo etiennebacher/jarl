@@ -134,6 +134,12 @@ mod tests {
     }
 
     #[test]
+    fn test_scan_symbols_includes_roxygen_comments() {
+        let syms = scan_symbols("#' \\Sexpr[stage=render]{dplyr:::methods_rd(\"rows_insert\")}\n");
+        assert!(syms.contains_key("methods_rd"));
+    }
+
+    #[test]
     fn test_scan_symbols_ignores_numbers() {
         let syms = scan_symbols("123 + foo\n");
         assert!(syms.contains_key("foo"));

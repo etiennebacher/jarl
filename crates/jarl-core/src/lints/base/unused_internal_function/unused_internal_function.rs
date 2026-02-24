@@ -170,7 +170,9 @@ pub fn scan_symbols(content: &str) -> HashMap<String, usize> {
 
     for line in content.lines() {
         let trimmed = line.trim_start();
-        if trimmed.starts_with('#') {
+        // Skip regular comments but keep roxygen comments (#') since they
+        // may reference internal functions (e.g. via \Sexpr).
+        if trimmed.starts_with('#') && !trimmed.starts_with("#'") {
             continue;
         }
 
