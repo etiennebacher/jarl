@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/testthat/expect_match/mod.rs
-expression: "get_fixed_text(vec![\"expect_true(grepl('fun', 'Testing is fun'))\",\n\"testthat::expect_true(grepl('fun', 'Testing is fun'))\",\n\"expect_true(grepl(pattern = 'fun', x = 'Testing is fun'))\",\n\"expect_true(grepl('fun', 'Testing is fun', perl = TRUE, fixed = FALSE))\",],\n\"expect_match\", None,)"
+expression: "get_fixed_text(vec![\"expect_true(grepl('fun', 'Testing is fun'))\",\n\"testthat::expect_true(grepl('fun', 'Testing is fun'))\",\n\"expect_true(grepl(pattern = 'fun', x = 'Testing is fun'))\",\n\"expect_true(grepl(x = 'Testing is fun', perl = TRUE, pattern = 'fun'))\",\n\"expect_true(grepl('fun', 'Testing is fun', perl = TRUE, fixed = FALSE))\",],\n\"expect_match\", None,)"
 ---
 OLD:
 ====
@@ -22,6 +22,13 @@ expect_true(grepl(pattern = 'fun', x = 'Testing is fun'))
 NEW:
 ====
 expect_match('Testing is fun', 'fun')
+
+OLD:
+====
+expect_true(grepl(x = 'Testing is fun', perl = TRUE, pattern = 'fun'))
+NEW:
+====
+expect_match('Testing is fun', 'fun', perl = TRUE)
 
 OLD:
 ====

@@ -45,7 +45,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | testthat::expect_true(grepl('fun', 'Testing is fun'))
-          | ----------------------------------------------------- `expect_true(grepl(...))` is not as clear as expect_match(...).
+          | ----------------------------------------------------- `expect_true(grepl(...))` is not as clear as `expect_match(...)`.
           |
           = help: Use `expect_match(...)` instead.
         Found 1 error.
@@ -55,7 +55,7 @@ mod tests {
          --> <test>:1:14
           |
         1 | show_failure(expect_true(grepl('fun', 'Testing is fun')))
-          |              ------------------------------------------- `expect_true(grepl(...))` is not as clear as expect_match(...).
+          |              ------------------------------------------- `expect_true(grepl(...))` is not as clear as `expect_match(...)`.
           |
           = help: Use `expect_match(...)` instead.
         Found 1 error.
@@ -67,20 +67,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_true(grepl('fun', 'Testing is fun'), info = 'msg')
-          | --------------------------------------------------------- `expect_true(grepl(...))` is not as clear as expect_match(...).
-          |
-          = help: Use `expect_match(...)` instead.
-        Found 1 error.
-        "
-        );
-        assert_snapshot!(
-            snapshot_lint("expect_true(grepl('fun', 'Testing is fun'), label = 'lbl')"),
-            @r"
-        warning: expect_match
-         --> <test>:1:1
-          |
-        1 | expect_true(grepl('fun', 'Testing is fun'), label = 'lbl')
-          | ---------------------------------------------------------- `expect_true(grepl(...))` is not as clear as expect_match(...).
+          | --------------------------------------------------------- `expect_true(grepl(...))` is not as clear as `expect_match(...)`.
           |
           = help: Use `expect_match(...)` instead.
         Found 1 error.
@@ -93,7 +80,20 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_true(grepl(pattern = 'fun', x = 'Testing is fun'))
-          | --------------------------------------------------------- `expect_true(grepl(...))` is not as clear as expect_match(...).
+          | --------------------------------------------------------- `expect_true(grepl(...))` is not as clear as `expect_match(...)`.
+          |
+          = help: Use `expect_match(...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("expect_true(grepl(x = 'Testing is fun', perl = TRUE, pattern = 'fun'))"),
+            @r"
+        warning: expect_match
+         --> <test>:1:1
+          |
+        1 | expect_true(grepl(x = 'Testing is fun', perl = TRUE, pattern = 'fun'))
+          | ---------------------------------------------------------------------- `expect_true(grepl(...))` is not as clear as `expect_match(...)`.
           |
           = help: Use `expect_match(...)` instead.
         Found 1 error.
@@ -104,7 +104,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_true(base::grepl('fun', 'Testing is fun'))
-          | ------------------------------------------------- `expect_true(grepl(...))` is not as clear as expect_match(...).
+          | ------------------------------------------------- `expect_true(grepl(...))` is not as clear as `expect_match(...)`.
           |
           = help: Use `expect_match(...)` instead.
         Found 1 error.
@@ -114,7 +114,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | grepl('fun', 'Testing is fun') |> expect_true()
-          | ----------------------------------------------- `expect_true(grepl(...))` is not as clear as expect_match(...).
+          | ----------------------------------------------- `expect_true(grepl(...))` is not as clear as `expect_match(...)`.
           |
           = help: Use `expect_match(...)` instead.
         Found 1 error.
@@ -126,7 +126,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | 'Testing is fun' |> grepl(pattern = 'fun') |> expect_true()
-          | ----------------------------------------------------------- `expect_true(grepl(...))` is not as clear as expect_match(...).
+          | ----------------------------------------------------------- `expect_true(grepl(...))` is not as clear as `expect_match(...)`.
           |
           = help: Use `expect_match(...)` instead.
         Found 1 error.
@@ -143,6 +143,7 @@ mod tests {
                     "expect_true(grepl('fun', 'Testing is fun'))",
                     "testthat::expect_true(grepl('fun', 'Testing is fun'))",
                     "expect_true(grepl(pattern = 'fun', x = 'Testing is fun'))",
+                    "expect_true(grepl(x = 'Testing is fun', perl = TRUE, pattern = 'fun'))",
                     "expect_true(grepl('fun', 'Testing is fun', perl = TRUE, fixed = FALSE))",
                 ],
                 "expect_match",
@@ -169,9 +170,7 @@ mod tests {
         assert_snapshot!(
             "no_fix_with_comments",
             get_fixed_text(
-                vec![
-                    "expect_true(grepl(# comment\n'fun', 'Testing is fun'))",
-                ],
+                vec!["expect_true(grepl(# comment\n'fun', 'Testing is fun'))",],
                 "expect_match",
                 None,
             )
