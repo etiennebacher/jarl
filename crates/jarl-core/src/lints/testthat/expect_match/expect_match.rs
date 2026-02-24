@@ -1,7 +1,7 @@
 use crate::diagnostic::*;
 use crate::utils::{
-    get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
-    get_nested_functions_content, node_contains_comments,
+    drop_arg_by_name_or_position, get_arg_by_name_then_position, get_function_name,
+    get_function_namespace_prefix, get_nested_functions_content, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
@@ -25,7 +25,7 @@ pub struct ExpectMatch;
 ///
 /// ```r
 /// expect_true(grepl("foo", x))
-/// expect_true(base::grepl("bar", x, perl = FALSE, fixed = FALSE))
+/// expect_true(grepl("bar", x, perl = FALSE, fixed = FALSE))
 /// ```
 ///
 /// Use instead:
@@ -106,24 +106,22 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(Some(Diagnostic::new(ExpectMatch, range, Fix::empty())));
     }
 
+    // Drop `x` & filter out `pattern`, the remaining can be passed to expect_match
+    let remaining_args = unwrap_or_return_none!(drop_arg_by_name_or_position(&grepl_args, "x", 2));
     let pattern_range = pattern_arg.syntax().text_trimmed_range();
-    let x_range = x_arg.syntax().text_trimmed_range();
-    // Get extra args, skipping x and pattern
-    let mut extra_args: Vec<String> = Vec::new();
-    for arg in grepl_args.iter() {
-        let arg = arg.clone().unwrap();
-        let arg_range = arg.syntax().text_trimmed_range();
-        if arg_range == pattern_range || arg_range == x_range {
-            continue;
-        }
-        extra_args.push(arg.to_trimmed_text().to_string());
-    }
+    let optional_args = remaining_args
+        .iter()
+        .filter(|arg| arg.syntax().text_trimmed_range() != pattern_range)
+        .map(|arg| arg.syntax().text_trimmed().to_string())
+        .collect::<Vec<_>>();
+
+    let inner_content = [x_text, pattern_text]
+        .into_iter()
+        .chain(optional_args)
+        .collect::<Vec<_>>();
 
     // Preserve namespace prefix if present
     let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();
-
-    let mut grepl_args = vec![x_text, pattern_text];
-    grepl_args.extend(extra_args);
 
     let diagnostic = Diagnostic::new(
         ExpectMatch,
@@ -132,7 +130,7 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             content: format!(
                 "{}expect_match({})",
                 namespace_prefix,
-                grepl_args.join(", ")
+                inner_content.join(", ")
             ),
             start: range.start().into(),
             end: range.end().into(),
