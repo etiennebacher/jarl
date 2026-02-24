@@ -16,11 +16,11 @@ This rule is **disabled by default**. Select it either with the rule name
 
 ```r
 expect_true(grepl("foo", x))
-expect_true(base::grepl("bar", x))
+expect_true(grepl("bar", x, perl = FALSE, fixed = FALSE))
 ```
 
 Use instead:
 ```r
 expect_match(x, "foo")
-expect_match(x, "bar")
+expect_match(x, "bar", perl = FALSE, fixed = FALSE)
 ```
