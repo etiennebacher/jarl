@@ -405,6 +405,41 @@ mod tests {
     }
 
     #[test]
+    fn test_function_used_in_src_cpp_not_flagged() {
+        let dir = TempDir::new().unwrap();
+        let r_dir = dir.path().join("R");
+        fs::create_dir(&r_dir).unwrap();
+        let src_dir = dir.path().join("src");
+        fs::create_dir(&src_dir).unwrap();
+        fs::write(dir.path().join("DESCRIPTION"), "Package: test").unwrap();
+        fs::write(dir.path().join("NAMESPACE"), "export(public_fn)\n").unwrap();
+
+        let file_a = r_dir.join("public.R");
+        fs::write(&file_a, "public_fn <- function() 1\n").unwrap();
+
+        let file_b = r_dir.join("internal.R");
+        fs::write(&file_b, "dplyr_internal_signal <- function() 2\n").unwrap();
+
+        // dplyr_internal_signal is referenced in a .cpp file
+        let cpp_file = src_dir.join("init.cpp");
+        fs::write(
+            &cpp_file,
+            "SEXP symbols::dplyr_internal_signal = Rf_install(\"dplyr_internal_signal\");\n",
+        )
+        .unwrap();
+
+        let result = compute_package_unused_internal_functions(&[file_a.clone(), file_b.clone()]);
+
+        let has_signal = result
+            .values()
+            .any(|v| v.iter().any(|(n, _, _)| n == "dplyr_internal_signal"));
+        assert!(
+            !has_signal,
+            "dplyr_internal_signal is used in src/*.cpp, should not be flagged"
+        );
+    }
+
+    #[test]
     fn test_non_package_files_ignored() {
         let dir = TempDir::new().unwrap();
         let r_dir = dir.path().join("R");
