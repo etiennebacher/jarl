@@ -3,7 +3,7 @@ use crate::rule_set::Rule;
 use air_r_syntax::RFunctionDefinition;
 
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code;
-use crate::lints::base::unused_function_arguments::unused_function_arguments::unused_function_arguments;
+use crate::lints::base::unused_function_argument::unused_function_argument::unused_function_argument;
 
 pub fn function_definition(
     func: &RFunctionDefinition,
@@ -17,7 +17,7 @@ pub fn function_definition(
     }
 
     if checker.is_rule_enabled(Rule::UnusedFunctionArguments) {
-        let diagnostics = unused_function_arguments(func)?;
+        let diagnostics = unused_function_argument(func)?;
         for diagnostic in diagnostics {
             checker.report_diagnostic(Some(diagnostic));
         }

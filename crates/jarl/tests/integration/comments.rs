@@ -141,7 +141,7 @@ fn test_jarl_ignore_cascading_suppression() -> anyhow::Result<()> {
         "
 # jarl-ignore any_is_na: cascades to children
 x <- function(x) {
-    any(is.na(y))
+    any(is.na(x))
 }
 any(is.na(y))
 ",

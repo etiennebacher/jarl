@@ -46,7 +46,7 @@ pub struct UnusedFunctionArguments {
 /// ```
 impl Violation for UnusedFunctionArguments {
     fn name(&self) -> String {
-        "unused_function_arguments".to_string()
+        "unused_function_argument".to_string()
     }
     fn body(&self) -> String {
         format!(
@@ -56,7 +56,7 @@ impl Violation for UnusedFunctionArguments {
     }
 }
 
-pub fn unused_function_arguments(func: &RFunctionDefinition) -> anyhow::Result<Vec<Diagnostic>> {
+pub fn unused_function_argument(func: &RFunctionDefinition) -> anyhow::Result<Vec<Diagnostic>> {
     let body = func.body()?;
 
     // Skip S3 generics/methods: functions calling UseMethod() or NextMethod()

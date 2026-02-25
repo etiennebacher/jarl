@@ -641,7 +641,7 @@ declare_rules! {
         min_r_version: None,
     },
     UnusedFunctionArguments => {
-        name: "unused_function_arguments",
+        name: "unused_function_argument",
         categories: [Read],
         default: Enabled,
         fix: None,

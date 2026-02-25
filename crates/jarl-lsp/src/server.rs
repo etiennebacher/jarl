@@ -1153,7 +1153,7 @@ f <- function() {
         let result = apply_jarl_ignore_at_cursor(
             r#"
 f <- function(a = <CURS>any(is.na(x))) {
-  1
+  a
 }
 "#,
         )
@@ -1163,7 +1163,7 @@ f <- function(a = <CURS>any(is.na(x))) {
         f <- function(
                       # jarl-ignore any_is_na: <reason>
                       a = any(is.na(x))) {
-          1
+          a
         }
         ");
 
@@ -1172,7 +1172,7 @@ f <- function(a = <CURS>any(is.na(x))) {
 f <- function(
     a = <CURS>any(is.na(x))
 ) {
-  1
+  a
 }
 "#,
         )
@@ -1183,7 +1183,7 @@ f <- function(
             # jarl-ignore any_is_na: <reason>
             a = any(is.na(x))
         ) {
-          1
+          a
         }
         ");
     }
