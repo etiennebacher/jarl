@@ -154,6 +154,22 @@ mod tests {
     }
 
     #[test]
+    fn test_no_lint_backtick_identifiers() {
+        // Argument used via backtick-quoted reference
+        expect_no_lint(
+            "function(self) { f(`self`) }",
+            "unused_function_argument",
+            None,
+        );
+        // Backtick in nested function
+        expect_no_lint(
+            "f5 <- function(self) { function() { f(.Call(f, `self`)) } }",
+            "unused_function_argument",
+            None,
+        );
+    }
+
+    #[test]
     fn test_no_lint_keyword_as_parameter() {
         // `return` used as parameter name — parser treats bare `return` as keyword
         expect_no_lint(

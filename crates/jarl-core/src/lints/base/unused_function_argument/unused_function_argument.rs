@@ -130,7 +130,8 @@ fn collect_body_identifiers(body: &AnyRExpression) -> HashSet<String> {
 
     for node in body.syntax().descendants() {
         if let Some(ident) = RIdentifier::cast(node.clone()) {
-            identifiers.insert(ident.syntax().text_trimmed().to_string());
+            let text = ident.syntax().text_trimmed().to_string();
+            identifiers.insert(strip_backticks(&text));
         } else if let Some(string_val) = RStringValue::cast(node)
             && let Ok(token) = string_val.value_token()
         {
@@ -225,6 +226,15 @@ fn is_r_identifier_start(s: &str) -> bool {
     }
     let first = s.chars().next().unwrap();
     first.is_alphabetic() || first == '.' || first == '_'
+}
+
+/// Strip surrounding backticks from an R identifier, if present.
+fn strip_backticks(s: &str) -> String {
+    if s.starts_with('`') && s.ends_with('`') && s.len() >= 2 {
+        s[1..s.len() - 1].to_string()
+    } else {
+        s.to_string()
+    }
 }
 
 /// Check if this function is a registered S3 method based on the pre-computed
