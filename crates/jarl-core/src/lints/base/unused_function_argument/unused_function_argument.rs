@@ -31,7 +31,8 @@ pub struct UnusedFunctionArguments {
 ///
 /// ## Automatically skipped
 ///
-/// - Functions whose body calls `UseMethod()` or `NextMethod()` (S3 generics/methods)
+/// - Functions whose body calls `UseMethod()`, `NextMethod()`, `match.call()`,
+///   `sys.call()`, `environment()`, or `parent.frame()`
 /// - S3 methods registered in the package `NAMESPACE` file via `S3method()`
 /// - Functions assigned to `.onLoad`, `.onAttach`, `.onUnload`, or `.onDetach`
 /// - Functions passed as `error`, `warning`, `message`, or `condition` handlers
@@ -65,8 +66,9 @@ pub fn unused_function_argument(
 ) -> anyhow::Result<Vec<Diagnostic>> {
     let body = func.body()?;
 
-    // Skip S3 generics/methods: functions calling UseMethod() or NextMethod()
-    if body_contains_dispatch_call(&body) {
+    // Skip functions that capture or forward all arguments dynamically:
+    // UseMethod(), NextMethod(), match.call(), environment(), sys.call(), etc.
+    if body_contains_dynamic_arg_access(&body) {
         return Ok(Vec::new());
     }
 
@@ -102,7 +104,7 @@ pub fn unused_function_argument(
             AnyRParameterName::RIdentifier(_) => {}
         }
 
-        let param_text = param_name_node.into_syntax().text_trimmed().to_string();
+        let param_text = strip_backticks(&param_name_node.into_syntax().text_trimmed().to_string());
 
         if !body_identifiers.contains(param_text.as_str()) {
             let range = param.syntax().text_trimmed_range();
@@ -329,14 +331,30 @@ pub fn compute_package_s3_methods(paths: &[std::path::PathBuf]) -> HashSet<Strin
     all_methods
 }
 
-/// Check if the function body contains a call to `UseMethod()` or `NextMethod()`.
-fn body_contains_dispatch_call(body: &AnyRExpression) -> bool {
+/// Check if the function body contains a call that dynamically accesses
+/// or forwards all arguments.
+///
+/// This includes:
+/// - `UseMethod()` / `NextMethod()` — S3 dispatch
+/// - `match.call()` / `sys.call()` — captures the call including all args
+/// - `environment()` — captures the environment including all bindings
+/// - `parent.frame()` — accesses the calling environment
+fn body_contains_dynamic_arg_access(body: &AnyRExpression) -> bool {
+    const DYNAMIC_FUNCTIONS: &[&str] = &[
+        "UseMethod",
+        "NextMethod",
+        "match.call",
+        "sys.call",
+        "environment",
+        "parent.frame",
+    ];
+
     for node in body.syntax().descendants() {
         if let Some(call) = RCall::cast(node)
             && let Ok(function) = call.function()
         {
             let name = function.into_syntax().text_trimmed().to_string();
-            if name == "UseMethod" || name == "NextMethod" {
+            if DYNAMIC_FUNCTIONS.contains(&name.as_str()) {
                 return true;
             }
         }

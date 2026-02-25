@@ -70,6 +70,28 @@ mod tests {
     }
 
     #[test]
+    fn test_no_lint_dynamic_arg_access() {
+        // match.call() captures all arguments
+        expect_no_lint(
+            "function(x, y) { cl <- match.call(); cl }",
+            "unused_function_argument",
+            None,
+        );
+        // environment() captures all bindings
+        expect_no_lint(
+            "function(x, y) { .args <- as.list(environment()); do.call(f, .args) }",
+            "unused_function_argument",
+            None,
+        );
+        // sys.call()
+        expect_no_lint(
+            "function(x, y) { cl <- sys.call(); cl }",
+            "unused_function_argument",
+            None,
+        );
+    }
+
+    #[test]
     fn test_no_lint_on_load() {
         // .onLoad hook: required signature, args often unused
         expect_no_lint(
