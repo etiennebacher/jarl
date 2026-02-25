@@ -17,7 +17,7 @@ pub fn function_definition(
     }
 
     if checker.is_rule_enabled(Rule::UnusedFunctionArguments) {
-        let diagnostics = unused_function_argument(func)?;
+        let diagnostics = unused_function_argument(func, checker)?;
         for diagnostic in diagnostics {
             checker.report_diagnostic(Some(diagnostic));
         }

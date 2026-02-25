@@ -21,6 +21,7 @@ use crate::fix::*;
 // Re-exported so the LSP can pre-compute package duplicates before calling `check()`.
 pub use crate::lints::base::duplicated_function_definition::duplicated_function_definition::compute_package_duplicate_assignments;
 pub use crate::lints::base::duplicated_function_definition::duplicated_function_definition::is_in_r_package;
+pub use crate::lints::base::unused_function_argument::unused_function_argument::compute_package_s3_methods;
 use crate::utils::*;
 
 pub fn check(mut config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
@@ -46,6 +47,16 @@ pub fn check(mut config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow:
         && config.package_duplicate_assignments.is_empty()
     {
         config.package_duplicate_assignments = compute_package_duplicate_assignments(&config.paths);
+    }
+
+    // Pre-compute S3 method names from NAMESPACE files for the
+    // unused_function_argument rule.
+    if config
+        .rules_to_apply
+        .contains(&Rule::UnusedFunctionArguments)
+        && config.package_s3_methods.is_empty()
+    {
+        config.package_s3_methods = compute_package_s3_methods(&config.paths);
     }
 
     // Wrap config in Arc to avoid expensive clones in parallel execution
@@ -141,6 +152,7 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
         .get(file)
         .cloned()
         .unwrap_or_default();
+    checker.package_s3_methods = config.package_s3_methods.clone();
 
     // We run checks at expression-level. This gathers all violations, no matter
     // whether they are suppressed or not. They are filtered out in the next

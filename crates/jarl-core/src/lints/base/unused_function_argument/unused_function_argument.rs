@@ -1,5 +1,7 @@
 use std::collections::HashSet;
+use std::path::Path;
 
+use crate::checker::Checker;
 use crate::diagnostic::*;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -30,6 +32,7 @@ pub struct UnusedFunctionArguments {
 /// ## Automatically skipped
 ///
 /// - Functions whose body calls `UseMethod()` or `NextMethod()` (S3 generics/methods)
+/// - S3 methods registered in the package `NAMESPACE` file via `S3method()`
 /// - Functions assigned to `.onLoad`, `.onAttach`, `.onUnload`, or `.onDetach`
 /// - Functions passed as `error`, `warning`, `message`, or `condition` handlers
 ///   to `tryCatch()` or `withCallingHandlers()`
@@ -56,7 +59,10 @@ impl Violation for UnusedFunctionArguments {
     }
 }
 
-pub fn unused_function_argument(func: &RFunctionDefinition) -> anyhow::Result<Vec<Diagnostic>> {
+pub fn unused_function_argument(
+    func: &RFunctionDefinition,
+    checker: &Checker,
+) -> anyhow::Result<Vec<Diagnostic>> {
     let body = func.body()?;
 
     // Skip S3 generics/methods: functions calling UseMethod() or NextMethod()
@@ -71,6 +77,11 @@ pub fn unused_function_argument(func: &RFunctionDefinition) -> anyhow::Result<Ve
 
     // Skip tryCatch/withCallingHandlers handler functions
     if is_trycatch_handler(func) {
+        return Ok(Vec::new());
+    }
+
+    // Skip S3 methods registered in the package NAMESPACE
+    if is_registered_s3_method(func, &checker.package_s3_methods) {
         return Ok(Vec::new());
     }
 
@@ -214,6 +225,98 @@ fn is_r_identifier_start(s: &str) -> bool {
     }
     let first = s.chars().next().unwrap();
     first.is_alphabetic() || first == '.' || first == '_'
+}
+
+/// Check if this function is a registered S3 method based on the pre-computed
+/// set of S3 method names from the package NAMESPACE file.
+fn is_registered_s3_method(func: &RFunctionDefinition, s3_methods: &HashSet<String>) -> bool {
+    if s3_methods.is_empty() {
+        return false;
+    }
+    if let Some(name) = get_assignment_name(func) {
+        return s3_methods.contains(&name);
+    }
+    false
+}
+
+/// Get the name this function is assigned to, if it's part of an assignment.
+///
+/// Handles `foo <- function(...)` and `foo = function(...)`.
+fn get_assignment_name(func: &RFunctionDefinition) -> Option<String> {
+    let parent = func.syntax().parent()?;
+    let binary = RBinaryExpression::cast(parent)?;
+    let left = binary.left().ok()?;
+    Some(left.into_syntax().text_trimmed().to_string())
+}
+
+/// Parse S3 method registrations from a NAMESPACE file.
+///
+/// Extracts function names from `S3method(generic, class)` lines,
+/// producing names like `"generic.class"`.
+pub fn parse_s3_methods_from_namespace(namespace_path: &Path) -> HashSet<String> {
+    let mut methods = HashSet::new();
+
+    let content = match std::fs::read_to_string(namespace_path) {
+        Ok(c) => c,
+        Err(_) => return methods,
+    };
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+
+        // Match S3method(generic, class) or S3method(generic, class, function)
+        if let Some(rest) = trimmed.strip_prefix("S3method(")
+            && let Some(inner) = rest.strip_suffix(')')
+        {
+            let parts: Vec<&str> = inner.split(',').map(|s| s.trim()).collect();
+            if parts.len() >= 2 {
+                let generic = parts[0];
+                let class = parts[1];
+                methods.insert(format!("{generic}.{class}"));
+
+                // S3method(generic, class, explicit_function_name)
+                if parts.len() >= 3 {
+                    methods.insert(parts[2].to_string());
+                }
+            }
+        }
+    }
+
+    methods
+}
+
+/// Pre-compute S3 method names for all R packages found among the given paths.
+///
+/// For each file inside an `R/` directory with a sibling `DESCRIPTION` file,
+/// reads the `NAMESPACE` file and collects S3 method names.
+pub fn compute_package_s3_methods(paths: &[std::path::PathBuf]) -> HashSet<String> {
+    use crate::lints::base::duplicated_function_definition::duplicated_function_definition::is_in_r_package;
+
+    let mut all_methods = HashSet::new();
+    let mut seen_roots = HashSet::new();
+
+    for path in paths {
+        if !crate::fs::has_r_extension(path) {
+            continue;
+        }
+        if !is_in_r_package(path).unwrap_or(false) {
+            continue;
+        }
+        // path is R/foo.R, parent is R/, grandparent is package root
+        if let Some(pkg_root) = path.parent().and_then(|p| p.parent()) {
+            let root_str = pkg_root.to_string_lossy().to_string();
+            if seen_roots.contains(&root_str) {
+                continue;
+            }
+            seen_roots.insert(root_str);
+
+            let namespace_path = pkg_root.join("NAMESPACE");
+            let methods = parse_s3_methods_from_namespace(&namespace_path);
+            all_methods.extend(methods);
+        }
+    }
+
+    all_methods
 }
 
 /// Check if the function body contains a call to `UseMethod()` or `NextMethod()`.

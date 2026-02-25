@@ -89,6 +89,9 @@ pub struct Config {
     /// Keyed by relativized file path. Value is a list of `(name, lhs_range,
     /// help)` triples where `help` points to the first definition.
     pub package_duplicate_assignments: HashMap<PathBuf, Vec<(String, TextRange, String)>>,
+    /// Pre-computed S3 method names from the package NAMESPACE file.
+    /// Used by unused_function_argument to skip S3 methods.
+    pub package_s3_methods: HashSet<String>,
 }
 
 pub fn build_config(
@@ -165,6 +168,7 @@ pub fn build_config(
         fixable: fixable_toml,
         rule_options,
         package_duplicate_assignments: HashMap::new(),
+        package_s3_methods: HashSet::new(),
     })
 }
 
