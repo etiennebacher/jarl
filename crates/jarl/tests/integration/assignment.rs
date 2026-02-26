@@ -447,7 +447,7 @@ assignment = "<-"
             .arg("assignment")
             .run()
             .normalize_os_executable_name(),
-        @r#"
+        @r"
     success: false
     exit_code: 1
     ----- stdout -----
@@ -471,10 +471,10 @@ assignment = "<-"
     2 fixable with the `--fix` option.
 
     ── Warnings ─────────────────────────────────────
-    `assignment = "..."` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator = "..."` instead.
+    Argument `assignment` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator` instead.
 
     ----- stderr -----
-    "#
+    "
     );
 
     std::fs::write(
@@ -493,7 +493,7 @@ assignment = "="
             .arg("assignment")
             .run()
             .normalize_os_executable_name(),
-        @r#"
+        @r"
     success: false
     exit_code: 1
     ----- stdout -----
@@ -517,10 +517,10 @@ assignment = "="
     2 fixable with the `--fix` option.
 
     ── Warnings ─────────────────────────────────────
-    `assignment = "..."` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator = "..."` instead.
+    Argument `assignment` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator` instead.
 
     ----- stderr -----
-    "#
+    "
     );
 
     Ok(())
@@ -635,7 +635,7 @@ assignment = "<-"
             .arg("=")
             .run()
             .normalize_os_executable_name(),
-        @r#"
+        @r"
     success: false
     exit_code: 1
     ----- stdout -----
@@ -660,10 +660,10 @@ assignment = "<-"
 
     ── Warnings ─────────────────────────────────────
     `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
-    `assignment = "..."` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator = "..."` instead.
+    Argument `assignment` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator` instead.
 
     ----- stderr -----
-    "#
+    "
     );
     Ok(())
 }
