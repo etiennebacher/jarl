@@ -187,8 +187,8 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         for item in resolver.items() {
             if item.value().linter.deprecated_assignment_syntax {
                 warnings.push(
-                    "`assignment = \"...\"` in `[lint]` is deprecated. \
-                     Use `[lint.assignment]` with `operator = \"...\"` instead."
+                    "Argument `assignment` in `[lint]` is deprecated. \
+                     Use `[lint.assignment]` with `operator` instead."
                         .to_string(),
                 );
             }
