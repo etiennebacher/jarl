@@ -2,6 +2,7 @@ pub mod assignment;
 pub mod duplicated_arguments;
 pub mod undesirable_function;
 pub mod unreachable_code;
+pub mod unused_function;
 
 use assignment::AssignmentOptions;
 use assignment::ResolvedAssignmentOptions;
@@ -12,6 +13,8 @@ use undesirable_function::ResolvedUndesirableFunctionOptions;
 use undesirable_function::UndesirableFunctionOptions;
 use unreachable_code::ResolvedUnreachableCodeOptions;
 use unreachable_code::UnreachableCodeOptions;
+use unused_function::ResolvedUnusedFunctionOptions;
+use unused_function::UnusedFunctionOptions;
 
 /// Resolve a pair of `field` / `extend-field` options against a set of defaults.
 ///
@@ -62,6 +65,7 @@ pub struct ResolvedRuleOptions {
     pub duplicated_arguments: ResolvedDuplicatedArgumentsOptions,
     pub undesirable_function: ResolvedUndesirableFunctionOptions,
     pub unreachable_code: ResolvedUnreachableCodeOptions,
+    pub unused_function: ResolvedUnusedFunctionOptions,
 }
 
 impl ResolvedRuleOptions {
@@ -70,6 +74,7 @@ impl ResolvedRuleOptions {
         duplicated_arguments: Option<&DuplicatedArgumentsOptions>,
         undesirable_function: Option<&UndesirableFunctionOptions>,
         unreachable_code: Option<&UnreachableCodeOptions>,
+        unused_function: Option<&UnusedFunctionOptions>,
     ) -> anyhow::Result<Self> {
         Ok(Self {
             assignment: ResolvedAssignmentOptions::resolve(assignment)?,
@@ -80,12 +85,14 @@ impl ResolvedRuleOptions {
                 undesirable_function,
             )?,
             unreachable_code: ResolvedUnreachableCodeOptions::resolve(unreachable_code)?,
+            unused_function: ResolvedUnusedFunctionOptions::resolve(unused_function)?,
         })
     }
 }
 
 impl Default for ResolvedRuleOptions {
     fn default() -> Self {
-        Self::resolve(None, None, None, None).expect("default rule options should always resolve")
+        Self::resolve(None, None, None, None, None)
+            .expect("default rule options should always resolve")
     }
 }

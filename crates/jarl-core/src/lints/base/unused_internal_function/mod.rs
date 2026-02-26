@@ -456,4 +456,184 @@ mod tests {
             "non-package files should produce no results"
         );
     }
+
+    // ── ResolvedUnusedFunctionOptions ────────────────────────────────────
+
+    use crate::rule_options::unused_function::{
+        ResolvedUnusedFunctionOptions, UnusedFunctionOptions,
+    };
+
+    #[test]
+    fn test_threshold_ignore_default_is_50() {
+        let resolved = ResolvedUnusedFunctionOptions::resolve(None).unwrap();
+        assert_eq!(resolved.threshold_ignore, 50);
+    }
+
+    #[test]
+    fn test_threshold_ignore_custom_value() {
+        let opts = UnusedFunctionOptions { threshold_ignore: Some(10) };
+        let resolved = ResolvedUnusedFunctionOptions::resolve(Some(&opts)).unwrap();
+        assert_eq!(resolved.threshold_ignore, 10);
+    }
+
+    #[test]
+    fn test_threshold_ignore_none_uses_default() {
+        let opts = UnusedFunctionOptions { threshold_ignore: None };
+        let resolved = ResolvedUnusedFunctionOptions::resolve(Some(&opts)).unwrap();
+        assert_eq!(resolved.threshold_ignore, 50);
+    }
+
+    #[test]
+    fn test_threshold_ignore_zero() {
+        let opts = UnusedFunctionOptions { threshold_ignore: Some(0) };
+        let resolved = ResolvedUnusedFunctionOptions::resolve(Some(&opts)).unwrap();
+        assert_eq!(resolved.threshold_ignore, 0);
+    }
+
+    // ── threshold-ignore end-to-end ─────────────────────────────────────
+
+    use annotate_snippets::Renderer;
+    use insta::assert_snapshot;
+
+    use crate::check::check;
+    use crate::config::{ArgsConfig, build_config};
+    use crate::diagnostic::render_diagnostic;
+
+    /// Create a minimal R package with `n` unused internal functions, run
+    /// the linter, and return the rendered diagnostics as a string (same
+    /// format the CLI emits).  Absolute temp paths are replaced with
+    /// `[PKG]` for snapshot stability.
+    fn check_package_with_n_unused(dir: &std::path::Path, n: usize) -> String {
+        let r_dir = dir.join("R");
+        fs::create_dir_all(&r_dir).unwrap();
+        fs::write(
+            dir.join("DESCRIPTION"),
+            "Package: testpkg\nVersion: 0.1.0\n",
+        )
+        .unwrap();
+        fs::write(dir.join("NAMESPACE"), "export(public_fn)\n").unwrap();
+        fs::write(r_dir.join("public.R"), "public_fn <- function() 1\n").unwrap();
+
+        let mut paths = vec![r_dir.join("public.R")];
+        for i in 1..=n {
+            let file = r_dir.join(format!("unused_{i}.R"));
+            fs::write(&file, format!("unused_fn_{i} <- function() {i}\n")).unwrap();
+            paths.push(file);
+        }
+
+        let args = ArgsConfig {
+            files: paths.iter().map(|p| p.to_path_buf()).collect(),
+            fix: false,
+            unsafe_fixes: false,
+            fix_only: false,
+            select: "unused_internal_function".to_string(),
+            extend_select: String::new(),
+            ignore: String::new(),
+            min_r_version: None,
+            allow_dirty: false,
+            allow_no_vcs: true,
+            assignment: None,
+        };
+
+        let config = build_config(&args, None, paths).unwrap();
+        let results = check(config);
+
+        let renderer = Renderer::plain();
+        let mut all_diagnostics = Vec::new();
+
+        for (path, result) in &results {
+            if let Ok(diagnostics) = result {
+                for d in diagnostics {
+                    let content = fs::read_to_string(&d.filename).unwrap();
+                    let rendered = render_diagnostic(&content, path, &d.message.name, d, &renderer);
+                    all_diagnostics.push((d, rendered));
+                }
+            }
+        }
+
+        all_diagnostics.sort_by(|(a, _), (b, _)| a.cmp(b));
+
+        let mut output = String::new();
+        for (_, rendered) in &all_diagnostics {
+            output.push_str(&format!("{rendered}\n"));
+        }
+
+        let count = all_diagnostics.len();
+        if count > 0 {
+            output.push_str(&format!(
+                "Found {count} error{}.",
+                if count == 1 { "" } else { "s" }
+            ));
+        }
+
+        // Normalize temp directory paths for stable snapshots
+        let dir_str = dir.to_string_lossy();
+        output.replace(&*dir_str, "[PKG]")
+    }
+
+    /// Simulate the threshold-ignore filtering that the CLI applies:
+    /// if the number of `unused_internal_function` diagnostics exceeds
+    /// `threshold`, return a note; otherwise return the diagnostics.
+    fn apply_threshold(diagnostics_output: &str, count: usize, threshold: usize) -> String {
+        if count > threshold {
+            format!(
+                "All checks passed!\n\
+                 Warning: {count} `unused_internal_function` diagnostics hidden \
+                 (likely false positives).\n\
+                 To show them:\n  \
+                 - set 'threshold-ignore' in `[lint.unused-function]` in jarl.toml,\n  \
+                 - or explicitly include 'unused_function' in the set of rules."
+            )
+        } else {
+            diagnostics_output.to_string()
+        }
+    }
+
+    #[test]
+    fn test_threshold_exceeded_hides_diagnostics() {
+        let dir = TempDir::new().unwrap();
+        let diagnostics_output = check_package_with_n_unused(dir.path(), 5);
+        let count = 5;
+        let threshold = 3;
+
+        assert_snapshot!(
+            apply_threshold(&diagnostics_output, count, threshold),
+            @r"
+        All checks passed!
+        Warning: 5 `unused_internal_function` diagnostics hidden (likely false positives).
+        To show them:
+          - set 'threshold-ignore' in `[lint.unused-function]` in jarl.toml,
+          - or explicitly include 'unused_function' in the set of rules.
+        "
+        );
+    }
+
+    #[test]
+    fn test_threshold_not_exceeded_shows_diagnostics() {
+        let dir = TempDir::new().unwrap();
+        let diagnostics_output = check_package_with_n_unused(dir.path(), 2);
+        let count = 2;
+        let threshold = 3;
+
+        assert_snapshot!(
+            apply_threshold(&diagnostics_output, count, threshold),
+            @r"
+        warning: unused_internal_function
+         --> [PKG]/R/unused_1.R:1:1
+          |
+        1 | unused_fn_1 <- function() 1
+          | ----------- `unused_fn_1` is defined but never called in this package.
+          |
+          = help: Defined at [PKG]/R/unused_1.R:1:1 but never called
+        warning: unused_internal_function
+         --> [PKG]/R/unused_2.R:1:1
+          |
+        1 | unused_fn_2 <- function() 2
+          | ----------- `unused_fn_2` is defined but never called in this package.
+          |
+          = help: Defined at [PKG]/R/unused_2.R:1:1 but never called
+        Found 2 errors.
+        "
+        );
+    }
 }

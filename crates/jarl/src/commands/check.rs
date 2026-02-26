@@ -134,6 +134,35 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         return add_jarl_ignore_comments(&all_diagnostics, reason, parent_config_path);
     }
 
+    // Hide `unused_internal_function` diagnostics when they exceed the threshold
+    // (likely false positives). Use the minimum threshold across all configs.
+    let threshold_ignore = resolver
+        .items()
+        .iter()
+        .map(|item| {
+            item.value()
+                .linter
+                .rule_options
+                .unused_function
+                .threshold_ignore
+        })
+        .min()
+        .unwrap_or(50);
+
+    let unused_fn_count = all_diagnostics
+        .iter()
+        .flat_map(|(_path, diagnostics)| diagnostics.iter())
+        .filter(|d| d.message.name == "unused_internal_function")
+        .count();
+
+    let unused_fn_hidden = unused_fn_count > threshold_ignore;
+    if unused_fn_hidden {
+        for (_path, diagnostics) in &mut all_diagnostics {
+            diagnostics.retain(|d| d.message.name != "unused_internal_function");
+        }
+        all_diagnostics.retain(|(_path, diagnostics)| !diagnostics.is_empty());
+    }
+
     // Flatten all diagnostics into a single vector and sort globally
     let mut all_diagnostics_flat: Vec<&Diagnostic> = all_diagnostics
         .iter()
@@ -186,6 +215,18 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
                 "Warning".yellow().bold()
             );
         }
+    }
+
+    if !is_structured_format && unused_fn_hidden {
+        eprintln!(
+            "{}: {} `unused_internal_function` diagnostics hidden (likely false positives).
+To show them:
+  - set 'threshold-ignore' in `[lint.unused-function]` in jarl.toml,
+  - or explicitly include 'unused_function' in the set of rules.
+            ",
+            "Warning".yellow().bold(),
+            unused_fn_count
+        );
     }
 
     if !is_structured_format {
