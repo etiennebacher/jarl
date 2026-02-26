@@ -57,6 +57,9 @@
   - `invalid_chunk_suppression` (#350)
   - `undesirable_function` (replaces `browser`) (#336)
 
+* The output in terminal with output format `full` or `concise` is now organized
+  in multiple sections (summary, warnings, notes) (#366).
+
 ## 0.4.0
 
 ### Breaking changes

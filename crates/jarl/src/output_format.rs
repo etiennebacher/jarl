@@ -17,15 +17,94 @@ fn make_hyperlink(text: &str) -> String {
 
 use jarl_core::diagnostic::{Diagnostic, render_diagnostic};
 
-fn show_hint_statistics(total_diagnostics: i32) {
-    let n_violations = std::env::var("JARL_N_VIOLATIONS_HINT_STAT")
-        .ok()
-        .and_then(|value| value.parse::<i32>().ok())
-        .unwrap_or(15);
-    if total_diagnostics > n_violations {
-        println!(
-            "\nMore than {n_violations} errors reported, use `--statistics` to get the count by rule."
-        );
+/// Prints a section header like `── Summary ──────────────────────────────────`
+/// padded to 57 characters total.
+pub fn print_section_header(title: &str) {
+    const TOTAL_WIDTH: usize = 57;
+    // "── {title} ──" takes up 5 + title.len() chars (2 for ── , 1 space, 1 space, 2 for ──)
+    let prefix = format!("── {title} ──");
+    let pad = TOTAL_WIDTH.saturating_sub(prefix.len());
+    let padding: String = "─".repeat(pad);
+    println!("{prefix}{padding}");
+}
+
+/// Prints the summary section with error counts and fix info.
+/// Only call for human-readable formats (Full, Concise).
+pub fn print_summary(diagnostics: &[&Diagnostic], has_errors: bool) {
+    let total: i32 = diagnostics.len() as i32;
+    let n_safe_fixes = diagnostics.iter().filter(|d| d.has_safe_fix()).count();
+    let n_unsafe_fixes = diagnostics.iter().filter(|d| d.has_unsafe_fix()).count();
+
+    if total > 0 {
+        println!();
+        print_section_header("Summary");
+
+        if total > 1 {
+            println!("Found {total} errors.");
+        } else {
+            println!("Found 1 error.");
+        }
+
+        if n_safe_fixes > 0 {
+            let msg = if n_unsafe_fixes == 0 {
+                format!("{n_safe_fixes} fixable with the `--fix` option.")
+            } else {
+                let unsafe_label = if n_unsafe_fixes == 1 {
+                    "1 hidden fix".to_string()
+                } else {
+                    format!("{n_unsafe_fixes} hidden fixes")
+                };
+                format!(
+                    "{n_safe_fixes} fixable with the `--fix` option ({unsafe_label} can be enabled with the `--unsafe-fixes` option)."
+                )
+            };
+            println!("{msg}");
+        } else if n_unsafe_fixes > 0 {
+            let label = if n_unsafe_fixes == 1 {
+                "1 fix is".to_string()
+            } else {
+                format!("{n_unsafe_fixes} fixes are")
+            };
+            println!("{label} available with the `--fix --unsafe-fixes` option.");
+        }
+
+        let n_violations = std::env::var("JARL_N_VIOLATIONS_HINT_STAT")
+            .ok()
+            .and_then(|value| value.parse::<i32>().ok())
+            .unwrap_or(15);
+        if total > n_violations {
+            println!(
+                "More than {n_violations} errors reported, use `--statistics` to get the count by rule."
+            );
+        }
+    } else if !has_errors {
+        println!();
+        print_section_header("Summary");
+        println!("All checks passed!");
+    }
+}
+
+/// Prints warnings under a `── Warnings ──` section header.
+pub fn print_warnings(warnings: &[String]) {
+    if warnings.is_empty() {
+        return;
+    }
+    println!();
+    print_section_header("Warnings");
+    for warning in warnings {
+        println!("{warning}");
+    }
+}
+
+/// Prints notes under a `── Notes ──` section header.
+pub fn print_notes(notes: &[String]) {
+    if notes.is_empty() {
+        return;
+    }
+    println!();
+    print_section_header("Notes");
+    for note in notes {
+        println!("{note}");
     }
 }
 
@@ -76,9 +155,6 @@ impl Emitter for ConciseEmitter {
         errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
-        let mut total_diagnostics = 0;
-        let mut n_diagnostic_with_fixes = 0usize;
-        let mut n_diagnostic_with_unsafe_fixes = 0usize;
 
         // First, print all parsing errors
         if !errors.is_empty() {
@@ -130,55 +206,9 @@ impl Emitter for ConciseEmitter {
                 rule_name.red(),
                 message
             )?;
-
-            if diagnostic.has_safe_fix() {
-                n_diagnostic_with_fixes += 1;
-            }
-            if diagnostic.has_unsafe_fix() {
-                n_diagnostic_with_unsafe_fixes += 1;
-            }
-            total_diagnostics += 1;
         }
 
-        writer.flush()?; // Ensure all diagnostics are written before summary
-
-        // Finally, print the info about the number of errors found and how
-        // many can be fixed.
-        if total_diagnostics > 0 {
-            if total_diagnostics > 1 {
-                println!("\nFound {total_diagnostics} errors.");
-            } else {
-                println!("\nFound 1 error.");
-            }
-
-            if n_diagnostic_with_fixes > 0 {
-                let msg = if n_diagnostic_with_unsafe_fixes == 0 {
-                    format!("{n_diagnostic_with_fixes} fixable with the `--fix` option.")
-                } else {
-                    let unsafe_label = if n_diagnostic_with_unsafe_fixes == 1 {
-                        "1 hidden fix".to_string()
-                    } else {
-                        format!("{n_diagnostic_with_unsafe_fixes} hidden fixes")
-                    };
-                    format!(
-                        "{n_diagnostic_with_fixes} fixable with the `--fix` option ({unsafe_label} can be enabled with the `--unsafe-fixes` option)."
-                    )
-                };
-                println!("{msg}");
-            } else if n_diagnostic_with_unsafe_fixes > 0 {
-                let label = if n_diagnostic_with_unsafe_fixes == 1 {
-                    "1 fix is".to_string()
-                } else {
-                    format!("{n_diagnostic_with_unsafe_fixes} fixes are")
-                };
-                println!("{label} available with the `--fix --unsafe-fixes` option.");
-            }
-
-            show_hint_statistics(total_diagnostics);
-        } else if errors.is_empty() {
-            println!("All checks passed!");
-        }
-
+        writer.flush()?;
         Ok(())
     }
 }
@@ -275,9 +305,6 @@ impl Emitter for FullEmitter {
         } else {
             Renderer::plain()
         };
-        let mut total_diagnostics = 0;
-        let mut n_diagnostic_with_fixes = 0usize;
-        let mut n_diagnostic_with_unsafe_fixes = 0usize;
 
         // First, print all parsing errors
         if !errors.is_empty() {
@@ -358,55 +385,9 @@ impl Emitter for FullEmitter {
 
             let rendered = render_diagnostic(source, file_path, &title, diagnostic, &renderer);
             writeln!(writer, "{rendered}\n")?;
-
-            if diagnostic.has_safe_fix() {
-                n_diagnostic_with_fixes += 1;
-            }
-            if diagnostic.has_unsafe_fix() {
-                n_diagnostic_with_unsafe_fixes += 1;
-            }
-            total_diagnostics += 1;
         }
 
-        writer.flush()?; // Ensure all diagnostics are written before summary
-
-        // Finally, print the info about the number of errors found and how
-        // many can be fixed.
-        if total_diagnostics > 0 {
-            if total_diagnostics > 1 {
-                println!("Found {total_diagnostics} errors.");
-            } else {
-                println!("Found 1 error.");
-            }
-
-            if n_diagnostic_with_fixes > 0 {
-                let msg = if n_diagnostic_with_unsafe_fixes == 0 {
-                    format!("{n_diagnostic_with_fixes} fixable with the `--fix` option.")
-                } else {
-                    let unsafe_label = if n_diagnostic_with_unsafe_fixes == 1 {
-                        "1 hidden fix".to_string()
-                    } else {
-                        format!("{n_diagnostic_with_unsafe_fixes} hidden fixes")
-                    };
-                    format!(
-                        "{n_diagnostic_with_fixes} fixable with the `--fix` option ({unsafe_label} can be enabled with the `--unsafe-fixes` option)."
-                    )
-                };
-                println!("{msg}");
-            } else if n_diagnostic_with_unsafe_fixes > 0 {
-                let label = if n_diagnostic_with_unsafe_fixes == 1 {
-                    "1 fix is".to_string()
-                } else {
-                    format!("{n_diagnostic_with_unsafe_fixes} fixes are")
-                };
-                println!("{label} available with the `--fix --unsafe-fixes` option.");
-            }
-
-            show_hint_statistics(total_diagnostics);
-        } else if errors.is_empty() {
-            println!("All checks passed!");
-        }
-
+        writer.flush()?;
         Ok(())
     }
 }
