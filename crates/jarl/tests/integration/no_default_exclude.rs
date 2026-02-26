@@ -39,23 +39,25 @@ Warning: No R files found under the given path(s).
             .arg("--no-default-exclude")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> cpp11.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> cpp11.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -84,23 +86,25 @@ default-exclude = true
             .arg("--no-default-exclude")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> cpp11.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> cpp11.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
     Ok(())
 }

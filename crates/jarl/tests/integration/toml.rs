@@ -30,31 +30,33 @@ fn test_empty_toml_uses_all_rules() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_duplicated
- --> test.R:2:1
-  |
-2 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -86,14 +88,16 @@ select = []
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
     );
 
     std::fs::write(
@@ -156,31 +160,33 @@ ignore = []
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_duplicated
- --> test.R:2:1
-  |
-2 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     std::fs::write(
@@ -241,23 +247,25 @@ select = ["any_is_na"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -292,31 +300,33 @@ any(duplicated(x))
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:2:1
-  |
-2 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:2:1
+      |
+    2 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: all_equal
- --> test.R:4:1
-  |
-4 | !all.equal(x, y)
-  | ---------------- If `all.equal()` is false, it will return a string and not `FALSE`.
-  |
-  = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
+    warning: all_equal
+     --> test.R:4:1
+      |
+    4 | !all.equal(x, y)
+      | ---------------- If `all.equal()` is false, it will return a string and not `FALSE`.
+      |
+      = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
 
-Found 2 errors.
-1 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    1 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -348,23 +358,25 @@ ignore = ["any_duplicated"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -399,31 +411,33 @@ length(levels(x))"#;
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_duplicated
- --> test.R:2:1
-  |
-2 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -463,23 +477,25 @@ length(levels(x))"#;
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_duplicated
- --> test.R:2:1
-  |
-2 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -517,23 +533,25 @@ length(levels(x))"#;
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_duplicated
- --> test.R:2:1
-  |
-2 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -573,14 +591,16 @@ length(levels(x))"#;
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -778,31 +798,33 @@ fn test_toml_without_linter_section() -> anyhow::Result<()> {
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_duplicated
- --> test.R:2:1
-  |
-2 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -905,31 +927,33 @@ fn test_no_toml_file_uses_all_rules() -> anyhow::Result<()> {
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_duplicated
- --> test.R:2:1
-  |
-2 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -986,31 +1010,33 @@ default-exclude = false
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> cpp11.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> cpp11.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_duplicated
- --> cpp11.R:2:1
-  |
-2 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> cpp11.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -1122,23 +1148,25 @@ exclude = ["excluded.R"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> included.R:1:1
-  |
-1 | any(is.na(y))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> included.R:1:1
+      |
+    1 | any(is.na(y))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -1171,23 +1199,25 @@ exclude = ["excluded_dir/"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> included.R:1:1
-  |
-1 | any(is.na(y))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> included.R:1:1
+      |
+    1 | any(is.na(y))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -1219,23 +1249,25 @@ exclude = ["test-*.R"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> normal.R:1:1
-  |
-1 | any(is.na(z))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> normal.R:1:1
+      |
+    1 | any(is.na(z))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -1270,23 +1302,25 @@ exclude = ["excluded.R", "temp/", "*.tmp.R"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> included.R:1:1
-  |
-1 | any(is.na(d))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> included.R:1:1
+      |
+    1 | any(is.na(d))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -1321,31 +1355,33 @@ exclude = ["custom_exclude.R"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> cpp11.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> cpp11.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_is_na
- --> normal.R:1:1
-  |
-1 | any(is.na(z))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+    warning: any_is_na
+     --> normal.R:1:1
+      |
+    1 | any(is.na(z))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -1382,23 +1418,25 @@ exclude = ["**/test/**"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> other/main.R:1:1
-  |
-1 | any(is.na(z))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> other/main.R:1:1
+      |
+    1 | any(is.na(z))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -1426,23 +1464,25 @@ exclude = []
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -1583,22 +1623,24 @@ fixable = ["any_is_na"]
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_duplicated
- --> test.R:2:1
-  |
-2 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 1 error.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
     );
 
     // Only any_is_na should be fixed
@@ -1986,31 +2028,33 @@ fixable = ["any_is_na"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_duplicated
- --> test.R:2:1
-  |
-2 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 2 errors.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -2084,31 +2128,33 @@ expect_equal(foo(x), TRUE)
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:2:1
-  |
-2 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:2:1
+      |
+    2 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: expect_true_false
- --> test.R:3:1
-  |
-3 | expect_equal(foo(x), TRUE)
-  | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
-  |
-  = help: Use `expect_true(x)` instead.
+    warning: expect_true_false
+     --> test.R:3:1
+      |
+    3 | expect_equal(foo(x), TRUE)
+      | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
+      |
+      = help: Use `expect_true(x)` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -2147,31 +2193,33 @@ expect_equal(foo(x), TRUE)
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:2:1
-  |
-2 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:2:1
+      |
+    2 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: expect_true_false
- --> test.R:4:1
-  |
-4 | expect_equal(foo(x), TRUE)
-  | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
-  |
-  = help: Use `expect_true(x)` instead.
+    warning: expect_true_false
+     --> test.R:4:1
+      |
+    4 | expect_equal(foo(x), TRUE)
+      | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
+      |
+      = help: Use `expect_true(x)` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -2243,23 +2291,25 @@ include = ["included.R"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> included.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> included.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -2292,23 +2342,25 @@ include = ["R/"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> R/utils.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> R/utils.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -2341,31 +2393,33 @@ include = ["R-*.R"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> R-helpers.R:1:1
-  |
-1 | any(is.na(y))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> R-helpers.R:1:1
+      |
+    1 | any(is.na(y))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_is_na
- --> R-utils.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+    warning: any_is_na
+     --> R-utils.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -2394,23 +2448,25 @@ include = []
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -2446,23 +2502,25 @@ exclude = ["R/generated.R"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> R/utils.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> R/utils.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -2502,30 +2560,32 @@ include = ["**/*.{Rmd,qmd}"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> analysis.qmd:6:1
-  |
-6 | any(is.na(y))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> analysis.qmd:6:1
+      |
+    6 | any(is.na(y))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_is_na
- --> report.Rmd:6:1
-  |
-6 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+    warning: any_is_na
+     --> report.Rmd:6:1
+      |
+    6 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 2 errors.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -2650,31 +2710,33 @@ select = ["any_duplicated"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> root.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> root.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_duplicated
- --> subfolder/sub.R:2:1
-  |
-2 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> subfolder/sub.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -2715,31 +2777,33 @@ select = ["any_is_na"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> root.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> root.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_is_na
- --> subfolder/sub.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+    warning: any_is_na
+     --> subfolder/sub.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -2789,31 +2853,33 @@ select = ["any_duplicated"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> root.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> root.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_duplicated
- --> subfolder/sub.R:2:1
-  |
-2 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> subfolder/sub.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
