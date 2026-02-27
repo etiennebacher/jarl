@@ -191,7 +191,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
             warnings.push(format!(
                 "{} `unused_function` diagnostics hidden (likely false positives).\n\
                  To show them:\n  \
-                 - set 'threshold-ignore' in `[lint.unused-function]` in jarl.toml,\n  \
+                 - set 'threshold-ignore' in `[lint.unused_function]` in jarl.toml,\n  \
                  - or explicitly include 'unused_function' in the set of rules.",
                 unused_fn_count
             ));

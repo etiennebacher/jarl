@@ -506,7 +506,7 @@ mod tests {
         assert_eq!(resolved.threshold_ignore, 0);
     }
 
-    // ── skipped-functions ──────────────────────────────────────────────
+    // ── skipped_functions ──────────────────────────────────────────────
 
     #[test]
     fn test_skipped_functions_invalid_regex() {
@@ -612,7 +612,7 @@ mod tests {
                  Warning: {count} `unused_function` diagnostics hidden \
                  (likely false positives).\n\
                  To show them:\n  \
-                 - set 'threshold-ignore' in `[lint.unused-function]` in jarl.toml,\n  \
+                 - set 'threshold-ignore' in `[lint.unused_function]` in jarl.toml,\n  \
                  - or explicitly include 'unused_function' in the set of rules."
             )
         } else {
@@ -633,7 +633,7 @@ mod tests {
         All checks passed!
         Warning: 5 `unused_function` diagnostics hidden (likely false positives).
         To show them:
-          - set 'threshold-ignore' in `[lint.unused-function]` in jarl.toml,
+          - set 'threshold-ignore' in `[lint.unused_function]` in jarl.toml,
           - or explicitly include 'unused_function' in the set of rules.
         "
         );

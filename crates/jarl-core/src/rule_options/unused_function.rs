@@ -2,7 +2,7 @@ use regex::Regex;
 
 const DEFAULT_THRESHOLD_IGNORE: usize = 50;
 
-/// TOML options for `[lint.unused-function]`.
+/// TOML options for `[lint.unused_function]`.
 ///
 /// Use `threshold-ignore` to control when `unused_function`
 /// diagnostics are hidden. When the number of violations exceeds this
@@ -39,7 +39,7 @@ impl ResolvedUnusedFunctionOptions {
                     Regex::new(p).map_err(|e| {
                         anyhow::anyhow!(
                             "Invalid regex `{p}` in `skipped-functions` \
-                             of `[lint.unused-function]`: {e}"
+                             of `[lint.unused_function]`: {e}"
                         )
                     })
                 })

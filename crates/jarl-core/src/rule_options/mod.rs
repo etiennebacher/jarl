@@ -99,7 +99,7 @@ impl ResolvedRuleOptions {
 
 impl Default for ResolvedRuleOptions {
     fn default() -> Self {
-        Self::resolve(None, None, None, None, None)
+        Self::resolve(None, None, None, None, None, None)
             .expect("default rule options should always resolve")
     }
 }
