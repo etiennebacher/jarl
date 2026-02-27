@@ -54,6 +54,7 @@
 
   - `duplicated_function_definition` (#358)
   - `expect_match` (#364, @bjyberg)
+  - `expect_no_match` (#368, @bjyberg)
   - `invalid_chunk_suppression` (#350)
   - `undesirable_function` (replaces `browser`) (#336)
 
