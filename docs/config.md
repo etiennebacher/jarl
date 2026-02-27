@@ -319,7 +319,7 @@ This option doesn't have a default value.
 operator = "<-" # or "="
 ```
 
-#### `duplicated-arguments`
+#### `duplicated_arguments`
 
 Use `skipped-functions` to fully replace the default list of functions that are
 allowed to have duplicated arguments. Use `extend-skipped-functions` to add to
@@ -335,12 +335,12 @@ Default: `skipped-functions = ["c", "mutate", "summarize", "transmute"]`
 [lint]
 ...
 
-[lint.duplicated-arguments]
+[lint.duplicated_arguments]
 # Ignore duplicated arguments in `list()` only.
 skipped-functions = ["list"]
 ```
 
-#### `implicit-assignment`
+#### `implicit_assignment`
 
 Use `skipped-functions` to fully replace the default list of functions that are
 allowed to contain implicit assignment. Use `extend-skipped-functions` to add to
@@ -357,12 +357,12 @@ Default: `skipped-functions = ["expect_error", "expect_warning", "expect_message
 [lint]
 ...
 
-[lint.implicit-assignment]
+[lint.implicit_assignment]
 # Ignore implicit assignment in `list()` only.
 skipped-functions = ["list"]
 ```
 
-#### `unreachable-code`
+#### `unreachable_code`
 
 Use `stopping-functions` to fully replace the default list of functions that are
 considered to stop execution (never return). Use `extend-stopping-functions` to
@@ -379,7 +379,7 @@ Default: `stopping-functions = ["stop", ".Defunct", "abort", "cli_abort",
 [lint]
 ...
 
-[lint.unreachable-code]
+[lint.unreachable_code]
 # Add a custom function to the list of stopping functions
 extend-stopping-functions = ["my_custom_stop"]
 ```

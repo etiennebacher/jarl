@@ -25,7 +25,7 @@ use crate::rule_options::implicit_assignment::ResolvedImplicitAssignmentOptions;
 /// - If neither is set, returns the defaults.
 ///
 /// `rule_section` and `field_name` are used for the error message, e.g.
-/// `"duplicated-arguments"` and `"skipped-functions"`.
+/// `"duplicated_arguments"` and `"skipped-functions"`.
 pub fn resolve_with_extend(
     base: Option<&Vec<String>>,
     extend: Option<&Vec<String>>,

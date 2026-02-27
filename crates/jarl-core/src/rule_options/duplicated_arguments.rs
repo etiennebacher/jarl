@@ -5,7 +5,7 @@ use super::resolve_with_extend;
 /// Default functions that are allowed to have duplicated arguments.
 const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &["c", "mutate", "summarize", "transmute"];
 
-/// TOML options for `[lint.duplicated-arguments]`.
+/// TOML options for `[lint.duplicated_arguments]`.
 ///
 /// Use `skipped-functions` to fully replace the default list of functions
 /// that are allowed to have duplicated arguments. Use
@@ -40,7 +40,7 @@ impl ResolvedDuplicatedArgumentsOptions {
             base,
             extend,
             DEFAULT_SKIPPED_FUNCTIONS,
-            "duplicated-arguments",
+            "duplicated_arguments",
             "skipped-functions",
         )?;
 
