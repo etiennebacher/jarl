@@ -45,7 +45,7 @@ pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> a
         checker.report_diagnostic(equals_null(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::ImplicitAssignment) {
-        checker.report_diagnostic(implicit_assignment(r_expr)?);
+        checker.report_diagnostic(implicit_assignment(r_expr, checker)?);
     }
     if checker.is_rule_enabled(Rule::IsNumeric) {
         checker.report_diagnostic(is_numeric(r_expr)?);

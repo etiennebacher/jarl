@@ -18,6 +18,7 @@ use crate::rule_options::ResolvedRuleOptions;
 use crate::rule_options::assignment::AssignmentConfig;
 use crate::rule_options::assignment::AssignmentOptions;
 use crate::rule_options::duplicated_arguments::DuplicatedArgumentsOptions;
+use crate::rule_options::implicit_assignment::ImplicitAssignmentOptions;
 use crate::rule_options::undesirable_function::UndesirableFunctionOptions;
 use crate::rule_options::unreachable_code::UnreachableCodeOptions;
 use crate::settings::LinterSettings;
@@ -208,6 +209,14 @@ pub struct LinterTomlOptions {
     /// Specifying both is an error.
     pub duplicated_arguments: Option<DuplicatedArgumentsOptions>,
 
+    /// # Options for the `implicit_assignment` rule
+    ///
+    /// Use `skipped-functions` to fully replace the default list of functions
+    /// that are allowed to contain implicit assignment. Use
+    /// `extend-skipped-functions` to add to the default list.
+    /// Specifying both is an error.
+    pub implicit_assignment: Option<ImplicitAssignmentOptions>,
+
     /// # Options for the `undesirable_function` rule
     ///
     /// Use `functions` to fully replace the default list of undesirable functions.
@@ -296,6 +305,7 @@ impl TomlOptions {
             rule_options: ResolvedRuleOptions::resolve(
                 assignment_options.as_ref(),
                 linter.duplicated_arguments.as_ref(),
+                linter.implicit_assignment.as_ref(),
                 linter.undesirable_function.as_ref(),
                 linter.unreachable_code.as_ref(),
             )?,
