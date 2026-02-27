@@ -13,7 +13,7 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
     "suppressWarnings",
 ];
 
-/// TOML options for `[lint.implicit-assignment]`.
+/// TOML options for `[lint.implicit_assignment]`.
 ///
 /// Use `skipped-functions` to fully replace the default list of functions
 /// where implicit assignments are allowed. Use
@@ -48,7 +48,7 @@ impl ResolvedImplicitAssignmentOptions {
             base,
             extend,
             DEFAULT_SKIPPED_FUNCTIONS,
-            "implicit-assignment",
+            "implicit_assignment",
             "skipped-functions",
         )?;
 

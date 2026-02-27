@@ -31,20 +31,20 @@ unknown-option = "foo"
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
-success: false
-exit_code: 255
------ stdout -----
+    success: false
+    exit_code: 255
+    ----- stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-TOML parse error at line 3, column 1
-  |
-3 | unknown-option = "foo"
-  | ^^^^^^^^^^^^^^
-unknown field `unknown-option`, expected `operator`
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 1
+      |
+    3 | unknown-option = "foo"
+      | ^^^^^^^^^^^^^^
+    unknown field `unknown-option`, expected `operator`
 
-"#
+    "#
     );
 
     Ok(())
@@ -62,95 +62,7 @@ fn test_duplicated_arguments_both_skipped_and_extend_is_error() -> anyhow::Resul
         r#"
 [lint]
 
-[lint.duplicated-arguments]
-skipped-functions = ["list"]
-extend-skipped-functions = ["my_fun"]
-"#,
-    )?;
-
-    std::fs::write(directory.join("test.R"), "list(a = 1, a = 2)")?;
-
-    insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths(),
-        @"
-success: false
-exit_code: 255
------ stdout -----
-
------ stderr -----
-jarl failed
-  Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
-Cannot specify both `skipped-functions` and `extend-skipped-functions` in `[lint.duplicated-arguments]`.
-"
-    );
-
-    Ok(())
-}
-
-#[test]
-fn test_duplicated_arguments_unknown_field_is_error() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        r#"
-[lint]
-
-[lint.duplicated-arguments]
-unknown-option = ["list"]
-"#,
-    )?;
-
-    std::fs::write(directory.join("test.R"), "list(a = 1, a = 2)")?;
-
-    insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths(),
-        @r#"
-success: false
-exit_code: 255
------ stdout -----
-
------ stderr -----
-jarl failed
-  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-TOML parse error at line 5, column 1
-  |
-5 | unknown-option = ["list"]
-  | ^^^^^^^^^^^^^^
-unknown field `unknown-option`, expected `skipped-functions` or `extend-skipped-functions`
-
-"#
-    );
-
-    Ok(())
-}
-
-// implicit_assignment ----------------------------------------
-
-#[test]
-fn test_implicit_assignment_both_skipped_and_extend_is_error() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        r#"
-[lint]
-
-[lint.implicit-assignment]
+[lint.duplicated_arguments]
 skipped-functions = ["list"]
 extend-skipped-functions = ["my_fun"]
 "#,
@@ -174,7 +86,94 @@ extend-skipped-functions = ["my_fun"]
     ----- stderr -----
     jarl failed
       Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
-    Cannot specify both `skipped-functions` and `extend-skipped-functions` in `[lint.implicit-assignment]`.
+    Cannot specify both `skipped-functions` and `extend-skipped-functions` in `[lint.duplicated_arguments]`.
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_duplicated_arguments_unknown_field_is_error() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+
+[lint.duplicated_arguments]
+unknown-option = ["list"]
+"#,
+    )?;
+
+    std::fs::write(directory.join("test.R"), "list(a = 1, a = 2)")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 5, column 1
+      |
+    5 | unknown-option = ["list"]
+      | ^^^^^^^^^^^^^^
+    unknown field `unknown-option`, expected `skipped-functions` or `extend-skipped-functions`
+    "#
+    );
+
+    Ok(())
+}
+
+// implicit_assignment ----------------------------------------
+
+#[test]
+fn test_implicit_assignment_both_skipped_and_extend_is_error() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+
+[lint.implicit_assignment]
+skipped-functions = ["list"]
+extend-skipped-functions = ["my_fun"]
+"#,
+    )?;
+
+    std::fs::write(directory.join("test.R"), "list(a = 1, a = 2)")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Cannot specify both `skipped-functions` and `extend-skipped-functions` in `[lint.implicit_assignment]`.
     "
     );
 
@@ -191,7 +190,7 @@ fn test_implicit_assignment_unknown_field_is_error() -> anyhow::Result<()> {
         r#"
 [lint]
 
-[lint.implicit-assignment]
+[lint.implicit_assignment]
 unknown-option = ["list"]
 "#,
     )?;
@@ -207,20 +206,19 @@ unknown-option = ["list"]
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
-success: false
-exit_code: 255
------ stdout -----
+    success: false
+    exit_code: 255
+    ----- stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-TOML parse error at line 5, column 1
-  |
-5 | unknown-option = ["list"]
-  | ^^^^^^^^^^^^^^
-unknown field `unknown-option`, expected `skipped-functions` or `extend-skipped-functions`
-
-"#
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 5, column 1
+      |
+    5 | unknown-option = ["list"]
+      | ^^^^^^^^^^^^^^
+    unknown field `unknown-option`, expected `skipped-functions` or `extend-skipped-functions`
+    "#
     );
 
     Ok(())
@@ -238,7 +236,7 @@ fn test_unreachable_code_both_stopping_and_extend_is_error() -> anyhow::Result<(
         r#"
 [lint]
 
-[lint.unreachable-code]
+[lint.unreachable_code]
 stopping-functions = ["stop"]
 extend-stopping-functions = ["my_stop"]
 "#,
@@ -262,16 +260,16 @@ foo <- function() {
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @"
-success: false
-exit_code: 255
------ stdout -----
+        @r"
+    success: false
+    exit_code: 255
+    ----- stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
-Cannot specify both `stopping-functions` and `extend-stopping-functions` in `[lint.unreachable-code]`.
-"
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Cannot specify both `stopping-functions` and `extend-stopping-functions` in `[lint.unreachable_code]`.
+    "
     );
 
     Ok(())

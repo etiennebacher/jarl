@@ -54,7 +54,7 @@ pub fn parse_jarl_toml(path: &Path) -> Result<TomlOptions, ParseTomlError> {
 
 #[derive(Clone, Debug, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct TomlOptions {
     #[serde(flatten)]
     pub global: GlobalTomlOptions,
@@ -63,7 +63,7 @@ pub struct TomlOptions {
 
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct GlobalTomlOptions {}
 
 #[derive(Clone, Debug, Default, serde::Deserialize)]
@@ -207,6 +207,7 @@ pub struct LinterTomlOptions {
     /// that are allowed to have duplicated arguments. Use
     /// `extend-skipped-functions` to add to the default list.
     /// Specifying both is an error.
+    #[serde(rename = "duplicated_arguments")]
     pub duplicated_arguments: Option<DuplicatedArgumentsOptions>,
 
     /// # Options for the `implicit_assignment` rule
@@ -215,6 +216,7 @@ pub struct LinterTomlOptions {
     /// that are allowed to contain implicit assignment. Use
     /// `extend-skipped-functions` to add to the default list.
     /// Specifying both is an error.
+    #[serde(rename = "implicit_assignment")]
     pub implicit_assignment: Option<ImplicitAssignmentOptions>,
 
     /// # Options for the `undesirable_function` rule
@@ -222,6 +224,7 @@ pub struct LinterTomlOptions {
     /// Use `functions` to fully replace the default list of undesirable functions.
     /// Use `extend-functions` to add to the default list.
     /// Specifying both is an error.
+    #[serde(rename = "undesirable_function")]
     pub undesirable_function: Option<UndesirableFunctionOptions>,
 
     /// # Options for the `unreachable_code` rule
@@ -230,6 +233,7 @@ pub struct LinterTomlOptions {
     /// that are considered to stop execution (never return). Use
     /// `extend-stopping-functions` to add to the default list.
     /// Specifying both is an error.
+    #[serde(rename = "unreachable_code")]
     pub unreachable_code: Option<UnreachableCodeOptions>,
 
     /// Catch any unknown fields so we can produce a clean error message that

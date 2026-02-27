@@ -24,7 +24,7 @@ pub struct UndesirableFunction {
 /// `jarl.toml`:
 ///
 /// ```toml
-/// [lint.undesirable-function]
+/// [lint.undesirable_function]
 /// # Replace the default list entirely:
 /// functions = ["browser", "debug"]
 ///
