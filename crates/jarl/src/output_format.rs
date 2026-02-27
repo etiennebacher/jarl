@@ -78,7 +78,6 @@ pub fn print_summary(diagnostics: &[&Diagnostic], has_errors: bool) {
             );
         }
     } else if !has_errors {
-        println!();
         print_section_header("Summary");
         println!("All checks passed!");
     }
