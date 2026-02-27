@@ -54,12 +54,12 @@ use crate::lints::base::duplicated_function_definition::duplicated_function_defi
 /// # `check_length()` isn't exported but and isn't used anywhere, so it is
 /// # reported.
 /// ```
-
-// Find a NAMESPACE directive (e.g. `S3method`, `export`) in a line and
-// return its parenthesized arguments. Handles lines where the directive is
-// preceded by an `if (...)` guard, e.g.:
-//   `if (getRversion() >= "4.4.0") S3method(sort_by, data.table)`
 fn extract_directive<'a>(line: &'a str, directive: &str) -> Option<&'a str> {
+    // Find a NAMESPACE directive (e.g. `S3method`, `export`) in a line and
+    // return its parenthesized arguments. Handles lines where the directive is
+    // preceded by an `if (...)` guard, e.g.:
+    //   `if (getRversion() >= "4.4.0") S3method(sort_by, data.table)`
+
     // Find `directive(` in the line
     let dir_with_paren = format!("{directive}(");
     let start = line.find(&dir_with_paren)?;
