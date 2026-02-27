@@ -206,6 +206,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul class="collapse">
   <li><a href="#assignment-1" id="toc-assignment-1" class="nav-link" data-scroll-target="#assignment-1"><code>assignment</code></a></li>
   <li><a href="#duplicated-arguments" id="toc-duplicated-arguments" class="nav-link" data-scroll-target="#duplicated-arguments"><code>duplicated-arguments</code></a></li>
+  <li><a href="#implicit-assignment" id="toc-implicit-assignment" class="nav-link" data-scroll-target="#implicit-assignment"><code>implicit-assignment</code></a></li>
   <li><a href="#unreachable-code" id="toc-unreachable-code" class="nav-link" data-scroll-target="#unreachable-code"><code>unreachable-code</code></a></li>
   </ul></li>
   </ul></li>
@@ -476,17 +477,29 @@ Global options:
 <span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Ignore duplicated arguments in `list()` only.</span></span>
 <span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="dt">skipped-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"list"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
+<section id="implicit-assignment" class="level4">
+<h4 class="anchored" data-anchor-id="implicit-assignment"><code>implicit-assignment</code></h4>
+<p>Use <code>skipped-functions</code> to fully replace the default list of functions that are allowed to contain implicit assignment. Use <code>extend-skipped-functions</code> to add to the default list. Specifying both is an error.</p>
+<p>Function names in <code>skipped-functions</code> or <code>extend-skipped-functions</code> also match namespaced calls, e.g.&nbsp;<code>skipped-functions = ["list2"]</code> will ignore <code>list2()</code> and <code>rlang::list2()</code>.</p>
+<p>Default: <code>skipped-functions = ["expect_error", "expect_warning", "expect_message", "expect_snapshot", "quote", "suppressMessages", "suppressWarnings"]</code></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.implicit-assignment]</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Ignore implicit assignment in `list()` only.</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="dt">skipped-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"list"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
 <section id="unreachable-code" class="level4">
 <h4 class="anchored" data-anchor-id="unreachable-code"><code>unreachable-code</code></h4>
 <p>Use <code>stopping-functions</code> to fully replace the default list of functions that are considered to stop execution (never return). Use <code>extend-stopping-functions</code> to add to the default list. Specifying both is an error.</p>
 <p>Function names in <code>stopping-functions</code> or <code>extend-stopping-functions</code> also match namespaced calls, e.g.&nbsp;<code>stopping-functions = ["abort"]</code> will consider <code>abort()</code> and <code>rlang::abort()</code> as stopping functions.</p>
 <p>Default: <code>stopping-functions = ["stop", ".Defunct", "abort", "cli_abort", "q", "quit"]</code>.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.unreachable-code]</span></span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Add a custom function to the list of stopping functions</span></span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="dt">extend-stopping-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"my_custom_stop"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.unreachable-code]</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Add a custom function to the list of stopping functions</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="dt">extend-stopping-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"my_custom_stop"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 </section>
 </section>
