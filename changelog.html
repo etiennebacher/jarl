@@ -256,13 +256,13 @@ operator = "&lt;-" # or "="</code></pre>
 <section id="features" class="level3">
 <h3 class="anchored" data-anchor-id="features">Features</h3>
 <ul>
-<li><p><code>jarl.toml</code> now accepts rule-specific options in subsections <code>[lint.&lt;rule-name&gt;]</code>, such as:</p>
+<li><p><code>jarl.toml</code> now accepts rule-specific options in subsections <code>[lint.&lt;rule_name&gt;]</code>, such as:</p>
 <pre><code>[lint]
 ...
 
 # In the rule `duplicated_arguments`, do not report calls to `my_function()`
 # and `list()` where multiple arguments have the same name.
-[lint.duplicated-arguments]
+[lint.duplicated_arguments]
 extend-skipped-functions = ["my_function", "list"]</code></pre>
 <p>These options are listed in the <a href="https://jarl.etiennebacher.com/config#with-a-config-file" target="_blank">Configuration page</a> (#333).</p></li>
 <li><p>Jarl now also analyzes piped functions, e.g.&nbsp;the following code is reported by the <code>any_is_na</code> rule:</p>
