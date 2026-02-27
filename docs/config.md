@@ -407,8 +407,9 @@ Defaults:
 ...
 
 [lint.unused_function]
-# Ignore all functions that start with "pl_" or "cs_"
-skipped-functions = ["^cs_", "^pl_"]
+# Ignore all functions that start with "pl_" or "cs_", and the function
+# "my.function"
+skipped-functions = ["^cs_", "^pl_", "my\\.function"]
 # Set a custom threshold above which diagnostics for this rule aren't reported
 # (this is basically equivalent to never hiding unused functions).
 threshold-ignore = 10000
