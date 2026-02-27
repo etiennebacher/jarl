@@ -38,7 +38,6 @@ impl ResolvedUndesirableFunctionOptions {
             DEFAULT_FUNCTIONS,
             "undesirable_function",
             "functions",
-
         )?;
 
         Ok(Self { functions })
