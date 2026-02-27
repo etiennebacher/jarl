@@ -568,7 +568,7 @@ mod tests {
 
         // Normalize temp directory paths for stable snapshots
         let dir_str = dir.to_string_lossy();
-        output.replace(&*dir_str, "[PKG]")
+        output.replace(&*dir_str, "[PKG]").replace('\\', "/")
     }
 
     /// Simulate the threshold-ignore filtering that the CLI applies:
