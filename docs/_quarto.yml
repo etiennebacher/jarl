@@ -74,6 +74,7 @@ website:
       - rules/expect_length.md
       - rules/expect_match.md
       - rules/expect_named.md
+      - rules/expect_no_match.md
       - rules/expect_not.md
       - rules/expect_null.md
       - rules/expect_s3_class.md
