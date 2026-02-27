@@ -3,7 +3,6 @@ use regex::Regex;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
-use crate::fs::has_r_extension;
 use crate::package::SharedFileData;
 
 /// ## What it does
@@ -219,7 +218,7 @@ pub fn scan_symbols(content: &str) -> HashMap<String, usize> {
 }
 
 /// Recursively collect files under `dir` that match `predicate`.
-fn collect_files(dir: &Path, predicate: fn(&Path) -> bool) -> Vec<PathBuf> {
+pub(crate) fn collect_files(dir: &Path, predicate: fn(&Path) -> bool) -> Vec<PathBuf> {
     let mut files = Vec::new();
     let mut stack = vec![dir.to_path_buf()];
     while let Some(current) = stack.pop() {
@@ -239,7 +238,7 @@ fn collect_files(dir: &Path, predicate: fn(&Path) -> bool) -> Vec<PathBuf> {
     files
 }
 
-fn has_cpp_extension(path: &Path) -> bool {
+pub(crate) fn has_cpp_extension(path: &Path) -> bool {
     matches!(
         path.extension().and_then(|e| e.to_str()),
         Some("c" | "cpp" | "h" | "hpp")
@@ -251,9 +250,13 @@ fn has_cpp_extension(path: &Path) -> bool {
 /// This is the inner logic extracted from `compute_package_unused_functions`,
 /// operating on already-scanned `SharedFileData` to avoid redundant file reads.
 /// Uses O(1) cross-file symbol lookup via pre-computed frequency maps.
+///
+/// `precomputed_namespace` maps package root paths to their NAMESPACE file
+/// contents (if readable). When provided, avoids re-reading NAMESPACE files.
 pub(crate) fn compute_unused_from_shared(
     shared_data: &[SharedFileData],
     options: &crate::rule_options::unused_function::ResolvedUnusedFunctionOptions,
+    precomputed_namespace: &HashMap<PathBuf, Option<String>>,
 ) -> HashMap<PathBuf, Vec<(String, TextRange, String)>> {
     // Group by package root
     let mut packages: HashMap<&str, Vec<&SharedFileData>> = HashMap::new();
@@ -264,27 +267,39 @@ pub(crate) fn compute_unused_from_shared(
     let mut result: HashMap<PathBuf, Vec<(String, TextRange, String)>> = HashMap::new();
 
     for (_root_key, file_data) in packages {
+        // Separate R/ files from extra (test/src/tinytest) files.
+        let r_files: Vec<&&SharedFileData> = file_data.iter().filter(|f| f.is_r_dir_file).collect();
+        let extra_files: Vec<&&SharedFileData> =
+            file_data.iter().filter(|f| !f.is_r_dir_file).collect();
+
         // Collect ALL defined function names across the package (for exportPattern matching)
-        let all_defined_names: Vec<String> = file_data
+        let all_defined_names: Vec<String> = r_files
             .iter()
             .flat_map(|f| f.assignments.iter().map(|(name, _, _, _)| name.clone()))
             .collect();
         let all_defined_name_refs: Vec<&str> =
             all_defined_names.iter().map(|s| s.as_str()).collect();
 
-        // Parse NAMESPACE
-        // The package root is the parent of the R/ directory. We can find it
-        // from any abs_path: abs_path.parent() is R/, its parent is the root.
-        let namespace_exports = if let Some(first_abs) = file_data.first().map(|f| &f.abs_path) {
+        // Parse NAMESPACE using pre-computed content.
+        // The package root is the parent of the R/ directory.
+        let namespace_exports = if let Some(first_abs) = r_files.first().map(|f| &f.abs_path) {
             let package_root = first_abs.parent().and_then(|r_dir| r_dir.parent());
             if let Some(root) = package_root {
-                let ns_path = root.join("NAMESPACE");
-                if let Ok(ns_content) = std::fs::read_to_string(&ns_path) {
-                    parse_namespace_exports(&ns_content, &all_defined_name_refs)
+                if let Some(ns_content_opt) = precomputed_namespace.get(root) {
+                    if let Some(ns_content) = ns_content_opt {
+                        parse_namespace_exports(ns_content, &all_defined_name_refs)
+                    } else {
+                        // No NAMESPACE file — skip this package
+                        continue;
+                    }
                 } else {
-                    // No NAMESPACE file — treat everything as potentially exported
-                    // (skip this package)
-                    continue;
+                    // Fallback: read NAMESPACE directly (e.g. from tests)
+                    let ns_path = root.join("NAMESPACE");
+                    if let Ok(ns_content) = std::fs::read_to_string(&ns_path) {
+                        parse_namespace_exports(&ns_content, &all_defined_name_refs)
+                    } else {
+                        continue;
+                    }
                 }
             } else {
                 continue;
@@ -296,49 +311,18 @@ pub(crate) fn compute_unused_from_shared(
         // --- O(1) cross-file symbol lookup ---
         // Pre-compute: for each symbol name, how many R/ files contain it.
         let mut symbol_file_count: HashMap<&str, usize> = HashMap::new();
-        for file in &file_data {
+        for file in &r_files {
             for name in file.symbol_counts.keys() {
                 *symbol_file_count.entry(name.as_str()).or_insert(0) += 1;
             }
         }
 
-        // Scan inst/tinytest, tests/, and src/ for symbol usage so that
-        // internal functions referenced only from test, example, or C/C++
-        // code are not flagged. Build a single HashSet for O(1) lookup.
-        let extra_symbol_set: HashSet<String> = {
-            let package_root = file_data
-                .first()
-                .and_then(|f| f.abs_path.parent())
-                .and_then(|r_dir| r_dir.parent());
-            let mut syms = HashSet::new();
-            if let Some(root) = package_root {
-                // R files in inst/tinytest and tests/
-                for dir_name in &["inst/tinytest", "tests"] {
-                    let dir = root.join(dir_name);
-                    if dir.is_dir() {
-                        for file_path in collect_files(&dir, has_r_extension) {
-                            if let Ok(content) = std::fs::read_to_string(&file_path) {
-                                for (k, _) in scan_symbols(&content) {
-                                    syms.insert(k);
-                                }
-                            }
-                        }
-                    }
-                }
-                // C/C++ files in src/
-                let src_dir = root.join("src");
-                if src_dir.is_dir() {
-                    for file_path in collect_files(&src_dir, has_cpp_extension) {
-                        if let Ok(content) = std::fs::read_to_string(&file_path) {
-                            for (k, _) in scan_symbols(&content) {
-                                syms.insert(k);
-                            }
-                        }
-                    }
-                }
-            }
-            syms
-        };
+        // Build extra_symbol_set from pre-scanned extra files (tests/,
+        // inst/tinytest/, src/) instead of doing sequential I/O.
+        let extra_symbol_set: HashSet<&str> = extra_files
+            .iter()
+            .flat_map(|f| f.symbol_counts.keys().map(|s| s.as_str()))
+            .collect();
 
         // R package hook functions that are called by the runtime, not by
         // user code. These are typically defined in `zzz.R` and should never
@@ -353,16 +337,16 @@ pub(crate) fn compute_unused_from_shared(
             ".First.lib",
         ]);
 
-        // Collect all symbols across all files in the package (used for
+        // Collect all symbols across all R/ files in the package (used for
         // S3 method heuristic below).
-        let all_symbols: HashSet<&str> = file_data
+        let all_symbols: HashSet<&str> = r_files
             .iter()
             .flat_map(|f| f.symbol_counts.keys().map(|s| s.as_str()))
             .collect();
 
         // For each defined function, check if its name appears anywhere else
         // in the package using the pre-computed frequency maps (O(1) per check).
-        for file in &file_data {
+        for file in &r_files {
             let mut unused: Vec<(String, TextRange, String)> = Vec::new();
 
             // Count how many times each name is defined in this file
