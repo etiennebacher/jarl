@@ -93,7 +93,6 @@ fn test_no_git_repo_allow_no_vcs() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 

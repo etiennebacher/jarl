@@ -92,7 +92,6 @@ select = []
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -595,7 +594,6 @@ length(levels(x))"#;
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 

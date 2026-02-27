@@ -35,7 +35,6 @@ fn test_clean_git_repo() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -151,7 +150,6 @@ fn test_dirty_git_repo_allow_dirty() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -246,7 +244,6 @@ fn test_two_clean_subdirs() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
