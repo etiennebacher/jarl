@@ -16,12 +16,11 @@ use crate::utils::should_exclude_file_based_on_settings;
 
 use air_workspace::resolve::PathResolver;
 use jarl_core::check::get_checks;
-use jarl_core::config::Config;
 use jarl_core::config::{ArgsConfig, build_config};
 use jarl_core::diagnostic::Diagnostic as JarlDiagnostic;
 use jarl_core::discovery::{DiscoveredSettings, discover_settings};
 use jarl_core::fs::{has_r_extension, relativize_path};
-use jarl_core::package::{PackageAnalysis, compute_package_analysis, is_in_r_package};
+use jarl_core::package::{compute_package_analysis, is_in_r_package};
 use jarl_core::settings::Settings;
 
 /// Fix information that can be attached to a diagnostic for code actions
@@ -114,8 +113,14 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlD
     let config = build_config(&check_config, toml_settings, vec![file_path.to_path_buf()])?;
 
     // Compute package-level analysis using the real file's sibling R files.
-    let pkg = compute_package_analysis_for_file(file_path, &config);
+    let pkg = if let Some(package_files) = collect_sibling_r_files(file_path) {
+        compute_package_analysis(&package_files, &config)
+    } else {
+        Default::default()
+    };
 
+    // Call get_checks directly with the in-memory content and the real
+    // (relativized) file path, avoiding the old tempfile round-trip.
     let rel_path = PathBuf::from(relativize_path(file_path));
     let diagnostics = get_checks(content, &rel_path, &config, &pkg)?;
 
@@ -123,30 +128,20 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlD
     Ok(diagnostics)
 }
 
-/// Compute package-level analysis for the R files that are siblings of
-/// `file_path` (i.e. all `.R` files in the same `R/` directory).
-///
-/// Returns an empty `PackageAnalysis` if the file is not inside an R package.
-fn compute_package_analysis_for_file(file_path: &Path, config: &Config) -> PackageAnalysis {
+/// If `file_path` lives inside an R package's `R/` directory, return all
+/// `.R` files in that directory. Returns `None` otherwise.
+fn collect_sibling_r_files(file_path: &Path) -> Option<Vec<PathBuf>> {
     if !is_in_r_package(file_path).unwrap_or(false) {
-        return PackageAnalysis::default();
+        return None;
     }
-
-    let Some(r_dir) = file_path.parent() else {
-        return PackageAnalysis::default();
-    };
-
-    let Ok(entries) = std::fs::read_dir(r_dir) else {
-        return PackageAnalysis::default();
-    };
-
-    let package_files: Vec<PathBuf> = entries
+    let r_dir = file_path.parent()?;
+    let entries = std::fs::read_dir(r_dir).ok()?;
+    let files = entries
         .filter_map(|e| e.ok())
         .map(|e| e.path())
         .filter(|p| has_r_extension(p))
         .collect();
-
-    compute_package_analysis(&package_files, config)
+    Some(files)
 }
 
 /// Convert a Jarl diagnostic to LSP diagnostic format with fix information
