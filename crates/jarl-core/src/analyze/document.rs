@@ -19,6 +19,8 @@ use crate::rule_set::Rule;
 pub(crate) fn check_document(
     expressions: &RExpressionList,
     checker: &mut Checker,
+    duplicate_assignments: &[(String, biome_rowan::TextRange, String)],
+    unused_internal_functions: &[(String, biome_rowan::TextRange, String)],
 ) -> anyhow::Result<()> {
     // --- Document-level analysis ---
 
@@ -101,7 +103,7 @@ pub(crate) fn check_document(
     // This must come before suppression filtering so that # jarl-ignore
     // and # jarl-ignore-file comments can suppress these diagnostics.
     if checker.is_rule_enabled(Rule::DuplicatedFunctionDefinition) {
-        for (name, range, help) in &checker.package_duplicate_assignments.clone() {
+        for (name, range, help) in duplicate_assignments {
             checker.report_diagnostic(Some(Diagnostic::new(
                 ViolationData::new(
                     "duplicated_function_definition".to_string(),
@@ -132,7 +134,7 @@ pub(crate) fn check_document(
 
     // Emit package-level unused internal function diagnostics.
     if checker.is_rule_enabled(Rule::UnusedInternalFunction) {
-        for (name, range, help) in &checker.package_unused_internal_functions.clone() {
+        for (name, range, help) in unused_internal_functions {
             checker.report_diagnostic(Some(Diagnostic::new(
                 ViolationData::new(
                     "unused_internal_function".to_string(),

@@ -8,7 +8,7 @@ use lsp_types::{Diagnostic, DiagnosticSeverity, Position, Range};
 use serde::{Deserialize, Serialize};
 use tempfile::TempDir;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::DIAGNOSTIC_SOURCE;
 use crate::document::PositionEncoding;
@@ -16,11 +16,13 @@ use crate::session::DocumentSnapshot;
 use crate::utils::should_exclude_file_based_on_settings;
 
 use air_workspace::resolve::PathResolver;
+use jarl_core::check::check_with_package_analysis;
+use jarl_core::config::{ArgsConfig, Config, build_config};
+use jarl_core::diagnostic::Diagnostic as JarlDiagnostic;
 use jarl_core::discovery::{DiscoveredSettings, discover_r_file_paths, discover_settings};
-use jarl_core::{
-    config::ArgsConfig, config::build_config, diagnostic::Diagnostic as JarlDiagnostic,
-    settings::Settings,
-};
+use jarl_core::fs::{has_r_extension, relativize_path};
+use jarl_core::package::{PackageAnalysis, compute_package_analysis, is_in_r_package};
+use jarl_core::settings::Settings;
 
 /// Fix information that can be attached to a diagnostic for code actions
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -134,19 +136,14 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlD
     };
 
     let toml_settings = resolver.items().first().map(|item| item.value());
-    let mut config = build_config(&check_config, toml_settings, paths)?;
+    let config = build_config(&check_config, toml_settings, paths)?;
 
-    // Pre-compute package-level duplicate assignments using the real file path.
+    // Pre-compute package-level analysis using the real file path.
     // The temp file lives outside the package tree, so the normal code path in
     // `check()` would find nothing.
-    if config
-        .rules_to_apply
-        .contains(&jarl_core::rule_set::Rule::DuplicatedFunctionDefinition)
-    {
-        precompute_package_duplicates(&mut config, file_path, &temp_file);
-    }
+    let pkg = precompute_package_analysis(file_path, &temp_file, &config);
 
-    let diagnostics = jarl_core::check::check(config);
+    let diagnostics = check_with_package_analysis(config, pkg);
     let mut all_diagnostics: Vec<JarlDiagnostic> = diagnostics
         .into_iter()
         .flat_map(|(_, result)| match result {
@@ -174,55 +171,66 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlD
     Ok(all_diagnostics)
 }
 
-/// Pre-compute package-level duplicate function assignments into `config`.
+/// Pre-compute package-level analysis (duplicates + unused functions).
 ///
 /// The LSP lints a temporary copy of the file that lives outside the real
-/// package tree, so `compute_package_duplicate_assignments` (which checks
+/// package tree, so the normal compute functions (which check
 /// `is_in_r_package`) would find nothing for the temp file. This function
 /// runs the analysis on the real package files and re-keys the result for
 /// the current file so it matches the temp file path that `get_checks` will
 /// look up.
-fn precompute_package_duplicates(
-    config: &mut jarl_core::config::Config,
+fn precompute_package_analysis(
     real_path: &Path,
     temp_path: &Path,
-) {
-    use jarl_core::check::{compute_package_duplicate_assignments, is_in_r_package};
-
+    config: &Config,
+) -> PackageAnalysis {
     if !is_in_r_package(real_path).unwrap_or(false) {
-        return;
+        return PackageAnalysis::default();
     }
 
     let Some(r_dir) = real_path.parent() else {
-        return;
+        return PackageAnalysis::default();
     };
 
     let Ok(entries) = std::fs::read_dir(r_dir) else {
-        return;
+        return PackageAnalysis::default();
     };
 
-    let package_files: Vec<std::path::PathBuf> = entries
+    let package_files: Vec<PathBuf> = entries
         .filter_map(|e| e.ok())
         .map(|e| e.path())
-        .filter(|p| jarl_core::fs::has_r_extension(p))
+        .filter(|p| has_r_extension(p))
         .collect();
 
-    let package_dupes = compute_package_duplicate_assignments(&package_files);
+    let mut pkg = compute_package_analysis(&package_files, config);
 
     // Re-key: the checker looks up diagnostics by the relativized temp path,
     // but the analysis was done with real paths.
-    let real_rel = std::path::PathBuf::from(jarl_core::fs::relativize_path(real_path));
-    let temp_rel = std::path::PathBuf::from(jarl_core::fs::relativize_path(temp_path));
+    let real_rel = PathBuf::from(relativize_path(real_path));
+    let temp_rel = PathBuf::from(relativize_path(temp_path));
 
-    for (key, value) in package_dupes {
+    // Re-key duplicate_assignments
+    let dupes = std::mem::take(&mut pkg.duplicate_assignments);
+    for (key, value) in dupes {
         if key == real_rel {
-            config
-                .package_duplicate_assignments
-                .insert(temp_rel.clone(), value);
+            pkg.duplicate_assignments.insert(temp_rel.clone(), value);
         } else {
-            config.package_duplicate_assignments.insert(key, value);
+            pkg.duplicate_assignments.insert(key, value);
         }
     }
+
+    // Re-key unused_internal_functions
+    let unused = std::mem::take(&mut pkg.unused_internal_functions);
+    for (key, value) in unused {
+        if key == real_rel {
+            pkg.unused_internal_functions
+                .insert(temp_rel.clone(), value);
+        } else {
+            pkg.unused_internal_functions.insert(key, value);
+        }
+    }
+
+    pkg
 }
 
 /// Convert a Jarl diagnostic to LSP diagnostic format with fix information

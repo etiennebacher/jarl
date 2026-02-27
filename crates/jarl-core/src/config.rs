@@ -7,12 +7,7 @@ use crate::{
 };
 use air_r_syntax::RSyntaxKind;
 use anyhow::Result;
-use biome_rowan::TextRange;
-use std::{
-    collections::{HashMap, HashSet},
-    fs,
-    path::PathBuf,
-};
+use std::{collections::HashSet, fs, path::PathBuf};
 
 use crate::rule_options::assignment::ResolvedAssignmentOptions;
 
@@ -85,15 +80,6 @@ pub struct Config {
     pub fixable: Option<HashSet<String>>,
     /// Resolved per-rule options
     pub rule_options: ResolvedRuleOptions,
-    /// Pre-computed per-file duplicate top-level assignment data.
-    /// Keyed by relativized file path. Value is a list of `(name, lhs_range,
-    /// help)` triples where `help` points to the first definition.
-    pub package_duplicate_assignments: HashMap<PathBuf, Vec<(String, TextRange, String)>>,
-    /// Pre-computed per-file unused internal function data.
-    /// Keyed by relativized file path. Value is a list of `(name, lhs_range,
-    /// help)` triples for functions that are defined but never called and not
-    /// exported.
-    pub package_unused_internal_functions: HashMap<PathBuf, Vec<(String, TextRange, String)>>,
 }
 
 pub fn build_config(
@@ -169,8 +155,6 @@ pub fn build_config(
         unfixable: unfixable_toml,
         fixable: fixable_toml,
         rule_options,
-        package_duplicate_assignments: HashMap::new(),
-        package_unused_internal_functions: HashMap::new(),
     })
 }
 

@@ -22,6 +22,7 @@ pub mod fix;
 pub mod fs;
 pub mod lints;
 pub mod location;
+pub mod package;
 pub mod rmd;
 pub mod rule_options;
 pub mod rule_set;
