@@ -1,3 +1,4 @@
+use crate::check::Checker;
 use crate::diagnostic::*;
 use crate::utils::get_function_name;
 use crate::utils_ast::AstNodeExt;
@@ -41,7 +42,10 @@ use biome_rowan::AstNode;
 /// See:
 ///
 /// - [https://style.tidyverse.org/syntax.html#assignment](https://style.tidyverse.org/syntax.html#assignment)
-pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
+pub fn implicit_assignment(
+    ast: &RBinaryExpression,
+    checker: &Checker,
+) -> anyhow::Result<Option<Diagnostic>> {
     let operator = ast.operator()?;
     if operator.kind() != RSyntaxKind::ASSIGN
         && operator.kind() != RSyntaxKind::SUPER_ASSIGN
@@ -84,17 +88,8 @@ pub fn implicit_assignment(ast: &RBinaryExpression) -> anyhow::Result<Option<Dia
                 let call = RCall::cast(ancestor).unwrap();
                 let function = call.function()?;
                 let function_name = get_function_name(function);
-                if [
-                    "expect_error",
-                    "expect_warning",
-                    "expect_message",
-                    "expect_snapshot",
-                    "quote",
-                    "suppressMessages",
-                    "suppressWarnings",
-                ]
-                .contains(&function_name.to_string().as_str())
-                {
+                let skipped = &checker.rule_options.implicit_assignment.skipped_functions;
+                if skipped.contains(&function_name) {
                     return Ok(None);
                 } else {
                     break;
