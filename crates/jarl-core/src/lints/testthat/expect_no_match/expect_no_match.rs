@@ -1,7 +1,7 @@
 use crate::diagnostic::*;
 use crate::utils::{
     get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
-    get_nested_functions_content, node_contains_comments,
+    get_nested_functions_content, get_unnamed_args, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
@@ -112,19 +112,15 @@ pub fn expect_no_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     }
 
     // Collect remaining args (neither `x` nor `pattern`) to pass to expect_no_match.
-    // If any extra grepl args are positional, lint but skip fix to avoid changing
-    // semantics when converting to expect_no_match(..., ..., ..., perl =, fixed =).
+    // If any extra grepl args are positional, lint but skip fix as order differs from
+    // expect_no_match
     let pattern_range = pattern_arg.syntax().text_trimmed_range();
     let x_range = x_arg.syntax().text_trimmed_range();
 
-    let has_unnamed_optional_grepl_arg = grepl_args
-        .iter()
-        .flatten()
-        .filter(|arg| {
-            let range = arg.syntax().text_trimmed_range();
-            range != pattern_range && range != x_range
-        })
-        .any(|arg| arg.name_clause().is_none());
+    let has_unnamed_optional_grepl_arg = get_unnamed_args(&grepl_args).into_iter().any(|arg| {
+        let range = arg.syntax().text_trimmed_range();
+        range != pattern_range && range != x_range
+    });
 
     if has_unnamed_optional_grepl_arg {
         return Ok(Some(Diagnostic::new(ExpectNoMatch, range, Fix::empty())));
