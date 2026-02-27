@@ -20,7 +20,7 @@ pub(crate) fn check_document(
     expressions: &RExpressionList,
     checker: &mut Checker,
     duplicate_assignments: &[(String, biome_rowan::TextRange, String)],
-    unused_internal_functions: &[(String, biome_rowan::TextRange, String)],
+    unused_functions: &[(String, biome_rowan::TextRange, String)],
 ) -> anyhow::Result<()> {
     // --- Document-level analysis ---
 
@@ -133,11 +133,11 @@ pub(crate) fn check_document(
     }
 
     // Emit package-level unused internal function diagnostics.
-    if checker.is_rule_enabled(Rule::UnusedInternalFunction) {
-        for (name, range, help) in unused_internal_functions {
+    if checker.is_rule_enabled(Rule::UnusedFunction) {
+        for (name, range, help) in unused_functions {
             checker.report_diagnostic(Some(Diagnostic::new(
                 ViolationData::new(
-                    "unused_internal_function".to_string(),
+                    "unused_function".to_string(),
                     format!("`{name}` is defined but never called in this package."),
                     Some(help.clone()),
                 ),

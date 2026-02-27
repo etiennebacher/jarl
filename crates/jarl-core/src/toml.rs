@@ -224,9 +224,9 @@ pub struct LinterTomlOptions {
     /// Specifying both is an error.
     pub unreachable_code: Option<UnreachableCodeOptions>,
 
-    /// # Options for the `unused_internal_function` rule
+    /// # Options for the `unused_function` rule
     ///
-    /// Use `threshold-ignore` to control how many `unused_internal_function`
+    /// Use `threshold-ignore` to control how many `unused_function`
     /// violations are allowed before they are all hidden (likely false
     /// positives).
     pub unused_function: Option<UnusedFunctionOptions>,

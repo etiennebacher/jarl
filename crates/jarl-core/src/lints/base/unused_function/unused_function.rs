@@ -255,7 +255,7 @@ fn has_cpp_extension(path: &Path) -> bool {
 /// 1. Defined as top-level assignments in `R/`
 /// 2. Not exported in `NAMESPACE`
 /// 3. Never appear as an identifier in any file in `R/`, `inst/tinytest/`, `tests/`, or `src/`
-pub fn compute_package_unused_internal_functions(
+pub fn compute_package_unused_functions(
     paths: &[PathBuf],
 ) -> HashMap<PathBuf, Vec<(String, TextRange, String)>> {
     // Step 1: collect data from each file in parallel

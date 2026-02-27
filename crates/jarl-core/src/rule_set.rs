@@ -640,8 +640,8 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
-    UnusedInternalFunction => {
-        name: "unused_internal_function",
+    UnusedFunction => {
+        name: "unused_function",
         categories: [Corr],
         default: Disabled,
         fix: None,

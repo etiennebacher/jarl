@@ -1,8 +1,8 @@
-pub(crate) mod unused_internal_function;
+pub(crate) mod unused_function;
 
 #[cfg(test)]
 mod tests {
-    use super::unused_internal_function::*;
+    use super::unused_function::*;
     use std::fs;
     use tempfile::TempDir;
 
@@ -146,7 +146,7 @@ mod tests {
         assert!(!syms.contains_key("123"));
     }
 
-    // ── compute_package_unused_internal_functions ────────────────────────
+    // ── compute_package_unused_functions ────────────────────────
 
     #[test]
     fn test_unused_function_flagged() {
@@ -162,7 +162,7 @@ mod tests {
         let file_b = r_dir.join("unused.R");
         fs::write(&file_b, "unused_helper <- function() 2\n").unwrap();
 
-        let result = compute_package_unused_internal_functions(&[file_a.clone(), file_b.clone()]);
+        let result = compute_package_unused_functions(&[file_a.clone(), file_b.clone()]);
 
         // unused_helper is not exported and never called → flagged
         let has_unused = result
@@ -191,7 +191,7 @@ mod tests {
         let file_b = r_dir.join("helper.R");
         fs::write(&file_b, "helper <- function() 1\n").unwrap();
 
-        let result = compute_package_unused_internal_functions(&[file_a.clone(), file_b.clone()]);
+        let result = compute_package_unused_functions(&[file_a.clone(), file_b.clone()]);
 
         assert!(
             result.is_empty(),
@@ -214,7 +214,7 @@ mod tests {
         let file_b = r_dir.join("methods.R");
         fs::write(&file_b, "print.myclass <- function(x, ...) cat(x)\n").unwrap();
 
-        let result = compute_package_unused_internal_functions(&[file_a.clone(), file_b.clone()]);
+        let result = compute_package_unused_functions(&[file_a.clone(), file_b.clone()]);
 
         assert!(
             result.is_empty(),
@@ -237,7 +237,7 @@ mod tests {
         let file_b = r_dir.join("methods.R");
         fs::write(&file_b, "sort_by.data.table <- function(x, ...) x\n").unwrap();
 
-        let result = compute_package_unused_internal_functions(&[file_a.clone(), file_b.clone()]);
+        let result = compute_package_unused_functions(&[file_a.clone(), file_b.clone()]);
 
         assert!(
             result.is_empty(),
@@ -261,7 +261,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = compute_package_unused_internal_functions(std::slice::from_ref(&file));
+        let result = compute_package_unused_functions(std::slice::from_ref(&file));
 
         assert!(
             result.is_empty(),
@@ -280,7 +280,7 @@ mod tests {
         let file = r_dir.join("foo.R");
         fs::write(&file, "foo <- function() 1\n").unwrap();
 
-        let result = compute_package_unused_internal_functions(std::slice::from_ref(&file));
+        let result = compute_package_unused_functions(std::slice::from_ref(&file));
 
         assert!(
             result.is_empty(),
@@ -303,7 +303,7 @@ mod tests {
         let file = r_dir.join("foo.R");
         fs::write(&file, "foo <- function() 1\n").unwrap();
 
-        let result = compute_package_unused_internal_functions(std::slice::from_ref(&file));
+        let result = compute_package_unused_functions(std::slice::from_ref(&file));
 
         assert!(
             result.is_empty(),
@@ -331,7 +331,7 @@ mod tests {
         let test_file = tests_dir.join("test-internal.R");
         fs::write(&test_file, "test_that('works', { internal_helper() })\n").unwrap();
 
-        let result = compute_package_unused_internal_functions(&[file_a.clone(), file_b.clone()]);
+        let result = compute_package_unused_functions(&[file_a.clone(), file_b.clone()]);
 
         let has_internal = result
             .values()
@@ -362,7 +362,7 @@ mod tests {
         let inst_file = inst_dir.join("test_inst.R");
         fs::write(&inst_file, "expect_equal(inst_helper(), 2)\n").unwrap();
 
-        let result = compute_package_unused_internal_functions(&[file_a.clone(), file_b.clone()]);
+        let result = compute_package_unused_functions(&[file_a.clone(), file_b.clone()]);
 
         let has_inst = result
             .values()
@@ -393,7 +393,7 @@ mod tests {
         let inst_file = inst_dir.join("test_inst.R");
         fs::write(&inst_file, "expect_equal(inst_helper(), 2)\n").unwrap();
 
-        let result = compute_package_unused_internal_functions(&[file_a.clone(), file_b.clone()]);
+        let result = compute_package_unused_functions(&[file_a.clone(), file_b.clone()]);
 
         let has_inst = result
             .values()
@@ -428,7 +428,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = compute_package_unused_internal_functions(&[file_a.clone(), file_b.clone()]);
+        let result = compute_package_unused_functions(&[file_a.clone(), file_b.clone()]);
 
         let has_signal = result
             .values()
@@ -449,7 +449,7 @@ mod tests {
         let file = r_dir.join("foo.R");
         fs::write(&file, "foo <- function() 1\n").unwrap();
 
-        let result = compute_package_unused_internal_functions(std::slice::from_ref(&file));
+        let result = compute_package_unused_functions(std::slice::from_ref(&file));
 
         assert!(
             result.is_empty(),
@@ -526,7 +526,7 @@ mod tests {
             fix: false,
             unsafe_fixes: false,
             fix_only: false,
-            select: "unused_internal_function".to_string(),
+            select: "unused_function".to_string(),
             extend_select: String::new(),
             ignore: String::new(),
             min_r_version: None,
@@ -572,13 +572,13 @@ mod tests {
     }
 
     /// Simulate the threshold-ignore filtering that the CLI applies:
-    /// if the number of `unused_internal_function` diagnostics exceeds
+    /// if the number of `unused_function` diagnostics exceeds
     /// `threshold`, return a note; otherwise return the diagnostics.
     fn apply_threshold(diagnostics_output: &str, count: usize, threshold: usize) -> String {
         if count > threshold {
             format!(
                 "All checks passed!\n\
-                 Warning: {count} `unused_internal_function` diagnostics hidden \
+                 Warning: {count} `unused_function` diagnostics hidden \
                  (likely false positives).\n\
                  To show them:\n  \
                  - set 'threshold-ignore' in `[lint.unused-function]` in jarl.toml,\n  \
@@ -600,7 +600,7 @@ mod tests {
             apply_threshold(&diagnostics_output, count, threshold),
             @r"
         All checks passed!
-        Warning: 5 `unused_internal_function` diagnostics hidden (likely false positives).
+        Warning: 5 `unused_function` diagnostics hidden (likely false positives).
         To show them:
           - set 'threshold-ignore' in `[lint.unused-function]` in jarl.toml,
           - or explicitly include 'unused_function' in the set of rules.
@@ -618,14 +618,14 @@ mod tests {
         assert_snapshot!(
             apply_threshold(&diagnostics_output, count, threshold),
             @r"
-        warning: unused_internal_function
+        warning: unused_function
          --> [PKG]/R/unused_1.R:1:1
           |
         1 | unused_fn_1 <- function() 1
           | ----------- `unused_fn_1` is defined but never called in this package.
           |
           = help: Defined at [PKG]/R/unused_1.R:1:1 but never called
-        warning: unused_internal_function
+        warning: unused_function
          --> [PKG]/R/unused_2.R:1:1
           |
         1 | unused_fn_2 <- function() 2

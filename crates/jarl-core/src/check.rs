@@ -155,11 +155,7 @@ pub fn get_checks(
         .get(file)
         .cloned()
         .unwrap_or_default();
-    let unused_internal_functions = pkg
-        .unused_internal_functions
-        .get(file)
-        .cloned()
-        .unwrap_or_default();
+    let unused_functions = pkg.unused_functions.get(file).cloned().unwrap_or_default();
 
     // We run checks at expression-level. This gathers all violations, no matter
     // whether they are suppressed or not. They are filtered out in the next
@@ -177,7 +173,7 @@ pub fn get_checks(
         expressions,
         &mut checker,
         &duplicate_assignments,
-        &unused_internal_functions,
+        &unused_functions,
     )?;
 
     // Some rules have a fix available in their implementation but do not have

@@ -134,7 +134,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         return add_jarl_ignore_comments(&all_diagnostics, reason, parent_config_path);
     }
 
-    // Hide `unused_internal_function` diagnostics when they exceed the threshold
+    // Hide `unused_function` diagnostics when they exceed the threshold
     // (likely false positives). Use the minimum threshold across all configs.
     let threshold_ignore = resolver
         .items()
@@ -152,13 +152,13 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     let unused_fn_count = all_diagnostics
         .iter()
         .flat_map(|(_path, diagnostics)| diagnostics.iter())
-        .filter(|d| d.message.name == "unused_internal_function")
+        .filter(|d| d.message.name == "unused_function")
         .count();
 
     let unused_fn_hidden = unused_fn_count > threshold_ignore;
     if unused_fn_hidden {
         for (_path, diagnostics) in &mut all_diagnostics {
-            diagnostics.retain(|d| d.message.name != "unused_internal_function");
+            diagnostics.retain(|d| d.message.name != "unused_function");
         }
         all_diagnostics.retain(|(_path, diagnostics)| !diagnostics.is_empty());
     }
@@ -215,7 +215,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
 
         if unused_fn_hidden {
             warnings.push(format!(
-                "{} `unused_internal_function` diagnostics hidden (likely false positives).\n\
+                "{} `unused_function` diagnostics hidden (likely false positives).\n\
                  To show them:\n  \
                  - set 'threshold-ignore' in `[lint.unused-function]` in jarl.toml,\n  \
                  - or explicitly include 'unused_function' in the set of rules.",

@@ -2,7 +2,7 @@ const DEFAULT_THRESHOLD_IGNORE: usize = 50;
 
 /// TOML options for `[lint.unused-function]`.
 ///
-/// Use `threshold-ignore` to control when `unused_internal_function`
+/// Use `threshold-ignore` to control when `unused_function`
 /// diagnostics are hidden. When the number of violations exceeds this
 /// threshold, they are suppressed with an informative note (likely false
 /// positives).
@@ -13,7 +13,7 @@ pub struct UnusedFunctionOptions {
     pub threshold_ignore: Option<usize>,
 }
 
-/// Resolved options for the `unused_internal_function` rule.
+/// Resolved options for the `unused_function` rule.
 #[derive(Clone, Debug)]
 pub struct ResolvedUnusedFunctionOptions {
     pub threshold_ignore: usize,
