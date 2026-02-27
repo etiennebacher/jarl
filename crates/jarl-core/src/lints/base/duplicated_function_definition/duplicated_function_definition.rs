@@ -1,7 +1,8 @@
 use biome_rowan::{TextRange, TextSize};
-use rayon::prelude::*;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+
+use crate::package::SharedFileData;
 
 /// ## What it does
 ///
@@ -118,83 +119,49 @@ pub fn scan_top_level_assignments(content: &str) -> Vec<(String, TextRange, u32,
     results
 }
 
-/// Group R-package files by package root, detect names assigned more than once
-/// (across files or within a file), and return a per-file map of
-/// `(name, lhs_range, help)` triples that should be flagged.
+/// Compute duplicate assignments from pre-scanned shared file data.
 ///
-/// `help` is a human-readable string indicating where the first definition
-/// was found, e.g. `"other definition at R/aaa.R:1:1"`.
-///
-/// Files within each package are processed in alphabetical order by their
-/// relativized path. The **first** occurrence of each name is never flagged;
-/// all subsequent occurrences are flagged.
-// (root_key, rel_path, assignments) per package file
-type FileEntry = (String, PathBuf, Vec<(String, TextRange, u32, u32)>);
-// per-package sorted list: (rel_path, assignments)
-type PackageFiles = Vec<(PathBuf, Vec<(String, TextRange, u32, u32)>)>;
-
-pub fn compute_package_duplicate_assignments(
-    paths: &[PathBuf],
+/// This is the inner logic extracted from `compute_package_duplicate_assignments`,
+/// operating on already-scanned `SharedFileData` to avoid redundant file reads.
+pub(crate) fn compute_duplicates_from_shared(
+    shared_data: &[SharedFileData],
 ) -> HashMap<PathBuf, Vec<(String, TextRange, String)>> {
-    // For each R-package file, resolve its package root and collect top-level
-    // function assignments.
-    let file_data: Vec<FileEntry> = paths
-        .par_iter()
-        .filter(|p| crate::fs::has_r_extension(p))
-        .filter(|p| is_in_r_package(p).unwrap_or(false))
-        .filter_map(|path| {
-            let root = path.parent()?;
-            let rel_path = PathBuf::from(crate::fs::relativize_path(path));
-            let root_key = crate::fs::relativize_path(root);
-            // Use the fast text scan — the full parser runs later in the main
-            // lint pass so each file is only parsed once.
-            let content = std::fs::read_to_string(path).ok()?;
-            let assignments = scan_top_level_assignments(&content);
-            Some((root_key, rel_path, assignments))
-        })
-        .collect();
-
-    // Group by package root, sort filesalphabetically, and detect duplicate names.
-    let mut packages: HashMap<String, PackageFiles> = HashMap::new();
-    for (root_key, rel_path, assignments) in file_data {
-        packages
-            .entry(root_key)
-            .or_default()
-            .push((rel_path, assignments));
+    // Group by package root
+    let mut packages: HashMap<&str, Vec<&SharedFileData>> = HashMap::new();
+    for fd in shared_data {
+        packages.entry(&fd.root_key).or_default().push(fd);
     }
 
     let mut result: HashMap<PathBuf, Vec<(String, TextRange, String)>> = HashMap::new();
 
     for (_root_key, mut file_data) in packages {
         // Sort alphabetically by the relativized path for deterministic ordering
-        file_data.sort_by(|a, b| a.0.cmp(&b.0));
+        file_data.sort_by(|a, b| a.rel_path.cmp(&b.rel_path));
 
         // Track the first occurrence of each name: (file, line, col)
-        let mut seen: HashMap<String, (PathBuf, u32, u32)> = HashMap::new();
+        let mut seen: HashMap<&str, (&PathBuf, u32, u32)> = HashMap::new();
 
-        for (rel_path, assignments) in file_data {
+        for fd in &file_data {
             let mut file_duplicates: Vec<(String, TextRange, String)> = Vec::new();
 
-            for (name, range, line, col) in assignments {
-                match seen.entry(name.clone()) {
+            for (name, range, line, col) in &fd.assignments {
+                match seen.entry(name.as_str()) {
                     std::collections::hash_map::Entry::Occupied(e) => {
-                        // This is a duplicate: flag it with a pointer to the first definition
                         let (first_file, first_line, first_col) = e.get();
                         let help = format!(
                             "Other definition at {}:{first_line}:{first_col}",
                             first_file.display()
                         );
-                        file_duplicates.push((name, range, help));
+                        file_duplicates.push((name.clone(), *range, help));
                     }
                     std::collections::hash_map::Entry::Vacant(e) => {
-                        // First occurrence: record its location, do not flag
-                        e.insert((rel_path.clone(), line, col));
+                        e.insert((&fd.rel_path, *line, *col));
                     }
                 }
             }
 
             if !file_duplicates.is_empty() {
-                result.insert(rel_path, file_duplicates);
+                result.insert(fd.rel_path.clone(), file_duplicates);
             }
         }
     }

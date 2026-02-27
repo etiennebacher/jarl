@@ -1,13 +1,10 @@
 use biome_rowan::TextRange;
-use rayon::prelude::*;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use crate::fs::has_r_extension;
-use crate::lints::base::duplicated_function_definition::duplicated_function_definition::{
-    is_in_r_package, scan_top_level_assignments,
-};
+use crate::package::SharedFileData;
 
 /// ## What it does
 ///
@@ -181,7 +178,7 @@ pub fn parse_namespace_exports(content: &str, all_names: &[&str]) -> HashSet<Str
 /// `name(` call patterns, we also cover indirect references like
 /// `do.call("name", ...)`, `lapply(xs, name)`, `match.fun(name)`, etc.
 pub fn scan_symbols(content: &str) -> HashMap<String, usize> {
-    let mut symbols: HashMap<String, usize> = HashMap::new();
+    let mut symbols: HashMap<&str, usize> = HashMap::new();
 
     for line in content.lines() {
         let trimmed = line.trim_start();
@@ -208,7 +205,7 @@ pub fn scan_symbols(content: &str) -> HashMap<String, usize> {
                     i += 1;
                 }
                 let name = &line[start..i];
-                *symbols.entry(name.to_string()).or_insert(0) += 1;
+                *symbols.entry(name).or_insert(0) += 1;
             } else {
                 i += 1;
             }
@@ -216,23 +213,9 @@ pub fn scan_symbols(content: &str) -> HashMap<String, usize> {
     }
 
     symbols
-}
-
-/// Per-file data within a package, after grouping by package root.
-struct PackageFileEntry {
-    rel_path: PathBuf,
-    abs_path: PathBuf,
-    definitions: Vec<(String, TextRange, u32, u32)>,
-    symbol_counts: HashMap<String, usize>,
-}
-
-/// Raw per-file data before grouping, includes the package root key.
-struct FileData {
-    package_root_key: String,
-    rel_path: PathBuf,
-    abs_path: PathBuf,
-    definitions: Vec<(String, TextRange, u32, u32)>,
-    symbol_counts: HashMap<String, usize>,
+        .into_iter()
+        .map(|(k, v)| (k.to_string(), v))
+        .collect()
 }
 
 /// Recursively collect files under `dir` that match `predicate`.
@@ -263,51 +246,19 @@ fn has_cpp_extension(path: &Path) -> bool {
     )
 }
 
-/// Pre-compute unused internal functions across an R package.
+/// Compute unused functions from pre-scanned shared file data.
 ///
-/// Returns a map from relativized file path to a list of
-/// `(name, lhs_range, help)` triples for functions that are:
-/// 1. Defined as top-level assignments in `R/`
-/// 2. Not exported in `NAMESPACE`
-/// 3. Never appear as an identifier in any file in `R/`, `inst/tinytest/`, `tests/`, or `src/`
-pub fn compute_package_unused_functions(
-    paths: &[PathBuf],
+/// This is the inner logic extracted from `compute_package_unused_functions`,
+/// operating on already-scanned `SharedFileData` to avoid redundant file reads.
+/// Uses O(1) cross-file symbol lookup via pre-computed frequency maps.
+pub(crate) fn compute_unused_from_shared(
+    shared_data: &[SharedFileData],
     options: &crate::rule_options::unused_function::ResolvedUnusedFunctionOptions,
 ) -> HashMap<PathBuf, Vec<(String, TextRange, String)>> {
-    // Step 1: collect data from each file in parallel
-    let file_data: Vec<FileData> = paths
-        .par_iter()
-        .filter(|p| has_r_extension(p))
-        .filter(|p| is_in_r_package(p).unwrap_or(false))
-        .filter_map(|path| {
-            let root = path.parent()?;
-            let rel_path = PathBuf::from(crate::fs::relativize_path(path));
-            let root_key = crate::fs::relativize_path(root);
-            let content = std::fs::read_to_string(path).ok()?;
-            let definitions = scan_top_level_assignments(&content);
-            let symbol_counts = scan_symbols(&content);
-            Some(FileData {
-                package_root_key: root_key,
-                rel_path,
-                abs_path: path.clone(),
-                definitions,
-                symbol_counts,
-            })
-        })
-        .collect();
-
-    // Step 2: group by package root
-    let mut packages: HashMap<String, Vec<PackageFileEntry>> = HashMap::new();
-    for fd in file_data {
-        packages
-            .entry(fd.package_root_key)
-            .or_default()
-            .push(PackageFileEntry {
-                rel_path: fd.rel_path,
-                abs_path: fd.abs_path,
-                definitions: fd.definitions,
-                symbol_counts: fd.symbol_counts,
-            });
+    // Group by package root
+    let mut packages: HashMap<&str, Vec<&SharedFileData>> = HashMap::new();
+    for fd in shared_data {
+        packages.entry(&fd.root_key).or_default().push(fd);
     }
 
     let mut result: HashMap<PathBuf, Vec<(String, TextRange, String)>> = HashMap::new();
@@ -316,12 +267,12 @@ pub fn compute_package_unused_functions(
         // Collect ALL defined function names across the package (for exportPattern matching)
         let all_defined_names: Vec<String> = file_data
             .iter()
-            .flat_map(|f| f.definitions.iter().map(|(name, _, _, _)| name.clone()))
+            .flat_map(|f| f.assignments.iter().map(|(name, _, _, _)| name.clone()))
             .collect();
         let all_defined_name_refs: Vec<&str> =
             all_defined_names.iter().map(|s| s.as_str()).collect();
 
-        // Step 3: parse NAMESPACE
+        // Parse NAMESPACE
         // The package root is the parent of the R/ directory. We can find it
         // from any abs_path: abs_path.parent() is R/, its parent is the root.
         let namespace_exports = if let Some(first_abs) = file_data.first().map(|f| &f.abs_path) {
@@ -342,15 +293,24 @@ pub fn compute_package_unused_functions(
             continue;
         };
 
+        // --- O(1) cross-file symbol lookup ---
+        // Pre-compute: for each symbol name, how many R/ files contain it.
+        let mut symbol_file_count: HashMap<&str, usize> = HashMap::new();
+        for file in &file_data {
+            for name in file.symbol_counts.keys() {
+                *symbol_file_count.entry(name.as_str()).or_insert(0) += 1;
+            }
+        }
+
         // Scan inst/tinytest, tests/, and src/ for symbol usage so that
         // internal functions referenced only from test, example, or C/C++
-        // code are not flagged.
-        let extra_symbols: Vec<HashMap<String, usize>> = {
+        // code are not flagged. Build a single HashSet for O(1) lookup.
+        let extra_symbol_set: HashSet<String> = {
             let package_root = file_data
                 .first()
                 .and_then(|f| f.abs_path.parent())
                 .and_then(|r_dir| r_dir.parent());
-            let mut syms = Vec::new();
+            let mut syms = HashSet::new();
             if let Some(root) = package_root {
                 // R files in inst/tinytest and tests/
                 for dir_name in &["inst/tinytest", "tests"] {
@@ -358,7 +318,9 @@ pub fn compute_package_unused_functions(
                     if dir.is_dir() {
                         for file_path in collect_files(&dir, has_r_extension) {
                             if let Ok(content) = std::fs::read_to_string(&file_path) {
-                                syms.push(scan_symbols(&content));
+                                for (k, _) in scan_symbols(&content) {
+                                    syms.insert(k);
+                                }
                             }
                         }
                     }
@@ -368,7 +330,9 @@ pub fn compute_package_unused_functions(
                 if src_dir.is_dir() {
                     for file_path in collect_files(&src_dir, has_cpp_extension) {
                         if let Ok(content) = std::fs::read_to_string(&file_path) {
-                            syms.push(scan_symbols(&content));
+                            for (k, _) in scan_symbols(&content) {
+                                syms.insert(k);
+                            }
                         }
                     }
                 }
@@ -396,21 +360,18 @@ pub fn compute_package_unused_functions(
             .flat_map(|f| f.symbol_counts.keys().map(|s| s.as_str()))
             .collect();
 
-        // Step 4: for each defined function, check if its name appears
-        // anywhere else in the package. A name counts as "used" if:
-        //   - it appears in any OTHER file as a symbol, OR
-        //   - it appears MORE times than it is defined in the SAME file
-        //     (i.e. the name is also referenced, not just assigned).
-        for (i, file) in file_data.iter().enumerate() {
+        // For each defined function, check if its name appears anywhere else
+        // in the package using the pre-computed frequency maps (O(1) per check).
+        for file in &file_data {
             let mut unused: Vec<(String, TextRange, String)> = Vec::new();
 
             // Count how many times each name is defined in this file
-            let mut def_counts: HashMap<String, usize> = HashMap::new();
-            for (name, _, _, _) in &file.definitions {
-                *def_counts.entry(name.clone()).or_insert(0) += 1;
+            let mut def_counts: HashMap<&str, usize> = HashMap::new();
+            for (name, _, _, _) in &file.assignments {
+                *def_counts.entry(name.as_str()).or_insert(0) += 1;
             }
 
-            for (name, range, line, col) in &file.definitions {
+            for (name, range, line, col) in &file.assignments {
                 // Skip exported functions
                 if namespace_exports.contains(name) {
                     continue;
@@ -443,19 +404,21 @@ pub fn compute_package_unused_functions(
                     }
                 }
 
-                // Used in another R/ file, in inst/tinytest, tests/, or src/?
-                let used_in_other_file = file_data
-                    .iter()
-                    .enumerate()
-                    .any(|(j, f)| j != i && f.symbol_counts.contains_key(name))
-                    || extra_symbols.iter().any(|syms| syms.contains_key(name));
+                // O(1) cross-file lookup: check symbol_file_count to see if
+                // the name appears in other R/ files, and extra_symbol_set for
+                // test/src files.
+                let file_count = symbol_file_count.get(name.as_str()).copied().unwrap_or(0);
+                let in_extra = extra_symbol_set.contains(name.as_str());
+                let in_other_r_file =
+                    file_count > 1 || (file_count == 1 && !file.symbol_counts.contains_key(name));
+                let used_in_other_file = in_other_r_file || in_extra;
 
                 // Used in the same file beyond its own definition(s)?
                 // Each definition contributes exactly one occurrence of the
                 // name to the symbol count (the LHS). If the total count
                 // exceeds the number of definitions, the name is also
                 // referenced elsewhere in the file.
-                let n_defs = def_counts.get(name).copied().unwrap_or(0);
+                let n_defs = def_counts.get(name.as_str()).copied().unwrap_or(0);
                 let n_occurrences = file.symbol_counts.get(name).copied().unwrap_or(0);
                 let used_in_same_file = n_occurrences > n_defs;
 
