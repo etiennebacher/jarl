@@ -6,7 +6,6 @@
 use anyhow::{Result, anyhow};
 use lsp_types::{Diagnostic, DiagnosticSeverity, Position, Range};
 use serde::{Deserialize, Serialize};
-use tempfile::TempDir;
 
 use std::path::{Path, PathBuf};
 
@@ -16,10 +15,11 @@ use crate::session::DocumentSnapshot;
 use crate::utils::should_exclude_file_based_on_settings;
 
 use air_workspace::resolve::PathResolver;
-use jarl_core::check::check_with_package_analysis;
-use jarl_core::config::{ArgsConfig, Config, build_config};
+use jarl_core::check::get_checks;
+use jarl_core::config::Config;
+use jarl_core::config::{ArgsConfig, build_config};
 use jarl_core::diagnostic::Diagnostic as JarlDiagnostic;
-use jarl_core::discovery::{DiscoveredSettings, discover_r_file_paths, discover_settings};
+use jarl_core::discovery::{DiscoveredSettings, discover_settings};
 use jarl_core::fs::{has_r_extension, relativize_path};
 use jarl_core::package::{PackageAnalysis, compute_package_analysis, is_in_r_package};
 use jarl_core::settings::Settings;
@@ -96,33 +96,8 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlD
         return Ok(Vec::new());
     }
 
-    // TODO: we shoudln't have to write the content to a tempfile to then read
-    // it and get diagnostic. The check function should be able to take the R
-    // code as a string.
-    // Write in-memory content to a temporary file for linting.
-    // Preserve the original extension so Rmd/Qmd files go through the correct
-    // code path (get_checks_rmd) rather than the plain-R path.
-    let ext = file_path
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("R");
-    let temp_dir = TempDir::new()?;
-    let temp_dir = temp_dir.path();
-    let temp_file = temp_dir.join(format!("jarl_lsp_{}.{}", std::process::id(), ext));
-
-    std::fs::write(&temp_file, content)
-        .map_err(|e| anyhow!("Failed to write temporary file: {}", e))?;
-    let temp_path_str = temp_file.to_string_lossy().to_string();
-    let temp_path: Vec<String> = vec![temp_path_str];
-
-    // Use temp path for discovering R file paths (just the temp file itself)
-    let paths = discover_r_file_paths(&temp_path, &resolver, true, true)
-        .into_iter()
-        .filter_map(Result::ok)
-        .collect::<Vec<_>>();
-
     let check_config = ArgsConfig {
-        files: temp_path.iter().map(|s| s.into()).collect(),
+        files: vec![file_path.to_path_buf()],
         fix: false,
         unsafe_fixes: false,
         fix_only: false,
@@ -136,59 +111,28 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlD
     };
 
     let toml_settings = resolver.items().first().map(|item| item.value());
-    let config = build_config(&check_config, toml_settings, paths)?;
+    let config = build_config(&check_config, toml_settings, vec![file_path.to_path_buf()])?;
 
-    // Pre-compute package-level analysis using the real file path.
-    // The temp file lives outside the package tree, so the normal code path in
-    // `check()` would find nothing.
-    let pkg = precompute_package_analysis(file_path, &temp_file, &config);
+    // Compute package-level analysis using the real file's sibling R files.
+    let pkg = compute_package_analysis_for_file(file_path, &config);
 
-    let diagnostics = check_with_package_analysis(config, pkg);
-    let mut all_diagnostics: Vec<JarlDiagnostic> = diagnostics
-        .into_iter()
-        .flat_map(|(_, result)| match result {
-            Ok(diags) => {
-                tracing::debug!("Found {} diagnostics for file", diags.len());
-                diags
-            }
-            Err(e) => {
-                tracing::error!("Error checking file: {}", e);
-                Vec::new()
-            }
-        })
-        .collect();
+    let rel_path = PathBuf::from(relativize_path(file_path));
+    let diagnostics = get_checks(content, &rel_path, &config, &pkg)?;
 
-    // Clean up temporary file
-    if let Err(e) = std::fs::remove_file(&temp_file) {
-        tracing::warn!("Failed to remove temporary file {:?}: {}", temp_file, e);
-    }
-
-    // Update diagnostics to point to the original file instead of temp file
-    for diagnostic in &mut all_diagnostics {
-        diagnostic.filename = file_path.to_path_buf();
-    }
-
-    Ok(all_diagnostics)
+    tracing::debug!("Found {} diagnostics for file", diagnostics.len());
+    Ok(diagnostics)
 }
 
-/// Pre-compute package-level analysis (duplicates + unused functions).
+/// Compute package-level analysis for the R files that are siblings of
+/// `file_path` (i.e. all `.R` files in the same `R/` directory).
 ///
-/// The LSP lints a temporary copy of the file that lives outside the real
-/// package tree, so the normal compute functions (which check
-/// `is_in_r_package`) would find nothing for the temp file. This function
-/// runs the analysis on the real package files and re-keys the result for
-/// the current file so it matches the temp file path that `get_checks` will
-/// look up.
-fn precompute_package_analysis(
-    real_path: &Path,
-    temp_path: &Path,
-    config: &Config,
-) -> PackageAnalysis {
-    if !is_in_r_package(real_path).unwrap_or(false) {
+/// Returns an empty `PackageAnalysis` if the file is not inside an R package.
+fn compute_package_analysis_for_file(file_path: &Path, config: &Config) -> PackageAnalysis {
+    if !is_in_r_package(file_path).unwrap_or(false) {
         return PackageAnalysis::default();
     }
 
-    let Some(r_dir) = real_path.parent() else {
+    let Some(r_dir) = file_path.parent() else {
         return PackageAnalysis::default();
     };
 
@@ -202,35 +146,7 @@ fn precompute_package_analysis(
         .filter(|p| has_r_extension(p))
         .collect();
 
-    let mut pkg = compute_package_analysis(&package_files, config);
-
-    // Re-key: the checker looks up diagnostics by the relativized temp path,
-    // but the analysis was done with real paths.
-    let real_rel = PathBuf::from(relativize_path(real_path));
-    let temp_rel = PathBuf::from(relativize_path(temp_path));
-
-    // Re-key duplicate_assignments
-    let dupes = std::mem::take(&mut pkg.duplicate_assignments);
-    for (key, value) in dupes {
-        if key == real_rel {
-            pkg.duplicate_assignments.insert(temp_rel.clone(), value);
-        } else {
-            pkg.duplicate_assignments.insert(key, value);
-        }
-    }
-
-    // Re-key unused_internal_functions
-    let unused = std::mem::take(&mut pkg.unused_internal_functions);
-    for (key, value) in unused {
-        if key == real_rel {
-            pkg.unused_internal_functions
-                .insert(temp_rel.clone(), value);
-        } else {
-            pkg.unused_internal_functions.insert(key, value);
-        }
-    }
-
-    pkg
+    compute_package_analysis(&package_files, config)
 }
 
 /// Convert a Jarl diagnostic to LSP diagnostic format with fix information
@@ -372,6 +288,8 @@ pub fn byte_offset_to_lsp_position(
 
 #[cfg(test)]
 mod tests {
+    use tempfile::TempDir;
+
     use super::*;
     use crate::document::{DocumentKey, TextDocument};
     use crate::session::DocumentSnapshot;

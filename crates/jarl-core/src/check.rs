@@ -26,7 +26,7 @@ pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Err
     check_with_package_analysis(config, pkg)
 }
 
-pub fn check_with_package_analysis(
+fn check_with_package_analysis(
     config: Config,
     pkg: PackageAnalysis,
 ) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
