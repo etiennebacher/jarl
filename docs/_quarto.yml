@@ -115,5 +115,6 @@ website:
       - rules/unmatched_range_suppression.md
       - rules/unnecessary_nesting.md
       - rules/unreachable_code.md
+      - rules/unused_function.md
       - rules/vector_logic.md
       - rules/which_grepl.md

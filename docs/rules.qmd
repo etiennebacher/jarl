@@ -105,6 +105,7 @@ dat <- as.data.frame(
     c("unmatched_range_suppression", "comments", "❌", ""),
     c("unnecessary_nesting", "readability", "✅", "Disabled by default"),
     c("unreachable_code", "readability, suspicious", "❌", ""),
+    c("unused_function", "correctness", "❌", ""),
     c("unused_suppression", "comments", "❌", ""),
     c("vector_logic", "performance", "❌", ""),
     c("which_grepl", "performance, readability", "✅", "")

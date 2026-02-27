@@ -10,9 +10,10 @@ use crate::lints::base::duplicated_function_definition::duplicated_function_defi
 
 // ## What it does
 //
-// Checks for internal (non-exported) functions in an R package that are never
-// called anywhere in the package (including `inst/tinytest`, `tests/`, and
-// `src/` directories).
+// Checks for unused functions, currently limited to R packages. It looks for
+// functions defined in the `R` folder that are not exported and not used
+// anywhere in the package (including the `R`, `inst/tinytest`, `src`, and
+// `tests` folders).
 //
 // ## Why is this bad?
 //
@@ -20,11 +21,15 @@ use crate::lints::base::duplicated_function_definition::duplicated_function_defi
 // refactoring. Removing it keeps the codebase easier to understand and
 // maintain.
 //
-// This is a "dirty" first implementation: it looks for `name(` patterns in
-// source text rather than performing full static analysis. Indirect call
-// patterns like `do.call()`, `lapply()`, `match.fun()`, `Map()`, etc. are
-// **not** detected, so there may be false positives for functions that are
-// only invoked indirectly. The rule is therefore disabled by default.
+// ## Limitations
+//
+// There are many ways to call a function in R code (e.g. `foo()`,
+// `do.call("foo", ...)`, `lapply(x, foo)` among others). Jarl tries to limit
+// false positives as much as possible, at the expense of false negatives. This
+// means that reporting a function that is actually used somewhere (false positive)
+// is considered a bug, but not reporting a function that isn't used anywhere
+// (false negative) isn't considered a bug (but can be suggested as a feature
+// request).
 //
 // ## Example
 //
@@ -32,13 +37,22 @@ use crate::lints::base::duplicated_function_definition::duplicated_function_defi
 // # In NAMESPACE: export(public_fn)
 //
 // # In R/public.R:
-// public_fn <- function() helper()
+// public_fn <- function(x) {
+//   check_character(x)
+// }
 //
 // # In R/helper.R:
-// helper <- function() 1
+// check_character <- function(x) {
+//   stopifnot(is.character(x))
+// }
+// check_length <- function(x, y) {
+//   stopifnot(length(x) == y)
+// }
 //
-// # `helper` is internal (not exported) and called by `public_fn`, so it is
-// # fine. But if nothing ever called `helper`, it would be flagged.
+// # `public_fn` is exported by the package, so it is considered used.
+// # `check_character()` isn't exported but used in `public_fn`.
+// # `check_length()` isn't exported but and isn't used anywhere, so it is
+// # reported.
 // ```
 
 /// Find a NAMESPACE directive (e.g. `S3method`, `export`) in a line and
