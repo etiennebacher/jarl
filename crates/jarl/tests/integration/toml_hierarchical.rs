@@ -30,31 +30,33 @@ fn test_look_for_toml_in_parent_directories() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_duplicated
- --> test.R:2:1
-  |
-2 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     // Place a TOML in the root directory, which is the parent directory of
@@ -77,25 +79,28 @@ ignore = ["any_is_na"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_duplicated
- --> test.R:2:1
-  |
-2 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
-Used '[TEMP_DIR]/jarl.toml'
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Notes ────────────────────────────────────────
+    Used '[TEMP_DIR]/jarl.toml'
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -145,23 +150,25 @@ ignore = ["any_duplicated"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -186,31 +193,33 @@ fn test_no_toml_uses_defaults() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_duplicated
- --> test.R:2:1
-  |
-2 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -247,25 +256,28 @@ ignore = ["any_duplicated"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> project/script.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> project/script.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
-Used '[TEMP_DIR]/project/jarl.toml'
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Notes ────────────────────────────────────────
+    Used '[TEMP_DIR]/project/jarl.toml'
+
+    ----- stderr -----
+    "
     );
 
     Ok(())

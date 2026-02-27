@@ -623,14 +623,16 @@ z <- x == TRUE && any(is.na(y))
                                     .run()
                                     .normalize_os_executable_name()
                                     .normalize_temp_paths(),
-    @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+    @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
         );
 
     Ok(())
@@ -693,14 +695,16 @@ Summary: Added 1 suppression comment(s) across 1 file(s).
                                     .run()
                                     .normalize_os_executable_name()
                                     .normalize_temp_paths(),
-    @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+    @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
         );
 
     Ok(())
@@ -764,14 +768,16 @@ Summary: Added 2 suppression comment(s) across 1 file(s).
                                     .run()
                                     .normalize_os_executable_name()
                                     .normalize_temp_paths(),
-    @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+    @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
         );
 
     Ok(())
@@ -839,14 +845,16 @@ Summary: Added 1 suppression comment(s) across 1 file(s).
                 .run()
                 .normalize_os_executable_name()
                 .normalize_temp_paths(),
-    @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+    @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
         );
 
     Ok(())

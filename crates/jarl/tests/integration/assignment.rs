@@ -32,30 +32,34 @@ y <- 2
             .arg("<-")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: assignment
- --> test.R:2:1
-  |
-2 | x = 1
-  | --- Use `<-` for assignment.
-  |
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: assignment
+     --> test.R:2:1
+      |
+    2 | x = 1
+      | --- Use `<-` for assignment.
+      |
 
-warning: assignment
- --> test.R:4:3
-  |
-4 | 3 -> z
-  |   ---- Use `<-` for assignment.
-  |
+    warning: assignment
+     --> test.R:4:3
+      |
+    4 | 3 -> z
+      |   ---- Use `<-` for assignment.
+      |
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-Warning: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ── Warnings ─────────────────────────────────────
+    `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
+
+    ----- stderr -----
+    "
     );
 
     insta::assert_snapshot!(
@@ -69,30 +73,34 @@ Warning: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml inst
             .arg("=")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: assignment
- --> test.R:3:1
-  |
-3 | y <- 2
-  | ---- Use `=` for assignment.
-  |
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: assignment
+     --> test.R:3:1
+      |
+    3 | y <- 2
+      | ---- Use `=` for assignment.
+      |
 
-warning: assignment
- --> test.R:4:3
-  |
-4 | 3 -> z
-  |   ---- Use `=` for assignment.
-  |
+    warning: assignment
+     --> test.R:4:3
+      |
+    4 | 3 -> z
+      |   ---- Use `=` for assignment.
+      |
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-Warning: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ── Warnings ─────────────────────────────────────
+    `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -188,29 +196,31 @@ operator = "<-"
             .arg("assignment")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: assignment
- --> test.R:2:1
-  |
-2 | x = 1
-  | --- Use `<-` for assignment.
-  |
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: assignment
+     --> test.R:2:1
+      |
+    2 | x = 1
+      | --- Use `<-` for assignment.
+      |
 
-warning: assignment
- --> test.R:4:3
-  |
-4 | 3 -> z
-  |   ---- Use `<-` for assignment.
-  |
+    warning: assignment
+     --> test.R:4:3
+      |
+    4 | 3 -> z
+      |   ---- Use `<-` for assignment.
+      |
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     std::fs::write(
@@ -229,29 +239,31 @@ operator = "="
             .arg("assignment")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: assignment
- --> test.R:3:1
-  |
-3 | y <- 2
-  | ---- Use `=` for assignment.
-  |
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: assignment
+     --> test.R:3:1
+      |
+    3 | y <- 2
+      | ---- Use `=` for assignment.
+      |
 
-warning: assignment
- --> test.R:4:3
-  |
-4 | 3 -> z
-  |   ---- Use `=` for assignment.
-  |
+    warning: assignment
+     --> test.R:4:3
+      |
+    4 | 3 -> z
+      |   ---- Use `=` for assignment.
+      |
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -370,30 +382,34 @@ operator = "<-"
             .arg("=")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: assignment
- --> test.R:3:1
-  |
-3 | y <- 2
-  | ---- Use `=` for assignment.
-  |
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: assignment
+     --> test.R:3:1
+      |
+    3 | y <- 2
+      | ---- Use `=` for assignment.
+      |
 
-warning: assignment
- --> test.R:4:3
-  |
-4 | 3 -> z
-  |   ---- Use `=` for assignment.
-  |
+    warning: assignment
+     --> test.R:4:3
+      |
+    4 | 3 -> z
+      |   ---- Use `=` for assignment.
+      |
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-Warning: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ── Warnings ─────────────────────────────────────
+    `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
+
+    ----- stderr -----
+    "
     );
     Ok(())
 }
@@ -431,30 +447,34 @@ assignment = "<-"
             .arg("assignment")
             .run()
             .normalize_os_executable_name(),
-        @r#"
-success: false
-exit_code: 1
------ stdout -----
-warning: assignment
- --> test.R:2:1
-  |
-2 | x = 1
-  | --- Use `<-` for assignment.
-  |
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: assignment
+     --> test.R:2:1
+      |
+    2 | x = 1
+      | --- Use `<-` for assignment.
+      |
 
-warning: assignment
- --> test.R:4:3
-  |
-4 | 3 -> z
-  |   ---- Use `<-` for assignment.
-  |
+    warning: assignment
+     --> test.R:4:3
+      |
+    4 | 3 -> z
+      |   ---- Use `<-` for assignment.
+      |
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-Warning: `assignment = "..."` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator = "..."` instead.
-"#
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ── Warnings ─────────────────────────────────────
+    Argument `assignment` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator` instead.
+
+    ----- stderr -----
+    "
     );
 
     std::fs::write(
@@ -473,30 +493,34 @@ assignment = "="
             .arg("assignment")
             .run()
             .normalize_os_executable_name(),
-        @r#"
-success: false
-exit_code: 1
------ stdout -----
-warning: assignment
- --> test.R:3:1
-  |
-3 | y <- 2
-  | ---- Use `=` for assignment.
-  |
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: assignment
+     --> test.R:3:1
+      |
+    3 | y <- 2
+      | ---- Use `=` for assignment.
+      |
 
-warning: assignment
- --> test.R:4:3
-  |
-4 | 3 -> z
-  |   ---- Use `=` for assignment.
-  |
+    warning: assignment
+     --> test.R:4:3
+      |
+    4 | 3 -> z
+      |   ---- Use `=` for assignment.
+      |
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-Warning: `assignment = "..."` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator = "..."` instead.
-"#
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ── Warnings ─────────────────────────────────────
+    Argument `assignment` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator` instead.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -611,31 +635,35 @@ assignment = "<-"
             .arg("=")
             .run()
             .normalize_os_executable_name(),
-        @r#"
-success: false
-exit_code: 1
------ stdout -----
-warning: assignment
- --> test.R:3:1
-  |
-3 | y <- 2
-  | ---- Use `=` for assignment.
-  |
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: assignment
+     --> test.R:3:1
+      |
+    3 | y <- 2
+      | ---- Use `=` for assignment.
+      |
 
-warning: assignment
- --> test.R:4:3
-  |
-4 | 3 -> z
-  |   ---- Use `=` for assignment.
-  |
+    warning: assignment
+     --> test.R:4:3
+      |
+    4 | 3 -> z
+      |   ---- Use `=` for assignment.
+      |
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-Warning: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
-Warning: `assignment = "..."` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator = "..."` instead.
-"#
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ── Warnings ─────────────────────────────────────
+    `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
+    Argument `assignment` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator` instead.
+
+    ----- stderr -----
+    "
     );
     Ok(())
 }
