@@ -23,13 +23,7 @@ use crate::utils::*;
 
 pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
     let pkg = compute_package_analysis(&config.paths, &config);
-    check_with_package_analysis(config, pkg)
-}
 
-fn check_with_package_analysis(
-    config: Config,
-    pkg: PackageAnalysis,
-) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
     // Ensure that all paths are covered by VCS. This is conservative because
     // technically we could apply fixes on those that are covered by VCS and
     // error for the others, but I'd rather be on the safe side and force the

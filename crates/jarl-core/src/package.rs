@@ -30,16 +30,14 @@ pub struct PackageAnalysis {
 /// Pass `check_duplicates` / `check_unused` as `false` to skip the
 /// corresponding (potentially expensive) cross-file scan.
 pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAnalysis {
-    let duplicate_assignments = if config
-        .rules_to_apply
-        .contains(&Rule::DuplicatedFunctionDefinition)
-    {
+    let rules = &config.rules_to_apply;
+    let duplicate_assignments = if rules.contains(&Rule::DuplicatedFunctionDefinition) {
         compute_package_duplicate_assignments(paths)
     } else {
         HashMap::new()
     };
 
-    let unused_functions = if config.rules_to_apply.contains(&Rule::UnusedFunction) {
+    let unused_functions = if rules.contains(&Rule::UnusedFunction) {
         compute_package_unused_functions(paths, &config.rule_options.unused_function)
     } else {
         HashMap::new()
