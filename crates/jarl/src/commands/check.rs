@@ -90,7 +90,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         min_r_version: args.min_r_version.clone(),
         allow_dirty: args.allow_dirty,
         allow_no_vcs: args.allow_no_vcs,
-        assignment: args.assignment,
+        assignment: args.assignment.clone(),
     };
 
     // Group paths by their closest resolved config directory, so each file is
@@ -134,34 +134,8 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         return add_jarl_ignore_comments(&all_diagnostics, reason, parent_config_path);
     }
 
-    // Hide `unused_function` diagnostics when they exceed the threshold
-    // (likely false positives). Use the minimum threshold across all configs.
-    let threshold_ignore = resolver
-        .items()
-        .iter()
-        .map(|item| {
-            item.value()
-                .linter
-                .rule_options
-                .unused_function
-                .threshold_ignore
-        })
-        .min()
-        .unwrap_or(50);
-
-    let unused_fn_count = all_diagnostics
-        .iter()
-        .flat_map(|(_path, diagnostics)| diagnostics.iter())
-        .filter(|d| d.message.name == "unused_function")
-        .count();
-
-    let unused_fn_hidden = unused_fn_count > threshold_ignore;
-    if unused_fn_hidden {
-        for (_path, diagnostics) in &mut all_diagnostics {
-            diagnostics.retain(|d| d.message.name != "unused_function");
-        }
-        all_diagnostics.retain(|(_path, diagnostics)| !diagnostics.is_empty());
-    }
+    let (unused_fn_hidden, unused_fn_count) =
+        hide_unused_function_if_needed(&mut all_diagnostics, &args, &resolver);
 
     // Flatten all diagnostics into a single vector and sort globally
     let mut all_diagnostics_flat: Vec<&Diagnostic> = all_diagnostics
@@ -445,4 +419,62 @@ fn add_jarl_ignore_comments(
     }
 
     Ok(ExitStatus::Success)
+}
+
+/// Hide `unused_function` diagnostics when they exceed the configured
+/// threshold (likely false positives). Suppression is skipped when the
+/// rule is explicitly listed in `--select` / `--extend-select` (CLI) or
+/// in the corresponding TOML fields.
+///
+/// Returns `(hidden, total_count)` where `hidden` is `true` when the
+/// diagnostics were removed and `total_count` is the original number of
+/// `unused_function` diagnostics.
+fn hide_unused_function_if_needed(
+    all_diagnostics: &mut Vec<(String, Vec<Diagnostic>)>,
+    args: &CheckCommand,
+    resolver: &PathResolver<Settings>,
+) -> (bool, usize) {
+    let explicitly_selected = args
+        .select
+        .split(',')
+        .chain(args.extend_select.split(','))
+        .any(|s| s.trim() == "unused_function")
+        || resolver.items().iter().any(|item| {
+            let linter = &item.value().linter;
+            linter
+                .select
+                .iter()
+                .chain(linter.extend_select.iter())
+                .flatten()
+                .any(|s| s == "unused_function")
+        });
+
+    let threshold_ignore = resolver
+        .items()
+        .iter()
+        .map(|item| {
+            item.value()
+                .linter
+                .rule_options
+                .unused_function
+                .threshold_ignore
+        })
+        .min()
+        .unwrap_or(50);
+
+    let unused_fn_count = all_diagnostics
+        .iter()
+        .flat_map(|(_path, diagnostics)| diagnostics.iter())
+        .filter(|d| d.message.name == "unused_function")
+        .count();
+
+    let hidden = !explicitly_selected && unused_fn_count > threshold_ignore;
+    if hidden {
+        for (_path, diagnostics) in all_diagnostics.iter_mut() {
+            diagnostics.retain(|d| d.message.name != "unused_function");
+        }
+        all_diagnostics.retain(|(_path, diagnostics)| !diagnostics.is_empty());
+    }
+
+    (hidden, unused_fn_count)
 }
