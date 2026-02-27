@@ -148,6 +148,10 @@ mod tests {
 
     // ── compute_package_unused_functions ────────────────────────
 
+    fn default_options() -> ResolvedUnusedFunctionOptions {
+        ResolvedUnusedFunctionOptions::resolve(None).unwrap()
+    }
+
     #[test]
     fn test_unused_function_flagged() {
         let dir = TempDir::new().unwrap();
@@ -162,7 +166,8 @@ mod tests {
         let file_b = r_dir.join("unused.R");
         fs::write(&file_b, "unused_helper <- function() 2\n").unwrap();
 
-        let result = compute_package_unused_functions(&[file_a.clone(), file_b.clone()]);
+        let result =
+            compute_package_unused_functions(&[file_a.clone(), file_b.clone()], &default_options());
 
         // unused_helper is not exported and never called → flagged
         let has_unused = result
@@ -191,7 +196,8 @@ mod tests {
         let file_b = r_dir.join("helper.R");
         fs::write(&file_b, "helper <- function() 1\n").unwrap();
 
-        let result = compute_package_unused_functions(&[file_a.clone(), file_b.clone()]);
+        let result =
+            compute_package_unused_functions(&[file_a.clone(), file_b.clone()], &default_options());
 
         assert!(
             result.is_empty(),
@@ -214,7 +220,8 @@ mod tests {
         let file_b = r_dir.join("methods.R");
         fs::write(&file_b, "print.myclass <- function(x, ...) cat(x)\n").unwrap();
 
-        let result = compute_package_unused_functions(&[file_a.clone(), file_b.clone()]);
+        let result =
+            compute_package_unused_functions(&[file_a.clone(), file_b.clone()], &default_options());
 
         assert!(
             result.is_empty(),
@@ -237,7 +244,8 @@ mod tests {
         let file_b = r_dir.join("methods.R");
         fs::write(&file_b, "sort_by.data.table <- function(x, ...) x\n").unwrap();
 
-        let result = compute_package_unused_functions(&[file_a.clone(), file_b.clone()]);
+        let result =
+            compute_package_unused_functions(&[file_a.clone(), file_b.clone()], &default_options());
 
         assert!(
             result.is_empty(),
@@ -261,7 +269,8 @@ mod tests {
         )
         .unwrap();
 
-        let result = compute_package_unused_functions(std::slice::from_ref(&file));
+        let result =
+            compute_package_unused_functions(std::slice::from_ref(&file), &default_options());
 
         assert!(
             result.is_empty(),
@@ -280,7 +289,8 @@ mod tests {
         let file = r_dir.join("foo.R");
         fs::write(&file, "foo <- function() 1\n").unwrap();
 
-        let result = compute_package_unused_functions(std::slice::from_ref(&file));
+        let result =
+            compute_package_unused_functions(std::slice::from_ref(&file), &default_options());
 
         assert!(
             result.is_empty(),
@@ -303,7 +313,8 @@ mod tests {
         let file = r_dir.join("foo.R");
         fs::write(&file, "foo <- function() 1\n").unwrap();
 
-        let result = compute_package_unused_functions(std::slice::from_ref(&file));
+        let result =
+            compute_package_unused_functions(std::slice::from_ref(&file), &default_options());
 
         assert!(
             result.is_empty(),
@@ -331,7 +342,8 @@ mod tests {
         let test_file = tests_dir.join("test-internal.R");
         fs::write(&test_file, "test_that('works', { internal_helper() })\n").unwrap();
 
-        let result = compute_package_unused_functions(&[file_a.clone(), file_b.clone()]);
+        let result =
+            compute_package_unused_functions(&[file_a.clone(), file_b.clone()], &default_options());
 
         let has_internal = result
             .values()
@@ -362,7 +374,8 @@ mod tests {
         let inst_file = inst_dir.join("test_inst.R");
         fs::write(&inst_file, "expect_equal(inst_helper(), 2)\n").unwrap();
 
-        let result = compute_package_unused_functions(&[file_a.clone(), file_b.clone()]);
+        let result =
+            compute_package_unused_functions(&[file_a.clone(), file_b.clone()], &default_options());
 
         let has_inst = result
             .values()
@@ -393,7 +406,8 @@ mod tests {
         let inst_file = inst_dir.join("test_inst.R");
         fs::write(&inst_file, "expect_equal(inst_helper(), 2)\n").unwrap();
 
-        let result = compute_package_unused_functions(&[file_a.clone(), file_b.clone()]);
+        let result =
+            compute_package_unused_functions(&[file_a.clone(), file_b.clone()], &default_options());
 
         let has_inst = result
             .values()
@@ -428,7 +442,8 @@ mod tests {
         )
         .unwrap();
 
-        let result = compute_package_unused_functions(&[file_a.clone(), file_b.clone()]);
+        let result =
+            compute_package_unused_functions(&[file_a.clone(), file_b.clone()], &default_options());
 
         let has_signal = result
             .values()
@@ -449,7 +464,8 @@ mod tests {
         let file = r_dir.join("foo.R");
         fs::write(&file, "foo <- function() 1\n").unwrap();
 
-        let result = compute_package_unused_functions(std::slice::from_ref(&file));
+        let result =
+            compute_package_unused_functions(std::slice::from_ref(&file), &default_options());
 
         assert!(
             result.is_empty(),
@@ -471,23 +487,38 @@ mod tests {
 
     #[test]
     fn test_threshold_ignore_custom_value() {
-        let opts = UnusedFunctionOptions { threshold_ignore: Some(10) };
+        let opts = UnusedFunctionOptions { threshold_ignore: Some(10), ..Default::default() };
         let resolved = ResolvedUnusedFunctionOptions::resolve(Some(&opts)).unwrap();
         assert_eq!(resolved.threshold_ignore, 10);
     }
 
     #[test]
     fn test_threshold_ignore_none_uses_default() {
-        let opts = UnusedFunctionOptions { threshold_ignore: None };
+        let opts = UnusedFunctionOptions { threshold_ignore: None, ..Default::default() };
         let resolved = ResolvedUnusedFunctionOptions::resolve(Some(&opts)).unwrap();
         assert_eq!(resolved.threshold_ignore, 50);
     }
 
     #[test]
     fn test_threshold_ignore_zero() {
-        let opts = UnusedFunctionOptions { threshold_ignore: Some(0) };
+        let opts = UnusedFunctionOptions { threshold_ignore: Some(0), ..Default::default() };
         let resolved = ResolvedUnusedFunctionOptions::resolve(Some(&opts)).unwrap();
         assert_eq!(resolved.threshold_ignore, 0);
+    }
+
+    // ── skipped-functions ──────────────────────────────────────────────
+
+    #[test]
+    fn test_skipped_functions_invalid_regex() {
+        let opts = UnusedFunctionOptions {
+            skipped_functions: Some(vec!["^pl__".to_string(), "[invalid".to_string()]),
+            ..Default::default()
+        };
+        let err = ResolvedUnusedFunctionOptions::resolve(Some(&opts)).unwrap_err();
+        assert!(
+            err.to_string().contains("[invalid"),
+            "error should mention the bad pattern: {err}"
+        );
     }
 
     // ── threshold-ignore end-to-end ─────────────────────────────────────

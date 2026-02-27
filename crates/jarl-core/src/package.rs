@@ -40,7 +40,7 @@ pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAn
     };
 
     let unused_functions = if config.rules_to_apply.contains(&Rule::UnusedFunction) {
-        compute_package_unused_functions(paths)
+        compute_package_unused_functions(paths, &config.rule_options.unused_function)
     } else {
         HashMap::new()
     };

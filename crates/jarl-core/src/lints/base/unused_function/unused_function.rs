@@ -257,6 +257,7 @@ fn has_cpp_extension(path: &Path) -> bool {
 /// 3. Never appear as an identifier in any file in `R/`, `inst/tinytest/`, `tests/`, or `src/`
 pub fn compute_package_unused_functions(
     paths: &[PathBuf],
+    options: &crate::rule_options::unused_function::ResolvedUnusedFunctionOptions,
 ) -> HashMap<PathBuf, Vec<(String, TextRange, String)>> {
     // Step 1: collect data from each file in parallel
     let file_data: Vec<FileData> = paths
@@ -392,6 +393,11 @@ pub fn compute_package_unused_functions(
 
                 // Skip R package hook functions (.onLoad, .onAttach, etc.)
                 if package_hooks.contains(name.as_str()) {
+                    continue;
+                }
+
+                // Skip functions matching user-configured patterns
+                if options.is_skipped(name) {
                     continue;
                 }
 
