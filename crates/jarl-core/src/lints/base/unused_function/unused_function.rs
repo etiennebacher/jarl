@@ -218,22 +218,22 @@ pub fn scan_symbols(content: &str) -> HashMap<String, usize> {
     symbols
 }
 
-// (rel_path, abs_path, definitions, symbol_counts) — per file within a package
-type PackageFileEntry = (
-    PathBuf,
-    PathBuf,
-    Vec<(String, TextRange, u32, u32)>,
-    HashMap<String, usize>,
-);
+/// Per-file data within a package, after grouping by package root.
+struct PackageFileEntry {
+    rel_path: PathBuf,
+    abs_path: PathBuf,
+    definitions: Vec<(String, TextRange, u32, u32)>,
+    symbol_counts: HashMap<String, usize>,
+}
 
-// (package_root_key, rel_path, abs_path, definitions, symbol_counts)
-type FileData = (
-    String,
-    PathBuf,
-    PathBuf,
-    Vec<(String, TextRange, u32, u32)>,
-    HashMap<String, usize>,
-);
+/// Raw per-file data before grouping, includes the package root key.
+struct FileData {
+    package_root_key: String,
+    rel_path: PathBuf,
+    abs_path: PathBuf,
+    definitions: Vec<(String, TextRange, u32, u32)>,
+    symbol_counts: HashMap<String, usize>,
+}
 
 /// Recursively collect files under `dir` that match `predicate`.
 fn collect_files(dir: &Path, predicate: fn(&Path) -> bool) -> Vec<PathBuf> {
@@ -285,18 +285,29 @@ pub fn compute_package_unused_functions(
             let root_key = crate::fs::relativize_path(root);
             let content = std::fs::read_to_string(path).ok()?;
             let definitions = scan_top_level_assignments(&content);
-            let calls = scan_symbols(&content);
-            Some((root_key, rel_path, path.clone(), definitions, calls))
+            let symbol_counts = scan_symbols(&content);
+            Some(FileData {
+                package_root_key: root_key,
+                rel_path,
+                abs_path: path.clone(),
+                definitions,
+                symbol_counts,
+            })
         })
         .collect();
 
     // Step 2: group by package root
     let mut packages: HashMap<String, Vec<PackageFileEntry>> = HashMap::new();
-    for (root_key, rel_path, abs_path, definitions, calls) in file_data {
+    for fd in file_data {
         packages
-            .entry(root_key)
+            .entry(fd.package_root_key)
             .or_default()
-            .push((rel_path, abs_path, definitions, calls));
+            .push(PackageFileEntry {
+                rel_path: fd.rel_path,
+                abs_path: fd.abs_path,
+                definitions: fd.definitions,
+                symbol_counts: fd.symbol_counts,
+            });
     }
 
     let mut result: HashMap<PathBuf, Vec<(String, TextRange, String)>> = HashMap::new();
@@ -305,7 +316,7 @@ pub fn compute_package_unused_functions(
         // Collect ALL defined function names across the package (for exportPattern matching)
         let all_defined_names: Vec<String> = file_data
             .iter()
-            .flat_map(|(_, _, defs, _)| defs.iter().map(|(name, _, _, _)| name.clone()))
+            .flat_map(|f| f.definitions.iter().map(|(name, _, _, _)| name.clone()))
             .collect();
         let all_defined_name_refs: Vec<&str> =
             all_defined_names.iter().map(|s| s.as_str()).collect();
@@ -313,8 +324,7 @@ pub fn compute_package_unused_functions(
         // Step 3: parse NAMESPACE
         // The package root is the parent of the R/ directory. We can find it
         // from any abs_path: abs_path.parent() is R/, its parent is the root.
-        let namespace_exports = if let Some(first_abs) = file_data.first().map(|(_, abs, _, _)| abs)
-        {
+        let namespace_exports = if let Some(first_abs) = file_data.first().map(|f| &f.abs_path) {
             let package_root = first_abs.parent().and_then(|r_dir| r_dir.parent());
             if let Some(root) = package_root {
                 let ns_path = root.join("NAMESPACE");
@@ -338,7 +348,7 @@ pub fn compute_package_unused_functions(
         let extra_symbols: Vec<HashMap<String, usize>> = {
             let package_root = file_data
                 .first()
-                .and_then(|(_, abs, _, _)| abs.parent())
+                .and_then(|f| f.abs_path.parent())
                 .and_then(|r_dir| r_dir.parent());
             let mut syms = Vec::new();
             if let Some(root) = package_root {
@@ -383,7 +393,7 @@ pub fn compute_package_unused_functions(
         // S3 method heuristic below).
         let all_symbols: HashSet<&str> = file_data
             .iter()
-            .flat_map(|(_, _, _, syms)| syms.keys().map(|s| s.as_str()))
+            .flat_map(|f| f.symbol_counts.keys().map(|s| s.as_str()))
             .collect();
 
         // Step 4: for each defined function, check if its name appears
@@ -391,16 +401,16 @@ pub fn compute_package_unused_functions(
         //   - it appears in any OTHER file as a symbol, OR
         //   - it appears MORE times than it is defined in the SAME file
         //     (i.e. the name is also referenced, not just assigned).
-        for (i, (rel_path, _, definitions, sym_counts)) in file_data.iter().enumerate() {
+        for (i, file) in file_data.iter().enumerate() {
             let mut unused: Vec<(String, TextRange, String)> = Vec::new();
 
             // Count how many times each name is defined in this file
             let mut def_counts: HashMap<String, usize> = HashMap::new();
-            for (name, _, _, _) in definitions {
+            for (name, _, _, _) in &file.definitions {
                 *def_counts.entry(name.clone()).or_insert(0) += 1;
             }
 
-            for (name, range, line, col) in definitions {
+            for (name, range, line, col) in &file.definitions {
                 // Skip exported functions
                 if namespace_exports.contains(name) {
                     continue;
@@ -437,7 +447,7 @@ pub fn compute_package_unused_functions(
                 let used_in_other_file = file_data
                     .iter()
                     .enumerate()
-                    .any(|(j, (_, _, _, syms))| j != i && syms.contains_key(name))
+                    .any(|(j, f)| j != i && f.symbol_counts.contains_key(name))
                     || extra_symbols.iter().any(|syms| syms.contains_key(name));
 
                 // Used in the same file beyond its own definition(s)?
@@ -446,20 +456,20 @@ pub fn compute_package_unused_functions(
                 // exceeds the number of definitions, the name is also
                 // referenced elsewhere in the file.
                 let n_defs = def_counts.get(name).copied().unwrap_or(0);
-                let n_occurrences = sym_counts.get(name).copied().unwrap_or(0);
+                let n_occurrences = file.symbol_counts.get(name).copied().unwrap_or(0);
                 let used_in_same_file = n_occurrences > n_defs;
 
                 if !used_in_other_file && !used_in_same_file {
                     let help = format!(
                         "Defined at {path}:{line}:{col} but never called",
-                        path = rel_path.display()
+                        path = file.rel_path.display()
                     );
                     unused.push((name.clone(), *range, help));
                 }
             }
 
             if !unused.is_empty() {
-                result.insert(rel_path.clone(), unused);
+                result.insert(file.rel_path.clone(), unused);
             }
         }
     }
