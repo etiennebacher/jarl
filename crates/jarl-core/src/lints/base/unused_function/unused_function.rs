@@ -4,6 +4,7 @@ use regex::Regex;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
+use crate::fs::has_r_extension;
 use crate::lints::base::duplicated_function_definition::duplicated_function_definition::{
     is_in_r_package, scan_top_level_assignments,
 };
@@ -276,7 +277,7 @@ pub fn compute_package_unused_functions(
     // Step 1: collect data from each file in parallel
     let file_data: Vec<FileData> = paths
         .par_iter()
-        .filter(|p| crate::fs::has_r_extension(p))
+        .filter(|p| has_r_extension(p))
         .filter(|p| is_in_r_package(p).unwrap_or(false))
         .filter_map(|path| {
             let root = path.parent()?;
@@ -345,7 +346,7 @@ pub fn compute_package_unused_functions(
                 for dir_name in &["inst/tinytest", "tests"] {
                     let dir = root.join(dir_name);
                     if dir.is_dir() {
-                        for file_path in collect_files(&dir, crate::fs::has_r_extension) {
+                        for file_path in collect_files(&dir, has_r_extension) {
                             if let Ok(content) = std::fs::read_to_string(&file_path) {
                                 syms.push(scan_symbols(&content));
                             }
