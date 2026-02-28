@@ -91,40 +91,41 @@ pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAn
         })
         .collect();
 
-    // Discover package roots and collect extra files (tests/, inst/tinytest/,
-    // src/) for the unused-function rule. Also pre-compute NAMESPACE exports.
+    // Discover package roots and collect excluded R/ files so they still
+    // contribute to cross-file analysis (both duplicate and unused checks).
+    // Also collect extra files (tests/, inst/tinytest/, src/) and NAMESPACE
+    // exports for the unused-function rule.
     let mut extra_files: Vec<PathBuf> = Vec::new();
     let mut excluded_r_files: Vec<PathBuf> = Vec::new();
     let mut namespace_contents: HashMap<PathBuf, String> = HashMap::new();
 
-    if check_unused {
-        let package_roots: HashSet<PathBuf> = r_dir_files
-            .iter()
-            .filter_map(|p| p.parent().and_then(|r| r.parent()).map(|r| r.to_path_buf()))
-            .collect();
+    let package_roots: HashSet<PathBuf> = r_dir_files
+        .iter()
+        .filter_map(|p| p.parent().and_then(|r| r.parent()).map(|r| r.to_path_buf()))
+        .collect();
 
-        // Collect the set of R/ files already in paths (canonicalized for comparison).
-        let r_dir_file_set: HashSet<PathBuf> = r_dir_files
-            .iter()
-            .filter_map(|p| std::fs::canonicalize(p).ok())
-            .collect();
+    // Collect the set of R/ files already in paths (canonicalized for comparison).
+    let r_dir_file_set: HashSet<PathBuf> = r_dir_files
+        .iter()
+        .filter_map(|p| std::fs::canonicalize(p).ok())
+        .collect();
 
-        for root in &package_roots {
-            // Discover ALL R/ files on disk, including excluded ones, so they
-            // contribute symbol usages to the cross-file analysis. Diagnostics
-            // are only emitted for files in config.paths, so excluded files
-            // won't produce warnings.
-            let r_dir = root.join("R");
-            if r_dir.is_dir() {
-                for file in collect_files(&r_dir, has_r_extension) {
-                    if let Ok(canon) = std::fs::canonicalize(&file)
-                        && !r_dir_file_set.contains(&canon)
-                    {
-                        excluded_r_files.push(file);
-                    }
+    for root in &package_roots {
+        // Discover ALL R/ files on disk, including excluded ones, so they
+        // contribute to the cross-file analysis. Diagnostics are only emitted
+        // for files in config.paths, so excluded files won't produce warnings.
+        let r_dir = root.join("R");
+        if r_dir.is_dir() {
+            for file in collect_files(&r_dir, has_r_extension) {
+                if let Ok(canon) = std::fs::canonicalize(&file)
+                    && !r_dir_file_set.contains(&canon)
+                {
+                    excluded_r_files.push(file);
                 }
             }
+        }
 
+        if check_unused {
             // Collect test/tinytest R files
             for dir_name in &["inst/tinytest", "tests"] {
                 let dir = root.join(dir_name);
