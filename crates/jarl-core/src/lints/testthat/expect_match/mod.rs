@@ -154,11 +154,16 @@ mod tests {
 
     #[test]
     fn test_expect_match_extra_args_no_fix() {
-        // grepl args should be carried in a fix, no fix for extra expect_true args
+        // grepl args should be carried in a fix, no fix for:
+        // - extra expect_true args
+        // - positional optional grepl args (unsafe to rewrite)
         assert_snapshot!(
             "no_fix_extra_args",
             get_fixed_text(
-                vec!["expect_true(grepl('fun', 'Testing is fun'), info = 'msg')",],
+                vec![
+                    "expect_true(grepl('fun', 'Testing is fun'), info = 'msg')",
+                    "expect_true(grepl('fun', 'Testing is fun', FALSE, FALSE, FALSE, FALSE))",
+                ],
                 "expect_match",
                 None,
             )
