@@ -154,6 +154,13 @@ mod tests {
         ResolvedUnusedFunctionOptions::resolve(None).unwrap()
     }
 
+    /// Read the NAMESPACE file from `pkg_root` into a map suitable for
+    /// `compute_unused_from_shared`.
+    fn read_namespace(pkg_root: &std::path::Path) -> HashMap<std::path::PathBuf, String> {
+        let content = fs::read_to_string(pkg_root.join("NAMESPACE")).unwrap();
+        HashMap::from([(pkg_root.to_path_buf(), content)])
+    }
+
     #[test]
     fn test_unused_function_flagged() {
         let dir = TempDir::new().unwrap();
@@ -169,7 +176,8 @@ mod tests {
         fs::write(&file_b, "unused_helper <- function() 2\n").unwrap();
 
         let shared = scan_r_package_paths(&[file_a.clone(), file_b.clone()], true);
-        let result = compute_unused_from_shared(&shared, &default_options(), &HashMap::new());
+        let result =
+            compute_unused_from_shared(&shared, &default_options(), &read_namespace(dir.path()));
 
         // unused_helper is not exported and never called → flagged
         let has_unused = result
@@ -199,7 +207,8 @@ mod tests {
         fs::write(&file_b, "helper <- function() 1\n").unwrap();
 
         let shared = scan_r_package_paths(&[file_a.clone(), file_b.clone()], true);
-        let result = compute_unused_from_shared(&shared, &default_options(), &HashMap::new());
+        let result =
+            compute_unused_from_shared(&shared, &default_options(), &read_namespace(dir.path()));
 
         assert!(
             result.is_empty(),
@@ -223,7 +232,8 @@ mod tests {
         fs::write(&file_b, "print.myclass <- function(x, ...) cat(x)\n").unwrap();
 
         let shared = scan_r_package_paths(&[file_a.clone(), file_b.clone()], true);
-        let result = compute_unused_from_shared(&shared, &default_options(), &HashMap::new());
+        let result =
+            compute_unused_from_shared(&shared, &default_options(), &read_namespace(dir.path()));
 
         assert!(
             result.is_empty(),
@@ -247,7 +257,8 @@ mod tests {
         fs::write(&file_b, "sort_by.data.table <- function(x, ...) x\n").unwrap();
 
         let shared = scan_r_package_paths(&[file_a.clone(), file_b.clone()], true);
-        let result = compute_unused_from_shared(&shared, &default_options(), &HashMap::new());
+        let result =
+            compute_unused_from_shared(&shared, &default_options(), &read_namespace(dir.path()));
 
         assert!(
             result.is_empty(),
@@ -272,7 +283,8 @@ mod tests {
         .unwrap();
 
         let shared = scan_r_package_paths(std::slice::from_ref(&file), true);
-        let result = compute_unused_from_shared(&shared, &default_options(), &HashMap::new());
+        let result =
+            compute_unused_from_shared(&shared, &default_options(), &read_namespace(dir.path()));
 
         assert!(
             result.is_empty(),
@@ -316,7 +328,8 @@ mod tests {
         fs::write(&file, "foo <- function() 1\n").unwrap();
 
         let shared = scan_r_package_paths(std::slice::from_ref(&file), true);
-        let result = compute_unused_from_shared(&shared, &default_options(), &HashMap::new());
+        let result =
+            compute_unused_from_shared(&shared, &default_options(), &read_namespace(dir.path()));
 
         assert!(
             result.is_empty(),
@@ -346,7 +359,8 @@ mod tests {
 
         let mut shared = scan_r_package_paths(&[file_a.clone(), file_b.clone()], true);
         shared.extend(scan_extra_package_paths(&[test_file], dir.path()));
-        let result = compute_unused_from_shared(&shared, &default_options(), &HashMap::new());
+        let result =
+            compute_unused_from_shared(&shared, &default_options(), &read_namespace(dir.path()));
 
         let has_internal = result
             .values()
@@ -379,7 +393,8 @@ mod tests {
 
         let mut shared = scan_r_package_paths(&[file_a.clone(), file_b.clone()], true);
         shared.extend(scan_extra_package_paths(&[inst_file], dir.path()));
-        let result = compute_unused_from_shared(&shared, &default_options(), &HashMap::new());
+        let result =
+            compute_unused_from_shared(&shared, &default_options(), &read_namespace(dir.path()));
 
         let has_inst = result
             .values()
@@ -411,7 +426,8 @@ mod tests {
         fs::write(&inst_file, "expect_equal(inst_helper(), 2)\n").unwrap();
 
         let shared = scan_r_package_paths(&[file_a.clone(), file_b.clone()], true);
-        let result = compute_unused_from_shared(&shared, &default_options(), &HashMap::new());
+        let result =
+            compute_unused_from_shared(&shared, &default_options(), &read_namespace(dir.path()));
 
         let has_inst = result
             .values()
@@ -448,7 +464,8 @@ mod tests {
 
         let mut shared = scan_r_package_paths(&[file_a.clone(), file_b.clone()], true);
         shared.extend(scan_extra_package_paths(&[cpp_file], dir.path()));
-        let result = compute_unused_from_shared(&shared, &default_options(), &HashMap::new());
+        let result =
+            compute_unused_from_shared(&shared, &default_options(), &read_namespace(dir.path()));
 
         let has_signal = result
             .values()

@@ -94,7 +94,7 @@ pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAn
     // Discover package roots and collect extra files (tests/, inst/tinytest/,
     // src/) for the unused-function rule. Also pre-compute NAMESPACE exports.
     let mut extra_files: Vec<PathBuf> = Vec::new();
-    let mut namespace_exports: HashMap<PathBuf, Option<String>> = HashMap::new();
+    let mut namespace_contents: HashMap<PathBuf, String> = HashMap::new();
 
     if check_unused {
         let package_roots: HashSet<PathBuf> = r_dir_files
@@ -116,9 +116,9 @@ pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAn
                 extra_files.extend(collect_files(&src_dir, has_cpp_extension));
             }
             // Read NAMESPACE content (cheap, one per package)
-            let ns_path = root.join("NAMESPACE");
-            let ns_content = std::fs::read_to_string(&ns_path).ok();
-            namespace_exports.insert(root.clone(), ns_content);
+            if let Ok(ns_content) = std::fs::read_to_string(root.join("NAMESPACE")) {
+                namespace_contents.insert(root.clone(), ns_content);
+            }
         }
     }
 
@@ -188,7 +188,7 @@ pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAn
         compute_unused_from_shared(
             &shared_data,
             &config.rule_options.unused_function,
-            &namespace_exports,
+            &namespace_contents,
         )
     } else {
         HashMap::new()

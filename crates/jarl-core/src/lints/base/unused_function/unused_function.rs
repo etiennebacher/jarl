@@ -251,12 +251,12 @@ pub(crate) fn has_cpp_extension(path: &Path) -> bool {
 /// operating on already-scanned `SharedFileData` to avoid redundant file reads.
 /// Uses O(1) cross-file symbol lookup via pre-computed frequency maps.
 ///
-/// `precomputed_namespace` maps package root paths to their NAMESPACE file
-/// contents (if readable). When provided, avoids re-reading NAMESPACE files.
+/// `namespace_contents` maps package root paths to their NAMESPACE file
+/// contents. Packages without a NAMESPACE entry are skipped.
 pub(crate) fn compute_unused_from_shared(
     shared_data: &[SharedFileData],
     options: &crate::rule_options::unused_function::ResolvedUnusedFunctionOptions,
-    precomputed_namespace: &HashMap<PathBuf, Option<String>>,
+    namespace_contents: &HashMap<PathBuf, String>,
 ) -> HashMap<PathBuf, Vec<(String, TextRange, String)>> {
     // Group by package root
     let mut packages: HashMap<&str, Vec<&SharedFileData>> = HashMap::new();
@@ -283,19 +283,10 @@ pub(crate) fn compute_unused_from_shared(
         let Some(first) = r_files.first() else {
             continue;
         };
-        let root = &first.package_root;
-
-        // Resolve NAMESPACE content: use pre-computed value if available,
-        // otherwise read from disk (fallback for tests).
-        let ns_content = match precomputed_namespace.get(root.as_path()) {
-            Some(Some(content)) => content.clone(),
-            Some(None) => continue, // No NAMESPACE file — skip this package
-            None => match std::fs::read_to_string(root.join("NAMESPACE")) {
-                Ok(content) => content,
-                Err(_) => continue,
-            },
+        let Some(ns_content) = namespace_contents.get(&first.package_root) else {
+            continue;
         };
-        let namespace_exports = parse_namespace_exports(&ns_content, &all_defined_name_refs);
+        let namespace_exports = parse_namespace_exports(ns_content, &all_defined_name_refs);
 
         // --- O(1) cross-file symbol lookup ---
         // Pre-compute: for each symbol name, how many R/ files contain it.
