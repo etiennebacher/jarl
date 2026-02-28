@@ -616,7 +616,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h1>unused_function</h1>
 <section id="what-it-does" class="level2">
 <h2 class="anchored" data-anchor-id="what-it-does">What it does</h2>
-<p>Checks for unused functions, currently limited to R packages. It looks for functions defined in the <code>R</code> folder that are not exported and not used anywhere in the package (including the <code>R</code>, <code>inst/tinytest</code>, <code>inst/tests</code>, <code>src</code>, and <code>tests</code> folders).</p>
+<p>Checks for unused functions in R packages. It looks for:</p>
+<ul>
+<li>Functions defined in <code>R/</code> that are not exported and not used anywhere in the package (including <code>R/</code>, <code>inst/tinytest/</code>, <code>inst/tests/</code>, <code>src/</code>, and <code>tests/</code>).</li>
+<li>Functions defined in <code>tests/</code> that are not used anywhere in <code>tests/</code>.</li>
+<li>Functions defined in <code>inst/tinytest/</code> or <code>inst/tests/</code> that are not used anywhere within that directory.</li>
+</ul>
 </section>
 <section id="why-is-this-bad" class="level2">
 <h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
