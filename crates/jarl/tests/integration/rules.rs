@@ -153,7 +153,6 @@ fn test_selected_and_ignored() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -385,7 +384,6 @@ any(is.na(x))
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -487,7 +485,6 @@ any(is.na(x))
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 

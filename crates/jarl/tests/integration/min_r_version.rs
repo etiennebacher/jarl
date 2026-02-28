@@ -28,7 +28,6 @@ fn test_min_r_version_from_cli_only() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -51,7 +50,6 @@ fn test_min_r_version_from_cli_only() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -122,7 +120,6 @@ Depends: R (>= 4.4.0), utils, stats"#,
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 

@@ -174,7 +174,6 @@ fn test_parsing_weird_raw_strings() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -204,7 +203,6 @@ fn test_parsing_braced_anonymous_function() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -234,7 +232,6 @@ fn test_no_lints() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -459,7 +456,6 @@ fn test_corner_case() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -557,7 +553,6 @@ fn test_fix_options() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -580,7 +575,6 @@ fn test_fix_options() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -603,7 +597,6 @@ fn test_fix_options() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 

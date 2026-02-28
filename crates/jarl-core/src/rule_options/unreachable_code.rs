@@ -6,7 +6,7 @@ use super::resolve_with_extend;
 const DEFAULT_STOPPING_FUNCTIONS: &[&str] =
     &["stop", ".Defunct", "abort", "cli_abort", "q", "quit"];
 
-/// TOML options for `[lint.unreachable-code]`.
+/// TOML options for `[lint.unreachable_code]`.
 ///
 /// Use `stopping-functions` to fully replace the default list of functions
 /// that are considered to stop execution (never return). Use
@@ -41,7 +41,7 @@ impl ResolvedUnreachableCodeOptions {
             base,
             extend,
             DEFAULT_STOPPING_FUNCTIONS,
-            "unreachable-code",
+            "unreachable_code",
             "stopping-functions",
         )?;
 

@@ -176,7 +176,6 @@ fn test_rmd_ignore_chunk_with_rule() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -216,7 +215,6 @@ fn test_rmd_ignore_chunk_yaml_multiple() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -257,7 +255,6 @@ fn test_rmd_ignore_chunk_yaml_misplaced() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
