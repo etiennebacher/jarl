@@ -661,6 +661,171 @@ mod tests {
         );
     }
 
+    // ── unused functions in tests/ and inst/tinytest/ ───────────────
+
+    #[test]
+    fn test_unused_function_in_tests_flagged() {
+        let dir = TempDir::new().unwrap();
+        let r_dir = dir.path().join("R");
+        fs::create_dir(&r_dir).unwrap();
+        let tests_dir = dir.path().join("tests").join("testthat");
+        fs::create_dir_all(&tests_dir).unwrap();
+        fs::write(dir.path().join("DESCRIPTION"), "Package: test").unwrap();
+        fs::write(dir.path().join("NAMESPACE"), "export(public_fn)\n").unwrap();
+
+        let file_a = r_dir.join("public.R");
+        fs::write(&file_a, "public_fn <- function() 1\n").unwrap();
+
+        // Helper defined in tests/ but never used
+        let test_helper = tests_dir.join("helper.R");
+        fs::write(&test_helper, "unused_test_helper <- function() 42\n").unwrap();
+
+        let mut shared = scan_r_package_paths(std::slice::from_ref(&file_a), true);
+        shared.extend(scan_extra_package_paths(&[test_helper], dir.path()));
+        let result =
+            compute_unused_from_shared(&shared, &default_options(), &read_namespace(dir.path()));
+
+        let has_unused = result
+            .values()
+            .any(|v| v.iter().any(|(n, _, _)| n == "unused_test_helper"));
+        assert!(
+            has_unused,
+            "unused_test_helper is defined in tests/ but never called, should be flagged"
+        );
+    }
+
+    #[test]
+    fn test_used_function_in_tests_not_flagged() {
+        let dir = TempDir::new().unwrap();
+        let r_dir = dir.path().join("R");
+        fs::create_dir(&r_dir).unwrap();
+        let tests_dir = dir.path().join("tests").join("testthat");
+        fs::create_dir_all(&tests_dir).unwrap();
+        fs::write(dir.path().join("DESCRIPTION"), "Package: test").unwrap();
+        fs::write(dir.path().join("NAMESPACE"), "export(public_fn)\n").unwrap();
+
+        let file_a = r_dir.join("public.R");
+        fs::write(&file_a, "public_fn <- function() 1\n").unwrap();
+
+        // Helper defined in tests/ and used in another test file
+        let test_helper = tests_dir.join("helper.R");
+        fs::write(&test_helper, "test_helper <- function() 42\n").unwrap();
+
+        let test_file = tests_dir.join("test-foo.R");
+        fs::write(&test_file, "test_that('works', { test_helper() })\n").unwrap();
+
+        let mut shared = scan_r_package_paths(std::slice::from_ref(&file_a), true);
+        shared.extend(scan_extra_package_paths(
+            &[test_helper, test_file],
+            dir.path(),
+        ));
+        let result =
+            compute_unused_from_shared(&shared, &default_options(), &read_namespace(dir.path()));
+
+        let has_helper = result
+            .values()
+            .any(|v| v.iter().any(|(n, _, _)| n == "test_helper"));
+        assert!(
+            !has_helper,
+            "test_helper is used in another test file, should not be flagged"
+        );
+    }
+
+    #[test]
+    fn test_unused_function_in_inst_tinytest_flagged() {
+        let dir = TempDir::new().unwrap();
+        let r_dir = dir.path().join("R");
+        fs::create_dir(&r_dir).unwrap();
+        let inst_dir = dir.path().join("inst").join("tinytest");
+        fs::create_dir_all(&inst_dir).unwrap();
+        fs::write(dir.path().join("DESCRIPTION"), "Package: test").unwrap();
+        fs::write(dir.path().join("NAMESPACE"), "export(public_fn)\n").unwrap();
+
+        let file_a = r_dir.join("public.R");
+        fs::write(&file_a, "public_fn <- function() 1\n").unwrap();
+
+        // Helper defined in inst/tinytest/ but never used
+        let inst_helper = inst_dir.join("helper.R");
+        fs::write(&inst_helper, "unused_inst_helper <- function() 42\n").unwrap();
+
+        let mut shared = scan_r_package_paths(std::slice::from_ref(&file_a), true);
+        shared.extend(scan_extra_package_paths(&[inst_helper], dir.path()));
+        let result =
+            compute_unused_from_shared(&shared, &default_options(), &read_namespace(dir.path()));
+
+        let has_unused = result
+            .values()
+            .any(|v| v.iter().any(|(n, _, _)| n == "unused_inst_helper"));
+        assert!(
+            has_unused,
+            "unused_inst_helper is defined in inst/tinytest/ but never called, should be flagged"
+        );
+    }
+
+    #[test]
+    fn test_unused_function_in_inst_tests_flagged() {
+        let dir = TempDir::new().unwrap();
+        let r_dir = dir.path().join("R");
+        fs::create_dir(&r_dir).unwrap();
+        let inst_dir = dir.path().join("inst").join("tests");
+        fs::create_dir_all(&inst_dir).unwrap();
+        fs::write(dir.path().join("DESCRIPTION"), "Package: test").unwrap();
+        fs::write(dir.path().join("NAMESPACE"), "export(public_fn)\n").unwrap();
+
+        let file_a = r_dir.join("public.R");
+        fs::write(&file_a, "public_fn <- function() 1\n").unwrap();
+
+        // Helper defined in inst/tests/ but never used
+        let inst_helper = inst_dir.join("helper.R");
+        fs::write(&inst_helper, "unused_inst_helper <- function() 42\n").unwrap();
+
+        let mut shared = scan_r_package_paths(std::slice::from_ref(&file_a), true);
+        shared.extend(scan_extra_package_paths(&[inst_helper], dir.path()));
+        let result =
+            compute_unused_from_shared(&shared, &default_options(), &read_namespace(dir.path()));
+
+        let has_unused = result
+            .values()
+            .any(|v| v.iter().any(|(n, _, _)| n == "unused_inst_helper"));
+        assert!(
+            has_unused,
+            "unused_inst_helper is defined in inst/tests/ but never called, should be flagged"
+        );
+    }
+
+    #[test]
+    fn test_cross_scope_independence() {
+        let dir = TempDir::new().unwrap();
+        let r_dir = dir.path().join("R");
+        fs::create_dir(&r_dir).unwrap();
+        let tests_dir = dir.path().join("tests").join("testthat");
+        fs::create_dir_all(&tests_dir).unwrap();
+        fs::write(dir.path().join("DESCRIPTION"), "Package: test").unwrap();
+        fs::write(dir.path().join("NAMESPACE"), "export(public_fn)\n").unwrap();
+
+        // R/ file references `test_only_helper` but it shouldn't save the
+        // test-scoped definition from being flagged unused within tests/.
+        let file_a = r_dir.join("public.R");
+        fs::write(&file_a, "public_fn <- function() test_only_helper()\n").unwrap();
+
+        let test_helper = tests_dir.join("helper.R");
+        fs::write(&test_helper, "test_only_helper <- function() 42\n").unwrap();
+
+        let mut shared = scan_r_package_paths(std::slice::from_ref(&file_a), true);
+        shared.extend(scan_extra_package_paths(&[test_helper], dir.path()));
+        let result =
+            compute_unused_from_shared(&shared, &default_options(), &read_namespace(dir.path()));
+
+        let has_test_helper = result
+            .values()
+            .any(|v| v.iter().any(|(n, _, _)| n == "test_only_helper"));
+        assert!(
+            has_test_helper,
+            "test_only_helper is only referenced in R/ but defined in tests/, \
+             should be flagged as unused within tests/ scope"
+        );
+    }
+
     #[test]
     fn test_threshold_not_exceeded_shows_diagnostics() {
         let dir = TempDir::new().unwrap();

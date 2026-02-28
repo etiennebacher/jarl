@@ -1,10 +1,14 @@
 # unused_function
 ## What it does
 
-Checks for unused functions, currently limited to R packages. It looks for
-functions defined in the `R` folder that are not exported and not used
-anywhere in the package (including the `R`, `inst/tinytest`, `inst/tests`,
-`src`, and `tests` folders).
+Checks for unused functions in R packages. It looks for:
+
+- Functions defined in `R/` that are not exported and not used anywhere in
+  the package (including `R/`, `inst/tinytest/`, `inst/tests/`, `src/`, and
+  `tests/`).
+- Functions defined in `tests/` that are not used anywhere in `tests/`.
+- Functions defined in `inst/tinytest/` or `inst/tests/` that are not used
+  anywhere within that directory.
 
 ## Why is this bad?
 

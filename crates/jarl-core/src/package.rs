@@ -14,6 +14,20 @@ use crate::lints::base::unused_function::unused_function::{
 };
 use crate::rule_set::Rule;
 
+/// Scope of a file within an R package, determining how its definitions
+/// are checked for unused functions.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum FileScope {
+    /// R/ — definitions checked against all files; export check applies.
+    R,
+    /// tests/ — definitions checked only within tests/.
+    Tests,
+    /// inst/tinytest/ or inst/tests/ — definitions checked only within this scope.
+    Inst,
+    /// src/ — C/C++ files; no definition checking.
+    Src,
+}
+
 /// Shared per-file data collected during the single parallel scan.
 pub(crate) struct SharedFileData {
     pub root_key: String,
@@ -22,9 +36,7 @@ pub(crate) struct SharedFileData {
     pub package_root: PathBuf,
     pub assignments: Vec<(String, TextRange, u32, u32)>,
     pub symbol_counts: HashMap<String, usize>,
-    /// `true` for files in the R/ directory, `false` for extra files
-    /// (tests/, inst/tinytest/, inst/tests/, src/).
-    pub is_r_dir_file: bool,
+    pub scope: FileScope,
 }
 
 /// Pre-computed cross-file analysis results for an R package.
@@ -145,21 +157,22 @@ pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAn
         }
     }
 
-    // Build the list of all files to scan in parallel: R/ files (tagged as
-    // is_r_dir_file=true) and extra files (tagged as is_r_dir_file=false).
-    let all_files: Vec<(&Path, bool)> = r_dir_files
+    // Build the list of all files to scan in parallel, each tagged with its scope.
+    let all_files: Vec<(&Path, FileScope)> = r_dir_files
         .iter()
-        .map(|p| (p.as_path(), true))
-        .chain(excluded_r_files.iter().map(|p| (p.as_path(), true)))
-        .chain(extra_files.iter().map(|p| (p.as_path(), false)))
+        .map(|p| (p.as_path(), FileScope::R))
+        .chain(excluded_r_files.iter().map(|p| (p.as_path(), FileScope::R)))
+        .chain(extra_files.iter().map(|p| {
+            let scope = file_scope_from_path(p);
+            (p.as_path(), scope)
+        }))
         .collect();
 
-    // Single parallel scan: read each file once.
-    // - R/ files: scan_top_level_assignments + optionally scan_symbols.
-    // - Extra files: only scan_symbols (no assignments needed).
+    // Single parallel scan: read each file once. All R files get
+    // scan_top_level_assignments; Src files only get scan_symbols.
     let shared_data: Vec<SharedFileData> = all_files
         .par_iter()
-        .filter_map(|(path, is_r_dir)| {
+        .filter_map(|(path, scope)| {
             let content = std::fs::read_to_string(path).ok()?;
             let symbol_counts = if check_unused {
                 scan_symbols(&content)
@@ -167,20 +180,23 @@ pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAn
                 HashMap::new()
             };
 
-            if *is_r_dir {
+            let assignments = match scope {
+                FileScope::Src => Vec::new(),
+                _ => scan_top_level_assignments(&content),
+            };
+
+            if *scope == FileScope::R {
                 let r_dir = path.parent()?;
                 let package_root = r_dir.parent()?.to_path_buf();
                 let rel_path = PathBuf::from(crate::fs::relativize_path(path));
                 let root_key = crate::fs::relativize_path(r_dir);
-                let assignments = scan_top_level_assignments(&content);
                 Some(SharedFileData {
                     root_key,
                     rel_path,
-
                     package_root,
                     assignments,
                     symbol_counts,
-                    is_r_dir_file: true,
+                    scope: FileScope::R,
                 })
             } else {
                 // Extra file: figure out the package root. The file is
@@ -192,11 +208,10 @@ pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAn
                 Some(SharedFileData {
                     root_key,
                     rel_path,
-
                     package_root,
-                    assignments: Vec::new(),
+                    assignments,
                     symbol_counts,
-                    is_r_dir_file: false,
+                    scope: *scope,
                 })
             }
         })
@@ -219,6 +234,30 @@ pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAn
     };
 
     PackageAnalysis { duplicate_assignments, unused_functions }
+}
+
+/// Determine the `FileScope` for a non-R/ file based on its path.
+fn file_scope_from_path(path: &Path) -> FileScope {
+    let components: Vec<_> = path
+        .components()
+        .map(|c| c.as_os_str().to_string_lossy().to_string())
+        .collect();
+    for (i, comp) in components.iter().enumerate() {
+        match comp.as_str() {
+            "tests" => return FileScope::Tests,
+            "inst" => {
+                if let Some(next) = components.get(i + 1)
+                    && (next == "tinytest" || next == "tests")
+                {
+                    return FileScope::Inst;
+                }
+            }
+            "src" => return FileScope::Src,
+            _ => {}
+        }
+    }
+    // Fallback: treat unknown extra files as Tests scope
+    FileScope::Tests
 }
 
 /// Walk up from a file path to find the package root (directory containing DESCRIPTION).
@@ -256,18 +295,18 @@ pub(crate) fn scan_r_package_paths(paths: &[PathBuf], with_symbols: bool) -> Vec
             Some(SharedFileData {
                 root_key,
                 rel_path,
-
                 package_root,
                 assignments,
                 symbol_counts,
-                is_r_dir_file: true,
+                scope: FileScope::R,
             })
         })
         .collect()
 }
 
-/// Scan extra (non-R/) files into `SharedFileData` for tests. These are
-/// test/tinytest/src files that should have `is_r_dir_file = false`.
+/// Scan extra (non-R/) files into `SharedFileData` for tests. Assigns
+/// the correct `FileScope` based on the file path and also collects
+/// top-level assignments for R files.
 /// The `package_root` is the directory containing DESCRIPTION.
 #[cfg(test)]
 pub(crate) fn scan_extra_package_paths(
@@ -282,14 +321,18 @@ pub(crate) fn scan_extra_package_paths(
             let content = std::fs::read_to_string(path).ok()?;
             let symbol_counts = scan_symbols(&content);
             let rel_path = PathBuf::from(crate::fs::relativize_path(path));
+            let scope = file_scope_from_path(path);
+            let assignments = match scope {
+                FileScope::Src => Vec::new(),
+                _ => scan_top_level_assignments(&content),
+            };
             Some(SharedFileData {
                 root_key: root_key.clone(),
                 rel_path,
-
                 package_root: package_root.to_path_buf(),
-                assignments: Vec::new(),
+                assignments,
                 symbol_counts,
-                is_r_dir_file: false,
+                scope,
             })
         })
         .collect()
