@@ -63,11 +63,11 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::ExpectMatch) {
         checker.report_diagnostic(expect_match(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::ExpectNoMatch) {
-        checker.report_diagnostic(expect_no_match(r_expr)?);
-    }
     if checker.is_rule_enabled(Rule::ExpectNamed) {
         checker.report_diagnostic(expect_named(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::ExpectNoMatch) {
+        checker.report_diagnostic(expect_no_match(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::ExpectNot) {
         checker.report_diagnostic(expect_not(r_expr)?);
