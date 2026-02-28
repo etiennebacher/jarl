@@ -92,7 +92,6 @@ select = []
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -595,7 +594,6 @@ length(levels(x))"#;
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -2872,6 +2870,150 @@ select = ["any_duplicated"]
       | ------------------ `any(duplicated(...))` is inefficient.
       |
       = help: Use `anyDuplicated(...) > 0` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// When a subfolder has its own jarl.toml with `exclude` patterns, running
+/// `jarl check .` from the parent should respect the subfolder's exclude list.
+#[test]
+fn test_hierarchical_toml_subfolder_exclude_respected() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // Root config: flag any_is_na
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+select = ["any_is_na"]
+"#,
+    )?;
+    std::fs::write(directory.join("root.R"), "any(is.na(x))")?;
+
+    // Subfolder config: flag any_is_na but exclude bar.R
+    std::fs::create_dir(directory.join("subfolder"))?;
+    std::fs::write(
+        directory.join("subfolder/jarl.toml"),
+        r#"
+[lint]
+select = ["any_is_na"]
+exclude = ["bar.R"]
+"#,
+    )?;
+    std::fs::write(directory.join("subfolder/foo.R"), "any(is.na(x))")?;
+    std::fs::write(directory.join("subfolder/bar.R"), "any(is.na(x))")?;
+
+    // bar.R should be excluded by the subfolder config;
+    // only root.R and subfolder/foo.R should be flagged
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> root.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+    warning: any_is_na
+     --> subfolder/foo.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// When a subfolder has its own jarl.toml with `include` patterns, running
+/// `jarl check .` from the parent should only lint matching files in that subfolder.
+#[test]
+fn test_hierarchical_toml_subfolder_include_respected() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    // Root config: flag any_is_na, no include restriction
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+select = ["any_is_na"]
+"#,
+    )?;
+    std::fs::write(directory.join("root.R"), "any(is.na(x))")?;
+
+    // Subfolder config: flag any_is_na but only include foo.R
+    std::fs::create_dir(directory.join("subfolder"))?;
+    std::fs::write(
+        directory.join("subfolder/jarl.toml"),
+        r#"
+[lint]
+select = ["any_is_na"]
+include = ["foo.R"]
+"#,
+    )?;
+    std::fs::write(directory.join("subfolder/foo.R"), "any(is.na(x))")?;
+    std::fs::write(directory.join("subfolder/bar.R"), "any(is.na(x))")?;
+
+    // bar.R should be excluded because only foo.R is included;
+    // only root.R and subfolder/foo.R should be flagged
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> root.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+    warning: any_is_na
+     --> subfolder/foo.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────

@@ -627,7 +627,6 @@ z <- x == TRUE && any(is.na(y))
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -699,7 +698,6 @@ Summary: Added 1 suppression comment(s) across 1 file(s).
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -772,7 +770,6 @@ Summary: Added 2 suppression comment(s) across 1 file(s).
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
@@ -849,7 +846,6 @@ Summary: Added 1 suppression comment(s) across 1 file(s).
     success: true
     exit_code: 0
     ----- stdout -----
-
     ── Summary ──────────────────────────────────────
     All checks passed!
 
