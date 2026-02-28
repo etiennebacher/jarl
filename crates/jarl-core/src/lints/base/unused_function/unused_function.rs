@@ -9,8 +9,8 @@ use crate::package::SharedFileData;
 ///
 /// Checks for unused functions, currently limited to R packages. It looks for
 /// functions defined in the `R` folder that are not exported and not used
-/// anywhere in the package (including the `R`, `inst/tinytest`, `src`, and
-/// `tests` folders).
+/// anywhere in the package (including the `R`, `inst/tinytest`, `inst/tests`,
+/// `src`, and `tests` folders).
 ///
 /// ## Why is this bad?
 ///
@@ -304,7 +304,7 @@ pub(crate) fn compute_unused_from_shared(
             }
         }
 
-        // Symbols from extra files (tests/, inst/tinytest/, src/).
+        // Symbols from extra files (tests/, inst/tinytest/, inst/tests/, src/).
         let extra_symbol_set: HashSet<&str> = extra_files
             .iter()
             .flat_map(|f| f.symbol_counts.keys().map(|s| s.as_str()))

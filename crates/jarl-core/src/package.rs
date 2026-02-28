@@ -23,7 +23,7 @@ pub(crate) struct SharedFileData {
     pub assignments: Vec<(String, TextRange, u32, u32)>,
     pub symbol_counts: HashMap<String, usize>,
     /// `true` for files in the R/ directory, `false` for extra files
-    /// (tests/, inst/tinytest/, src/).
+    /// (tests/, inst/tinytest/, inst/tests/, src/).
     pub is_r_dir_file: bool,
 }
 
@@ -93,8 +93,8 @@ pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAn
 
     // Discover package roots and collect excluded R/ files so they still
     // contribute to cross-file analysis (both duplicate and unused checks).
-    // Also collect extra files (tests/, inst/tinytest/, src/) and NAMESPACE
-    // exports for the unused-function rule.
+    // Also collect extra files (tests/, inst/tinytest/, inst/tests/, src/) and
+    // NAMESPACE exports for the unused-function rule.
     let mut extra_files: Vec<PathBuf> = Vec::new();
     let mut excluded_r_files: Vec<PathBuf> = Vec::new();
     let mut namespace_contents: HashMap<PathBuf, String> = HashMap::new();
@@ -127,7 +127,7 @@ pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAn
 
         if check_unused {
             // Collect test/tinytest R files
-            for dir_name in &["inst/tinytest", "tests"] {
+            for dir_name in &["inst/tinytest", "inst/tests", "tests"] {
                 let dir = root.join(dir_name);
                 if dir.is_dir() {
                     extra_files.extend(collect_files(&dir, has_r_extension));
