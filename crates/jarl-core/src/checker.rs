@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::diagnostic::Diagnostic;
 use crate::rule_options::ResolvedRuleOptions;
 use crate::rule_set::{Rule, RuleSet};
@@ -19,6 +21,9 @@ pub struct Checker {
     pub suppression: SuppressionManager,
     // Per-rule options resolved from configuration
     pub rule_options: ResolvedRuleOptions,
+    // Pre-computed S3 method names from the package NAMESPACE file.
+    // Used by unused_function_argument to skip S3 methods.
+    pub package_s3_methods: HashSet<String>,
 }
 
 impl Checker {
@@ -29,6 +34,7 @@ impl Checker {
             minimum_r_version: None,
             suppression,
             rule_options,
+            package_s3_methods: HashSet::new(),
         }
     }
 

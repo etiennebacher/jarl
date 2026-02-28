@@ -428,7 +428,7 @@ fn test_add_jarl_ignore_function_parameter() -> anyhow::Result<()> {
         "f <- function(
     a = any(is.na(x))
 ) {
-  1
+  a
 }
 ",
     )?;
@@ -459,13 +459,14 @@ Summary: Added 1 suppression comment(s) across 1 file(s).
     let content = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(
     content,
-        @"f <- function(
-    # jarl-ignore any_is_na: <reason>
-    a = any(is.na(x))
-) {
-  1
-}
-"
+        @r"
+    f <- function(
+        # jarl-ignore any_is_na: <reason>
+        a = any(is.na(x))
+    ) {
+      a
+    }
+    "
     );
 
     Ok(())
