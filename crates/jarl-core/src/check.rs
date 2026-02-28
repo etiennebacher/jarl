@@ -19,10 +19,9 @@ pub use crate::checker::Checker;
 use crate::config::Config;
 use crate::diagnostic::*;
 use crate::fix::*;
-pub use crate::lints::base::unused_function_argument::unused_function_argument::compute_package_s3_methods;
 use crate::utils::*;
 
-pub fn check(mut config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
+pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
     let pkg = compute_package_analysis(&config.paths, &config);
 
     // Ensure that all paths are covered by VCS. This is conservative because
@@ -35,16 +34,6 @@ pub fn check(mut config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow:
             let first_path = path_strings.first().unwrap().clone();
             return vec![(first_path, Err(e))];
         }
-    }
-
-    // Pre-compute S3 method names from NAMESPACE files for the
-    // unused_function_argument rule.
-    if config
-        .rules_to_apply
-        .contains(&Rule::UnusedFunctionArguments)
-        && config.package_s3_methods.is_empty()
-    {
-        config.package_s3_methods = compute_package_s3_methods(&config.paths);
     }
 
     // Wrap config and package analysis in Arc to avoid expensive clones in parallel execution
@@ -161,7 +150,7 @@ pub fn get_checks(
         .cloned()
         .unwrap_or_default();
     let unused_functions = pkg.unused_functions.get(file).cloned().unwrap_or_default();
-    checker.package_s3_methods = config.package_s3_methods.clone();
+    checker.package_s3_methods = pkg.s3_methods.clone();
 
     // We run checks at expression-level. This gathers all violations, no matter
     // whether they are suppressed or not. They are filtered out in the next

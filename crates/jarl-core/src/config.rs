@@ -80,9 +80,6 @@ pub struct Config {
     pub fixable: Option<HashSet<String>>,
     /// Resolved per-rule options
     pub rule_options: ResolvedRuleOptions,
-    /// Pre-computed S3 method names from the package NAMESPACE file.
-    /// Used by unused_function_argument to skip S3 methods.
-    pub package_s3_methods: HashSet<String>,
 }
 
 pub fn build_config(
@@ -158,7 +155,6 @@ pub fn build_config(
         unfixable: unfixable_toml,
         fixable: fixable_toml,
         rule_options,
-        package_s3_methods: HashSet::new(),
     })
 }
 
