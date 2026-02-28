@@ -314,35 +314,25 @@ fn is_assigned_to_hook(func: &RFunctionDefinition) -> bool {
     false
 }
 
-/// Check if this function is a handler argument to `tryCatch()` or
-/// `withCallingHandlers()`.
+/// Check if this function is a handler argument to `tryCatch()`,
+/// `withCallingHandlers()`, or `try_fetch()`.
 ///
-/// Detects patterns like:
-///   `tryCatch(expr, error = function(e) ...)`
-///   `withCallingHandlers(expr, warning = function(w) ...)`
+/// Any named argument to these functions that is a function definition is a
+/// condition handler whose signature is imposed by R (it receives a condition
+/// object). The argument name is the condition class and can be anything
+/// (e.g. `error`, `vctrs_error_incompatible_type`, etc.).
 fn is_trycatch_handler(func: &RFunctionDefinition) -> bool {
-    const HANDLER_NAMES: &[&str] = &["error", "warning", "message", "condition", "interrupt"];
     const HANDLER_FUNCTIONS: &[&str] = &["tryCatch", "try_fetch", "withCallingHandlers"];
 
-    // Walk up: function_definition -> R_ARGUMENT (value) -> R_ARGUMENT_LIST -> R_CALL_ARGUMENTS -> R_CALL
+    // Walk up: function_definition -> R_ARGUMENT (value)
     let arg_node = match func.syntax().parent() {
         Some(p) if p.kind() == RSyntaxKind::R_ARGUMENT => p,
         _ => return false,
     };
 
-    // Check the argument name
+    // Must be a named argument (unnamed positional args aren't handlers)
     if let Some(argument) = RArgument::cast(arg_node.clone()) {
-        let fields = argument.as_fields();
-        if let Some(name_clause) = &fields.name_clause {
-            if let Ok(name) = name_clause.name() {
-                let arg_name = name.to_trimmed_string();
-                if !HANDLER_NAMES.contains(&arg_name.as_str()) {
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        } else {
+        if argument.as_fields().name_clause.is_none() {
             return false;
         }
     } else {
