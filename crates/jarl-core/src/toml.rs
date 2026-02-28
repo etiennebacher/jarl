@@ -21,6 +21,7 @@ use crate::rule_options::duplicated_arguments::DuplicatedArgumentsOptions;
 use crate::rule_options::implicit_assignment::ImplicitAssignmentOptions;
 use crate::rule_options::undesirable_function::UndesirableFunctionOptions;
 use crate::rule_options::unreachable_code::UnreachableCodeOptions;
+use crate::rule_options::unused_function::UnusedFunctionOptions;
 use crate::settings::LinterSettings;
 use crate::settings::Settings;
 
@@ -236,6 +237,17 @@ pub struct LinterTomlOptions {
     #[serde(rename = "unreachable_code")]
     pub unreachable_code: Option<UnreachableCodeOptions>,
 
+    /// # Options for the `unused_function` rule
+    ///
+    /// Use `threshold-ignore` to control how many `unused_function`
+    /// violations are allowed before they are all hidden (likely false
+    /// positives).
+    ///
+    /// Use `skipped-functions` to determine which functions won't be reported
+    /// even if Jarl considers them unused.
+    #[serde(rename = "unused_function")]
+    pub unused_function: Option<UnusedFunctionOptions>,
+
     /// Catch any unknown fields so we can produce a clean error message that
     /// only lists the primary `[lint]` options (not every rule sub-table).
     #[serde(flatten)]
@@ -312,6 +324,7 @@ impl TomlOptions {
                 linter.implicit_assignment.as_ref(),
                 linter.undesirable_function.as_ref(),
                 linter.unreachable_code.as_ref(),
+                linter.unused_function.as_ref(),
             )?,
         };
 

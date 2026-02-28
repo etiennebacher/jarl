@@ -3,6 +3,7 @@ pub mod duplicated_arguments;
 pub mod implicit_assignment;
 pub mod undesirable_function;
 pub mod unreachable_code;
+pub mod unused_function;
 
 use assignment::AssignmentOptions;
 use assignment::ResolvedAssignmentOptions;
@@ -13,6 +14,8 @@ use undesirable_function::ResolvedUndesirableFunctionOptions;
 use undesirable_function::UndesirableFunctionOptions;
 use unreachable_code::ResolvedUnreachableCodeOptions;
 use unreachable_code::UnreachableCodeOptions;
+use unused_function::ResolvedUnusedFunctionOptions;
+use unused_function::UnusedFunctionOptions;
 
 use crate::rule_options::implicit_assignment::ImplicitAssignmentOptions;
 use crate::rule_options::implicit_assignment::ResolvedImplicitAssignmentOptions;
@@ -67,6 +70,7 @@ pub struct ResolvedRuleOptions {
     pub implicit_assignment: ResolvedImplicitAssignmentOptions,
     pub undesirable_function: ResolvedUndesirableFunctionOptions,
     pub unreachable_code: ResolvedUnreachableCodeOptions,
+    pub unused_function: ResolvedUnusedFunctionOptions,
 }
 
 impl ResolvedRuleOptions {
@@ -76,6 +80,7 @@ impl ResolvedRuleOptions {
         implicit_assignment: Option<&ImplicitAssignmentOptions>,
         undesirable_function: Option<&UndesirableFunctionOptions>,
         unreachable_code: Option<&UnreachableCodeOptions>,
+        unused_function: Option<&UnusedFunctionOptions>,
     ) -> anyhow::Result<Self> {
         Ok(Self {
             assignment: ResolvedAssignmentOptions::resolve(assignment)?,
@@ -87,13 +92,14 @@ impl ResolvedRuleOptions {
                 undesirable_function,
             )?,
             unreachable_code: ResolvedUnreachableCodeOptions::resolve(unreachable_code)?,
+            unused_function: ResolvedUnusedFunctionOptions::resolve(unused_function)?,
         })
     }
 }
 
 impl Default for ResolvedRuleOptions {
     fn default() -> Self {
-        Self::resolve(None, None, None, None, None)
+        Self::resolve(None, None, None, None, None, None)
             .expect("default rule options should always resolve")
     }
 }

@@ -57,6 +57,7 @@
   - `expect_no_match` (#368, @bjyberg)
   - `invalid_chunk_suppression` (#350)
   - `undesirable_function` (replaces `browser`) (#336)
+  - `unused_function` (#362)
 
 * The output in terminal with output format `full` or `concise` is now organized
   in multiple sections (summary, warnings, notes) (#366).

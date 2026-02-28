@@ -11,6 +11,7 @@ mod allow_dirty;
 mod allow_no_vcs;
 mod assignment;
 mod comments;
+mod exclude;
 mod help;
 mod helpers;
 mod jarl;

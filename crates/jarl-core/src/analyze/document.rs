@@ -19,6 +19,8 @@ use crate::rule_set::Rule;
 pub(crate) fn check_document(
     expressions: &RExpressionList,
     checker: &mut Checker,
+    duplicate_assignments: &[(String, biome_rowan::TextRange, String)],
+    unused_functions: &[(String, biome_rowan::TextRange, String)],
 ) -> anyhow::Result<()> {
     // --- Document-level analysis ---
 
@@ -97,15 +99,28 @@ pub(crate) fn check_document(
         }
     }
 
-    // Emit package-level duplicate top-level assignment diagnostics.
-    // This must come before suppression filtering so that # jarl-ignore
-    // and # jarl-ignore-file comments can suppress these diagnostics.
+    // Emit package-level diagnostics before suppression filtering so that
+    // # jarl-ignore and # jarl-ignore-file comments can suppress them.
     if checker.is_rule_enabled(Rule::DuplicatedFunctionDefinition) {
-        for (name, range, help) in &checker.package_duplicate_assignments.clone() {
+        for (name, range, help) in duplicate_assignments {
             checker.report_diagnostic(Some(Diagnostic::new(
                 ViolationData::new(
                     "duplicated_function_definition".to_string(),
                     format!("`{name}` is defined more than once in this package."),
+                    Some(help.clone()),
+                ),
+                *range,
+                Fix::empty(),
+            )));
+        }
+    }
+
+    if checker.is_rule_enabled(Rule::UnusedFunction) {
+        for (name, range, help) in unused_functions {
+            checker.report_diagnostic(Some(Diagnostic::new(
+                ViolationData::new(
+                    "unused_function".to_string(),
+                    format!("`{name}` is defined but never called in this package."),
                     Some(help.clone()),
                 ),
                 *range,

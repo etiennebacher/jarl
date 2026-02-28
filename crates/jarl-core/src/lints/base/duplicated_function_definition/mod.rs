@@ -3,6 +3,7 @@ pub(crate) mod duplicated_function_definition;
 #[cfg(test)]
 mod tests {
     use super::duplicated_function_definition::*;
+    use crate::package::scan_r_package_paths;
     use std::fs;
     use tempfile::TempDir;
 
@@ -113,7 +114,7 @@ mod tests {
         assert!(!in_pkg, "file not inside R/ so not in package");
     }
 
-    // ── compute_package_duplicate_assignments ─────────────────────────────
+    // ── compute_duplicates_from_shared ──────────────────────────────────
 
     #[test]
     fn test_same_file_duplicates() {
@@ -125,7 +126,8 @@ mod tests {
         let file = r_dir.join("foo.R");
         fs::write(&file, "foo <- function() 1\nfoo <- function() 2\n").unwrap();
 
-        let result = compute_package_duplicate_assignments(std::slice::from_ref(&file));
+        let shared = scan_r_package_paths(std::slice::from_ref(&file), false);
+        let result = compute_duplicates_from_shared(&shared);
 
         // The second `foo` should be flagged, but the first should not.
         // The map has one entry for foo.R
@@ -150,7 +152,8 @@ mod tests {
         let file_b = r_dir.join("bbb.R");
         fs::write(&file_b, "foo <- function() 2\n").unwrap();
 
-        let result = compute_package_duplicate_assignments(&[file_a.clone(), file_b.clone()]);
+        let shared = scan_r_package_paths(&[file_a.clone(), file_b.clone()], false);
+        let result = compute_duplicates_from_shared(&shared);
 
         // Only bbb.R should have a diagnostic
         assert_eq!(result.len(), 1, "expected exactly one file with duplicates");
@@ -173,7 +176,8 @@ mod tests {
         let file = r_dir.join("foo.R");
         fs::write(&file, "foo <- function() 1\nfoo <- function() 2\n").unwrap();
 
-        let result = compute_package_duplicate_assignments(std::slice::from_ref(&file));
+        let shared = scan_r_package_paths(std::slice::from_ref(&file), false);
+        let result = compute_duplicates_from_shared(&shared);
 
         assert!(
             result.is_empty(),
@@ -193,7 +197,8 @@ mod tests {
         let file_b = r_dir.join("b.R");
         fs::write(&file_b, "bar <- function() 2\n").unwrap();
 
-        let result = compute_package_duplicate_assignments(&[file_a.clone(), file_b.clone()]);
+        let shared = scan_r_package_paths(&[file_a.clone(), file_b.clone()], false);
+        let result = compute_duplicates_from_shared(&shared);
 
         assert!(result.is_empty(), "unique names should not be flagged");
     }

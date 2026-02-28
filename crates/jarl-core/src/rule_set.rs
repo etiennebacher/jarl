@@ -647,6 +647,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    UnusedFunction => {
+        name: "unused_function",
+        categories: [Corr],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
     VectorLogic => {
         name: "vector_logic",
         categories: [Perf],
