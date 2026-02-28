@@ -280,33 +280,22 @@ pub(crate) fn compute_unused_from_shared(
         let all_defined_name_refs: Vec<&str> =
             all_defined_names.iter().map(|s| s.as_str()).collect();
 
-        // Parse NAMESPACE using pre-computed content.
-        // The package root is the parent of the R/ directory.
-        let namespace_exports = if let Some(first_abs) = r_files.first().map(|f| &f.abs_path) {
-            let package_root = first_abs.parent().and_then(|r_dir| r_dir.parent());
-            if let Some(root) = package_root {
-                if let Some(ns_content_opt) = precomputed_namespace.get(root) {
-                    if let Some(ns_content) = ns_content_opt {
-                        parse_namespace_exports(ns_content, &all_defined_name_refs)
-                    } else {
-                        // No NAMESPACE file — skip this package
-                        continue;
-                    }
-                } else {
-                    // Fallback: read NAMESPACE directly (e.g. from tests)
-                    let ns_path = root.join("NAMESPACE");
-                    if let Ok(ns_content) = std::fs::read_to_string(&ns_path) {
-                        parse_namespace_exports(&ns_content, &all_defined_name_refs)
-                    } else {
-                        continue;
-                    }
-                }
-            } else {
-                continue;
-            }
-        } else {
+        let Some(first) = r_files.first() else {
             continue;
         };
+        let root = &first.package_root;
+
+        // Resolve NAMESPACE content: use pre-computed value if available,
+        // otherwise read from disk (fallback for tests).
+        let ns_content = match precomputed_namespace.get(root.as_path()) {
+            Some(Some(content)) => content.clone(),
+            Some(None) => continue, // No NAMESPACE file — skip this package
+            None => match std::fs::read_to_string(root.join("NAMESPACE")) {
+                Ok(content) => content,
+                Err(_) => continue,
+            },
+        };
+        let namespace_exports = parse_namespace_exports(&ns_content, &all_defined_name_refs);
 
         // --- O(1) cross-file symbol lookup ---
         // Pre-compute: for each symbol name, how many R/ files contain it.

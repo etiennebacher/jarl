@@ -18,7 +18,8 @@ use crate::rule_set::Rule;
 pub(crate) struct SharedFileData {
     pub root_key: String,
     pub rel_path: PathBuf,
-    pub abs_path: PathBuf,
+    /// Absolute path to the package root (directory containing DESCRIPTION).
+    pub package_root: PathBuf,
     pub assignments: Vec<(String, TextRange, u32, u32)>,
     pub symbol_counts: HashMap<String, usize>,
     /// `true` for files in the R/ directory, `false` for extra files
@@ -143,14 +144,16 @@ pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAn
             };
 
             if *is_r_dir {
-                let root = path.parent()?;
+                let r_dir = path.parent()?;
+                let package_root = r_dir.parent()?.to_path_buf();
                 let rel_path = PathBuf::from(crate::fs::relativize_path(path));
-                let root_key = crate::fs::relativize_path(root);
+                let root_key = crate::fs::relativize_path(r_dir);
                 let assignments = scan_top_level_assignments(&content);
                 Some(SharedFileData {
                     root_key,
                     rel_path,
-                    abs_path: path.to_path_buf(),
+
+                    package_root,
                     assignments,
                     symbol_counts,
                     is_r_dir_file: true,
@@ -165,7 +168,8 @@ pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAn
                 Some(SharedFileData {
                     root_key,
                     rel_path,
-                    abs_path: path.to_path_buf(),
+
+                    package_root,
                     assignments: Vec::new(),
                     symbol_counts,
                     is_r_dir_file: false,
@@ -214,9 +218,10 @@ pub(crate) fn scan_r_package_paths(paths: &[PathBuf], with_symbols: bool) -> Vec
         .filter(|p| has_r_extension(p))
         .filter(|p| is_in_r_package(p).unwrap_or(false))
         .filter_map(|path| {
-            let root = path.parent()?;
+            let r_dir = path.parent()?;
+            let package_root = r_dir.parent()?.to_path_buf();
             let rel_path = PathBuf::from(crate::fs::relativize_path(path));
-            let root_key = crate::fs::relativize_path(root);
+            let root_key = crate::fs::relativize_path(r_dir);
             let content = std::fs::read_to_string(path).ok()?;
             let assignments = scan_top_level_assignments(&content);
             let symbol_counts = if with_symbols {
@@ -227,7 +232,8 @@ pub(crate) fn scan_r_package_paths(paths: &[PathBuf], with_symbols: bool) -> Vec
             Some(SharedFileData {
                 root_key,
                 rel_path,
-                abs_path: path.clone(),
+
+                package_root,
                 assignments,
                 symbol_counts,
                 is_r_dir_file: true,
@@ -255,7 +261,8 @@ pub(crate) fn scan_extra_package_paths(
             Some(SharedFileData {
                 root_key: root_key.clone(),
                 rel_path,
-                abs_path: path.clone(),
+
+                package_root: package_root.to_path_buf(),
                 assignments: Vec::new(),
                 symbol_counts,
                 is_r_dir_file: false,
