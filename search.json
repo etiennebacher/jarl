@@ -2395,7 +2395,7 @@
     "href": "rules/expect_match.html",
     "title": "expect_match",
     "section": "",
-    "text": "Checks for usage of expect_true(grepl(...)).\n\n\n\nexpect_match() is more explicit and clearer in intent than wrapping grepl() in expect_true(). It also provides better error messages when tests fail.\nThis rule is disabled by default. Select it either with the rule name \"expect_match\" or with the rule group \"TESTTHAT\".\n\n\n\nexpect_true(grepl(\"foo\", x))\nexpect_true(grepl(\"bar\", x, perl = FALSE, fixed = FALSE))\nUse instead:\nexpect_match(x, \"foo\")\nexpect_match(x, \"bar\", perl = FALSE, fixed = FALSE)",
+    "text": "Checks for usage of expect_true(grepl(...)).\n\n\n\nexpect_match() is more explicit and clearer in intent than wrapping grepl() in expect_true(). It also provides better error messages when tests fail.\nThis rule is disabled by default. Select it either with the rule name \"expect_match\" or with the rule group \"TESTTHAT\".\nThis rule has an automatic fix but the fix is disabled if grepl() arguments other than pattern and x are unnamed.\n\n\n\nexpect_true(grepl(\"foo\", x))\nexpect_true(grepl(\"bar\", x, perl = FALSE, fixed = FALSE))\nUse instead:\nexpect_match(x, \"foo\")\nexpect_match(x, \"bar\", perl = FALSE, fixed = FALSE)",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -2419,7 +2419,7 @@
     "href": "rules/expect_match.html#why-is-this-bad",
     "title": "expect_match",
     "section": "",
-    "text": "expect_match() is more explicit and clearer in intent than wrapping grepl() in expect_true(). It also provides better error messages when tests fail.\nThis rule is disabled by default. Select it either with the rule name \"expect_match\" or with the rule group \"TESTTHAT\".",
+    "text": "expect_match() is more explicit and clearer in intent than wrapping grepl() in expect_true(). It also provides better error messages when tests fail.\nThis rule is disabled by default. Select it either with the rule name \"expect_match\" or with the rule group \"TESTTHAT\".\nThis rule has an automatic fix but the fix is disabled if grepl() arguments other than pattern and x are unnamed.",
     "crumbs": [
       "Rules",
       "List of rules",
@@ -3559,7 +3559,7 @@
     "href": "rules.html",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\ncomments (COMM): mistakes in the suppression comments (# jarl-ignore).\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_g9ebuljsp583w9bl6347",
+    "text": "All rules belong to at least one category:\n\ncomments (COMM): mistakes in the suppression comments (# jarl-ignore).\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_chays2bzgbharix0rdob",
     "crumbs": [
       "Rules"
     ]
@@ -3569,7 +3569,7 @@
     "href": "rules.html#overview",
     "title": "Rules",
     "section": "",
-    "text": "All rules belong to at least one category:\n\ncomments (COMM): mistakes in the suppression comments (# jarl-ignore).\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_g9ebuljsp583w9bl6347",
+    "text": "All rules belong to at least one category:\n\ncomments (COMM): mistakes in the suppression comments (# jarl-ignore).\ncorrectness (CORR): code that is outright wrong or useless.\nsuspicious (SUSP): code that is most likely wrong or useless.\nperformance (PERF): code that can be written to run faster.\nreadability (READ): code is correct but can be written in a way that is easier to read.\ntestthat (TESTTHAT): rules for the testthat package. Disabled by default.\n\nYou can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.\n\n\n\n\n\n\nNoteComparison to lintr\n\n\n\nlintr includes many rules related to code formatting, such as brace_linter, line_length_linter, and paren_body_linter, among others.\nSupporting those rules is not an objective of Jarl. Instead, I recommend using the Air formatter.\n\n\nThe column “Has fix” can take the following values:\n\n✅ Safe fix\n❗ Unsafe fix\n❌ No fix\n\n\n\n\n\n\n\n\n\n  \n    \n    \n    tinytable_chays2bzgbharix0rdob",
     "crumbs": [
       "Rules"
     ]

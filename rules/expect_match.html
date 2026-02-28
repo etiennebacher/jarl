@@ -615,6 +615,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
 <p><code>expect_match()</code> is more explicit and clearer in intent than wrapping <code>grepl()</code> in <code>expect_true()</code>. It also provides better error messages when tests fail.</p>
 <p>This rule is <strong>disabled by default</strong>. Select it either with the rule name <code>"expect_match"</code> or with the rule group <code>"TESTTHAT"</code>.</p>
+<p>This rule has an automatic fix but the fix is disabled if <code>grepl()</code> arguments other than <code>pattern</code> and <code>x</code> are unnamed.</p>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
