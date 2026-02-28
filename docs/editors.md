@@ -118,3 +118,24 @@ This enables the code-actions and diagnostics.
 ![](img/nvim_diagnostic.png){fig-alt="R script with multiple errors showing in-line indicating a rule violation."}
 
 ![](img/nvim_quick_fix.png){fig-alt="The same R script as before, but this time there is a list of three actions next to the piece of code: apply fix, ignore this rule, and ignore all rules."}
+
+If you want to enable 'fix on save' behavior in Neovim, you can use the following code with [conform.nvim](https://github.com/stevearc/conform.nvim):
+
+```lua
+require('conform').setup({
+  format_on_save = {
+    timeout_ms = 1500,
+    lsp_format = 'fallback',
+  },
+  formatters_by_ft = {
+    r = { 'jarl' },
+  },
+  formatters = {
+    jarl = {
+      command = 'jarl',
+      args = { 'check', '--fix', '$FILENAME' }, -- add other commands such as '--allow-no-vcs' as needed
+      stdin = false,
+    },
+  }
+})
+```
