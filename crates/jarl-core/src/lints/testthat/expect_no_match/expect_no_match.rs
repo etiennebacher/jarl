@@ -6,66 +6,66 @@ use crate::utils::{
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
-pub struct ExpectMatch;
+pub struct ExpectNoMatch;
 
 /// ## What it does
 ///
-/// Checks for usage of `expect_true(grepl(...))`.
+/// Checks for usage of `expect_false(grepl(...))`.
 ///
 /// ## Why is this bad?
 ///
-/// `expect_match()` is more explicit and clearer in intent than wrapping
-/// `grepl()` in `expect_true()`. It also provides better error messages when
+/// `expect_no_match()` is more explicit and clearer in intent than wrapping
+/// `grepl()` in `expect_false()`. It also provides better error messages when
 /// tests fail.
 ///
-/// This rule is **disabled by default**. Select it either with the rule name
-/// `"expect_match"` or with the rule group `"TESTTHAT"`.
+/// Note: negated forms like `expect_false(!grepl(...))` are intentionally
+/// ignored by this rule and handled by `expect_not`.
 ///
-/// This rule has an automatic fix but the fix is disabled if `grepl()`
-/// arguments other than `pattern` and `x` are unnamed.
+/// This rule is **disabled by default**. Select it either with the rule name
+/// `"expect_no_match"` or with the rule group `"TESTTHAT"`.
 ///
 /// ## Example
 ///
 /// ```r
-/// expect_true(grepl("foo", x))
-/// expect_true(grepl("bar", x, perl = FALSE, fixed = FALSE))
+/// expect_false(grepl("foo", x))
+/// expect_false(grepl("bar", x, perl = FALSE, fixed = FALSE))
 /// ```
 ///
 /// Use instead:
 /// ```r
-/// expect_match(x, "foo")
-/// expect_match(x, "bar", perl = FALSE, fixed = FALSE)
+/// expect_no_match(x, "foo")
+/// expect_no_match(x, "bar", perl = FALSE, fixed = FALSE)
 /// ```
-impl Violation for ExpectMatch {
+impl Violation for ExpectNoMatch {
     fn name(&self) -> String {
-        "expect_match".to_string()
+        "expect_no_match".to_string()
     }
 
     fn body(&self) -> String {
-        "`expect_true(grepl(...))` is not as clear as `expect_match(...)`.".to_string()
+        "`expect_false(grepl(...))` is not as clear as `expect_no_match(...)`.".to_string()
     }
 
     fn suggestion(&self) -> Option<String> {
-        Some("Use `expect_match(...)` instead.".to_string())
+        Some("Use `expect_no_match(...)` instead.".to_string())
     }
 }
 
-pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
+pub fn expect_no_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let range = ast.syntax().text_trimmed_range();
     let function = ast.function()?;
     let function_name = get_function_name(function.clone());
-    if function_name != "expect_true" {
+    if function_name != "expect_false" {
         return Ok(None);
     }
 
-    // For pipe cases (`grepl(...) |> expect_true()`), lint but skip fix.
+    // For pipe cases (`grepl(...) |> expect_false()`), lint but skip fix.
     // Fix seems reasonably complex as x & pattern position are swapped
     if let Some((_inner_content, outer_syntax)) =
-        get_nested_functions_content(ast, "expect_true", "grepl")?
+        get_nested_functions_content(ast, "expect_false", "grepl")?
         && outer_syntax.kind() == RSyntaxKind::R_BINARY_EXPRESSION
     {
-        // Ignore negated pipe (e.g. `!grepl(...) |> expect_true()`) false positive
-        // This would be covered by `expect_no_match` or `expect_not`
+        // Ignore negated pipe (e.g. `!grepl(...) |> expect_false()`) false positive.
+        // Negation is intentionally handled by `expect_not`.
         if let Some(parent) = outer_syntax.parent()
             && let Some(unary) = RUnaryExpression::cast(parent)
             && let Ok(operator) = unary.operator()
@@ -75,7 +75,7 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         }
 
         let range = outer_syntax.text_trimmed_range();
-        return Ok(Some(Diagnostic::new(ExpectMatch, range, Fix::empty())));
+        return Ok(Some(Diagnostic::new(ExpectNoMatch, range, Fix::empty())));
     }
 
     let args = ast.arguments()?.items();
@@ -92,7 +92,7 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    // All grepl args can be passed to expect_match, so keep them all for fix
+    // All grepl args can be passed to expect_no_match, so keep them all for fix
     let grepl_args = grepl_call.arguments()?.items();
     let pattern_arg =
         unwrap_or_return_none!(get_arg_by_name_then_position(&grepl_args, "pattern", 1));
@@ -105,14 +105,15 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         .to_trimmed_text()
         .to_string();
 
-    // Give lint but no fix if expect_true has additional args
+    // Give lint but no fix if expect_false has additional args
     let outer_args_count = args.iter().count();
     if outer_args_count > 1 {
-        return Ok(Some(Diagnostic::new(ExpectMatch, range, Fix::empty())));
+        return Ok(Some(Diagnostic::new(ExpectNoMatch, range, Fix::empty())));
     }
 
-    // Collect remaining args (neither `x` nor `pattern`) to pass to expect_match.
-    // If any extra grepl args are positional, lint but skip fix as order differs from expect_match
+    // Collect remaining args (neither `x` nor `pattern`) to pass to expect_no_match.
+    // If any extra grepl args are positional, lint but skip fix as order differs from
+    // expect_no_match
     let pattern_range = pattern_arg.syntax().text_trimmed_range();
     let x_range = x_arg.syntax().text_trimmed_range();
 
@@ -122,7 +123,7 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     });
 
     if has_unnamed_optional_grepl_arg {
-        return Ok(Some(Diagnostic::new(ExpectMatch, range, Fix::empty())));
+        return Ok(Some(Diagnostic::new(ExpectNoMatch, range, Fix::empty())));
     }
 
     let optional_args: Vec<String> = grepl_args
@@ -144,11 +145,11 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();
 
     let diagnostic = Diagnostic::new(
-        ExpectMatch,
+        ExpectNoMatch,
         range,
         Fix {
             content: format!(
-                "{}expect_match({})",
+                "{}expect_no_match({})",
                 namespace_prefix,
                 inner_content.join(", ")
             ),

@@ -28,6 +28,7 @@ use crate::lints::base::which_grepl::which_grepl::which_grepl;
 use crate::lints::testthat::expect_length::expect_length::expect_length;
 use crate::lints::testthat::expect_match::expect_match::expect_match;
 use crate::lints::testthat::expect_named::expect_named::expect_named;
+use crate::lints::testthat::expect_no_match::expect_no_match::expect_no_match;
 use crate::lints::testthat::expect_not::expect_not::expect_not;
 use crate::lints::testthat::expect_null::expect_null::expect_null;
 use crate::lints::testthat::expect_s3_class::expect_s3_class::expect_s3_class;
@@ -64,6 +65,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled(Rule::ExpectNamed) {
         checker.report_diagnostic(expect_named(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::ExpectNoMatch) {
+        checker.report_diagnostic(expect_no_match(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::ExpectNot) {
         checker.report_diagnostic(expect_not(r_expr)?);

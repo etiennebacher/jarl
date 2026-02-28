@@ -360,6 +360,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    ExpectNoMatch => {
+        name: "expect_no_match",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
     ExpectNot => {
         name: "expect_not",
         categories: [Testthat],

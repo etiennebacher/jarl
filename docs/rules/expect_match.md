@@ -12,6 +12,9 @@ tests fail.
 This rule is **disabled by default**. Select it either with the rule name
 `"expect_match"` or with the rule group `"TESTTHAT"`.
 
+This rule has an automatic fix but the fix is disabled if `grepl()`
+arguments other than `pattern` and `x` are unnamed.
+
 ## Example
 
 ```r
