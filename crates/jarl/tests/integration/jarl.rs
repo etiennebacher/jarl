@@ -127,25 +127,26 @@ fn test_parsing_error_for_some_files() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 255
------ stdout -----
-warning: any_is_na
- --> test2.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+    warning: any_is_na
+     --> test2.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-Error: Failed to parse test.R due to syntax errors.
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
 
-"
+    ----- stderr -----
+    Error: Failed to parse test.R due to syntax errors.
+    "
     );
 
     Ok(())
@@ -169,14 +170,15 @@ fn test_parsing_weird_raw_strings() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
 
------ stderr -----
-"
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -197,14 +199,15 @@ fn test_parsing_braced_anonymous_function() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
 
------ stderr -----
-"
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -225,14 +228,15 @@ fn test_no_lints() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
 
------ stderr -----
-"
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -254,23 +258,25 @@ fn test_one_lint() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -293,31 +299,33 @@ fn test_several_lints_one_file() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_duplicated
- --> test.R:2:1
-  |
-2 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> test.R:2:1
+      |
+    2 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -344,31 +352,33 @@ fn test_several_lints_several_files() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_duplicated
- --> test2.R:1:1
-  |
-1 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> test2.R:1:1
+      |
+    1 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -414,6 +424,8 @@ fn test_not_all_fixable_lints() -> anyhow::Result<()> {
       | ------------------ Avoid duplicated arguments in function calls. Duplicated argument(s): "x".
       |
 
+
+    ── Summary ──────────────────────────────────────
     Found 2 errors.
     1 fixable with the `--fix` option.
 
@@ -440,14 +452,15 @@ fn test_corner_case() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
 
------ stderr -----
-"
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -486,6 +499,8 @@ fn test_fix_options() -> anyhow::Result<()> {
       | ------------------ Avoid duplicated arguments in function calls. Duplicated argument(s): "x".
       |
 
+
+    ── Summary ──────────────────────────────────────
     Found 1 error.
 
     ----- stderr -----
@@ -514,6 +529,8 @@ fn test_fix_options() -> anyhow::Result<()> {
       | ------------------ Avoid duplicated arguments in function calls. Duplicated argument(s): "x".
       |
 
+
+    ── Summary ──────────────────────────────────────
     Found 1 error.
 
     ----- stderr -----
@@ -532,14 +549,15 @@ fn test_fix_options() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
 
------ stderr -----
-"
+    ----- stderr -----
+    "
     );
 
     std::fs::write(directory.join(test_path), test_contents)?;
@@ -553,14 +571,15 @@ All checks passed!
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
 
------ stderr -----
-"
+    ----- stderr -----
+    "
     );
 
     std::fs::write(directory.join(test_path), test_contents)?;
@@ -574,14 +593,15 @@ All checks passed!
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
 
------ stderr -----
-"
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -608,31 +628,33 @@ fn test_safe_and_unsafe_lints() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: all_equal
- --> test2.R:1:1
-  |
-1 | !all.equal(x, y)
-  | ---------------- If `all.equal()` is false, it will return a string and not `FALSE`.
-  |
-  = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
+    warning: all_equal
+     --> test2.R:1:1
+      |
+    1 | !all.equal(x, y)
+      | ---------------- If `all.equal()` is false, it will return a string and not `FALSE`.
+      |
+      = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
 
-Found 2 errors.
-1 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    1 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -655,23 +677,25 @@ fn test_newline_character_in_string() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:2:1
-  |
-2 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:2:1
+      |
+    2 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())

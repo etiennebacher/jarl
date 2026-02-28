@@ -319,7 +319,7 @@ This option doesn't have a default value.
 operator = "<-" # or "="
 ```
 
-#### `duplicated-arguments`
+#### `duplicated_arguments`
 
 Use `skipped-functions` to fully replace the default list of functions that are
 allowed to have duplicated arguments. Use `extend-skipped-functions` to add to
@@ -335,12 +335,34 @@ Default: `skipped-functions = ["c", "mutate", "summarize", "transmute"]`
 [lint]
 ...
 
-[lint.duplicated-arguments]
+[lint.duplicated_arguments]
 # Ignore duplicated arguments in `list()` only.
 skipped-functions = ["list"]
 ```
 
-#### `unreachable-code`
+#### `implicit_assignment`
+
+Use `skipped-functions` to fully replace the default list of functions that are
+allowed to contain implicit assignment. Use `extend-skipped-functions` to add to
+the default list. Specifying both is an error.
+
+Function names in `skipped-functions` or `extend-skipped-functions` also match
+namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
+`rlang::list2()`.
+
+Default: `skipped-functions = ["expect_error", "expect_warning", "expect_message",
+"expect_snapshot", "quote", "suppressMessages", "suppressWarnings"]`
+
+```toml
+[lint]
+...
+
+[lint.implicit_assignment]
+# Ignore implicit assignment in `list()` only.
+skipped-functions = ["list"]
+```
+
+#### `unreachable_code`
 
 Use `stopping-functions` to fully replace the default list of functions that are
 considered to stop execution (never return). Use `extend-stopping-functions` to
@@ -357,9 +379,40 @@ Default: `stopping-functions = ["stop", ".Defunct", "abort", "cli_abort",
 [lint]
 ...
 
-[lint.unreachable-code]
+[lint.unreachable_code]
 # Add a custom function to the list of stopping functions
 extend-stopping-functions = ["my_custom_stop"]
+```
+
+#### `unused_function`
+
+Use `skipped-functions` to fully replace the default list of functions that are
+allowed to be unused in the R package. Function names in `skipped-functions`
+**are parsed as regular expressions** (this differs from other rules that have a
+`skipped-functions` argument).
+
+`unused_function` might return false positives because Jarl cannot statically
+determine whether a function is used. By default, Jarl will hide `unused_function`
+diagnostics if there are more than 50, as this would suggest that the package
+has some internal mechanism to use those functions. This number can be changed
+with the `threshold-ignore` argument.
+
+Defaults:
+
+- `skipped-functions = []`
+- `threshold-ignore = 50`
+
+```toml
+[lint]
+...
+
+[lint.unused_function]
+# Ignore all functions that start with "pl_" or "cs_", and the function
+# "my.function"
+skipped-functions = ["^cs_", "^pl_", "my\\.function"]
+# Set a custom threshold above which diagnostics for this rule aren't reported
+# (this is basically equivalent to never hiding unused functions).
+threshold-ignore = 10000
 ```
 
 ## Environment variables

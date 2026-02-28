@@ -412,19 +412,23 @@ impl Server {
     /// Handle linting a document and publishing diagnostics
     fn handle_lint_task(snapshot: DocumentSnapshot, client: Client) -> LspResult<()> {
         let start = Instant::now();
-        let diagnostics = lint::lint_document(&snapshot)?;
+        let output = lint::lint_document(&snapshot)?;
         let elapsed = start.elapsed();
 
         tracing::debug!(
             "Linted {} in {:?}: {} diagnostics found",
             snapshot.uri(),
             elapsed,
-            diagnostics.len()
+            output.diagnostics.len()
         );
+
+        if output.unused_fn_hidden_count > 0 {
+            let _ = client.notify_unused_fn_threshold_once(output.unused_fn_hidden_count);
+        }
 
         client.publish_diagnostics(
             snapshot.uri().clone(),
-            diagnostics,
+            output.diagnostics,
             Some(snapshot.version()),
         )?;
         Ok(())
@@ -437,14 +441,18 @@ impl Server {
         _client: Client,
         event_sender: &channel::Sender<Event>,
     ) -> LspResult<()> {
-        let diagnostics = lint::lint_document(&snapshot)?;
+        let output = lint::lint_document(&snapshot)?;
+
+        if output.unused_fn_hidden_count > 0 {
+            let _ = _client.notify_unused_fn_threshold_once(output.unused_fn_hidden_count);
+        }
 
         let result = types::DocumentDiagnosticReportResult::Report(
             types::DocumentDiagnosticReport::Full(types::RelatedFullDocumentDiagnosticReport {
                 related_documents: None,
                 full_document_diagnostic_report: types::FullDocumentDiagnosticReport {
                     result_id: None,
-                    items: diagnostics,
+                    items: output.diagnostics,
                 },
             }),
         );
@@ -489,7 +497,7 @@ impl Server {
         use crate::lint::lint_document;
 
         // Get diagnostics with fix information
-        let diagnostics = lint_document(snapshot)?;
+        let diagnostics = lint_document(snapshot)?.diagnostics;
 
         let mut actions = Vec::new();
 
@@ -897,7 +905,7 @@ select = ["ALL"]
         let snapshot = env.create_snapshot(&content);
 
         // Run the linter to get real diagnostics
-        let diagnostics = lint::lint_document(&snapshot).ok()?;
+        let diagnostics = lint::lint_document(&snapshot).ok()?.diagnostics;
 
         // Find the diagnostic at cursor position
         let cursor_lsp_pos = offset_to_position(&content, cursor_pos);
@@ -931,7 +939,7 @@ select = ["ALL"]
         let snapshot = env.create_snapshot(&content);
 
         // Run the linter to get real diagnostics
-        let diagnostics = lint::lint_document(&snapshot).ok()?;
+        let diagnostics = lint::lint_document(&snapshot).ok()?.diagnostics;
 
         // Find the diagnostic at cursor position
         let cursor_lsp_pos = offset_to_position(&content, cursor_pos);
@@ -965,7 +973,7 @@ select = ["ALL"]
         let snapshot = env.create_snapshot(&content);
 
         // Run the linter to get real diagnostics
-        let diagnostics = lint::lint_document(&snapshot).ok()?;
+        let diagnostics = lint::lint_document(&snapshot).ok()?.diagnostics;
 
         // Find the diagnostic at cursor position
         let cursor_lsp_pos = offset_to_position(&content, cursor_pos);
@@ -1495,7 +1503,7 @@ x |>
         let env = TestEnv::new(content);
         let snapshot = env.create_snapshot(content);
 
-        let diagnostics = lint::lint_document(&snapshot).unwrap();
+        let diagnostics = lint::lint_document(&snapshot).unwrap().diagnostics;
         let diagnostic = diagnostics
             .iter()
             .find(|d| {
@@ -1526,7 +1534,7 @@ x |>
         );
         let env = TestEnv::new_rmd(content);
         let snapshot = env.create_snapshot(content);
-        let diagnostics = lint::lint_document(&snapshot).unwrap();
+        let diagnostics = lint::lint_document(&snapshot).unwrap().diagnostics;
         let any_is_na_diags: Vec<_> = diagnostics
             .iter()
             .filter(|d| {
@@ -1555,7 +1563,7 @@ x |>
         );
         let env = TestEnv::new_rmd(content);
         let snapshot = env.create_snapshot(content);
-        let diagnostics = lint::lint_document(&snapshot).unwrap();
+        let diagnostics = lint::lint_document(&snapshot).unwrap().diagnostics;
         let any_is_na_diags: Vec<_> = diagnostics
             .iter()
             .filter(|d| {
@@ -1582,7 +1590,7 @@ x |>
         let env = TestEnv::new(content);
         let snapshot = env.create_snapshot(content);
 
-        let diagnostics = lint::lint_document(&snapshot).unwrap();
+        let diagnostics = lint::lint_document(&snapshot).unwrap().diagnostics;
         let diagnostic = diagnostics.first().unwrap();
 
         let action = Server::diagnostic_to_code_action(diagnostic, &snapshot).unwrap();
@@ -1598,7 +1606,7 @@ x |>
         let env = TestEnv::new(content);
         let snapshot = env.create_snapshot(content);
 
-        let diagnostics = lint::lint_document(&snapshot).unwrap();
+        let diagnostics = lint::lint_document(&snapshot).unwrap().diagnostics;
         let diagnostic = diagnostics.first().unwrap();
 
         let action = Server::diagnostic_to_jarl_ignore_rule_action(diagnostic, &snapshot).unwrap();

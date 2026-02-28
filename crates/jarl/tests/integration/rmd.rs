@@ -29,22 +29,24 @@ fn test_rmd_basic_lint() -> anyhow::Result<()> {
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.Rmd:6:1
-  |
-6 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.Rmd:6:1
+      |
+    6 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -68,22 +70,24 @@ fn test_qmd_basic_lint() -> anyhow::Result<()> {
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.qmd:6:1
-  |
-6 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.qmd:6:1
+      |
+    6 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -112,30 +116,32 @@ fn test_rmd_ignore_chunk_suppresses() -> anyhow::Result<()> {
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: blanket_suppression
- --> test.Rmd:2:1
-  |
-2 | #| jarl-ignore-chunk
-  | -------------------- This comment isn't used by Jarl because it is missing a rule to ignore.
-  |
-  = help: Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: blanket_suppression
+     --> test.Rmd:2:1
+      |
+    2 | #| jarl-ignore-chunk
+      | -------------------- This comment isn't used by Jarl because it is missing a rule to ignore.
+      |
+      = help: Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`.
 
-warning: any_is_na
- --> test.Rmd:3:1
-  |
-3 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+    warning: any_is_na
+     --> test.Rmd:3:1
+      |
+    3 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 2 errors.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -166,14 +172,15 @@ fn test_rmd_ignore_chunk_with_rule() -> anyhow::Result<()> {
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
 
------ stderr -----
-"
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -204,14 +211,15 @@ fn test_rmd_ignore_chunk_yaml_multiple() -> anyhow::Result<()> {
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
 
------ stderr -----
-"
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -243,14 +251,15 @@ fn test_rmd_ignore_chunk_yaml_misplaced() -> anyhow::Result<()> {
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
 
------ stderr -----
-"
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -280,22 +289,24 @@ fn test_rmd_pipe_suppression() -> anyhow::Result<()> {
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.Rmd:3:1
-  |
-3 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.Rmd:3:1
+      |
+    3 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -324,22 +335,24 @@ fn test_rmd_fix_not_applied() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.Rmd:2:1
-  |
-2 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.Rmd:2:1
+      |
+    2 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
     );
 
     let after = std::fs::read_to_string(directory.join("test.Rmd"))?;

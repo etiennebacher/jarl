@@ -1,7 +1,7 @@
 use crate::diagnostic::*;
 use crate::utils::{
     get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
-    get_nested_functions_content, node_contains_comments,
+    get_nested_functions_content, get_unnamed_args, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
@@ -20,6 +20,9 @@ pub struct ExpectMatch;
 ///
 /// This rule is **disabled by default**. Select it either with the rule name
 /// `"expect_match"` or with the rule group `"TESTTHAT"`.
+///
+/// This rule has an automatic fix but the fix is disabled if `grepl()`
+/// arguments other than `pattern` and `x` are unnamed.
 ///
 /// ## Example
 ///
@@ -108,14 +111,26 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(Some(Diagnostic::new(ExpectMatch, range, Fix::empty())));
     }
 
-    // Collect remaining args (neither `x` nor `pattern`) to pass to expect_match
+    // Collect remaining args (neither `x` nor `pattern`) to pass to expect_match.
+    // If any extra grepl args are positional, lint but skip fix as order differs from expect_match
+    let pattern_range = pattern_arg.syntax().text_trimmed_range();
+    let x_range = x_arg.syntax().text_trimmed_range();
+
+    let has_unnamed_optional_grepl_arg = get_unnamed_args(&grepl_args).into_iter().any(|arg| {
+        let range = arg.syntax().text_trimmed_range();
+        range != pattern_range && range != x_range
+    });
+
+    if has_unnamed_optional_grepl_arg {
+        return Ok(Some(Diagnostic::new(ExpectMatch, range, Fix::empty())));
+    }
+
     let optional_args: Vec<String> = grepl_args
         .iter()
         .flatten()
         .filter(|arg| {
             let range = arg.syntax().text_trimmed_range();
-            range != pattern_arg.syntax().text_trimmed_range()
-                && range != x_arg.syntax().text_trimmed_range()
+            range != pattern_range && range != x_range
         })
         .map(|arg| arg.syntax().text_trimmed().to_string())
         .collect();

@@ -5,7 +5,7 @@ use super::resolve_with_extend;
 /// Default functions that are considered undesirable.
 const DEFAULT_FUNCTIONS: &[&str] = &["browser"];
 
-/// TOML options for `[lint.undesirable-function]`.
+/// TOML options for `[lint.undesirable_function]`.
 ///
 /// Use `functions` to fully replace the default list of undesirable functions.
 /// Use `extend-functions` to add to the default list.
@@ -36,7 +36,7 @@ impl ResolvedUndesirableFunctionOptions {
             base,
             extend,
             DEFAULT_FUNCTIONS,
-            "undesirable-function",
+            "undesirable_function",
             "functions",
         )?;
 

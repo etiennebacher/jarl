@@ -21,10 +21,6 @@ pub struct Checker {
     pub suppression: SuppressionManager,
     // Per-rule options resolved from configuration
     pub rule_options: ResolvedRuleOptions,
-    // Pre-computed duplicate top-level assignments for this file (from
-    // cross-file package analysis). Each entry is (name, lhs_range, help)
-    // where help points to the first definition.
-    pub package_duplicate_assignments: Vec<(String, biome_rowan::TextRange, String)>,
     // Pre-computed S3 method names from the package NAMESPACE file.
     // Used by unused_function_argument to skip S3 methods.
     pub package_s3_methods: HashSet<String>,
@@ -38,7 +34,6 @@ impl Checker {
             minimum_r_version: None,
             suppression,
             rule_options,
-            package_duplicate_assignments: vec![],
             package_s3_methods: HashSet::new(),
         }
     }

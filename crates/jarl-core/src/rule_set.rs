@@ -360,6 +360,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    ExpectNoMatch => {
+        name: "expect_no_match",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
     ExpectNot => {
         name: "expect_not",
         categories: [Testthat],
@@ -637,6 +644,13 @@ declare_rules! {
         name: "unreachable_code",
         categories: [Read, Susp],
         default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    UnusedFunction => {
+        name: "unused_function",
+        categories: [Corr],
+        default: Disabled,
         fix: None,
         min_r_version: None,
     },

@@ -15,7 +15,7 @@ By default, only `browser` is flagged. You can customise the list in
 `jarl.toml`:
 
 ```toml
-[lint.undesirable-function]
+[lint.undesirable_function]
 # Replace the default list entirely:
 functions = ["browser", "debug"]
 

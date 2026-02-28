@@ -18,7 +18,7 @@
 
 ### Features
 
-* `jarl.toml` now accepts rule-specific options in subsections `[lint.<rule-name>]`,
+* `jarl.toml` now accepts rule-specific options in subsections `[lint.<rule_name>]`,
   such as:
   ```
   [lint]
@@ -26,7 +26,7 @@
 
   # In the rule `duplicated_arguments`, do not report calls to `my_function()`
   # and `list()` where multiple arguments have the same name.
-  [lint.duplicated-arguments]
+  [lint.duplicated_arguments]
   extend-skipped-functions = ["my_function", "list"]
   ```
   These options are listed in the [Configuration page](https://jarl.etiennebacher.com/config#with-a-config-file) (#333).
@@ -54,8 +54,13 @@
 
   - `duplicated_function_definition` (#358)
   - `expect_match` (#364, @bjyberg)
+  - `expect_no_match` (#368, @bjyberg)
   - `invalid_chunk_suppression` (#350)
   - `undesirable_function` (replaces `browser`) (#336)
+  - `unused_function` (#362)
+
+* The output in terminal with output format `full` or `concise` is now organized
+  in multiple sections (summary, warnings, notes) (#366).
 
 ## 0.4.0
 

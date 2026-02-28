@@ -18,8 +18,10 @@ use crate::rule_options::ResolvedRuleOptions;
 use crate::rule_options::assignment::AssignmentConfig;
 use crate::rule_options::assignment::AssignmentOptions;
 use crate::rule_options::duplicated_arguments::DuplicatedArgumentsOptions;
+use crate::rule_options::implicit_assignment::ImplicitAssignmentOptions;
 use crate::rule_options::undesirable_function::UndesirableFunctionOptions;
 use crate::rule_options::unreachable_code::UnreachableCodeOptions;
+use crate::rule_options::unused_function::UnusedFunctionOptions;
 use crate::settings::LinterSettings;
 use crate::settings::Settings;
 
@@ -53,7 +55,7 @@ pub fn parse_jarl_toml(path: &Path) -> Result<TomlOptions, ParseTomlError> {
 
 #[derive(Clone, Debug, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct TomlOptions {
     #[serde(flatten)]
     pub global: GlobalTomlOptions,
@@ -62,7 +64,7 @@ pub struct TomlOptions {
 
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct GlobalTomlOptions {}
 
 #[derive(Clone, Debug, Default, serde::Deserialize)]
@@ -206,13 +208,24 @@ pub struct LinterTomlOptions {
     /// that are allowed to have duplicated arguments. Use
     /// `extend-skipped-functions` to add to the default list.
     /// Specifying both is an error.
+    #[serde(rename = "duplicated_arguments")]
     pub duplicated_arguments: Option<DuplicatedArgumentsOptions>,
+
+    /// # Options for the `implicit_assignment` rule
+    ///
+    /// Use `skipped-functions` to fully replace the default list of functions
+    /// that are allowed to contain implicit assignment. Use
+    /// `extend-skipped-functions` to add to the default list.
+    /// Specifying both is an error.
+    #[serde(rename = "implicit_assignment")]
+    pub implicit_assignment: Option<ImplicitAssignmentOptions>,
 
     /// # Options for the `undesirable_function` rule
     ///
     /// Use `functions` to fully replace the default list of undesirable functions.
     /// Use `extend-functions` to add to the default list.
     /// Specifying both is an error.
+    #[serde(rename = "undesirable_function")]
     pub undesirable_function: Option<UndesirableFunctionOptions>,
 
     /// # Options for the `unreachable_code` rule
@@ -221,7 +234,19 @@ pub struct LinterTomlOptions {
     /// that are considered to stop execution (never return). Use
     /// `extend-stopping-functions` to add to the default list.
     /// Specifying both is an error.
+    #[serde(rename = "unreachable_code")]
     pub unreachable_code: Option<UnreachableCodeOptions>,
+
+    /// # Options for the `unused_function` rule
+    ///
+    /// Use `threshold-ignore` to control how many `unused_function`
+    /// violations are allowed before they are all hidden (likely false
+    /// positives).
+    ///
+    /// Use `skipped-functions` to determine which functions won't be reported
+    /// even if Jarl considers them unused.
+    #[serde(rename = "unused_function")]
+    pub unused_function: Option<UnusedFunctionOptions>,
 
     /// Catch any unknown fields so we can produce a clean error message that
     /// only lists the primary `[lint]` options (not every rule sub-table).
@@ -296,8 +321,10 @@ impl TomlOptions {
             rule_options: ResolvedRuleOptions::resolve(
                 assignment_options.as_ref(),
                 linter.duplicated_arguments.as_ref(),
+                linter.implicit_assignment.as_ref(),
                 linter.undesirable_function.as_ref(),
                 linter.unreachable_code.as_ref(),
+                linter.unused_function.as_ref(),
             )?,
         };
 

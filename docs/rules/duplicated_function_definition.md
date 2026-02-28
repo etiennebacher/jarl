@@ -29,4 +29,3 @@ foo <- function(x) {
 # Function "foo" is defined in two different scripts in the same package,
 # which is likely due to a mistake.
 ```
-

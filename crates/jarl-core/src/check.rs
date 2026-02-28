@@ -1,4 +1,5 @@
 use crate::error::ParseError;
+use crate::package::{PackageAnalysis, compute_package_analysis};
 use crate::rule_set::Rule;
 use crate::suppression::SuppressionManager;
 use crate::vcs::check_version_control;
@@ -18,13 +19,12 @@ pub use crate::checker::Checker;
 use crate::config::Config;
 use crate::diagnostic::*;
 use crate::fix::*;
-// Re-exported so the LSP can pre-compute package duplicates before calling `check()`.
-pub use crate::lints::base::duplicated_function_definition::duplicated_function_definition::compute_package_duplicate_assignments;
-pub use crate::lints::base::duplicated_function_definition::duplicated_function_definition::is_in_r_package;
 pub use crate::lints::base::unused_function_argument::unused_function_argument::compute_package_s3_methods;
 use crate::utils::*;
 
 pub fn check(mut config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
+    let pkg = compute_package_analysis(&config.paths, &config);
+
     // Ensure that all paths are covered by VCS. This is conservative because
     // technically we could apply fixes on those that are covered by VCS and
     // error for the others, but I'd rather be on the safe side and force the
@@ -37,18 +37,6 @@ pub fn check(mut config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow:
         }
     }
 
-    // Pre-compute cross-file duplicate assignments for the package rule.
-    // This must happen before the config is wrapped in Arc.
-    // Skip if already pre-populated (e.g. by the LSP which needs special
-    // handling because it lints a temp file outside the real package tree).
-    if config
-        .rules_to_apply
-        .contains(&Rule::DuplicatedFunctionDefinition)
-        && config.package_duplicate_assignments.is_empty()
-    {
-        config.package_duplicate_assignments = compute_package_duplicate_assignments(&config.paths);
-    }
-
     // Pre-compute S3 method names from NAMESPACE files for the
     // unused_function_argument rule.
     if config
@@ -59,42 +47,55 @@ pub fn check(mut config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow:
         config.package_s3_methods = compute_package_s3_methods(&config.paths);
     }
 
-    // Wrap config in Arc to avoid expensive clones in parallel execution
+    // Wrap config and package analysis in Arc to avoid expensive clones in parallel execution
     let config = Arc::new(config);
+    let pkg = Arc::new(pkg);
 
     config
         .paths
         .par_iter()
         .map(|file| {
-            let res = check_path(file, Arc::clone(&config));
+            let res = check_path(file, Arc::clone(&config), Arc::clone(&pkg));
             (relativize_path(file), res)
         })
         .collect()
 }
 
-pub fn check_path(path: &PathBuf, config: Arc<Config>) -> Result<Vec<Diagnostic>, anyhow::Error> {
+pub fn check_path(
+    path: &PathBuf,
+    config: Arc<Config>,
+    pkg: Arc<PackageAnalysis>,
+) -> Result<Vec<Diagnostic>, anyhow::Error> {
     if config.apply_fixes || config.apply_unsafe_fixes {
-        lint_fix(path, config)
+        lint_fix(path, config, pkg)
     } else {
-        lint_only(path, config)
+        lint_only(path, config, pkg)
     }
 }
 
-pub fn lint_only(path: &PathBuf, config: Arc<Config>) -> Result<Vec<Diagnostic>, anyhow::Error> {
+pub fn lint_only(
+    path: &PathBuf,
+    config: Arc<Config>,
+    pkg: Arc<PackageAnalysis>,
+) -> Result<Vec<Diagnostic>, anyhow::Error> {
     let path = relativize_path(path);
     let contents = fs::read_to_string(Path::new(&path))
         .with_context(|| format!("Failed to read file: {path}"))?;
 
-    let checks = get_checks(&contents, &PathBuf::from(&path), &config)
+    let checks = get_checks(&contents, &PathBuf::from(&path), &config, &pkg)
         .with_context(|| format!("Failed to get checks for file: {path}"))?;
 
     Ok(checks)
 }
 
-pub fn lint_fix(path: &PathBuf, config: Arc<Config>) -> Result<Vec<Diagnostic>, anyhow::Error> {
+pub fn lint_fix(
+    path: &PathBuf,
+    config: Arc<Config>,
+    pkg: Arc<PackageAnalysis>,
+) -> Result<Vec<Diagnostic>, anyhow::Error> {
     // Rmd/Qmd files never get autofixes applied.
     if crate::fs::has_rmd_extension(path) {
-        return lint_only(path, config);
+        return lint_only(path, config, pkg);
     }
 
     let path = relativize_path(path);
@@ -106,7 +107,7 @@ pub fn lint_fix(path: &PathBuf, config: Arc<Config>) -> Result<Vec<Diagnostic>, 
         let contents = fs::read_to_string(Path::new(&path))
             .with_context(|| format!("Failed to read file: {path}",))?;
 
-        checks = get_checks(&contents, &PathBuf::from(&path), &config)
+        checks = get_checks(&contents, &PathBuf::from(&path), &config, &pkg)
             .with_context(|| format!("Failed to get checks for file: {path}",))?;
 
         if !has_skipped_fixes {
@@ -127,7 +128,12 @@ pub fn lint_fix(path: &PathBuf, config: Arc<Config>) -> Result<Vec<Diagnostic>, 
 //
 // If there are diagnostics to report, this is also where their range in the
 // string is converted to their location (row, column).
-pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Diagnostic>> {
+pub fn get_checks(
+    contents: &str,
+    file: &Path,
+    config: &Config,
+    pkg: &PackageAnalysis,
+) -> Result<Vec<Diagnostic>> {
     if crate::fs::has_rmd_extension(file) {
         return get_checks_rmd(contents, file, config);
     }
@@ -147,11 +153,14 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     let mut checker = Checker::new(suppression, config.rule_options.clone());
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
-    checker.package_duplicate_assignments = config
-        .package_duplicate_assignments
+
+    // Look up per-file data from PackageAnalysis
+    let duplicate_assignments = pkg
+        .duplicate_assignments
         .get(file)
         .cloned()
         .unwrap_or_default();
+    let unused_functions = pkg.unused_functions.get(file).cloned().unwrap_or_default();
     checker.package_s3_methods = config.package_s3_methods.clone();
 
     // We run checks at expression-level. This gathers all violations, no matter
@@ -166,7 +175,12 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     // checks (blanket, unexplained, misplaced, misnamed, unused suppressions).
     // This must run after checking expressions because we filter out those that
     // are unused.
-    check_document(expressions, &mut checker)?;
+    check_document(
+        expressions,
+        &mut checker,
+        &duplicate_assignments,
+        &unused_functions,
+    )?;
 
     // Some rules have a fix available in their implementation but do not have
     // fix in the config, for instance because they are part of the "unfixable"
@@ -297,7 +311,8 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
         }
         // check_document runs suppression filtering internally, so
         // checker.diagnostics is the post-suppression list after this call.
-        check_document(expressions, &mut checker)?;
+        // Rmd chunks don't participate in package-level analysis, so pass empty slices.
+        check_document(expressions, &mut checker, &[], &[])?;
 
         let offset = TextSize::from(start_byte as u32);
         let diagnostics = checker.diagnostics.into_iter().map(|mut d| {

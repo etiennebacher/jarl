@@ -25,31 +25,33 @@ fn test_output_default() -> anyhow::Result<()> {
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_duplicated
- --> test2.R:1:1
-  |
-1 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> test2.R:1:1
+      |
+    1 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -77,18 +79,19 @@ fn test_output_concise() -> anyhow::Result<()> {
             .arg("concise")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-test.R [1:1] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
-test2.R [1:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    test.R [1:1] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
+    test2.R [1:1] any_duplicated `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -116,31 +119,33 @@ fn test_output_full() -> anyhow::Result<()> {
             .arg("full")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_duplicated
- --> test2.R:1:1
-  |
-1 | any(duplicated(x))
-  | ------------------ `any(duplicated(...))` is inefficient.
-  |
-  = help: Use `anyDuplicated(...) > 0` instead.
+    warning: any_duplicated
+     --> test2.R:1:1
+      |
+    1 | any(duplicated(x))
+      | ------------------ `any(duplicated(...))` is inefficient.
+      |
+      = help: Use `anyDuplicated(...) > 0` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -376,25 +381,26 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
             .arg("full")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 255
------ stdout -----
-warning: any_is_na
- --> test.R:1:1
-  |
-1 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-Error: Failed to parse test2.R due to syntax errors.
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
 
-"
+    ----- stderr -----
+    Error: Failed to parse test2.R due to syntax errors.
+    "
     );
 
     insta::assert_snapshot!(
@@ -406,18 +412,19 @@ Error: Failed to parse test2.R due to syntax errors.
             .arg("concise")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 255
------ stdout -----
-test.R [1:1] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+    test.R [1:1] any_is_na `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
 
------ stderr -----
-Error: Failed to parse test2.R due to syntax errors.
-"
+    ----- stderr -----
+    Error: Failed to parse test2.R due to syntax errors.
+    "
     );
 
     insta::assert_snapshot!(

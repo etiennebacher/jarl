@@ -22,7 +22,7 @@ use std::path::PathBuf;
 use std::time::Instant;
 
 use crate::args::CheckCommand;
-use crate::output_format::{self, GithubEmitter};
+use crate::output_format::{self, GithubEmitter, print_notes, print_summary, print_warnings};
 use crate::statistics::print_statistics;
 use crate::status::ExitStatus;
 
@@ -90,7 +90,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         min_r_version: args.min_r_version.clone(),
         allow_dirty: args.allow_dirty,
         allow_no_vcs: args.allow_no_vcs,
-        assignment: args.assignment,
+        assignment: args.assignment.clone(),
     };
 
     // Group paths by their closest resolved config directory, so each file is
@@ -134,6 +134,9 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         return add_jarl_ignore_comments(&all_diagnostics, reason, parent_config_path);
     }
 
+    let (unused_fn_hidden, unused_fn_count) =
+        hide_unused_function_if_needed(&mut all_diagnostics, &args, &resolver);
+
     // Flatten all diagnostics into a single vector and sort globally
     let mut all_diagnostics_flat: Vec<&Diagnostic> = all_diagnostics
         .iter()
@@ -163,44 +166,56 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         }
     }
 
-    // For human-readable formats, print timing and config info
-    // Skip for JSON/GitHub to avoid corrupting structured output
-    let is_structured_format = matches!(
+    // For human-readable formats, print sections (summary, warnings, notes).
+    // Skip for JSON/GitHub to avoid corrupting structured output.
+    let is_human_format = matches!(
         args.output_format,
-        OutputFormat::Json | OutputFormat::Github
+        OutputFormat::Full | OutputFormat::Concise
     );
 
-    // Check if the deprecated `--assignment` CLI flag was used
-    if check_config.assignment.is_some() {
-        eprintln!(
-            "{}: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.",
-            "Warning".yellow().bold()
-        );
-    }
-    // Check if the deprecated `assignment = "..."` top-level string form was used in TOML
-    for item in resolver.items() {
-        if item.value().linter.deprecated_assignment_syntax {
-            eprintln!(
-                "{}: `assignment = \"...\"` in `[lint]` is deprecated. \
-                     Use `[lint.assignment]` with `operator = \"...\"` instead.",
-                "Warning".yellow().bold()
+    if is_human_format {
+        // ── Summary ──
+        print_summary(&all_diagnostics_flat, !all_errors.is_empty());
+
+        // ── Warnings ──
+        let mut warnings: Vec<String> = Vec::new();
+
+        if check_config.assignment.is_some() {
+            warnings.push(
+                "`--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead."
+                    .to_string(),
             );
         }
-    }
 
-    if !is_structured_format {
-        // Emit deprecation warnings for explicitly-used deprecated rules.
-        // Collect rule names from CLI args and TOML settings.
+        if unused_fn_hidden {
+            warnings.push(format!(
+                "{} `unused_function` diagnostics hidden (likely false positives).\n\
+                 To show them:\n  \
+                 - set 'threshold-ignore' in `[lint.unused_function]` in jarl.toml,\n  \
+                 - or explicitly include 'unused_function' in the set of rules.",
+                unused_fn_count
+            ));
+        }
+
+        for item in resolver.items() {
+            if item.value().linter.deprecated_assignment_syntax {
+                warnings.push(
+                    "Argument `assignment` in `[lint]` is deprecated. \
+                     Use `[lint.assignment]` with `operator` instead."
+                        .to_string(),
+                );
+            }
+        }
+
+        // Deprecation warnings for explicitly-used deprecated rules.
         let mut explicit_rule_names: BTreeSet<String> = BTreeSet::new();
 
-        // CLI args (comma-separated)
         for arg_str in [&args.select, &args.extend_select, &args.ignore] {
             for name in arg_str.split(',').map(str::trim).filter(|s| !s.is_empty()) {
                 explicit_rule_names.insert(name.to_string());
             }
         }
 
-        // TOML settings from all discovered configs
         for item in resolver.items() {
             let linter = &item.value().linter;
             for names in [&linter.select, &linter.extend_select, &linter.ignore]
@@ -217,25 +232,28 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
             if let Some(rule) = Rule::from_name(name)
                 && let Some(dep) = rule.deprecation()
             {
-                eprintln!(
-                    "{}: Rule `{}` is deprecated since v{}. Use `{}` instead.",
-                    "Warning".yellow().bold(),
-                    name,
-                    dep.version,
-                    dep.replacement,
-                );
+                warnings.push(format!(
+                    "Rule `{}` is deprecated since v{}. Use `{}` instead.",
+                    name, dep.version, dep.replacement,
+                ));
             }
         }
 
-        // Inform the user if the config file used comes from a parent directory.
-        if let Some(config_path) = parent_config_path {
-            println!("\nUsed '{}'", config_path.display());
-        }
+        print_warnings(&warnings);
+
+        // ── Notes ──
+        let mut notes: Vec<String> = Vec::new();
 
         if let Some(start) = start {
             let duration = start.elapsed();
-            println!("\nChecked files in: {duration:?}");
+            notes.push(format!("Checked files in: {duration:?}"));
         }
+
+        if let Some(config_path) = parent_config_path {
+            notes.push(format!("Used '{}'", config_path.display()));
+        }
+
+        print_notes(&notes);
     }
 
     if !all_errors.is_empty() {
@@ -401,4 +419,62 @@ fn add_jarl_ignore_comments(
     }
 
     Ok(ExitStatus::Success)
+}
+
+/// Hide `unused_function` diagnostics when they exceed the configured
+/// threshold (likely false positives). Suppression is skipped when the
+/// rule is explicitly listed in `--select` / `--extend-select` (CLI) or
+/// in the corresponding TOML fields.
+///
+/// Returns `(hidden, total_count)` where `hidden` is `true` when the
+/// diagnostics were removed and `total_count` is the original number of
+/// `unused_function` diagnostics.
+fn hide_unused_function_if_needed(
+    all_diagnostics: &mut Vec<(String, Vec<Diagnostic>)>,
+    args: &CheckCommand,
+    resolver: &PathResolver<Settings>,
+) -> (bool, usize) {
+    let explicitly_selected = args
+        .select
+        .split(',')
+        .chain(args.extend_select.split(','))
+        .any(|s| s.trim() == "unused_function")
+        || resolver.items().iter().any(|item| {
+            let linter = &item.value().linter;
+            linter
+                .select
+                .iter()
+                .chain(linter.extend_select.iter())
+                .flatten()
+                .any(|s| s == "unused_function")
+        });
+
+    let threshold_ignore = resolver
+        .items()
+        .iter()
+        .map(|item| {
+            item.value()
+                .linter
+                .rule_options
+                .unused_function
+                .threshold_ignore
+        })
+        .min()
+        .unwrap_or(50);
+
+    let unused_fn_count = all_diagnostics
+        .iter()
+        .flat_map(|(_path, diagnostics)| diagnostics.iter())
+        .filter(|d| d.message.name == "unused_function")
+        .count();
+
+    let hidden = !explicitly_selected && unused_fn_count > threshold_ignore;
+    if hidden {
+        for (_path, diagnostics) in all_diagnostics.iter_mut() {
+            diagnostics.retain(|d| d.message.name != "unused_function");
+        }
+        all_diagnostics.retain(|(_path, diagnostics)| !diagnostics.is_empty());
+    }
+
+    (hidden, unused_fn_count)
 }

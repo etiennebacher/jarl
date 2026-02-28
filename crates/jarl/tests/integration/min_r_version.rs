@@ -24,14 +24,15 @@ fn test_min_r_version_from_cli_only() -> anyhow::Result<()> {
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
 
------ stderr -----
-"
+    ----- stderr -----
+    "
     );
 
     // This should not report a lint (the project could be using 4.4.0 so
@@ -45,14 +46,15 @@ All checks passed!
             .arg("4.4.0")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
 
------ stderr -----
-"
+    ----- stderr -----
+    "
     );
     // This should report a lint.
     insta::assert_snapshot!(
@@ -64,23 +66,25 @@ All checks passed!
             .arg("4.6.0")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: grepv
- --> test.R:1:1
-  |
-1 | grep('a.*', x, value = TRUE)
-  | ---------------------------- `grep(..., value = TRUE)` can be simplified.
-  |
-  = help: Use `grepv(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: grepv
+     --> test.R:1:1
+      |
+    1 | grep('a.*', x, value = TRUE)
+      | ---------------------------- `grep(..., value = TRUE)` can be simplified.
+      |
+      = help: Use `grepv(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -112,14 +116,15 @@ Depends: R (>= 4.4.0), utils, stats"#,
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
 
------ stderr -----
-"
+    ----- stderr -----
+    "
     );
 
     // This should report a lint.
@@ -136,23 +141,25 @@ Depends: R (>= 4.6.0), utils, stats"#,
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: grepv
- --> test.R:1:1
-  |
-1 | grep('a.*', x, value = TRUE)
-  | ---------------------------- `grep(..., value = TRUE)` can be simplified.
-  |
-  = help: Use `grepv(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: grepv
+     --> test.R:1:1
+      |
+    1 | grep('a.*', x, value = TRUE)
+      | ---------------------------- `grep(..., value = TRUE)` can be simplified.
+      |
+      = help: Use `grepv(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())

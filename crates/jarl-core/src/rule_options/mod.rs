@@ -1,7 +1,9 @@
 pub mod assignment;
 pub mod duplicated_arguments;
+pub mod implicit_assignment;
 pub mod undesirable_function;
 pub mod unreachable_code;
+pub mod unused_function;
 
 use assignment::AssignmentOptions;
 use assignment::ResolvedAssignmentOptions;
@@ -12,6 +14,11 @@ use undesirable_function::ResolvedUndesirableFunctionOptions;
 use undesirable_function::UndesirableFunctionOptions;
 use unreachable_code::ResolvedUnreachableCodeOptions;
 use unreachable_code::UnreachableCodeOptions;
+use unused_function::ResolvedUnusedFunctionOptions;
+use unused_function::UnusedFunctionOptions;
+
+use crate::rule_options::implicit_assignment::ImplicitAssignmentOptions;
+use crate::rule_options::implicit_assignment::ResolvedImplicitAssignmentOptions;
 
 /// Resolve a pair of `field` / `extend-field` options against a set of defaults.
 ///
@@ -21,7 +28,7 @@ use unreachable_code::UnreachableCodeOptions;
 /// - If neither is set, returns the defaults.
 ///
 /// `rule_section` and `field_name` are used for the error message, e.g.
-/// `"duplicated-arguments"` and `"skipped-functions"`.
+/// `"duplicated_arguments"` and `"skipped-functions"`.
 pub fn resolve_with_extend(
     base: Option<&Vec<String>>,
     extend: Option<&Vec<String>>,
@@ -60,32 +67,39 @@ pub fn resolve_with_extend(
 pub struct ResolvedRuleOptions {
     pub assignment: ResolvedAssignmentOptions,
     pub duplicated_arguments: ResolvedDuplicatedArgumentsOptions,
+    pub implicit_assignment: ResolvedImplicitAssignmentOptions,
     pub undesirable_function: ResolvedUndesirableFunctionOptions,
     pub unreachable_code: ResolvedUnreachableCodeOptions,
+    pub unused_function: ResolvedUnusedFunctionOptions,
 }
 
 impl ResolvedRuleOptions {
     pub fn resolve(
         assignment: Option<&AssignmentOptions>,
         duplicated_arguments: Option<&DuplicatedArgumentsOptions>,
+        implicit_assignment: Option<&ImplicitAssignmentOptions>,
         undesirable_function: Option<&UndesirableFunctionOptions>,
         unreachable_code: Option<&UnreachableCodeOptions>,
+        unused_function: Option<&UnusedFunctionOptions>,
     ) -> anyhow::Result<Self> {
         Ok(Self {
             assignment: ResolvedAssignmentOptions::resolve(assignment)?,
             duplicated_arguments: ResolvedDuplicatedArgumentsOptions::resolve(
                 duplicated_arguments,
             )?,
+            implicit_assignment: ResolvedImplicitAssignmentOptions::resolve(implicit_assignment)?,
             undesirable_function: ResolvedUndesirableFunctionOptions::resolve(
                 undesirable_function,
             )?,
             unreachable_code: ResolvedUnreachableCodeOptions::resolve(unreachable_code)?,
+            unused_function: ResolvedUnusedFunctionOptions::resolve(unused_function)?,
         })
     }
 }
 
 impl Default for ResolvedRuleOptions {
     fn default() -> Self {
-        Self::resolve(None, None, None, None).expect("default rule options should always resolve")
+        Self::resolve(None, None, None, None, None, None)
+            .expect("default rule options should always resolve")
     }
 }

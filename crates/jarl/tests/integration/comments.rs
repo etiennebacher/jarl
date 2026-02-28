@@ -25,14 +25,15 @@ any(is.na(x))
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
 
------ stderr -----
-"
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -60,14 +61,15 @@ any(is.na(z))
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
 
------ stderr -----
-"
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -100,31 +102,33 @@ any(is.na(w))
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:2:1
-  |
-2 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:2:1
+      |
+    2 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_is_na
- --> test.R:9:1
-  |
-9 | any(is.na(w))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+    warning: any_is_na
+     --> test.R:9:1
+      |
+    9 | any(is.na(w))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 2 errors.
-2 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -154,23 +158,25 @@ any(is.na(y))
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:6:1
-  |
-6 | any(is.na(y))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:6:1
+      |
+    6 | any(is.na(y))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -200,14 +206,15 @@ x = any(is.na(y))
             .arg("assignment")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
 
------ stderr -----
-"
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -237,14 +244,15 @@ foo(
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
+        @r"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
 
------ stderr -----
-"
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -276,39 +284,41 @@ any(is.na(z))
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @"
-success: false
-exit_code: 1
------ stdout -----
-warning: any_is_na
- --> test.R:3:1
-  |
-3 | any(is.na(x))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:3:1
+      |
+    3 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_is_na
- --> test.R:5:1
-  |
-5 | any(is.na(y))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+    warning: any_is_na
+     --> test.R:5:1
+      |
+    5 | any(is.na(y))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-warning: any_is_na
- --> test.R:7:1
-  |
-7 | any(is.na(z))
-  | ------------- `any(is.na(...))` is inefficient.
-  |
-  = help: Use `anyNA(...)` instead.
+    warning: any_is_na
+     --> test.R:7:1
+      |
+    7 | any(is.na(z))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
 
-Found 3 errors.
-3 fixable with the `--fix` option.
 
------ stderr -----
-"
+    ── Summary ──────────────────────────────────────
+    Found 3 errors.
+    3 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())

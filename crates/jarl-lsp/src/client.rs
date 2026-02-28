@@ -20,6 +20,9 @@ pub struct Client {
     request_id_counter: Arc<std::sync::atomic::AtomicI32>,
     /// Pending outgoing requests waiting for responses
     pending_requests: Arc<std::sync::Mutex<HashMap<RequestId, PendingRequest>>>,
+    /// Whether we've already shown the unused_function threshold notification
+    /// this session. Shared across all clones so it fires at most once.
+    unused_fn_threshold_notified: Arc<std::sync::atomic::AtomicBool>,
 }
 
 /// Information about a pending request sent to the client
@@ -36,6 +39,7 @@ impl Client {
             sender,
             request_id_counter: Arc::new(std::sync::atomic::AtomicI32::new(1)),
             pending_requests: Arc::new(std::sync::Mutex::new(HashMap::new())),
+            unused_fn_threshold_notified: Arc::new(std::sync::atomic::AtomicBool::new(false)),
         }
     }
 
@@ -134,6 +138,26 @@ impl Client {
             typ: message_type,
             message: message.to_string(),
         })
+    }
+
+    /// Show the unused_function threshold notification at most once per session.
+    /// Returns `true` if the notification was actually sent (first call), `false`
+    /// if it was already shown.
+    pub fn notify_unused_fn_threshold_once(&self, hidden_count: usize) -> Result<bool> {
+        let already = self
+            .unused_fn_threshold_notified
+            .swap(true, std::sync::atomic::Ordering::SeqCst);
+        if already {
+            return Ok(false);
+        }
+        let message = format!(
+            "{hidden_count} `unused_function` diagnostic{s} hidden (likely false positives). \
+             Adjust 'threshold-ignore' in `[lint.unused_function]` in jarl.toml to change this.\
+             This message is shown once per session.",
+            s = if hidden_count == 1 { "" } else { "s" },
+        );
+        self.show_message(&message, types::MessageType::INFO)?;
+        Ok(true)
     }
 
     /// Convenience method to log a message
