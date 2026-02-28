@@ -245,6 +245,7 @@ pub struct LinterTomlOptions {
     ///
     /// Use `skipped-functions` to determine which functions won't be reported
     /// even if Jarl considers them unused.
+    #[serde(rename = "unused_function")]
     pub unused_function: Option<UnusedFunctionOptions>,
 
     /// Catch any unknown fields so we can produce a clean error message that
