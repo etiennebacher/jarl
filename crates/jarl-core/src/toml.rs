@@ -242,6 +242,9 @@ pub struct LinterTomlOptions {
     /// Use `threshold-ignore` to control how many `unused_function`
     /// violations are allowed before they are all hidden (likely false
     /// positives).
+    ///
+    /// Use `skipped-functions` to determine which functions won't be reported
+    /// even if Jarl considers them unused.
     pub unused_function: Option<UnusedFunctionOptions>,
 
     /// Catch any unknown fields so we can produce a clean error message that
