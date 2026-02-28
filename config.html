@@ -208,6 +208,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#duplicated_arguments" id="toc-duplicated_arguments" class="nav-link" data-scroll-target="#duplicated_arguments"><code>duplicated_arguments</code></a></li>
   <li><a href="#implicit_assignment" id="toc-implicit_assignment" class="nav-link" data-scroll-target="#implicit_assignment"><code>implicit_assignment</code></a></li>
   <li><a href="#unreachable_code" id="toc-unreachable_code" class="nav-link" data-scroll-target="#unreachable_code"><code>unreachable_code</code></a></li>
+  <li><a href="#unused_function" id="toc-unused_function" class="nav-link" data-scroll-target="#unused_function"><code>unused_function</code></a></li>
   </ul></li>
   </ul></li>
   <li><a href="#environment-variables" id="toc-environment-variables" class="nav-link" data-scroll-target="#environment-variables">Environment variables</a></li>
@@ -500,6 +501,26 @@ Global options:
 <span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.unreachable_code]</span></span>
 <span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Add a custom function to the list of stopping functions</span></span>
 <span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="dt">extend-stopping-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"my_custom_stop"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="unused_function" class="level4">
+<h4 class="anchored" data-anchor-id="unused_function"><code>unused_function</code></h4>
+<p>Use <code>skipped-functions</code> to fully replace the default list of functions that are allowed to be unused in the R package. Function names in <code>skipped-functions</code> <strong>are parsed as regular expressions</strong> (this differs from other rules that have a <code>skipped-functions</code> argument).</p>
+<p><code>unused_function</code> might return false positives because Jarl cannot statically determine whether a function is used. By default, Jarl will hide <code>unused_function</code> diagnostics if there are more than 50, as this would suggest that the package has some internal mechanism to use those functions. This number can be changed with the <code>threshold-ignore</code> argument.</p>
+<p>Defaults:</p>
+<ul>
+<li><code>skipped-functions = []</code></li>
+<li><code>threshold-ignore = 50</code></li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.unused_function]</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Ignore all functions that start with "pl_" or "cs_", and the function</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="co"># "my.function"</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="dt">skipped-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"^cs_"</span><span class="op">,</span> <span class="st">"^pl_"</span><span class="op">,</span> <span class="st">"my</span><span class="sc">\\</span><span class="st">.function"</span><span class="op">]</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Set a custom threshold above which diagnostics for this rule aren't reported</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a><span class="co"># (this is basically equivalent to never hiding unused functions).</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a><span class="dt">threshold-ignore</span> <span class="op">=</span> <span class="dv">10000</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 </section>
 </section>
