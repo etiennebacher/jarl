@@ -3,14 +3,18 @@ use regex::Regex;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
-use crate::package::SharedFileData;
+use crate::package::{FileScope, SharedFileData};
 
 /// ## What it does
 ///
-/// Checks for unused functions, currently limited to R packages. It looks for
-/// functions defined in the `R` folder that are not exported and not used
-/// anywhere in the package (including the `R`, `inst/tinytest`, `inst/tests`,
-/// `src`, and `tests` folders).
+/// Checks for unused functions in R packages. It looks for:
+///
+/// - Functions defined in `R/` that are not exported and not used anywhere in
+///   the package (including `R/`, `inst/tinytest/`, `inst/tests/`, `src/`, and
+///   `tests/`).
+/// - Functions defined in `tests/` that are not used anywhere in `tests/`.
+/// - Functions defined in `inst/tinytest/` or `inst/tests/` that are not used
+///   anywhere within that directory.
 ///
 /// ## Why is this bad?
 ///
@@ -267,12 +271,27 @@ pub(crate) fn compute_unused_from_shared(
     let mut result: HashMap<PathBuf, Vec<(String, TextRange, String)>> = HashMap::new();
 
     for (_root_key, file_data) in packages {
-        // Separate R/ files from extra (test/src/tinytest) files.
-        let r_files: Vec<&&SharedFileData> = file_data.iter().filter(|f| f.is_r_dir_file).collect();
-        let extra_files: Vec<&&SharedFileData> =
-            file_data.iter().filter(|f| !f.is_r_dir_file).collect();
+        // Separate files by scope.
+        let r_files: Vec<&&SharedFileData> = file_data
+            .iter()
+            .filter(|f| f.scope == FileScope::R)
+            .collect();
+        let extra_files: Vec<&&SharedFileData> = file_data
+            .iter()
+            .filter(|f| f.scope != FileScope::R)
+            .collect();
+        let tests_files: Vec<&&SharedFileData> = file_data
+            .iter()
+            .filter(|f| f.scope == FileScope::Tests)
+            .collect();
+        let inst_files: Vec<&&SharedFileData> = file_data
+            .iter()
+            .filter(|f| f.scope == FileScope::Inst)
+            .collect();
 
-        // Collect ALL defined function names across the package (for exportPattern matching)
+        // ── R/ scope (existing behavior) ────────────────────────────────
+
+        // Collect ALL defined function names across R/ (for exportPattern matching)
         let all_defined_names: Vec<String> = r_files
             .iter()
             .flat_map(|f| f.assignments.iter().map(|(name, _, _, _)| name.clone()))
@@ -379,6 +398,63 @@ pub(crate) fn compute_unused_from_shared(
 
             if !unused.is_empty() {
                 result.insert(file.rel_path.clone(), unused);
+            }
+        }
+
+        // ── Tests and Inst scopes ───────────────────────────────
+        // A function defined in one of these directories is unused if it
+        // doesn't appear in any other file within that same scope. No
+        // NAMESPACE export check is needed.
+
+        for (scope_files, scope_name) in [(&tests_files, "tests/"), (&inst_files, "inst/tinytest/")]
+        {
+            if scope_files.is_empty() {
+                continue;
+            }
+
+            // Total symbol occurrences within this scope.
+            let mut scope_occurrences: HashMap<&str, usize> = HashMap::new();
+            for file in scope_files {
+                for (name, count) in &file.symbol_counts {
+                    *scope_occurrences.entry(name.as_str()).or_insert(0) += count;
+                }
+            }
+
+            // Total definitions within this scope.
+            let mut scope_definitions: HashMap<&str, usize> = HashMap::new();
+            for file in scope_files {
+                for (name, _, _, _) in &file.assignments {
+                    *scope_definitions.entry(name.as_str()).or_insert(0) += 1;
+                }
+            }
+
+            for file in scope_files {
+                let mut unused: Vec<(String, TextRange, String)> = Vec::new();
+
+                for (name, range, line, col) in &file.assignments {
+                    // Skip functions matching user-configured patterns
+                    if options.is_skipped(name) {
+                        continue;
+                    }
+
+                    let occurrences = scope_occurrences.get(name.as_str()).copied().unwrap_or(0);
+                    let definitions = scope_definitions.get(name.as_str()).copied().unwrap_or(0);
+
+                    if occurrences <= definitions {
+                        let help = format!(
+                            "Defined at {path}:{line}:{col} but never called in {scope_name}",
+                            path = file.rel_path.display()
+                        );
+                        unused.push((name.clone(), *range, help));
+                    }
+                }
+
+                if !unused.is_empty() {
+                    result
+                        .entry(file.rel_path.clone())
+                        .or_default()
+                        .extend(unused);
+                }
             }
         }
     }

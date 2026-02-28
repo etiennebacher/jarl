@@ -2,7 +2,7 @@ use biome_rowan::{TextRange, TextSize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use crate::package::SharedFileData;
+use crate::package::{FileScope, SharedFileData};
 
 /// ## What it does
 ///
@@ -126,9 +126,9 @@ pub fn scan_top_level_assignments(content: &str) -> Vec<(String, TextRange, u32,
 pub(crate) fn compute_duplicates_from_shared(
     shared_data: &[SharedFileData],
 ) -> HashMap<PathBuf, Vec<(String, TextRange, String)>> {
-    // Group by package root
+    // Group by package root (only R/ files contribute to duplicate checking)
     let mut packages: HashMap<&str, Vec<&SharedFileData>> = HashMap::new();
-    for fd in shared_data {
+    for fd in shared_data.iter().filter(|fd| fd.scope == FileScope::R) {
         packages.entry(&fd.root_key).or_default().push(fd);
     }
 
