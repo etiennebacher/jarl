@@ -249,6 +249,27 @@ pub(crate) fn has_cpp_extension(path: &Path) -> bool {
     )
 }
 
+/// Extract a human-readable scope directory from a file path, e.g.
+/// `"tests/"` or `"inst/tests/"`. Used in help messages.
+fn scope_dir_from_path(rel_path: &Path) -> String {
+    let components: Vec<_> = rel_path
+        .components()
+        .map(|c| c.as_os_str().to_string_lossy().to_string())
+        .collect();
+    for (i, comp) in components.iter().enumerate() {
+        if comp == "tests" {
+            return "tests/".to_string();
+        }
+        if comp == "inst"
+            && let Some(next) = components.get(i + 1)
+            && (next == "tinytest" || next == "tests")
+        {
+            return format!("inst/{next}/");
+        }
+    }
+    "tests/".to_string()
+}
+
 /// Compute unused functions from pre-scanned shared file data.
 ///
 /// This is the inner logic extracted from `compute_package_unused_functions`,
@@ -406,8 +427,7 @@ pub(crate) fn compute_unused_from_shared(
         // doesn't appear in any other file within that same scope. No
         // NAMESPACE export check is needed.
 
-        for (scope_files, scope_name) in [(&tests_files, "tests/"), (&inst_files, "inst/tinytest/")]
-        {
+        for scope_files in [&tests_files, &inst_files] {
             if scope_files.is_empty() {
                 continue;
             }
@@ -441,8 +461,9 @@ pub(crate) fn compute_unused_from_shared(
                     let definitions = scope_definitions.get(name.as_str()).copied().unwrap_or(0);
 
                     if occurrences <= definitions {
+                        let scope_dir = scope_dir_from_path(&file.rel_path);
                         let help = format!(
-                            "Defined at {path}:{line}:{col} but never called in {scope_name}",
+                            "Defined at {path}:{line}:{col} but never called in {scope_dir}",
                             path = file.rel_path.display()
                         );
                         unused.push((name.clone(), *range, help));
