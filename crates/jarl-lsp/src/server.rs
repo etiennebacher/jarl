@@ -43,12 +43,6 @@ pub enum Task {
         snapshot: Box<DocumentSnapshot>,
         client: Client,
     },
-    /// Handle a diagnostic request
-    HandleDiagnosticRequest {
-        snapshot: Box<DocumentSnapshot>,
-        request_id: RequestId,
-        client: Client,
-    },
     /// Handle a code action request
     HandleCodeActionRequest {
         snapshot: Box<DocumentSnapshot>,
@@ -229,24 +223,8 @@ impl Server {
                 client.send_response(request.id, ())?;
                 Ok(())
             }
-            types::request::DocumentDiagnosticRequest::METHOD => {
-                let params: types::DocumentDiagnosticParams =
-                    serde_json::from_value(request.params)?;
-
-                if let Some(snapshot) = session.take_snapshot(params.text_document.uri) {
-                    task_sender.send(Task::HandleDiagnosticRequest {
-                        snapshot: Box::new(snapshot),
-                        request_id: request.id,
-                        client,
-                    })?;
-                } else {
-                    client.send_error_response(
-                        request.id,
-                        anyhow!("Document not found").to_lsp_error(),
-                    )?;
-                }
-                Ok(())
-            }
+            // Pull diagnostics are disabled: diagnostics are only published on save.
+            // This avoids showing stale or partial diagnostics while typing.
             types::request::CodeActionRequest::METHOD => {
                 let params: types::CodeActionParams = serde_json::from_value(request.params)?;
                 let uri = params.text_document.uri.clone();
@@ -314,17 +292,7 @@ impl Server {
                     session.check_and_notify_config(&file_path);
                 }
 
-                // Trigger linting for push diagnostics (real-time as you type)
-                let supports_pull_diagnostics = session.supports_pull_diagnostics();
-
-                if !supports_pull_diagnostics
-                    && let Some(snapshot) = session.take_snapshot(params.text_document.uri)
-                {
-                    task_sender.send(Task::LintDocument {
-                        snapshot: Box::new(snapshot),
-                        client: session.client().clone(),
-                    })?;
-                }
+                // Don't trigger linting on open, only on save
                 Ok(())
             }
             types::notification::DidChangeTextDocument::METHOD => {
@@ -360,11 +328,7 @@ impl Server {
 
                 tracing::debug!("Document saved: {}", params.text_document.uri);
 
-                let supports_pull_diagnostics = session.supports_pull_diagnostics();
-
-                if !supports_pull_diagnostics
-                    && let Some(snapshot) = session.take_snapshot(params.text_document.uri)
-                {
+                if let Some(snapshot) = session.take_snapshot(params.text_document.uri) {
                     task_sender.send(Task::LintDocument {
                         snapshot: Box::new(snapshot),
                         client: session.client().clone(),
@@ -383,23 +347,13 @@ impl Server {
     fn worker_thread(
         _id: usize,
         task_receiver: channel::Receiver<Task>,
-        event_sender: channel::Sender<Event>,
+        _event_sender: channel::Sender<Event>,
     ) {
         while let Ok(task) = task_receiver.recv() {
             match task {
                 Task::LintDocument { snapshot, client } => {
                     if let Err(e) = Self::handle_lint_task(*snapshot, client) {
                         tracing::error!("Error in lint task: {}", e);
-                    }
-                }
-                Task::HandleDiagnosticRequest { snapshot, request_id, client } => {
-                    if let Err(e) = Self::handle_diagnostic_request(
-                        *snapshot,
-                        request_id,
-                        client,
-                        &event_sender,
-                    ) {
-                        tracing::error!("Error in diagnostic request task: {}", e);
                     }
                 }
                 Task::HandleCodeActionRequest { snapshot, request_id, params, client } => {
@@ -434,39 +388,6 @@ impl Server {
         Ok(())
     }
 
-    /// Handle a diagnostic request
-    fn handle_diagnostic_request(
-        snapshot: DocumentSnapshot,
-        request_id: RequestId,
-        _client: Client,
-        event_sender: &channel::Sender<Event>,
-    ) -> LspResult<()> {
-        let output = lint::lint_document(&snapshot)?;
-
-        if output.unused_fn_hidden_count > 0 {
-            let _ = _client.notify_unused_fn_threshold_once(output.unused_fn_hidden_count);
-        }
-
-        let result = types::DocumentDiagnosticReportResult::Report(
-            types::DocumentDiagnosticReport::Full(types::RelatedFullDocumentDiagnosticReport {
-                related_documents: None,
-                full_document_diagnostic_report: types::FullDocumentDiagnosticReport {
-                    result_id: None,
-                    items: output.diagnostics,
-                },
-            }),
-        );
-
-        let response = Response {
-            id: request_id,
-            result: Some(serde_json::to_value(result)?),
-            error: None,
-        };
-
-        event_sender.send(Event::SendResponse(response))?;
-        Ok(())
-    }
-
     /// Handle a code action request by providing quick fixes for diagnostics
     fn handle_code_action_request(
         snapshot: DocumentSnapshot,
@@ -474,18 +395,17 @@ impl Server {
         params: types::CodeActionParams,
         client: Client,
     ) {
-        match Self::generate_code_actions(&snapshot, &params) {
-            Ok(actions) => {
-                if let Err(e) = client.send_response(request_id, actions) {
-                    tracing::error!("Failed to send code actions: {}", e);
-                }
-            }
+        let actions = match Self::generate_code_actions(&snapshot, &params) {
+            Ok(actions) => actions,
             Err(e) => {
-                tracing::error!("Failed to generate code actions: {}", e);
-                if let Err(send_err) = client.send_error_response(request_id, e.to_lsp_error()) {
-                    tracing::error!("Failed to send error response: {}", send_err);
-                }
+                // Syntax errors are expected while typing; return an empty list
+                // instead of an error response to avoid noisy notifications.
+                tracing::debug!("Skipping code actions due to error: {}", e);
+                Vec::new()
             }
+        };
+        if let Err(e) = client.send_response(request_id, actions) {
+            tracing::error!("Failed to send code actions: {}", e);
         }
     }
 

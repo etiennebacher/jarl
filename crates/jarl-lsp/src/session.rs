@@ -208,14 +208,6 @@ impl Session {
         self.documents.keys().map(|key| key.uri())
     }
 
-    /// Check if the client supports pull diagnostics
-    /// For JARL, we always prefer push diagnostics for real-time linting
-    pub fn supports_pull_diagnostics(&self) -> bool {
-        // Always use push diagnostics for immediate feedback
-        // This ensures diagnostics are sent automatically on document changes
-        false
-    }
-
     /// Get the position encoding
     pub fn position_encoding(&self) -> PositionEncoding {
         self.position_encoding
