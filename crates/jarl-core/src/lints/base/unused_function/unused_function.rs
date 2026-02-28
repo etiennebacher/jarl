@@ -310,7 +310,7 @@ pub(crate) fn compute_unused_from_shared(
             .filter(|f| f.scope == FileScope::Inst)
             .collect();
 
-        // ── R/ scope (existing behavior) ────────────────────────────────
+        // ── R scope ────────────────────────────────
 
         // Collect ALL defined function names across R/ (for exportPattern matching)
         let all_defined_names: Vec<String> = r_files
