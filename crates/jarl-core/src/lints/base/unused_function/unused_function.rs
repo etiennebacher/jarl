@@ -288,17 +288,23 @@ pub(crate) fn compute_unused_from_shared(
         };
         let namespace_exports = parse_namespace_exports(ns_content, &all_defined_name_refs);
 
-        // --- O(1) cross-file symbol lookup ---
-        // Pre-compute: for each symbol name, how many R/ files contain it.
-        let mut symbol_file_count: HashMap<&str, usize> = HashMap::new();
+        // Total occurrences of each symbol across all R/ files.
+        let mut total_occurrences: HashMap<&str, usize> = HashMap::new();
         for file in &r_files {
-            for name in file.symbol_counts.keys() {
-                *symbol_file_count.entry(name.as_str()).or_insert(0) += 1;
+            for (name, count) in &file.symbol_counts {
+                *total_occurrences.entry(name.as_str()).or_insert(0) += count;
             }
         }
 
-        // Build extra_symbol_set from pre-scanned extra files (tests/,
-        // inst/tinytest/, src/) instead of doing sequential I/O.
+        // Total definitions of each symbol across all R/ files.
+        let mut total_definitions: HashMap<&str, usize> = HashMap::new();
+        for file in &r_files {
+            for (name, _, _, _) in &file.assignments {
+                *total_definitions.entry(name.as_str()).or_insert(0) += 1;
+            }
+        }
+
+        // Symbols from extra files (tests/, inst/tinytest/, src/).
         let extra_symbol_set: HashSet<&str> = extra_files
             .iter()
             .flat_map(|f| f.symbol_counts.keys().map(|s| s.as_str()))
@@ -317,23 +323,11 @@ pub(crate) fn compute_unused_from_shared(
             ".First.lib",
         ]);
 
-        // Collect all symbols across all R/ files in the package (used for
-        // S3 method heuristic below).
-        let all_symbols: HashSet<&str> = r_files
-            .iter()
-            .flat_map(|f| f.symbol_counts.keys().map(|s| s.as_str()))
-            .collect();
+        // All symbols across R/ files (used for S3 method heuristic).
+        let all_symbols: HashSet<&str> = total_occurrences.keys().copied().collect();
 
-        // For each defined function, check if its name appears anywhere else
-        // in the package using the pre-computed frequency maps (O(1) per check).
         for file in &r_files {
             let mut unused: Vec<(String, TextRange, String)> = Vec::new();
-
-            // Count how many times each name is defined in this file
-            let mut def_counts: HashMap<&str, usize> = HashMap::new();
-            for (name, _, _, _) in &file.assignments {
-                *def_counts.entry(name.as_str()).or_insert(0) += 1;
-            }
 
             for (name, range, line, col) in &file.assignments {
                 // Skip exported functions
@@ -368,25 +362,13 @@ pub(crate) fn compute_unused_from_shared(
                     }
                 }
 
-                // O(1) cross-file lookup: check symbol_file_count to see if
-                // the name appears in other R/ files, and extra_symbol_set for
-                // test/src files.
-                let file_count = symbol_file_count.get(name.as_str()).copied().unwrap_or(0);
-                let in_extra = extra_symbol_set.contains(name.as_str());
-                let in_other_r_file =
-                    file_count > 1 || (file_count == 1 && !file.symbol_counts.contains_key(name));
-                let used_in_other_file = in_other_r_file || in_extra;
+                // A definition contributes exactly one occurrence to
+                // total_occurrences. If that's all there is (and no extra
+                // file references it), the function is unused.
+                let occurrences = total_occurrences.get(name.as_str()).copied().unwrap_or(0);
+                let definitions = total_definitions.get(name.as_str()).copied().unwrap_or(0);
 
-                // Used in the same file beyond its own definition(s)?
-                // Each definition contributes exactly one occurrence of the
-                // name to the symbol count (the LHS). If the total count
-                // exceeds the number of definitions, the name is also
-                // referenced elsewhere in the file.
-                let n_defs = def_counts.get(name.as_str()).copied().unwrap_or(0);
-                let n_occurrences = file.symbol_counts.get(name).copied().unwrap_or(0);
-                let used_in_same_file = n_occurrences > n_defs;
-
-                if !used_in_other_file && !used_in_same_file {
+                if occurrences <= definitions && !extra_symbol_set.contains(name.as_str()) {
                     let help = format!(
                         "Defined at {path}:{line}:{col} but never called",
                         path = file.rel_path.display()
