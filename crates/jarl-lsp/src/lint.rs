@@ -4,7 +4,7 @@
 //! It handles diagnostics, code actions, and fixes for automatic issue resolution.
 
 use anyhow::{Result, anyhow};
-use lsp_types::{Diagnostic, DiagnosticSeverity, Position, Range};
+use lsp_types::{Diagnostic, DiagnosticSeverity, NumberOrString, Position, Range};
 use serde::{Deserialize, Serialize};
 
 use std::path::{Path, PathBuf};
@@ -250,7 +250,7 @@ fn convert_to_lsp_diagnostic(
     let diagnostic = Diagnostic {
         range,
         severity: Some(severity),
-        code: None,
+        code: Some(NumberOrString::String(jarl_diag.message.name.clone())),
         code_description: None,
         source: Some(DIAGNOSTIC_SOURCE.to_string()),
         message,
