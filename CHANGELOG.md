@@ -62,6 +62,8 @@
 * The output in terminal with output format `full` or `concise` is now organized
   in multiple sections (summary, warnings, notes) (#366).
 
+* Hovering a diagnostic now shows the rule name (#377).
+
 ## 0.4.0
 
 ### Breaking changes
