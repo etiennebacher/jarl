@@ -281,6 +281,19 @@ jobs:
 
           gh release create "${{ needs.plan.outputs.tag }}" --target "$RELEASE_COMMIT" $PRERELEASE_FLAG --title "$ANNOUNCEMENT_TITLE" --notes-file "$RUNNER_TEMP/notes.txt" artifacts/*
 
+      # When we make a new release of Jarl, we also trigger a new release in
+      # `jarl-pre-commit`. This is because the `rev` parameter in the pre-commit
+      # file will fetch the matching version of Jarl so that everyone using the
+      # same pre-commit file also uses the same version of Jarl.
+      - name: Update jarl-pre-commit
+        if: ${{ !fromJson(steps.host.outputs.manifest).announcement_is_prerelease }}
+        env:
+          TAG: ${{ needs.plan.outputs.tag }}
+        run: |
+          gh api repos/etiennebacher/jarl-pre-commit/dispatches \
+            -f event_type=jarl-release \
+            -f "client_payload[version]=$TAG"
+
   announce:
     needs:
       - plan
