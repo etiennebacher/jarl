@@ -40,7 +40,11 @@ website:
     - text: Editors
       href: editors.md
     - text: Integrations
-      href: integrations.md
+      menu:
+      - text: Continuous integration
+        href: ci.md
+      - text: Pre-commit tools
+        href: precommit.md
     - text: Contributing
       menu:
       - text: General information
