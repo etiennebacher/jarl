@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:diataxis.fr)",
+      "WebFetch(domain:loonlang.com)"
+    ]
+  }
+}
