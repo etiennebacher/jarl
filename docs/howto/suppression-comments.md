@@ -3,11 +3,13 @@ title: Suppression comments
 ---
 
 It is sometimes needed to ignore diagnostics on certain lines of code, for instance in case of (hopefully rare) false positives.
-Jarl supports this via `# jarl-ignore` comments (aka *suppression comments*, because they are used to suppress diagnostics).
+Jarl supports this via `# jarl-ignore` comments, aka *suppression comments* because they are used to suppress diagnostics.
 In short, Jarl provides four types of suppression comments:
 
 - standard comments: `# jarl-ignore <rule-name>: <reason>`
-- range comments: `# jarl-ignore-start <rule-name>: <reason>` and `# jarl-ignore-end <rule-name>`
+- range comments:
+  - `# jarl-ignore-start <rule-name>: <reason>`
+  - `# jarl-ignore-end <rule-name>`
 - file comments: `# jarl-ignore-file <rule-name>: <reason>`
 - chunk comments:
   ```
@@ -153,6 +155,8 @@ Because an array is required, one can list several rules and their reasons:
 #|   - any_is_na: <reason>
 #|   - any_duplicated: <another reason>
 ```
+
+Note that chunks comments do not appear in the rendered output, contrarily to standard comments.
 
 ## How can I check that my suppression comments are correct?
 
