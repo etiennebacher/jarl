@@ -30,7 +30,7 @@ Jarl is built on [Air](https://posit-dev.github.io/air/), a fast formatter for R
 
 ## Quick start
 
-You can use Jarl manually via the command line, or use [extensions](https://jarl.etiennebacher.com/editors) to have it integrated in your coding environment.
+You can use Jarl manually via the command line, or use [extensions](https://jarl.etiennebacher.com/howto/editors) to have it integrated in your coding environment.
 
 This shows how to use it in the terminal:
 
