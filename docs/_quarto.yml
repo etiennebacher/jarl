@@ -51,12 +51,14 @@ website:
         href: howto/precommit.md
     - text: Reference
       menu:
+      - text: Rules
+        href: rules.qmd
       - text: CLI options
         href: reference/cli.md
       - text: Configuration file
         href: reference/config-file.md
-      - text: Rules
-        href: rules.qmd
+      - text: Environment variables
+        href: reference/envvars.md
     - text: Contributing
       menu:
       - text: General information
