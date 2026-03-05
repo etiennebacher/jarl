@@ -31,10 +31,10 @@ website:
       href: https://github.com/etiennebacher/jarl
       aria-label: GitHub
     left:
-    - text: Tour
-      href: tour.md
+    - text: Getting started
+      href: getting-started.md
     - text: By Example
-      href: by-example.md
+      href: by-example.qmd
     - text: How-to
       menu:
       - text: Suppression comments

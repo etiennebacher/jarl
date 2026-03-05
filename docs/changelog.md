@@ -29,7 +29,7 @@
   [lint.duplicated_arguments]
   extend-skipped-functions = ["my_function", "list"]
   ```
-  These options are listed in the [Configuration page](https://jarl.etiennebacher.com/config#with-a-config-file) (#333).
+  These options are listed in the [Configuration page](https://jarl.etiennebacher.com/reference/config-file) (#333).
 
 * Jarl now also analyzes piped functions, e.g. the following code is reported by
   the `any_is_na` rule:
@@ -41,7 +41,7 @@
   (#338).
 
 * Jarl now checks R code chunks in Quarto and R Markdown documents. More
-  information in the ["R Markdown and Quarto"](https://jarl.etiennebacher.com/using-jarl#r-markdown-and-quarto)
+  information in the ["R Markdown and Quarto"](https://jarl.etiennebacher.com/howto/rmarkdown-quarto)
   section (#50).
 
 * Added support for multiple `jarl.toml`, i.e. each file now uses the nearest
@@ -64,7 +64,7 @@
 
 * Hovering a diagnostic now shows the rule name (#377).
 
-* Jarl can be used with `pre-commit` and `prek`, see [Pre-commit tools](https://jarl.etiennebacher.com/precommit) (#379).
+* Jarl can be used with `pre-commit` and `prek`, see [Pre-commit tools](https://jarl.etiennebacher.com/howto/precommit) (#379).
 
 ## 0.4.0
 
@@ -75,7 +75,7 @@
   longer compatible with `lintr`'s comments. Instead, Jarl now uses `# jarl-ignore`
   comments and follows different rules regarding the syntax and location of those
   comments. Detailed documentation is available in the section
-  ["Ignoring diagnostics"](https://jarl.etiennebacher.com/using-jarl#ignoring-diagnostics)
+  ["Suppression comments"](https://jarl.etiennebacher.com/howto/suppression-comments)
   on the website. As part of this rewrite, the following rules have been added:
 
   - `blanket_suppression` (#243)
@@ -231,7 +231,7 @@
 
 ### Documentation
 
-- Added section on Neovim to the [Editors](https://jarl.etiennebacher.com/editors) page (#188, @bjyberg).
+- Added section on Neovim to the [Editors](https://jarl.etiennebacher.com/howto/editors) page (#188, @bjyberg).
 - Added page "Tutorial: add a new rule" (#183).
 
 ## 0.1.2
@@ -248,7 +248,7 @@
 
 ### Documentation
 
-- Added sections on RStudio and Helix to the [Editors](https://jarl.etiennebacher.com/editors) page.
+- Added sections on RStudio and Helix to the [Editors](https://jarl.etiennebacher.com/howto/editors) page.
 - Added installation instructions using Scoop on Windows.
 
 ## 0.1.1

@@ -222,10 +222,33 @@ See [R Markdown & Quarto](howto/rmarkdown-quarto.md) for limitations and details
 
 ## Set a minimum R version
 
-Some rules depend on the R version (e.g. `grepv` requires R >= 4.5.0):
+Some rules depend on the R version.
+Passing `--min-r-version x.y` tells Jarl that the project runs with R version `x.y` or later.
+Therefore, Jarl knows that it can apply rules that were implemented before `x.y`.
+
+For example, the `grepv` rule is only valid for R >= 4.5.0.
+
+```{.r filename="test.R"}
+grep("on", c("hi there", "bonjour"), value = TRUE)
+```
 
 ```{filename="Terminal"}
-$> jarl check . --min-r-version 4.3
+# Doesn't show anything because the user might be using R < 4.5.0
+$> jarl check test.R --min-r-version 4.3
+
+# Shows the diagnostic because the user runs R >= 4.5.0
+$> jarl check test.R --min-r-version 4.5
+
+warning: grepv
+ --> test.R:1:1
+  |
+1 | grep("on", c("hi there", "bonjour"), value = TRUE)
+  | -------------------------------------------------- `grep(..., value = TRUE)` can be simplified.
+  |
+  = help: Use `grepv(...)` instead.
+
+Found 1 error.
+1 fixable with the `--fix` option.
 ```
 
 See [R versions](howto/r-versions.md) for more.
