@@ -19,6 +19,7 @@ use crate::rule_options::assignment::AssignmentConfig;
 use crate::rule_options::assignment::AssignmentOptions;
 use crate::rule_options::duplicated_arguments::DuplicatedArgumentsOptions;
 use crate::rule_options::implicit_assignment::ImplicitAssignmentOptions;
+use crate::rule_options::quotes::QuotesOptions;
 use crate::rule_options::undesirable_function::UndesirableFunctionOptions;
 use crate::rule_options::unreachable_code::UnreachableCodeOptions;
 use crate::rule_options::unused_function::UnusedFunctionOptions;
@@ -220,6 +221,13 @@ pub struct LinterTomlOptions {
     #[serde(rename = "implicit_assignment")]
     pub implicit_assignment: Option<ImplicitAssignmentOptions>,
 
+    /// # Options for the `quotes` rule
+    ///
+    /// Use `quote` to choose the preferred quote delimiter for string
+    /// literals. Valid values are `"double"` (default) and `"single"`.
+    #[serde(rename = "quotes")]
+    pub quotes: Option<QuotesOptions>,
+
     /// # Options for the `undesirable_function` rule
     ///
     /// Use `functions` to fully replace the default list of undesirable functions.
@@ -322,6 +330,7 @@ impl TomlOptions {
                 assignment_options.as_ref(),
                 linter.duplicated_arguments.as_ref(),
                 linter.implicit_assignment.as_ref(),
+                linter.quotes.as_ref(),
                 linter.undesirable_function.as_ref(),
                 linter.unreachable_code.as_ref(),
                 linter.unused_function.as_ref(),

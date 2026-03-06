@@ -1,6 +1,7 @@
 pub mod assignment;
 pub mod duplicated_arguments;
 pub mod implicit_assignment;
+pub mod quotes;
 pub mod undesirable_function;
 pub mod unreachable_code;
 pub mod unused_function;
@@ -19,6 +20,8 @@ use unused_function::UnusedFunctionOptions;
 
 use crate::rule_options::implicit_assignment::ImplicitAssignmentOptions;
 use crate::rule_options::implicit_assignment::ResolvedImplicitAssignmentOptions;
+use crate::rule_options::quotes::QuotesOptions;
+use crate::rule_options::quotes::ResolvedQuotesOptions;
 
 /// Resolve a pair of `field` / `extend-field` options against a set of defaults.
 ///
@@ -68,6 +71,7 @@ pub struct ResolvedRuleOptions {
     pub assignment: ResolvedAssignmentOptions,
     pub duplicated_arguments: ResolvedDuplicatedArgumentsOptions,
     pub implicit_assignment: ResolvedImplicitAssignmentOptions,
+    pub quotes: ResolvedQuotesOptions,
     pub undesirable_function: ResolvedUndesirableFunctionOptions,
     pub unreachable_code: ResolvedUnreachableCodeOptions,
     pub unused_function: ResolvedUnusedFunctionOptions,
@@ -78,6 +82,7 @@ impl ResolvedRuleOptions {
         assignment: Option<&AssignmentOptions>,
         duplicated_arguments: Option<&DuplicatedArgumentsOptions>,
         implicit_assignment: Option<&ImplicitAssignmentOptions>,
+        quotes: Option<&QuotesOptions>,
         undesirable_function: Option<&UndesirableFunctionOptions>,
         unreachable_code: Option<&UnreachableCodeOptions>,
         unused_function: Option<&UnusedFunctionOptions>,
@@ -88,6 +93,7 @@ impl ResolvedRuleOptions {
                 duplicated_arguments,
             )?,
             implicit_assignment: ResolvedImplicitAssignmentOptions::resolve(implicit_assignment)?,
+            quotes: ResolvedQuotesOptions::resolve(quotes)?,
             undesirable_function: ResolvedUndesirableFunctionOptions::resolve(
                 undesirable_function,
             )?,
@@ -99,7 +105,7 @@ impl ResolvedRuleOptions {
 
 impl Default for ResolvedRuleOptions {
     fn default() -> Self {
-        Self::resolve(None, None, None, None, None, None)
+        Self::resolve(None, None, None, None, None, None, None)
             .expect("default rule options should always resolve")
     }
 }
