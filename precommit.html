@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Integrations – jarl</title>
+<title>Pre-commit tools – jarl</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -138,10 +138,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="nav-link" href="./editors.html"> 
 <span class="menu-text">Editors</span></a>
   </li>  
-  <li class="nav-item">
-    <a class="nav-link active" href="./integrations.html" aria-current="page"> 
-<span class="menu-text">Integrations</span></a>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-integrations" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Integrations</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-integrations">    
+        <li>
+    <a class="dropdown-item" href="./ci.html">
+ <span class="dropdown-text">Continuous integration</span></a>
   </li>  
+        <li>
+    <a class="dropdown-item" href="./precommit.html">
+ <span class="dropdown-text">Pre-commit tools</span></a>
+  </li>  
+    </ul>
+  </li>
   <li class="nav-item dropdown ">
     <a class="nav-link dropdown-toggle" href="#" id="nav-menu-contributing" role="link" data-bs-toggle="dropdown" aria-expanded="false">
  <span class="menu-text">Contributing</span>
@@ -184,17 +195,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#github-actions" id="toc-github-actions" class="nav-link active" data-scroll-target="#github-actions">Github Actions</a></li>
-  <li><a href="#container-based-cicd-platforms" id="toc-container-based-cicd-platforms" class="nav-link" data-scroll-target="#container-based-cicd-platforms">Container-based CI/CD platforms</a></li>
+  <li><a href="#pre-commit" id="toc-pre-commit" class="nav-link active" data-scroll-target="#pre-commit"><code>pre-commit</code></a></li>
+  <li><a href="#prek" id="toc-prek" class="nav-link" data-scroll-target="#prek"><code>prek</code></a></li>
+  <li><a href="#choosing-the-version-of-jarl-to-use" id="toc-choosing-the-version-of-jarl-to-use" class="nav-link" data-scroll-target="#choosing-the-version-of-jarl-to-use">Choosing the version of Jarl to use</a></li>
   </ul>
-<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/integrations.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/precommit.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Integrations</h1>
+<h1 class="title">Pre-commit tools</h1>
 </div>
 
 
@@ -211,40 +223,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="github-actions" class="level2">
-<h2 class="anchored" data-anchor-id="github-actions">Github Actions</h2>
-<p>Jarl can be used as a Github Action via <a href="https://github.com/etiennebacher/setup-jarl" target="_blank"><code>setup-jarl</code></a>. This action runs in a couple of seconds and will fail if there are any rule violations. It is possible to customize the arguments passed to Jarl in this action, such as the input paths.</p>
-<p>Here is an example YAML file:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> main</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">pull_request</span><span class="kw">:</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> jarl-check</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">permissions</span><span class="kw">:</span><span class="at"> read-all</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">jarl-check</span><span class="kw">:</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> jarl-check</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> etiennebacher/setup-jarl@v0.1.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>See the <code>setup-jarl</code> repository for more examples.</p>
+<p>Pre-commit tools run a configurable number of checks every time you want to commit some code. Their purpose is to catch some easily avoidable errors, such as linting or styling errors, before they are pushed to a branch. The two main pre-commit tools are <a href="https://pre-commit.com/" target="_blank"><code>pre-commit</code></a> and <a href="https://prek.j178.dev/" target="_blank"><code>prek</code></a>. Jarl provides a pre-commit hook that works with both of these tools: <a href="https://github.com/etiennebacher/jarl-pre-commit" target="_blank"><code>jarl-pre-commit</code></a>.</p>
+<section id="pre-commit" class="level2">
+<h2 class="anchored" data-anchor-id="pre-commit"><code>pre-commit</code></h2>
+<p>Use this in <code>.pre-commit-config.yaml</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at">   </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> https://github.com/etiennebacher/jarl-pre-commit</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">rev</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.4.0</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">hooks</span><span class="kw">:</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">id</span><span class="kw">:</span><span class="at"> jarl-check</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="container-based-cicd-platforms" class="level2">
-<h2 class="anchored" data-anchor-id="container-based-cicd-platforms">Container-based CI/CD platforms</h2>
-<p><code>jarl</code> can also easily be run in open-source and lightweight CI solutions like <a href="https://woodpecker-ci.org" target="_blank">Woodpecker CI</a> or <a href="https://crowci.dev" target="_blank">Crow CI</a>. For container-based CI/CD, here is an example of using <code>jarl</code> within a slim alpine linux container image.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">steps</span><span class="kw">:</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> lint-r-jarl</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> alpine:&lt;YOUR_ALPINE_VERSION&gt;</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">    commands</span><span class="kw">: </span><span class="ch">|</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>      apk add --no-cache -q curl</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>      curl -L -o jarl-installer.sh https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.sh</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>      sh ./jarl-installer.sh</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>      source $HOME/.local/bin/env</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>      jarl check ./R/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="prek" class="level2">
+<h2 class="anchored" data-anchor-id="prek"><code>prek</code></h2>
+<p><code>prek</code> can read <code>.pre-commit-config.yaml</code> but also has its own format, <code>prek.toml</code>.</p>
+<p>Use this in <code>prek.toml</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[[repos]]</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="dt">repo</span> <span class="op">=</span> <span class="st">"https://github.com/etiennebacher/jarl-pre-commit"</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="dt">rev</span> <span class="op">=</span> <span class="st">"0.4.0"</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="dt">hooks</span> <span class="op">=</span> <span class="op">[</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">{ </span><span class="dt">id</span><span class="op"> =</span> <span class="st">"jarl-check"</span><span class="op"> },</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="choosing-the-version-of-jarl-to-use" class="level2">
+<h2 class="anchored" data-anchor-id="choosing-the-version-of-jarl-to-use">Choosing the version of Jarl to use</h2>
+<p>The <code>rev</code> parameter determines the version of Jarl to use. Starting from 0.4.0, all releases of Jarl have a matching release in <code>jarl-pre-commit</code> (see <a href="https://github.com/etiennebacher/jarl-pre-commit/tags" target="_blank"><code>jarl-pre-commit</code> tags</a>).</p>
+<p>When you call <code>pre-commit</code> or <code>prek</code>, it fetches the corresponding Jarl binary and caches it in <code>~/.cache/jarl-pre-commit</code> (for instance <code>~/.cache/jarl-pre-commit/jarl-0.4.0</code>). This implies two things:</p>
+<ul>
+<li>you may have projects with <code>pre-commit</code> config files that use different versions of Jarl;</li>
+<li>the version of Jarl on the <code>$PATH</code> is not affected, meaning that projects that don’t use <code>pre-commit</code> are not affected by the version of Jarl used in a project with <code>pre-commit</code>.</li>
+</ul>
 
 
 </section>
@@ -655,4 +662,4 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/integrations.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/precommit.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

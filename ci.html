@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>changelog – jarl</title>
+<title>Continuous integration – jarl</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -169,7 +169,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     </ul>
   </li>
   <li class="nav-item">
-    <a class="nav-link active" href="./changelog.html" aria-current="page"> 
+    <a class="nav-link" href="./changelog.html"> 
 <span class="menu-text">Changelog</span></a>
   </li>  
 </ul>
@@ -195,320 +195,69 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#changelog" id="toc-changelog" class="nav-link active" data-scroll-target="#changelog">Changelog</a>
-  <ul>
-  <li><a href="#development-version" id="toc-development-version" class="nav-link" data-scroll-target="#development-version">Development version</a>
-  <ul class="collapse">
-  <li><a href="#deprecations" id="toc-deprecations" class="nav-link" data-scroll-target="#deprecations">Deprecations</a></li>
-  <li><a href="#features" id="toc-features" class="nav-link" data-scroll-target="#features">Features</a></li>
-  </ul></li>
-  <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section">0.4.0</a>
-  <ul class="collapse">
-  <li><a href="#breaking-changes" id="toc-breaking-changes" class="nav-link" data-scroll-target="#breaking-changes">Breaking changes</a></li>
-  <li><a href="#features-1" id="toc-features-1" class="nav-link" data-scroll-target="#features-1">Features</a></li>
-  <li><a href="#other-changes" id="toc-other-changes" class="nav-link" data-scroll-target="#other-changes">Other changes</a></li>
-  <li><a href="#bug-fixes" id="toc-bug-fixes" class="nav-link" data-scroll-target="#bug-fixes">Bug fixes</a></li>
-  <li><a href="#documentation" id="toc-documentation" class="nav-link" data-scroll-target="#documentation">Documentation</a></li>
-  </ul></li>
-  <li><a href="#section-1" id="toc-section-1" class="nav-link" data-scroll-target="#section-1">0.3.0</a>
-  <ul class="collapse">
-  <li><a href="#breaking-changes-1" id="toc-breaking-changes-1" class="nav-link" data-scroll-target="#breaking-changes-1">Breaking changes</a></li>
-  <li><a href="#features-2" id="toc-features-2" class="nav-link" data-scroll-target="#features-2">Features</a></li>
-  <li><a href="#fixes" id="toc-fixes" class="nav-link" data-scroll-target="#fixes">Fixes</a></li>
-  <li><a href="#other-changes-1" id="toc-other-changes-1" class="nav-link" data-scroll-target="#other-changes-1">Other changes</a></li>
-  </ul></li>
-  <li><a href="#section-2" id="toc-section-2" class="nav-link" data-scroll-target="#section-2">0.2.1</a>
-  <ul class="collapse">
-  <li><a href="#other" id="toc-other" class="nav-link" data-scroll-target="#other">Other</a></li>
-  </ul></li>
-  <li><a href="#section-3" id="toc-section-3" class="nav-link" data-scroll-target="#section-3">0.2.0</a>
-  <ul class="collapse">
-  <li><a href="#breaking-changes-2" id="toc-breaking-changes-2" class="nav-link" data-scroll-target="#breaking-changes-2">Breaking changes</a></li>
-  <li><a href="#features-3" id="toc-features-3" class="nav-link" data-scroll-target="#features-3">Features</a></li>
-  <li><a href="#fixes-1" id="toc-fixes-1" class="nav-link" data-scroll-target="#fixes-1">Fixes</a></li>
-  <li><a href="#documentation-1" id="toc-documentation-1" class="nav-link" data-scroll-target="#documentation-1">Documentation</a></li>
-  </ul></li>
-  <li><a href="#section-4" id="toc-section-4" class="nav-link" data-scroll-target="#section-4">0.1.2</a>
-  <ul class="collapse">
-  <li><a href="#features-4" id="toc-features-4" class="nav-link" data-scroll-target="#features-4">Features</a></li>
-  <li><a href="#fixes-2" id="toc-fixes-2" class="nav-link" data-scroll-target="#fixes-2">Fixes</a></li>
-  <li><a href="#documentation-2" id="toc-documentation-2" class="nav-link" data-scroll-target="#documentation-2">Documentation</a></li>
-  </ul></li>
-  <li><a href="#section-5" id="toc-section-5" class="nav-link" data-scroll-target="#section-5">0.1.1</a>
-  <ul class="collapse">
-  <li><a href="#fixes-3" id="toc-fixes-3" class="nav-link" data-scroll-target="#fixes-3">Fixes</a></li>
-  <li><a href="#documentation-3" id="toc-documentation-3" class="nav-link" data-scroll-target="#documentation-3">Documentation</a></li>
-  </ul></li>
-  <li><a href="#section-6" id="toc-section-6" class="nav-link" data-scroll-target="#section-6">0.1.0</a></li>
-  </ul></li>
+  <li><a href="#github-actions" id="toc-github-actions" class="nav-link active" data-scroll-target="#github-actions">Github Actions</a></li>
+  <li><a href="#container-based-cicd-platforms" id="toc-container-based-cicd-platforms" class="nav-link" data-scroll-target="#container-based-cicd-platforms">Container-based CI/CD platforms</a></li>
   </ul>
-<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/changelog.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/ci.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Continuous integration</h1>
+</div>
 
 
 
+<div class="quarto-title-meta">
 
-<section id="changelog" class="level1">
-<h1>Changelog</h1>
-<section id="development-version" class="level2">
-<h2 class="anchored" data-anchor-id="development-version">Development version</h2>
-<section id="deprecations" class="level3">
-<h3 class="anchored" data-anchor-id="deprecations">Deprecations</h3>
-<ul>
-<li><p>The command-line argument <code>--assignment</code> and the <code>jarl.toml</code> argument <code>assignment</code> are both deprecated. Instead, you should use the following code in <code>jarl.toml</code>:</p>
-<pre><code>[lint.assignment]
-operator = "&lt;-" # or "="</code></pre>
-<p>More info on these rule-specific options in <code>jarl.toml</code> in the “Features” section below (#334).</p></li>
-<li><p>The rule <code>"browser"</code> is deprecated. Calls to <code>browser()</code> are now detected with the rule <code>"undesirable_function"</code> (#336).</p></li>
-</ul>
-</section>
-<section id="features" class="level3">
-<h3 class="anchored" data-anchor-id="features">Features</h3>
-<ul>
-<li><p><code>jarl.toml</code> now accepts rule-specific options in subsections <code>[lint.&lt;rule_name&gt;]</code>, such as:</p>
-<pre><code>[lint]
-...
-
-# In the rule `duplicated_arguments`, do not report calls to `my_function()`
-# and `list()` where multiple arguments have the same name.
-[lint.duplicated_arguments]
-extend-skipped-functions = ["my_function", "list"]</code></pre>
-<p>These options are listed in the <a href="https://jarl.etiennebacher.com/config#with-a-config-file" target="_blank">Configuration page</a> (#333).</p></li>
-<li><p>Jarl now also analyzes piped functions, e.g.&nbsp;the following code is reported by the <code>any_is_na</code> rule:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">is.na</span>(x) <span class="sc">|&gt;</span> <span class="fu">any</span>()</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>x <span class="sc">|&gt;</span> <span class="fu">is.na</span>() <span class="sc">|&gt;</span> <span class="fu">any</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>(#338).</p></li>
-<li><p>Jarl now checks R code chunks in Quarto and R Markdown documents. More information in the <a href="https://jarl.etiennebacher.com/using-jarl#r-markdown-and-quarto" target="_blank">“R Markdown and Quarto”</a> section (#50).</p></li>
-<li><p>Added support for multiple <code>jarl.toml</code>, i.e.&nbsp;each file now uses the nearest <code>jarl.toml</code>. For example, Jarl can check a folder where several subfolders have their own <code>jarl.toml</code> (before, this would error). (#353)</p></li>
-<li><p>New option <code>include</code> in <code>jarl.toml</code>, to complement <code>exclude</code> (#349).</p></li>
-<li><p>New rules:</p>
-<ul>
-<li><code>duplicated_function_definition</code> (#358)</li>
-<li><code>expect_match</code> (#364, <span class="citation" data-cites="bjyberg">@bjyberg</span>)</li>
-<li><code>expect_no_match</code> (#368, <span class="citation" data-cites="bjyberg">@bjyberg</span>)</li>
-<li><code>invalid_chunk_suppression</code> (#350)</li>
-<li><code>undesirable_function</code> (replaces <code>browser</code>) (#336)</li>
-<li><code>unused_function</code> (#362)</li>
-</ul></li>
-<li><p>The output in terminal with output format <code>full</code> or <code>concise</code> is now organized in multiple sections (summary, warnings, notes) (#366).</p></li>
-<li><p>Hovering a diagnostic now shows the rule name (#377).</p></li>
-<li><p>Jarl can be used with <code>pre-commit</code> and <code>prek</code>, see <a href="https://jarl.etiennebacher.com/precommit" target="_blank">Pre-commit tools</a> (#379).</p></li>
-</ul>
-</section>
-</section>
-<section id="section" class="level2">
-<h2 class="anchored" data-anchor-id="section">0.4.0</h2>
-<section id="breaking-changes" class="level3">
-<h3 class="anchored" data-anchor-id="breaking-changes">Breaking changes</h3>
-<ul>
-<li><p>The support for comments to hide violations (aka <em>suppression comments</em>, aka <code># nolint</code> comments in <code>lintr</code>) has been entirely reworked (#218). It is no longer compatible with <code>lintr</code>’s comments. Instead, Jarl now uses <code># jarl-ignore</code> comments and follows different rules regarding the syntax and location of those comments. Detailed documentation is available in the section <a href="https://jarl.etiennebacher.com/using-jarl#ignoring-diagnostics" target="_blank">“Ignoring diagnostics”</a> on the website. As part of this rewrite, the following rules have been added:</p>
-<ul>
-<li><code>blanket_suppression</code> (#243)</li>
-<li><code>misnamed_suppression</code> (#309)</li>
-<li><code>misplaced_file_suppression</code> (#305)</li>
-<li><code>misplaced_suppression</code> (#307)</li>
-<li><code>unexplained_suppression</code> (#304)</li>
-<li><code>unmatched_range_suppression</code> (#312)</li>
-<li><code>unused_suppression</code> (#310)</li>
-</ul></li>
-</ul>
-</section>
-<section id="features-1" class="level3">
-<h3 class="anchored" data-anchor-id="features-1">Features</h3>
-<ul>
-<li><p>New CLI argument <code>--statistics</code> to show the number of violations per rule instead of the details of each violation. Jarl prints a hint to use this argument when more than 15 violations are reported (only when <code>--output-format</code> is <code>concise</code> or <code>full</code>). This value can be configured with the environment variable <code>JARL_N_VIOLATIONS_HINT_STAT</code>. (#250, #266)</p></li>
-<li><p>Jarl now looks in parent folders for <code>jarl.toml</code>. It searches until the user config folder is reached (the location of this folder depends on the OS: <code>~/.config</code> on Unix and <code>~/AppData/Roaming</code> on Windows). Jarl uses the first <code>jarl.toml</code> that is found. This is useful to store settings that should be common to all projects (e.g.&nbsp;<code>assignment = "&lt;-"</code>) without creating a <code>jarl.toml</code>, which is a common situation for standalone R scripts. (#253)</p></li>
-<li><p>New rules:</p>
-<ul>
-<li><code>equals_nan</code> (#284)</li>
-<li><code>equals_null</code> (#283)</li>
-<li><code>for_loop_dup_index</code> (#327)</li>
-<li><code>if_always_true</code> (#311, <span class="citation" data-cites="bjyberg">@bjyberg</span>)</li>
-<li><code>internal_function</code> (#291)</li>
-<li><code>redundant_ifelse</code> (#260)</li>
-<li><code>unnecessary_nesting</code> (#268)</li>
-<li><code>unreachable_code</code> (#261)</li>
-</ul></li>
-<li><p>When the output format is <code>full</code> or <code>concise</code>, rule names now have a hyperlink leading to the website documentation (#278).</p></li>
-<li><p><code>any_is_na</code> now reports <code>NA %in% x</code> (#286).</p></li>
-</ul>
-</section>
-<section id="other-changes" class="level3">
-<h3 class="anchored" data-anchor-id="other-changes">Other changes</h3>
-<ul>
-<li><p>The following rules are now disabled by default. They still exist and the user can choose to use them, but they were deemed too noisy for limited benefit to be enabled by default:</p>
-<ul>
-<li><code>assignment</code> (#258)</li>
-<li><code>fixed_regex</code> (#279)</li>
-<li><code>sample_int</code> (#262)</li>
-</ul></li>
-<li><p><code>equals_na</code> now reports <code>x %in% NA</code> cases, as documented (#285).</p></li>
-<li><p>There are now binaries available for <code>linux-musl</code> (<code>x64</code> and <code>arm64</code>) (#287).</p></li>
-</ul>
-</section>
-<section id="bug-fixes" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h3>
-<ul>
-<li><p>When <code>output-format</code> is <code>json</code> or <code>github</code>, additional information displayed in the terminal (e.g.&nbsp;timing) isn’t included anymore to avoid parsing errors (#254).</p></li>
-<li><p>Fixed a bug in the number of “fixable diagnostics” reported when the arg <code>fixable</code> is present in <code>jarl.toml</code> but <code>--fix</code> is not passed (#255).</p></li>
-<li><p><code>fixed_regex</code> is now correctly classified as “Performance” instead of “Readability” rule internally (#279).</p></li>
-<li><p>Default values of function parameters are now analyzed too (#282).</p></li>
-<li><p><code>duplicated_arguments</code> doesn’t report anymore cases where argument names <code>"</code> and <code>'</code> were conflated, e.g.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="cf">switch</span>(x, <span class="st">`</span><span class="at">"</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"double"</span>, <span class="st">`</span><span class="at">'</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"single"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>(#288).</p></li>
-</ul>
-</section>
-<section id="documentation" class="level3">
-<h3 class="anchored" data-anchor-id="documentation">Documentation</h3>
-<ul>
-<li>New section in the <code>Integrations</code> page to show how to use Jarl in various CI/CD platforms (#289, <span class="citation" data-cites="philipp-baumann">@philipp-baumann</span>).</li>
-</ul>
-</section>
-</section>
-<section id="section-1" class="level2">
-<h2 class="anchored" data-anchor-id="section-1">0.3.0</h2>
-<section id="breaking-changes-1" class="level3">
-<h3 class="anchored" data-anchor-id="breaking-changes-1">Breaking changes</h3>
-<ul>
-<li><p>Jarl now excludes by default file paths matching the following patterns: <code>.git/</code>, <code>renv/</code>, <code>revdep/</code>, <code>cpp11.R</code>, <code>RcppExports.R</code>, <code>extendr-wrappers.R</code>, and <code>import-standalone-*.R</code>.</p>
-<p>A new CLI argument <code>--no-default-exclude</code> can be used to check those files as well. This argument overrides the <code>default-exclude = true</code> option when set in <code>jarl.toml</code> (#178, <span class="citation" data-cites="novica">@novica</span>).</p></li>
-</ul>
-</section>
-<section id="features-2" class="level3">
-<h3 class="anchored" data-anchor-id="features-2">Features</h3>
-<ul>
-<li><code>--output-format json</code> now contains two fields <code>diagnostics</code> and <code>errors</code> (#219).</li>
-<li>Better support for namespaced function calls, both when reporting violations and when fixing them (#221).</li>
-<li>The <code>class_equals</code> rule now also reports cases like <code>identical(class(x), "foo")</code> and <code>identical("foo", class(x))</code> (#234).</li>
-<li>New rules:
-<ul>
-<li><code>expect_s3_class</code> (#235)</li>
-<li><code>expect_type</code> (#226)</li>
-<li><code>fixed_regex</code> (#227)</li>
-<li><code>sprintf</code> (#224)</li>
-<li><code>string_boundary</code> (#225)</li>
-<li><code>vector_logic</code> (#238)</li>
-</ul></li>
-</ul>
-</section>
-<section id="fixes" class="level3">
-<h3 class="anchored" data-anchor-id="fixes">Fixes</h3>
-<ul>
-<li><p><code># nolint</code> comments are now properly applied to nodes that are function arguments, e.g.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">foo</span>(</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># nolint</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(x))</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>does not report a violation anymore (#229).</p></li>
-</ul>
-</section>
-<section id="other-changes-1" class="level3">
-<h3 class="anchored" data-anchor-id="other-changes-1">Other changes</h3>
-<ul>
-<li><code>expect_named</code> no longer reports cases like <code>expect_equal(x, names(y))</code> because rewriting those as <code>expect_named(y, x)</code> would potentially change the intent of the test and the way it is read (#220).</li>
-</ul>
-</section>
-</section>
-<section id="section-2" class="level2">
-<h2 class="anchored" data-anchor-id="section-2">0.2.1</h2>
-<section id="other" class="level3">
-<h3 class="anchored" data-anchor-id="other">Other</h3>
-<ul>
-<li>Important performance improvement when using <code>--fix</code>, in particular in projects with many R files (#217).</li>
-</ul>
-</section>
-</section>
-<section id="section-3" class="level2">
-<h2 class="anchored" data-anchor-id="section-3">0.2.0</h2>
-<section id="breaking-changes-2" class="level3">
-<h3 class="anchored" data-anchor-id="breaking-changes-2">Breaking changes</h3>
-<ul>
-<li>For consistency between CLI arguments and <code>jarl.toml</code> arguments, the following CLI arguments are renamed (#199):
-<ul>
-<li><code>--select-rules</code> becomes <code>--select</code></li>
-<li><code>--ignore-rules</code> becomes <code>--ignore</code></li>
-<li><code>--assignment-op</code> becomes <code>--assignment</code></li>
-</ul></li>
-</ul>
-</section>
-<section id="features-3" class="level3">
-<h3 class="anchored" data-anchor-id="features-3">Features</h3>
-<ul>
-<li>New argument <code>extend-select</code> in <code>jarl.toml</code> and <code>--extend-select</code> in the CLI to select additional rules on top of the existing selection. This can be useful to select opt-in rules in addition to the default set of rules (#193).</li>
-<li>Added support for <code>seq</code> and <code>seq2</code> rules (#187).</li>
-<li>Added support for several rules related to <code>testthat</code>. Those rules are disabled by default and can be enabled by combining <code>select</code> or <code>extend-select</code> with the rule name or the <code>TESTTHAT</code> group rule name. Those rules are:
-<ul>
-<li><code>expect_length</code> (#211)</li>
-<li><code>expect_named</code> (#212)</li>
-<li><code>expect_not</code> (#204)</li>
-<li><code>expect_null</code> (#202)</li>
-<li><code>expect_true_false</code> (#191)</li>
-</ul></li>
-</ul>
-</section>
-<section id="fixes-1" class="level3">
-<h3 class="anchored" data-anchor-id="fixes-1">Fixes</h3>
-<ul>
-<li><code>implicit_assignment</code> no longer reports cases inside <code>quote()</code> (#209).</li>
-</ul>
-</section>
-<section id="documentation-1" class="level3">
-<h3 class="anchored" data-anchor-id="documentation-1">Documentation</h3>
-<ul>
-<li>Added section on Neovim to the <a href="https://jarl.etiennebacher.com/editors" target="_blank">Editors</a> page (#188, <span class="citation" data-cites="bjyberg">@bjyberg</span>).</li>
-<li>Added page “Tutorial: add a new rule” (#183).</li>
-</ul>
-</section>
-</section>
-<section id="section-4" class="level2">
-<h2 class="anchored" data-anchor-id="section-4">0.1.2</h2>
-<section id="features-4" class="level3">
-<h3 class="anchored" data-anchor-id="features-4">Features</h3>
-<ul>
-<li>Added support for <code>list2df</code> rule (#179).</li>
-<li>Added support for <code>browser</code> rule (#185, <span class="citation" data-cites="jonocarroll">@jonocarroll</span>).</li>
-<li>Added support for <code>system_file</code> rule (#186).</li>
-</ul>
-</section>
-<section id="fixes-2" class="level3">
-<h3 class="anchored" data-anchor-id="fixes-2">Fixes</h3>
-<ul>
-<li>(Hopefully) Fixed wrong printing of ANSI characters in multiple terminals on Windows (#179, thanks <span class="citation" data-cites="novica">@novica</span> for the report).</li>
-</ul>
-</section>
-<section id="documentation-2" class="level3">
-<h3 class="anchored" data-anchor-id="documentation-2">Documentation</h3>
-<ul>
-<li>Added sections on RStudio and Helix to the <a href="https://jarl.etiennebacher.com/editors" target="_blank">Editors</a> page.</li>
-<li>Added installation instructions using Scoop on Windows.</li>
-</ul>
-</section>
-</section>
-<section id="section-5" class="level2">
-<h2 class="anchored" data-anchor-id="section-5">0.1.1</h2>
-<section id="fixes-3" class="level3">
-<h3 class="anchored" data-anchor-id="fixes-3">Fixes</h3>
-<ul>
-<li>Fix discovery of <code>jarl.toml</code> by the Jarl extension (#175, thanks <span class="citation" data-cites="DavisVaughan">@DavisVaughan</span> for the report).</li>
-<li>Rule <code>duplicated_argument</code> no longer reports <code>cli_</code> functions where multiple arguments have the same name (#176, thanks <span class="citation" data-cites="DavisVaughan">@DavisVaughan</span> for the report).</li>
-</ul>
-</section>
-<section id="documentation-3" class="level3">
-<h3 class="anchored" data-anchor-id="documentation-3">Documentation</h3>
-<ul>
-<li>The docs of <code>assignment</code> rule now explain how to change the preferred assignment operator.</li>
-</ul>
-</section>
-</section>
-<section id="section-6" class="level2">
-<h2 class="anchored" data-anchor-id="section-6">0.1.0</h2>
-<p>First release (announced)</p>
+    
+  
+    
+  </div>
+  
 
 
+</header>
+
+
+<section id="github-actions" class="level2">
+<h2 class="anchored" data-anchor-id="github-actions">Github Actions</h2>
+<p>Jarl can be used as a Github Action via <a href="https://github.com/etiennebacher/setup-jarl" target="_blank"><code>setup-jarl</code></a>. This action runs in a couple of seconds and will fail if there are any rule violations. It is possible to customize the arguments passed to Jarl in this action, such as the input paths.</p>
+<p>Here is an example YAML file:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> main</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">pull_request</span><span class="kw">:</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> jarl-check</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">permissions</span><span class="kw">:</span><span class="at"> read-all</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">jarl-check</span><span class="kw">:</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> jarl-check</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> etiennebacher/setup-jarl@v0.1.0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>See the <code>setup-jarl</code> repository for more examples.</p>
 </section>
+<section id="container-based-cicd-platforms" class="level2">
+<h2 class="anchored" data-anchor-id="container-based-cicd-platforms">Container-based CI/CD platforms</h2>
+<p><code>jarl</code> can also easily be run in open-source and lightweight CI solutions like <a href="https://woodpecker-ci.org" target="_blank">Woodpecker CI</a> or <a href="https://crowci.dev" target="_blank">Crow CI</a>. For container-based CI/CD, here is an example of using <code>jarl</code> within a slim alpine linux container image.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> lint-r-jarl</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> alpine:&lt;YOUR_ALPINE_VERSION&gt;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">    commands</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>      apk add --no-cache -q curl</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>      curl -L -o jarl-installer.sh https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.sh</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>      sh ./jarl-installer.sh</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>      source $HOME/.local/bin/env</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>      jarl check ./R/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+
+
 </section>
 
 </main> <!-- /main -->
@@ -917,4 +666,4 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/changelog.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/ci.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
