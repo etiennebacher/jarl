@@ -109,7 +109,7 @@ pub fn print_notes(notes: &[String]) {
 
 #[derive(Debug, Serialize)]
 struct JsonOutput<'a> {
-    diagnostics: Vec<&'a Diagnostic>,
+    diagnostics: &'a [&'a Diagnostic],
     errors: Vec<JsonError>,
 }
 
@@ -229,12 +229,9 @@ impl Emitter for JsonEmitter {
             .map(|(path, err)| JsonError { file: path.clone(), error: format!("{:#}", err) })
             .collect();
 
-        let output = JsonOutput {
-            diagnostics: diagnostics.to_vec(),
-            errors: json_errors,
-        };
+        let output = JsonOutput { diagnostics, errors: json_errors };
 
-        serde_json::to_writer_pretty(&mut writer, &output)?;
+        serde_json::to_writer(&mut writer, &output)?;
         writer.flush()?;
         Ok(())
     }

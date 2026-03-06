@@ -174,60 +174,12 @@ fn test_output_json() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @r#"
-success: false
-exit_code: 1
------ stdout -----
-{
-  "diagnostics": [
-    {
-      "message": {
-        "name": "any_is_na",
-        "body": "`any(is.na(...))` is inefficient.",
-        "suggestion": "Use `anyNA(...)` instead."
-      },
-      "filename": "test.R",
-      "range": [
-        0,
-        13
-      ],
-      "location": {
-        "row": 1,
-        "column": 0
-      },
-      "fix": {
-        "content": "anyNA(x)",
-        "start": 0,
-        "end": 13,
-        "to_skip": false
-      }
-    },
-    {
-      "message": {
-        "name": "any_duplicated",
-        "body": "`any(duplicated(...))` is inefficient.",
-        "suggestion": "Use `anyDuplicated(...) > 0` instead."
-      },
-      "filename": "test2.R",
-      "range": [
-        0,
-        18
-      ],
-      "location": {
-        "row": 1,
-        "column": 0
-      },
-      "fix": {
-        "content": "anyDuplicated(x) > 0",
-        "start": 0,
-        "end": 18,
-        "to_skip": false
-      }
-    }
-  ],
-  "errors": []
-}
------ stderr -----
-"#
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    {"diagnostics":[{"message":{"name":"any_is_na","body":"`any(is.na(...))` is inefficient.","suggestion":"Use `anyNA(...)` instead."},"filename":"test.R","range":[0,13],"location":{"row":1,"column":0},"fix":{"content":"anyNA(x)","start":0,"end":13,"to_skip":false}},{"message":{"name":"any_duplicated","body":"`any(duplicated(...))` is inefficient.","suggestion":"Use `anyDuplicated(...) > 0` instead."},"filename":"test2.R","range":[0,18],"location":{"row":1,"column":0},"fix":{"content":"anyDuplicated(x) > 0","start":0,"end":18,"to_skip":false}}],"errors":[]}
+    ----- stderr -----
+    "#
     );
 
     // Additional info such as timing isn't included in output, #254
@@ -242,60 +194,12 @@ exit_code: 1
             .run()
             .normalize_os_executable_name(),
         @r#"
-success: false
-exit_code: 1
------ stdout -----
-{
-  "diagnostics": [
-    {
-      "message": {
-        "name": "any_is_na",
-        "body": "`any(is.na(...))` is inefficient.",
-        "suggestion": "Use `anyNA(...)` instead."
-      },
-      "filename": "test.R",
-      "range": [
-        0,
-        13
-      ],
-      "location": {
-        "row": 1,
-        "column": 0
-      },
-      "fix": {
-        "content": "anyNA(x)",
-        "start": 0,
-        "end": 13,
-        "to_skip": false
-      }
-    },
-    {
-      "message": {
-        "name": "any_duplicated",
-        "body": "`any(duplicated(...))` is inefficient.",
-        "suggestion": "Use `anyDuplicated(...) > 0` instead."
-      },
-      "filename": "test2.R",
-      "range": [
-        0,
-        18
-      ],
-      "location": {
-        "row": 1,
-        "column": 0
-      },
-      "fix": {
-        "content": "anyDuplicated(x) > 0",
-        "start": 0,
-        "end": 18,
-        "to_skip": false
-      }
-    }
-  ],
-  "errors": []
-}
------ stderr -----
-"#
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    {"diagnostics":[{"message":{"name":"any_is_na","body":"`any(is.na(...))` is inefficient.","suggestion":"Use `anyNA(...)` instead."},"filename":"test.R","range":[0,13],"location":{"row":1,"column":0},"fix":{"content":"anyNA(x)","start":0,"end":13,"to_skip":false}},{"message":{"name":"any_duplicated","body":"`any(duplicated(...))` is inefficient.","suggestion":"Use `anyDuplicated(...) > 0` instead."},"filename":"test2.R","range":[0,18],"location":{"row":1,"column":0},"fix":{"content":"anyDuplicated(x) > 0","start":0,"end":18,"to_skip":false}}],"errors":[]}
+    ----- stderr -----
+    "#
     );
 
     Ok(())
@@ -437,43 +341,12 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @r#"
-success: false
-exit_code: 255
------ stdout -----
-{
-  "diagnostics": [
-    {
-      "message": {
-        "name": "any_is_na",
-        "body": "`any(is.na(...))` is inefficient.",
-        "suggestion": "Use `anyNA(...)` instead."
-      },
-      "filename": "test.R",
-      "range": [
-        0,
-        13
-      ],
-      "location": {
-        "row": 1,
-        "column": 0
-      },
-      "fix": {
-        "content": "anyNA(x)",
-        "start": 0,
-        "end": 13,
-        "to_skip": false
-      }
-    }
-  ],
-  "errors": [
-    {
-      "file": "test2.R",
-      "error": "Failed to get checks for file: test2.R: Failed to parse test2.R due to syntax errors."
-    }
-  ]
-}
------ stderr -----
-"#
+    success: false
+    exit_code: 255
+    ----- stdout -----
+    {"diagnostics":[{"message":{"name":"any_is_na","body":"`any(is.na(...))` is inefficient.","suggestion":"Use `anyNA(...)` instead."},"filename":"test.R","range":[0,13],"location":{"row":1,"column":0},"fix":{"content":"anyNA(x)","start":0,"end":13,"to_skip":false}}],"errors":[{"file":"test2.R","error":"Failed to get checks for file: test2.R: Failed to parse test2.R due to syntax errors."}]}
+    ----- stderr -----
+    "#
     );
 
     insta::assert_snapshot!(
