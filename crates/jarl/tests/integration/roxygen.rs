@@ -291,13 +291,12 @@ check-roxygen = false
 }
 
 // ---------------------------------------------------------------------------
-// \dontrun{} and \donttest{} — entire examples section skipped on parse error
+// \dontrun{}, \donttest{}, \dontshow{} wrappers are stripped
 // ---------------------------------------------------------------------------
 
-/// When `\dontrun{}` or `\donttest{}` is present, the extracted code is not
-/// valid R, so the entire examples section is silently skipped.
+/// Code inside `\dontrun{}` is linted — the wrapper is stripped.
 #[test]
-fn test_roxygen_dontrun_skipped() -> anyhow::Result<()> {
+fn test_roxygen_dontrun_linted() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();
 
@@ -321,11 +320,20 @@ foo <- function(x) x
             .run()
             .normalize_os_executable_name(),
         @r"
-    success: true
-    exit_code: 0
+    success: false
+    exit_code: 1
     ----- stdout -----
+    warning: any_is_na
+     --> test.R:4:4
+      |
+    4 | #' any(is.na(x))
+      |    ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
     ── Summary ──────────────────────────────────────
-    All checks passed!
+    Found 1 error.
 
     ----- stderr -----
     "
@@ -334,8 +342,9 @@ foo <- function(x) x
     Ok(())
 }
 
+/// Code inside `\donttest{}` is linted — the wrapper is stripped.
 #[test]
-fn test_roxygen_donttest_skipped() -> anyhow::Result<()> {
+fn test_roxygen_donttest_linted() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();
 
@@ -359,11 +368,20 @@ foo <- function(x) x
             .run()
             .normalize_os_executable_name(),
         @r"
-    success: true
-    exit_code: 0
+    success: false
+    exit_code: 1
     ----- stdout -----
+    warning: any_is_na
+     --> test.R:4:4
+      |
+    4 | #' any(is.na(x))
+      |    ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
     ── Summary ──────────────────────────────────────
-    All checks passed!
+    Found 1 error.
 
     ----- stderr -----
     "
@@ -372,10 +390,9 @@ foo <- function(x) x
     Ok(())
 }
 
-/// Code before `\dontrun{}` in the same examples section is also skipped
-/// because the whole extracted block fails to parse.
+/// Code both inside and outside `\dontrun{}` is linted.
 #[test]
-fn test_roxygen_dontrun_skips_entire_section() -> anyhow::Result<()> {
+fn test_roxygen_dontrun_with_surrounding_code() -> anyhow::Result<()> {
     let directory = TempDir::new()?;
     let directory = directory.path();
 
@@ -386,55 +403,9 @@ fn test_roxygen_dontrun_skips_entire_section() -> anyhow::Result<()> {
 #' @examples
 #' any(is.na(x))
 #' \\dontrun{
-#' y <- 1
-#' }
-foo <- function(x) x
-",
-    )?;
-
-    insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name(),
-        @r"
-    success: true
-    exit_code: 0
-    ----- stdout -----
-    ── Summary ──────────────────────────────────────
-    All checks passed!
-
-    ----- stderr -----
-    "
-    );
-
-    Ok(())
-}
-
-/// When one roxygen block has `\dontrun{}` and another doesn't, only the
-/// clean block is linted.
-#[test]
-fn test_roxygen_dontrun_does_not_affect_other_blocks() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    std::fs::write(
-        directory.join("test.R"),
-        "\
-#' First function
-#' @examples
-#' any(is.na(x))
-foo <- function(x) x
-
-#' Second function
-#' @examples
 #' any(is.na(y))
-#' \\dontrun{
-#' z <- 1
 #' }
-bar <- function(y) y
+foo <- function(x) x
 ",
     )?;
 
@@ -457,9 +428,17 @@ bar <- function(y) y
       |
       = help: Use `anyNA(...)` instead.
 
+    warning: any_is_na
+     --> test.R:5:4
+      |
+    5 | #' any(is.na(y))
+      |    ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
 
     ── Summary ──────────────────────────────────────
-    Found 1 error.
+    Found 2 errors.
 
     ----- stderr -----
     "

@@ -13,6 +13,10 @@ use std::sync::LazyLock;
 /// Matches a roxygen comment prefix: one or more `#` followed by `'`.
 static RE_ROXYGEN_PREFIX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^#+'").unwrap());
 
+/// Matches roxygen macros like `\dontrun{`, `\donttest{`, `\dontshow{`.
+static RE_ROXYGEN_MACRO: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^\\(dontrun|donttest|dontshow)\{\s*$").unwrap());
+
 /// An R code chunk extracted from a roxygen `@examples` or `@examplesIf` section.
 #[derive(Debug)]
 pub struct RoxygenExamplesChunk {
@@ -143,6 +147,13 @@ fn extract_examples_from_block(block: &[RoxygenLine]) -> Vec<RoxygenExamplesChun
                 i += 1;
             }
 
+            // Strip \dontrun{}, \donttest{}, \dontshow{} wrappers
+            strip_roxygen_macros(
+                &mut code_lines,
+                &mut line_start_offsets,
+                &mut line_prefix_lengths,
+            );
+
             // Skip empty examples sections
             if code_lines.iter().all(|l| l.trim().is_empty()) {
                 continue;
@@ -156,6 +167,40 @@ fn extract_examples_from_block(block: &[RoxygenLine]) -> Vec<RoxygenExamplesChun
     }
 
     chunks
+}
+
+/// Remove `\dontrun{}`, `\donttest{}`, and `\dontshow{}` wrapper lines from
+/// the extracted code lines. These are roxygen macros whose content is valid R
+/// code. We remove the opening `\dontrun{` line and its matching closing `}`
+/// line so the code inside can be parsed and linted.
+fn strip_roxygen_macros(
+    code_lines: &mut Vec<String>,
+    line_start_offsets: &mut Vec<usize>,
+    line_prefix_lengths: &mut Vec<usize>,
+) {
+    // Work backwards so that removing lines doesn't shift indices we haven't
+    // processed yet. Track macro nesting depth to match closing braces.
+    let mut to_remove: Vec<usize> = Vec::new();
+    let mut open_stack: Vec<usize> = Vec::new();
+
+    for (i, line) in code_lines.iter().enumerate() {
+        let trimmed = line.trim();
+        if RE_ROXYGEN_MACRO.is_match(trimmed) {
+            open_stack.push(i);
+        } else if trimmed == "}" && !open_stack.is_empty() {
+            to_remove.push(open_stack.pop().unwrap());
+            to_remove.push(i);
+        }
+    }
+
+    // Remove in reverse order to preserve indices
+    to_remove.sort_unstable();
+    to_remove.dedup();
+    for &idx in to_remove.iter().rev() {
+        code_lines.remove(idx);
+        line_start_offsets.remove(idx);
+        line_prefix_lengths.remove(idx);
+    }
 }
 
 /// Check if a comment token is a roxygen comment (starts with one or more `#`
@@ -354,5 +399,65 @@ bar <- function(y) y
         let chunks = parse_and_extract(source);
         assert_eq!(chunks.len(), 1);
         assert_eq!(chunks[0].code, "  indented_code()");
+    }
+
+    #[test]
+    fn test_dontrun_stripped() {
+        let source = "\
+#' @examples
+#' x <- 1
+#' \\dontrun{
+#' y <- 2
+#' }
+#' z <- 3
+foo <- function(x) x
+";
+        let chunks = parse_and_extract(source);
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0].code, "x <- 1\ny <- 2\nz <- 3");
+    }
+
+    #[test]
+    fn test_donttest_stripped() {
+        let source = "\
+#' @examples
+#' \\donttest{
+#' any(is.na(x))
+#' }
+foo <- function(x) x
+";
+        let chunks = parse_and_extract(source);
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0].code, "any(is.na(x))");
+    }
+
+    #[test]
+    fn test_nested_dontrun_donttest() {
+        let source = "\
+#' @examples
+#' \\donttest{
+#' \\dontrun{
+#' x <- 1
+#' }
+#' }
+foo <- function(x) x
+";
+        let chunks = parse_and_extract(source);
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0].code, "x <- 1");
+    }
+
+    #[test]
+    fn test_dontshow_stripped() {
+        let source = "\
+#' @examples
+#' \\dontshow{
+#' x <- 1
+#' }
+foo <- function(x) x
+";
+        let chunks = parse_and_extract(source);
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0].code, "x <- 1");
     }
 }
