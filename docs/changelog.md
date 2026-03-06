@@ -64,6 +64,8 @@
 
 * Hovering a diagnostic now shows the rule name (#377).
 
+* Jarl can be used with `pre-commit` and `prek`, see [Pre-commit tools](https://jarl.etiennebacher.com/precommit) (#379).
+
 ## 0.4.0
 
 ### Breaking changes
