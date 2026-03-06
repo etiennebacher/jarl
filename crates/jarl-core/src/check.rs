@@ -1,10 +1,12 @@
 use crate::error::ParseError;
 use crate::package::{PackageAnalysis, compute_package_analysis};
+use crate::roxygen::{extract_roxygen_examples, remap_roxygen_range};
 use crate::rule_set::Rule;
 use crate::suppression::SuppressionManager;
 use crate::vcs::check_version_control;
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
+use air_r_syntax::RSyntaxNode;
 use anyhow::{Context, Result};
 use biome_rowan::TextSize;
 use rayon::prelude::*;
@@ -211,10 +213,63 @@ pub fn get_checks(
         })
         .collect();
 
+    // Lint R code inside roxygen @examples / @examplesIf sections
+    let mut diagnostics = diagnostics;
+    if config.check_roxygen {
+        let roxygen_diagnostics = get_checks_roxygen(syntax, file, config)?;
+        diagnostics.extend(roxygen_diagnostics);
+    }
+
     let loc_new_lines = find_new_lines(syntax)?;
     let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
 
     Ok(diagnostics)
+}
+
+/// Lint R code inside roxygen `@examples` and `@examplesIf` sections.
+///
+/// Each examples section is extracted, parsed as standalone R code, and linted.
+/// Diagnostic byte ranges are remapped to point to the correct position in the
+/// original file. Autofixes are disabled because the `#'` prefix makes
+/// position-based edits unsafe.
+fn get_checks_roxygen(
+    syntax: &RSyntaxNode,
+    file: &Path,
+    config: &Config,
+) -> Result<Vec<Diagnostic>> {
+    let chunks = extract_roxygen_examples(syntax);
+    let mut all_diagnostics: Vec<Diagnostic> = Vec::new();
+
+    for chunk in &chunks {
+        let parsed = air_r_parser::parse(&chunk.code, RParserOptions::default());
+        if parsed.has_error() {
+            // Examples may contain pseudo-code, \dontrun{} wrappers, etc.
+            continue;
+        }
+
+        let expressions = &parsed.tree().expressions();
+        let suppression = SuppressionManager::from_node(&parsed.syntax(), &chunk.code);
+        let mut checker = Checker::new(suppression, config.rule_options.clone());
+        checker.rule_set = config.rules_to_apply.clone();
+        checker.minimum_r_version = config.minimum_r_version;
+
+        for expr in expressions {
+            check_expression(&expr, &mut checker)?;
+        }
+
+        // Run document-level checks (suppression filtering, etc.).
+        // Roxygen examples don't participate in package-level analysis.
+        check_document(expressions, &mut checker, &[], &[])?;
+
+        for mut d in checker.diagnostics {
+            d.range = remap_roxygen_range(d.range, chunk);
+            d.fix = Fix::empty();
+            d.filename = file.to_path_buf();
+            all_diagnostics.push(d);
+        }
+    }
+
+    Ok(all_diagnostics)
 }
 
 /// Lint an Rmd/Qmd file by extracting R code chunks and checking each one.

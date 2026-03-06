@@ -78,6 +78,8 @@ pub struct Config {
     /// Rules that are allowed to have fixes applied (from fixable setting)
     /// None means all rules with fixes can be applied
     pub fixable: Option<HashSet<String>>,
+    /// Whether to lint R code inside roxygen `@examples` sections
+    pub check_roxygen: bool,
     /// Resolved per-rule options
     pub rule_options: ResolvedRuleOptions,
 }
@@ -143,6 +145,10 @@ pub fn build_config(
         rule_options.assignment = parse_assignment_cli(cli_assignment)?;
     }
 
+    let check_roxygen = toml_settings
+        .and_then(|s| s.linter.check_roxygen)
+        .unwrap_or(true);
+
     Ok(Config {
         paths,
         rules,
@@ -154,6 +160,7 @@ pub fn build_config(
         allow_no_vcs: check_config.allow_no_vcs,
         unfixable: unfixable_toml,
         fixable: fixable_toml,
+        check_roxygen,
         rule_options,
     })
 }
