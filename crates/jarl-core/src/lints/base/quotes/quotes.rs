@@ -79,6 +79,12 @@ pub fn quotes(
     let token = string.value_token()?;
     let text = token.text_trimmed();
 
+    // Malformed raw strings like `r'(hello]'` are parsed as identifier (`r`)
+    // followed by a regular string literal. Skip these invalid forms.
+    if is_malformed_raw_string(ast, text) {
+        return Ok(None);
+    }
+
     let parsed = unwrap_or_return_none!(parse_string(text));
 
     let quote_char = preferred_quote.as_char();
@@ -123,6 +129,24 @@ pub fn quotes(
     );
 
     Ok(Some(diagnostic))
+}
+
+fn is_malformed_raw_string(ast: &AnyRValue, text: &str) -> bool {
+    if !text.starts_with(['"', '\'']) {
+        return false;
+    }
+
+    let Some(prev) = ast.syntax().prev_sibling_or_token() else {
+        return false;
+    };
+
+    if !matches!(prev.kind(), RSyntaxKind::R_IDENTIFIER | RSyntaxKind::IDENT)
+        || !matches!(prev.to_string().trim(), "r" | "R")
+    {
+        return false;
+    }
+    // Check that it is actually raw string (r"hi" vs r "hi" or r \n "hi")
+    return prev.text_trimmed_range().end() == ast.syntax().text_trimmed_range().start();
 }
 
 fn quote_message(preferred_quote: PreferredQuote) -> &'static str {
