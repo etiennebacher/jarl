@@ -36,6 +36,12 @@ Jarl is built on [Air](https://posit-dev.github.io/air/), a fast formatter for R
 
 ## Quick start
 
+See:
+
+- ["Getting started"](https://jarl.etiennebacher.com/getting-started) for an intro to Jarl;
+- ["By Example"](https://jarl.etiennebacher.com/by-example) for short examples of what Jarl can do;
+- ["Editors"](https://jarl.etiennebacher.com/howto/editors), ["Continuous integration"](https://jarl.etiennebacher.com/howto/ci), and ["Pre-commit tools"](https://jarl.etiennebacher.com/howto/precommit) to integrate Jarl into your development tools.
+
 This shows what it looks like in the terminal:
 
 `test.R`:
@@ -86,12 +92,6 @@ if (all.equal(x, y)) {
   print("x and y are equal")
 }
 ```
-
-See:
-
-- ["Getting started"](https://jarl.etiennebacher.com/getting-started) for an intro to Jarl;
-- ["By Example"](https://jarl.etiennebacher.com/by-example) for short examples of what Jarl can do;
-- ["Editors"](https://jarl.etiennebacher.com/howto/editors), ["Continuous integration"](https://jarl.etiennebacher.com/howto/ci), and ["Pre-commit tools"](https://jarl.etiennebacher.com/howto/precommit) to integrate Jarl into your development tools.
 
 
 ## Installation

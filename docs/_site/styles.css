@@ -1,0 +1,107 @@
+/* css styles */
+
+.navbar {
+	border-bottom: 1px solid #303d64;
+	margin-bottom: 1em;
+}
+
+code {
+  background-color: #e5f0fb !important;
+}
+
+p, a, li, .callout-title-container, table {
+	color: #303d64 !important;
+}
+
+#title-block-header {
+	text-align: center;
+}
+
+.tippy-content {
+	border: 1px solid #a2a2a2;
+	border-radius: 2%;
+	background-color: #303d64;
+}
+
+.tippy-content > p {
+	color: white !important;
+}
+
+.callout {
+	border-right: 1px solid #a2a2a2 !important;
+	border-bottom: 1px solid #a2a2a2 !important;
+}
+
+.callout-header {
+	border-bottom: 1px solid #a2a2a2 !important;
+	border-top: 1px solid #a2a2a2 !important;
+}
+
+h1 {
+	margin-top: 0rem !important;
+}
+
+header {
+    nav {
+        ul {
+            &.navbar-nav {
+                li {
+                    a {
+                        border-bottom: 3px solid transparent;
+                        transition: border-bottom 0.5s;
+                        &:hover, &.active {
+                            border-color: #4b5f9b;
+														color: #4b5f9b !important;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* For code blocks with attribute "filename" */
+.code-with-filename-file  {
+  background-color: #4b5f9b !important;
+}
+.code-with-filename-file > pre {
+  background-color: #4b5f9b !important;
+  color: #e5f0fb;
+  padding: 0.1em !important;
+  margin: 0 !important;
+  border: 1px solid #a2a2a2 !important;
+  border: none !important;
+}
+
+.code-with-filename .sourceCode > pre,
+.code-with-filename > pre {
+  border-top: none !important;
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+  padding: 0.4em;
+}
+
+pre.sourceCode, pre {
+	border: 1px solid #a2a2a2;
+}
+
+/* Wrap text that overflows in codeblocks */
+pre {
+  padding: 1em;
+}
+
+pre code {
+  background-color: transparent;
+  display: block;
+  overflow-x: auto;
+}
+
+/* Background color of buttons in "Contributing" dropdown when they are clicked */
+ul.navbar-nav > li.nav-item.dropdown > ul.dropdown-menu.show > li > a.dropdown-item:active {
+  background: #303d64
+}
+
+/* Side color of note callouts */
+div.callout-note.callout {
+	border-left-color: #4b5f9b;
+}
