@@ -2,23 +2,38 @@
 title: Getting started
 ---
 
+This page will briefly present the main features of Jarl.
+It is complemented by the [By Example](by-example.qmd) page, that shows concrete examples of usage.
+
 ## Installation
 
 See the ["Installation" section](index.md#installation) on the homepage.
 
-## Linting
+## Quick start
+
+### Linting
+
+Jarl is a command-line tool and therefore must run in the terminal (not in an R console).
 
 `jarl check` is the command used to diagnose one or several files.
 It takes a path as its first argument, such as `jarl check .` to check all files starting from the current directory.
 This command will return a list of diagnostics, one per rule violation.
 
 Jarl comes with a [list of rules](rules.qmd) but not all of them are enabled by default.
-You can select or ignore rules either via the [command-line interface (CLI)](reference/cli.md) or in a [configuration file](reference/config-file.md).
-The full list of rules and families is available on the [Rules](rules.qmd) page.
+You can select or ignore rules via the CLI, for example:
 
-See the [By Example](by-example.qmd) page for concrete input/output examples.
+```bash
+# Check all files with all rules
+jarl check . --select ALL
 
-## Fixing
+# Check a single file, ignoring a specific rule
+jarl check my_file.R --ignore assignment
+```
+
+The full list of rules and families is available on the [Rules](rules.qmd) page. See the [CLI reference](reference/cli.md) for all available arguments.
+
+
+### Fixing
 
 It can be tedious to fix rule violations one by one.
 Jarl can apply automatic fixes to some diagnostics by passing the argument `--fix`, such as `jarl check . --fix`.
@@ -52,21 +67,35 @@ It can be hard to inspect the changes or to revert a large number of changes, so
 Note that Jarl is not a code formatter, so automatic fixes may not match your expected code style.
 
 
-## Configuration
+## Day-to-day usage
 
-Jarl can be configured to select or ignore specific rules, include or exclude files and folders, and apply rule-specific options, among other things.
-Those settings can be stored in a `jarl.toml` file so that everyone contributing in a project use the same configuration.
+### Configuration
+
+Persistent rule selection, file inclusion/exclusion, and rule-specific options can be stored in a `jarl.toml` file so that everyone contributing to a project uses the same configuration:
+
+```toml
+[lint]
+select = ["ALL"]
+ignore = ["assignment"]
+exclude = ["my_folder/"]
+```
 
 See the [Configuration file](reference/config-file.md) reference for all options.
 
 
-## Suppression comments
+### Suppression comments
 
-You can use `# jarl-ignore` comments (aka *suppression comments*) to ignore a diagnostic on a specific piece of code (e.g. for a false positive).
+You can use `# jarl-ignore` comments (aka *suppression comments*) to ignore a diagnostic on a specific piece of code (e.g. for a false positive):
+
+```r
+# jarl-ignore assignment: third-party API expects `=`
+x = foo()
+```
+
 Those follow a very specific syntax, see [Suppression comments](howto/suppression-comments.md) for the full guide.
 
 
-## Editor integration
+### Editor integration
 
 Jarl integrates with VS Code, Positron, Zed, Helix, and Neovim to provide inline diagnostics and quick fixes:
 
@@ -75,9 +104,17 @@ Jarl integrates with VS Code, Positron, Zed, Helix, and Neovim to provide inline
 See [Editor setup](howto/editors.md) for installation instructions.
 
 
-## CI and pre-commit
+## Integration with external tools
 
-Jarl can be used in continuous integration (such as GitHub Actions via [`setup-jarl`](https://github.com/etiennebacher/setup-jarl)).
-There is also built-in support for pre-commit hooks.
+### CI
 
-See [Continuous integration](howto/ci.md) and [Pre-commit tools](howto/precommit.md) for examples.
+Jarl can be used in continuous integration via GitHub Actions with [`setup-jarl`](https://github.com/etiennebacher/setup-jarl).
+
+See [Continuous integration](howto/ci.md) for more examples.
+
+
+### Pre-commit
+
+Jarl has built-in support for [pre-commit](https://pre-commit.com/) hooks, allowing you to lint staged files before each commit.
+
+See [Pre-commit tools](howto/precommit.md) for setup instructions.

@@ -47,7 +47,7 @@ will only apply the rule `length_test`.
 
 ## Config file detection
 
-Like [Ruff](https://docs.astral.sh/ruff/configuration/#config-file-discovery), Jarl follows a hierarchical strategy to detect the closest config file relative to the current working directory.
+Jarl follows a hierarchical strategy to detect the closest config file relative to the current working directory (inspired by [Ruff](https://docs.astral.sh/ruff/configuration/#config-file-discovery) in Python).
 
 Jarl follows these steps:
 
@@ -79,7 +79,7 @@ select = ["PERF", "length_test"]
 Select some rules in addition to `select`.
 
 This is useful when you want to use the default set of rules *and* some additional opt-in rules.
-In this scenario, you only need to add `extend-select = ["OPT_IN_RULE"]` instead of writing all default rule names.
+In this scenario, you only need to add `extend-select = ["<some_rule>"]` instead of writing all default rule names.
 
 This has the same constraints as `select`.
 
