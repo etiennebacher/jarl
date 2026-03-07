@@ -150,6 +150,7 @@ pub fn get_checks(
         .cloned()
         .unwrap_or_default();
     let unused_functions = pkg.unused_functions.get(file).cloned().unwrap_or_default();
+    checker.package_s3_methods = pkg.s3_methods.clone();
 
     // We run checks at expression-level. This gathers all violations, no matter
     // whether they are suppressed or not. They are filtered out in the next
