@@ -2,15 +2,15 @@
 title: Getting started
 ---
 
-This page will briefly present the main features of Jarl, assuming you have installed Jarl following the ["Installation" section](index.md#installation) on the homepage.
+This page will briefly present the main features of Jarl, assuming you have installed it following the ["Installation" section](index.md#installation) on the homepage.
 
-This page is organized in three sections:
+It is organized in three sections:
 
 - "Quick start" for basic information on occasional usage;
 - "Day-to-day usage" to see how to set up Jarl for regular usage;
 - "Integration with external tools" to see how it interacts with other tools.
 
-It is complemented by the [By Example](by-example.qmd) page, that shows concrete examples.
+This page is complemented by the [By Example](by-example.qmd) page, that shows concrete examples.
 
 ## Quick start
 
