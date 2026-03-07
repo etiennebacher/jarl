@@ -2,12 +2,15 @@
 title: Getting started
 ---
 
-This page will briefly present the main features of Jarl.
-It is complemented by the [By Example](by-example.qmd) page, that shows concrete examples of usage.
+This page will briefly present the main features of Jarl, assuming you have installed Jarl following the ["Installation" section](index.md#installation) on the homepage.
 
-## Installation
+This page is organized in three sections:
 
-See the ["Installation" section](index.md#installation) on the homepage.
+- "Quick start" for basic information on occasional usage;
+- "Day-to-day usage" to see how to set up Jarl for regular usage;
+- "Integration with external tools" to see how it interacts with other tools.
+
+It is complemented by the [By Example](by-example.qmd) page, that shows concrete examples.
 
 ## Quick start
 
@@ -51,10 +54,10 @@ By default, only safe fixes are applied.
 To also apply the unsafe fixes, use `--unsafe-fixes`, e.g. `jarl check . --fix --unsafe-fixes`.
 
 Not all rules have an automatic fix.
-For example, the rule `for_loop_index` reports cases such as `for (x in foo(x))`, which is problematic because `x` is both in the index and in the sequence component of the loop.
-It is recommended to rename `x` to disambiguate its use, but this requires manual intervention.
+For example, the rule `unreachable_code` detects code that would never run, for example because it is after a `return()` in a function.
+This requires user intervention to determine if the code needs to be removed, or if there is a bug to fix.
 
-::: {.callout-warning}
+::: {.callout-note}
 ### Automatic fixes and version control
 
 Using `--fix` may modify several files at once depending on the path you specified.

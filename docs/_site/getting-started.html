@@ -228,8 +228,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#installation" id="toc-installation" class="nav-link active" data-scroll-target="#installation">Installation</a></li>
-  <li><a href="#quick-start" id="toc-quick-start" class="nav-link" data-scroll-target="#quick-start">Quick start</a>
+  <li><a href="#quick-start" id="toc-quick-start" class="nav-link active" data-scroll-target="#quick-start">Quick start</a>
   <ul>
   <li><a href="#linting" id="toc-linting" class="nav-link" data-scroll-target="#linting">Linting</a></li>
   <li><a href="#fixing" id="toc-fixing" class="nav-link" data-scroll-target="#fixing">Fixing</a></li>
@@ -270,11 +269,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>This page will briefly present the main features of Jarl. It is complemented by the <a href="./by-example.html" target="_blank">By Example</a> page, that shows concrete examples of usage.</p>
-<section id="installation" class="level2">
-<h2 class="anchored" data-anchor-id="installation">Installation</h2>
-<p>See the <a href="./index.html#installation" target="_blank">“Installation” section</a> on the homepage.</p>
-</section>
+<p>This page will briefly present the main features of Jarl, assuming you have installed Jarl following the <a href="./index.html#installation" target="_blank">“Installation” section</a> on the homepage.</p>
+<p>This page is organized in three sections:</p>
+<ul>
+<li>“Quick start” for basic information on occasional usage;</li>
+<li>“Day-to-day usage” to see how to set up Jarl for regular usage;</li>
+<li>“Integration with external tools” to see how it interacts with other tools.</li>
+</ul>
+<p>It is complemented by the <a href="./by-example.html" target="_blank">By Example</a> page, that shows concrete examples.</p>
 <section id="quick-start" class="level2">
 <h2 class="anchored" data-anchor-id="quick-start">Quick start</h2>
 <section id="linting" class="level3">
@@ -298,14 +300,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p><strong>Unsafe fixes</strong> may change the behavior of the code when it runs. For example, <a href="./rules/all_equal.html" target="_blank"><code>all_equal</code></a> reports cases such as <code>!all.equal(x, y)</code>. This code is likely a mistake because <code>all.equal()</code> returns a character vector and not <code>FALSE</code> when <code>x != y</code>. Jarl could fix this to be <code>!isTRUE(all.equal(x, y))</code> instead, but this would change the behavior of the code, so it is marked “unsafe”.</p></li>
 </ul>
 <p>By default, only safe fixes are applied. To also apply the unsafe fixes, use <code>--unsafe-fixes</code>, e.g.&nbsp;<code>jarl check . --fix --unsafe-fixes</code>.</p>
-<p>Not all rules have an automatic fix. For example, the rule <code>for_loop_index</code> reports cases such as <code>for (x in foo(x))</code>, which is problematic because <code>x</code> is both in the index and in the sequence component of the loop. It is recommended to rename <code>x</code> to disambiguate its use, but this requires manual intervention.</p>
-<div class="callout callout-style-default callout-warning callout-titled">
+<p>Not all rules have an automatic fix. For example, the rule <code>unreachable_code</code> detects code that would never run, for example because it is after a <code>return()</code> in a function. This requires user intervention to determine if the code needs to be removed, or if there is a bug to fix.</p>
+<div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Warning</span>Automatic fixes and version control
+<span class="screen-reader-only">Note</span>Automatic fixes and version control
 </div>
 </div>
 <div class="callout-body-container callout-body">

@@ -2,9 +2,10 @@
 title: By Example
 execute:
   eval: false
+engine: knitr
 ---
 
-A collection of short, self-contained recipes for common Jarl tasks.
+A collection of short, self-contained recipes for common Jarl tasks in the terminal.
 
 
 ## Lint a file
