@@ -250,6 +250,7 @@ fn get_checks_roxygen(
 
         let expressions = &parsed.tree().expressions();
         let suppression = SuppressionManager::from_node(&parsed.syntax(), &chunk.code);
+        let has_suppressions = suppression.has_any_suppressions;
         let mut checker = Checker::new(suppression, config.rule_options.clone());
         checker.rule_set = config.rules_to_apply.clone();
         checker.minimum_r_version = config.minimum_r_version;
@@ -258,9 +259,13 @@ fn get_checks_roxygen(
             check_expression(&expr, &mut checker)?;
         }
 
-        // Run document-level checks (suppression filtering, etc.).
-        // Roxygen examples don't participate in package-level analysis.
-        check_document(expressions, &mut checker, &[], &[])?;
+        // Only run document-level checks if the examples code has inline
+        // suppression comments. Most examples don't, and check_document is
+        // otherwise unnecessary here (no package-level analysis, no
+        // suppression-related diagnostics to report).
+        if has_suppressions {
+            check_document(expressions, &mut checker, &[], &[])?;
+        }
 
         for mut d in checker.diagnostics {
             d.range = remap_roxygen_range(d.range, chunk);

@@ -26,153 +26,135 @@ pub struct RoxygenExamplesChunk {
     code_line_starts: Vec<usize>,
 }
 
-/// A single roxygen comment line with its text and position in the original file.
-struct RoxygenLine {
-    /// The full text of the comment token (e.g. `#' some text`).
-    text: String,
-    /// Byte offset of this comment token in the original file.
-    start_byte: usize,
-}
-
 /// Extract all `@examples` / `@examplesIf` code chunks from a parsed R file.
 ///
 /// Walks all trivia tokens in the CST looking for roxygen comment lines (`#'`),
-/// groups them into contiguous blocks, finds `@examples` or `@examplesIf` tags,
-/// and returns the code lines that follow those tags (with `#'` stripped).
+/// finds `@examples` or `@examplesIf` tags, and returns the code lines that
+/// follow those tags (with `#'` stripped). Extraction and filtering happen in a
+/// single pass to avoid intermediate allocations for non-examples lines.
 pub fn extract_roxygen_examples(syntax: &RSyntaxNode, contents: &str) -> Vec<RoxygenExamplesChunk> {
     // Fast path: skip the CST walk if the file has no roxygen examples at all
     if !contents.contains("#'") || !contents.contains("@examples") {
         return Vec::new();
     }
 
-    let roxygen_blocks = collect_roxygen_blocks(syntax);
-
     let mut chunks = Vec::new();
-    for block in roxygen_blocks {
-        chunks.extend(extract_examples_from_block(&block));
-    }
-    chunks
-}
 
-/// Collect contiguous groups of roxygen comment lines from the CST.
-///
-/// A roxygen block is a sequence of consecutive comment trivia tokens where
-/// each starts with `#'` (possibly with multiple `#`s).
-fn collect_roxygen_blocks(syntax: &RSyntaxNode) -> Vec<Vec<RoxygenLine>> {
-    let mut blocks: Vec<Vec<RoxygenLine>> = Vec::new();
-    let mut current_block: Vec<RoxygenLine> = Vec::new();
+    // State machine for single-pass extraction:
+    // - `in_examples`: we are collecting code lines after an @examples tag
+    // - `in_block`: we are inside a contiguous roxygen block
+    let mut in_examples = false;
+    let mut in_block = false;
+    let mut code_lines: Vec<String> = Vec::new();
+    let mut line_start_offsets: Vec<usize> = Vec::new();
+    let mut line_prefix_lengths: Vec<usize> = Vec::new();
 
-    // Walk all tokens in document order and inspect their leading trivia
-    // for comment pieces.
     let raw: &SyntaxNode<RLanguage> = syntax;
     for token in raw.descendants_tokens(biome_rowan::Direction::Next) {
         for piece in token.leading_trivia().pieces() {
             if !piece.is_comments() {
-                // A non-comment trivia piece (whitespace/newline) between comment
-                // lines is expected, but if there's an actual code token between
-                // two comment groups, that ends the block.
                 continue;
             }
 
-            let text = piece.text().to_string();
-            if is_roxygen_comment(&text) {
-                let start_byte: usize = piece.text_range().start().into();
-                current_block.push(RoxygenLine { text, start_byte });
+            let text = piece.text();
+            if is_roxygen_comment(text) {
+                in_block = true;
+                let stripped = strip_roxygen_prefix(text);
+                let trimmed = stripped.trim_start();
+
+                if trimmed.starts_with("@examples") || trimmed.starts_with("@examplesIf") {
+                    // Flush any previous examples section in this block
+                    flush_chunk(
+                        &mut chunks,
+                        &mut code_lines,
+                        &mut line_start_offsets,
+                        &mut line_prefix_lengths,
+                    );
+                    in_examples = true;
+                } else if trimmed.starts_with('@') {
+                    // A different @tag ends the examples section
+                    flush_chunk(
+                        &mut chunks,
+                        &mut code_lines,
+                        &mut line_start_offsets,
+                        &mut line_prefix_lengths,
+                    );
+                    in_examples = false;
+                } else if in_examples {
+                    let prefix_len = text.len() - stripped.len();
+                    let start_byte: usize = piece.text_range().start().into();
+                    code_lines.push(stripped.to_string());
+                    line_start_offsets.push(start_byte);
+                    line_prefix_lengths.push(prefix_len);
+                }
             } else {
                 // Non-roxygen comment breaks the block
-                if !current_block.is_empty() {
-                    blocks.push(std::mem::take(&mut current_block));
+                if in_block {
+                    flush_chunk(
+                        &mut chunks,
+                        &mut code_lines,
+                        &mut line_start_offsets,
+                        &mut line_prefix_lengths,
+                    );
+                    in_examples = false;
+                    in_block = false;
                 }
             }
         }
 
-        // A real (non-trivia) token ends the current roxygen block, unless the
-        // block will be continued by the next token's leading trivia. However,
-        // in the R CST, a roxygen block before a function definition will have
-        // all its comments as leading trivia of the first real token. So we
-        // only break the block when we encounter a non-trivia token that does
-        // NOT have roxygen comments in its leading trivia (handled naturally by
-        // the loop above — each token's trivia is processed in order).
-        //
-        // Actually, in biome_rowan, all leading comments of a node are attached
-        // to its first token's leading trivia. So roxygen blocks will appear
-        // as a contiguous sequence of comment pieces in one token's trivia.
-        // We flush the block after processing each token's trivia.
-        if !current_block.is_empty() {
-            blocks.push(std::mem::take(&mut current_block));
-        }
-    }
-
-    if !current_block.is_empty() {
-        blocks.push(current_block);
-    }
-
-    blocks
-}
-
-/// Given a roxygen block, find `@examples` / `@examplesIf` sections and extract
-/// the R code lines that follow them.
-fn extract_examples_from_block(block: &[RoxygenLine]) -> Vec<RoxygenExamplesChunk> {
-    let mut chunks = Vec::new();
-    let mut i = 0;
-
-    while i < block.len() {
-        let stripped = strip_roxygen_prefix(&block[i].text);
-        let trimmed = stripped.trim_start();
-
-        if trimmed.starts_with("@examples") || trimmed.starts_with("@examplesIf") {
-            // For @examplesIf, the condition is on the same line and is valid R,
-            // but we skip it since linting the condition alone isn't useful.
-            // Collect code lines starting from the next line.
-            i += 1;
-
-            let mut code_lines: Vec<String> = Vec::new();
-            let mut line_start_offsets: Vec<usize> = Vec::new();
-            let mut line_prefix_lengths: Vec<usize> = Vec::new();
-
-            while i < block.len() {
-                let line_stripped = strip_roxygen_prefix(&block[i].text);
-                let line_trimmed = line_stripped.trim_start();
-
-                // A new `@tag` ends the examples section
-                if line_trimmed.starts_with('@') {
-                    break;
-                }
-
-                let prefix_len = block[i].text.len() - line_stripped.len();
-                code_lines.push(line_stripped.to_string());
-                line_start_offsets.push(block[i].start_byte);
-                line_prefix_lengths.push(prefix_len);
-
-                i += 1;
-            }
-
-            // Strip \dontrun{}, \donttest{}, \dontshow{} wrappers
-            strip_roxygen_macros(
+        // End of token's trivia — flush the roxygen block
+        if in_block {
+            flush_chunk(
+                &mut chunks,
                 &mut code_lines,
                 &mut line_start_offsets,
                 &mut line_prefix_lengths,
             );
-
-            // Skip empty examples sections
-            if code_lines.iter().all(|l| l.trim().is_empty()) {
-                continue;
-            }
-
-            let code = code_lines.join("\n");
-            let code_line_starts = compute_code_line_starts(&code);
-            chunks.push(RoxygenExamplesChunk {
-                code,
-                line_start_offsets,
-                line_prefix_lengths,
-                code_line_starts,
-            });
-        } else {
-            i += 1;
+            in_examples = false;
+            in_block = false;
         }
     }
 
+    // Flush any trailing examples
+    flush_chunk(
+        &mut chunks,
+        &mut code_lines,
+        &mut line_start_offsets,
+        &mut line_prefix_lengths,
+    );
+
     chunks
+}
+
+/// Flush accumulated examples lines into a chunk (if non-empty).
+fn flush_chunk(
+    chunks: &mut Vec<RoxygenExamplesChunk>,
+    code_lines: &mut Vec<String>,
+    line_start_offsets: &mut Vec<usize>,
+    line_prefix_lengths: &mut Vec<usize>,
+) {
+    if code_lines.is_empty() {
+        return;
+    }
+
+    // Strip \dontrun{}, \donttest{}, \dontshow{} wrappers
+    strip_roxygen_macros(code_lines, line_start_offsets, line_prefix_lengths);
+
+    // Skip empty examples sections
+    if !code_lines.iter().all(|l| l.trim().is_empty()) {
+        let code = code_lines.join("\n");
+        let code_line_starts = compute_code_line_starts(&code);
+        chunks.push(RoxygenExamplesChunk {
+            code,
+            line_start_offsets: std::mem::take(line_start_offsets),
+            line_prefix_lengths: std::mem::take(line_prefix_lengths),
+            code_line_starts,
+        });
+    }
+
+    code_lines.clear();
+    line_start_offsets.clear();
+    line_prefix_lengths.clear();
 }
 
 /// Remove `\dontrun{}`, `\donttest{}`, and `\dontshow{}` wrapper lines from
