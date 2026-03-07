@@ -650,7 +650,7 @@ declare_rules! {
     UnusedFunction => {
         name: "unused_function",
         categories: [Corr],
-        default: Disabled,
+        default: Enabled,
         fix: None,
         min_r_version: None,
     },
