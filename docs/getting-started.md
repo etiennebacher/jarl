@@ -2,13 +2,19 @@
 title: Getting started
 ---
 
-This page shortly presents Jarl's main features.
+## Installation
+
+See the ["Installation" section](index.md#installation) on the homepage.
 
 ## Linting
 
 `jarl check` is the command used to diagnose one or several files.
 It takes a path as its first argument, such as `jarl check .` to check all files starting from the current directory.
 This command will return a list of diagnostics, one per rule violation.
+
+Jarl comes with a [list of rules](rules.qmd) but not all of them are enabled by default.
+You can select or ignore rules either via the [command-line interface (CLI)](reference/cli.md) or in a [configuration file](reference/config-file.md).
+The full list of rules and families is available on the [Rules](rules.qmd) page.
 
 See the [By Example](by-example.qmd) page for concrete input/output examples.
 
@@ -46,21 +52,17 @@ It can be hard to inspect the changes or to revert a large number of changes, so
 Note that Jarl is not a code formatter, so automatic fixes may not match your expected code style.
 
 
-## Selecting and ignoring rules
-
-Rules can be selected or ignored using the `--select` and `--ignore` parameters, or by family (e.g. `PERF`, `READ`).
-The full list of rules and families is available on the [Rules](rules.qmd) page.
-
-
 ## Configuration
 
-To avoid typing options every time, settings can be stored in a `jarl.toml` file.
+Jarl can be configured to select or ignore specific rules, include or exclude files and folders, and apply rule-specific options, among other things.
+Those settings can be stored in a `jarl.toml` file so that everyone contributing in a project use the same configuration.
+
 See the [Configuration file](reference/config-file.md) reference for all options.
 
 
 ## Suppression comments
 
-When you need to ignore a diagnostic on a specific piece of code (e.g. for a false positive), Jarl supports `# jarl-ignore` comments.
+You can use `# jarl-ignore` comments (aka *suppression comments*) to ignore a diagnostic on a specific piece of code (e.g. for a false positive).
 Those follow a very specific syntax, see [Suppression comments](howto/suppression-comments.md) for the full guide.
 
 
@@ -73,6 +75,9 @@ Jarl integrates with VS Code, Positron, Zed, Helix, and Neovim to provide inline
 See [Editor setup](howto/editors.md) for installation instructions.
 
 
-## CI
+## CI and pre-commit
 
-Jarl can run as a GitHub Action via [`setup-jarl`](https://github.com/etiennebacher/setup-jarl), completing in seconds. See [Continuous integration](howto/ci.md) for examples.
+Jarl can be used in continuous integration (such as GitHub Actions via [`setup-jarl`](https://github.com/etiennebacher/setup-jarl)).
+There is also built-in support for pre-commit hooks.
+
+See [Continuous integration](howto/ci.md) and [Pre-commit tools](howto/precommit.md) for examples.
