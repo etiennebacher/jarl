@@ -7,15 +7,6 @@
 
 use air_r_syntax::{RLanguage, RSyntaxNode};
 use biome_rowan::{SyntaxNode, TextSize};
-use regex::Regex;
-use std::sync::LazyLock;
-
-/// Matches a roxygen comment prefix: one or more `#` followed by `'`.
-static RE_ROXYGEN_PREFIX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^#+'").unwrap());
-
-/// Matches roxygen macros like `\dontrun{`, `\donttest{`, `\dontshow{`.
-static RE_ROXYGEN_MACRO: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^\\(dontrun|donttest|dontshow)\{\s*$").unwrap());
 
 /// An R code chunk extracted from a roxygen `@examples` or `@examplesIf` section.
 #[derive(Debug)]
@@ -29,6 +20,10 @@ pub struct RoxygenExamplesChunk {
     /// of the original comment line (the `#' ` prefix length). Used to remap
     /// column positions back to the original file.
     pub line_prefix_lengths: Vec<usize>,
+    /// Pre-computed byte offset of each line within `code` (cumulative lengths
+    /// accounting for `\n` separators). Used by `remap_byte_offset` to avoid
+    /// repeated string splitting.
+    code_line_starts: Vec<usize>,
 }
 
 /// A single roxygen comment line with its text and position in the original file.
@@ -44,7 +39,12 @@ struct RoxygenLine {
 /// Walks all trivia tokens in the CST looking for roxygen comment lines (`#'`),
 /// groups them into contiguous blocks, finds `@examples` or `@examplesIf` tags,
 /// and returns the code lines that follow those tags (with `#'` stripped).
-pub fn extract_roxygen_examples(syntax: &RSyntaxNode) -> Vec<RoxygenExamplesChunk> {
+pub fn extract_roxygen_examples(syntax: &RSyntaxNode, contents: &str) -> Vec<RoxygenExamplesChunk> {
+    // Fast path: skip the CST walk if the file has no roxygen comments at all
+    if !contents.contains("#'") {
+        return Vec::new();
+    }
+
     let roxygen_blocks = collect_roxygen_blocks(syntax);
 
     let mut chunks = Vec::new();
@@ -160,7 +160,13 @@ fn extract_examples_from_block(block: &[RoxygenLine]) -> Vec<RoxygenExamplesChun
             }
 
             let code = code_lines.join("\n");
-            chunks.push(RoxygenExamplesChunk { code, line_start_offsets, line_prefix_lengths });
+            let code_line_starts = compute_code_line_starts(&code);
+            chunks.push(RoxygenExamplesChunk {
+                code,
+                line_start_offsets,
+                line_prefix_lengths,
+                code_line_starts,
+            });
         } else {
             i += 1;
         }
@@ -185,7 +191,7 @@ fn strip_roxygen_macros(
 
     for (i, line) in code_lines.iter().enumerate() {
         let trimmed = line.trim();
-        if RE_ROXYGEN_MACRO.is_match(trimmed) {
+        if is_roxygen_macro(trimmed) {
             open_stack.push(i);
         } else if trimmed == "}" && !open_stack.is_empty() {
             to_remove.push(open_stack.pop().unwrap());
@@ -203,10 +209,30 @@ fn strip_roxygen_macros(
     }
 }
 
+/// Check if a trimmed line is a roxygen macro like `\dontrun{`, `\donttest{`,
+/// or `\dontshow{` (with optional trailing whitespace).
+fn is_roxygen_macro(trimmed: &str) -> bool {
+    let rest = if let Some(r) = trimmed.strip_prefix("\\dontrun{") {
+        r
+    } else if let Some(r) = trimmed.strip_prefix("\\donttest{") {
+        r
+    } else if let Some(r) = trimmed.strip_prefix("\\dontshow{") {
+        r
+    } else {
+        return false;
+    };
+    rest.trim().is_empty()
+}
+
 /// Check if a comment token is a roxygen comment (starts with one or more `#`
 /// followed by `'`).
 fn is_roxygen_comment(text: &str) -> bool {
-    RE_ROXYGEN_PREFIX.is_match(text)
+    let bytes = text.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() && bytes[i] == b'#' {
+        i += 1;
+    }
+    i > 0 && i < bytes.len() && bytes[i] == b'\''
 }
 
 /// Strip the roxygen prefix (`#+'` plus at most one leading space) from a comment line.
@@ -215,9 +241,15 @@ fn is_roxygen_comment(text: &str) -> bool {
 /// as ark's `find_roxygen_examples_range`: strip `#+'` then at most one space,
 /// to preserve intentional indentation.
 fn strip_roxygen_prefix(text: &str) -> &str {
-    let after_prefix = RE_ROXYGEN_PREFIX
-        .find(text)
-        .map_or(text, |m| &text[m.end()..]);
+    let bytes = text.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() && bytes[i] == b'#' {
+        i += 1;
+    }
+    if i < bytes.len() && bytes[i] == b'\'' {
+        i += 1;
+    }
+    let after_prefix = &text[i..];
     after_prefix.strip_prefix(' ').unwrap_or(after_prefix)
 }
 
@@ -241,32 +273,31 @@ pub fn remap_roxygen_range(
     )
 }
 
+/// Pre-compute the byte offset of each line within a `code` string (lines
+/// joined by `\n`).
+fn compute_code_line_starts(code: &str) -> Vec<usize> {
+    let mut starts = vec![0usize];
+    for (i, b) in code.bytes().enumerate() {
+        if b == b'\n' {
+            starts.push(i + 1);
+        }
+    }
+    starts
+}
+
 /// Map a byte offset within the chunk's `code` string to the corresponding byte
 /// offset in the original file.
 fn remap_byte_offset(offset: usize, chunk: &RoxygenExamplesChunk) -> usize {
-    // Find which line of the chunk this offset falls on.
-    // Lines in `code` are joined by `\n`, so line boundaries are at cumulative
-    // lengths + 1 (for the newline separator).
-    let mut cumulative = 0usize;
-    let lines: Vec<&str> = chunk.code.split('\n').collect();
+    // Binary search to find which line this offset falls on.
+    let line_idx = match chunk.code_line_starts.binary_search(&offset) {
+        Ok(i) => i,
+        Err(i) => i.saturating_sub(1),
+    };
 
-    for (line_idx, line) in lines.iter().enumerate() {
-        let line_end = cumulative + line.len();
-
-        if offset <= line_end || line_idx == lines.len() - 1 {
-            // The offset falls on this line
-            let col = offset.saturating_sub(cumulative);
-            let original_line_start = chunk.line_start_offsets[line_idx];
-            let prefix_len = chunk.line_prefix_lengths[line_idx];
-            return original_line_start + prefix_len + col;
-        }
-
-        // +1 for the \n separator between lines in `code`
-        cumulative = line_end + 1;
-    }
-
-    // Fallback (shouldn't happen)
-    offset
+    let col = offset.saturating_sub(chunk.code_line_starts[line_idx]);
+    let original_line_start = chunk.line_start_offsets[line_idx];
+    let prefix_len = chunk.line_prefix_lengths[line_idx];
+    original_line_start + prefix_len + col
 }
 
 #[cfg(test)]
@@ -276,7 +307,7 @@ mod tests {
 
     fn parse_and_extract(source: &str) -> Vec<RoxygenExamplesChunk> {
         let parsed = air_r_parser::parse(source, RParserOptions::default());
-        extract_roxygen_examples(&parsed.syntax())
+        extract_roxygen_examples(&parsed.syntax(), source)
     }
 
     #[test]

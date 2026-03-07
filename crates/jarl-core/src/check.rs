@@ -216,7 +216,7 @@ pub fn get_checks(
     // Lint R code inside roxygen @examples / @examplesIf sections
     let mut diagnostics = diagnostics;
     if config.check_roxygen {
-        let roxygen_diagnostics = get_checks_roxygen(syntax, file, config)?;
+        let roxygen_diagnostics = get_checks_roxygen(syntax, file, config, contents)?;
         diagnostics.extend(roxygen_diagnostics);
     }
 
@@ -236,8 +236,9 @@ fn get_checks_roxygen(
     syntax: &RSyntaxNode,
     file: &Path,
     config: &Config,
+    contents: &str,
 ) -> Result<Vec<Diagnostic>> {
-    let chunks = extract_roxygen_examples(syntax);
+    let chunks = extract_roxygen_examples(syntax, contents);
     let mut all_diagnostics: Vec<Diagnostic> = Vec::new();
 
     for chunk in &chunks {
