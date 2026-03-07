@@ -303,6 +303,23 @@ do.call(
 
 At this point, if you have an R file with a couple of examples that should be reported (e.g. `test.R`), you can use `cargo run --bin jarl -- check test.R` (the rule in this example is only valid for R >= 4.0.0, so we also need `--min-r-version 4.1` for instance).
 
+### Add TOML options
+
+It is possible that the rule you want to add benefits from some user customization.
+This is possible via rule-specific arguments in `jarl.toml`.
+For example, one could list some functions that will not be checked by the rule `duplicated_arguments`:
+
+```toml
+[lint]
+...
+
+[lint.duplicated_arguments]
+# Ignore duplicated arguments in `list()` only.
+skipped-functions = ["list"]
+```
+
+This adds some work and therefore will not be detailed here, but you can refer to [PR #372](https://github.com/etiennebacher/jarl/pull/372) for inspiration (it adds support for TOML arguments to the `implicit_assignment` rule).
+
 ### Add tests
 
 Tests for each rule are stored in `lints/base/<rule_name>/mod.rs`.
