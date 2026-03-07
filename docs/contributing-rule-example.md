@@ -69,7 +69,7 @@ Do `cargo check` or `cargo test` to know if you are correctly set up.
 
 ## Adding a new rule: basic steps
 
-As an example for this entire tutorial, we will analyze [PR #182](https://github.com/etiennebacher/jarl/pull/182/files), which added the rule [`list2df`](https://jarl.etiennebacher.com/rules/list2df).
+As an example for this entire tutorial, we will analyze [PR #182](https://github.com/etiennebacher/jarl/pull/182/files), which added the rule [`list2df`](rules/list2df.md).
 This PR adds a rule to replace calls like `do.call(cbind.data.frame, x)` by `list2DF(x)`.
 Importantly, `list2DF()` was added in R 4.0.0.
 I encourage you to check this PR as you advance in this tutorial.
@@ -452,7 +452,7 @@ We now need to document this change:
 * update `CHANGELOG.md`
 * update `docs/rules.md`
 
-If you have installed `just` as [recommended](https://jarl.etiennebacher.com/contributing#tools), you can now run `just document` to update the website.
+If you have installed `just` as [recommended](contributing.md#tools), you can now run `just document` to update the website.
 
 Finally, run `just lint` to ensure that `clippy` (the Rust linter) doesn't report any issue and that the code is properly formatted.
 You can also run `just lint-fix` to apply `clippy`'s automatic fixes if there are any.

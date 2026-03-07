@@ -23,5 +23,5 @@ See the website: https://jarl.etiennebacher.com/
 - Removed the setting "assignment" from the VS Code / Positron settings. This
   should be defined in a `jarl.toml` file. To use this by default on all R files,
   even those outside of a specific project, create a `jarl.toml` in [your config
-  folder](https://jarl.etiennebacher.com/config#config-file-detection).
+  folder](https://jarl.etiennebacher.com/reference/config-file#config-file-detection).
   (https://github.com/etiennebacher/jarl/pull/257)

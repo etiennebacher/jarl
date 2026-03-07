@@ -1,99 +1,8 @@
 ---
-title: Configuring Jarl
+title: Configuration file
 ---
 
-## With the command line
-
-Jarl comes with various options available directly from the command line.
-These can be listed with `jarl check --help`:
-
-```
-Check a set of files or directories
-
-Usage: jarl check [OPTIONS] <FILES>...
-
-Arguments:
-  <FILES>...
-          List of files or directories to check or fix lints, for example `jarl check .`.
-
-Options:
-  -f, --fix
-          Automatically fix issues detected by the linter.
-
-  -u, --unsafe-fixes
-          Include fixes that may not retain the original intent of the  code.
-
-      --fix-only
-          Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
-
-      --allow-dirty
-          Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
-
-      --allow-no-vcs
-          Apply fixes even if there is no version control system.
-
-  -s, --select <SELECT>
-          Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF".
-
-          [default: ]
-
-  -e, --extend-select <EXTEND_SELECT>
-          Like `--select` but adds additional rules in addition to those already specified.
-
-          [default: ]
-
-  -i, --ignore <IGNORE>
-          Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF".
-
-          [default: ]
-
-  -w, --with-timing
-          Show the time taken by the function.
-
-  -m, --min-r-version <MIN_R_VERSION>
-          The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
-
-      --output-format <OUTPUT_FORMAT>
-          Output serialization format for violations.
-
-          Possible values:
-          - full:    Print diagnostics with full context using annotated code snippets
-          - concise: Print diagnostics in a concise format, one per line
-          - github:  Print diagnostics as GitHub format
-          - json:    Print diagnostics as JSON
-
-          [default: full]
-
-      --assignment <ASSIGNMENT>
-          [DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`.
-
-      --no-default-exclude
-          Do not apply the default set of file patterns that should be excluded.
-
-      --statistics
-          Show counts for every rule with at least one violation.
-
-      --add-jarl-ignore[=<REASON>]
-          Automatically insert a `# jarl-ignore` comment to suppress all violations.
-          The default reason can be customized with `--add-jarl-ignore="my_reason"`.
-
-  -h, --help
-          Print help (see a summary with '-h')
-
-Global options:
-      --log-level <LOG_LEVEL>
-          The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
-```
-
-You can pass multiple options at once, for instance
-
-```sh
-jarl check . --fix --select any_is_na,class_equals
-```
-
-## With a config file
-
-### Introduction
+## Introduction
 
 To avoid typing options every time and to ensure all uses of Jarl in a project are consistent, it is possible to store options in `jarl.toml`.
 
@@ -117,7 +26,7 @@ assignment = "<-"
 
 These arguments (among others) are described below.
 
-### Interaction between CLI arguments and config file
+## Interaction between CLI arguments and config file
 
 Arguments in the command line always have the priority on those specified in `jarl.toml`.
 For example, if you have the following file:
@@ -136,9 +45,9 @@ jarl check . --ignore PERF
 
 will only apply the rule `length_test`.
 
-### Config file detection
+## Config file detection
 
-Like [Ruff](https://docs.astral.sh/ruff/configuration/#config-file-discovery), Jarl follows a hierarchical strategy to detect the closest config file relative to the current working directory.
+Jarl follows a hierarchical strategy to detect the closest config file relative to the current working directory (inspired by [Ruff](https://docs.astral.sh/ruff/configuration/#config-file-discovery) in Python).
 
 Jarl follows these steps:
 
@@ -152,9 +61,9 @@ For example, if you use `=` as assignment operator, you can set `assignment = "=
 
 Note that Jarl cannot handle multiple config files, it will use the first one it finds.
 
-### Top-level arguments
+## Top-level arguments
 
-#### `select`
+### `select`
 
 Select some rules by default.
 
@@ -165,12 +74,12 @@ This has the same capabilities as `--select`, so it is possible to pass rule nam
 select = ["PERF", "length_test"]
 ```
 
-#### `extend-select`
+### `extend-select`
 
 Select some rules in addition to `select`.
 
 This is useful when you want to use the default set of rules *and* some additional opt-in rules.
-In this scenario, you only need to add `extend-select = ["OPT_IN_RULE"]` instead of writing all default rule names.
+In this scenario, you only need to add `extend-select = ["<some_rule>"]` instead of writing all default rule names.
 
 This has the same constraints as `select`.
 
@@ -181,7 +90,7 @@ This has the same constraints as `select`.
 extend-select = ["TESTTHAT"]
 ```
 
-#### `ignore`
+### `ignore`
 
 Ignore some rules by default.
 
@@ -192,7 +101,7 @@ This has the same capabilities as `--ignore`, so it is possible to pass rule nam
 ignore = ["PERF", "length_test"]
 ```
 
-#### `include`
+### `include`
 
 Files and/or directories that are checked. By default, Jarl checks all files
 with a `.R`, `.qmd`, `.Rmd`, or `.rmd` extension.
@@ -216,7 +125,7 @@ It also supports glob patterns:
 include = ["**/*{.Rmd,qmd}"]
 ```
 
-#### `exclude`
+### `exclude`
 
 Files and/or directories that are not checked.
 
@@ -234,7 +143,7 @@ It also supports glob patterns:
 exclude = ["excluded-*.R"]
 ```
 
-#### `default-exclude`
+### `default-exclude`
 
 This takes a boolean argument indicating whether the default file exclude patterns are used.
 
@@ -255,12 +164,12 @@ The complete list of default exclude patterns is:
 default-exclude = true
 ```
 
-#### `assignment`
+### `assignment`
 
 **This argument is deprecated. Use the rule-specific argument `[lint.assignment]`
 instead (see below).**
 
-#### `fixable`
+### `fixable`
 
 This determines which rule violations will be fixed if `--fix` is passed.
 This can be useful if you only trust Jarl's automatic fixes for some rules and want to avoid automatic fixes for other rules.
@@ -280,7 +189,7 @@ fixable = ["PERF"]
 fixable = []
 ```
 
-#### `unfixable`
+### `unfixable`
 
 This determines which rule violations will be not fixed, even if `--fix` is passed.
 This can be useful if you only trust Jarl's automatic fixes for some rules and want to avoid automatic fixes for other rules.
@@ -300,9 +209,9 @@ unfixable = ["PERF"]
 unfixable = []
 ```
 
-### Rule-specific arguments
+## Rule-specific arguments
 
-#### `assignment`
+### `assignment`
 
 This takes a single value (`"<-"` or `"="`) indicating the preferred assignment
 operator in the files to check. If `assignment = "<-"` and if the `"assignment"`
@@ -319,7 +228,7 @@ This option doesn't have a default value.
 operator = "<-" # or "="
 ```
 
-#### `duplicated_arguments`
+### `duplicated_arguments`
 
 Use `skipped-functions` to fully replace the default list of functions that are
 allowed to have duplicated arguments. Use `extend-skipped-functions` to add to
@@ -340,7 +249,7 @@ Default: `skipped-functions = ["c", "mutate", "summarize", "transmute"]`
 skipped-functions = ["list"]
 ```
 
-#### `implicit_assignment`
+### `implicit_assignment`
 
 Use `skipped-functions` to fully replace the default list of functions that are
 allowed to contain implicit assignment. Use `extend-skipped-functions` to add to
@@ -362,7 +271,7 @@ Default: `skipped-functions = ["expect_error", "expect_warning", "expect_message
 skipped-functions = ["list"]
 ```
 
-#### `unreachable_code`
+### `unreachable_code`
 
 Use `stopping-functions` to fully replace the default list of functions that are
 considered to stop execution (never return). Use `extend-stopping-functions` to
@@ -384,7 +293,7 @@ Default: `stopping-functions = ["stop", ".Defunct", "abort", "cli_abort",
 extend-stopping-functions = ["my_custom_stop"]
 ```
 
-#### `unused_function`
+### `unused_function`
 
 Use `skipped-functions` to fully replace the default list of functions that are
 allowed to be unused in the R package. Function names in `skipped-functions`
@@ -414,13 +323,3 @@ skipped-functions = ["^cs_", "^pl_", "my\\.function"]
 # (this is basically equivalent to never hiding unused functions).
 threshold-ignore = 10000
 ```
-
-## Environment variables
-
-This section lists all environment variables that can be used in Jarl:
-
-* `NO_COLOR`: set this to any value to remove colors from the output.
-  - Example: `NO_COLOR=1`
-
-* `JARL_N_VIOLATIONS_HINT_STAT`: Jarl prints a hint to use `--statistics` if the number of violations is higher than a certain threshold. By default, this threshold is 15. This environment variable overrides this value.
-  - Example: `JARL_N_VIOLATIONS_HINT_STAT=25`

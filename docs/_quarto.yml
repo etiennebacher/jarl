@@ -31,20 +31,34 @@ website:
       href: https://github.com/etiennebacher/jarl
       aria-label: GitHub
     left:
-    - text: Using Jarl
-      href: using-jarl.md
-    - text: Configuration
-      href: config.md
-    - text: Rules
-      href: rules.qmd
-    - text: Editors
-      href: editors.md
-    - text: Integrations
+    - text: Getting started
+      href: getting-started.md
+    - text: By Example
+      href: by-example.qmd
+    - text: How-to
       menu:
+      - text: Suppression comments
+        href: howto/suppression-comments.md
+      - text: R Markdown & Quarto
+        href: howto/rmarkdown-quarto.md
+      - text: R versions
+        href: howto/r-versions.md
+      - text: Editor setup
+        href: howto/editors.md
       - text: Continuous integration
-        href: ci.md
+        href: howto/ci.md
       - text: Pre-commit tools
-        href: precommit.md
+        href: howto/precommit.md
+    - text: Reference
+      menu:
+      - text: Rules
+        href: rules.qmd
+      - text: CLI options
+        href: reference/cli.md
+      - text: Configuration file
+        href: reference/config-file.md
+      - text: Environment variables
+        href: reference/envvars.md
     - text: Contributing
       menu:
       - text: General information
