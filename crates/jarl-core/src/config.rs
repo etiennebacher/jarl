@@ -7,7 +7,7 @@ use crate::{
 };
 use air_r_syntax::RSyntaxKind;
 use anyhow::Result;
-use std::{collections::HashSet, fs, path::PathBuf};
+use std::{collections::HashSet, fs, path::PathBuf, sync::Arc};
 
 use crate::rule_options::assignment::ResolvedAssignmentOptions;
 
@@ -80,8 +80,8 @@ pub struct Config {
     pub fixable: Option<HashSet<String>>,
     /// Whether to lint R code inside roxygen `@examples` sections
     pub check_roxygen: bool,
-    /// Resolved per-rule options
-    pub rule_options: ResolvedRuleOptions,
+    /// Resolved per-rule options (wrapped in Arc to avoid expensive clones)
+    pub rule_options: Arc<ResolvedRuleOptions>,
 }
 
 pub fn build_config(
@@ -161,7 +161,7 @@ pub fn build_config(
         unfixable: unfixable_toml,
         fixable: fixable_toml,
         check_roxygen,
-        rule_options,
+        rule_options: Arc::new(rule_options),
     })
 }
 

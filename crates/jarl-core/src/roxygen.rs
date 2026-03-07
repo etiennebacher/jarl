@@ -40,8 +40,8 @@ struct RoxygenLine {
 /// groups them into contiguous blocks, finds `@examples` or `@examplesIf` tags,
 /// and returns the code lines that follow those tags (with `#'` stripped).
 pub fn extract_roxygen_examples(syntax: &RSyntaxNode, contents: &str) -> Vec<RoxygenExamplesChunk> {
-    // Fast path: skip the CST walk if the file has no roxygen comments at all
-    if !contents.contains("#'") {
+    // Fast path: skip the CST walk if the file has no roxygen examples at all
+    if !contents.contains("#'") || !contents.contains("@examples") {
         return Vec::new();
     }
 
