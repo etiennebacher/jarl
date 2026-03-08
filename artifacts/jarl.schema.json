@@ -125,9 +125,17 @@
             }
           ]
         },
+        "check-roxygen": {
+          "title": "Whether to lint R code in roxygen `@examples` and `@examplesIf` sections",
+          "description": "When enabled, Jarl parses and checks R code found in roxygen2\n`@examples` and `@examplesIf` documentation sections. Only applies to\nfiles inside an R package (i.e. in the `R/` directory with a\n`DESCRIPTION` file in the parent).\n\nDefaults to `true`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "default-exclude": {
           "title": "Whether or not to use default exclude patterns",
-          "description": "jarl automatically excludes a default set of folders and files. If this option is\nset to `false`, these files will be formatted as well.\n\nThe default set of excluded patterns are:\n- `.git/`\n- `renv/`\n- `revdep/`\n- `cpp11.R`\n- `RcppExports.R`\n- `extendr-wrappers.R`\n- `import-standalone-*.R`",
+          "description": "Jarl automatically excludes a default set of folders and files. If this option is\nset to `false`, these files will be formatted as well.\n\nThe default set of excluded patterns are:\n- `.git/`\n- `renv/`\n- `revdep/`\n- `cpp11.R`\n- `RcppExports.R`\n- `extendr-wrappers.R`\n- `import-standalone-*.R`",
           "type": [
             "boolean",
             "null"
@@ -166,6 +174,14 @@
           "items": {
             "type": "string"
           }
+        },
+        "fix-roxygen": {
+          "title": "Whether to apply autofixes to roxygen examples",
+          "description": "When enabled, Jarl will attempt to apply fixes to R code inside\nroxygen2 `@examples` and `@examplesIf` sections. Since Air does not\ncurrently support formatting roxygen examples, this is opt-in.\n\nDefaults to `false`.",
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "fixable": {
           "title": "Rule violations to always fix",
