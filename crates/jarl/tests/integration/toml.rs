@@ -765,7 +765,7 @@ unknown_field = ["value"]
     ----- stderr -----
     jarl failed
       Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
-    Unknown field `unknown_field` in `[lint]`. Expected one of: `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, `exclude`, `default-exclude`, `include`, `check-roxygen`.
+    Unknown field `unknown_field` in `[lint]`. Expected one of: `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, `exclude`, `default-exclude`, `include`, `check-roxygen`, `fix-roxygen`.
     "
     );
 
