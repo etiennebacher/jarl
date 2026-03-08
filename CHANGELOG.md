@@ -40,9 +40,11 @@
   ```
   (#338).
 
-* Jarl now checks R code chunks in Quarto and R Markdown documents. More
-  information in the ["R Markdown and Quarto"](https://jarl.etiennebacher.com/using-jarl#r-markdown-and-quarto)
-  section (#50).
+* Jarl now checks R code in more places:
+
+  - chunks in Quarto and R Markdown documents.
+    More information in the ["R Markdown and Quarto"](https://jarl.etiennebacher.com/using-jarl#r-markdown-and-quarto) section (#50).
+  - `@examples` and `@examplesIf` sections in `roxygen2` comments (#385).
 
 * Added support for multiple `jarl.toml`, i.e. each file now uses the nearest
   `jarl.toml`. For example, Jarl can check a folder where several subfolders have
