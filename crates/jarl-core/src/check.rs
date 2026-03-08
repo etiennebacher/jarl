@@ -216,7 +216,11 @@ pub fn get_checks(
     // Lint R code inside roxygen @examples / @examplesIf sections.
     // Only applies to files inside an R package (R/ dir with DESCRIPTION above).
     let mut diagnostics = diagnostics;
-    if config.check_roxygen && is_in_r_package(file) == Some(true) {
+    if config.check_roxygen
+        && contents.contains("#'")
+        && contents.contains("@examples")
+        && is_in_r_package(file) == Some(true)
+    {
         let roxygen_diagnostics = get_checks_roxygen(syntax, file, config, contents)?;
         diagnostics.extend(roxygen_diagnostics);
     }
