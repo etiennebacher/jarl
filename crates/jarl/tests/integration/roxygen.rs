@@ -511,6 +511,63 @@ foo <- function(x) x
 }
 
 // ---------------------------------------------------------------------------
+// @examples section stops at the next @tag
+// ---------------------------------------------------------------------------
+
+/// Code after `@return` (or any other tag) should NOT be linted as examples.
+#[test]
+fn test_roxygen_examples_stopped_by_tag() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+    let r_dir = setup_r_package(directory);
+
+    std::fs::write(
+        r_dir.join("test.R"),
+        "\
+#' @title hi
+#' @description
+#' hello
+#' @examples
+#' any(is.na(x))
+#' @return foo
+#' any(is.na(x))
+f <- function() 1
+",
+    )?;
+
+    // Only the first any(is.na(x)) (inside @examples) should be reported.
+    // The second one is under @return and is not R code.
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @r"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> R/test.R:5:4
+      |
+    5 | #' any(is.na(x))
+      |    ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
 // ##' is also a valid roxygen comment
 // ---------------------------------------------------------------------------
 
