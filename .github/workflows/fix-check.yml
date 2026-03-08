@@ -49,6 +49,7 @@ env:
 jobs:
   fix-check:
     runs-on: macos-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout current PR branch
