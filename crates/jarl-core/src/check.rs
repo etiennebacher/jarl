@@ -1,5 +1,5 @@
 use crate::error::ParseError;
-use crate::package::{PackageAnalysis, compute_package_analysis};
+use crate::package::{PackageAnalysis, compute_package_analysis, is_in_r_package};
 use crate::roxygen::{extract_roxygen_examples, remap_roxygen_range};
 use crate::rule_set::Rule;
 use crate::suppression::SuppressionManager;
@@ -213,9 +213,10 @@ pub fn get_checks(
         })
         .collect();
 
-    // Lint R code inside roxygen @examples / @examplesIf sections
+    // Lint R code inside roxygen @examples / @examplesIf sections.
+    // Only applies to files inside an R package (R/ dir with DESCRIPTION above).
     let mut diagnostics = diagnostics;
-    if config.check_roxygen {
+    if config.check_roxygen && is_in_r_package(file) == Some(true) {
         let roxygen_diagnostics = get_checks_roxygen(syntax, file, config, contents)?;
         diagnostics.extend(roxygen_diagnostics);
     }
@@ -269,7 +270,9 @@ fn get_checks_roxygen(
 
         for mut d in checker.diagnostics {
             d.range = remap_roxygen_range(d.range, chunk);
-            d.fix = Fix::empty();
+            if !config.fix_roxygen {
+                d.fix = Fix::empty();
+            }
             d.filename = file.to_path_buf();
             all_diagnostics.push(d);
         }

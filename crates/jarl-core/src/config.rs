@@ -80,6 +80,8 @@ pub struct Config {
     pub fixable: Option<HashSet<String>>,
     /// Whether to lint R code inside roxygen `@examples` sections
     pub check_roxygen: bool,
+    /// Whether to apply autofixes to roxygen examples
+    pub fix_roxygen: bool,
     /// Resolved per-rule options (wrapped in Arc to avoid expensive clones)
     pub rule_options: Arc<ResolvedRuleOptions>,
 }
@@ -149,6 +151,10 @@ pub fn build_config(
         .and_then(|s| s.linter.check_roxygen)
         .unwrap_or(true);
 
+    let fix_roxygen = toml_settings
+        .and_then(|s| s.linter.fix_roxygen)
+        .unwrap_or(false);
+
     Ok(Config {
         paths,
         rules,
@@ -161,6 +167,7 @@ pub fn build_config(
         unfixable: unfixable_toml,
         fixable: fixable_toml,
         check_roxygen,
+        fix_roxygen,
         rule_options: Arc::new(rule_options),
     })
 }

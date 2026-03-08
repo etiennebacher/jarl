@@ -21,6 +21,7 @@ pub struct LinterSettings {
     pub exclude: Option<Vec<String>>,
     pub default_exclude: Option<bool>,
     pub check_roxygen: Option<bool>,
+    pub fix_roxygen: Option<bool>,
     pub fixable: Option<Vec<String>>,
     pub unfixable: Option<Vec<String>>,
     /// Whether the deprecated `assignment = "<-"` top-level string form was
@@ -42,6 +43,7 @@ impl Default for LinterSettings {
             exclude: None,
             default_exclude: None,
             check_roxygen: None,
+            fix_roxygen: None,
             fixable: None,
             unfixable: None,
             deprecated_assignment_syntax: false,
