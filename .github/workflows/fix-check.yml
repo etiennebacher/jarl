@@ -88,23 +88,33 @@ jobs:
             repo_name=$(echo "$repo" | cut -d'@' -f1)
             repo_dir=$(echo "$repo_name" | tr '/' '_')
 
-            # Lint before fixes
+            echo "=== [$repo_name] Starting ==="
+
+            echo "  [$repo_name] Lint before fixes..."
             (cd "$repo_dir" && $JARL check . --select ALL --output-format json) > "../results/${repo_dir}_pre.json" || true
+            echo "  [$repo_name] Lint before fixes done."
 
-            # Apply safe fixes
+            echo "  [$repo_name] Applying safe fixes..."
             (cd "$repo_dir" && $JARL check . --select ALL --fix --allow-no-vcs --allow-dirty) > /dev/null 2>&1 || true
+            echo "  [$repo_name] Applying safe fixes done."
 
-            # Lint after fixes
+            echo "  [$repo_name] Lint after fixes..."
             (cd "$repo_dir" && $JARL check . --select ALL --output-format json) > "../results/${repo_dir}_post.json" || true
+            echo "  [$repo_name] Lint after fixes done."
 
-            # Snapshot file contents for idempotency check
+            echo "  [$repo_name] SHA snapshot 1..."
             find "$repo_dir" \( -name '*.R' -o -name '*.r' \) -print0 | sort -z | xargs -0 cat | shasum -a 256 | cut -d' ' -f1 > "../results/${repo_dir}_sha1.txt"
+            echo "  [$repo_name] SHA snapshot 1 done."
 
-            # Apply fixes a second time
+            echo "  [$repo_name] Applying fixes (2nd pass)..."
             (cd "$repo_dir" && $JARL check . --select ALL --fix --allow-no-vcs --allow-dirty) > /dev/null 2>&1 || true
+            echo "  [$repo_name] Applying fixes (2nd pass) done."
 
-            # Snapshot again
+            echo "  [$repo_name] SHA snapshot 2..."
             find "$repo_dir" \( -name '*.R' -o -name '*.r' \) -print0 | sort -z | xargs -0 cat | shasum -a 256 | cut -d' ' -f1 > "../results/${repo_dir}_sha2.txt"
+            echo "  [$repo_name] SHA snapshot 2 done."
+
+            echo "=== [$repo_name] Finished ==="
           done
 
       - name: Upload result JSONs
