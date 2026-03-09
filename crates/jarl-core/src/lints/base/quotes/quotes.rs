@@ -42,21 +42,55 @@ impl ParsedString<'_> {
 ///
 /// ## Why is this bad?
 ///
-/// Using a consistent quote delimiter improves readability.
+/// In general, both both single (`'`) double (`"`) quotes can be used
+/// interchangeably within R.
+/// However, inconsistent use of quote styles decreases readability.
 ///
-/// By default, this rule expects double quotes (`"`). To prefer single quotes,
-/// set this in `jarl.toml`:
+/// Base R documentation and the Tidyverse style guide recommend using double
+/// quotes for all strings, except for when the string already contains double
+/// quotes.
 ///
+/// Enforcing a consistent quote style improves readability and keeps code
+/// aligned with common R conventions.
+///
+/// By default, this rule expects double quotes (`"`).
+/// To prefer single quotes set this in `jarl.toml`:
 /// ```toml
 /// [lint.quotes]
 /// quote = "single"
 /// ```
 ///
 /// For regular strings, this rule allows the opposite quote when needed to
-/// avoid escaping the preferred quote.
+/// avoid escaping the preferred quote. For example,
+/// ```r
+/// cat('R says "Hello world" ...')
+/// ```
+/// is easier to read than
+/// ```r
+/// cat("R says \"Hello world\" ...")
+/// ```
 ///
 /// Raw strings follow the same rule and allow the use of the opposite quote
 /// for readability and to prevent early termination.
+///
+/// For example:
+/// ```r
+/// r'("rawstring")'
+/// ```
+/// is more readable than
+/// ```r
+/// r"("rawstring")"
+/// ```
+///
+/// Using the wrong delimiter can also terminate the string early. For example:
+/// ```r
+/// r'(abc)"def)'
+/// ```
+/// is valid R, but
+/// ```r
+/// r"(abc)"def)"
+/// ```
+/// results in early termination and a syntax error.
 ///
 /// ## Example
 ///
@@ -70,6 +104,13 @@ impl ParsedString<'_> {
 /// x <- "hello"
 /// print(r"-('hello')-")
 /// ```
+///
+/// ## References
+///
+/// See:
+///
+/// - [Tidyverse style guide](https://style.tidyverse.org/syntax.html#character-vectors)
+/// - [R documentation](https://stat.ethz.ch/R-manual/R-patched/library/base/html/Quotes.html)
 pub fn quotes(
     ast: &AnyRValue,
     preferred_quote: PreferredQuote,
@@ -94,11 +135,8 @@ pub fn quotes(
     }
 
     // Allow the non-preferred quote when escaping would be needed
-    // eg. 'R says "Hello world" ...'` vs `"R says \"Hello world\" ..."`
     // Skip cases in raw strings where using preferred quote reduces readability
-    // e.g. `'r("rawstring")'` vs `"r("rawstring")"`.
-    // Also skips cases where switching to the preferred quote results in invalid syntax
-    // e.g. r'(abc)"def)' becomes `r"(abc)"def)"`
+    // Skip cases where switching to the preferred quote results in invalid syntax
     if parsed.content().contains(quote_char) {
         return Ok(None);
     }
