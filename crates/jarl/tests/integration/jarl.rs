@@ -700,3 +700,57 @@ fn test_newline_character_in_string() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+// ---------------------------------------------------------------------------
+// Overlapping fixes across rules don't corrupt the file
+// ---------------------------------------------------------------------------
+
+/// When `which_grepl` and `fixed_regex` both fire on the same call, their fixes
+/// overlap. The overlap detection must correctly skip the inner fix on every
+/// iteration, even when accumulated length changes shift positions. With a
+/// buggy offset tracker this broke starting at 5 overlapping pairs.
+///
+/// This specific example used to make the `fix-check` workflow fail.
+#[test]
+fn test_overlapping_fixes_no_corruption() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("test.R"),
+        r#"f <- function() {
+  expect_length(which(grepl("A__", str)), 1L)
+  expect_length(which(grepl("B__", str)), 1L)
+  expect_length(which(grepl("C__", str)), 0L)
+  expect_length(which(grepl("D__", str)), 0L)
+  expect_length(which(grepl("E__", str)), 1L)
+}
+"#,
+    )?;
+
+    Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--select")
+        .arg("ALL")
+        .arg("--fix")
+        .arg("--allow-no-vcs")
+        .run();
+
+    let fixed = std::fs::read_to_string(directory.join("test.R"))?;
+    insta::assert_snapshot!(
+        fixed,
+        @r#"
+    f <- function() {
+      expect_length(grep("A__", str, fixed = TRUE), 1L)
+      expect_length(grep("B__", str, fixed = TRUE), 1L)
+      expect_length(grep("C__", str, fixed = TRUE), 0L)
+      expect_length(grep("D__", str, fixed = TRUE), 0L)
+      expect_length(grep("E__", str, fixed = TRUE), 1L)
+    }
+    "#
+    );
+
+    Ok(())
+}

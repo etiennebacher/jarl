@@ -65,6 +65,16 @@
 
 * Hovering a diagnostic now shows the rule name (#377).
 
+* Jarl can be used with `pre-commit` and `prek`, see [Pre-commit tools](https://jarl.etiennebacher.com/precommit) (#379).
+
+### Bug fixes
+
+* `fixed_regex` could loop infinitely trying to add `fixed = TRUE`. This is
+  fixed (#388).
+
+* Some fixes to ensure that automatic fixes don't introduce new violations or
+  new parsing errors (#389).
+
 ## 0.4.0
 
 ### Breaking changes

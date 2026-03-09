@@ -89,7 +89,6 @@ pub fn lint_fix(
 
     let path = relativize_path(path);
 
-    let mut has_skipped_fixes = true;
     let mut checks: Vec<Diagnostic>;
 
     loop {
@@ -99,12 +98,20 @@ pub fn lint_fix(
         checks = get_checks(&contents, &PathBuf::from(&path), &config, &pkg)
             .with_context(|| format!("Failed to get checks for file: {path}",))?;
 
-        if !has_skipped_fixes {
+        let has_fixable = checks
+            .iter()
+            .any(|d| d.has_safe_fix() || d.has_unsafe_fix());
+        if !has_fixable {
             break;
         }
 
-        let (new_has_skipped_fixes, fixed_text) = apply_fixes(&checks, &contents);
-        has_skipped_fixes = new_has_skipped_fixes;
+        let fixed_text = apply_fixes(&checks, &contents);
+
+        // No progress was made (e.g. all fixes overlap), stop to avoid an
+        // infinite loop.
+        if fixed_text == contents {
+            break;
+        }
 
         fs::write(&path, fixed_text).with_context(|| format!("Failed to write file: {path}",))?;
     }
@@ -352,4 +359,33 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
 
     let loc_new_lines = crate::utils::find_new_lines_from_content(contents);
     Ok(compute_lints_location(all_diagnostics, &loc_new_lines))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    #[test]
+    fn test_fix_does_not_introduce_new_lints() {
+        // Fixing `outer_negation` on this code would produce
+        // `expect_true(!any(is.na(x)))`, which introduced new
+        // `expect_not` and `any_is_na` lints. The fix loop should keep
+        // going until the code is fully clean.
+        assert_snapshot!(
+            get_fixed_text(
+                vec!["expect_true(all(!is.na(x)))"],
+                "ALL",
+                None
+            ),
+            @r"
+            OLD:
+            ====
+            expect_true(all(!is.na(x)))
+            NEW:
+            ====
+            expect_false(anyNA(x))
+            "
+        );
+    }
 }
