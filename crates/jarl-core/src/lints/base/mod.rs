@@ -43,5 +43,6 @@ pub(crate) mod undesirable_function;
 pub(crate) mod unnecessary_nesting;
 pub(crate) mod unreachable_code;
 pub(crate) mod unused_function;
+pub(crate) mod unused_function_argument;
 pub(crate) mod vector_logic;
 pub(crate) mod which_grepl;

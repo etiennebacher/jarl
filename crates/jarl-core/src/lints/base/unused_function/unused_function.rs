@@ -172,6 +172,46 @@ pub fn parse_namespace_exports(content: &str, all_names: &[&str]) -> HashSet<Str
     exports
 }
 
+/// Parse S3 method registrations from a NAMESPACE file content.
+///
+/// Extracts function names from `S3method(generic, class)` directives,
+/// producing names like `"generic.class"`. Handles `if (...)` guards and
+/// namespaced generics (e.g. `pkg::generic`).
+pub(crate) fn parse_namespace_s3_methods(content: &str) -> HashSet<String> {
+    let mut methods = HashSet::new();
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with('#') {
+            continue;
+        }
+
+        if let Some(inner) = extract_directive(trimmed, "S3method") {
+            let parts: Vec<&str> = inner.splitn(4, ',').collect();
+            if parts.len() >= 2 {
+                let raw_generic = parts[0].trim().trim_matches('"').trim_matches('\'');
+                let class = parts[1].trim().trim_matches('"').trim_matches('\'');
+
+                // Strip optional pkg:: or pkg::: prefix
+                let generic = raw_generic
+                    .rsplit_once("::")
+                    .map(|(_, g)| g)
+                    .unwrap_or(raw_generic);
+
+                if parts.len() >= 3 {
+                    let method_fn = parts[2].trim().trim_matches('"').trim_matches('\'');
+                    if !method_fn.is_empty() {
+                        methods.insert(method_fn.to_string());
+                    }
+                }
+                methods.insert(format!("{generic}.{class}"));
+            }
+        }
+    }
+
+    methods
+}
+
 /// Scan source text for all R-style identifiers (symbols).
 ///
 /// Returns a map from identifier name to occurrence count. This intentionally
