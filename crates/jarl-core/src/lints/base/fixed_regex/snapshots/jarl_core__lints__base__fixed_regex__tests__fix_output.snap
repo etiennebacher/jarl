@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/base/fixed_regex/mod.rs
-expression: "get_fixed_text(vec![\"grepl('abcdefg', x)\", \"grep('abcdefg', x)\",\n\"regexec('abcdefg', x)\", \"regexpr('abcdefg', x)\", \"gsub('abcdefg', 'a', x)\",\n\"sub('abcdefg', 'a', x)\", \"gregexpr('abcdefg', x)\", \"gregexpr('a-z', y)\",\n\"gregexpr('a-z', y, fixed = FALSE)\",\n\"gregexpr('a-z', y, fixed = FALSE, ignore.case = FALSE)\",\n\"gregexpr(pattern = 'a-z', y)\",], \"fixed_regex\", None)"
+expression: "get_fixed_text(vec![\"grepl('abcdefg', x)\", \"grep('abcdefg', x)\",\n\"regexec('abcdefg', x)\", \"regexpr('abcdefg', x)\", \"gsub('abcdefg', 'a', x)\",\n\"sub('abcdefg', 'a', x)\", \"gregexpr('abcdefg', x)\", \"gregexpr('a-z', y)\",\n\"gregexpr(pattern = 'a-z', y)\",], \"fixed_regex\", None)"
 ---
 OLD:
 ====
@@ -57,20 +57,6 @@ gregexpr('a-z', y)
 NEW:
 ====
 gregexpr('a-z', y, fixed = TRUE)
-
-OLD:
-====
-gregexpr('a-z', y, fixed = FALSE)
-NEW:
-====
-gregexpr('a-z', y, fixed = TRUE)
-
-OLD:
-====
-gregexpr('a-z', y, fixed = FALSE, ignore.case = FALSE)
-NEW:
-====
-gregexpr('a-z', y, ignore.case = FALSE, fixed = TRUE)
 
 OLD:
 ====

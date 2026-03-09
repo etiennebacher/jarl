@@ -40,9 +40,11 @@
   ```
   (#338).
 
-* Jarl now checks R code chunks in Quarto and R Markdown documents. More
-  information in the ["R Markdown and Quarto"](https://jarl.etiennebacher.com/howto/rmarkdown-quarto)
-  section (#50).
+* Jarl now checks R code in more places:
+
+  - chunks in Quarto and R Markdown documents.
+    More information in the ["R Markdown and Quarto"](https://jarl.etiennebacher.com/using-jarl/howto/rmarkdown-quarto) section (#50).
+  - `@examples` and `@examplesIf` sections in `roxygen2` comments (#385).
 
 * Added support for multiple `jarl.toml`, i.e. each file now uses the nearest
   `jarl.toml`. For example, Jarl can check a folder where several subfolders have
@@ -56,6 +58,7 @@
   - `expect_match` (#364, @bjyberg)
   - `expect_no_match` (#368, @bjyberg)
   - `invalid_chunk_suppression` (#350)
+  - `quotes` (#381, @bjyberg)
   - `undesirable_function` (replaces `browser`) (#336)
   - `unused_function` (#362)
 
@@ -65,6 +68,14 @@
 * Hovering a diagnostic now shows the rule name (#377).
 
 * Jarl can be used with `pre-commit` and `prek`, see [Pre-commit tools](https://jarl.etiennebacher.com/howto/precommit) (#379).
+
+### Bug fixes
+
+* `fixed_regex` could loop infinitely trying to add `fixed = TRUE`. This is
+  fixed (#388).
+
+* Some fixes to ensure that automatic fixes don't introduce new violations or
+  new parsing errors (#389).
 
 ## 0.4.0
 

@@ -209,7 +209,38 @@ unfixable = ["PERF"]
 unfixable = []
 ```
 
-## Rule-specific arguments
+#### `check-roxygen`
+
+This takes a boolean argument indicating whether to check code in `roxygen2`
+comments.
+This only checks code in `@examples` and `@examplesIf` sections, and only if
+the R file is part of an R package.
+
+Default: `true`
+
+```toml
+[lint]
+check-roxygen = true
+```
+
+#### `fix-roxygen`
+
+This takes a boolean argument indicating whether to apply automatic fixes to
+code in `roxygen2` comments.
+This fixes code if all following conditions are respected:
+
+- the code is in `@examples` or `@examplesIf` sections
+- the file is part of an R package
+- `--fix` is passed in the command line
+
+Default: `false`
+
+```toml
+[lint]
+fix-roxygen = false
+```
+
+### Rule-specific arguments
 
 ### `assignment`
 
@@ -271,7 +302,24 @@ Default: `skipped-functions = ["expect_error", "expect_warning", "expect_message
 skipped-functions = ["list"]
 ```
 
-### `unreachable_code`
+#### `quotes`
+
+This takes a single value (`"single"` or `"double"`) indicating the preferred
+quote style in the files to check. If `quote = "double"` and if the `"quotes"`
+rule is enabled, then any use of single quotes `'` will be reported, and
+vice-versa.
+
+Default: `double`
+
+```toml
+[lint]
+...
+
+[lint.quotes]
+quote = "single" # or "double"
+```
+
+#### `unreachable_code`
 
 Use `stopping-functions` to fully replace the default list of functions that are
 considered to stop execution (never return). Use `extend-stopping-functions` to

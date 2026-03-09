@@ -1,10 +1,12 @@
 use crate::error::ParseError;
-use crate::package::{PackageAnalysis, compute_package_analysis};
+use crate::package::{PackageAnalysis, compute_package_analysis, is_in_r_package};
+use crate::roxygen::{extract_roxygen_examples, remap_roxygen_fix, remap_roxygen_range};
 use crate::rule_set::Rule;
 use crate::suppression::SuppressionManager;
 use crate::vcs::check_version_control;
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
+use air_r_syntax::RSyntaxNode;
 use anyhow::{Context, Result};
 use biome_rowan::TextSize;
 use rayon::prelude::*;
@@ -89,7 +91,6 @@ pub fn lint_fix(
 
     let path = relativize_path(path);
 
-    let mut has_skipped_fixes = true;
     let mut checks: Vec<Diagnostic>;
 
     loop {
@@ -99,12 +100,20 @@ pub fn lint_fix(
         checks = get_checks(&contents, &PathBuf::from(&path), &config, &pkg)
             .with_context(|| format!("Failed to get checks for file: {path}",))?;
 
-        if !has_skipped_fixes {
+        let has_fixable = checks
+            .iter()
+            .any(|d| d.has_safe_fix() || d.has_unsafe_fix());
+        if !has_fixable {
             break;
         }
 
-        let (new_has_skipped_fixes, fixed_text) = apply_fixes(&checks, &contents);
-        has_skipped_fixes = new_has_skipped_fixes;
+        let fixed_text = apply_fixes(&checks, &contents);
+
+        // No progress was made (e.g. all fixes overlap), stop to avoid an
+        // infinite loop.
+        if fixed_text == contents {
+            break;
+        }
 
         fs::write(&path, fixed_text).with_context(|| format!("Failed to write file: {path}",))?;
     }
@@ -211,10 +220,78 @@ pub fn get_checks(
         })
         .collect();
 
+    // Lint R code inside roxygen @examples / @examplesIf sections.
+    // Only applies to files inside an R package (R/ dir with DESCRIPTION above).
+    let mut diagnostics = diagnostics;
+    if config.check_roxygen
+        && contents.contains("#'")
+        && contents.contains("@examples")
+        && is_in_r_package(file) == Some(true)
+    {
+        let roxygen_diagnostics = get_checks_roxygen(syntax, file, config, contents)?;
+        diagnostics.extend(roxygen_diagnostics);
+    }
+
     let loc_new_lines = find_new_lines(syntax)?;
     let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
 
     Ok(diagnostics)
+}
+
+/// Lint R code inside roxygen `@examples` and `@examplesIf` sections.
+///
+/// Each examples section is extracted, parsed as standalone R code, and linted.
+/// Diagnostic byte ranges are remapped to point to the correct position in the
+/// original file. Autofixes are disabled because the `#'` prefix makes
+/// position-based edits unsafe.
+fn get_checks_roxygen(
+    syntax: &RSyntaxNode,
+    file: &Path,
+    config: &Config,
+    contents: &str,
+) -> Result<Vec<Diagnostic>> {
+    let chunks = extract_roxygen_examples(syntax, contents);
+    let mut all_diagnostics: Vec<Diagnostic> = Vec::new();
+
+    for chunk in &chunks {
+        let parsed = air_r_parser::parse(&chunk.code, RParserOptions::default());
+        if parsed.has_error() {
+            // Examples may contain pseudo-code, \dontrun{} wrappers, etc.
+            continue;
+        }
+
+        let expressions = &parsed.tree().expressions();
+        let suppression = SuppressionManager::from_node(&parsed.syntax(), &chunk.code);
+        let has_suppressions = suppression.has_any_suppressions;
+        let mut checker = Checker::new(suppression, config.rule_options.clone());
+        checker.rule_set = config.rules_to_apply.clone();
+        checker.minimum_r_version = config.minimum_r_version;
+
+        for expr in expressions {
+            check_expression(&expr, &mut checker)?;
+        }
+
+        // Only run document-level checks if the examples code has inline
+        // suppression comments. Most examples don't, and check_document is
+        // otherwise unnecessary here (no package-level analysis, no
+        // suppression-related diagnostics to report).
+        if has_suppressions {
+            check_document(expressions, &mut checker, &[], &[])?;
+        }
+
+        for mut d in checker.diagnostics {
+            d.range = remap_roxygen_range(d.range, chunk);
+            if config.fix_roxygen {
+                d.fix = remap_roxygen_fix(&d.fix, chunk, contents);
+            } else {
+                d.fix = Fix::empty();
+            }
+            d.filename = file.to_path_buf();
+            all_diagnostics.push(d);
+        }
+    }
+
+    Ok(all_diagnostics)
 }
 
 /// Lint an Rmd/Qmd file by extracting R code chunks and checking each one.
@@ -352,4 +429,56 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
 
     let loc_new_lines = crate::utils::find_new_lines_from_content(contents);
     Ok(compute_lints_location(all_diagnostics, &loc_new_lines))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    #[test]
+    fn test_fix_does_not_introduce_new_lints() {
+        // Fixing `outer_negation` on this code would produce
+        // `expect_true(!any(is.na(x)))`, which introduced new
+        // `expect_not` and `any_is_na` lints. The fix loop should keep
+        // going until the code is fully clean.
+        assert_snapshot!(
+            get_fixed_text(
+                vec!["expect_true(all(!is.na(x)))"],
+                "ALL",
+                None
+            ),
+            @r"
+            OLD:
+            ====
+            expect_true(all(!is.na(x)))
+            NEW:
+            ====
+            expect_false(anyNA(x))
+            "
+        );
+    }
+
+    #[test]
+    fn test_overlapping_fixes_do_not_corrupt() {
+        // `fixed_regex` replaces the whole call (adding `, fixed = TRUE`)
+        // while `quotes` replaces just the string inside it. The nested
+        // fix must be skipped in the first pass and applied in the next
+        // iteration, not applied on stale offsets.
+        assert_snapshot!(
+            get_fixed_text(
+                vec!["grepl('/', repo)"],
+                "ALL",
+                None
+            ),
+            @r#"
+            OLD:
+            ====
+            grepl('/', repo)
+            NEW:
+            ====
+            grepl("/", repo, fixed = TRUE)
+            "#
+        );
+    }
 }

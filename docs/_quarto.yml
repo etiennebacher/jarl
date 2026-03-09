@@ -118,6 +118,7 @@ website:
       - rules/numeric_leading_zero.md
       - rules/outdated_suppression.md
       - rules/outer_negation.md
+      - rules/quotes.md
       - rules/redundant_equals.md
       - rules/redundant_ifelse.md
       - rules/repeat.md

@@ -24,7 +24,6 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: write
 
 env:
   CARGO_TERM_COLOR: always
@@ -44,11 +43,14 @@ env:
     tidyverse/dplyr@384ff2c4af79a9bd9142d8bdab23efbcd52f275b
     tidyverse/ggplot2@bed8e32d45c7dc98afb783b409edac98854d41a7
     vincentarelbundock/marginaleffects@ffe5a4f5962a9ba51c3e68e1c55eea62887c25da
-    wch/r-source@b5cf23a805f4305852f55c4148f2a302b06844b5
+# TODO: add this back once https://github.com/r-lib/tree-sitter-r/issues/191 is
+# fixed (infinite fixing loop otherwise)
+# wch/r-source@b5cf23a805f4305852f55c4148f2a302b06844b5
 
 jobs:
   fix-check:
     runs-on: macos-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout current PR branch
@@ -88,23 +90,33 @@ jobs:
             repo_name=$(echo "$repo" | cut -d'@' -f1)
             repo_dir=$(echo "$repo_name" | tr '/' '_')
 
-            # Lint before fixes
+            echo "=== [$repo_name] Starting ==="
+
+            echo "  [$repo_name] Lint before fixes..."
             (cd "$repo_dir" && $JARL check . --select ALL --output-format json) > "../results/${repo_dir}_pre.json" || true
+            echo "  [$repo_name] Lint before fixes done."
 
-            # Apply safe fixes
+            echo "  [$repo_name] Applying safe fixes..."
             (cd "$repo_dir" && $JARL check . --select ALL --fix --allow-no-vcs --allow-dirty) > /dev/null 2>&1 || true
+            echo "  [$repo_name] Applying safe fixes done."
 
-            # Lint after fixes
+            echo "  [$repo_name] Lint after fixes..."
             (cd "$repo_dir" && $JARL check . --select ALL --output-format json) > "../results/${repo_dir}_post.json" || true
+            echo "  [$repo_name] Lint after fixes done."
 
-            # Snapshot file contents for idempotency check
+            echo "  [$repo_name] SHA snapshot 1..."
             find "$repo_dir" \( -name '*.R' -o -name '*.r' \) -print0 | sort -z | xargs -0 cat | shasum -a 256 | cut -d' ' -f1 > "../results/${repo_dir}_sha1.txt"
+            echo "  [$repo_name] SHA snapshot 1 done."
 
-            # Apply fixes a second time
+            echo "  [$repo_name] Applying fixes (2nd pass)..."
             (cd "$repo_dir" && $JARL check . --select ALL --fix --allow-no-vcs --allow-dirty) > /dev/null 2>&1 || true
+            echo "  [$repo_name] Applying fixes (2nd pass) done."
 
-            # Snapshot again
+            echo "  [$repo_name] SHA snapshot 2..."
             find "$repo_dir" \( -name '*.R' -o -name '*.r' \) -print0 | sort -z | xargs -0 cat | shasum -a 256 | cut -d' ' -f1 > "../results/${repo_dir}_sha2.txt"
+            echo "  [$repo_name] SHA snapshot 2 done."
+
+            echo "=== [$repo_name] Finished ==="
           done
 
       - name: Upload result JSONs
@@ -127,8 +139,3 @@ jobs:
           source(".github/scripts/process_fix_ci.R", echo = TRUE)
         shell: Rscript {0}
 
-      - name: Post comment on PR
-        uses: thollander/actions-comment-pull-request@v3
-        with:
-          file-path: fix_check.md
-          comment-tag: fix-check-comment

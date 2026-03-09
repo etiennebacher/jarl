@@ -19,6 +19,7 @@ use crate::rule_options::assignment::AssignmentConfig;
 use crate::rule_options::assignment::AssignmentOptions;
 use crate::rule_options::duplicated_arguments::DuplicatedArgumentsOptions;
 use crate::rule_options::implicit_assignment::ImplicitAssignmentOptions;
+use crate::rule_options::quotes::QuotesOptions;
 use crate::rule_options::undesirable_function::UndesirableFunctionOptions;
 use crate::rule_options::unreachable_code::UnreachableCodeOptions;
 use crate::rule_options::unused_function::UnusedFunctionOptions;
@@ -184,7 +185,7 @@ pub struct LinterTomlOptions {
 
     /// # Whether or not to use default exclude patterns
     ///
-    /// jarl automatically excludes a default set of folders and files. If this option is
+    /// Jarl automatically excludes a default set of folders and files. If this option is
     /// set to `false`, these files will be formatted as well.
     ///
     /// The default set of excluded patterns are:
@@ -196,6 +197,25 @@ pub struct LinterTomlOptions {
     /// - `extendr-wrappers.R`
     /// - `import-standalone-*.R`
     pub default_exclude: Option<bool>,
+
+    /// # Whether to lint R code in roxygen `@examples` and `@examplesIf` sections
+    ///
+    /// When enabled, Jarl parses and checks R code found in roxygen2
+    /// `@examples` and `@examplesIf` documentation sections. Only applies to
+    /// files inside an R package (i.e. in the `R/` directory with a
+    /// `DESCRIPTION` file in the parent).
+    ///
+    /// Defaults to `true`.
+    pub check_roxygen: Option<bool>,
+
+    /// # Whether to apply autofixes to roxygen examples
+    ///
+    /// When enabled, Jarl will attempt to apply fixes to R code inside
+    /// roxygen2 `@examples` and `@examplesIf` sections. Since Air does not
+    /// currently support formatting roxygen examples, this is opt-in.
+    ///
+    /// Defaults to `false`.
+    pub fix_roxygen: Option<bool>,
     /// # Assignment operator to use
     ///
     /// Accepts either the legacy form `assignment = "<-"` (deprecated) or the
@@ -219,6 +239,13 @@ pub struct LinterTomlOptions {
     /// Specifying both is an error.
     #[serde(rename = "implicit_assignment")]
     pub implicit_assignment: Option<ImplicitAssignmentOptions>,
+
+    /// # Options for the `quotes` rule
+    ///
+    /// Use `quote` to choose the preferred quote delimiter for string
+    /// literals. Valid values are `"double"` (default) and `"single"`.
+    #[serde(rename = "quotes")]
+    pub quotes: Option<QuotesOptions>,
 
     /// # Options for the `undesirable_function` rule
     ///
@@ -293,7 +320,7 @@ impl TomlOptions {
             return Err(anyhow::anyhow!(
                 "Unknown field `{field}` in `[lint]`. Expected one of: \
                  `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, \
-                 `exclude`, `default-exclude`, `include`."
+                 `exclude`, `default-exclude`, `include`, `check-roxygen`, `fix-roxygen`."
             ));
         }
 
@@ -315,6 +342,8 @@ impl TomlOptions {
             include: linter.include,
             exclude: linter.exclude,
             default_exclude: linter.default_exclude,
+            check_roxygen: linter.check_roxygen,
+            fix_roxygen: linter.fix_roxygen,
             fixable: linter.fixable,
             unfixable: linter.unfixable,
             deprecated_assignment_syntax,
@@ -322,6 +351,7 @@ impl TomlOptions {
                 assignment_options.as_ref(),
                 linter.duplicated_arguments.as_ref(),
                 linter.implicit_assignment.as_ref(),
+                linter.quotes.as_ref(),
                 linter.undesirable_function.as_ref(),
                 linter.unreachable_code.as_ref(),
                 linter.unused_function.as_ref(),
