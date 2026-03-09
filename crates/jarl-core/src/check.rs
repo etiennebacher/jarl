@@ -1,6 +1,6 @@
 use crate::error::ParseError;
 use crate::package::{PackageAnalysis, compute_package_analysis, is_in_r_package};
-use crate::roxygen::{extract_roxygen_examples, remap_roxygen_range};
+use crate::roxygen::{extract_roxygen_examples, remap_roxygen_fix, remap_roxygen_range};
 use crate::rule_set::Rule;
 use crate::suppression::SuppressionManager;
 use crate::vcs::check_version_control;
@@ -274,7 +274,9 @@ fn get_checks_roxygen(
 
         for mut d in checker.diagnostics {
             d.range = remap_roxygen_range(d.range, chunk);
-            if !config.fix_roxygen {
+            if config.fix_roxygen {
+                d.fix = remap_roxygen_fix(&d.fix, chunk, contents);
+            } else {
                 d.fix = Fix::empty();
             }
             d.filename = file.to_path_buf();

@@ -568,6 +568,120 @@ f <- function() 1
 }
 
 // ---------------------------------------------------------------------------
+// fix-roxygen = true applies fixes at the correct position
+// ---------------------------------------------------------------------------
+
+/// Multi-line roxygen example is correctly fixed in place.
+#[test]
+fn test_roxygen_fix_multiline() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+    let r_dir = setup_r_package(directory);
+
+    std::fs::write(
+        r_dir.join("test.R"),
+        "\
+#' @title hi
+#' @description
+#' hello
+#' @examples
+#' 1 + 1
+#' any(
+#'   is.na(x)
+#' )
+#' 1 + 1
+#' @return foo
+f <- function() 1
+",
+    )?;
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        "\
+[lint]
+fix-roxygen = true
+",
+    )?;
+
+    Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--fix")
+        .arg("--allow-no-vcs")
+        .run();
+
+    let fixed = std::fs::read_to_string(r_dir.join("test.R"))?;
+    insta::assert_snapshot!(
+        fixed,
+        @r"
+    #' @title hi
+    #' @description
+    #' hello
+    #' @examples
+    #' 1 + 1
+    #' anyNA(x)
+    #' 1 + 1
+    #' @return foo
+    f <- function() 1
+    "
+    );
+
+    Ok(())
+}
+
+/// Single-line roxygen example is correctly fixed in place.
+#[test]
+fn test_roxygen_fix_single_line() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+    let r_dir = setup_r_package(directory);
+
+    std::fs::write(
+        r_dir.join("test.R"),
+        "\
+#' Title
+#' @examples
+#' 1 + 1
+#' any(is.na(x))
+#' 1 + 1
+foo <- function(x) x
+",
+    )?;
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        "\
+[lint]
+fix-roxygen = true
+",
+    )?;
+
+    Command::new(binary_path())
+        .current_dir(directory)
+        .arg("check")
+        .arg(".")
+        .arg("--fix")
+        .arg("--allow-no-vcs")
+        .run();
+
+    let fixed = std::fs::read_to_string(r_dir.join("test.R"))?;
+    insta::assert_snapshot!(
+        fixed,
+        @r"
+    #' Title
+    #' @examples
+    #' 1 + 1
+    #' anyNA(x)
+    #' 1 + 1
+    foo <- function(x) x
+    "
+    );
+
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
 // ##' is also a valid roxygen comment
 // ---------------------------------------------------------------------------
 
