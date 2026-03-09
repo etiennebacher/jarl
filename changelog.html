@@ -282,7 +282,11 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>x <span class="sc">|&gt;</span> <span class="fu">is.na</span>() <span class="sc">|&gt;</span> <span class="fu">any</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>(#338).</p></li>
-<li><p>Jarl now checks R code chunks in Quarto and R Markdown documents. More information in the <a href="https://jarl.etiennebacher.com/using-jarl#r-markdown-and-quarto" target="_blank">“R Markdown and Quarto”</a> section (#50).</p></li>
+<li><p>Jarl now checks R code in more places:</p>
+<ul>
+<li>chunks in Quarto and R Markdown documents. More information in the <a href="https://jarl.etiennebacher.com/using-jarl#r-markdown-and-quarto" target="_blank">“R Markdown and Quarto”</a> section (#50).</li>
+<li><code>@examples</code> and <code>@examplesIf</code> sections in <code>roxygen2</code> comments (#385).</li>
+</ul></li>
 <li><p>Added support for multiple <code>jarl.toml</code>, i.e.&nbsp;each file now uses the nearest <code>jarl.toml</code>. For example, Jarl can check a folder where several subfolders have their own <code>jarl.toml</code> (before, this would error). (#353)</p></li>
 <li><p>New option <code>include</code> in <code>jarl.toml</code>, to complement <code>exclude</code> (#349).</p></li>
 <li><p>New rules:</p>
