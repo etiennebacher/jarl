@@ -15,32 +15,27 @@ pub fn apply_fixes(fixes: &[Diagnostic], contents: &str) -> String {
 
     let old_content = contents;
     let mut new_content = old_content.to_string();
-    let mut last_modified_pos = 0;
+    // Track the end of the last applied fix in original positions so that
+    // overlap detection works even when earlier fixes change the content
+    // length.
+    let mut last_original_end: usize = 0;
 
     let old_length = old_content.chars().count() as i32;
     let mut new_length = old_length;
 
     for fix in fixes {
-        let mut start: i32 = fix.start.try_into().unwrap();
-        let mut end: i32 = fix.end.try_into().unwrap();
-
-        // Adjust the range of the fix based on the changes in the contents due
-        // to previous fixes.
-        let diff_length = new_length - old_length;
-        start += diff_length;
-        end += diff_length;
-
         // Skip overlapping fixes; they'll be handled in the next iteration.
-        if start < last_modified_pos {
+        if fix.start < last_original_end {
             continue;
         }
 
-        let start_usize = start as usize;
-        let end_usize = end as usize;
+        let diff_length = new_length - old_length;
+        let start = (fix.start as i32 + diff_length) as usize;
+        let end = (fix.end as i32 + diff_length) as usize;
 
-        new_content.replace_range(start_usize..end_usize, &fix.content);
+        new_content.replace_range(start..end, &fix.content);
         new_length = new_content.chars().count() as i32;
-        last_modified_pos = end;
+        last_original_end = fix.end;
     }
 
     new_content
