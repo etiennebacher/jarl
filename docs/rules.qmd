@@ -90,6 +90,7 @@ dat <- as.data.frame(
     c("misplaced_suppression", "comments", "❌", ""),
     c("numeric_leading_zero", "readability", "✅", ""),
     c("outer_negation", "performance, readability", "✅", ""),
+    c("quotes", "readability", "✅", "Disabled by default"),
     c("redundant_equals", "readability", "✅", ""),
     c("redundant_ifelse", "correctness, performance, readability", "✅", ""),
     c("repeat", "readability", "✅", ""),

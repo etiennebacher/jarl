@@ -362,6 +362,23 @@ Default: `skipped-functions = ["expect_error", "expect_warning", "expect_message
 skipped-functions = ["list"]
 ```
 
+#### `quotes`
+
+This takes a single value (`"single"` or `"double"`) indicating the preferred
+quote style in the files to check. If `quote = "double"` and if the `"quotes"`
+rule is enabled, then any use of single quotes `'` will be reported, and
+vice-versa.
+
+Default: `double`
+
+```toml
+[lint]
+...
+
+[lint.quotes]
+quote = "single" # or "double"
+```
+
 #### `unreachable_code`
 
 Use `stopping-functions` to fully replace the default list of functions that are
