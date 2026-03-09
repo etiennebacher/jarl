@@ -6,6 +6,7 @@
 name: Update pre-commit
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ["Release"]
     types:
@@ -16,7 +17,7 @@ permissions:
 
 jobs:
   update-pre-commit:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.JARL_DISPATCH_PRE_COMMIT }}
