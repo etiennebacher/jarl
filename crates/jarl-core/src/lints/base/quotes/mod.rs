@@ -49,7 +49,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | 'hi'
-          | ---- Prefer double-quotes for string delimiters.
+          | ---- Prefer double quotes for string delimiters.
           |
         Found 1 error.
         "
@@ -61,7 +61,7 @@ mod tests {
          --> <test>:1:5
           |
         1 | fun('hello')
-          |     ------- Prefer double-quotes for string delimiters.
+          |     ------- Prefer double quotes for string delimiters.
           |
         Found 1 error.
         "
@@ -73,7 +73,7 @@ mod tests {
          --> <test>:1:6
           |
         1 | x <- 'test'
-          |      ------ Prefer double-quotes for string delimiters.
+          |      ------ Prefer double quotes for string delimiters.
           |
         Found 1 error.
         "
@@ -85,13 +85,13 @@ mod tests {
          --> <test>:2:3
           |
         2 |   'abc',
-          |   ----- Prefer double-quotes for string delimiters.
+          |   ----- Prefer double quotes for string delimiters.
           |
         warning: quotes
          --> <test>:4:3
           |
         4 |   'ghi'
-          |   ----- Prefer double-quotes for string delimiters.
+          |   ----- Prefer double quotes for string delimiters.
           |
         Found 2 errors.
         "
@@ -150,7 +150,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | R'( whoops )'
-          | ------------- Prefer double-quotes for string delimiters.
+          | ------------- Prefer double quotes for string delimiters.
           |
         Found 1 error.
         "
@@ -162,7 +162,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | R'---[ hello ]---'
-          | ------------------ Prefer double-quotes for string delimiters.
+          | ------------------ Prefer double quotes for string delimiters.
           |
         Found 1 error.
         "
@@ -174,7 +174,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | r'{'rawstring'}'
-          | ---------------- Prefer double-quotes for string delimiters.
+          | ---------------- Prefer double quotes for string delimiters.
           |
         Found 1 error.
         "

@@ -185,7 +185,7 @@ fn is_malformed_raw_string(ast: &AnyRValue, text: &str) -> bool {
 
 fn quote_message(preferred_quote: PreferredQuote) -> &'static str {
     match preferred_quote {
-        PreferredQuote::Double => "Prefer double-quotes for string delimiters.",
+        PreferredQuote::Double => "Prefer double quotes for string delimiters.",
         PreferredQuote::Single => "Prefer single-quotes for string delimiters.",
     }
 }
