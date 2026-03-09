@@ -49,7 +49,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | 'hi'
-          | ---- Only use double-quotes.
+          | ---- Prefer double-quotes for string delimiters.
           |
         Found 1 error.
         "
@@ -61,7 +61,7 @@ mod tests {
          --> <test>:1:5
           |
         1 | fun('hello')
-          |     ------- Only use double-quotes.
+          |     ------- Prefer double-quotes for string delimiters.
           |
         Found 1 error.
         "
@@ -73,7 +73,7 @@ mod tests {
          --> <test>:1:6
           |
         1 | x <- 'test'
-          |      ------ Only use double-quotes.
+          |      ------ Prefer double-quotes for string delimiters.
           |
         Found 1 error.
         "
@@ -85,13 +85,13 @@ mod tests {
          --> <test>:2:3
           |
         2 |   'abc',
-          |   ----- Only use double-quotes.
+          |   ----- Prefer double-quotes for string delimiters.
           |
         warning: quotes
          --> <test>:4:3
           |
         4 |   'ghi'
-          |   ----- Only use double-quotes.
+          |   ----- Prefer double-quotes for string delimiters.
           |
         Found 2 errors.
         "
@@ -121,7 +121,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | "blah"
-          | ------ Only use single-quotes.
+          | ------ Prefer single-quotes for string delimiters.
           |
         Found 1 error.
         "#
@@ -134,7 +134,7 @@ mod tests {
          --> <test>:1:6
           |
         1 | x <- "test"
-          |      ------ Only use single-quotes.
+          |      ------ Prefer single-quotes for string delimiters.
           |
         Found 1 error.
         "#
@@ -150,7 +150,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | R'( whoops )'
-          | ------------- Only use double-quotes.
+          | ------------- Prefer double-quotes for string delimiters.
           |
         Found 1 error.
         "
@@ -162,7 +162,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | R'---[ hello ]---'
-          | ------------------ Only use double-quotes.
+          | ------------------ Prefer double-quotes for string delimiters.
           |
         Found 1 error.
         "
@@ -174,7 +174,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | r'{'rawstring'}'
-          | ---------------- Only use double-quotes.
+          | ---------------- Prefer double-quotes for string delimiters.
           |
         Found 1 error.
         "
