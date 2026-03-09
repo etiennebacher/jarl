@@ -69,7 +69,10 @@
 ### Bug fixes
 
 * `fixed_regex` could loop infinitely trying to add `fixed = TRUE`. This is
-  fixed (#387).
+  fixed (#388).
+
+* Some fixes to ensure that automatic fixes don't introduce new violations or
+  new parsing errors (#389).
 
 ## 0.4.0
 
