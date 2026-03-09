@@ -535,6 +535,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    Quotes => {
+        name: "quotes",
+        categories: [Read],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
     RedundantEquals => {
         name: "redundant_equals",
         categories: [Read],

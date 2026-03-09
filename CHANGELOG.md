@@ -56,6 +56,7 @@
   - `expect_match` (#364, @bjyberg)
   - `expect_no_match` (#368, @bjyberg)
   - `invalid_chunk_suppression` (#350)
+  - `quotes` (#381, @bjyberg)
   - `undesirable_function` (replaces `browser`) (#336)
   - `unused_function` (#362)
 
