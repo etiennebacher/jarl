@@ -6,19 +6,15 @@ This rule is disabled by default.
 
 ## Why is this bad?
 
-In general, both both single (`'`) double (`"`) quotes can be used
+In general, single (`'`) and double (`"`) quotes can be used
 interchangeably within R.
 However, inconsistent use of quote styles decreases readability.
 
 Base R documentation and the Tidyverse style guide recommend using double
 quotes for all strings, except for when the string already contains double
-quotes.
+quotes. Therefore, by default, this rule expects double quotes (`"`).
 
-Enforcing a consistent quote style improves readability and keeps code
-aligned with common R conventions.
-
-By default, this rule expects double quotes (`"`).
-To prefer single quotes set this in `jarl.toml`:
+To prefer single quotes, set this in `jarl.toml`:
 ```toml
 [lint.quotes]
 quote = "single"
@@ -34,8 +30,8 @@ is easier to read than
 cat("R says \"Hello world\" ...")
 ```
 
-Raw strings follow the same rule and allow the use of the opposite quote
-for readability and to prevent early termination.
+Raw strings also allow the use of the opposite quote for readability and to
+prevent early termination.
 
 For example:
 ```r
