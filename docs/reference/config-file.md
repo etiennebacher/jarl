@@ -240,7 +240,7 @@ Default: `false`
 fix-roxygen = false
 ```
 
-### Rule-specific arguments
+## Rule-specific arguments
 
 ### `assignment`
 
