@@ -185,7 +185,7 @@ pub struct LinterTomlOptions {
 
     /// # Whether or not to use default exclude patterns
     ///
-    /// jarl automatically excludes a default set of folders and files. If this option is
+    /// Jarl automatically excludes a default set of folders and files. If this option is
     /// set to `false`, these files will be formatted as well.
     ///
     /// The default set of excluded patterns are:
@@ -197,6 +197,25 @@ pub struct LinterTomlOptions {
     /// - `extendr-wrappers.R`
     /// - `import-standalone-*.R`
     pub default_exclude: Option<bool>,
+
+    /// # Whether to lint R code in roxygen `@examples` and `@examplesIf` sections
+    ///
+    /// When enabled, Jarl parses and checks R code found in roxygen2
+    /// `@examples` and `@examplesIf` documentation sections. Only applies to
+    /// files inside an R package (i.e. in the `R/` directory with a
+    /// `DESCRIPTION` file in the parent).
+    ///
+    /// Defaults to `true`.
+    pub check_roxygen: Option<bool>,
+
+    /// # Whether to apply autofixes to roxygen examples
+    ///
+    /// When enabled, Jarl will attempt to apply fixes to R code inside
+    /// roxygen2 `@examples` and `@examplesIf` sections. Since Air does not
+    /// currently support formatting roxygen examples, this is opt-in.
+    ///
+    /// Defaults to `false`.
+    pub fix_roxygen: Option<bool>,
     /// # Assignment operator to use
     ///
     /// Accepts either the legacy form `assignment = "<-"` (deprecated) or the
@@ -301,7 +320,7 @@ impl TomlOptions {
             return Err(anyhow::anyhow!(
                 "Unknown field `{field}` in `[lint]`. Expected one of: \
                  `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, \
-                 `exclude`, `default-exclude`, `include`."
+                 `exclude`, `default-exclude`, `include`, `check-roxygen`, `fix-roxygen`."
             ));
         }
 
@@ -323,6 +342,8 @@ impl TomlOptions {
             include: linter.include,
             exclude: linter.exclude,
             default_exclude: linter.default_exclude,
+            check_roxygen: linter.check_roxygen,
+            fix_roxygen: linter.fix_roxygen,
             fixable: linter.fixable,
             unfixable: linter.unfixable,
             deprecated_assignment_syntax,

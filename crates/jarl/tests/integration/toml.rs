@@ -757,16 +757,16 @@ unknown_field = ["value"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @"
-success: false
-exit_code: 255
------ stdout -----
+        @r"
+    success: false
+    exit_code: 255
+    ----- stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
-Unknown field `unknown_field` in `[lint]`. Expected one of: `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, `exclude`, `default-exclude`, `include`.
-"
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Unknown field `unknown_field` in `[lint]`. Expected one of: `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, `exclude`, `default-exclude`, `include`, `check-roxygen`, `fix-roxygen`.
+    "
     );
 
     Ok(())

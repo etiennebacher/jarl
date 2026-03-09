@@ -24,6 +24,7 @@ pub mod lints;
 pub mod location;
 pub mod package;
 pub mod rmd;
+pub mod roxygen;
 pub mod rule_options;
 pub mod rule_set;
 pub mod settings;

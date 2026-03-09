@@ -300,6 +300,37 @@ unfixable = ["PERF"]
 unfixable = []
 ```
 
+#### `check-roxygen`
+
+This takes a boolean argument indicating whether to check code in `roxygen2`
+comments.
+This only checks code in `@examples` and `@examplesIf` sections, and only if
+the R file is part of an R package.
+
+Default: `true`
+
+```toml
+[lint]
+check-roxygen = true
+```
+
+#### `fix-roxygen`
+
+This takes a boolean argument indicating whether to apply automatic fixes to
+code in `roxygen2` comments.
+This fixes code if all following conditions are respected:
+
+- the code is in `@examples` or `@examplesIf` sections
+- the file is part of an R package
+- `--fix` is passed in the command line
+
+Default: `false`
+
+```toml
+[lint]
+fix-roxygen = false
+```
+
 ### Rule-specific arguments
 
 #### `assignment`

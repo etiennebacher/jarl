@@ -2,6 +2,7 @@ use crate::diagnostic::Diagnostic;
 use crate::rule_options::ResolvedRuleOptions;
 use crate::rule_set::{Rule, RuleSet};
 use crate::suppression::SuppressionManager;
+use std::sync::Arc;
 
 #[derive(Debug)]
 // The object that will collect diagnostics in check_expressions(). One per
@@ -17,12 +18,15 @@ pub struct Checker {
     pub minimum_r_version: Option<(u32, u32, u32)>,
     // Tracks comment-based suppression directives like `# jarl-ignore`
     pub suppression: SuppressionManager,
-    // Per-rule options resolved from configuration
-    pub rule_options: ResolvedRuleOptions,
+    // Per-rule options resolved from configuration (Arc to avoid expensive clones)
+    pub rule_options: Arc<ResolvedRuleOptions>,
 }
 
 impl Checker {
-    pub(crate) fn new(suppression: SuppressionManager, rule_options: ResolvedRuleOptions) -> Self {
+    pub(crate) fn new(
+        suppression: SuppressionManager,
+        rule_options: Arc<ResolvedRuleOptions>,
+    ) -> Self {
         Self {
             diagnostics: vec![],
             rule_set: RuleSet::empty(),
