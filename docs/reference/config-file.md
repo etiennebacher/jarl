@@ -209,7 +209,7 @@ unfixable = ["PERF"]
 unfixable = []
 ```
 
-#### `check-roxygen`
+### `check-roxygen`
 
 This takes a boolean argument indicating whether to check code in `roxygen2`
 comments.
@@ -223,7 +223,7 @@ Default: `true`
 check-roxygen = true
 ```
 
-#### `fix-roxygen`
+### `fix-roxygen`
 
 This takes a boolean argument indicating whether to apply automatic fixes to
 code in `roxygen2` comments.
@@ -302,7 +302,7 @@ Default: `skipped-functions = ["expect_error", "expect_warning", "expect_message
 skipped-functions = ["list"]
 ```
 
-#### `quotes`
+### `quotes`
 
 This takes a single value (`"single"` or `"double"`) indicating the preferred
 quote style in the files to check. If `quote = "double"` and if the `"quotes"`
@@ -319,7 +319,7 @@ Default: `double`
 quote = "single" # or "double"
 ```
 
-#### `unreachable_code`
+### `unreachable_code`
 
 Use `stopping-functions` to fully replace the default list of functions that are
 considered to stop execution (never return). Use `extend-stopping-functions` to
