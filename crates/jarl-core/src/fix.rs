@@ -58,7 +58,7 @@ pub fn apply_fixes(fixes: &[Diagnostic], contents: &str) -> (bool, String) {
 
         new_content.replace_range(start_usize..end_usize, &fix.content);
         new_length = new_content.chars().count() as i32;
-        last_modified_pos = end + diff_length;
+        last_modified_pos = end;
     }
 
     (has_skipped_fixes, new_content)
