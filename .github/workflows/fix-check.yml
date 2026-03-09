@@ -24,7 +24,6 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: write
 
 env:
   CARGO_TERM_COLOR: always
@@ -140,8 +139,3 @@ jobs:
           source(".github/scripts/process_fix_ci.R", echo = TRUE)
         shell: Rscript {0}
 
-      - name: Post comment on PR
-        uses: thollander/actions-comment-pull-request@v3
-        with:
-          file-path: fix_check.md
-          comment-tag: fix-check-comment

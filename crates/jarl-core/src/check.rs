@@ -458,4 +458,27 @@ mod tests {
             "
         );
     }
+
+    #[test]
+    fn test_overlapping_fixes_do_not_corrupt() {
+        // `fixed_regex` replaces the whole call (adding `, fixed = TRUE`)
+        // while `quotes` replaces just the string inside it. The nested
+        // fix must be skipped in the first pass and applied in the next
+        // iteration, not applied on stale offsets.
+        assert_snapshot!(
+            get_fixed_text(
+                vec!["grepl('/', repo)"],
+                "ALL",
+                None
+            ),
+            @r#"
+            OLD:
+            ====
+            grepl('/', repo)
+            NEW:
+            ====
+            grepl("/", repo, fixed = TRUE)
+            "#
+        );
+    }
 }

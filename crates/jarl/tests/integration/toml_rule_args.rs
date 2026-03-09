@@ -224,6 +224,95 @@ unknown-option = ["list"]
     Ok(())
 }
 
+// quotes ----------------------------------------
+
+#[test]
+fn test_quotes_unknown_field_is_error() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+
+[lint.quotes]
+unknown-option = "x"
+"#,
+    )?;
+
+    std::fs::write(directory.join("test.R"), "'x'")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 5, column 1
+      |
+    5 | unknown-option = "x"
+      | ^^^^^^^^^^^^^^
+    unknown field `unknown-option`, expected `quote`
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_quotes_invalid_quote_is_error() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    std::fs::write(
+        directory.join("jarl.toml"),
+        r#"
+[lint]
+extend-select = ["quotes"]
+
+[lint.quotes]
+quote = "foo"
+"#,
+    )?;
+
+    std::fs::write(directory.join("test.R"), "'x'")?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Invalid value for `quote` in `[lint.quotes]`: "foo". Expected "double" or "single".
+    "#
+    );
+
+    Ok(())
+}
+
 // unreachable_code ----------------------------------------
 
 #[test]

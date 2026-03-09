@@ -11,8 +11,6 @@ all_repos <- setNames(
   sapply(repo_parts, function(x) trimws(x[1]))
 )
 
-cat("### Fix checks\n\n", file = "fix_check.md")
-
 any_failure <- FALSE
 parse_error_repos <- character(0)
 idempotency_repos <- character(0)
@@ -69,73 +67,18 @@ for (i in seq_along(all_repos)) {
   }
 }
 
-# -- Generate markdown report ------------------------------------------------
-
-if (!any_failure) {
-  cat(
-    paste0(
-      "All ",
-      length(all_repos),
-      " repos passed.\n\n",
-      "- No fixes introduced new parse errors\n",
-      "- All fixes are idempotent (second pass produces no changes)\n"
-    ),
-    file = "fix_check.md",
-    append = TRUE
-  )
-} else {
+if (any_failure) {
   if (length(parse_error_repos) > 0) {
-    cat(
-      paste0(
-        "**Parse errors introduced by fixes:**\n\n",
-        paste0(
-          "- [`",
-          parse_error_repos,
-          "`](https://github.com/",
-          parse_error_repos,
-          "/tree/",
-          all_repos[parse_error_repos],
-          ")",
-          collapse = "\n"
-        ),
-        "\n\n"
-      ),
-      file = "fix_check.md",
-      append = TRUE
+    message(
+      "Parse errors introduced by fixes:\n",
+      paste0("- ", parse_error_repos, collapse = "\n")
     )
   }
 
   if (length(idempotency_repos) > 0) {
-    cat(
-      paste0(
-        "**Non-idempotent fixes (second pass changed files):**\n\n",
-        paste0(
-          "- [`",
-          idempotency_repos,
-          "`](https://github.com/",
-          idempotency_repos,
-          "/tree/",
-          all_repos[idempotency_repos],
-          ")",
-          collapse = "\n"
-        ),
-        "\n\n"
-      ),
-      file = "fix_check.md",
-      append = TRUE
-    )
-  }
-
-  n_passed <- length(all_repos) -
-    length(unique(c(
-      parse_error_repos,
-      idempotency_repos
-    )))
-  if (n_passed > 0) {
-    cat(
-      paste0(n_passed, " other repo(s) passed all checks.\n"),
-      file = "fix_check.md",
-      append = TRUE
+    message(
+      "Non-idempotent fixes (second pass changed files):\n",
+      paste0("- ", idempotency_repos, collapse = "\n")
     )
   }
 
