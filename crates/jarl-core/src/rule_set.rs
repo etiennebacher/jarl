@@ -413,6 +413,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    FilterOut => {
+        name: "dplyr_filter_out",
+        categories: [Dplyr],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
     FixedRegex => {
         name: "fixed_regex",
         categories: [Perf],
@@ -442,8 +449,8 @@ declare_rules! {
         min_r_version: Some((4, 5, 0)),
     },
     GroupByUngroup => {
-        name: "group_by_ungroup",
-        categories: [Read, Dplyr],
+        name: "dplyr_group_by_ungroup",
+        categories: [Dplyr],
         default: Disabled,
         fix: None,
         min_r_version: None,

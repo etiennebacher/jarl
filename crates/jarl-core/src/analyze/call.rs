@@ -11,7 +11,6 @@ use crate::lints::base::download_file::download_file::download_file;
 use crate::lints::base::duplicated_arguments::duplicated_arguments::duplicated_arguments;
 use crate::lints::base::fixed_regex::fixed_regex::fixed_regex;
 use crate::lints::base::grepv::grepv::grepv;
-use crate::lints::base::group_by_ungroup::group_by_ungroup::group_by_ungroup;
 use crate::lints::base::length_levels::length_levels::length_levels;
 use crate::lints::base::length_test::length_test::length_test;
 use crate::lints::base::lengths::lengths::lengths;
@@ -25,6 +24,8 @@ use crate::lints::base::sprintf::sprintf::sprintf;
 use crate::lints::base::system_file::system_file::system_file;
 use crate::lints::base::undesirable_function::undesirable_function::undesirable_function;
 use crate::lints::base::which_grepl::which_grepl::which_grepl;
+use crate::lints::dplyr::dplyr_filter_out::dplyr_filter_out::dplyr_filter_out;
+use crate::lints::dplyr::dplyr_group_by_ungroup::dplyr_group_by_ungroup::dplyr_group_by_ungroup;
 
 use crate::lints::testthat::expect_length::expect_length::expect_length;
 use crate::lints::testthat::expect_match::expect_match::expect_match;
@@ -85,6 +86,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::ExpectTrueFalse) {
         checker.report_diagnostic(expect_true_false(r_expr)?);
     }
+    if checker.is_rule_enabled(Rule::FilterOut) {
+        checker.report_diagnostic(dplyr_filter_out(r_expr, checker)?);
+    }
     if checker.is_rule_enabled(Rule::FixedRegex) {
         checker.report_diagnostic(fixed_regex(r_expr)?);
     }
@@ -92,7 +96,7 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
         checker.report_diagnostic(grepv(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::GroupByUngroup) {
-        checker.report_diagnostic(group_by_ungroup(r_expr)?);
+        checker.report_diagnostic(dplyr_group_by_ungroup(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::LengthLevels) {
         checker.report_diagnostic(length_levels(r_expr)?);

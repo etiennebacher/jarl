@@ -1,4 +1,4 @@
-pub(crate) mod group_by_ungroup;
+pub(crate) mod dplyr_group_by_ungroup;
 
 #[cfg(test)]
 mod tests {
@@ -6,47 +6,47 @@ mod tests {
     use insta::assert_snapshot;
 
     fn snapshot_lint(code: &str) -> String {
-        format_diagnostics(code, "group_by_ungroup", None)
+        format_diagnostics(code, "dplyr_group_by_ungroup", None)
     }
 
     #[test]
-    fn test_no_lint_group_by_ungroup() {
+    fn test_no_lint_dplyr_group_by_ungroup() {
         // No ungroup at the end
         expect_no_lint(
             "x |> group_by(grp) |> summarize(a = mean(b))",
-            "group_by_ungroup",
+            "dplyr_group_by_ungroup",
             None,
         );
         // More than one verb between group_by and ungroup
         expect_no_lint(
             "x |> group_by(grp) |> mutate(a = 1) |> summarize(b = mean(a)) |> ungroup()",
-            "group_by_ungroup",
+            "dplyr_group_by_ungroup",
             None,
         );
         // ungroup() with arguments (not a simple pipe ungroup)
         expect_no_lint(
             "x |> group_by(grp1, grp2) |> summarize(a = mean(b)) |> ungroup(grp1)",
-            "group_by_ungroup",
+            "dplyr_group_by_ungroup",
             None,
         );
         // Verb already has .by
         expect_no_lint(
             "x |> group_by(grp) |> summarize(a = mean(b), .by = grp) |> ungroup()",
-            "group_by_ungroup",
+            "dplyr_group_by_ungroup",
             None,
         );
         // Non-dplyr verb
         expect_no_lint(
             "x |> group_by(grp) |> my_custom_fun() |> ungroup()",
-            "group_by_ungroup",
+            "dplyr_group_by_ungroup",
             None,
         );
         // Standalone ungroup
-        expect_no_lint("x |> ungroup()", "group_by_ungroup", None);
+        expect_no_lint("x |> ungroup()", "dplyr_group_by_ungroup", None);
         // Non-dplyr namespace
         expect_no_lint(
             "x |> group_by(grp) |> summarize(a = 1) |> other::ungroup()",
-            "group_by_ungroup",
+            "dplyr_group_by_ungroup",
             None,
         );
     }
@@ -56,7 +56,7 @@ mod tests {
         assert_snapshot!(
             snapshot_lint("x |> group_by(grp) |> summarize(a = mean(b)) |> ungroup()"),
             @r"
-        warning: group_by_ungroup
+        warning: dplyr_group_by_ungroup
          --> <test>:1:6
           |
         1 | x |> group_by(grp) |> summarize(a = mean(b)) |> ungroup()
@@ -73,7 +73,7 @@ mod tests {
         assert_snapshot!(
             snapshot_lint("x |> group_by(grp) |> summarise(a = mean(b)) |> ungroup()"),
             @r"
-        warning: group_by_ungroup
+        warning: dplyr_group_by_ungroup
          --> <test>:1:6
           |
         1 | x |> group_by(grp) |> summarise(a = mean(b)) |> ungroup()
@@ -90,7 +90,7 @@ mod tests {
         assert_snapshot!(
             snapshot_lint("x |> group_by(grp) |> mutate(a = mean(b)) |> ungroup()"),
             @r"
-        warning: group_by_ungroup
+        warning: dplyr_group_by_ungroup
          --> <test>:1:6
           |
         1 | x |> group_by(grp) |> mutate(a = mean(b)) |> ungroup()
@@ -107,7 +107,7 @@ mod tests {
         assert_snapshot!(
             snapshot_lint("x |> group_by(grp) |> filter(a > 1) |> ungroup()"),
             @r"
-        warning: group_by_ungroup
+        warning: dplyr_group_by_ungroup
          --> <test>:1:6
           |
         1 | x |> group_by(grp) |> filter(a > 1) |> ungroup()
@@ -124,7 +124,7 @@ mod tests {
         assert_snapshot!(
             snapshot_lint("x |> group_by(grp1, grp2) |> summarize(a = mean(b)) |> ungroup()"),
             @r"
-        warning: group_by_ungroup
+        warning: dplyr_group_by_ungroup
          --> <test>:1:6
           |
         1 | x |> group_by(grp1, grp2) |> summarize(a = mean(b)) |> ungroup()
@@ -141,7 +141,7 @@ mod tests {
         assert_snapshot!(
             snapshot_lint("x |> dplyr::group_by(grp) |> dplyr::summarize(a = mean(b)) |> dplyr::ungroup()"),
             @r"
-        warning: group_by_ungroup
+        warning: dplyr_group_by_ungroup
          --> <test>:1:6
           |
         1 | x |> dplyr::group_by(grp) |> dplyr::summarize(a = mean(b)) |> dplyr::ungroup()
@@ -158,7 +158,7 @@ mod tests {
         assert_snapshot!(
             snapshot_lint("x %>% group_by(grp) %>% summarize(a = mean(b)) %>% ungroup()"),
             @r"
-        warning: group_by_ungroup
+        warning: dplyr_group_by_ungroup
          --> <test>:1:7
           |
         1 | x %>% group_by(grp) %>% summarize(a = mean(b)) %>% ungroup()
@@ -173,24 +173,69 @@ mod tests {
     #[test]
     fn test_lint_slice_verbs() {
         assert_snapshot!(
-            "slice_head",
-            snapshot_lint("x |> group_by(grp) |> slice_head(n = 1) |> ungroup()")
+            snapshot_lint("x |> group_by(grp) |> slice_head(n = 1) |> ungroup()"),
+            @r"
+        warning: dplyr_group_by_ungroup
+         --> <test>:1:6
+          |
+        1 | x |> group_by(grp) |> slice_head(n = 1) |> ungroup()
+          |      ----------------------------------------------- `group_by()` followed by `slice_head()` and `ungroup()` can be simplified.
+          |
+          = help: Use `slice_head(..., .by = grp)` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
-            "slice_tail",
-            snapshot_lint("x |> group_by(grp) |> slice_tail(n = 1) |> ungroup()")
+            snapshot_lint("x |> group_by(grp) |> slice_tail(n = 1) |> ungroup()"),
+            @r"
+        warning: dplyr_group_by_ungroup
+         --> <test>:1:6
+          |
+        1 | x |> group_by(grp) |> slice_tail(n = 1) |> ungroup()
+          |      ----------------------------------------------- `group_by()` followed by `slice_tail()` and `ungroup()` can be simplified.
+          |
+          = help: Use `slice_tail(..., .by = grp)` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
-            "slice_min",
-            snapshot_lint("x |> group_by(grp) |> slice_min(val) |> ungroup()")
+            snapshot_lint("x |> group_by(grp) |> slice_min(val) |> ungroup()"),
+            @r"
+        warning: dplyr_group_by_ungroup
+         --> <test>:1:6
+          |
+        1 | x |> group_by(grp) |> slice_min(val) |> ungroup()
+          |      -------------------------------------------- `group_by()` followed by `slice_min()` and `ungroup()` can be simplified.
+          |
+          = help: Use `slice_min(..., .by = grp)` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
-            "slice_max",
-            snapshot_lint("x |> group_by(grp) |> slice_max(val) |> ungroup()")
+            snapshot_lint("x |> group_by(grp) |> slice_max(val) |> ungroup()"),
+            @r"
+        warning: dplyr_group_by_ungroup
+         --> <test>:1:6
+          |
+        1 | x |> group_by(grp) |> slice_max(val) |> ungroup()
+          |      -------------------------------------------- `group_by()` followed by `slice_max()` and `ungroup()` can be simplified.
+          |
+          = help: Use `slice_max(..., .by = grp)` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
-            "slice_sample",
-            snapshot_lint("x |> group_by(grp) |> slice_sample(n = 5) |> ungroup()")
+            snapshot_lint("x |> group_by(grp) |> slice_sample(n = 5) |> ungroup()"),
+            @r"
+        warning: dplyr_group_by_ungroup
+         --> <test>:1:6
+          |
+        1 | x |> group_by(grp) |> slice_sample(n = 5) |> ungroup()
+          |      ------------------------------------------------- `group_by()` followed by `slice_sample()` and `ungroup()` can be simplified.
+          |
+          = help: Use `slice_sample(..., .by = grp)` instead.
+        Found 1 error.
+        "
         );
     }
 
@@ -206,7 +251,7 @@ mod tests {
   ungroup()"
             ),
             @r"
-        warning: group_by_ungroup
+        warning: dplyr_group_by_ungroup
          --> <test>:2:3
           |
         2 | /   group_by(grp) |>
@@ -228,7 +273,7 @@ mod tests {
         assert_snapshot!(
             snapshot_lint("group_by(x, grp) |> summarize(a = mean(b)) |> ungroup()"),
             @r"
-        warning: group_by_ungroup
+        warning: dplyr_group_by_ungroup
          --> <test>:1:1
           |
         1 | group_by(x, grp) |> summarize(a = mean(b)) |> ungroup()

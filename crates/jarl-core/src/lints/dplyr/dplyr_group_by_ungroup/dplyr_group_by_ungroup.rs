@@ -46,7 +46,7 @@ const VERBS_WITH_BY: &[&str] = &[
 /// ## References
 ///
 /// See the `.by` argument in `?dplyr::summarize`.
-pub fn group_by_ungroup(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
+pub fn dplyr_group_by_ungroup(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let fn_name = get_function_name(ast.function()?);
     let fn_ns = get_function_namespace_prefix(ast.function()?);
 
@@ -147,7 +147,7 @@ pub fn group_by_ungroup(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let suggestion = format!("Use `{verb_name}(..., .by = {grouping_args})` instead.",);
 
     Ok(Some(Diagnostic::new(
-        ViolationData::new("group_by_ungroup".to_string(), body, Some(suggestion)),
+        ViolationData::new("dplyr_group_by_ungroup".to_string(), body, Some(suggestion)),
         range,
         Fix::empty(),
     )))
