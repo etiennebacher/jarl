@@ -430,6 +430,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: Some((4, 5, 0)),
     },
+    GroupByUngroup => {
+        name: "group_by_ungroup",
+        categories: [Read],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
     IfAlwaysTrue => {
         name: "if_always_true",
         categories: [Read, Susp],

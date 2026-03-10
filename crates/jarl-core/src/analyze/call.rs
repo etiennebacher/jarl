@@ -11,6 +11,7 @@ use crate::lints::base::download_file::download_file::download_file;
 use crate::lints::base::duplicated_arguments::duplicated_arguments::duplicated_arguments;
 use crate::lints::base::fixed_regex::fixed_regex::fixed_regex;
 use crate::lints::base::grepv::grepv::grepv;
+use crate::lints::base::group_by_ungroup::group_by_ungroup::group_by_ungroup;
 use crate::lints::base::length_levels::length_levels::length_levels;
 use crate::lints::base::length_test::length_test::length_test;
 use crate::lints::base::lengths::lengths::lengths;
@@ -89,6 +90,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled(Rule::Grepv) {
         checker.report_diagnostic(grepv(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::GroupByUngroup) {
+        checker.report_diagnostic(group_by_ungroup(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::LengthLevels) {
         checker.report_diagnostic(length_levels(r_expr)?);

@@ -17,6 +17,7 @@ pub(crate) mod fixed_regex;
 pub(crate) mod for_loop_dup_index;
 pub(crate) mod for_loop_index;
 pub(crate) mod grepv;
+pub(crate) mod group_by_ungroup;
 pub(crate) mod if_always_true;
 pub(crate) mod implicit_assignment;
 pub(crate) mod internal_function;
