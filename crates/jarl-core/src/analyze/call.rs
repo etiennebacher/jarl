@@ -24,6 +24,7 @@ use crate::lints::base::sprintf::sprintf::sprintf;
 use crate::lints::base::system_file::system_file::system_file;
 use crate::lints::base::undesirable_function::undesirable_function::undesirable_function;
 use crate::lints::base::which_grepl::which_grepl::which_grepl;
+
 use crate::lints::dplyr::dplyr_filter_out::dplyr_filter_out::dplyr_filter_out;
 use crate::lints::dplyr::dplyr_group_by_ungroup::dplyr_group_by_ungroup::dplyr_group_by_ungroup;
 
@@ -59,44 +60,11 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::DuplicatedArguments) {
         checker.report_diagnostic(duplicated_arguments(r_expr, checker)?);
     }
-    if checker.is_rule_enabled(Rule::ExpectLength) {
-        checker.report_diagnostic(expect_length(r_expr)?);
-    }
-    if checker.is_rule_enabled(Rule::ExpectMatch) {
-        checker.report_diagnostic(expect_match(r_expr)?);
-    }
-    if checker.is_rule_enabled(Rule::ExpectNamed) {
-        checker.report_diagnostic(expect_named(r_expr)?);
-    }
-    if checker.is_rule_enabled(Rule::ExpectNoMatch) {
-        checker.report_diagnostic(expect_no_match(r_expr)?);
-    }
-    if checker.is_rule_enabled(Rule::ExpectNot) {
-        checker.report_diagnostic(expect_not(r_expr)?);
-    }
-    if checker.is_rule_enabled(Rule::ExpectNull) {
-        checker.report_diagnostic(expect_null(r_expr)?);
-    }
-    if checker.is_rule_enabled(Rule::ExpectS3Class) {
-        checker.report_diagnostic(expect_s3_class(r_expr)?);
-    }
-    if checker.is_rule_enabled(Rule::ExpectType) {
-        checker.report_diagnostic(expect_type(r_expr)?);
-    }
-    if checker.is_rule_enabled(Rule::ExpectTrueFalse) {
-        checker.report_diagnostic(expect_true_false(r_expr)?);
-    }
-    if checker.is_rule_enabled(Rule::FilterOut) {
-        checker.report_diagnostic(dplyr_filter_out(r_expr, checker)?);
-    }
     if checker.is_rule_enabled(Rule::FixedRegex) {
         checker.report_diagnostic(fixed_regex(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::Grepv) {
         checker.report_diagnostic(grepv(r_expr)?);
-    }
-    if checker.is_rule_enabled(Rule::GroupByUngroup) {
-        checker.report_diagnostic(dplyr_group_by_ungroup(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::LengthLevels) {
         checker.report_diagnostic(length_levels(r_expr)?);
@@ -137,5 +105,47 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::WhichGrepl) {
         checker.report_diagnostic(which_grepl(r_expr)?);
     }
+
+    //
+    // ------------- DPLYR -------------
+    //
+    if checker.is_rule_enabled(Rule::DplyrFilterOut) {
+        checker.report_diagnostic(dplyr_filter_out(r_expr, checker)?);
+    }
+    if checker.is_rule_enabled(Rule::DplyrGroupByUngroup) {
+        checker.report_diagnostic(dplyr_group_by_ungroup(r_expr)?);
+    }
+
+    //
+    // ------------- TESTTHAT -------------
+    //
+    if checker.is_rule_enabled(Rule::TestthatExpectLength) {
+        checker.report_diagnostic(expect_length(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::TestthatExpectMatch) {
+        checker.report_diagnostic(expect_match(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::TestthatExpectNamed) {
+        checker.report_diagnostic(expect_named(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::TestthatExpectNoMatch) {
+        checker.report_diagnostic(expect_no_match(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::TestthatExpectNot) {
+        checker.report_diagnostic(expect_not(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::TestthatExpectNull) {
+        checker.report_diagnostic(expect_null(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::TestthatExpectS3Class) {
+        checker.report_diagnostic(expect_s3_class(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::TestthatExpectType) {
+        checker.report_diagnostic(expect_type(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::TestthatExpectTrueFalse) {
+        checker.report_diagnostic(expect_true_false(r_expr)?);
+    }
+
     Ok(())
 }

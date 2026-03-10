@@ -230,6 +230,10 @@ macro_rules! declare_rules {
 
 // Declare all rules with their metadata
 declare_rules! {
+
+    //
+    // ------------- BASE -------------
+    //
     AllEqual => {
         name: "all_equal",
         categories: [Susp],
@@ -256,20 +260,6 @@ declare_rules! {
         categories: [Read],
         default: Disabled,
         fix: Safe,
-        min_r_version: None,
-    },
-    BlanketSuppression => {
-        name: "blanket_suppression",
-        categories: [Comm],
-        default: Enabled,
-        fix: None,
-        min_r_version: None,
-    },
-    InvalidChunkSuppression => {
-        name: "invalid_chunk_suppression",
-        categories: [Comm],
-        default: Enabled,
-        fix: None,
         min_r_version: None,
     },
     #[deprecated(version = "0.5.0", replacement = "undesirable_function")]
@@ -350,76 +340,6 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
-    ExpectLength => {
-        name: "expect_length",
-        categories: [Testthat],
-        default: Disabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    ExpectMatch => {
-        name: "expect_match",
-        categories: [Testthat],
-        default: Disabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    ExpectNamed => {
-        name: "expect_named",
-        categories: [Testthat],
-        default: Disabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    ExpectNoMatch => {
-        name: "expect_no_match",
-        categories: [Testthat],
-        default: Disabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    ExpectNot => {
-        name: "expect_not",
-        categories: [Testthat],
-        default: Disabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    ExpectNull => {
-        name: "expect_null",
-        categories: [Testthat],
-        default: Disabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    ExpectS3Class => {
-        name: "expect_s3_class",
-        categories: [Testthat],
-        default: Disabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    ExpectTrueFalse => {
-        name: "expect_true_false",
-        categories: [Testthat],
-        default: Disabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    ExpectType => {
-        name: "expect_type",
-        categories: [Testthat],
-        default: Disabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    FilterOut => {
-        name: "dplyr_filter_out",
-        categories: [Dplyr],
-        default: Disabled,
-        fix: None,
-        min_r_version: None,
-    },
     FixedRegex => {
         name: "fixed_regex",
         categories: [Perf],
@@ -447,13 +367,6 @@ declare_rules! {
         default: Enabled,
         fix: Safe,
         min_r_version: Some((4, 5, 0)),
-    },
-    GroupByUngroup => {
-        name: "dplyr_group_by_ungroup",
-        categories: [Dplyr],
-        default: Disabled,
-        fix: None,
-        min_r_version: None,
     },
     IfAlwaysTrue => {
         name: "if_always_true",
@@ -518,39 +431,11 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
-    MisplacedFileSuppression => {
-        name: "misplaced_file_suppression",
-        categories: [Comm],
-        default: Enabled,
-        fix: None,
-        min_r_version: None,
-    },
-    MisplacedSuppression => {
-        name: "misplaced_suppression",
-        categories: [Comm],
-        default: Enabled,
-        fix: None,
-        min_r_version: None,
-    },
-    MisnamedSuppression => {
-        name: "misnamed_suppression",
-        categories: [Comm],
-        default: Enabled,
-        fix: None,
-        min_r_version: None,
-    },
     NumericLeadingZero => {
         name: "numeric_leading_zero",
         categories: [Read],
         default: Enabled,
         fix: Safe,
-        min_r_version: None,
-    },
-    OutdatedSuppression => {
-        name: "outdated_suppression",
-        categories: [Comm],
-        default: Enabled,
-        fix: None,
         min_r_version: None,
     },
     OuterNegation => {
@@ -651,20 +536,6 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
-    UnexplainedSuppression => {
-        name: "unexplained_suppression",
-        categories: [Comm],
-        default: Enabled,
-        fix: None,
-        min_r_version: None,
-    },
-    UnmatchedRangeSuppression => {
-        name: "unmatched_range_suppression",
-        categories: [Comm],
-        default: Enabled,
-        fix: None,
-        min_r_version: None,
-    },
     UnnecessaryNesting => {
         name: "unnecessary_nesting",
         categories: [Read],
@@ -700,6 +571,152 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+
+    //
+    // ------------- COMMENTS -------------
+    //
+    BlanketSuppression => {
+        name: "blanket_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    InvalidChunkSuppression => {
+        name: "invalid_chunk_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    MisplacedFileSuppression => {
+        name: "misplaced_file_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    MisplacedSuppression => {
+        name: "misplaced_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    MisnamedSuppression => {
+        name: "misnamed_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    OutdatedSuppression => {
+        name: "outdated_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    UnexplainedSuppression => {
+        name: "unexplained_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    UnmatchedRangeSuppression => {
+        name: "unmatched_range_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+
+    //
+    // ------------- DPLYR -------------
+    //
+    DplyrFilterOut => {
+        name: "dplyr_filter_out",
+        categories: [Dplyr],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
+    DplyrGroupByUngroup => {
+        name: "dplyr_group_by_ungroup",
+        categories: [Dplyr],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
+
+    //
+    // ------------- TESTTHAT -------------
+    //
+    TestthatExpectLength => {
+        name: "expect_length",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    TestthatExpectMatch => {
+        name: "expect_match",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    TestthatExpectNamed => {
+        name: "expect_named",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    TestthatExpectNoMatch => {
+        name: "expect_no_match",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    TestthatExpectNot => {
+        name: "expect_not",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    TestthatExpectNull => {
+        name: "expect_null",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    TestthatExpectS3Class => {
+        name: "expect_s3_class",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    TestthatExpectTrueFalse => {
+        name: "expect_true_false",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    TestthatExpectType => {
+        name: "expect_type",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+
 }
 
 /// A collection of rules
