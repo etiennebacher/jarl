@@ -16,6 +16,8 @@ pub enum Category {
     Read,
     /// Testthat-specific rules
     Testthat,
+    /// dplyr-specific rules (opt-in)
+    Dplyr,
 }
 
 impl Category {
@@ -27,6 +29,7 @@ impl Category {
             Self::Perf => "PERF",
             Self::Read => "READ",
             Self::Testthat => "TESTTHAT",
+            Self::Dplyr => "DPLYR",
         }
     }
 
@@ -37,7 +40,14 @@ impl Category {
         Category::Perf,
         Category::Read,
         Category::Testthat,
+        Category::Dplyr,
     ];
+
+    /// Whether this category is package-specific (requires library path
+    /// discovery and the `PackageCache` to be useful).
+    pub const fn is_package_specific(self) -> bool {
+        matches!(self, Self::Dplyr)
+    }
 }
 
 impl fmt::Display for Category {
@@ -57,6 +67,7 @@ impl FromStr for Category {
             "PERF" => Ok(Self::Perf),
             "READ" => Ok(Self::Read),
             "TESTTHAT" => Ok(Self::Testthat),
+            "DPLYR" => Ok(Self::Dplyr),
             _ => Err(format!("Unknown category: {}", s)),
         }
     }
@@ -432,7 +443,7 @@ declare_rules! {
     },
     GroupByUngroup => {
         name: "group_by_ungroup",
-        categories: [Read],
+        categories: [Read, Dplyr],
         default: Disabled,
         fix: None,
         min_r_version: None,
@@ -729,6 +740,17 @@ impl RuleSet {
     /// Check if the rule set is empty
     pub fn is_empty(&self) -> bool {
         self.rules.is_empty()
+    }
+
+    /// Check if any rule in the set belongs to a package-specific category.
+    ///
+    /// Used to decide whether to discover R library paths and build a
+    /// `PackageCache` — an expensive operation that should be skipped
+    /// when no package-specific rules are enabled.
+    pub fn has_package_specific_rules(&self) -> bool {
+        self.rules
+            .iter()
+            .any(|r| r.categories().iter().any(|c| c.is_package_specific()))
     }
 
     /// Filter rules by a predicate

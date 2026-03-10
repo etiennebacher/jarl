@@ -152,6 +152,12 @@ pub fn get_checks(
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
 
+    // Extract library() calls and wire up the package cache for package-specific rules
+    if config.package_cache.is_some() {
+        checker.loaded_packages = crate::library_calls::extract_library_calls(expressions);
+        checker.package_cache = config.package_cache.clone();
+    }
+
     // Look up per-file data from PackageAnalysis
     let duplicate_assignments = pkg
         .duplicate_assignments

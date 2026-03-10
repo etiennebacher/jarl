@@ -3,6 +3,7 @@ pub(crate) mod unused_function;
 #[cfg(test)]
 mod tests {
     use super::unused_function::*;
+    use crate::namespace::parse_namespace_exports;
     use crate::package::{scan_extra_package_paths, scan_r_package_paths};
     use std::collections::HashMap;
     use std::fs;

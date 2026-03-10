@@ -1,5 +1,7 @@
 use air_workspace::resolve::PathResolver;
 use jarl_core::discovery::{discover_r_file_paths, discover_settings};
+use jarl_core::library_paths::discover_library_paths;
+use jarl_core::package_cache::PackageCache;
 use jarl_core::rule_set::Rule;
 use jarl_core::{
     config::ArgsConfig,
@@ -19,6 +21,7 @@ use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::env;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Instant;
 
 use crate::args::CheckCommand;
@@ -103,13 +106,32 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         groups.entry(key).or_default().push(path);
     }
 
+    // Lazily discover R library paths only when a config enables package-
+    // specific rules (e.g., DPLYR). This avoids the ~200ms Rscript cost
+    // when no such rules are active, which also avoids requiring R in CI.
+    let mut package_cache: Option<Arc<PackageCache>> = None;
+    let mut cache_initialized = false;
+
     let mut file_results = Vec::new();
     for (dir_key, group_paths) in groups {
         let settings = dir_key
             .as_deref()
             .and_then(|dir| resolver.items().iter().find(|item| item.path() == dir))
             .map(|item| item.value());
-        let config = build_config(&check_config, settings, group_paths)?;
+        let mut config = build_config(&check_config, settings, group_paths)?;
+
+        if config.rules_to_apply.has_package_specific_rules() {
+            if !cache_initialized {
+                let project_root = cwd.as_deref();
+                let library_paths = discover_library_paths(project_root);
+                if !library_paths.is_empty() {
+                    package_cache = Some(Arc::new(PackageCache::new(library_paths)));
+                }
+                cache_initialized = true;
+            }
+            config.package_cache = package_cache.clone();
+        }
+
         file_results.extend(jarl_core::check::check(config));
     }
 
