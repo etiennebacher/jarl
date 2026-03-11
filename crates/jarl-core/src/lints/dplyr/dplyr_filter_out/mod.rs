@@ -151,7 +151,7 @@ mod tests {
         x |> dplyr::filter(a > 1 | is.na(a))
         NEW:
         ====
-        x |> dplyr::filter_out(!(a > 1))
+        x |> dplyr::filter_out(a <= 1)
         "
         );
     }
@@ -182,7 +182,7 @@ mod tests {
         x |> dplyr::filter(a != 'foo' | is.na(a))
         NEW:
         ====
-        x |> dplyr::filter_out(!(a != 'foo'))
+        x |> dplyr::filter_out(a == 'foo')
         "#
         );
     }
@@ -197,7 +197,7 @@ mod tests {
         x |> dplyr::filter(a > 1 | is.na(a), .by = grp)
         NEW:
         ====
-        x |> dplyr::filter_out(!(a > 1), .by = grp)
+        x |> dplyr::filter_out(a <= 1, .by = grp)
         "
         );
     }
@@ -213,7 +213,7 @@ mod tests {
         x |> dplyr::filter(is.na(a) | a > 1)
         NEW:
         ====
-        x |> dplyr::filter_out(!(a > 1))
+        x |> dplyr::filter_out(a <= 1)
         "
         );
     }

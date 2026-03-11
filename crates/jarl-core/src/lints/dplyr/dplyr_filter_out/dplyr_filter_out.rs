@@ -224,12 +224,39 @@ fn extract_is_na_arg(expr: &AnyRExpression) -> Option<String> {
 /// Negate an expression for use in `filter_out()`.
 ///
 /// - If already negated (`!expr`), strips the `!`
+/// - Comparison operators are inverted: `a > 1` → `a <= 1`
 /// - Simple identifiers/calls: `!expr`
 /// - Complex expressions (binary, etc.): `!(expr)`
 fn negate_expression(expr: &AnyRExpression) -> String {
     // If the expression is already `!something`, just unwrap it
     if let Some(inner) = extract_negated_inner(expr) {
         return inner;
+    }
+
+    // Invert comparison operators directly: `a > 1` → `a <= 1`
+    if let Some(binary) = expr.as_r_binary_expression()
+        && let Ok(op) = binary.operator()
+    {
+        let inverted = match op.kind() {
+            RSyntaxKind::GREATER_THAN => Some("<="),
+            RSyntaxKind::GREATER_THAN_OR_EQUAL_TO => Some("<"),
+            RSyntaxKind::LESS_THAN => Some(">="),
+            RSyntaxKind::LESS_THAN_OR_EQUAL_TO => Some(">"),
+            RSyntaxKind::EQUAL2 => Some("!="),
+            RSyntaxKind::NOT_EQUAL => Some("=="),
+            _ => None,
+        };
+
+        if let Some(inv_op) = inverted
+            && let (Ok(left), Ok(right)) = (binary.left(), binary.right())
+        {
+            return format!(
+                "{} {} {}",
+                left.syntax().text_trimmed(),
+                inv_op,
+                right.syntax().text_trimmed()
+            );
+        }
     }
 
     let text = expr.syntax().text_trimmed().to_string();
