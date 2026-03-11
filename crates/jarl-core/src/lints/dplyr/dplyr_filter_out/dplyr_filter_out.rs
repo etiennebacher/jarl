@@ -1,4 +1,4 @@
-use crate::checker::Checker;
+use crate::checker::{Checker, PackageOrigin};
 use crate::diagnostic::*;
 use crate::utils::{get_function_name, get_function_namespace_prefix};
 use air_r_syntax::*;
@@ -55,10 +55,17 @@ pub fn dplyr_filter_out(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
     // unlikely to be `stats::filter()`).
     if fn_ns.is_none() {
         match checker.resolve_package("filter") {
-            Some(ref pkg) if pkg == "dplyr" => {}
-            Some(_) => return Ok(None),
-            None if !is_piped_into(ast) => return Ok(None),
-            None => {}
+            PackageOrigin::Resolved(ref pkg) if pkg == "dplyr" => {}
+            PackageOrigin::Resolved(_) => return Ok(None),
+            // Multiple packages export `filter` (e.g. stats and dplyr).
+            // Use pipe as a heuristic: piped `filter()` is likely dplyr.
+            PackageOrigin::Ambiguous(_) => {
+                if !checker.resolve_package("filter").includes("dplyr") || !is_piped_into(ast) {
+                    return Ok(None);
+                }
+            }
+            PackageOrigin::Unknown if !is_piped_into(ast) => return Ok(None),
+            PackageOrigin::Unknown => {}
         }
     }
 
@@ -130,7 +137,7 @@ pub fn dplyr_filter_out(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
     let range = ast.syntax().text_trimmed_range();
 
     let body = "Negating conditions in `filter()` can be hard to read.".to_string();
-    let suggestion = format!("Use `dplyr_filter_out({inner_text})` instead.",);
+    let suggestion = format!("Use `filter_out({inner_text})` instead.",);
 
     Ok(Some(Diagnostic::new(
         ViolationData::new("dplyr_filter_out".to_string(), body, Some(suggestion)),
