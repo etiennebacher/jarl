@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::RwLock;
 
 use crate::namespace::parse_namespace_exports;
+use rds2rust::{RObject, read_rds_from_path};
 
 /// Information about an installed R package.
 #[derive(Debug, Clone)]
@@ -71,13 +72,76 @@ impl PackageCache {
                 Ok(c) => c,
                 Err(_) => continue,
             };
-            // Skip exportPattern resolution for external packages (no object list available)
-            let exports = parse_namespace_exports(&namespace_content, &[]);
+            // If NAMESPACE uses exportPattern, read the .rdx file to get all
+            // object names so the pattern can be resolved.
+            let all_names = if namespace_content.contains("exportPattern") {
+                read_rdx_object_names(&pkg_dir, name)
+            } else {
+                Vec::new()
+            };
+            let all_name_refs: Vec<&str> = all_names.iter().map(|s| s.as_str()).collect();
+            let exports = parse_namespace_exports(&namespace_content, &all_name_refs);
 
             let version = read_package_version(&pkg_dir);
 
             return Some(PackageInfo { exports, version });
         }
+        None
+    }
+}
+
+/// Read all object names from a package's `.rdx` lazy-load database index.
+///
+/// The `.rdx` file is an RDS file containing a named list with a `$variables`
+/// element. The names of `$variables` are all object names defined in the
+/// package (both exported and internal).
+fn read_rdx_object_names(pkg_dir: &Path, pkg_name: &str) -> Vec<String> {
+    let rdx_path = pkg_dir.join("R").join(format!("{pkg_name}.rdx"));
+    let parsed = match read_rds_from_path(&rdx_path) {
+        Ok(p) => p,
+        Err(_) => return Vec::new(),
+    };
+
+    // The rdx is a named list: extract names from the `$variables` element.
+    // Structure: List with "names" attribute = ["variables", "references", "compressed"]
+    // We need the names attribute of the `variables` sub-list.
+    extract_variables_names(&parsed.object).unwrap_or_default()
+}
+
+/// Extract the names from the `$variables` element of an rdx RObject.
+///
+/// The rdx parses as `WithAttributes { List([variables, references, compressed]),
+/// names: ["variables", "references", "compressed"] }`.
+/// The `variables` sub-element is itself `WithAttributes { List([...]),
+/// names: [...all object names...] }`.
+fn extract_variables_names(obj: &RObject) -> Option<Vec<String>> {
+    let (items, attrs) = unwrap_list_with_attrs(obj)?;
+
+    // Find the "variables" element by name
+    let names = extract_string_vector(attrs.get("names")?)?;
+    let var_idx = names.iter().position(|n| n == "variables")?;
+    let variables_obj = items.get(var_idx)?;
+
+    // Extract the names attribute from the variables sub-list
+    let (_, var_attrs) = unwrap_list_with_attrs(variables_obj)?;
+    extract_string_vector(var_attrs.get("names")?)
+}
+
+/// Unwrap an RObject that is a List with attributes (possibly wrapped in WithAttributes).
+fn unwrap_list_with_attrs(obj: &RObject) -> Option<(&[RObject], &rds2rust::Attributes)> {
+    if let RObject::WithAttributes { object, attributes } = obj
+        && let RObject::List(items) = object.as_ref()
+    {
+        return Some((items, attributes));
+    }
+    None
+}
+
+/// Extract strings from an RObject that should be a character vector.
+fn extract_string_vector(obj: &RObject) -> Option<Vec<String>> {
+    if let RObject::Character(data) = obj {
+        Some(data.as_vec().iter().map(|s| s.to_string()).collect())
+    } else {
         None
     }
 }
@@ -207,6 +271,79 @@ mod tests {
         assert_eq!(ctx.resolve_package("filter"), Some("dplyr"));
         assert_eq!(ctx.resolve_package("lag"), Some("stats"));
         assert_eq!(ctx.resolve_package("nonexistent"), None);
+    }
+
+    #[test]
+    fn test_export_pattern_with_rdx() {
+        // Test against the real `astsa` package which uses:
+        //   exportPattern("^[^\\.]")
+        // This exports all objects not starting with a dot.
+        let lib_dir = PathBuf::from("/home/etienne/R/x86_64-pc-linux-gnu-library/4.5");
+        if !lib_dir.join("astsa").is_dir() {
+            // Skip if astsa is not installed
+            return;
+        }
+
+        let cache = PackageCache::new(vec![lib_dir]);
+        let info = cache.get("astsa").unwrap();
+
+        // Ground truth from R: sort(getNamespaceExports("astsa"))
+        let mut expected = vec![
+            "%^%",
+            "acf1",
+            "acf2",
+            "acfm",
+            "ar.boot",
+            "ar.mcmc",
+            "arma.check",
+            "arma.spec",
+            "ARMAtoAR",
+            "astsa.col",
+            "autoParm",
+            "autoSpec",
+            "bart",
+            "ccf2",
+            "detrend",
+            "dna2vector",
+            "EM",
+            "ESS",
+            "FDR",
+            "ffbs",
+            "Grid",
+            "Kfilter",
+            "Ksmooth",
+            "lag1.plot",
+            "lag2.plot",
+            "LagReg",
+            "matrixpwr",
+            "mvspec",
+            "polyMul",
+            "pre.white",
+            "QQnorm",
+            "sarima",
+            "sarima.for",
+            "sarima.sim",
+            "scatter.hist",
+            "SigExtract",
+            "spec.ic",
+            "specenv",
+            "ssm",
+            "stoch.reg",
+            "SV.mcmc",
+            "SV.mle",
+            "test.linear",
+            "timex",
+            "trend",
+            "tspairs",
+            "tsplot",
+            "ttable",
+        ];
+        expected.sort();
+
+        let mut actual: Vec<&str> = info.exports.iter().map(|s| s.as_str()).collect();
+        actual.sort();
+
+        assert_eq!(actual, expected);
     }
 
     #[test]

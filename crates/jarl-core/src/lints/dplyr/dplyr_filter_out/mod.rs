@@ -14,13 +14,21 @@ mod tests {
         // No negation
         expect_no_lint("x |> dplyr::filter(a > 1)", "dplyr_filter_out", None);
         // Already using dplyr_filter_out
-        expect_no_lint("x |> dplyr::dplyr_filter_out(is.na(val))", "dplyr_filter_out", None);
+        expect_no_lint(
+            "x |> dplyr::dplyr_filter_out(is.na(val))",
+            "dplyr_filter_out",
+            None,
+        );
         // Non-dplyr namespace
         expect_no_lint("x |> stats::filter(!cond)", "dplyr_filter_out", None);
         // Bare filter without pipe (could be stats::filter)
         expect_no_lint("filter(x, !cond)", "dplyr_filter_out", None);
         // Named argument with negation (not a filtering condition)
-        expect_no_lint("x |> dplyr::filter(.preserve = !TRUE)", "dplyr_filter_out", None);
+        expect_no_lint(
+            "x |> dplyr::filter(.preserve = !TRUE)",
+            "dplyr_filter_out",
+            None,
+        );
         // Double bang (tidy eval injection)
         expect_no_lint("x |> dplyr::filter(!!cond)", "dplyr_filter_out", None);
         // Triple bang (tidy eval splice)
