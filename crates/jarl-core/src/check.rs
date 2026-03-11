@@ -152,9 +152,16 @@ pub fn get_checks(
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
 
-    // Extract library() calls and wire up the package cache for package-specific rules
+    // Extract library() calls and wire up the package cache for package-specific rules.
+    // Default packages (base, stats, utils, etc.) are always attached in R, so we
+    // prepend them before any explicit library() calls.
     if config.package_cache.is_some() {
-        checker.loaded_packages = crate::library_calls::extract_library_calls(expressions);
+        let mut packages = crate::checker::DEFAULT_PACKAGES
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>();
+        packages.extend(crate::library_calls::extract_library_calls(expressions));
+        checker.loaded_packages = packages;
         checker.package_cache = config.package_cache.clone();
     }
 

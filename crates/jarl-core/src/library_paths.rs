@@ -16,8 +16,18 @@ use std::process::Command;
 /// specific rules simply won't fire.
 pub fn discover_library_paths(project_root: Option<&Path>) -> Vec<PathBuf> {
     if let Some(root) = project_root
-        && let Some(paths) = discover_renv_library(root)
+        && let Some(mut paths) = discover_renv_library(root)
     {
+        // renv only provides user package paths. Append the system library
+        // (where base/recommended packages like stats live) so that
+        // package resolution works for all packages.
+        if let Some(system_paths) = discover_system_library() {
+            for p in system_paths {
+                if !paths.contains(&p) {
+                    paths.push(p);
+                }
+            }
+        }
         return paths;
     }
 
@@ -57,6 +67,39 @@ fn discover_renv_library(project_root: &Path) -> Option<Vec<PathBuf>> {
     }
 
     if paths.is_empty() { None } else { Some(paths) }
+}
+
+/// Discover the system R library path (where base/recommended packages live).
+///
+/// This is the path returned by `R.home("library")`, e.g.
+/// `/opt/R/4.5.0/lib/R/library`. We try to find it without running R by
+/// checking the `R_HOME` environment variable, falling back to `Rscript`.
+fn discover_system_library() -> Option<Vec<PathBuf>> {
+    // Try R_HOME first (avoids spawning a process)
+    if let Ok(r_home) = std::env::var("R_HOME") {
+        let lib_path = PathBuf::from(r_home).join("library");
+        if lib_path.is_dir() {
+            return Some(vec![lib_path]);
+        }
+    }
+
+    // Fall back to Rscript
+    let output = Command::new("Rscript")
+        .args(["-e", "cat(R.home(\"library\"))"])
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let stdout = String::from_utf8(output.stdout).ok()?;
+    let path = PathBuf::from(stdout.trim());
+    if path.is_dir() {
+        Some(vec![path])
+    } else {
+        None
+    }
 }
 
 /// Run `Rscript` to discover library paths.

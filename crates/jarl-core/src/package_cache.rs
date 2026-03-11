@@ -8,6 +8,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::RwLock;
 
+use crate::checker::PackageOrigin;
 use crate::namespace::parse_namespace_exports;
 use rds2rust::{RObject, read_rds_from_path};
 
@@ -35,6 +36,24 @@ pub struct PackageCache {
 impl PackageCache {
     pub fn new(library_paths: Vec<PathBuf>) -> Self {
         Self { library_paths, cache: RwLock::new(HashMap::new()) }
+    }
+
+    /// Build an in-memory cache from a list of (package_name, exports) pairs.
+    ///
+    /// No filesystem access is performed. Useful for testing.
+    pub fn from_exports(entries: &[(&str, &[&str])]) -> Self {
+        let mut cache = HashMap::new();
+        for (pkg_name, exports) in entries {
+            let info = PackageInfo {
+                exports: exports.iter().map(|s| s.to_string()).collect(),
+                version: None,
+            };
+            cache.insert(pkg_name.to_string(), Some(info));
+        }
+        Self {
+            library_paths: Vec::new(),
+            cache: RwLock::new(cache),
+        }
     }
 
     /// Look up a package, reading from disk on first access.
@@ -188,20 +207,22 @@ impl<'a> FilePackageContext<'a> {
         Self { loaded_packages, cache }
     }
 
-    /// Resolve which package a bare function name likely comes from.
-    ///
-    /// Walks loaded packages in **reverse** order (last loaded wins,
-    /// matching R's masking behavior). Returns `None` if not found in
-    /// any loaded package.
-    pub fn resolve_package(&self, fn_name: &str) -> Option<&str> {
-        for pkg_name in self.loaded_packages.iter().rev() {
+    /// Resolve which package a bare function name comes from.
+    pub fn resolve_package(&self, fn_name: &str) -> PackageOrigin {
+        let mut candidates: Vec<String> = Vec::new();
+        for pkg_name in &self.loaded_packages {
             if let Some(info) = self.cache.get(pkg_name)
                 && info.exports.contains(fn_name)
             {
-                return Some(pkg_name);
+                candidates.push(pkg_name.clone());
             }
         }
-        None
+
+        match candidates.len() {
+            0 => PackageOrigin::Unknown,
+            1 => PackageOrigin::Resolved(candidates.into_iter().next().unwrap()),
+            _ => PackageOrigin::Ambiguous(candidates),
+        }
     }
 
     /// Look up version info for a specific package.
@@ -266,11 +287,17 @@ mod tests {
 
         let cache = PackageCache::new(vec![lib_dir]);
 
-        // library(stats) then library(dplyr) — dplyr masks stats::filter
+        // library(stats) then library(dplyr) — both export `filter`
         let ctx = FilePackageContext::new(vec!["stats".to_string(), "dplyr".to_string()], &cache);
-        assert_eq!(ctx.resolve_package("filter"), Some("dplyr"));
-        assert_eq!(ctx.resolve_package("lag"), Some("stats"));
-        assert_eq!(ctx.resolve_package("nonexistent"), None);
+        assert_eq!(
+            ctx.resolve_package("filter"),
+            PackageOrigin::Ambiguous(vec!["stats".to_string(), "dplyr".to_string()])
+        );
+        assert_eq!(
+            ctx.resolve_package("lag"),
+            PackageOrigin::Resolved("stats".to_string())
+        );
+        assert_eq!(ctx.resolve_package("nonexistent"), PackageOrigin::Unknown);
     }
 
     #[test]

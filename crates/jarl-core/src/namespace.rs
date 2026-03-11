@@ -29,6 +29,57 @@ fn extract_directive<'a>(line: &'a str, directive: &str) -> Option<&'a str> {
     Some(&rest[..end])
 }
 
+/// Join multi-line directives into single strings.
+///
+/// NAMESPACE files can have directives that span multiple lines, e.g.:
+/// ```text
+/// export(foo, bar,
+///        baz, qux)
+/// ```
+/// This function joins such lines by tracking unmatched parentheses.
+fn join_continuation_lines(content: &str) -> Vec<String> {
+    let mut statements = Vec::new();
+    let mut current = String::new();
+    let mut depth: i32 = 0;
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with('#') {
+            if depth == 0 {
+                statements.push(trimmed.to_string());
+            }
+            continue;
+        }
+
+        if depth > 0 {
+            current.push(' ');
+            current.push_str(trimmed);
+        } else {
+            current = trimmed.to_string();
+        }
+
+        for ch in trimmed.chars() {
+            match ch {
+                '(' => depth += 1,
+                ')' => depth -= 1,
+                _ => {}
+            }
+        }
+
+        if depth <= 0 {
+            statements.push(std::mem::take(&mut current));
+            depth = 0;
+        }
+    }
+
+    // Push any remaining incomplete directive
+    if !current.is_empty() {
+        statements.push(current);
+    }
+
+    statements
+}
+
 /// Parse a NAMESPACE file and return the set of exported function names.
 ///
 /// Handles `export(name)`, `exportPattern(regex)`, `S3method(generic, class)`,
@@ -41,8 +92,12 @@ fn extract_directive<'a>(line: &'a str, directive: &str) -> Option<&'a str> {
 pub fn parse_namespace_exports(content: &str, all_names: &[&str]) -> HashSet<String> {
     let mut exports = HashSet::new();
 
-    for line in content.lines() {
-        let trimmed = line.trim();
+    // Join multi-line directives: a line starting a directive (e.g. `export(`)
+    // without a closing `)` continues on subsequent lines.
+    let statements = join_continuation_lines(content);
+
+    for statement in &statements {
+        let trimmed = statement.trim();
 
         if trimmed.is_empty() || trimmed.starts_with('#') {
             continue;
