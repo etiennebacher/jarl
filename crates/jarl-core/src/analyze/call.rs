@@ -133,6 +133,5 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::TestthatExpectTrueFalse) {
         checker.report_diagnostic(expect_true_false(r_expr)?);
     }
-
     Ok(())
 }
