@@ -639,7 +639,7 @@ declare_rules! {
         name: "dplyr_filter_out",
         categories: [Dplyr],
         default: Disabled,
-        fix: None,
+        fix: Safe,
         min_r_version: None,
     },
     DplyrGroupByUngroup => {
