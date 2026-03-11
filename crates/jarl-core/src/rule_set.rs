@@ -46,7 +46,11 @@ impl Category {
     /// Whether this category is package-specific (requires library path
     /// discovery and the `PackageCache` to be useful).
     pub const fn is_package_specific(self) -> bool {
-        matches!(self, Self::Dplyr)
+        !matches!(self, Self::Comm)
+            && !matches!(self, Self::Corr)
+            && !matches!(self, Self::Perf)
+            && !matches!(self, Self::Read)
+            && !matches!(self, Self::Susp)
     }
 }
 
