@@ -20,7 +20,9 @@ use jarl_core::config::{ArgsConfig, build_config};
 use jarl_core::diagnostic::Diagnostic as JarlDiagnostic;
 use jarl_core::discovery::{DiscoveredSettings, discover_settings};
 use jarl_core::fs::{has_r_extension, relativize_path};
+use jarl_core::library_paths::discover_library_paths;
 use jarl_core::package::{compute_package_analysis, is_in_r_package};
+use jarl_core::package_cache::PackageCache;
 use jarl_core::settings::Settings;
 
 /// Fix information that can be attached to a diagnostic for code actions
@@ -132,7 +134,28 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<LintInter
     };
 
     let toml_settings = resolver.items().first().map(|item| item.value());
-    let config = build_config(&check_config, toml_settings, vec![file_path.to_path_buf()])?;
+    let mut config = build_config(&check_config, toml_settings, vec![file_path.to_path_buf()])?;
+
+    // Only discover R library paths when package-specific rules are enabled.
+    // This avoids the ~200ms Rscript cost when no such rules are active.
+    if config.rules_to_apply.has_package_specific_rules() {
+        let project_root = file_path.parent().and_then(|p| {
+            let mut dir = p;
+            loop {
+                if dir.join("renv.lock").exists()
+                    || dir.join(".git").exists()
+                    || dir.join("DESCRIPTION").exists()
+                {
+                    return Some(dir);
+                }
+                dir = dir.parent()?;
+            }
+        });
+        let library_paths = discover_library_paths(project_root);
+        if !library_paths.is_empty() {
+            config.package_cache = Some(std::sync::Arc::new(PackageCache::new(library_paths)));
+        }
+    }
 
     // Compute package-level analysis using the real file's sibling R files.
     let pkg = if let Some(package_files) = collect_sibling_r_files(file_path) {

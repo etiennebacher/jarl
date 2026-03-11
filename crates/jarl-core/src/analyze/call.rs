@@ -57,33 +57,6 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::DuplicatedArguments) {
         checker.report_diagnostic(duplicated_arguments(r_expr, checker)?);
     }
-    if checker.is_rule_enabled(Rule::ExpectLength) {
-        checker.report_diagnostic(expect_length(r_expr)?);
-    }
-    if checker.is_rule_enabled(Rule::ExpectMatch) {
-        checker.report_diagnostic(expect_match(r_expr)?);
-    }
-    if checker.is_rule_enabled(Rule::ExpectNamed) {
-        checker.report_diagnostic(expect_named(r_expr)?);
-    }
-    if checker.is_rule_enabled(Rule::ExpectNoMatch) {
-        checker.report_diagnostic(expect_no_match(r_expr)?);
-    }
-    if checker.is_rule_enabled(Rule::ExpectNot) {
-        checker.report_diagnostic(expect_not(r_expr)?);
-    }
-    if checker.is_rule_enabled(Rule::ExpectNull) {
-        checker.report_diagnostic(expect_null(r_expr)?);
-    }
-    if checker.is_rule_enabled(Rule::ExpectS3Class) {
-        checker.report_diagnostic(expect_s3_class(r_expr)?);
-    }
-    if checker.is_rule_enabled(Rule::ExpectType) {
-        checker.report_diagnostic(expect_type(r_expr)?);
-    }
-    if checker.is_rule_enabled(Rule::ExpectTrueFalse) {
-        checker.report_diagnostic(expect_true_false(r_expr)?);
-    }
     if checker.is_rule_enabled(Rule::FixedRegex) {
         checker.report_diagnostic(fixed_regex(r_expr)?);
     }
@@ -129,5 +102,37 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::WhichGrepl) {
         checker.report_diagnostic(which_grepl(r_expr)?);
     }
+
+    //
+    // ------------- TESTTHAT -------------
+    //
+    if checker.is_rule_enabled(Rule::TestthatExpectLength) {
+        checker.report_diagnostic(expect_length(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::TestthatExpectMatch) {
+        checker.report_diagnostic(expect_match(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::TestthatExpectNamed) {
+        checker.report_diagnostic(expect_named(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::TestthatExpectNoMatch) {
+        checker.report_diagnostic(expect_no_match(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::TestthatExpectNot) {
+        checker.report_diagnostic(expect_not(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::TestthatExpectNull) {
+        checker.report_diagnostic(expect_null(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::TestthatExpectS3Class) {
+        checker.report_diagnostic(expect_s3_class(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::TestthatExpectType) {
+        checker.report_diagnostic(expect_type(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::TestthatExpectTrueFalse) {
+        checker.report_diagnostic(expect_true_false(r_expr)?);
+    }
+
     Ok(())
 }
