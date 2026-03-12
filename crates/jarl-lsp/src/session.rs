@@ -14,6 +14,10 @@ use rustc_hash::FxHashMap;
 use serde::Deserialize;
 
 use std::path::PathBuf;
+use std::sync::{Arc, OnceLock};
+
+use jarl_core::library_paths::discover_library_paths;
+use jarl_core::package_cache::PackageCache;
 
 use crate::LspResult;
 use crate::client::Client;
@@ -45,6 +49,9 @@ pub struct Session {
     client: Client,
     /// Whether we've shown the config notification
     config_notification_shown: bool,
+    /// Cached package cache for package-specific rules, computed lazily once
+    /// per session to avoid spawning Rscript on every save.
+    package_cache: OnceLock<Option<Arc<PackageCache>>>,
 }
 
 /// Immutable snapshot of a document and its context
@@ -57,6 +64,8 @@ pub struct DocumentSnapshot {
     position_encoding: PositionEncoding,
     /// Client capabilities
     client_capabilities: ClientCapabilities,
+    /// Shared package cache for package-specific rules (from Session)
+    package_cache: Option<Arc<PackageCache>>,
 }
 
 impl Session {
@@ -75,6 +84,7 @@ impl Session {
             workspace_roots,
             client,
             config_notification_shown: false,
+            package_cache: OnceLock::new(),
         }
     }
 
@@ -200,6 +210,23 @@ impl Session {
             key,
             position_encoding: self.position_encoding,
             client_capabilities: self.client_capabilities.clone(),
+            package_cache: self.package_cache().clone(),
+        })
+    }
+
+    /// Get the cached package cache, initializing it lazily on first access.
+    ///
+    /// This calls `discover_library_paths()` (which may spawn Rscript) at most
+    /// once per LSP session, avoiding the ~200ms overhead on every save.
+    fn package_cache(&self) -> &Option<Arc<PackageCache>> {
+        self.package_cache.get_or_init(|| {
+            let project_root = self.workspace_roots.first().map(|p| p.as_path());
+            let library_paths = discover_library_paths(project_root);
+            if library_paths.is_empty() {
+                None
+            } else {
+                Some(Arc::new(PackageCache::new(library_paths)))
+            }
         })
     }
 
@@ -314,6 +341,7 @@ impl DocumentSnapshot {
             key,
             position_encoding,
             client_capabilities,
+            package_cache: None,
         }
     }
 
@@ -350,6 +378,11 @@ impl DocumentSnapshot {
     /// Get the client capabilities
     pub fn client_capabilities(&self) -> &ClientCapabilities {
         &self.client_capabilities
+    }
+
+    /// Get the cached package cache for package-specific rules.
+    pub fn package_cache(&self) -> Option<Arc<PackageCache>> {
+        self.package_cache.clone()
     }
 
     /// Get the language ID if available

@@ -8,6 +8,7 @@ use lsp_types::{Diagnostic, DiagnosticSeverity, NumberOrString, Position, Range}
 use serde::{Deserialize, Serialize};
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use crate::DIAGNOSTIC_SOURCE;
 use crate::document::PositionEncoding;
@@ -20,7 +21,6 @@ use jarl_core::config::{ArgsConfig, build_config};
 use jarl_core::diagnostic::Diagnostic as JarlDiagnostic;
 use jarl_core::discovery::{DiscoveredSettings, discover_settings};
 use jarl_core::fs::{has_r_extension, relativize_path};
-use jarl_core::library_paths::discover_library_paths;
 use jarl_core::package::{compute_package_analysis, is_in_r_package};
 use jarl_core::package_cache::PackageCache;
 use jarl_core::settings::Settings;
@@ -67,7 +67,7 @@ pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<LintOutput> {
     let LintInternalOutput {
         diagnostics: jarl_diagnostics,
         unused_fn_hidden_count,
-    } = run_jarl_linting(content, file_path.as_deref())?;
+    } = run_jarl_linting(content, file_path.as_deref(), snapshot.package_cache())?;
 
     // Convert to LSP diagnostics with fix information
     let mut lsp_diagnostics = Vec::new();
@@ -88,7 +88,11 @@ struct LintInternalOutput {
 }
 
 /// Run the Jarl linting engine on the given content
-fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<LintInternalOutput> {
+fn run_jarl_linting(
+    content: &str,
+    file_path: Option<&Path>,
+    package_cache: Option<Arc<PackageCache>>,
+) -> Result<LintInternalOutput> {
     let empty = LintInternalOutput { diagnostics: Vec::new(), unused_fn_hidden_count: 0 };
 
     let file_path = match file_path {
@@ -136,25 +140,10 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<LintInter
     let toml_settings = resolver.items().first().map(|item| item.value());
     let mut config = build_config(&check_config, toml_settings, vec![file_path.to_path_buf()])?;
 
-    // Only discover R library paths when package-specific rules are enabled.
-    // This avoids the ~200ms Rscript cost when no such rules are active.
+    // Use the session-level package cache (computed once per LSP session)
+    // instead of discovering library paths on every save.
     if config.rules_to_apply.has_package_specific_rules() {
-        let project_root = file_path.parent().and_then(|p| {
-            let mut dir = p;
-            loop {
-                if dir.join("renv.lock").exists()
-                    || dir.join(".git").exists()
-                    || dir.join("DESCRIPTION").exists()
-                {
-                    return Some(dir);
-                }
-                dir = dir.parent()?;
-            }
-        });
-        let library_paths = discover_library_paths(project_root);
-        if !library_paths.is_empty() {
-            config.package_cache = Some(std::sync::Arc::new(PackageCache::new(library_paths)));
-        }
+        config.package_cache = package_cache;
     }
 
     // Compute package-level analysis using the real file's sibling R files.
