@@ -45,12 +45,17 @@ impl Category {
 
     /// Whether this category is package-specific (requires library path
     /// discovery and the `PackageCache` to be useful).
+    ///
+    /// `Testthat` is NOT package-specific: those rules only need to detect
+    /// that the file is inside a `tests/testthat/` directory, not resolve
+    /// function origins via installed packages.
     pub const fn is_package_specific(self) -> bool {
         !matches!(self, Self::Comm)
             && !matches!(self, Self::Corr)
             && !matches!(self, Self::Perf)
             && !matches!(self, Self::Read)
             && !matches!(self, Self::Susp)
+            && !matches!(self, Self::Testthat)
     }
 }
 
