@@ -7,6 +7,7 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::RwLock;
+use std::time::SystemTime;
 
 use crate::checker::PackageOrigin;
 use crate::namespace::parse_namespace_exports;
@@ -31,11 +32,18 @@ pub struct PackageCache {
     library_paths: Vec<PathBuf>,
     /// Lazily populated: package name → info (`None` means looked up but not found).
     cache: RwLock<HashMap<String, Option<PackageInfo>>>,
+    /// Modification times of package DESCRIPTION files at the time of lookup,
+    /// used for staleness detection.
+    mtimes: RwLock<HashMap<String, Option<SystemTime>>>,
 }
 
 impl PackageCache {
     pub fn new(library_paths: Vec<PathBuf>) -> Self {
-        Self { library_paths, cache: RwLock::new(HashMap::new()) }
+        Self {
+            library_paths,
+            cache: RwLock::new(HashMap::new()),
+            mtimes: RwLock::new(HashMap::new()),
+        }
     }
 
     /// Build an in-memory cache from a list of (package_name, exports) pairs.
@@ -53,6 +61,7 @@ impl PackageCache {
         Self {
             library_paths: Vec::new(),
             cache: RwLock::new(cache),
+            mtimes: RwLock::new(HashMap::new()),
         }
     }
 
@@ -76,6 +85,51 @@ impl PackageCache {
     /// Check if any library paths are configured.
     pub fn is_available(&self) -> bool {
         !self.library_paths.is_empty()
+    }
+
+    /// Check whether any of the given packages have changed on disk since
+    /// they were cached (by comparing DESCRIPTION mtime). Stale entries are
+    /// evicted so the next `get()` call re-reads from disk.
+    ///
+    /// Returns the names of packages that were refreshed.
+    pub fn refresh_if_stale(&self, packages: &[&str]) -> Vec<String> {
+        let mut refreshed = Vec::new();
+        let mtimes = self.mtimes.read().unwrap();
+
+        for &pkg in packages {
+            let Some(recorded) = mtimes.get(pkg) else {
+                // Never looked up — nothing to refresh.
+                continue;
+            };
+            let current = self.description_mtime(pkg);
+            if current != *recorded {
+                refreshed.push(pkg.to_string());
+            }
+        }
+        drop(mtimes);
+
+        if !refreshed.is_empty() {
+            let mut cache = self.cache.write().unwrap();
+            let mut mtimes = self.mtimes.write().unwrap();
+            for pkg in &refreshed {
+                cache.remove(pkg);
+                mtimes.remove(pkg);
+            }
+        }
+
+        refreshed
+    }
+
+    /// Get the mtime of a package's DESCRIPTION file (the most likely file to
+    /// change on install/upgrade).
+    fn description_mtime(&self, name: &str) -> Option<SystemTime> {
+        for lib_path in &self.library_paths {
+            let desc = lib_path.join(name).join("DESCRIPTION");
+            if let Ok(meta) = std::fs::metadata(&desc) {
+                return meta.modified().ok();
+            }
+        }
+        None
     }
 
     /// Search library paths for a package and read its metadata.
@@ -102,6 +156,17 @@ impl PackageCache {
             let exports = parse_namespace_exports(&namespace_content, &all_name_refs);
 
             let version = read_package_version(&pkg_dir);
+
+            // Record the DESCRIPTION mtime for staleness detection.
+            let desc_mtime = pkg_dir
+                .join("DESCRIPTION")
+                .metadata()
+                .ok()
+                .and_then(|m| m.modified().ok());
+            self.mtimes
+                .write()
+                .unwrap()
+                .insert(name.to_string(), desc_mtime);
 
             return Some(PackageInfo { exports, version });
         }

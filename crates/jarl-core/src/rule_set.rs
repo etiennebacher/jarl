@@ -781,6 +781,22 @@ impl RuleSet {
         cats
     }
 
+    /// Return the R package names targeted by the package-specific rules in
+    /// this set (e.g. `["dplyr"]`).
+    pub fn target_packages(&self) -> Vec<&'static str> {
+        let mut pkgs = Vec::new();
+        for cat in self.package_specific_categories() {
+            let pkg = match cat {
+                Category::Dplyr => "dplyr",
+                _ => continue,
+            };
+            if !pkgs.contains(&pkg) {
+                pkgs.push(pkg);
+            }
+        }
+        pkgs
+    }
+
     /// Filter rules by a predicate
     pub fn filter<F>(self, predicate: F) -> Self
     where

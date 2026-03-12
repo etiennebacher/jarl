@@ -51,6 +51,9 @@ pub struct LintOutput {
     /// Number of unused_function diagnostics hidden because the package-wide
     /// count exceeded `threshold-ignore`. Zero if none were hidden.
     pub unused_fn_hidden_count: usize,
+    /// Package names whose cached metadata was refreshed because they changed
+    /// on disk (e.g. after `install.packages()`). Empty most of the time.
+    pub refreshed_packages: Vec<String>,
 }
 
 /// Main entry point for linting a document
@@ -67,6 +70,7 @@ pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<LintOutput> {
     let LintInternalOutput {
         diagnostics: jarl_diagnostics,
         unused_fn_hidden_count,
+        refreshed_packages,
     } = run_jarl_linting(content, file_path.as_deref(), snapshot.package_cache())?;
 
     // Convert to LSP diagnostics with fix information
@@ -79,12 +83,14 @@ pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<LintOutput> {
     Ok(LintOutput {
         diagnostics: lsp_diagnostics,
         unused_fn_hidden_count,
+        refreshed_packages,
     })
 }
 
 struct LintInternalOutput {
     diagnostics: Vec<JarlDiagnostic>,
     unused_fn_hidden_count: usize,
+    refreshed_packages: Vec<String>,
 }
 
 /// Run the Jarl linting engine on the given content
@@ -93,7 +99,11 @@ fn run_jarl_linting(
     file_path: Option<&Path>,
     package_cache: Option<Arc<PackageCache>>,
 ) -> Result<LintInternalOutput> {
-    let empty = LintInternalOutput { diagnostics: Vec::new(), unused_fn_hidden_count: 0 };
+    let empty = LintInternalOutput {
+        diagnostics: Vec::new(),
+        unused_fn_hidden_count: 0,
+        refreshed_packages: Vec::new(),
+    };
 
     let file_path = match file_path {
         Some(path) => path,
@@ -142,7 +152,15 @@ fn run_jarl_linting(
 
     // Use the session-level package cache (computed once per LSP session)
     // instead of discovering library paths on every save.
+    let mut refreshed_packages = Vec::new();
     if config.rules_to_apply.has_package_specific_rules() {
+        // Check if any tracked packages have changed on disk (e.g. after
+        // install.packages()). This is a cheap stat() per package, not an
+        // Rscript call.
+        if let Some(ref cache) = package_cache {
+            let targets = config.rules_to_apply.target_packages();
+            refreshed_packages = cache.refresh_if_stale(&targets);
+        }
         config.package_cache = package_cache;
     }
 
@@ -199,7 +217,11 @@ fn run_jarl_linting(
     };
 
     tracing::debug!("Found {} diagnostics for file", diagnostics.len());
-    Ok(LintInternalOutput { diagnostics, unused_fn_hidden_count })
+    Ok(LintInternalOutput {
+        diagnostics,
+        unused_fn_hidden_count,
+        refreshed_packages,
+    })
 }
 
 /// If `file_path` lives inside an R package's `R/` directory, return all
