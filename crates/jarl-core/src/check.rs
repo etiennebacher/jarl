@@ -1,4 +1,6 @@
+use crate::description::Description;
 use crate::error::ParseError;
+use crate::namespace::parse_namespace_imports;
 use crate::package::{PackageAnalysis, compute_package_analysis, is_in_r_package};
 use crate::roxygen::{extract_roxygen_examples, remap_roxygen_fix, remap_roxygen_range};
 use crate::rule_set::Rule;
@@ -6,7 +8,7 @@ use crate::suppression::SuppressionManager;
 use crate::vcs::check_version_control;
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
-use air_r_syntax::RSyntaxNode;
+use air_r_syntax::{RExpressionList, RSyntaxNode};
 use anyhow::{Context, Result};
 use biome_rowan::TextSize;
 use rayon::prelude::*;
@@ -152,17 +154,9 @@ pub fn get_checks(
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
 
-    // Extract library() calls and wire up the package cache for package-specific rules.
-    // Default packages (base, stats, utils, etc.) are always attached in R, so we
-    // prepend them before any explicit library() calls.
+    // Wire up the package cache for package-specific rules.
     if config.package_cache.is_some() {
-        let mut packages = crate::checker::DEFAULT_PACKAGES
-            .iter()
-            .map(|s| s.to_string())
-            .collect::<Vec<_>>();
-        packages.extend(crate::library_calls::extract_library_calls(expressions));
-        checker.loaded_packages = packages;
-        checker.package_cache = config.package_cache.clone();
+        setup_package_context(&mut checker, file, expressions, config);
     }
 
     // Look up per-file data from PackageAnalysis
@@ -249,6 +243,50 @@ pub fn get_checks(
     let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
 
     Ok(diagnostics)
+}
+
+/// Set up package resolution on the checker for package-specific rules.
+///
+/// Inside an R package, uses DESCRIPTION `Depends`/`Imports` and NAMESPACE
+/// `importFrom()` directives. In scripts, scans for `library()`/`require()` calls.
+fn setup_package_context(
+    checker: &mut Checker,
+    file: &Path,
+    expressions: &RExpressionList,
+    config: &Config,
+) {
+    let mut packages = crate::checker::DEFAULT_PACKAGES
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<Vec<_>>();
+
+    if is_in_r_package(file) == Some(true) {
+        if let Some(pkg_root) = file.parent().and_then(|p| p.parent()) {
+            let desc_path = pkg_root.join("DESCRIPTION");
+            if let Ok(desc_content) = fs::read_to_string(&desc_path) {
+                packages.extend(Description::get_package_deps(
+                    &desc_content,
+                    &["Depends", "Imports"],
+                ));
+            }
+
+            let ns_path = pkg_root.join("NAMESPACE");
+            if let Ok(ns_content) = fs::read_to_string(&ns_path) {
+                let imports = parse_namespace_imports(&ns_content);
+                checker.import_from = imports.import_from;
+                for pkg in imports.blanket_imports {
+                    if !packages.contains(&pkg) {
+                        packages.push(pkg);
+                    }
+                }
+            }
+        }
+    } else {
+        packages.extend(crate::library_calls::extract_library_calls(expressions));
+    }
+
+    checker.loaded_packages = packages;
+    checker.package_cache = config.package_cache.clone();
 }
 
 /// Lint R code inside roxygen `@examples` and `@examplesIf` sections.
