@@ -141,6 +141,15 @@ pub fn parse_namespace_exports(content: &str, all_names: &[&str]) -> HashSet<Str
                                 .map(|(_, g)| g)
                                 .unwrap_or(raw_generic);
 
+                            // Add the generic name so that packages providing
+                            // S3 methods for a generic (e.g. tidypolars
+                            // providing filter.polars_data_frame) are
+                            // considered as candidates when resolving bare
+                            // calls to that generic. This avoids false
+                            // positives: without type information we can't
+                            // know which method will dispatch at runtime.
+                            exports.insert(generic.to_string());
+
                             if parts.len() >= 3 {
                                 let method_fn =
                                     parts[2].trim().trim_matches('"').trim_matches('\'');
