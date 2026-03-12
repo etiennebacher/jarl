@@ -1,6 +1,6 @@
 use air_workspace::resolve::PathResolver;
 use jarl_core::discovery::{discover_r_file_paths, discover_settings};
-use jarl_core::library_paths::discover_library_paths;
+use jarl_core::library_paths::{discover_library_paths, is_r_available};
 use jarl_core::package_cache::PackageCache;
 use jarl_core::rule_set::Rule;
 use jarl_core::{
@@ -122,6 +122,23 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
 
         if config.rules_to_apply.has_package_specific_rules() {
             if !cache_initialized {
+                if !is_r_available() {
+                    let pkg_categories: Vec<_> = config
+                        .rules_to_apply
+                        .package_specific_categories()
+                        .into_iter()
+                        .map(|c| c.as_str())
+                        .collect();
+                    return Err(anyhow::anyhow!(
+                        "Package-specific rules are enabled ({}) but R is not available.\n\n\
+                         These rules require R and installed packages to resolve function origins.\n\n\
+                         If running in CI with `setup-jarl`, uncomment (or add yourself) the R setup steps in your workflow:\n\n\
+                         \x20 - uses: r-lib/actions/setup-r@v2\n\
+                         \x20 - uses: r-lib/actions/setup-r-dependencies@v2\n\n\
+                         You can also disable these rules instead.",
+                        pkg_categories.join(", "),
+                    ));
+                }
                 let project_root = cwd.as_deref();
                 let library_paths = discover_library_paths(project_root);
                 if !library_paths.is_empty() {

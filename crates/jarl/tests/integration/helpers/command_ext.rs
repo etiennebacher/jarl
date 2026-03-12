@@ -62,6 +62,11 @@ impl CommandExt for Command {
         // Set NO_COLOR environment variable to disable colored output in tests
         self.env("NO_COLOR", "1");
 
+        // Set R_HOME to a temp directory so that `is_r_available()` returns true
+        // even when R is not installed (e.g. in CI). Package-specific rules
+        // won't fire without real packages, but they won't cause an error either.
+        self.env("R_HOME", std::env::temp_dir());
+
         // Augment `std::process::Output` with the arguments
         let output = self.output().unwrap();
 

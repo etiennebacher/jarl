@@ -763,6 +763,19 @@ impl RuleSet {
             .any(|r| r.categories().iter().any(|c| c.is_package_specific()))
     }
 
+    /// Return the distinct package-specific categories present in this rule set.
+    pub fn package_specific_categories(&self) -> Vec<Category> {
+        let mut cats = Vec::new();
+        for rule in &self.rules {
+            for cat in rule.categories() {
+                if cat.is_package_specific() && !cats.contains(cat) {
+                    cats.push(*cat);
+                }
+            }
+        }
+        cats
+    }
+
     /// Filter rules by a predicate
     pub fn filter<F>(self, predicate: F) -> Self
     where
