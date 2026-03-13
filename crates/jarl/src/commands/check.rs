@@ -140,7 +140,8 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
                     ));
                 }
                 let r_pkg_names = config.rules_to_apply.pkg_names_from_category();
-                if let Some(cache) = PackageCache::from_rscript(&r_pkg_names) {
+                let project_root = cwd.as_deref();
+                if let Some(cache) = PackageCache::from_rscript(&r_pkg_names, project_root) {
                     package_cache = Some(Arc::new(cache));
                 }
                 cache_initialized = true;

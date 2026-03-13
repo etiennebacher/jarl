@@ -14,9 +14,9 @@ use rustc_hash::FxHashMap;
 use serde::Deserialize;
 
 use std::path::PathBuf;
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
 
-use jarl_core::package_cache::PackageCache;
+use jarl_core::package_cache::PackageCacheMap;
 
 use crate::LspResult;
 use crate::client::Client;
@@ -48,10 +48,9 @@ pub struct Session {
     client: Client,
     /// Whether we've shown the config notification
     config_notification_shown: bool,
-    /// Cached package cache for package-specific rules, computed lazily once
-    /// per session to avoid spawning Rscript on every save. Wrapped in `Arc`
-    /// so snapshots can trigger initialization.
-    package_cache: Arc<OnceLock<Option<Arc<PackageCache>>>>,
+    /// Per-project package caches for package-specific rules. Keyed by R
+    /// project root so that renv and system projects get separate caches.
+    package_cache_map: Arc<PackageCacheMap>,
 }
 
 /// Immutable snapshot of a document and its context
@@ -64,9 +63,9 @@ pub struct DocumentSnapshot {
     position_encoding: PositionEncoding,
     /// Client capabilities
     client_capabilities: ClientCapabilities,
-    /// Shared reference to the session-level package cache. The lint code
-    /// initializes this on first use (when target packages are known).
-    package_cache: Arc<OnceLock<Option<Arc<PackageCache>>>>,
+    /// Shared reference to the session-level cache map. The lint code
+    /// creates per-project caches on first use.
+    package_cache_map: Arc<PackageCacheMap>,
 }
 
 impl Session {
@@ -85,7 +84,7 @@ impl Session {
             workspace_roots,
             client,
             config_notification_shown: false,
-            package_cache: Arc::new(OnceLock::new()),
+            package_cache_map: Arc::new(PackageCacheMap::new()),
         }
     }
 
@@ -211,13 +210,13 @@ impl Session {
             key,
             position_encoding: self.position_encoding,
             client_capabilities: self.client_capabilities.clone(),
-            package_cache: Arc::clone(&self.package_cache),
+            package_cache_map: Arc::clone(&self.package_cache_map),
         })
     }
 
-    /// Get the cached package cache if it has been initialized.
-    pub fn package_cache(&self) -> Option<Arc<PackageCache>> {
-        self.package_cache.get().and_then(|opt| opt.clone())
+    /// Get the shared cache map.
+    pub fn package_cache_map(&self) -> &Arc<PackageCacheMap> {
+        &self.package_cache_map
     }
 
     /// Get all open document URIs
@@ -326,14 +325,12 @@ impl DocumentSnapshot {
         position_encoding: PositionEncoding,
         client_capabilities: ClientCapabilities,
     ) -> Self {
-        let lock = Arc::new(OnceLock::new());
-        lock.get_or_init(|| None);
         Self {
             document,
             key,
             position_encoding,
             client_capabilities,
-            package_cache: lock,
+            package_cache_map: Arc::new(PackageCacheMap::new()),
         }
     }
 
@@ -372,16 +369,19 @@ impl DocumentSnapshot {
         &self.client_capabilities
     }
 
-    /// Get the cached package cache for package-specific rules.
-    pub fn package_cache(&self) -> Option<Arc<PackageCache>> {
-        self.package_cache.get().and_then(|opt| opt.clone())
+    /// Get or create the package cache for this document's project root.
+    pub fn get_or_create_package_cache(
+        &self,
+        packages: &[&str],
+    ) -> Option<Arc<jarl_core::package_cache::PackageCache>> {
+        let file_path = self.file_path()?;
+        self.package_cache_map.get_or_create(&file_path, packages)
     }
 
-    /// Initialize the package cache from an Rscript call for the given
-    /// packages. This is a no-op if the cache is already initialized.
-    pub fn init_package_cache(&self, packages: &[&str]) {
-        self.package_cache
-            .get_or_init(|| PackageCache::from_rscript(packages).map(Arc::new));
+    /// Get the existing package cache for this document's project root, if any.
+    pub fn package_cache(&self) -> Option<Arc<jarl_core::package_cache::PackageCache>> {
+        let file_path = self.file_path()?;
+        self.package_cache_map.get_for_file(&file_path)
     }
 
     /// Get the language ID if available

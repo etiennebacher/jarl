@@ -150,13 +150,12 @@ fn run_jarl_linting(
 
     let mut refreshed_packages = Vec::new();
     if config.rules_to_apply.has_package_specific_rules() {
-        let targets = config.rules_to_apply.pkg_names_from_category();
-        // Initialize the session-level cache on first use (spawns Rscript once).
-        snapshot.init_package_cache(&targets);
-        let package_cache = snapshot.package_cache();
+        let pkgs = config.rules_to_apply.pkg_names_from_category();
+        // Get or create a per-project-root cache (spawns Rscript once per root).
+        let package_cache = snapshot.get_or_create_package_cache(&pkgs);
         // Check if any tracked packages have changed on disk (cheap stat()).
         if let Some(ref cache) = package_cache {
-            refreshed_packages = cache.refresh_if_stale(&targets);
+            refreshed_packages = cache.refresh_if_stale(&pkgs);
         }
         config.package_cache = package_cache;
     }
