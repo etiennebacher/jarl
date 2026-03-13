@@ -72,8 +72,7 @@ pub fn dplyr_filter_out(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
                     return Ok(None);
                 }
             }
-            PackageOrigin::Unknown if !is_piped_into(ast) => return Ok(None),
-            PackageOrigin::Unknown => {}
+            PackageOrigin::Unknown => return Ok(None),
         }
     }
 
