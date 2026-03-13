@@ -12,6 +12,31 @@ use std::collections::HashMap;
 pub struct Description;
 
 impl Description {
+    /// Extract package names from the specified DESCRIPTION fields.
+    ///
+    /// `fields` should be a slice of field names, e.g.
+    /// `&["Depends", "Imports"]` or `&["Depends", "Imports", "Suggests"]`.
+    ///
+    /// Returns package names (excluding `R` itself) in the order they appear.
+    pub fn get_package_deps(contents: &str, what: &[&str]) -> Vec<String> {
+        let parsed = parse_dcf(contents);
+        let mut packages = Vec::new();
+
+        for field_name in what {
+            if let Some(value) = parsed.get(*field_name) {
+                for dep in value.split(',') {
+                    // Strip version constraints: "dplyr (>= 1.0.0)" → "dplyr"
+                    let name = dep.split('(').next().unwrap_or("").trim();
+                    if !name.is_empty() && name != "R" && !packages.contains(&name.to_string()) {
+                        packages.push(name.to_string());
+                    }
+                }
+            }
+        }
+
+        packages
+    }
+
     /// Extract R version requirements from the Depends field of a DESCRIPTION file
     ///
     /// Returns a vector of version strings found in R dependencies.
@@ -178,5 +203,52 @@ Depends: R ( >= 4.3.0 ), dplyr
 "#;
         let result = Description::get_depend_r_version(description).unwrap();
         assert_eq!(result, vec!["4.3.0"]);
+    }
+
+    #[test]
+    fn test_get_package_deps_imports_and_depends() {
+        let description = r#"
+Package: mypackage
+Version: 1.0.0
+Depends: R (>= 4.3.0), rlang
+Imports: dplyr (>= 1.0.0), tidyr, ggplot2
+"#;
+        let result = Description::get_package_deps(description, &["Depends", "Imports"]);
+        assert_eq!(result, vec!["rlang", "dplyr", "tidyr", "ggplot2"]);
+
+        let result = Description::get_package_deps(description, &["Depends"]);
+        assert_eq!(result, vec!["rlang"]);
+    }
+
+    #[test]
+    fn test_get_package_deps_no_deps() {
+        let description = r#"
+Package: mypackage
+Version: 1.0.0
+"#;
+        let result = Description::get_package_deps(description, &["Depends", "Imports"]);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_get_package_deps_excludes_r() {
+        let description = r#"
+Package: mypackage
+Depends: R (>= 4.0.0)
+Imports: dplyr
+"#;
+        let result = Description::get_package_deps(description, &["Depends", "Imports"]);
+        assert_eq!(result, vec!["dplyr"]);
+    }
+
+    #[test]
+    fn test_get_package_deps_no_duplicates() {
+        let description = r#"
+Package: mypackage
+Depends: dplyr
+Imports: dplyr, tidyr
+"#;
+        let result = Description::get_package_deps(description, &["Depends", "Imports"]);
+        assert_eq!(result, vec!["dplyr", "tidyr"]);
     }
 }

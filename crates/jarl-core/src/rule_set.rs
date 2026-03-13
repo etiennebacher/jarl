@@ -16,6 +16,8 @@ pub enum Category {
     Read,
     /// Testthat-specific rules
     Testthat,
+    /// dplyr-specific rules (opt-in)
+    Dplyr,
 }
 
 impl Category {
@@ -27,6 +29,7 @@ impl Category {
             Self::Perf => "PERF",
             Self::Read => "READ",
             Self::Testthat => "TESTTHAT",
+            Self::Dplyr => "DPLYR",
         }
     }
 
@@ -37,7 +40,23 @@ impl Category {
         Category::Perf,
         Category::Read,
         Category::Testthat,
+        Category::Dplyr,
     ];
+
+    /// Whether this category is package-specific (requires library path
+    /// discovery and the `PackageCache` to be useful).
+    ///
+    /// `Testthat` is NOT package-specific: those rules only need to detect
+    /// that the file is inside a `tests/testthat/` directory, not resolve
+    /// function origins via installed packages.
+    pub const fn is_package_specific(self) -> bool {
+        !matches!(self, Self::Comm)
+            && !matches!(self, Self::Corr)
+            && !matches!(self, Self::Perf)
+            && !matches!(self, Self::Read)
+            && !matches!(self, Self::Susp)
+            && !matches!(self, Self::Testthat)
+    }
 }
 
 impl fmt::Display for Category {
@@ -57,6 +76,7 @@ impl FromStr for Category {
             "PERF" => Ok(Self::Perf),
             "READ" => Ok(Self::Read),
             "TESTTHAT" => Ok(Self::Testthat),
+            "DPLYR" => Ok(Self::Dplyr),
             _ => Err(format!("Unknown category: {}", s)),
         }
     }
@@ -735,6 +755,46 @@ impl RuleSet {
     /// Check if the rule set is empty
     pub fn is_empty(&self) -> bool {
         self.rules.is_empty()
+    }
+
+    /// Check if any rule in the set belongs to a package-specific category.
+    ///
+    /// Used to decide whether to discover R library paths and build a
+    /// `PackageCache` — an expensive operation that should be skipped
+    /// when no package-specific rules are enabled.
+    pub fn has_package_specific_rules(&self) -> bool {
+        self.rules
+            .iter()
+            .any(|r| r.categories().iter().any(|c| c.is_package_specific()))
+    }
+
+    /// Return the distinct package-specific categories present in this rule set.
+    pub fn package_specific_categories(&self) -> Vec<Category> {
+        let mut cats = Vec::new();
+        for rule in &self.rules {
+            for cat in rule.categories() {
+                if cat.is_package_specific() && !cats.contains(cat) {
+                    cats.push(*cat);
+                }
+            }
+        }
+        cats
+    }
+
+    /// Return the R package names targeted by the package-specific rules in
+    /// this set (e.g. `["dplyr"]`).
+    pub fn pkg_names_from_category(&self) -> Vec<&'static str> {
+        let mut pkgs = Vec::new();
+        for cat in self.package_specific_categories() {
+            let pkg = match cat {
+                Category::Dplyr => "dplyr",
+                _ => continue,
+            };
+            if !pkgs.contains(&pkg) {
+                pkgs.push(pkg);
+            }
+        }
+        pkgs
     }
 
     /// Filter rules by a predicate

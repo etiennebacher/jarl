@@ -49,6 +49,9 @@ pub struct LintOutput {
     /// Number of unused_function diagnostics hidden because the package-wide
     /// count exceeded `threshold-ignore`. Zero if none were hidden.
     pub unused_fn_hidden_count: usize,
+    /// Package names whose cached metadata was refreshed because they changed
+    /// on disk (e.g. after `install.packages()`). Empty most of the time.
+    pub refreshed_packages: Vec<String>,
 }
 
 /// Main entry point for linting a document
@@ -65,7 +68,8 @@ pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<LintOutput> {
     let LintInternalOutput {
         diagnostics: jarl_diagnostics,
         unused_fn_hidden_count,
-    } = run_jarl_linting(content, file_path.as_deref())?;
+        refreshed_packages,
+    } = run_jarl_linting(content, file_path.as_deref(), snapshot)?;
 
     // Convert to LSP diagnostics with fix information
     let mut lsp_diagnostics = Vec::new();
@@ -77,17 +81,27 @@ pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<LintOutput> {
     Ok(LintOutput {
         diagnostics: lsp_diagnostics,
         unused_fn_hidden_count,
+        refreshed_packages,
     })
 }
 
 struct LintInternalOutput {
     diagnostics: Vec<JarlDiagnostic>,
     unused_fn_hidden_count: usize,
+    refreshed_packages: Vec<String>,
 }
 
 /// Run the Jarl linting engine on the given content
-fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<LintInternalOutput> {
-    let empty = LintInternalOutput { diagnostics: Vec::new(), unused_fn_hidden_count: 0 };
+fn run_jarl_linting(
+    content: &str,
+    file_path: Option<&Path>,
+    snapshot: &DocumentSnapshot,
+) -> Result<LintInternalOutput> {
+    let empty = LintInternalOutput {
+        diagnostics: Vec::new(),
+        unused_fn_hidden_count: 0,
+        refreshed_packages: Vec::new(),
+    };
 
     let file_path = match file_path {
         Some(path) => path,
@@ -132,7 +146,19 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<LintInter
     };
 
     let toml_settings = resolver.items().first().map(|item| item.value());
-    let config = build_config(&check_config, toml_settings, vec![file_path.to_path_buf()])?;
+    let mut config = build_config(&check_config, toml_settings, vec![file_path.to_path_buf()])?;
+
+    let mut refreshed_packages = Vec::new();
+    if config.rules_to_apply.has_package_specific_rules() {
+        let pkgs = config.rules_to_apply.pkg_names_from_category();
+        // Get or create a per-project-root cache (spawns Rscript once per root).
+        let package_cache = snapshot.get_or_create_package_cache(&pkgs);
+        // Check if any tracked packages have changed on disk (cheap stat()).
+        if let Some(ref cache) = package_cache {
+            refreshed_packages = cache.refresh_if_stale(&pkgs);
+        }
+        config.package_cache = package_cache;
+    }
 
     // Compute package-level analysis using the real file's sibling R files.
     let pkg = if let Some(package_files) = collect_sibling_r_files(file_path) {
@@ -187,7 +213,11 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<LintInter
     };
 
     tracing::debug!("Found {} diagnostics for file", diagnostics.len());
-    Ok(LintInternalOutput { diagnostics, unused_fn_hidden_count })
+    Ok(LintInternalOutput {
+        diagnostics,
+        unused_fn_hidden_count,
+        refreshed_packages,
+    })
 }
 
 /// If `file_path` lives inside an R package's `R/` directory, return all
