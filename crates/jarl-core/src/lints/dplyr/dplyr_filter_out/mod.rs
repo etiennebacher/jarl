@@ -219,6 +219,38 @@ mod tests {
     }
 
     #[test]
+    fn test_fix_is_na_guard_identifier_cond() {
+        // Condition is a plain identifier — negated with `!`
+        assert_snapshot!(
+            snapshot_fix("x |> dplyr::filter(is_valid | is.na(is_valid))"),
+            @r"
+        OLD:
+        ====
+        x |> dplyr::filter(is_valid | is.na(is_valid))
+        NEW:
+        ====
+        x |> dplyr::filter_out(!is_valid)
+        "
+        );
+    }
+
+    #[test]
+    fn test_fix_is_na_guard_call_cond() {
+        // Condition is a function call — negated with `!`
+        assert_snapshot!(
+            snapshot_fix("x |> dplyr::filter(my_fun(a) | is.na(a))"),
+            @r"
+        OLD:
+        ====
+        x |> dplyr::filter(my_fun(a) | is.na(a))
+        NEW:
+        ====
+        x |> dplyr::filter_out(!my_fun(a))
+        "
+        );
+    }
+
+    #[test]
     fn test_lint_parenthesized_negation() {
         assert_snapshot!(
             snapshot_lint("x |> dplyr::filter(!(a > 1))"),
