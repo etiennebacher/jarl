@@ -47,14 +47,14 @@ impl PackageCache {
             return None;
         }
 
-        let (cache_map, mtime_map) = run_rscript_for_pkg_info(packages)?;
-        if cache_map.is_empty() {
+        let result = run_rscript_for_pkg_info(packages)?;
+        if result.cache.is_empty() {
             return None;
         }
 
         Some(Self {
-            cache: RwLock::new(cache_map),
-            mtimes: RwLock::new(mtime_map),
+            cache: RwLock::new(result.cache),
+            mtimes: RwLock::new(result.mtimes),
         })
     }
 
@@ -115,16 +115,16 @@ impl PackageCache {
 
         // Re-fetch stale packages via Rscript
         let stale_refs: Vec<&str> = stale.iter().map(|s| s.as_str()).collect();
-        if let Some((new_cache, new_mtimes)) = run_rscript_for_pkg_info(&stale_refs) {
+        if let Some(result) = run_rscript_for_pkg_info(&stale_refs) {
             let mut cache = self.cache.write().unwrap();
             let mut mtimes = self.mtimes.write().unwrap();
             for pkg in &stale {
-                if let Some(info) = new_cache.get(pkg) {
+                if let Some(info) = result.cache.get(pkg) {
                     cache.insert(pkg.clone(), info.clone());
                 } else {
                     cache.insert(pkg.clone(), None);
                 }
-                if let Some(mtime) = new_mtimes.get(pkg) {
+                if let Some(mtime) = result.mtimes.get(pkg) {
                     mtimes.insert(pkg.clone(), *mtime);
                 } else {
                     mtimes.remove(pkg);
@@ -193,16 +193,20 @@ impl<'a> FilePackageContext<'a> {
     }
 }
 
+/// Result of a batch Rscript query for package metadata.
+struct PackageBatchResult {
+    /// Link package name to info (`None` means looked up but not found).
+    cache: HashMap<String, Option<PackageInfo>>,
+    /// Link package name to DESCRIPTION mtime at query time, for staleness detection
+    /// in LSP.
+    mtimes: HashMap<String, Option<SystemTime>>,
+}
+
 /// Run a single Rscript process that returns exports, version, and install
 /// path for each requested package.
 ///
-/// Returns `(cache_map, mtime_map)` or `None` if Rscript failed entirely.
-fn run_rscript_for_pkg_info(
-    packages: &[&str],
-) -> Option<(
-    HashMap<String, Option<PackageInfo>>,
-    HashMap<String, Option<SystemTime>>,
-)> {
+/// Returns `None` if Rscript failed entirely.
+fn run_rscript_for_pkg_info(packages: &[&str]) -> Option<PackageBatchResult> {
     let pkg_vec: String = packages
         .iter()
         .map(|p| format!("\"{}\"", p.replace('\\', "\\\\").replace('"', "\\\"")))
@@ -270,7 +274,7 @@ fn run_rscript_for_pkg_info(
         cache_map.insert(name, Some(info));
     }
 
-    Some((cache_map, mtime_map))
+    Some(PackageBatchResult { cache: cache_map, mtimes: mtime_map })
 }
 
 /// Parse a version string like "1.2.3" into a tuple.

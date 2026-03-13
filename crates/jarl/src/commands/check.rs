@@ -401,7 +401,7 @@ fn add_jarl_ignore_comments(
         }
 
         // Sort by offset in descending order so we can apply edits without shifting positions
-        merged_edits.sort_by(|a, b| b.0.cmp(&a.0));
+        merged_edits.sort_by_key(|b| std::cmp::Reverse(b.0));
 
         // Apply edits to the content
         let mut modified_content = content.clone();
