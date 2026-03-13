@@ -642,6 +642,24 @@ declare_rules! {
     },
 
     //
+    // ------------- DPLYR -------------
+    //
+    DplyrFilterOut => {
+        name: "dplyr_filter_out",
+        categories: [Dplyr],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    DplyrGroupByUngroup => {
+        name: "dplyr_group_by_ungroup",
+        categories: [Dplyr],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+
+    //
     // ------------- TESTTHAT -------------
     //
     TestthatExpectLength => {

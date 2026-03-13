@@ -20,9 +20,7 @@ use jarl_core::config::{ArgsConfig, build_config};
 use jarl_core::diagnostic::Diagnostic as JarlDiagnostic;
 use jarl_core::discovery::{DiscoveredSettings, discover_settings};
 use jarl_core::fs::{has_r_extension, relativize_path};
-use jarl_core::library_paths::discover_library_paths;
 use jarl_core::package::{compute_package_analysis, is_in_r_package};
-use jarl_core::package_cache::PackageCache;
 use jarl_core::settings::Settings;
 
 /// Fix information that can be attached to a diagnostic for code actions

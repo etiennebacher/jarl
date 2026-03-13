@@ -107,6 +107,16 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
 
     //
+    // ------------- DPLYR -------------
+    //
+    if checker.is_rule_enabled(Rule::DplyrFilterOut) {
+        checker.report_diagnostic(dplyr_filter_out(r_expr, checker)?);
+    }
+    if checker.is_rule_enabled(Rule::DplyrGroupByUngroup) {
+        checker.report_diagnostic(dplyr_group_by_ungroup(r_expr)?);
+    }
+
+    //
     // ------------- TESTTHAT -------------
     //
     if checker.is_rule_enabled(Rule::TestthatExpectLength) {
