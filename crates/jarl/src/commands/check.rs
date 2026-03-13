@@ -1,6 +1,6 @@
 use air_workspace::resolve::PathResolver;
 use jarl_core::discovery::{discover_r_file_paths, discover_settings};
-use jarl_core::library_paths::{discover_library_paths, is_r_available};
+use jarl_core::library_paths::is_r_available;
 use jarl_core::package_cache::PackageCache;
 use jarl_core::rule_set::Rule;
 use jarl_core::{
@@ -139,10 +139,9 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
                         pkg_categories.join(", "),
                     ));
                 }
-                let project_root = cwd.as_deref();
-                let library_paths = discover_library_paths(project_root);
-                if !library_paths.is_empty() {
-                    package_cache = Some(Arc::new(PackageCache::new(library_paths)));
+                let r_pkg_names = config.rules_to_apply.pkg_names_from_category();
+                if let Some(cache) = PackageCache::from_rscript(&r_pkg_names) {
+                    package_cache = Some(Arc::new(cache));
                 }
                 cache_initialized = true;
             }
@@ -383,7 +382,7 @@ fn add_jarl_ignore_comments(
         }
 
         // Sort by offset ascending to group edits at the same offset
-        raw_edits.sort_by(|a, b| a.0.cmp(&b.0));
+        raw_edits.sort_by_key(|a| a.0);
 
         // Merge edits at the same offset: collect all rule names for each offset
         let mut merged_edits: Vec<(usize, String, bool, Vec<String>)> = Vec::new();

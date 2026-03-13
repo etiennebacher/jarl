@@ -783,7 +783,7 @@ impl RuleSet {
 
     /// Return the R package names targeted by the package-specific rules in
     /// this set (e.g. `["dplyr"]`).
-    pub fn target_packages(&self) -> Vec<&'static str> {
+    pub fn pkg_names_from_category(&self) -> Vec<&'static str> {
         let mut pkgs = Vec::new();
         for cat in self.package_specific_categories() {
             let pkg = match cat {

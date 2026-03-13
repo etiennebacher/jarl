@@ -8,7 +8,6 @@ use lsp_types::{Diagnostic, DiagnosticSeverity, NumberOrString, Position, Range}
 use serde::{Deserialize, Serialize};
 
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 
 use crate::DIAGNOSTIC_SOURCE;
 use crate::document::PositionEncoding;
@@ -22,7 +21,6 @@ use jarl_core::diagnostic::Diagnostic as JarlDiagnostic;
 use jarl_core::discovery::{DiscoveredSettings, discover_settings};
 use jarl_core::fs::{has_r_extension, relativize_path};
 use jarl_core::package::{compute_package_analysis, is_in_r_package};
-use jarl_core::package_cache::PackageCache;
 use jarl_core::settings::Settings;
 
 /// Fix information that can be attached to a diagnostic for code actions
@@ -71,7 +69,7 @@ pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<LintOutput> {
         diagnostics: jarl_diagnostics,
         unused_fn_hidden_count,
         refreshed_packages,
-    } = run_jarl_linting(content, file_path.as_deref(), snapshot.package_cache())?;
+    } = run_jarl_linting(content, file_path.as_deref(), snapshot)?;
 
     // Convert to LSP diagnostics with fix information
     let mut lsp_diagnostics = Vec::new();
@@ -97,7 +95,7 @@ struct LintInternalOutput {
 fn run_jarl_linting(
     content: &str,
     file_path: Option<&Path>,
-    package_cache: Option<Arc<PackageCache>>,
+    snapshot: &DocumentSnapshot,
 ) -> Result<LintInternalOutput> {
     let empty = LintInternalOutput {
         diagnostics: Vec::new(),
@@ -150,15 +148,14 @@ fn run_jarl_linting(
     let toml_settings = resolver.items().first().map(|item| item.value());
     let mut config = build_config(&check_config, toml_settings, vec![file_path.to_path_buf()])?;
 
-    // Use the session-level package cache (computed once per LSP session)
-    // instead of discovering library paths on every save.
     let mut refreshed_packages = Vec::new();
     if config.rules_to_apply.has_package_specific_rules() {
-        // Check if any tracked packages have changed on disk (e.g. after
-        // install.packages()). This is a cheap stat() per package, not an
-        // Rscript call.
+        let targets = config.rules_to_apply.pkg_names_from_category();
+        // Initialize the session-level cache on first use (spawns Rscript once).
+        snapshot.init_package_cache(&targets);
+        let package_cache = snapshot.package_cache();
+        // Check if any tracked packages have changed on disk (cheap stat()).
         if let Some(ref cache) = package_cache {
-            let targets = config.rules_to_apply.target_packages();
             refreshed_packages = cache.refresh_if_stale(&targets);
         }
         config.package_cache = package_cache;

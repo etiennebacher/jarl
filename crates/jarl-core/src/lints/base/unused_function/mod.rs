@@ -605,7 +605,7 @@ mod tests {
             }
         }
 
-        all_diagnostics.sort_by(|(a, _), (b, _)| a.cmp(b));
+        all_diagnostics.sort_by_key(|(a, _)| *a);
 
         let mut output = String::new();
         for (_, rendered) in &all_diagnostics {

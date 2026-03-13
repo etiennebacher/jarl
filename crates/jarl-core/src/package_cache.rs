@@ -1,35 +1,34 @@
 //! Lazy cache of installed R package metadata.
 //!
-//! Looks up package NAMESPACE (exports) and DESCRIPTION (version) on demand
-//! from the R library paths discovered at startup. Results are cached so
-//! repeated lookups across files are free.
+//! Uses a single `Rscript` call to batch-query exports, versions, and install
+//! paths for the packages we care about. Mtime-based staleness checks avoid
+//! re-running Rscript unless a package actually changed on disk.
 
 use std::collections::{HashMap, HashSet};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+use std::process::Command;
 use std::sync::RwLock;
 use std::time::SystemTime;
 
 use crate::checker::PackageOrigin;
-use crate::namespace::parse_namespace_exports;
-use rds2rust::{RObject, read_rds_from_path};
 
 /// Information about an installed R package.
 #[derive(Debug, Clone)]
 pub struct PackageInfo {
-    /// Exported function/object names from NAMESPACE.
+    /// Exported function/object names.
     pub exports: HashSet<String>,
     /// Package version from DESCRIPTION (e.g., `(1, 2, 0)`).
     pub version: Option<(u32, u32, u32)>,
+    /// Install path on disk (e.g. `/home/user/R/x86_64-pc-linux-gnu-library/4.5`).
+    /// Used for mtime-based staleness checks.
+    pub install_path: Option<PathBuf>,
 }
 
 /// Lazily-populated cache of installed R package metadata.
 ///
 /// Shared across all files being linted (wrapped in `Arc` for thread safety).
-/// Packages are looked up on demand from the R library paths.
 #[derive(Debug)]
 pub struct PackageCache {
-    /// Library paths discovered at startup (in priority order).
-    library_paths: Vec<PathBuf>,
     /// Lazily populated: package name → info (`None` means looked up but not found).
     cache: RwLock<HashMap<String, Option<PackageInfo>>>,
     /// Modification times of package DESCRIPTION files at the time of lookup,
@@ -38,12 +37,25 @@ pub struct PackageCache {
 }
 
 impl PackageCache {
-    pub fn new(library_paths: Vec<PathBuf>) -> Self {
-        Self {
-            library_paths,
-            cache: RwLock::new(HashMap::new()),
-            mtimes: RwLock::new(HashMap::new()),
+    /// Query R for package metadata and build a cache.
+    ///
+    /// Spawns a single `Rscript` process that returns exports, version, and
+    /// install path for each requested package. Packages that are not installed
+    /// are silently skipped.
+    pub fn from_rscript(packages: &[&str]) -> Option<Self> {
+        if packages.is_empty() {
+            return None;
         }
+
+        let (cache_map, mtime_map) = run_rscript_for_pkg_info(packages)?;
+        if cache_map.is_empty() {
+            return None;
+        }
+
+        Some(Self {
+            cache: RwLock::new(cache_map),
+            mtimes: RwLock::new(mtime_map),
+        })
     }
 
     /// Build an in-memory cache from a list of (package_name, exports) pairs.
@@ -55,205 +67,90 @@ impl PackageCache {
             let info = PackageInfo {
                 exports: exports.iter().map(|s| s.to_string()).collect(),
                 version: None,
+                install_path: None,
             };
             cache.insert(pkg_name.to_string(), Some(info));
         }
         Self {
-            library_paths: Vec::new(),
             cache: RwLock::new(cache),
             mtimes: RwLock::new(HashMap::new()),
         }
     }
 
-    /// Look up a package, reading from disk on first access.
+    /// Look up a package from the cache.
     pub fn get(&self, name: &str) -> Option<PackageInfo> {
-        // Fast path: already cached
-        {
-            let cache = self.cache.read().unwrap();
-            if let Some(cached) = cache.get(name) {
-                return cached.clone();
-            }
-        }
-
-        // Slow path: look up on disk and cache
-        let info = self.lookup_package(name);
-        let mut cache = self.cache.write().unwrap();
-        cache.insert(name.to_string(), info.clone());
-        info
+        let cache = self.cache.read().unwrap();
+        cache.get(name).and_then(|v| v.clone())
     }
 
-    /// Check if any library paths are configured.
+    /// Check if any packages were loaded into the cache.
     pub fn is_available(&self) -> bool {
-        !self.library_paths.is_empty()
+        let cache = self.cache.read().unwrap();
+        !cache.is_empty()
     }
 
     /// Check whether any of the given packages have changed on disk since
     /// they were cached (by comparing DESCRIPTION mtime). Stale entries are
-    /// evicted so the next `get()` call re-reads from disk.
+    /// re-fetched via Rscript.
     ///
     /// Returns the names of packages that were refreshed.
     pub fn refresh_if_stale(&self, packages: &[&str]) -> Vec<String> {
-        let mut refreshed = Vec::new();
+        let mut stale = Vec::new();
         let mtimes = self.mtimes.read().unwrap();
 
         for &pkg in packages {
             let Some(recorded) = mtimes.get(pkg) else {
-                // Never looked up — nothing to refresh.
                 continue;
             };
             let current = self.description_mtime(pkg);
             if current != *recorded {
-                refreshed.push(pkg.to_string());
+                stale.push(pkg.to_string());
             }
         }
         drop(mtimes);
 
-        if !refreshed.is_empty() {
+        if stale.is_empty() {
+            return Vec::new();
+        }
+
+        // Re-fetch stale packages via Rscript
+        let stale_refs: Vec<&str> = stale.iter().map(|s| s.as_str()).collect();
+        if let Some((new_cache, new_mtimes)) = run_rscript_for_pkg_info(&stale_refs) {
             let mut cache = self.cache.write().unwrap();
             let mut mtimes = self.mtimes.write().unwrap();
-            for pkg in &refreshed {
+            for pkg in &stale {
+                if let Some(info) = new_cache.get(pkg) {
+                    cache.insert(pkg.clone(), info.clone());
+                } else {
+                    cache.insert(pkg.clone(), None);
+                }
+                if let Some(mtime) = new_mtimes.get(pkg) {
+                    mtimes.insert(pkg.clone(), *mtime);
+                } else {
+                    mtimes.remove(pkg);
+                }
+            }
+        } else {
+            // Rscript failed — evict stale entries so they don't stay stale forever
+            let mut cache = self.cache.write().unwrap();
+            let mut mtimes = self.mtimes.write().unwrap();
+            for pkg in &stale {
                 cache.remove(pkg);
                 mtimes.remove(pkg);
             }
         }
 
-        refreshed
+        stale
     }
 
-    /// Get the mtime of a package's DESCRIPTION file (the most likely file to
-    /// change on install/upgrade).
+    /// Get the mtime of a package's DESCRIPTION file at its recorded install path.
     fn description_mtime(&self, name: &str) -> Option<SystemTime> {
-        for lib_path in &self.library_paths {
-            let desc = lib_path.join(name).join("DESCRIPTION");
-            if let Ok(meta) = std::fs::metadata(&desc) {
-                return meta.modified().ok();
-            }
-        }
-        None
+        let cache = self.cache.read().unwrap();
+        let info = cache.get(name)?.as_ref()?;
+        let install_path = info.install_path.as_ref()?;
+        let desc = install_path.join(name).join("DESCRIPTION");
+        std::fs::metadata(&desc).ok()?.modified().ok()
     }
-
-    /// Search library paths for a package and read its metadata.
-    fn lookup_package(&self, name: &str) -> Option<PackageInfo> {
-        for lib_path in &self.library_paths {
-            let pkg_dir = lib_path.join(name);
-            if !pkg_dir.is_dir() {
-                continue;
-            }
-
-            let namespace_path = pkg_dir.join("NAMESPACE");
-            let namespace_content = match std::fs::read_to_string(&namespace_path) {
-                Ok(c) => c,
-                Err(_) => continue,
-            };
-            // If NAMESPACE uses exportPattern, read the .rdx file to get all
-            // object names so the pattern can be resolved.
-            let all_names = if namespace_content.contains("exportPattern") {
-                read_rdx_object_names(&pkg_dir, name)
-            } else {
-                Vec::new()
-            };
-            let all_name_refs: Vec<&str> = all_names.iter().map(|s| s.as_str()).collect();
-            let exports = parse_namespace_exports(&namespace_content, &all_name_refs);
-
-            let version = read_package_version(&pkg_dir);
-
-            // Record the DESCRIPTION mtime for staleness detection.
-            let desc_mtime = pkg_dir
-                .join("DESCRIPTION")
-                .metadata()
-                .ok()
-                .and_then(|m| m.modified().ok());
-            self.mtimes
-                .write()
-                .unwrap()
-                .insert(name.to_string(), desc_mtime);
-
-            return Some(PackageInfo { exports, version });
-        }
-        None
-    }
-}
-
-/// Read all object names from a package's `.rdx` lazy-load database index.
-///
-/// The `.rdx` file is an RDS file containing a named list with a `$variables`
-/// element. The names of `$variables` are all object names defined in the
-/// package (both exported and internal).
-fn read_rdx_object_names(pkg_dir: &Path, pkg_name: &str) -> Vec<String> {
-    let rdx_path = pkg_dir.join("R").join(format!("{pkg_name}.rdx"));
-    let parsed = match read_rds_from_path(&rdx_path) {
-        Ok(p) => p,
-        Err(_) => return Vec::new(),
-    };
-
-    // The rdx is a named list: extract names from the `$variables` element.
-    // Structure: List with "names" attribute = ["variables", "references", "compressed"]
-    // We need the names attribute of the `variables` sub-list.
-    extract_variables_names(&parsed.object).unwrap_or_default()
-}
-
-/// Extract the names from the `$variables` element of an rdx RObject.
-///
-/// The rdx parses as `WithAttributes { List([variables, references, compressed]),
-/// names: ["variables", "references", "compressed"] }`.
-/// The `variables` sub-element is itself `WithAttributes { List([...]),
-/// names: [...all object names...] }`.
-fn extract_variables_names(obj: &RObject) -> Option<Vec<String>> {
-    let (items, attrs) = unwrap_list_with_attrs(obj)?;
-
-    // Find the "variables" element by name
-    let names = extract_string_vector(attrs.get("names")?)?;
-    let var_idx = names.iter().position(|n| n == "variables")?;
-    let variables_obj = items.get(var_idx)?;
-
-    // Extract the names attribute from the variables sub-list
-    let (_, var_attrs) = unwrap_list_with_attrs(variables_obj)?;
-    extract_string_vector(var_attrs.get("names")?)
-}
-
-/// Unwrap an RObject that is a List with attributes (possibly wrapped in WithAttributes).
-fn unwrap_list_with_attrs(obj: &RObject) -> Option<(&[RObject], &rds2rust::Attributes)> {
-    if let RObject::WithAttributes { object, attributes } = obj
-        && let RObject::List(items) = object.as_ref()
-    {
-        return Some((items, attributes));
-    }
-    None
-}
-
-/// Extract strings from an RObject that should be a character vector.
-fn extract_string_vector(obj: &RObject) -> Option<Vec<String>> {
-    if let RObject::Character(data) = obj {
-        Some(data.as_vec().iter().map(|s| s.to_string()).collect())
-    } else {
-        None
-    }
-}
-
-/// Read the `Version` field from a package's DESCRIPTION file.
-fn read_package_version(pkg_dir: &Path) -> Option<(u32, u32, u32)> {
-    let desc_path = pkg_dir.join("DESCRIPTION");
-    let content = std::fs::read_to_string(desc_path).ok()?;
-
-    for line in content.lines() {
-        if let Some(rest) = line.strip_prefix("Version:") {
-            let version_str = rest.trim();
-            return parse_package_version(version_str);
-        }
-    }
-    None
-}
-
-/// Parse a version string like "1.2.3" into a tuple.
-fn parse_package_version(version: &str) -> Option<(u32, u32, u32)> {
-    let parts: Vec<&str> = version.split('.').collect();
-    if parts.len() < 2 {
-        return None;
-    }
-    let major = parts[0].parse().ok()?;
-    let minor = parts[1].parse().ok()?;
-    let patch = parts.get(2).and_then(|p| p.parse().ok()).unwrap_or(0);
-    Some((major, minor, patch))
 }
 
 /// Per-file package context for resolving bare function names to packages.
@@ -296,63 +193,127 @@ impl<'a> FilePackageContext<'a> {
     }
 }
 
+/// Run a single Rscript process that returns exports, version, and install
+/// path for each requested package.
+///
+/// Returns `(cache_map, mtime_map)` or `None` if Rscript failed entirely.
+fn run_rscript_for_pkg_info(
+    packages: &[&str],
+) -> Option<(
+    HashMap<String, Option<PackageInfo>>,
+    HashMap<String, Option<SystemTime>>,
+)> {
+    let pkg_vec: String = packages
+        .iter()
+        .map(|p| format!("\"{}\"", p.replace('\\', "\\\\").replace('"', "\\\"")))
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    let script = format!(
+        r#"for (pkg in c({pkg_vec})) {{
+  tryCatch({{
+    cat(pkg, "\n", sep = "")
+    cat(format(packageVersion(pkg)), "\n", sep = "")
+    cat(dirname(system.file(package = pkg)), "\n", sep = "")
+    cat(paste(getNamespaceExports(pkg), collapse = "\n"), "\n", sep = "")
+    cat("---\n")
+  }}, error = function(e) NULL)
+}}"#
+    );
+
+    let output = Command::new("Rscript")
+        .args(["-e", &script])
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let stdout = String::from_utf8(output.stdout).ok()?;
+    let mut cache_map: HashMap<String, Option<PackageInfo>> = HashMap::new();
+    let mut mtime_map: HashMap<String, Option<SystemTime>> = HashMap::new();
+
+    for block in stdout.split("---\n") {
+        let block = block.trim();
+        if block.is_empty() {
+            continue;
+        }
+
+        let mut lines = block.lines();
+        let Some(name) = lines.next() else { continue };
+        let name = name.trim().to_string();
+        let Some(version_str) = lines.next().map(str::trim) else {
+            continue;
+        };
+        let Some(install_path_str) = lines.next().map(str::trim) else {
+            continue;
+        };
+        let exports: HashSet<String> = lines
+            .filter(|l| !l.is_empty())
+            .map(|l| l.to_string())
+            .collect();
+
+        let version = parse_package_version(version_str);
+        let install_path = PathBuf::from(install_path_str);
+
+        // Record DESCRIPTION mtime for staleness detection
+        let desc_mtime = install_path
+            .join(&name)
+            .join("DESCRIPTION")
+            .metadata()
+            .ok()
+            .and_then(|m| m.modified().ok());
+        mtime_map.insert(name.clone(), desc_mtime);
+
+        let info = PackageInfo { exports, version, install_path: Some(install_path) };
+        cache_map.insert(name, Some(info));
+    }
+
+    Some((cache_map, mtime_map))
+}
+
+/// Parse a version string like "1.2.3" into a tuple.
+fn parse_package_version(version: &str) -> Option<(u32, u32, u32)> {
+    let parts: Vec<&str> = version.split('.').collect();
+    if parts.len() < 2 {
+        return None;
+    }
+    let major = parts[0].parse().ok()?;
+    let minor = parts[1].parse().ok()?;
+    let patch = parts.get(2).and_then(|p| p.parse().ok()).unwrap_or(0);
+    Some((major, minor, patch))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::TempDir;
-
-    fn create_fake_package(lib_dir: &Path, name: &str, exports: &[&str], version: &str) {
-        let pkg_dir = lib_dir.join(name);
-        std::fs::create_dir_all(&pkg_dir).unwrap();
-
-        // Write NAMESPACE
-        let namespace_content: String = exports
-            .iter()
-            .map(|e| format!("export({e})"))
-            .collect::<Vec<_>>()
-            .join("\n");
-        std::fs::write(pkg_dir.join("NAMESPACE"), namespace_content).unwrap();
-
-        // Write DESCRIPTION
-        let desc = format!("Package: {name}\nVersion: {version}\n");
-        std::fs::write(pkg_dir.join("DESCRIPTION"), desc).unwrap();
-    }
 
     #[test]
-    fn test_package_cache_lookup() {
-        let dir = TempDir::new().unwrap();
-        let lib_dir = dir.path().join("library");
-        std::fs::create_dir_all(&lib_dir).unwrap();
-
-        create_fake_package(&lib_dir, "dplyr", &["filter", "mutate", "select"], "1.1.4");
-
-        let cache = PackageCache::new(vec![lib_dir]);
+    fn test_from_exports() {
+        let cache = PackageCache::from_exports(&[
+            ("dplyr", &["filter", "mutate", "select"]),
+            ("tidyr", &["pivot_longer"]),
+        ]);
 
         let info = cache.get("dplyr").unwrap();
         assert!(info.exports.contains("filter"));
         assert!(info.exports.contains("mutate"));
-        assert_eq!(info.version, Some((1, 1, 4)));
+        assert!(info.exports.contains("select"));
 
-        // Second lookup should hit the cache
-        let info2 = cache.get("dplyr").unwrap();
-        assert!(info2.exports.contains("filter"));
+        let info = cache.get("tidyr").unwrap();
+        assert!(info.exports.contains("pivot_longer"));
 
-        // Non-existent package
         assert!(cache.get("nonexistent").is_none());
     }
 
     #[test]
     fn test_file_package_context_resolve() {
-        let dir = TempDir::new().unwrap();
-        let lib_dir = dir.path().join("library");
-        std::fs::create_dir_all(&lib_dir).unwrap();
+        let cache = PackageCache::from_exports(&[
+            ("dplyr", &["filter", "mutate"]),
+            ("stats", &["filter", "lag"]),
+        ]);
 
-        create_fake_package(&lib_dir, "dplyr", &["filter", "mutate"], "1.1.4");
-        create_fake_package(&lib_dir, "stats", &["filter", "lag"], "4.4.0");
-
-        let cache = PackageCache::new(vec![lib_dir]);
-
-        // library(stats) then library(dplyr) — both export `filter`
         let ctx = FilePackageContext::new(vec!["stats".to_string(), "dplyr".to_string()], &cache);
         assert_eq!(
             ctx.resolve_package("filter"),
@@ -366,17 +327,49 @@ mod tests {
     }
 
     #[test]
-    fn test_export_pattern_with_rdx() {
-        // Test against the real `astsa` package which uses:
-        //   exportPattern("^[^\\.]")
-        // This exports all objects not starting with a dot.
-        let lib_dir = PathBuf::from("/home/etienne/R/x86_64-pc-linux-gnu-library/4.5");
-        if !lib_dir.join("astsa").is_dir() {
-            // Skip if astsa is not installed
+    fn test_parse_package_version() {
+        assert_eq!(parse_package_version("1.2.3"), Some((1, 2, 3)));
+        assert_eq!(parse_package_version("1.2"), Some((1, 2, 0)));
+        assert_eq!(parse_package_version("0.10.1"), Some((0, 10, 1)));
+        assert_eq!(parse_package_version("1"), None);
+    }
+
+    #[test]
+    fn test_run_rscript_for_pkg_info_integration() {
+        // Skip if R is not available
+        if Command::new("Rscript")
+            .args(["-e", "cat('ok')"])
+            .output()
+            .is_err()
+        {
             return;
         }
 
-        let cache = PackageCache::new(vec![lib_dir]);
+        let cache = PackageCache::from_rscript(&["base"]);
+        // base is always available
+        if let Some(cache) = cache {
+            let info = cache.get("base").unwrap();
+            assert!(info.exports.contains("cat"));
+            assert!(info.exports.contains("print"));
+            assert!(info.install_path.is_some());
+        }
+    }
+
+    #[test]
+    fn test_export_pattern_via_rscript() {
+        // Test against the real `astsa` package which uses:
+        //   exportPattern("^[^\\.]")
+        // This exports all objects not starting with a dot.
+        // Skip if R or astsa is not available.
+        let ok = Command::new("Rscript")
+            .args(["-e", "library(astsa)"])
+            .output()
+            .is_ok_and(|o| o.status.success());
+        if !ok {
+            return;
+        }
+
+        let cache = PackageCache::from_rscript(&["astsa"]).unwrap();
         let info = cache.get("astsa").unwrap();
 
         // Ground truth from R: sort(getNamespaceExports("astsa"))
@@ -436,13 +429,5 @@ mod tests {
         actual.sort();
 
         assert_eq!(actual, expected);
-    }
-
-    #[test]
-    fn test_parse_package_version() {
-        assert_eq!(parse_package_version("1.2.3"), Some((1, 2, 3)));
-        assert_eq!(parse_package_version("1.2"), Some((1, 2, 0)));
-        assert_eq!(parse_package_version("0.10.1"), Some((0, 10, 1)));
-        assert_eq!(parse_package_version("1"), None);
     }
 }
