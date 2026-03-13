@@ -43,3 +43,8 @@ build-install-positron-extension:
 install-positron-extension:
   cp target/release/jarl editors/code/bundled/bin/jarl
   cd editors/code && rm -rf *.vsix && vsce package && positron --install-extension *.vsix
+
+# Install the jarl binary (release mode) to `~/.cargo/bin/jarl`.
+# Note that a `~/.local/bin/jarl` installed another way may shadow this.
+install-binary:
+  cargo install --path crates/jarl --force --profile=release

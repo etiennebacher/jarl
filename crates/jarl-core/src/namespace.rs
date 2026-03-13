@@ -5,7 +5,7 @@
 //! and the `PackageCache` (for installed external packages).
 
 use regex::Regex;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 /// Extract the directive arguments from a NAMESPACE line.
 ///
@@ -141,6 +141,15 @@ pub fn parse_namespace_exports(content: &str, all_names: &[&str]) -> HashSet<Str
                                 .map(|(_, g)| g)
                                 .unwrap_or(raw_generic);
 
+                            // Add the generic name so that packages providing
+                            // S3 methods for a generic (e.g. tidypolars
+                            // providing filter.polars_data_frame) are
+                            // considered as candidates when resolving bare
+                            // calls to that generic. This avoids false
+                            // positives: without type information we can't
+                            // know which method will dispatch at runtime.
+                            exports.insert(generic.to_string());
+
                             if parts.len() >= 3 {
                                 let method_fn =
                                     parts[2].trim().trim_matches('"').trim_matches('\'');
@@ -168,4 +177,110 @@ pub fn parse_namespace_exports(content: &str, all_names: &[&str]) -> HashSet<Str
     }
 
     exports
+}
+
+/// Result of parsing `import()` and `importFrom()` directives from a
+/// package's own NAMESPACE file.
+#[derive(Debug, Default)]
+pub struct NamespaceImports {
+    /// Direct function→package mappings from `importFrom(pkg, fn1, fn2, ...)`.
+    pub import_from: HashMap<String, String>,
+    /// Packages imported wholesale via `import(pkg)`.
+    pub blanket_imports: Vec<String>,
+}
+
+/// Parse a NAMESPACE file for `importFrom()` and `import()` directives.
+///
+/// - `importFrom(dplyr, filter, select)` → maps `filter` and `select` to `"dplyr"`
+/// - `import(rlang)` → adds `"rlang"` to `blanket_imports`
+pub fn parse_namespace_imports(content: &str) -> NamespaceImports {
+    let mut result = NamespaceImports::default();
+    let statements = join_continuation_lines(content);
+
+    for statement in &statements {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with('#') {
+            continue;
+        }
+
+        if let Some(inner) = extract_directive(trimmed, "importFrom") {
+            let parts: Vec<&str> = inner
+                .split(',')
+                .map(|s| s.trim().trim_matches('"').trim_matches('\''))
+                .collect();
+            if parts.len() >= 2 {
+                let pkg = parts[0];
+                for &fn_name in &parts[1..] {
+                    if !fn_name.is_empty() {
+                        result
+                            .import_from
+                            .insert(fn_name.to_string(), pkg.to_string());
+                    }
+                }
+            }
+        } else if let Some(inner) = extract_directive(trimmed, "import") {
+            for pkg in inner.split(',') {
+                let pkg = pkg.trim().trim_matches('"').trim_matches('\'');
+                if !pkg.is_empty() && !result.blanket_imports.contains(&pkg.to_string()) {
+                    result.blanket_imports.push(pkg.to_string());
+                }
+            }
+        }
+    }
+
+    result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_import_from() {
+        let ns = r#"
+importFrom(dplyr, filter, select, mutate)
+importFrom(rlang, "!!")
+"#;
+        let result = parse_namespace_imports(ns);
+        assert_eq!(result.import_from.get("filter").unwrap(), "dplyr");
+        assert_eq!(result.import_from.get("select").unwrap(), "dplyr");
+        assert_eq!(result.import_from.get("mutate").unwrap(), "dplyr");
+        assert_eq!(result.import_from.get("!!").unwrap(), "rlang");
+        assert!(result.blanket_imports.is_empty());
+    }
+
+    #[test]
+    fn test_parse_blanket_import() {
+        let ns = "import(rlang)\nimport(dplyr, tidyr)\n";
+        let result = parse_namespace_imports(ns);
+        assert!(result.import_from.is_empty());
+        assert_eq!(result.blanket_imports, vec!["rlang", "dplyr", "tidyr"]);
+    }
+
+    #[test]
+    fn test_parse_mixed_imports() {
+        let ns = r#"
+import(rlang)
+importFrom(dplyr, filter)
+export(my_fn)
+"#;
+        let result = parse_namespace_imports(ns);
+        assert_eq!(result.import_from.get("filter").unwrap(), "dplyr");
+        assert_eq!(result.blanket_imports, vec!["rlang"]);
+    }
+
+    #[test]
+    fn test_parse_multiline_import_from() {
+        let ns = "importFrom(dplyr,\n  filter,\n  select)\n";
+        let result = parse_namespace_imports(ns);
+        assert_eq!(result.import_from.get("filter").unwrap(), "dplyr");
+        assert_eq!(result.import_from.get("select").unwrap(), "dplyr");
+    }
+
+    #[test]
+    fn test_no_duplicate_blanket_imports() {
+        let ns = "import(dplyr)\nimport(dplyr)\n";
+        let result = parse_namespace_imports(ns);
+        assert_eq!(result.blanket_imports, vec!["dplyr"]);
+    }
 }

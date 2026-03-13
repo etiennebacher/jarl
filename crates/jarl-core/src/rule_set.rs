@@ -45,8 +45,17 @@ impl Category {
 
     /// Whether this category is package-specific (requires library path
     /// discovery and the `PackageCache` to be useful).
+    ///
+    /// `Testthat` is NOT package-specific: those rules only need to detect
+    /// that the file is inside a `tests/testthat/` directory, not resolve
+    /// function origins via installed packages.
     pub const fn is_package_specific(self) -> bool {
-        matches!(self, Self::Dplyr)
+        !matches!(self, Self::Comm)
+            && !matches!(self, Self::Corr)
+            && !matches!(self, Self::Perf)
+            && !matches!(self, Self::Read)
+            && !matches!(self, Self::Susp)
+            && !matches!(self, Self::Testthat)
     }
 }
 
@@ -633,24 +642,6 @@ declare_rules! {
     },
 
     //
-    // ------------- DPLYR -------------
-    //
-    DplyrFilterOut => {
-        name: "dplyr_filter_out",
-        categories: [Dplyr],
-        default: Disabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    DplyrGroupByUngroup => {
-        name: "dplyr_group_by_ungroup",
-        categories: [Dplyr],
-        default: Disabled,
-        fix: None,
-        min_r_version: None,
-    },
-
-    //
     // ------------- TESTTHAT -------------
     //
     TestthatExpectLength => {
@@ -775,6 +766,35 @@ impl RuleSet {
         self.rules
             .iter()
             .any(|r| r.categories().iter().any(|c| c.is_package_specific()))
+    }
+
+    /// Return the distinct package-specific categories present in this rule set.
+    pub fn package_specific_categories(&self) -> Vec<Category> {
+        let mut cats = Vec::new();
+        for rule in &self.rules {
+            for cat in rule.categories() {
+                if cat.is_package_specific() && !cats.contains(cat) {
+                    cats.push(*cat);
+                }
+            }
+        }
+        cats
+    }
+
+    /// Return the R package names targeted by the package-specific rules in
+    /// this set (e.g. `["dplyr"]`).
+    pub fn pkg_names_from_category(&self) -> Vec<&'static str> {
+        let mut pkgs = Vec::new();
+        for cat in self.package_specific_categories() {
+            let pkg = match cat {
+                Category::Dplyr => "dplyr",
+                _ => continue,
+            };
+            if !pkgs.contains(&pkg) {
+                pkgs.push(pkg);
+            }
+        }
+        pkgs
     }
 
     /// Filter rules by a predicate

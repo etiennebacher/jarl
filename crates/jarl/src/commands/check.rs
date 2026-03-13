@@ -1,6 +1,6 @@
 use air_workspace::resolve::PathResolver;
 use jarl_core::discovery::{discover_r_file_paths, discover_settings};
-use jarl_core::library_paths::discover_library_paths;
+use jarl_core::library_paths::is_r_available;
 use jarl_core::package_cache::PackageCache;
 use jarl_core::rule_set::Rule;
 use jarl_core::{
@@ -122,10 +122,27 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
 
         if config.rules_to_apply.has_package_specific_rules() {
             if !cache_initialized {
+                if !is_r_available() {
+                    let pkg_categories: Vec<_> = config
+                        .rules_to_apply
+                        .package_specific_categories()
+                        .into_iter()
+                        .map(|c| c.as_str())
+                        .collect();
+                    return Err(anyhow::anyhow!(
+                        "Package-specific rules are enabled ({}) but R is not available.\n\n\
+                         These rules require R and installed packages to resolve function origins.\n\n\
+                         If running in CI with `setup-jarl`, uncomment (or add yourself) the R setup steps in your workflow:\n\n\
+                         \x20 - uses: r-lib/actions/setup-r@v2\n\
+                         \x20 - uses: r-lib/actions/setup-r-dependencies@v2\n\n\
+                         You can also disable these rules instead.",
+                        pkg_categories.join(", "),
+                    ));
+                }
+                let r_pkg_names = config.rules_to_apply.pkg_names_from_category();
                 let project_root = cwd.as_deref();
-                let library_paths = discover_library_paths(project_root);
-                if !library_paths.is_empty() {
-                    package_cache = Some(Arc::new(PackageCache::new(library_paths)));
+                if let Some(cache) = PackageCache::from_rscript(&r_pkg_names, project_root) {
+                    package_cache = Some(Arc::new(cache));
                 }
                 cache_initialized = true;
             }
@@ -366,7 +383,7 @@ fn add_jarl_ignore_comments(
         }
 
         // Sort by offset ascending to group edits at the same offset
-        raw_edits.sort_by(|a, b| a.0.cmp(&b.0));
+        raw_edits.sort_by_key(|a| a.0);
 
         // Merge edits at the same offset: collect all rule names for each offset
         let mut merged_edits: Vec<(usize, String, bool, Vec<String>)> = Vec::new();
@@ -385,7 +402,7 @@ fn add_jarl_ignore_comments(
         }
 
         // Sort by offset in descending order so we can apply edits without shifting positions
-        merged_edits.sort_by(|a, b| b.0.cmp(&a.0));
+        merged_edits.sort_by_key(|b| std::cmp::Reverse(b.0));
 
         // Apply edits to the content
         let mut modified_content = content.clone();

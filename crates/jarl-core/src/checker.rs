@@ -3,6 +3,7 @@ use crate::package_cache::PackageCache;
 use crate::rule_options::ResolvedRuleOptions;
 use crate::rule_set::{Rule, RuleSet};
 use crate::suppression::SuppressionManager;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Packages that R attaches by default on startup (equivalent to
@@ -61,10 +62,14 @@ pub struct Checker {
     pub suppression: SuppressionManager,
     // Per-rule options resolved from configuration (Arc to avoid expensive clones)
     pub rule_options: Arc<ResolvedRuleOptions>,
-    // Packages loaded via `library()` in this file, in load order.
+    // Packages loaded via `library()` in this file (or from DESCRIPTION
+    // Depends/Imports when inside an R package), in load order.
     pub loaded_packages: Vec<String>,
     // Shared package cache for looking up installed package metadata.
     pub package_cache: Option<Arc<PackageCache>>,
+    // Direct function→package mappings from `importFrom()` in the package's
+    // own NAMESPACE. Takes priority over export-list scanning.
+    pub import_from: HashMap<String, String>,
 }
 
 impl Checker {
@@ -80,6 +85,7 @@ impl Checker {
             rule_options,
             loaded_packages: Vec::new(),
             package_cache: None,
+            import_from: HashMap::new(),
         }
     }
 
@@ -95,9 +101,17 @@ impl Checker {
         self.rule_set.contains(&rule)
     }
 
-    /// Resolve which package a bare function name comes from, based on
-    /// the `library()` calls in this file and the installed package metadata.
+    /// Resolve which package a bare function name comes from.
+    ///
+    /// Resolution order:
+    /// 1. Direct `importFrom()` mappings (from the package's own NAMESPACE)
+    /// 2. Export-list scanning across `loaded_packages` via the `PackageCache`
     pub fn resolve_package(&self, fn_name: &str) -> PackageOrigin {
+        // Check importFrom() first, these don't leave doubt
+        if let Some(pkg) = self.import_from.get(fn_name) {
+            return PackageOrigin::Resolved(pkg.clone());
+        }
+
         let Some(cache) = self.package_cache.as_ref() else {
             return PackageOrigin::Unknown;
         };

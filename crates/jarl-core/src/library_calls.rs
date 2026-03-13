@@ -1,8 +1,8 @@
 //! Extract `library()` and `require()` calls from an R file's AST.
 //!
 //! A lightweight pre-pass over top-level statements to determine which packages
-//! are loaded, and in what order. This information feeds into the
-//! `FilePackageContext` for resolving bare function names to packages.
+//! are loaded, and in what order. This information is used to resolve bare
+//! function names to packages.
 
 use air_r_syntax::*;
 use biome_rowan::AstNode;

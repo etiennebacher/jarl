@@ -380,6 +380,14 @@ impl Server {
             let _ = client.notify_unused_fn_threshold_once(output.unused_fn_hidden_count);
         }
 
+        if !output.refreshed_packages.is_empty() {
+            let pkgs = output.refreshed_packages.join(", ");
+            let _ = client.show_message(
+                &format!("Jarl updated its information for the following package(s): {pkgs}"),
+                types::MessageType::INFO,
+            );
+        }
+
         client.publish_diagnostics(
             snapshot.uri().clone(),
             output.diagnostics,
