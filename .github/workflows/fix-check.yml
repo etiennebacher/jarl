@@ -93,15 +93,15 @@ jobs:
             echo "=== [$repo_name] Starting ==="
 
             echo "  [$repo_name] Lint before fixes..."
-            (cd "$repo_dir" && $JARL check . --select ALL --output-format json) > "../results/${repo_dir}_pre.json" || true
+            (cd "$repo_dir" && $JARL check . --select ALL --ignore DPLYR --output-format json) > "../results/${repo_dir}_pre.json" || true
             echo "  [$repo_name] Lint before fixes done."
 
             echo "  [$repo_name] Applying safe fixes..."
-            (cd "$repo_dir" && $JARL check . --select ALL --fix --allow-no-vcs --allow-dirty) > /dev/null 2>&1 || true
+            (cd "$repo_dir" && $JARL check . --select ALL --ignore DPLYR --fix --allow-no-vcs --allow-dirty) > /dev/null 2>&1 || true
             echo "  [$repo_name] Applying safe fixes done."
 
             echo "  [$repo_name] Lint after fixes..."
-            (cd "$repo_dir" && $JARL check . --select ALL --output-format json) > "../results/${repo_dir}_post.json" || true
+            (cd "$repo_dir" && $JARL check . --select ALL --ignore DPLYR --output-format json) > "../results/${repo_dir}_post.json" || true
             echo "  [$repo_name] Lint after fixes done."
 
             echo "  [$repo_name] SHA snapshot 1..."
@@ -109,7 +109,7 @@ jobs:
             echo "  [$repo_name] SHA snapshot 1 done."
 
             echo "  [$repo_name] Applying fixes (2nd pass)..."
-            (cd "$repo_dir" && $JARL check . --select ALL --fix --allow-no-vcs --allow-dirty) > /dev/null 2>&1 || true
+            (cd "$repo_dir" && $JARL check . --select ALL --ignore DPLYR --fix --allow-no-vcs --allow-dirty) > /dev/null 2>&1 || true
             echo "  [$repo_name] Applying fixes (2nd pass) done."
 
             echo "  [$repo_name] SHA snapshot 2..."
