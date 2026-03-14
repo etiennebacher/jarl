@@ -54,6 +54,7 @@
 
 * New rules:
 
+  - `dplyr_group_by_ungroup` (#393)
   - `duplicated_function_definition` (#358)
   - `expect_match` (#364, @bjyberg)
   - `expect_no_match` (#368, @bjyberg)
