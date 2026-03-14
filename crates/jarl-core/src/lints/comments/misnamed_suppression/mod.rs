@@ -40,7 +40,7 @@ any(is.na(x))
     fn test_lint_misnamed_suppression() {
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore any_isna: <reason>
-any(is.na(x))"), @r"
+any(is.na(x))"), @"
         warning: misnamed_suppression
          --> <test>:2:1
           |
@@ -57,7 +57,7 @@ any(is.na(x))"), @r"
     fn test_lint_misnamed_suppression_file() {
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-file nonexistent_rule: <reason>
-any(is.na(x))"), @r"
+any(is.na(x))"), @"
         warning: misnamed_suppression
          --> <test>:2:1
           |
@@ -75,7 +75,7 @@ any(is.na(x))"), @r"
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start fake_rule: <reason>
 any(is.na(x))
-# jarl-ignore-end any_is_na"), @r"
+# jarl-ignore-end any_is_na"), @"
         warning: misnamed_suppression
          --> <test>:2:1
           |
@@ -93,7 +93,7 @@ any(is.na(x))
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
 any(is.na(x))
-# jarl-ignore-end fake_rule"), @r"
+# jarl-ignore-end fake_rule"), @"
         warning: misnamed_suppression
          --> <test>:4:1
           |

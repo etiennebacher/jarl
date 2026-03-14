@@ -33,7 +33,7 @@ any(is.na(x))",
         insta::assert_snapshot!(snapshot_lint("
 x <- 1
 # jarl-ignore-file any_is_na: explanation
-any(is.na(x))"), @r"
+any(is.na(x))"), @"
         warning: misplaced_file_suppression
          --> <test>:3:1
           |
@@ -49,7 +49,7 @@ any(is.na(x))"), @r"
 # jarl-ignore-file any_is_na: reason 1
 x <- 1
 # jarl-ignore-file browser: reason 2
-any(is.na(x))"), @r"
+any(is.na(x))"), @"
         warning: misplaced_file_suppression
          --> <test>:4:1
           |

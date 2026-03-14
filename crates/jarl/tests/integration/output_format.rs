@@ -25,7 +25,8 @@ fn test_output_default() -> anyhow::Result<()> {
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -79,7 +80,8 @@ fn test_output_concise() -> anyhow::Result<()> {
             .arg("concise")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -119,7 +121,8 @@ fn test_output_full() -> anyhow::Result<()> {
             .arg("full")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -174,60 +177,61 @@ fn test_output_json() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @r#"
-success: false
-exit_code: 1
------ stdout -----
-{
-  "diagnostics": [
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
     {
-      "message": {
-        "name": "any_is_na",
-        "body": "`any(is.na(...))` is inefficient.",
-        "suggestion": "Use `anyNA(...)` instead."
-      },
-      "filename": "test.R",
-      "range": [
-        0,
-        13
+      "diagnostics": [
+        {
+          "message": {
+            "name": "any_is_na",
+            "body": "`any(is.na(...))` is inefficient.",
+            "suggestion": "Use `anyNA(...)` instead."
+          },
+          "filename": "test.R",
+          "range": [
+            0,
+            13
+          ],
+          "location": {
+            "row": 1,
+            "column": 0
+          },
+          "fix": {
+            "content": "anyNA(x)",
+            "start": 0,
+            "end": 13,
+            "to_skip": false
+          }
+        },
+        {
+          "message": {
+            "name": "any_duplicated",
+            "body": "`any(duplicated(...))` is inefficient.",
+            "suggestion": "Use `anyDuplicated(...) > 0` instead."
+          },
+          "filename": "test2.R",
+          "range": [
+            0,
+            18
+          ],
+          "location": {
+            "row": 1,
+            "column": 0
+          },
+          "fix": {
+            "content": "anyDuplicated(x) > 0",
+            "start": 0,
+            "end": 18,
+            "to_skip": false
+          }
+        }
       ],
-      "location": {
-        "row": 1,
-        "column": 0
-      },
-      "fix": {
-        "content": "anyNA(x)",
-        "start": 0,
-        "end": 13,
-        "to_skip": false
-      }
-    },
-    {
-      "message": {
-        "name": "any_duplicated",
-        "body": "`any(duplicated(...))` is inefficient.",
-        "suggestion": "Use `anyDuplicated(...) > 0` instead."
-      },
-      "filename": "test2.R",
-      "range": [
-        0,
-        18
-      ],
-      "location": {
-        "row": 1,
-        "column": 0
-      },
-      "fix": {
-        "content": "anyDuplicated(x) > 0",
-        "start": 0,
-        "end": 18,
-        "to_skip": false
-      }
+      "errors": []
     }
-  ],
-  "errors": []
-}
------ stderr -----
-"#
+    ----- stderr -----
+    "#
     );
 
     // Additional info such as timing isn't included in output, #254
@@ -242,60 +246,61 @@ exit_code: 1
             .run()
             .normalize_os_executable_name(),
         @r#"
-success: false
-exit_code: 1
------ stdout -----
-{
-  "diagnostics": [
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
     {
-      "message": {
-        "name": "any_is_na",
-        "body": "`any(is.na(...))` is inefficient.",
-        "suggestion": "Use `anyNA(...)` instead."
-      },
-      "filename": "test.R",
-      "range": [
-        0,
-        13
+      "diagnostics": [
+        {
+          "message": {
+            "name": "any_is_na",
+            "body": "`any(is.na(...))` is inefficient.",
+            "suggestion": "Use `anyNA(...)` instead."
+          },
+          "filename": "test.R",
+          "range": [
+            0,
+            13
+          ],
+          "location": {
+            "row": 1,
+            "column": 0
+          },
+          "fix": {
+            "content": "anyNA(x)",
+            "start": 0,
+            "end": 13,
+            "to_skip": false
+          }
+        },
+        {
+          "message": {
+            "name": "any_duplicated",
+            "body": "`any(duplicated(...))` is inefficient.",
+            "suggestion": "Use `anyDuplicated(...) > 0` instead."
+          },
+          "filename": "test2.R",
+          "range": [
+            0,
+            18
+          ],
+          "location": {
+            "row": 1,
+            "column": 0
+          },
+          "fix": {
+            "content": "anyDuplicated(x) > 0",
+            "start": 0,
+            "end": 18,
+            "to_skip": false
+          }
+        }
       ],
-      "location": {
-        "row": 1,
-        "column": 0
-      },
-      "fix": {
-        "content": "anyNA(x)",
-        "start": 0,
-        "end": 13,
-        "to_skip": false
-      }
-    },
-    {
-      "message": {
-        "name": "any_duplicated",
-        "body": "`any(duplicated(...))` is inefficient.",
-        "suggestion": "Use `anyDuplicated(...) > 0` instead."
-      },
-      "filename": "test2.R",
-      "range": [
-        0,
-        18
-      ],
-      "location": {
-        "row": 1,
-        "column": 0
-      },
-      "fix": {
-        "content": "anyDuplicated(x) > 0",
-        "start": 0,
-        "end": 18,
-        "to_skip": false
-      }
+      "errors": []
     }
-  ],
-  "errors": []
-}
------ stderr -----
-"#
+    ----- stderr -----
+    "#
     );
 
     Ok(())
@@ -324,14 +329,15 @@ fn test_output_github() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @"
-success: false
-exit_code: 1
------ stdout -----
-::warning title=Jarl (any_is_na),file=test.R,line=1,col=1::test.R:1:1 [any_is_na] `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
-::warning title=Jarl (any_duplicated),file=test2.R,line=1,col=1::test2.R:1:1 [any_duplicated] `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
 
------ stderr -----
-"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    ::warning title=Jarl (any_is_na),file=test.R,line=1,col=1::test.R:1:1 [any_is_na] `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
+    ::warning title=Jarl (any_duplicated),file=test2.R,line=1,col=1::test2.R:1:1 [any_duplicated] `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+
+    ----- stderr -----
+    "
     );
 
     // Additional info such as timing isn't included in output, #254
@@ -346,14 +352,15 @@ exit_code: 1
             .run()
             .normalize_os_executable_name(),
         @"
-success: false
-exit_code: 1
------ stdout -----
-::warning title=Jarl (any_is_na),file=test.R,line=1,col=1::test.R:1:1 [any_is_na] `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
-::warning title=Jarl (any_duplicated),file=test2.R,line=1,col=1::test2.R:1:1 [any_duplicated] `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
 
------ stderr -----
-"
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    ::warning title=Jarl (any_is_na),file=test.R,line=1,col=1::test.R:1:1 [any_is_na] `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
+    ::warning title=Jarl (any_duplicated),file=test2.R,line=1,col=1::test2.R:1:1 [any_duplicated] `any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -381,7 +388,8 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
             .arg("full")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 255
     ----- stdout -----
@@ -412,7 +420,8 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
             .arg("concise")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 255
     ----- stdout -----
@@ -437,43 +446,44 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @r#"
-success: false
-exit_code: 255
------ stdout -----
-{
-  "diagnostics": [
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
     {
-      "message": {
-        "name": "any_is_na",
-        "body": "`any(is.na(...))` is inefficient.",
-        "suggestion": "Use `anyNA(...)` instead."
-      },
-      "filename": "test.R",
-      "range": [
-        0,
-        13
+      "diagnostics": [
+        {
+          "message": {
+            "name": "any_is_na",
+            "body": "`any(is.na(...))` is inefficient.",
+            "suggestion": "Use `anyNA(...)` instead."
+          },
+          "filename": "test.R",
+          "range": [
+            0,
+            13
+          ],
+          "location": {
+            "row": 1,
+            "column": 0
+          },
+          "fix": {
+            "content": "anyNA(x)",
+            "start": 0,
+            "end": 13,
+            "to_skip": false
+          }
+        }
       ],
-      "location": {
-        "row": 1,
-        "column": 0
-      },
-      "fix": {
-        "content": "anyNA(x)",
-        "start": 0,
-        "end": 13,
-        "to_skip": false
-      }
+      "errors": [
+        {
+          "file": "test2.R",
+          "error": "Failed to get checks for file: test2.R: Failed to parse test2.R due to syntax errors."
+        }
+      ]
     }
-  ],
-  "errors": [
-    {
-      "file": "test2.R",
-      "error": "Failed to get checks for file: test2.R: Failed to parse test2.R due to syntax errors."
-    }
-  ]
-}
------ stderr -----
-"#
+    ----- stderr -----
+    "#
     );
 
     insta::assert_snapshot!(
@@ -486,13 +496,14 @@ exit_code: 255
             .run()
             .normalize_os_executable_name(),
         @"
-success: false
-exit_code: 255
------ stdout -----
-::warning title=Jarl (any_is_na),file=test.R,line=1,col=1::test.R:1:1 [any_is_na] `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
 
------ stderr -----
-"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+    ::warning title=Jarl (any_is_na),file=test.R,line=1,col=1::test.R:1:1 [any_is_na] `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())

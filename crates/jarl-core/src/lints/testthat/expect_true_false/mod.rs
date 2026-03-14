@@ -24,7 +24,7 @@ mod tests {
     fn test_lint_expect_true_false() {
         assert_snapshot!(
             snapshot_lint("expect_equal(foo(x), TRUE)"),
-            @r"
+            @"
         warning: expect_true_false
          --> <test>:1:1
           |
@@ -37,7 +37,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("testthat::expect_equal(foo(x), TRUE)"),
-            @r"
+            @"
         warning: expect_true_false
          --> <test>:1:1
           |
@@ -50,7 +50,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_equal(TRUE, foo(x))"),
-            @r"
+            @"
         warning: expect_true_false
          --> <test>:1:1
           |
@@ -63,7 +63,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_identical(x, FALSE)"),
-            @r"
+            @"
         warning: expect_true_false
          --> <test>:1:1
           |
@@ -76,7 +76,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_identical(FALSE, x)"),
-            @r"
+            @"
         warning: expect_true_false
          --> <test>:1:1
           |
@@ -89,7 +89,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_equal(is.numeric(x), FALSE)"),
-            @r"
+            @"
         warning: expect_true_false
          --> <test>:1:1
           |

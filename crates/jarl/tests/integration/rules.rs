@@ -23,14 +23,15 @@ fn test_one_non_existing_selected_rule() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Unknown rules in `--select`: foo
-"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in `--select`: foo
+    "
     );
 
     Ok(())
@@ -54,14 +55,15 @@ fn test_several_non_existing_selected_rules() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Unknown rules in `--select`: foo, barbaz
-"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in `--select`: foo, barbaz
+    "
     );
 
     Ok(())
@@ -85,14 +87,15 @@ fn test_one_non_existing_ignored_rule() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Unknown rules in `--ignore`: foo
-"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in `--ignore`: foo
+    "
     );
 
     Ok(())
@@ -116,14 +119,15 @@ fn test_several_non_existing_ignored_rules() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Unknown rules in `--ignore`: foo, barbaz
-"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in `--ignore`: foo, barbaz
+    "
     );
 
     Ok(())
@@ -149,7 +153,8 @@ fn test_selected_and_ignored() -> anyhow::Result<()> {
             .arg("any_is_na")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -187,7 +192,8 @@ fn test_correct_rule_selection_and_exclusion() -> anyhow::Result<()> {
             .arg("any_duplicated")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -233,7 +239,8 @@ any(is.na(x))
             .arg("SUSP")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -264,7 +271,8 @@ any(is.na(x))
             .arg("any_is_na,SUSP")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -303,7 +311,8 @@ any(is.na(x))
             .arg("all_equal,SUSP")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -349,7 +358,8 @@ any(is.na(x))
             .arg("SUSP")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -380,7 +390,8 @@ any(is.na(x))
             .arg("any_is_na,SUSP")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -401,7 +412,8 @@ any(is.na(x))
             .arg("all_equal,SUSP")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -445,14 +457,15 @@ fn test_invalid_rule_group() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Unknown rules in `--ignore`: FOOBAR
-"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in `--ignore`: FOOBAR
+    "
     );
 
     Ok(())
@@ -481,7 +494,8 @@ any(is.na(x))
             .arg("SUSP")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -503,7 +517,8 @@ any(is.na(x))
             .arg("PERF")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -548,7 +563,8 @@ expect_equal(foo(x), TRUE)
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -594,7 +610,8 @@ expect_equal(foo(x), TRUE)
             .arg("ALL")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -635,7 +652,8 @@ expect_equal(foo(x), TRUE)
             .arg("TESTTHAT")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -681,7 +699,8 @@ expect_equal(foo(x), TRUE)
             .arg("TESTTHAT")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -720,7 +739,8 @@ expect_equal(foo(x), TRUE)
             .arg("expect_true_false")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -771,14 +791,15 @@ fn test_extend_select_unknown_rule() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Unknown rules in `--extend-select`: FOO
-"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in `--extend-select`: FOO
+    "
     );
     Ok(())
 }
@@ -802,7 +823,8 @@ fn test_deprecated_rule_warning_from_cli() -> anyhow::Result<()> {
             .arg("browser")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -852,7 +874,8 @@ select = ["browser"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----

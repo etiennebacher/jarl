@@ -32,7 +32,8 @@ y <- 2
             .arg("<-")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -73,7 +74,8 @@ y <- 2
             .arg("=")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -129,14 +131,16 @@ y <- 2
             .arg("foo")
             .run()
             .normalize_os_executable_name(),
-        @"success: false
-exit_code: 255
------ stdout -----
+        @"
 
------ stderr -----
-jarl failed
-  Cause: Invalid value in `--assignment`: foo
-"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid value in `--assignment`: foo
+    "
     );
 
     insta::assert_snapshot!(
@@ -150,14 +154,16 @@ jarl failed
             .arg("1")
             .run()
             .normalize_os_executable_name(),
-        @"success: false
-exit_code: 255
------ stdout -----
+        @"
 
------ stderr -----
-jarl failed
-  Cause: Invalid value in `--assignment`: 1
-"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid value in `--assignment`: 1
+    "
     );
 
     Ok(())
@@ -196,7 +202,8 @@ operator = "<-"
             .arg("assignment")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -239,7 +246,8 @@ operator = "="
             .arg("assignment")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -300,15 +308,16 @@ operator = "foo"
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
-Invalid value for `operator` in `[lint.assignment]`: "foo". Expected "<-" or "=".
-"#
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Invalid value for `operator` in `[lint.assignment]`: "foo". Expected "<-" or "=".
+    "#
     );
 
     std::fs::write(
@@ -329,20 +338,20 @@ operator = 1
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-TOML parse error at line 3, column 12
-  |
-3 | operator = 1
-  |            ^
-invalid type: integer `1`, expected a string
+    success: false
+    exit_code: 255
+    ----- stdout -----
 
-"
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 12
+      |
+    3 | operator = 1
+      |            ^
+    invalid type: integer `1`, expected a string
+    "
     );
 
     Ok(())
@@ -382,7 +391,8 @@ operator = "<-"
             .arg("=")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -447,7 +457,8 @@ assignment = "<-"
             .arg("assignment")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -493,7 +504,8 @@ assignment = "="
             .arg("assignment")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -557,15 +569,16 @@ assignment = "foo"
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
-Invalid value for `operator` in `[lint.assignment]`: "foo". Expected "<-" or "=".
-"#
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Invalid value for `operator` in `[lint.assignment]`: "foo". Expected "<-" or "=".
+    "#
     );
 
     std::fs::write(
@@ -586,20 +599,20 @@ assignment = 1
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-TOML parse error at line 3, column 14
-  |
-3 | assignment = 1
-  |              ^
-invalid type: integer `1`, expected a string (e.g. `assignment = "<-"`) or a table (e.g. `[lint.assignment]`)
+    success: false
+    exit_code: 255
+    ----- stdout -----
 
-"#
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 14
+      |
+    3 | assignment = 1
+      |              ^
+    invalid type: integer `1`, expected a string (e.g. `assignment = "<-"`) or a table (e.g. `[lint.assignment]`)
+    "#
     );
 
     Ok(())
@@ -635,7 +648,8 @@ assignment = "<-"
             .arg("=")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----

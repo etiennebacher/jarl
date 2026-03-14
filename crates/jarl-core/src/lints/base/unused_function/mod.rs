@@ -652,7 +652,7 @@ mod tests {
 
         assert_snapshot!(
             apply_threshold(&diagnostics_output, count, threshold),
-            @r"
+            @"
         All checks passed!
         Warning: 5 `unused_function` diagnostics hidden (likely false positives).
         To show them:
@@ -836,7 +836,7 @@ mod tests {
 
         assert_snapshot!(
             apply_threshold(&diagnostics_output, count, threshold),
-            @r"
+            @"
         warning: unused_function
          --> [PKG]/R/unused_1.R:1:1
           |
