@@ -669,8 +669,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="co"># `check_character()` isn't exported but used in `public_fn`.</span></span>
 <span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co"># `check_length()` isn't exported but and isn't used anywhere, so it is</span></span>
 <span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="co"># reported.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Scan source text for all R-style identifiers (symbols).</p>
-<p>Returns a map from identifier name to occurrence count. This intentionally over-counts (e.g.&nbsp;it will match inside comments and strings) — that is fine because false negatives (failing to flag truly unused functions) are preferable to false positives. By collecting all symbols rather than just <code>name(</code> call patterns, we also cover indirect references like <code>do.call("name", ...)</code>, <code>lapply(xs, name)</code>, <code>match.fun(name)</code>, etc.</p>
 
 
 </section>
