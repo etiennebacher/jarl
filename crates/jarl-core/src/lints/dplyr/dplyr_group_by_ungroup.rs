@@ -1,3 +1,4 @@
+use crate::check::Checker;
 use crate::diagnostic::*;
 use crate::utils::{get_function_name, get_function_namespace_prefix};
 use air_r_syntax::*;
@@ -24,7 +25,7 @@ const VERBS_WITH_BY: &[&str] = &[
 ///
 /// ## Why is this bad?
 ///
-/// Since dplyr 1.1.0, verbs like `summarize()`, `mutate()`, `filter()`,
+/// Since `dplyr` 1.1.0, verbs like `summarize()`, `mutate()`, `filter()`,
 /// `reframe()`, and the `slice_*()` family support a `.by` argument. Using
 /// `.by` is shorter and does not require a subsequent `ungroup()` call.
 ///
@@ -46,7 +47,10 @@ const VERBS_WITH_BY: &[&str] = &[
 /// ## References
 ///
 /// See the `.by` argument in `?dplyr::summarize`.
-pub fn dplyr_group_by_ungroup(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
+pub fn dplyr_group_by_ungroup(
+    ast: &RCall,
+    checker: &Checker,
+) -> anyhow::Result<Option<Diagnostic>> {
     let fn_name = get_function_name(ast.function()?);
     let fn_ns = get_function_namespace_prefix(ast.function()?);
 
@@ -56,6 +60,14 @@ pub fn dplyr_group_by_ungroup(ast: &RCall) -> anyhow::Result<Option<Diagnostic>>
     }
     if let Some(ref ns) = fn_ns
         && ns != "dplyr::"
+    {
+        return Ok(None);
+    }
+
+    // `.by` was introduced in dplyr 1.1.0. Skip if the installed
+    // version is older.
+    if let Some(version) = checker.package_version("dplyr")
+        && version < (1, 1, 0)
     {
         return Ok(None);
     }
