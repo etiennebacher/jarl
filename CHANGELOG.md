@@ -77,6 +77,8 @@
 * Some fixes to ensure that automatic fixes don't introduce new violations or
   new parsing errors (#389).
 
+* Suppression comments now work better when inserted in piped chains (#397).
+
 ## 0.4.0
 
 ### Breaking changes
