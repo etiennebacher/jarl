@@ -1,8 +1,7 @@
 ---
 title: Rules
+toc: false
 ---
-
-## Overview
 
 All rules belong to at least one category:
 
