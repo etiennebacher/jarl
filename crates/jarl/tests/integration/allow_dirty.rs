@@ -31,7 +31,8 @@ fn test_clean_git_repo() -> anyhow::Result<()> {
             .arg("--fix")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -63,7 +64,8 @@ fn test_dirty_git_repo_does_not_block_lint() -> anyhow::Result<()> {
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -110,7 +112,8 @@ fn test_dirty_git_repo_blocks_fix() -> anyhow::Result<()> {
             .arg("--fix")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 255
     ----- stdout -----
@@ -146,7 +149,8 @@ fn test_dirty_git_repo_allow_dirty() -> anyhow::Result<()> {
             .arg("--allow-dirty")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -191,7 +195,8 @@ fn test_mixed_dirty_status_blocks_fix() -> anyhow::Result<()> {
             .arg("--fix")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 255
     ----- stdout -----
@@ -240,7 +245,8 @@ fn test_two_clean_subdirs() -> anyhow::Result<()> {
             .arg("--fix")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----

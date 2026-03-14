@@ -31,6 +31,7 @@ unknown-option = "foo"
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
+
     success: false
     exit_code: 255
     ----- stdout -----
@@ -43,7 +44,6 @@ unknown-option = "foo"
     3 | unknown-option = "foo"
       | ^^^^^^^^^^^^^^
     unknown field `unknown-option`, expected `operator`
-
     "#
     );
 
@@ -78,7 +78,8 @@ extend-skipped-functions = ["my_fun"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 255
     ----- stdout -----
@@ -119,6 +120,7 @@ unknown-option = ["list"]
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
+
     success: false
     exit_code: 255
     ----- stdout -----
@@ -165,7 +167,8 @@ extend-skipped-functions = ["my_fun"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 255
     ----- stdout -----
@@ -206,6 +209,7 @@ unknown-option = ["list"]
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
+
     success: false
     exit_code: 255
     ----- stdout -----
@@ -349,7 +353,8 @@ foo <- function() {
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 255
     ----- stdout -----

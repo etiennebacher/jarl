@@ -63,7 +63,7 @@ mod tests {
     fn test_lint_expect_type() {
         assert_snapshot!(
             snapshot_lint("expect_equal(typeof(x), 'double')"),
-            @r"
+            @"
         warning: expect_type
          --> <test>:1:1
           |
@@ -77,7 +77,7 @@ mod tests {
         // expect_identical is treated the same as expect_equal
         assert_snapshot!(
             snapshot_lint("testthat::expect_identical(typeof(x), 'language')"),
-            @r"
+            @"
         warning: expect_type
          --> <test>:1:1
           |
@@ -91,7 +91,7 @@ mod tests {
         // different equivalent usage
         assert_snapshot!(
             snapshot_lint("expect_true(is.complex(foo(x)))"),
-            @r"
+            @"
         warning: expect_type
          --> <test>:1:1
           |
@@ -105,7 +105,7 @@ mod tests {
         // yoda test with clear expect_type replacement
         assert_snapshot!(
             snapshot_lint("expect_equal('integer', typeof(x))"),
-            @r"
+            @"
         warning: expect_type
          --> <test>:1:1
           |
@@ -139,7 +139,7 @@ mod tests {
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             snapshot_lint("expect_equal(typeof(x), # comment\n'integer')"),
-            @r"
+            @"
         warning: expect_type
          --> <test>:1:1
           |

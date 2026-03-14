@@ -45,7 +45,7 @@ mod tests {
     fn test_lint_if_always_true() {
         assert_snapshot!(
             snapshot_lint("if (TRUE) print('hi')"),
-            @r"
+            @"
         warning: if_always_true
          --> <test>:1:5
           |
@@ -58,7 +58,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (TRUE || x) { print('hi') }"),
-            @r"
+            @"
         warning: if_always_true
          --> <test>:1:5
           |
@@ -71,7 +71,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (x || TRUE) { print('hi') }"),
-            @r"
+            @"
         warning: if_always_true
          --> <test>:1:5
           |
@@ -84,7 +84,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (1) { print('hi') }"),
-            @r"
+            @"
         warning: if_always_true
          --> <test>:1:5
           |
@@ -97,7 +97,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (-1) { print('hi') }"),
-            @r"
+            @"
         warning: if_always_true
          --> <test>:1:5
           |
@@ -110,7 +110,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (5.5) { print('hi') }"),
-            @r"
+            @"
         warning: if_always_true
          --> <test>:1:5
           |
@@ -123,7 +123,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (0.1) { print('hi') }"),
-            @r"
+            @"
         warning: if_always_true
          --> <test>:1:5
           |
@@ -136,7 +136,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (10 || x) { print('hi') }"),
-            @r"
+            @"
         warning: if_always_true
          --> <test>:1:5
           |
@@ -149,7 +149,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (!FALSE) { print('hi') }"),
-            @r"
+            @"
         warning: if_always_true
          --> <test>:1:5
           |
@@ -162,7 +162,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (Inf) { print('hi') }"),
-            @r"
+            @"
         warning: if_always_true
          --> <test>:1:5
           |
@@ -175,7 +175,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (-Inf) { print('hi') }"),
-            @r"
+            @"
         warning: if_always_true
          --> <test>:1:5
           |
@@ -189,7 +189,7 @@ mod tests {
         //Not handled by `unreachable_code`
         assert_snapshot!(
             snapshot_lint("if (x) { print('hi') } else if (TRUE) { print('bye') }"),
-            @r"
+            @"
         warning: if_always_true
          --> <test>:1:33
           |

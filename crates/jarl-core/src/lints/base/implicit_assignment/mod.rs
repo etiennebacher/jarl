@@ -35,7 +35,7 @@ mod tests {
     fn test_lint_implicit_assignment() {
         assert_snapshot!(
             snapshot_lint("if (x <- 1L) TRUE"),
-            @r"
+            @"
         warning: implicit_assignment
          --> <test>:1:5
           |
@@ -47,7 +47,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (1L -> x) TRUE"),
-            @r"
+            @"
         warning: implicit_assignment
          --> <test>:1:5
           |
@@ -59,7 +59,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (x <<- 1L) TRUE"),
-            @r"
+            @"
         warning: implicit_assignment
          --> <test>:1:5
           |
@@ -71,7 +71,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (1L ->> x) TRUE"),
-            @r"
+            @"
         warning: implicit_assignment
          --> <test>:1:5
           |
@@ -83,7 +83,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (A && (B <- foo())) { }"),
-            @r"
+            @"
         warning: implicit_assignment
          --> <test>:1:11
           |
@@ -95,7 +95,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("while (x <- 0L) FALSE"),
-            @r"
+            @"
         warning: implicit_assignment
          --> <test>:1:8
           |
@@ -107,7 +107,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("while (0L -> x) FALSE"),
-            @r"
+            @"
         warning: implicit_assignment
          --> <test>:1:8
           |
@@ -119,7 +119,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("for (x in y <- 1:10) print(x)"),
-            @r"
+            @"
         warning: implicit_assignment
          --> <test>:1:11
           |
@@ -131,7 +131,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("for (x in 1:10 -> y) print(x)"),
-            @r"
+            @"
         warning: implicit_assignment
          --> <test>:1:11
           |
@@ -143,7 +143,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_true(x <- 1 > 2)"),
-            @r"
+            @"
         warning: implicit_assignment
          --> <test>:1:13
           |
@@ -215,7 +215,7 @@ mod tests {
         // "expect_error" is NOT in the custom list -> now lints (was default-skipped)
         assert_snapshot!(
             snapshot_lint_with_settings("expect_error(a <- 1)", settings),
-            @r"
+            @"
         warning: implicit_assignment
          --> <test>:1:14
           |
@@ -254,7 +254,7 @@ mod tests {
         // "foo" is not in either list -> lints
         assert_snapshot!(
             snapshot_lint_with_settings("foo(a <- 1)", settings),
-            @r"
+            @"
         warning: implicit_assignment
          --> <test>:1:5
           |
@@ -285,7 +285,7 @@ mod tests {
             "fun(
                 a <- # xxx
                 1,
-              )"), @r"
+              )"), @"
         warning: implicit_assignment
          --> <test>:2:17
           |
@@ -311,7 +311,7 @@ mod tests {
         let code = r#"myfun(a <- 1)"#;
         assert_snapshot!(
             snapshot_lint_with_settings(code, settings),
-            @r"
+            @"
         warning: implicit_assignment
          --> <test>:1:7
           |
