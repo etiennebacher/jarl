@@ -26,7 +26,6 @@ use crate::lints::base::undesirable_function::undesirable_function::undesirable_
 use crate::lints::base::which_grepl::which_grepl::which_grepl;
 
 use crate::lints::dplyr::dplyr_filter_out::dplyr_filter_out::dplyr_filter_out;
-use crate::lints::dplyr::dplyr_group_by_ungroup::dplyr_group_by_ungroup::dplyr_group_by_ungroup;
 
 use crate::lints::testthat::expect_length::expect_length::expect_length;
 use crate::lints::testthat::expect_match::expect_match::expect_match;
@@ -111,9 +110,6 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     //
     if checker.is_rule_enabled(Rule::DplyrFilterOut) {
         checker.report_diagnostic(dplyr_filter_out(r_expr, checker)?);
-    }
-    if checker.is_rule_enabled(Rule::DplyrGroupByUngroup) {
-        checker.report_diagnostic(dplyr_group_by_ungroup(r_expr)?);
     }
 
     //
