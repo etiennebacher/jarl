@@ -20,7 +20,7 @@ mod tests {
     fn test_lint_grepv() {
         assert_snapshot!(
             snapshot_lint("grep('i', x, value = TRUE)"),
-            @r"
+            @"
         warning: grepv
          --> <test>:1:1
           |
@@ -33,7 +33,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("grep('i', x, TRUE, TRUE, TRUE)"),
-            @r"
+            @"
         warning: grepv
          --> <test>:1:1
           |
@@ -46,7 +46,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("grep('i', x, TRUE, TRUE, TRUE, value = TRUE)"),
-            @r"
+            @"
         warning: grepv
          --> <test>:1:1
           |

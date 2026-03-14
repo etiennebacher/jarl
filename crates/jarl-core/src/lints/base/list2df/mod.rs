@@ -37,7 +37,7 @@ mod tests {
     fn test_lint_list2df() {
         assert_snapshot!(
             snapshot_lint("do.call(cbind.data.frame, x)"),
-            @r"
+            @"
         warning: list2df
          --> <test>:1:1
           |
@@ -50,7 +50,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("do.call(args = x, what = cbind.data.frame)"),
-            @r"
+            @"
         warning: list2df
          --> <test>:1:1
           |
@@ -63,7 +63,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("do.call(cbind.data.frame, args = x)"),
-            @r"
+            @"
         warning: list2df
          --> <test>:1:1
           |
@@ -76,7 +76,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("do.call(cbind.data.frame, foo(bar(x)))"),
-            @r"
+            @"
         warning: list2df
          --> <test>:1:1
           |
@@ -91,7 +91,7 @@ mod tests {
         // Quoted function names
         assert_snapshot!(
             snapshot_lint("do.call('cbind.data.frame', x)"),
-            @r"
+            @"
         warning: list2df
          --> <test>:1:1
           |
@@ -138,7 +138,7 @@ mod tests {
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             snapshot_lint("do.call(\n # a comment\ncbind.data.frame, x)"),
-            @r"
+            @"
         warning: list2df
          --> <test>:1:1
           |

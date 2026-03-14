@@ -13,7 +13,7 @@ mod tests {
     fn test_lint_length_levels() {
         assert_snapshot!(
             snapshot_lint("2:length(levels(x))"),
-            @r"
+            @"
         warning: length_levels
          --> <test>:1:3
           |
@@ -26,7 +26,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("2:length(levels(foo(a)))"),
-            @r"
+            @"
         warning: length_levels
          --> <test>:1:3
           |
@@ -60,7 +60,7 @@ mod tests {
     fn test_lint_length_levels_piped() {
         assert_snapshot!(
             snapshot_lint("levels(x) |> \n length()"),
-            @r"
+            @"
         warning: length_levels
          --> <test>:1:1
           |
@@ -74,7 +74,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x |> \n levels() |> \n length()"),
-            @r"
+            @"
         warning: length_levels
          --> <test>:1:1
           |

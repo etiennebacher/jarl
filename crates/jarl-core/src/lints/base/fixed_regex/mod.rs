@@ -64,7 +64,7 @@ mod tests {
     fn test_lint_fixed_regex() {
         assert_snapshot!(
             snapshot_lint("grepl('abcdefg', x)"),
-            @r"
+            @"
         warning: fixed_regex
          --> <test>:1:1
           |
@@ -77,7 +77,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("grep('abcdefg', x)"),
-            @r"
+            @"
         warning: fixed_regex
          --> <test>:1:1
           |
@@ -90,7 +90,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("regexec('abcdefg', x)"),
-            @r"
+            @"
         warning: fixed_regex
          --> <test>:1:1
           |
@@ -103,7 +103,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("regexpr('abcdefg', x)"),
-            @r"
+            @"
         warning: fixed_regex
          --> <test>:1:1
           |
@@ -116,7 +116,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("gsub('abcdefg', 'a', x)"),
-            @r"
+            @"
         warning: fixed_regex
          --> <test>:1:1
           |
@@ -129,7 +129,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("sub('abcdefg', 'a', x)"),
-            @r"
+            @"
         warning: fixed_regex
          --> <test>:1:1
           |
@@ -142,7 +142,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("gregexpr('abcdefg', x)"),
-            @r"
+            @"
         warning: fixed_regex
          --> <test>:1:1
           |
@@ -158,7 +158,7 @@ mod tests {
 
             snapshot_lint("gregexpr('a-z', y)"),
 
-            @r"
+            @"
         warning: fixed_regex
          --> <test>:1:1
           |
@@ -173,7 +173,7 @@ mod tests {
         // naming the argument doesn't matter (if it's still used positionally)
         assert_snapshot!(
             snapshot_lint("gregexpr(pattern = 'a-z', y)"),
-            @r"
+            @"
         warning: fixed_regex
          --> <test>:1:1
           |
@@ -210,7 +210,7 @@ mod tests {
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             snapshot_lint("grep(\n  # comment\n  'hello', x\n)"),
-            @r"
+            @"
         warning: fixed_regex
          --> <test>:1:1
           |

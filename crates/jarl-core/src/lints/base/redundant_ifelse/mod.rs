@@ -44,7 +44,7 @@ mod tests {
         // Complex conditions should still be detected
         assert_snapshot!(
             snapshot_lint("ifelse(x > 0 & y < 10, TRUE, FALSE)"),
-            @r"
+            @"
         warning: redundant_ifelse
          --> <test>:1:1
           |
@@ -57,7 +57,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("ifelse(foo(bar(x)) == 'test', TRUE, FALSE)"),
-            @r"
+            @"
         warning: redundant_ifelse
          --> <test>:1:1
           |

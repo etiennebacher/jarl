@@ -25,7 +25,7 @@ mod tests {
     fn test_lint_seq() {
         assert_snapshot!(
             snapshot_lint("1:length(x)"),
-            @r"
+            @"
         warning: seq
          --> <test>:1:1
           |
@@ -38,7 +38,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("1:nrow(x)"),
-            @r"
+            @"
         warning: seq
          --> <test>:1:1
           |
@@ -51,7 +51,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("1:ncol(x)"),
-            @r"
+            @"
         warning: seq
          --> <test>:1:1
           |
@@ -64,7 +64,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("1:NROW(x)"),
-            @r"
+            @"
         warning: seq
          --> <test>:1:1
           |
@@ -77,7 +77,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("1:NCOL(x)"),
-            @r"
+            @"
         warning: seq
          --> <test>:1:1
           |
@@ -93,7 +93,7 @@ mod tests {
 
             snapshot_lint("1:base::length(x)"),
 
-            @r"
+            @"
         warning: seq
          --> <test>:1:1
           |
@@ -108,7 +108,7 @@ mod tests {
         // Same with 1L
         assert_snapshot!(
             snapshot_lint("1L:length(x)"),
-            @r"
+            @"
         warning: seq
          --> <test>:1:1
           |
@@ -121,7 +121,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("1L:nrow(x)"),
-            @r"
+            @"
         warning: seq
          --> <test>:1:1
           |
@@ -134,7 +134,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("1L:ncol(x)"),
-            @r"
+            @"
         warning: seq
          --> <test>:1:1
           |
@@ -147,7 +147,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("1L:NROW(x)"),
-            @r"
+            @"
         warning: seq
          --> <test>:1:1
           |
@@ -160,7 +160,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("1L:NCOL(x)"),
-            @r"
+            @"
         warning: seq
          --> <test>:1:1
           |
@@ -200,7 +200,7 @@ mod tests {
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             snapshot_lint("1:length(\n # a comment \nfoo(x))"),
-            @r"
+            @"
         warning: seq
          --> <test>:1:1
           |

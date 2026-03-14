@@ -13,7 +13,7 @@ mod tests {
     fn test_lint_empty_assignment() {
         assert_snapshot!(
             snapshot_lint("x <- {}"),
-            @r"
+            @"
         warning: empty_assignment
          --> <test>:1:1
           |
@@ -25,7 +25,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x = { }"),
-            @r"
+            @"
         warning: empty_assignment
          --> <test>:1:1
           |
@@ -37,7 +37,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("{ } -> x"),
-            @r"
+            @"
         warning: empty_assignment
          --> <test>:1:1
           |
@@ -49,7 +49,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x <- {\n}"),
-            @r"
+            @"
         warning: empty_assignment
          --> <test>:1:1
           |
@@ -62,7 +62,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("env$obj <- {}"),
-            @r"
+            @"
         warning: empty_assignment
          --> <test>:1:1
           |

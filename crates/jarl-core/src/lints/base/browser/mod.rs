@@ -20,7 +20,7 @@ mod tests {
     fn test_lint_browser() {
         assert_snapshot!(
             snapshot_lint("browser()"),
-            @r"
+            @"
         warning: browser
          --> <test>:1:1
           |
@@ -32,7 +32,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("utils::browser()"),
-            @r"
+            @"
         warning: browser
          --> <test>:1:1
           |
@@ -44,7 +44,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("browser(text = 'remove before commit')"),
-            @r"
+            @"
         warning: browser
          --> <test>:1:1
           |
@@ -56,7 +56,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (x > 10) { browser(text = 'x is large') }"),
-            @r"
+            @"
         warning: browser
          --> <test>:1:15
           |
@@ -71,7 +71,7 @@ mod tests {
             // This is invalid syntax (invalid 'y' type in 'x || y'), but it "works" for debugging
             "( x < 10 ) || browser('big x')"
         ),
-        @r"
+        @"
         warning: browser
          --> <test>:1:15
           |

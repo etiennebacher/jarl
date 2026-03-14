@@ -30,7 +30,8 @@ fn test_empty_toml_uses_all_rules() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -88,7 +89,8 @@ select = []
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -120,14 +122,15 @@ select = [""]
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Unknown rules in field `select` in 'jarl.toml': "" (empty or whitespace-only not allowed)
-"#
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in field `select` in 'jarl.toml': "" (empty or whitespace-only not allowed)
+    "#
     );
 
     Ok(())
@@ -159,7 +162,8 @@ ignore = []
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -208,14 +212,15 @@ ignore = [""]
             .run()
             .normalize_os_executable_name(),
         @r#"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Unknown rules in field `ignore` in 'jarl.toml': "" (empty or whitespace-only not allowed)
-"#
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in field `ignore` in 'jarl.toml': "" (empty or whitespace-only not allowed)
+    "#
     );
 
     Ok(())
@@ -246,7 +251,8 @@ select = ["any_is_na"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -299,7 +305,8 @@ any(duplicated(x))
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -357,7 +364,8 @@ ignore = ["any_duplicated"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -410,7 +418,8 @@ length(levels(x))"#;
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -476,7 +485,8 @@ length(levels(x))"#;
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -532,7 +542,8 @@ length(levels(x))"#;
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -590,7 +601,8 @@ length(levels(x))"#;
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -631,14 +643,15 @@ select = ["any_is_na", "foo"]
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Unknown rules in field `select` in 'jarl.toml': foo
-"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in field `select` in 'jarl.toml': foo
+    "
     );
 
     Ok(())
@@ -671,14 +684,15 @@ ignore = ["foo", "bar"]
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Unknown rules in field `ignore` in 'jarl.toml': foo, bar
-"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in field `ignore` in 'jarl.toml': foo, bar
+    "
     );
 
     Ok(())
@@ -711,20 +725,20 @@ select = ["any_is_na"
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-TOML parse error at line 2, column 6
-  |
-2 | [lint
-  |      ^
-unclosed table, expected `]`
+    success: false
+    exit_code: 255
+    ----- stdout -----
 
-"
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 2, column 6
+      |
+    2 | [lint
+      |      ^
+    unclosed table, expected `]`
+    "
     );
 
     Ok(())
@@ -757,7 +771,8 @@ unknown_field = ["value"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 255
     ----- stdout -----
@@ -796,7 +811,8 @@ fn test_toml_without_linter_section() -> anyhow::Result<()> {
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -855,14 +871,15 @@ ignore = ["any_duplicated", "", "any_is_na"]
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Unknown rules in field `ignore` in 'jarl.toml': "" (empty or whitespace-only not allowed)
-"#
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in field `ignore` in 'jarl.toml': "" (empty or whitespace-only not allowed)
+    "#
     );
 
     Ok(())
@@ -895,14 +912,15 @@ select = ["any_is_na", "   ", "any_duplicated"]
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Unknown rules in field `select` in 'jarl.toml': "" (empty or whitespace-only not allowed)
-"#
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in field `select` in 'jarl.toml': "" (empty or whitespace-only not allowed)
+    "#
     );
 
     Ok(())
@@ -925,7 +943,8 @@ fn test_no_toml_file_uses_all_rules() -> anyhow::Result<()> {
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -983,13 +1002,14 @@ fn test_default_exclude_works() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @"
-success: true
-exit_code: 0
------ stdout -----
-Warning: No R files found under the given path(s).
 
------ stderr -----
-"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    Warning: No R files found under the given path(s).
+
+    ----- stderr -----
+    "
     );
 
     // "default-exclude" specified by the user
@@ -1008,7 +1028,8 @@ default-exclude = false
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -1063,20 +1084,20 @@ default-exclude = 1
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-TOML parse error at line 3, column 19
-  |
-3 | default-exclude = 1
-  |                   ^
-invalid type: integer `1`, expected a boolean
+    success: false
+    exit_code: 255
+    ----- stdout -----
 
-"
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 19
+      |
+    3 | default-exclude = 1
+      |                   ^
+    invalid type: integer `1`, expected a boolean
+    "
     );
 
     // "default-exclude" specified by the user
@@ -1097,20 +1118,20 @@ default-exclude = ["a"]
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-TOML parse error at line 3, column 19
-  |
-3 | default-exclude = ["a"]
-  |                   ^^^^^
-invalid type: sequence, expected a boolean
+    success: false
+    exit_code: 255
+    ----- stdout -----
 
-"#
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 19
+      |
+    3 | default-exclude = ["a"]
+      |                   ^^^^^
+    invalid type: sequence, expected a boolean
+    "#
     );
 
     Ok(())
@@ -1146,7 +1167,8 @@ exclude = ["excluded.R"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -1197,7 +1219,8 @@ exclude = ["excluded_dir/"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -1247,7 +1270,8 @@ exclude = ["test-*.R"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -1300,7 +1324,8 @@ exclude = ["excluded.R", "temp/", "*.tmp.R"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -1353,7 +1378,8 @@ exclude = ["custom_exclude.R"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -1416,7 +1442,8 @@ exclude = ["**/test/**"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -1462,7 +1489,8 @@ exclude = []
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -1508,20 +1536,20 @@ exclude = true
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-TOML parse error at line 3, column 11
-  |
-3 | exclude = true
-  |           ^^^^
-invalid type: boolean `true`, expected a sequence
+    success: false
+    exit_code: 255
+    ----- stdout -----
 
-"
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 11
+      |
+    3 | exclude = true
+      |           ^^^^
+    invalid type: boolean `true`, expected a sequence
+    "
     );
 
     std::fs::write(
@@ -1541,20 +1569,20 @@ exclude = 1
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-TOML parse error at line 3, column 11
-  |
-3 | exclude = 1
-  |           ^
-invalid type: integer `1`, expected a sequence
+    success: false
+    exit_code: 255
+    ----- stdout -----
 
-"
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 11
+      |
+    3 | exclude = 1
+      |           ^
+    invalid type: integer `1`, expected a sequence
+    "
     );
 
     std::fs::write(
@@ -1574,20 +1602,20 @@ exclude = ["a", 1]
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-TOML parse error at line 3, column 17
-  |
-3 | exclude = ["a", 1]
-  |                 ^
-invalid type: integer `1`, expected a string
+    success: false
+    exit_code: 255
+    ----- stdout -----
 
-"#
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 17
+      |
+    3 | exclude = ["a", 1]
+      |                 ^
+    invalid type: integer `1`, expected a string
+    "#
     );
 
     Ok(())
@@ -1621,7 +1649,8 @@ fixable = ["any_is_na"]
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -1644,9 +1673,10 @@ fixable = ["any_is_na"]
     // Only any_is_na should be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(fixed_contents,
-        @"anyNA(x)
-any(duplicated(x))
-"
+        @"
+    anyNA(x)
+    any(duplicated(x))
+    "
     );
 
     Ok(())
@@ -1682,9 +1712,10 @@ unfixable = ["any_is_na"]
     // Only any_duplicated should be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(fixed_contents,
-        @"any(is.na(x))
-anyDuplicated(x) > 0
-"
+        @"
+    any(is.na(x))
+    anyDuplicated(x) > 0
+    "
     );
 
     Ok(())
@@ -1720,10 +1751,11 @@ fixable = ["PERF"]
     // Only PERF rules should be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(fixed_contents,
-        @"anyNA(x)
-anyDuplicated(x) > 0
-length(levels(x))
-"
+        @"
+    anyNA(x)
+    anyDuplicated(x) > 0
+    length(levels(x))
+    "
     );
 
     Ok(())
@@ -1759,10 +1791,11 @@ unfixable = ["PERF"]
     // PERF rules should not be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(fixed_contents,
-        @"any(is.na(x))
-any(duplicated(x))
-nlevels(x)
-"
+        @"
+    any(is.na(x))
+    any(duplicated(x))
+    nlevels(x)
+    "
     );
 
     Ok(())
@@ -1799,9 +1832,10 @@ unfixable = ["any_is_na"]
     // any_is_na should not be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(fixed_contents,
-        @"any(is.na(x))
-anyDuplicated(x) > 0
-"
+        @"
+    any(is.na(x))
+    anyDuplicated(x) > 0
+    "
     );
 
     Ok(())
@@ -1839,9 +1873,10 @@ unfixable = ["any_duplicated"]
     // any_is_na should not be fixed
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(fixed_contents,
-        @"anyNA(x)
-any(duplicated(x))
-"
+        @"
+    anyNA(x)
+    any(duplicated(x))
+    "
     );
 
     Ok(())
@@ -1876,9 +1911,10 @@ fixable = []
 
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(fixed_contents,
-        @"any(is.na(x))
-any(duplicated(x))
-"
+        @"
+    any(is.na(x))
+    any(duplicated(x))
+    "
     );
 
     Ok(())
@@ -1914,9 +1950,10 @@ unfixable = []
 
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(fixed_contents,
-        @"anyNA(x)
-anyDuplicated(x) > 0
-"
+        @"
+    anyNA(x)
+    anyDuplicated(x) > 0
+    "
     );
 
     Ok(())
@@ -1948,14 +1985,15 @@ fixable = ["invalid_rule_name"]
             .run()
             .normalize_os_executable_name(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Unknown rules in field `fixable` in 'jarl.toml': invalid_rule_name
-"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in field `fixable` in 'jarl.toml': invalid_rule_name
+    "
     );
 
     Ok(())
@@ -1987,14 +2025,15 @@ unfixable = ["invalid_rule_name"]
             .run()
             .normalize_os_executable_name(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Unknown rules in field `unfixable` in 'jarl.toml': invalid_rule_name
-"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in field `unfixable` in 'jarl.toml': invalid_rule_name
+    "
     );
 
     Ok(())
@@ -2026,7 +2065,8 @@ fixable = ["any_is_na"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -2088,10 +2128,11 @@ fixable = ["any_is_na"]
 
     let fixed_contents = std::fs::read_to_string(directory.join(test_path))?;
     insta::assert_snapshot!(fixed_contents,
-        @"anyNA(x)
-any(duplicated(x))
-length(levels(x))
-"
+        @"
+    anyNA(x)
+    any(duplicated(x))
+    length(levels(x))
+    "
     );
 
     Ok(())
@@ -2126,7 +2167,8 @@ expect_equal(foo(x), TRUE)
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -2191,7 +2233,8 @@ expect_equal(foo(x), TRUE)
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -2250,14 +2293,15 @@ extend-select = ["FOO"]
             .run()
             .normalize_os_executable_name(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Unknown rules in field `extend-select` in 'jarl.toml': FOO
-"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in field `extend-select` in 'jarl.toml': FOO
+    "
     );
 
     Ok(())
@@ -2289,7 +2333,8 @@ include = ["included.R"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -2340,7 +2385,8 @@ include = ["R/"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -2391,7 +2437,8 @@ include = ["R-*.R"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -2446,7 +2493,8 @@ include = []
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -2500,7 +2548,8 @@ exclude = ["R/generated.R"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -2558,7 +2607,8 @@ include = ["**/*.{Rmd,qmd}"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -2611,20 +2661,20 @@ include = true
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-TOML parse error at line 3, column 11
-  |
-3 | include = true
-  |           ^^^^
-invalid type: boolean `true`, expected a sequence
+    success: false
+    exit_code: 255
+    ----- stdout -----
 
-"
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 11
+      |
+    3 | include = true
+      |           ^^^^
+    invalid type: boolean `true`, expected a sequence
+    "
     );
 
     std::fs::write(
@@ -2644,20 +2694,20 @@ include = ["a", 1]
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-TOML parse error at line 3, column 17
-  |
-3 | include = ["a", 1]
-  |                 ^
-invalid type: integer `1`, expected a string
+    success: false
+    exit_code: 255
+    ----- stdout -----
 
-"#
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 17
+      |
+    3 | include = ["a", 1]
+      |                 ^
+    invalid type: integer `1`, expected a string
+    "#
     );
 
     Ok(())
@@ -2708,7 +2758,8 @@ select = ["any_duplicated"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -2775,7 +2826,8 @@ select = ["any_is_na"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -2851,7 +2903,8 @@ select = ["any_duplicated"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -2923,7 +2976,8 @@ exclude = ["bar.R"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -2995,7 +3049,8 @@ include = ["foo.R"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----

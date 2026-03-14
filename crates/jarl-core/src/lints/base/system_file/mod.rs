@@ -22,7 +22,7 @@ mod tests {
     fn test_lint_system_file() {
         assert_snapshot!(
             snapshot_lint("system.file(file.path('path', 'to', 'data'), package = 'foo')"),
-            @r"
+            @"
         warning: system_file
          --> <test>:1:1
           |
@@ -35,7 +35,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("base::system.file(file.path('path', 'to', 'data'), package = 'foo')"),
-            @r"
+            @"
         warning: system_file
          --> <test>:1:1
           |
@@ -62,7 +62,7 @@ mod tests {
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             snapshot_lint("system.file(\n # a comment\nfile.path('path', 'to', 'data'), package = 'foo')"),
-            @r"
+            @"
         warning: system_file
          --> <test>:1:1
           |

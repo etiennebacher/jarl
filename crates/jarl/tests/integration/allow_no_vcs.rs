@@ -22,7 +22,8 @@ fn test_no_git_repo_does_not_block_lint() -> anyhow::Result<()> {
             .arg("--fix")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 255
     ----- stdout -----
@@ -57,7 +58,8 @@ fn test_no_git_repo_blocks_fix() -> anyhow::Result<()> {
             .arg("--fix")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 255
     ----- stdout -----
@@ -89,7 +91,8 @@ fn test_no_git_repo_allow_no_vcs() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -130,7 +133,8 @@ fn test_mixed_vcs_coverage_blocks_fix() -> anyhow::Result<()> {
             .arg("--fix")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 255
     ----- stdout -----
