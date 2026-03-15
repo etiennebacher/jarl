@@ -15,7 +15,7 @@ air_workspace.workspace = true
 
 # LSP dependencies
 lsp-server = "0.7"
-lsp-types = "0.95"
+lsp-types = "0.97"
 
 # Async and concurrency
 crossbeam = "0.8"
