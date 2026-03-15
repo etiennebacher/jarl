@@ -35,6 +35,12 @@ mod tests {
             "dplyr_group_by_ungroup",
             None,
         );
+        // Slice verb already has by (slice_*() use `by`, not `.by`)
+        expect_no_lint(
+            "x |> group_by(grp) |> slice_head(n = 1, by = grp) |> ungroup()",
+            "dplyr_group_by_ungroup",
+            None,
+        );
         // Non-dplyr verb
         expect_no_lint(
             "x |> group_by(grp) |> my_custom_fun() |> ungroup()",
@@ -174,66 +180,66 @@ mod tests {
     fn test_lint_slice_verbs() {
         assert_snapshot!(
             snapshot_lint("x |> group_by(grp) |> slice_head(n = 1) |> ungroup()"),
-            @r"
+            @"
         warning: dplyr_group_by_ungroup
          --> <test>:1:6
           |
         1 | x |> group_by(grp) |> slice_head(n = 1) |> ungroup()
           |      ----------------------------------------------- `group_by()` followed by `slice_head()` and `ungroup()` can be simplified.
           |
-          = help: Use `slice_head(..., .by = grp)` instead.
+          = help: Use `slice_head(..., by = grp)` instead.
         Found 1 error.
         "
         );
         assert_snapshot!(
             snapshot_lint("x |> group_by(grp) |> slice_tail(n = 1) |> ungroup()"),
-            @r"
+            @"
         warning: dplyr_group_by_ungroup
          --> <test>:1:6
           |
         1 | x |> group_by(grp) |> slice_tail(n = 1) |> ungroup()
           |      ----------------------------------------------- `group_by()` followed by `slice_tail()` and `ungroup()` can be simplified.
           |
-          = help: Use `slice_tail(..., .by = grp)` instead.
+          = help: Use `slice_tail(..., by = grp)` instead.
         Found 1 error.
         "
         );
         assert_snapshot!(
             snapshot_lint("x |> group_by(grp) |> slice_min(val) |> ungroup()"),
-            @r"
+            @"
         warning: dplyr_group_by_ungroup
          --> <test>:1:6
           |
         1 | x |> group_by(grp) |> slice_min(val) |> ungroup()
           |      -------------------------------------------- `group_by()` followed by `slice_min()` and `ungroup()` can be simplified.
           |
-          = help: Use `slice_min(..., .by = grp)` instead.
+          = help: Use `slice_min(..., by = grp)` instead.
         Found 1 error.
         "
         );
         assert_snapshot!(
             snapshot_lint("x |> group_by(grp) |> slice_max(val) |> ungroup()"),
-            @r"
+            @"
         warning: dplyr_group_by_ungroup
          --> <test>:1:6
           |
         1 | x |> group_by(grp) |> slice_max(val) |> ungroup()
           |      -------------------------------------------- `group_by()` followed by `slice_max()` and `ungroup()` can be simplified.
           |
-          = help: Use `slice_max(..., .by = grp)` instead.
+          = help: Use `slice_max(..., by = grp)` instead.
         Found 1 error.
         "
         );
         assert_snapshot!(
             snapshot_lint("x |> group_by(grp) |> slice_sample(n = 5) |> ungroup()"),
-            @r"
+            @"
         warning: dplyr_group_by_ungroup
          --> <test>:1:6
           |
         1 | x |> group_by(grp) |> slice_sample(n = 5) |> ungroup()
           |      ------------------------------------------------- `group_by()` followed by `slice_sample()` and `ungroup()` can be simplified.
           |
-          = help: Use `slice_sample(..., .by = grp)` instead.
+          = help: Use `slice_sample(..., by = grp)` instead.
         Found 1 error.
         "
         );
@@ -282,6 +288,73 @@ mod tests {
           = help: Use `summarize(..., .by = grp)` instead.
         Found 1 error.
         "
+        );
+    }
+
+    #[test]
+    fn test_fix_single_group() {
+        assert_snapshot!(
+            "fix_output",
+            get_fixed_text(
+                vec![
+                    "x |> group_by(grp) |> summarize(a = mean(b)) |> ungroup()",
+                    "x |> group_by(grp) |> mutate(a = mean(b)) |> ungroup()",
+                    "x |> group_by(grp) |> filter(a > 1) |> ungroup()",
+                    "x |> group_by(grp) |> slice_head(n = 1) |> ungroup()",
+                ],
+                "dplyr_group_by_ungroup",
+                None
+            )
+        );
+    }
+
+    #[test]
+    fn test_fix_multiple_groups() {
+        assert_snapshot!(
+            "fix_multiple_groups",
+            get_fixed_text(
+                vec!["x |> group_by(grp1, grp2) |> summarize(a = mean(b)) |> ungroup()",],
+                "dplyr_group_by_ungroup",
+                None
+            )
+        );
+    }
+
+    #[test]
+    fn test_fix_magrittr_pipe() {
+        assert_snapshot!(
+            "fix_magrittr",
+            get_fixed_text(
+                vec!["x %>% group_by(grp) %>% summarize(a = mean(b)) %>% ungroup()",],
+                "dplyr_group_by_ungroup",
+                None
+            )
+        );
+    }
+
+    #[test]
+    fn test_no_fix_group_by_not_piped() {
+        assert_snapshot!(
+            "no_fix_not_piped",
+            get_fixed_text(
+                vec!["group_by(x, grp) |> summarize(a = mean(b)) |> ungroup()",],
+                "dplyr_group_by_ungroup",
+                None
+            )
+        );
+    }
+
+    #[test]
+    fn test_fix_namespaced() {
+        assert_snapshot!(
+            "fix_namespaced",
+            get_fixed_text(
+                vec![
+                    "x |> dplyr::group_by(grp) |> dplyr::summarize(a = mean(b)) |> dplyr::ungroup()",
+                ],
+                "dplyr_group_by_ungroup",
+                None
+            )
         );
     }
 }

@@ -1,0 +1,31 @@
+---
+source: crates/jarl-core/src/lints/dplyr/mod.rs
+expression: "get_fixed_text(vec![\"x |> group_by(grp) |> summarize(a = mean(b)) |> ungroup()\",\n\"x |> group_by(grp) |> mutate(a = mean(b)) |> ungroup()\",\n\"x |> group_by(grp) |> filter(a > 1) |> ungroup()\",\n\"x |> group_by(grp) |> slice_head(n = 1) |> ungroup()\",],\n\"dplyr_group_by_ungroup\", None)"
+---
+OLD:
+====
+x |> group_by(grp) |> summarize(a = mean(b)) |> ungroup()
+NEW:
+====
+x |> summarize(a = mean(b), .by = grp)
+
+OLD:
+====
+x |> group_by(grp) |> mutate(a = mean(b)) |> ungroup()
+NEW:
+====
+x |> mutate(a = mean(b), .by = grp)
+
+OLD:
+====
+x |> group_by(grp) |> filter(a > 1) |> ungroup()
+NEW:
+====
+x |> filter(a > 1, .by = grp)
+
+OLD:
+====
+x |> group_by(grp) |> slice_head(n = 1) |> ungroup()
+NEW:
+====
+x |> slice_head(n = 1, by = grp)

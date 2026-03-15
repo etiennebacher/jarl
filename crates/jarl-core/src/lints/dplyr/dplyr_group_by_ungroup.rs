@@ -1,10 +1,11 @@
 use crate::check::Checker;
 use crate::diagnostic::*;
-use crate::utils::{get_function_name, get_function_namespace_prefix};
+use crate::utils::{get_function_name, get_function_namespace_prefix, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, TextRange};
 
-/// List of dplyr verbs that support the `.by` argument.
+/// List of dplyr verbs that support per-operation grouping.
+/// Verbs use `.by` except `slice_*()` which use `by`.
 const VERBS_WITH_BY: &[&str] = &[
     "summarize",
     "summarise",
@@ -17,6 +18,15 @@ const VERBS_WITH_BY: &[&str] = &[
     "slice_max",
     "slice_sample",
 ];
+
+/// Return the name of the grouping argument for a given verb.
+fn by_arg_name(verb: &str) -> &'static str {
+    if verb.starts_with("slice_") {
+        "by"
+    } else {
+        ".by"
+    }
+}
 
 /// ## What it does
 ///
@@ -116,12 +126,13 @@ pub fn dplyr_group_by_ungroup(
         return Ok(None);
     }
 
-    // The verb must not already have a `.by` argument
+    // The verb must not already have a `by`/`.by` argument
+    let by_arg = by_arg_name(&verb_name);
     let verb_args = verb_call.arguments()?;
     let has_by_arg = verb_args.items().into_iter().any(|x| {
         x.is_ok_and(|a| {
             a.name_clause()
-                .is_some_and(|nc| nc.name().is_ok_and(|n| n.to_trimmed_string() == ".by"))
+                .is_some_and(|nc| nc.name().is_ok_and(|n| n.to_trimmed_string() == by_arg))
         })
     });
     if has_by_arg {
@@ -156,12 +167,36 @@ pub fn dplyr_group_by_ungroup(
 
     let body =
         format!("`group_by()` followed by `{verb_name}()` and `ungroup()` can be simplified.",);
-    let suggestion = format!("Use `{verb_name}(..., .by = {grouping_args})` instead.",);
+    let suggestion = format!("Use `{verb_name}(..., {by_arg} = {grouping_args})` instead.",);
+
+    // Build fix when group_by() has no named arguments and is piped into.
+    // When group_by() is called directly (e.g. group_by(data, grp)), the data
+    // argument would need to be moved into the verb, which is too complex to
+    // autofix reliably.
+    let has_named_group_by_args = group_by_items
+        .iter()
+        .any(|item| item.as_ref().is_ok_and(|a| a.name_clause().is_some()));
+    let fix = if has_named_group_by_args || !group_by_is_piped {
+        Fix::empty()
+    } else {
+        let verb_text = verb_call.to_trimmed_string();
+        // Insert `by`/`.by = grouping_args` before the closing paren
+        let fix_content = match verb_text.rfind(')') {
+            Some(pos) => format!("{}, {by_arg} = {grouping_args})", &verb_text[..pos]),
+            None => return Ok(None),
+        };
+        Fix {
+            content: fix_content,
+            start: range.start().into(),
+            end: range.end().into(),
+            to_skip: node_contains_comments(pipe_expr.syntax()),
+        }
+    };
 
     Ok(Some(Diagnostic::new(
         ViolationData::new("dplyr_group_by_ungroup".to_string(), body, Some(suggestion)),
         range,
-        Fix::empty(),
+        fix,
     )))
 }
 
