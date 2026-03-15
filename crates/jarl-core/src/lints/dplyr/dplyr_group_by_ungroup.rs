@@ -4,8 +4,8 @@ use crate::utils::{get_function_name, get_function_namespace_prefix, node_contai
 use air_r_syntax::*;
 use biome_rowan::{AstNode, TextRange};
 
-/// List of dplyr verbs that support per-operation grouping.
-/// Verbs use `.by` except `slice_*()` which use `by`.
+// List of dplyr verbs that support per-operation grouping.
+// Verbs use `.by` except `slice_*()` which use `by`.
 const VERBS_WITH_BY: &[&str] = &[
     "summarize",
     "summarise",
@@ -19,7 +19,7 @@ const VERBS_WITH_BY: &[&str] = &[
     "slice_sample",
 ];
 
-/// Return the name of the grouping argument for a given verb.
+// Return the name of the grouping argument for a given verb.
 fn by_arg_name(verb: &str) -> &'static str {
     if verb.starts_with("slice_") {
         "by"
@@ -31,19 +31,25 @@ fn by_arg_name(verb: &str) -> &'static str {
 /// ## What it does
 ///
 /// Checks for `group_by() |> verb() |> ungroup()` patterns that can be
-/// simplified using the `.by` argument.
+/// simplified using the `.by` or `by` argument.
 ///
 /// ## Why is this bad?
 ///
 /// Since `dplyr` 1.1.0, verbs like `summarize()`, `mutate()`, `filter()`,
-/// `reframe()`, and the `slice_*()` family support a `.by` argument. Using
-/// `.by` is shorter and does not require a subsequent `ungroup()` call.
+/// `reframe()`, and the `slice_*()` family support a `.by` or `by` argument.
+/// Using `.by` / `by` is shorter and does not require a subsequent `ungroup()`
+/// call.
 ///
 /// ## Example
 ///
 /// ```r
 /// x |>
 ///   group_by(grp) |>
+///   slice_head(mean_val = mean(val)) |>
+///   ungroup()
+///
+/// x |>
+///   group_by(grp1, grp2) |>
 ///   summarize(mean_val = mean(val)) |>
 ///   ungroup()
 /// ```
@@ -51,7 +57,10 @@ fn by_arg_name(verb: &str) -> &'static str {
 /// Use instead:
 /// ```r
 /// x |>
-///   summarize(mean_val = mean(val), .by = grp)
+///   slice_head(mean_val = mean(val), by = grp)
+///
+/// x |>
+///   summarize(mean_val = mean(val), .by = c(grp1, grp2))
 /// ```
 ///
 /// ## References
