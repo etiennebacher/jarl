@@ -573,7 +573,7 @@ mod tests {
     }
 
     #[test]
-    fn test_find_root_description_in_parent() {
+    fn test_find_root_description_alone_is_not_a_root() {
         let dir = tempfile::TempDir::new().unwrap();
         std::fs::write(
             dir.path().join("DESCRIPTION"),
@@ -585,7 +585,8 @@ mod tests {
         let file = r_dir.join("foo.R");
         std::fs::write(&file, "").unwrap();
 
-        assert_eq!(find_r_project_root(&file), Some(dir.path().to_path_buf()));
+        // DESCRIPTION alone doesn't change .libPaths(), so no distinct root
+        assert_eq!(find_r_project_root(&file), None);
     }
 
     #[test]
@@ -621,12 +622,12 @@ mod tests {
         let file = sub.join("R").join("foo.R");
         std::fs::write(&file, "").unwrap();
 
-        // DESCRIPTION is closer, so the subproject is the root
-        assert_eq!(find_r_project_root(&file), Some(sub));
+        // Only renv.lock matters, DESCRIPTION is ignored for root detection
+        assert_eq!(find_r_project_root(&file), Some(dir.path().to_path_buf()));
     }
 
     #[test]
-    fn test_find_root_file_at_root_level() {
+    fn test_find_root_file_at_root_level_description_only() {
         let dir = tempfile::TempDir::new().unwrap();
         std::fs::write(
             dir.path().join("DESCRIPTION"),
@@ -636,7 +637,8 @@ mod tests {
         let file = dir.path().join("script.R");
         std::fs::write(&file, "").unwrap();
 
-        assert_eq!(find_r_project_root(&file), Some(dir.path().to_path_buf()));
+        // DESCRIPTION alone doesn't change .libPaths(), so no distinct root
+        assert_eq!(find_r_project_root(&file), None);
     }
 
     // ── PackageCacheMap tests ──────────────────────────────────────────
@@ -684,22 +686,14 @@ mod tests {
     fn test_cache_map_different_roots_get_separate_caches() {
         let map = PackageCacheMap::new();
 
-        // Two separate project directories
+        // Two separate renv projects (only renv.lock creates distinct roots)
         let dir_a = tempfile::TempDir::new().unwrap();
-        std::fs::write(
-            dir_a.path().join("DESCRIPTION"),
-            "Package: pkg_a\nVersion: 0.1.0\n",
-        )
-        .unwrap();
+        std::fs::write(dir_a.path().join("renv.lock"), "{}").unwrap();
         let file_a = dir_a.path().join("script.R");
         std::fs::write(&file_a, "").unwrap();
 
         let dir_b = tempfile::TempDir::new().unwrap();
-        std::fs::write(
-            dir_b.path().join("DESCRIPTION"),
-            "Package: pkg_b\nVersion: 0.2.0\n",
-        )
-        .unwrap();
+        std::fs::write(dir_b.path().join("renv.lock"), "{}").unwrap();
         let file_b = dir_b.path().join("script.R");
         std::fs::write(&file_b, "").unwrap();
 
@@ -715,7 +709,7 @@ mod tests {
         let cache_a = map.get_or_create(&file_a, &["base"]);
         let cache_b = map.get_or_create(&file_b, &["base"]);
 
-        // Different project roots → different cache instances
+        // Different renv roots → different cache instances
         assert!(cache_a.is_some());
         assert!(cache_b.is_some());
         assert!(!Arc::ptr_eq(
