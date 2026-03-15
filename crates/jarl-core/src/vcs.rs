@@ -8,9 +8,8 @@ use std::process::Command;
 /// Returns `Some(repo_root)` if found, `None` otherwise.
 fn discover_repo(path: &str) -> Option<String> {
     let dir = match Path::new(path).parent() {
-        Some(p) if p.as_os_str().is_empty() => Path::new("."),
-        Some(p) => p,
-        None => Path::new("."),
+        Some(p) if !p.as_os_str().is_empty() => p,
+        _ => Path::new("."),
     };
 
     let output = Command::new("git")
