@@ -242,11 +242,12 @@ impl PackageCacheMap {
 
 /// Find the R project root for a given file path.
 ///
-/// Walks up the directory tree looking for markers of an R project environment:
-/// - `renv.lock` — renv project (changes `.libPaths()` via auto-activation)
-/// - `DESCRIPTION` — R package root
+/// Only renv projects get their own root, because renv changes `.libPaths()`
+/// via auto-activation in `.Rprofile`. Non-renv projects (including plain R
+/// packages with a DESCRIPTION) all use the system library and share a single
+/// cache (`None`).
 ///
-/// Returns `None` if no marker is found (system R installation).
+/// Returns `None` if no renv project is found.
 pub fn find_r_project_root(file_path: &Path) -> Option<PathBuf> {
     let start = if file_path.is_file() {
         file_path.parent()?
@@ -256,11 +257,7 @@ pub fn find_r_project_root(file_path: &Path) -> Option<PathBuf> {
 
     let mut dir = start;
     loop {
-        // renv takes priority: it changes the entire library path
         if dir.join("renv.lock").exists() {
-            return Some(dir.to_path_buf());
-        }
-        if dir.join("DESCRIPTION").exists() {
             return Some(dir.to_path_buf());
         }
         match dir.parent() {
