@@ -1,30 +1,39 @@
-use git2::{Repository, Signature};
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::process::Command;
 
-pub fn create_commit(file_path: PathBuf, repo: Repository) -> anyhow::Result<()> {
-    let file_path = PathBuf::from(Path::file_name(&file_path).unwrap());
+pub fn create_commit(file_path: &Path, repo_dir: &Path) -> anyhow::Result<()> {
+    let file_name = file_path
+        .file_name()
+        .expect("file_path must have a file name");
 
-    // 1. Add the file to the index
-    let mut index = repo.index()?;
-    index.add_path(&file_path)?;
-    index.write()?; // Write the index to disk
+    Command::new("git")
+        .args(["add", &file_name.to_string_lossy()])
+        .current_dir(repo_dir)
+        .output()?;
 
-    // 2. Write the index to a tree
-    let tree_id = index.write_tree()?;
-    let tree = repo.find_tree(tree_id)?;
+    Command::new("git")
+        .args(["commit", "-m", "Initial commit"])
+        .current_dir(repo_dir)
+        .output()?;
 
-    // 3. Create a signature
-    let sig = Signature::now("Your Name", "your@example.com")?;
+    Ok(())
+}
 
-    // 4. Commit (no parents means it's the initial commit)
-    let _ = repo.commit(
-        Some("HEAD"),     // Point HEAD to this commit
-        &sig,             // Author
-        &sig,             // Committer
-        "Initial commit", // Commit message
-        &tree,            // Tree
-        &[],              // Parents
-    )?;
+pub fn git_init(dir: &Path) -> anyhow::Result<()> {
+    Command::new("git")
+        .args(["init"])
+        .current_dir(dir)
+        .output()?;
+
+    Command::new("git")
+        .args(["config", "user.email", "test@example.com"])
+        .current_dir(dir)
+        .output()?;
+
+    Command::new("git")
+        .args(["config", "user.name", "Test"])
+        .current_dir(dir)
+        .output()?;
 
     Ok(())
 }

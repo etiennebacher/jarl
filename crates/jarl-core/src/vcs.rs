@@ -2,6 +2,46 @@ use crate::config::Config;
 use anyhow::{Result, bail};
 use std::collections::HashMap;
 use std::path::Path;
+use std::process::Command;
+
+/// Try to find the git repository root for a given file path.
+/// Returns `Some(repo_root)` if found, `None` otherwise.
+fn discover_repo(path: &str) -> Option<String> {
+    let dir = match Path::new(path).parent() {
+        Some(p) if p.as_os_str().is_empty() => Path::new("."),
+        Some(p) => p,
+        None => Path::new("."),
+    };
+
+    let output = Command::new("git")
+        .args(["rev-parse", "--show-toplevel"])
+        .current_dir(dir)
+        .output()
+        .ok()?;
+
+    if output.status.success() {
+        Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    } else {
+        None
+    }
+}
+
+/// Get the list of dirty (modified, untracked, staged) files in a repo.
+fn dirty_files(repo_root: &str) -> Result<Vec<String>> {
+    let output = Command::new("git")
+        .args(["status", "--porcelain"])
+        .current_dir(repo_root)
+        .output()?;
+
+    let mut files = Vec::new();
+    for line in String::from_utf8_lossy(&output.stdout).lines() {
+        // porcelain format: "XY filename" where XY is the two-char status
+        if let Some(name) = line.get(3..) {
+            files.push(name.to_string());
+        }
+    }
+    Ok(files)
+}
 
 /// Check version control status once for multiple paths.
 ///
@@ -26,21 +66,14 @@ pub fn check_version_control(paths: &[String], config: &Config) -> Result<()> {
     let mut paths_without_repo: Vec<String> = Vec::new();
 
     for path in paths {
-        match git2::Repository::discover(Path::new(path)) {
-            Ok(repo) => {
-                // Get the repository root path as a key
-                let repo_path = repo
-                    .path()
-                    .parent()
-                    .and_then(|p| p.to_str())
-                    .unwrap_or("")
-                    .to_string();
+        match discover_repo(path) {
+            Some(repo_root) => {
                 repo_to_paths
-                    .entry(repo_path)
+                    .entry(repo_root)
                     .or_default()
                     .push(path.clone());
             }
-            Err(_) => {
+            None => {
                 paths_without_repo.push(path.clone());
             }
         }
@@ -51,7 +84,7 @@ pub fn check_version_control(paths: &[String], config: &Config) -> Result<()> {
         bail!(
             "`jarl check --fix` can potentially perform destructive changes but no \
             Version Control System (e.g. Git) was found on this project, so no fixes \
-            were applied. \n\
+            were applied.\n\
             Add `--allow-no-vcs` to the call to apply the fixes."
         )
     }
@@ -63,23 +96,8 @@ pub fn check_version_control(paths: &[String], config: &Config) -> Result<()> {
     // Check each repository once
     let mut all_dirty_files = Vec::new();
 
-    for (repo_path, _paths) in repo_to_paths {
-        let repo = git2::Repository::discover(Path::new(&repo_path))?;
-
-        let mut repo_opts = git2::StatusOptions::new();
-        repo_opts.include_ignored(false);
-        repo_opts.include_untracked(true);
-
-        for status in repo.statuses(Some(&mut repo_opts))?.iter() {
-            if let Some(path) = status.path() {
-                match status.status() {
-                    git2::Status::CURRENT => (),
-                    _ => {
-                        all_dirty_files.push(path.to_string());
-                    }
-                };
-            }
-        }
+    for repo_root in repo_to_paths.keys() {
+        all_dirty_files.extend(dirty_files(repo_root)?);
     }
 
     if !all_dirty_files.is_empty() {
@@ -92,7 +110,7 @@ pub fn check_version_control(paths: &[String], config: &Config) -> Result<()> {
 
         bail!(
             "`jarl check --fix` can potentially perform destructive changes but the working \
-            directory of this project has uncommitted changes, so no fixes were applied. \n\
+            directory of this project has uncommitted changes, so no fixes were applied.\n\
             To apply the fixes, either add `--allow-dirty` to the call, or commit the changes \
             to these files:\n\
              \n\
