@@ -1,0 +1,34 @@
+# Adapted from https://github.com/pola-rs/polars/blob/main/.github/dependabot.yml
+
+version: 2
+updates:
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: weekly
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-patch']
+    commit-message:
+      prefix: ci
+    groups:
+      ci:
+        patterns:
+          - '*'
+
+  # Rust part
+  - package-ecosystem: cargo
+    directory: '/'
+    schedule:
+      interval: weekly
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-patch']
+    commit-message:
+      prefix: build
+      prefix-development: chore(rust)
+    groups:
+      rust:
+        patterns:
+          - '*'
