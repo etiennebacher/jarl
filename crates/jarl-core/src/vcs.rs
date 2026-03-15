@@ -5,7 +5,8 @@ use std::path::Path;
 use std::process::Command;
 
 /// Try to find the git repository root for a given file path.
-/// Returns `Some(repo_root)` if found, `None` otherwise.
+/// Returns `Some(repo_root)` if found, `None` otherwise (e.g. if git isn't used
+/// in the folder or isn't installed).
 fn discover_repo(path: &str) -> Option<String> {
     let dir = match Path::new(path).parent() {
         Some(p) if !p.as_os_str().is_empty() => p,
