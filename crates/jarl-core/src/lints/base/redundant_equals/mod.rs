@@ -13,7 +13,7 @@ mod tests {
     fn test_lint_redundant_equals() {
         assert_snapshot!(
             snapshot_lint("a == TRUE"),
-            @r"
+            @"
         warning: redundant_equals
          --> <test>:1:1
           |
@@ -25,7 +25,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("TRUE == a"),
-            @r"
+            @"
         warning: redundant_equals
          --> <test>:1:1
           |
@@ -37,7 +37,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("a == FALSE"),
-            @r"
+            @"
         warning: redundant_equals
          --> <test>:1:1
           |
@@ -49,7 +49,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("FALSE == a"),
-            @r"
+            @"
         warning: redundant_equals
          --> <test>:1:1
           |
@@ -61,7 +61,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("a != TRUE"),
-            @r"
+            @"
         warning: redundant_equals
          --> <test>:1:1
           |
@@ -73,7 +73,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("TRUE != a"),
-            @r"
+            @"
         warning: redundant_equals
          --> <test>:1:1
           |
@@ -85,7 +85,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("a != FALSE"),
-            @r"
+            @"
         warning: redundant_equals
          --> <test>:1:1
           |
@@ -97,7 +97,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("FALSE != a"),
-            @r"
+            @"
         warning: redundant_equals
          --> <test>:1:1
           |

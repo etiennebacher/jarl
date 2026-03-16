@@ -1,0 +1,10 @@
+---
+source: crates/jarl-core/src/lints/dplyr/dplyr_group_by_ungroup/mod.rs
+expression: "get_unsafe_fixed_text_with_cache(vec![\"library(dplyr); x |> group_by(grp1, grp2) |> summarize(a = mean(b)) |> ungroup()\"],\n\"dplyr_group_by_ungroup\", &NS,)"
+---
+OLD:
+====
+library(dplyr); x |> group_by(grp1, grp2) |> summarize(a = mean(b)) |> ungroup()
+NEW:
+====
+library(dplyr); x |> summarize(a = mean(b), .by = c(grp1, grp2))

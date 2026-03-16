@@ -13,7 +13,7 @@ mod tests {
     fn test_lint_equals_na() {
         assert_snapshot!(
             snapshot_lint("x == NA"),
-            @r"
+            @"
         warning: equals_na
          --> <test>:1:1
           |
@@ -26,7 +26,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x == NA_integer_"),
-            @r"
+            @"
         warning: equals_na
          --> <test>:1:1
           |
@@ -39,7 +39,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x == NA_real_"),
-            @r"
+            @"
         warning: equals_na
          --> <test>:1:1
           |
@@ -52,7 +52,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x == NA_logical_"),
-            @r"
+            @"
         warning: equals_na
          --> <test>:1:1
           |
@@ -65,7 +65,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x == NA_character_"),
-            @r"
+            @"
         warning: equals_na
          --> <test>:1:1
           |
@@ -78,7 +78,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x == NA_complex_"),
-            @r"
+            @"
         warning: equals_na
          --> <test>:1:1
           |
@@ -91,7 +91,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x != NA"),
-            @r"
+            @"
         warning: equals_na
          --> <test>:1:1
           |
@@ -104,7 +104,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x %in% NA"),
-            @r"
+            @"
         warning: equals_na
          --> <test>:1:1
           |
@@ -117,7 +117,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("foo(x(y)) == NA"),
-            @r"
+            @"
         warning: equals_na
          --> <test>:1:1
           |
@@ -130,7 +130,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("NA == x"),
-            @r"
+            @"
         warning: equals_na
          --> <test>:1:1
           |

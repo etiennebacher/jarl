@@ -499,14 +499,14 @@ mod tests {
                 "ALL",
                 None
             ),
-            @r"
-            OLD:
-            ====
-            expect_true(all(!is.na(x)))
-            NEW:
-            ====
-            expect_false(anyNA(x))
-            "
+            @"
+        OLD:
+        ====
+        expect_true(all(!is.na(x)))
+        NEW:
+        ====
+        expect_false(anyNA(x))
+        "
         );
     }
 
@@ -523,13 +523,13 @@ mod tests {
                 None
             ),
             @r#"
-            OLD:
-            ====
-            grepl('/', repo)
-            NEW:
-            ====
-            grepl("/", repo, fixed = TRUE)
-            "#
+        OLD:
+        ====
+        grepl('/', repo)
+        NEW:
+        ====
+        grepl("/", repo, fixed = TRUE)
+        "#
         );
     }
 }

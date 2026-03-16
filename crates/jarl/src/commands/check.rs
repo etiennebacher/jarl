@@ -1,7 +1,7 @@
 use air_workspace::resolve::PathResolver;
 use jarl_core::discovery::{discover_r_file_paths, discover_settings};
 use jarl_core::library_paths::is_r_available;
-use jarl_core::package_cache::{PackageCache, find_r_project_root};
+use jarl_core::package_cache::{PackageCache, any_file_references_packages, find_r_project_root};
 use jarl_core::rule_set::Rule;
 use jarl_core::{
     config::ArgsConfig,
@@ -149,6 +149,19 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
 
         let r_pkg_names = config.rules_to_apply.pkg_names_from_category();
         drop(config);
+
+        // Skip the expensive Rscript call if no file in this group actually
+        // references any of the target packages. In that case, strip the
+        // package-specific rules since they can't produce meaningful results
+        // without a PackageCache.
+        if !any_file_references_packages(&group_paths, &r_pkg_names) {
+            let mut config = build_config(&check_config, settings, group_paths)?;
+            config.rules_to_apply = config
+                .rules_to_apply
+                .filter(|r| !r.categories().iter().any(|c| c.is_package_specific()));
+            file_results.extend(jarl_core::check::check(config));
+            continue;
+        }
 
         // Sub-group files by R project root so each renv/system project
         // gets its own PackageCache.

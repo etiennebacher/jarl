@@ -52,7 +52,7 @@ f <- function() {
 f <- function() {
   any(is.na(x))
   # jarl-ignore-end any_is_na
-}"), @r"
+}"), @"
         warning: unmatched_range_suppression
          --> <test>:2:1
           |
@@ -76,7 +76,7 @@ f <- function() {
 if (a) {
   any(is.na(x))
   # jarl-ignore-end any_is_na
-}"), @r"
+}"), @"
         warning: unmatched_range_suppression
          --> <test>:2:1
           |
@@ -100,7 +100,7 @@ if (a) {
 while (a) {
   any(is.na(x))
   # jarl-ignore-end any_is_na
-}"), @r"
+}"), @"
         warning: unmatched_range_suppression
          --> <test>:2:1
           |
@@ -124,7 +124,7 @@ while (a) {
 for (i in 1:10) {
   any(is.na(x))
   # jarl-ignore-end any_is_na
-}"), @r"
+}"), @"
         warning: unmatched_range_suppression
          --> <test>:2:1
           |
@@ -148,7 +148,7 @@ for (i in 1:10) {
 repeat {
   any(is.na(x))
   # jarl-ignore-end any_is_na
-}"), @r"
+}"), @"
         warning: unmatched_range_suppression
          --> <test>:2:1
           |
@@ -169,7 +169,7 @@ repeat {
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore-start any_is_na: <reason>
-any(is.na(x))"), @r"
+any(is.na(x))"), @"
         warning: unmatched_range_suppression
          --> <test>:2:1
           |
@@ -189,7 +189,7 @@ f <- function() {
   # jarl-ignore-start any_is_na: <reason>
   any(is.na(x))
 }
-# jarl-ignore-end any_is_na"), @r"
+# jarl-ignore-end any_is_na"), @"
         warning: unmatched_range_suppression
          --> <test>:3:3
           |
@@ -213,7 +213,7 @@ if (a) {
   # jarl-ignore-start any_is_na: <reason>
   any(is.na(x))
 }
-# jarl-ignore-end any_is_na"), @r"
+# jarl-ignore-end any_is_na"), @"
         warning: unmatched_range_suppression
          --> <test>:3:3
           |
@@ -237,7 +237,7 @@ while (a) {
   # jarl-ignore-start any_is_na: <reason>
   any(is.na(x))
 }
-# jarl-ignore-end any_is_na"), @r"
+# jarl-ignore-end any_is_na"), @"
         warning: unmatched_range_suppression
          --> <test>:3:3
           |
@@ -261,7 +261,7 @@ for (i in 1:10) {
   # jarl-ignore-start any_is_na: <reason>
   any(is.na(x))
 }
-# jarl-ignore-end any_is_na"), @r"
+# jarl-ignore-end any_is_na"), @"
         warning: unmatched_range_suppression
          --> <test>:3:3
           |
@@ -285,7 +285,7 @@ repeat {
   # jarl-ignore-start any_is_na: <reason>
   any(is.na(x))
 }
-# jarl-ignore-end any_is_na"), @r"
+# jarl-ignore-end any_is_na"), @"
         warning: unmatched_range_suppression
          --> <test>:3:3
           |
@@ -306,7 +306,7 @@ repeat {
 
         insta::assert_snapshot!(snapshot_lint("
 any(is.na(x))
-# jarl-ignore-end any_is_na"), @r"
+# jarl-ignore-end any_is_na"), @"
         warning: unmatched_range_suppression
          --> <test>:3:1
           |

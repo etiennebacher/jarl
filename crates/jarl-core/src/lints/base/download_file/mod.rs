@@ -41,7 +41,7 @@ mod tests {
     fn test_lint_download_file() {
         assert_snapshot!(
             snapshot_lint("download.file(x)"),
-            @r"
+            @"
         warning: download_file
          --> <test>:1:1
           |
@@ -54,7 +54,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("utils::download.file(x)"),
-            @r"
+            @"
         warning: download_file
          --> <test>:1:1
           |
@@ -67,7 +67,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("download.file(x, mode = 'a')"),
-            @r"
+            @"
         warning: download_file
          --> <test>:1:1
           |
@@ -80,7 +80,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("download.file(x, mode = 'w')"),
-            @r"
+            @"
         warning: download_file
          --> <test>:1:1
           |
@@ -119,7 +119,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("download.file(x, y, z, w, 'a')"),
-            @r"
+            @"
         warning: download_file
          --> <test>:1:1
           |
@@ -132,7 +132,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("download.file(x, y, z, w, 'w')"),
-            @r"
+            @"
         warning: download_file
          --> <test>:1:1
           |
@@ -146,7 +146,7 @@ mod tests {
         // Only method = "wget" / "curl" don't trigger the lint.
         assert_snapshot!(
             snapshot_lint("download.file(x, y, z, method = 'foo', 'a')"),
-            @r"
+            @"
         warning: download_file
          --> <test>:1:1
           |
@@ -159,7 +159,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("download.file(x, y, z, method = 'foo', 'w')"),
-            @r"
+            @"
         warning: download_file
          --> <test>:1:1
           |

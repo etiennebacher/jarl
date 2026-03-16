@@ -27,7 +27,7 @@ mod tests {
     fn test_lint_sort() {
         assert_snapshot!(
             snapshot_lint("x[order(x)]"),
-            @r"
+            @"
         warning: sort
          --> <test>:1:1
           |
@@ -40,7 +40,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x[order(x, decreasing = TRUE)]"),
-            @r"
+            @"
         warning: sort
          --> <test>:1:1
           |
@@ -53,7 +53,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x[order(x, na.last = TRUE)]"),
-            @r"
+            @"
         warning: sort
          --> <test>:1:1
           |

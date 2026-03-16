@@ -16,40 +16,41 @@ fn test_must_pass_path() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @r#"
-success: false
-exit_code: 2
------ stdout -----
 
------ stderr -----
-Check a set of files or directories
+    success: false
+    exit_code: 2
+    ----- stdout -----
 
-Usage: jarl check [OPTIONS] <FILES>...
+    ----- stderr -----
+    Check a set of files or directories
 
-Arguments:
-  <FILES>...  List of files or directories to check or fix lints, for example `jarl check .`.
+    Usage: jarl check [OPTIONS] <FILES>...
 
-Options:
-  -f, --fix                            Automatically fix issues detected by the linter.
-  -u, --unsafe-fixes                   Include fixes that may not retain the original intent of the  code.
-      --fix-only                       Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
-      --allow-dirty                    Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
-      --allow-no-vcs                   Apply fixes even if there is no version control system.
-  -s, --select <SELECT>                Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ]
-  -e, --extend-select <EXTEND_SELECT>  Like `--select` but adds additional rules in addition to those already specified. [default: ]
-  -i, --ignore <IGNORE>                Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ]
-  -w, --with-timing                    Show the time taken by the function.
-  -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
-      --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: full] [possible values: full, concise, github, json]
-      --assignment <ASSIGNMENT>        [DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`.
-      --no-default-exclude             Do not apply the default set of file patterns that should be excluded.
-      --statistics                     Show counts for every rule with at least one violation.
-      --add-jarl-ignore[=<REASON>]     Automatically insert a `# jarl-ignore` comment to suppress all violations.
-                                       The default reason can be customized with `--add-jarl-ignore="my_reason"`.
-  -h, --help                           Print help (see more with '--help')
+    Arguments:
+      <FILES>...  List of files or directories to check or fix lints, for example `jarl check .`.
 
-Global options:
-      --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
-"#
+    Options:
+      -f, --fix                            Automatically fix issues detected by the linter.
+      -u, --unsafe-fixes                   Include fixes that may not retain the original intent of the  code.
+          --fix-only                       Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
+          --allow-dirty                    Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
+          --allow-no-vcs                   Apply fixes even if there is no version control system.
+      -s, --select <SELECT>                Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ]
+      -e, --extend-select <EXTEND_SELECT>  Like `--select` but adds additional rules in addition to those already specified. [default: ]
+      -i, --ignore <IGNORE>                Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ]
+      -w, --with-timing                    Show the time taken by the function.
+      -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
+          --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: full] [possible values: full, concise, github, json]
+          --assignment <ASSIGNMENT>        [DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`.
+          --no-default-exclude             Do not apply the default set of file patterns that should be excluded.
+          --statistics                     Show counts for every rule with at least one violation.
+          --add-jarl-ignore[=<REASON>]     Automatically insert a `# jarl-ignore` comment to suppress all violations.
+                                           The default reason can be customized with `--add-jarl-ignore="my_reason"`.
+      -h, --help                           Print help (see more with '--help')
+
+    Global options:
+          --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+    "#
     );
 
     Ok(())
@@ -68,13 +69,14 @@ fn test_no_r_files() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @"
-success: true
-exit_code: 0
------ stdout -----
-Warning: No R files found under the given path(s).
 
------ stderr -----
-"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    Warning: No R files found under the given path(s).
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -96,13 +98,14 @@ fn test_parsing_error() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-Error: Failed to parse test.R due to syntax errors.
-"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    Error: Failed to parse test.R due to syntax errors.
+    "
     );
 
     Ok(())
@@ -127,7 +130,8 @@ fn test_parsing_error_for_some_files() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 255
     ----- stdout -----
@@ -170,7 +174,8 @@ fn test_parsing_weird_raw_strings() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -199,7 +204,8 @@ fn test_parsing_braced_anonymous_function() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -228,7 +234,8 @@ fn test_no_lints() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -258,7 +265,8 @@ fn test_one_lint() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -299,7 +307,8 @@ fn test_several_lints_one_file() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -352,7 +361,8 @@ fn test_several_lints_several_files() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -406,6 +416,7 @@ fn test_not_all_fixable_lints() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @r#"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -452,7 +463,8 @@ fn test_corner_case() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -489,6 +501,7 @@ fn test_fix_options() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @r#"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -519,6 +532,7 @@ fn test_fix_options() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @r#"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -549,7 +563,8 @@ fn test_fix_options() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -571,7 +586,8 @@ fn test_fix_options() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -593,7 +609,8 @@ fn test_fix_options() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -628,7 +645,8 @@ fn test_safe_and_unsafe_lints() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -677,7 +695,8 @@ fn test_newline_character_in_string() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----

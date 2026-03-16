@@ -47,7 +47,7 @@ mod tests {
     fn test_lint_expect_length() {
         assert_snapshot!(
             snapshot_lint("expect_equal(length(x), 2)"),
-            @r"
+            @"
         warning: expect_length
          --> <test>:1:1
           |
@@ -60,7 +60,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("testthat::expect_equal(length(x), 2)"),
-            @r"
+            @"
         warning: expect_length
          --> <test>:1:1
           |
@@ -73,7 +73,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_identical(length(x), 2)"),
-            @r"
+            @"
         warning: expect_length
          --> <test>:1:1
           |
@@ -86,7 +86,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_equal(2, length(x))"),
-            @r"
+            @"
         warning: expect_length
          --> <test>:1:1
           |
@@ -99,7 +99,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_equal(2L, length(x))"),
-            @r"
+            @"
         warning: expect_length
          --> <test>:1:1
           |
@@ -112,7 +112,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_equal(foo(y), length(x))"),
-            @r"
+            @"
         warning: expect_length
          --> <test>:1:1
           |
@@ -145,7 +145,7 @@ mod tests {
         // Should detect lint but skip fix when comments are present
         assert_snapshot!(
             snapshot_lint("expect_equal(# comment\nlength(x), 2L)"),
-            @r"
+            @"
         warning: expect_length
          --> <test>:1:1
           |

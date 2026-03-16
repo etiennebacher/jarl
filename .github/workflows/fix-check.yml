@@ -54,7 +54,7 @@ jobs:
 
     steps:
       - name: Checkout current PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
@@ -63,6 +63,21 @@ jobs:
 
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Set up R for package-specific rules and to process results
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      # Note: in an ideal world, we'd install all dependencies of the packages
+      # we test below, but this would make the CI much slower.
+      - name: Install packages that have rules in Jarl
+        run: |
+          Rscript -e "install.packages(c('dplyr'))"
+
+      - name: Install packages to process results
+        run: |
+          R -e "install.packages(c('jsonlite'))"
 
       - name: Build jarl binary from PR
         run: cargo build --release --package jarl
@@ -93,15 +108,15 @@ jobs:
             echo "=== [$repo_name] Starting ==="
 
             echo "  [$repo_name] Lint before fixes..."
-            (cd "$repo_dir" && $JARL check . --select ALL --ignore DPLYR --output-format json) > "../results/${repo_dir}_pre.json" || true
+            (cd "$repo_dir" && $JARL check . --select ALL --output-format json) > "../results/${repo_dir}_pre.json" || true
             echo "  [$repo_name] Lint before fixes done."
 
             echo "  [$repo_name] Applying safe fixes..."
-            (cd "$repo_dir" && $JARL check . --select ALL --ignore DPLYR --fix --allow-no-vcs --allow-dirty) > /dev/null 2>&1 || true
+            (cd "$repo_dir" && $JARL check . --select ALL --fix --allow-no-vcs --allow-dirty) > /dev/null 2>&1 || true
             echo "  [$repo_name] Applying safe fixes done."
 
             echo "  [$repo_name] Lint after fixes..."
-            (cd "$repo_dir" && $JARL check . --select ALL --ignore DPLYR --output-format json) > "../results/${repo_dir}_post.json" || true
+            (cd "$repo_dir" && $JARL check . --select ALL --output-format json) > "../results/${repo_dir}_post.json" || true
             echo "  [$repo_name] Lint after fixes done."
 
             echo "  [$repo_name] SHA snapshot 1..."
@@ -109,7 +124,7 @@ jobs:
             echo "  [$repo_name] SHA snapshot 1 done."
 
             echo "  [$repo_name] Applying fixes (2nd pass)..."
-            (cd "$repo_dir" && $JARL check . --select ALL --ignore DPLYR --fix --allow-no-vcs --allow-dirty) > /dev/null 2>&1 || true
+            (cd "$repo_dir" && $JARL check . --select ALL --fix --allow-no-vcs --allow-dirty) > /dev/null 2>&1 || true
             echo "  [$repo_name] Applying fixes (2nd pass) done."
 
             echo "  [$repo_name] SHA snapshot 2..."
@@ -120,19 +135,10 @@ jobs:
           done
 
       - name: Upload result JSONs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fix-check-results
           path: results/
-
-      - name: Setup R
-        uses: r-lib/actions/setup-r@v2
-        with:
-          use-public-rspm: true
-
-      - name: Install R dependencies
-        run: |
-          R -e "install.packages(c('jsonlite'))"
 
       - name: Process fix results
         run: |

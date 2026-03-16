@@ -3,6 +3,7 @@ use tempfile::TempDir;
 
 use crate::helpers::CommandExt;
 use crate::helpers::binary_path;
+use crate::helpers::git_init;
 
 #[test]
 fn test_no_git_repo_does_not_block_lint() -> anyhow::Result<()> {
@@ -22,13 +23,14 @@ fn test_no_git_repo_does_not_block_lint() -> anyhow::Result<()> {
             .arg("--fix")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 255
     ----- stdout -----
 
     ----- stderr -----
-    Error: `jarl check --fix` can potentially perform destructive changes but no Version Control System (e.g. Git) was found on this project, so no fixes were applied. 
+    Error: `jarl check --fix` can potentially perform destructive changes but no Version Control System (e.g. Git) was found on this project, so no fixes were applied.
     Add `--allow-no-vcs` to the call to apply the fixes.
     "
     );
@@ -57,13 +59,14 @@ fn test_no_git_repo_blocks_fix() -> anyhow::Result<()> {
             .arg("--fix")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 255
     ----- stdout -----
 
     ----- stderr -----
-    Error: `jarl check --fix` can potentially perform destructive changes but no Version Control System (e.g. Git) was found on this project, so no fixes were applied. 
+    Error: `jarl check --fix` can potentially perform destructive changes but no Version Control System (e.g. Git) was found on this project, so no fixes were applied.
     Add `--allow-no-vcs` to the call to apply the fixes.
     "
     );
@@ -89,7 +92,8 @@ fn test_no_git_repo_allow_no_vcs() -> anyhow::Result<()> {
             .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -119,7 +123,7 @@ fn test_mixed_vcs_coverage_blocks_fix() -> anyhow::Result<()> {
     std::fs::write(no_git_subdir.join("test.R"), test_contents)?;
 
     // Only initialize git in one subdir
-    let _ = git2::Repository::init(&git_subdir)?;
+    git_init(&git_subdir)?;
 
     // Try to fix both subdirs - should fail because one is not in VCS
     insta::assert_snapshot!(
@@ -130,13 +134,14 @@ fn test_mixed_vcs_coverage_blocks_fix() -> anyhow::Result<()> {
             .arg("--fix")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 255
     ----- stdout -----
 
     ----- stderr -----
-    Error: `jarl check --fix` can potentially perform destructive changes but no Version Control System (e.g. Git) was found on this project, so no fixes were applied. 
+    Error: `jarl check --fix` can potentially perform destructive changes but no Version Control System (e.g. Git) was found on this project, so no fixes were applied.
     Add `--allow-no-vcs` to the call to apply the fixes.
     "
     );

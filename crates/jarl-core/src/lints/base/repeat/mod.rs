@@ -13,7 +13,7 @@ mod tests {
     fn test_lint_repeat() {
         assert_snapshot!(
             snapshot_lint("while (TRUE) { }"),
-            @r"
+            @"
         warning: repeat
          --> <test>:1:1
           |
@@ -26,7 +26,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("for (i in 1:10) { while (TRUE) { if (i == 5) { break } } }"),
-            @r"
+            @"
         warning: repeat
          --> <test>:1:19
           |

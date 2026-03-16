@@ -55,15 +55,15 @@ use crate::package::{FileScope, SharedFileData};
 /// # `check_length()` isn't exported but and isn't used anywhere, so it is
 /// # reported.
 /// ```
-/// Scan source text for all R-style identifiers (symbols).
-///
-/// Returns a map from identifier name to occurrence count. This intentionally
-/// over-counts (e.g. it will match inside comments and strings) — that is fine
-/// because false negatives (failing to flag truly unused functions) are
-/// preferable to false positives. By collecting all symbols rather than just
-/// `name(` call patterns, we also cover indirect references like
-/// `do.call("name", ...)`, `lapply(xs, name)`, `match.fun(name)`, etc.
 pub fn scan_symbols(content: &str) -> HashMap<String, usize> {
+    // Scan source text for all R-style identifiers (symbols).
+    //
+    // Returns a map from identifier name to occurrence count. This intentionally
+    // over-counts (e.g. it will match inside comments and strings) — that is fine
+    // because false negatives (failing to flag truly unused functions) are
+    // preferable to false positives. By collecting all symbols rather than just
+    // `name(` call patterns, we also cover indirect references like
+    // `do.call("name", ...)`, `lapply(xs, name)`, `match.fun(name)`, etc.
     let mut symbols: HashMap<&str, usize> = HashMap::new();
 
     for line in content.lines() {

@@ -11,29 +11,30 @@ fn test_help() {
             .run()
             .normalize_os_executable_name(),
         @"
-success: true
-exit_code: 0
------ stdout -----
-jarl: Just Another R Linter
 
-Usage: jarl [OPTIONS] <COMMAND>
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    jarl: Just Another R Linter
 
-Commands:
-  check   Check a set of files or directories
-  server  Start a language server
-  help    Print this message or the help of the given subcommand(s)
+    Usage: jarl [OPTIONS] <COMMAND>
 
-Options:
-  -h, --help     Print help
-  -V, --version  Print version
+    Commands:
+      check   Check a set of files or directories
+      server  Start a language server
+      help    Print this message or the help of the given subcommand(s)
 
-Global options:
-      --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+    Options:
+      -h, --help     Print help
+      -V, --version  Print version
 
-For help with a specific command, see: `jarl help <command>`.
+    Global options:
+          --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
 
------ stderr -----
-"
+    For help with a specific command, see: `jarl help <command>`.
+
+    ----- stderr -----
+    "
     );
     insta::assert_snapshot!(
         Command::new(binary_path())
@@ -41,29 +42,30 @@ For help with a specific command, see: `jarl help <command>`.
             .run()
             .normalize_os_executable_name(),
         @"
-success: true
-exit_code: 0
------ stdout -----
-jarl: Just Another R Linter
 
-Usage: jarl [OPTIONS] <COMMAND>
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    jarl: Just Another R Linter
 
-Commands:
-  check   Check a set of files or directories
-  server  Start a language server
-  help    Print this message or the help of the given subcommand(s)
+    Usage: jarl [OPTIONS] <COMMAND>
 
-Options:
-  -h, --help     Print help
-  -V, --version  Print version
+    Commands:
+      check   Check a set of files or directories
+      server  Start a language server
+      help    Print this message or the help of the given subcommand(s)
 
-Global options:
-      --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+    Options:
+      -h, --help     Print help
+      -V, --version  Print version
 
-For help with a specific command, see: `jarl help <command>`.
+    Global options:
+          --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
 
------ stderr -----
-"
+    For help with a specific command, see: `jarl help <command>`.
+
+    ----- stderr -----
+    "
     );
     insta::assert_snapshot!(
         Command::new(binary_path())
@@ -71,29 +73,30 @@ For help with a specific command, see: `jarl help <command>`.
             .run()
             .normalize_os_executable_name(),
         @"
-success: true
-exit_code: 0
------ stdout -----
-jarl: Just Another R Linter
 
-Usage: jarl [OPTIONS] <COMMAND>
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    jarl: Just Another R Linter
 
-Commands:
-  check   Check a set of files or directories
-  server  Start a language server
-  help    Print this message or the help of the given subcommand(s)
+    Usage: jarl [OPTIONS] <COMMAND>
 
-Options:
-  -h, --help     Print help
-  -V, --version  Print version
+    Commands:
+      check   Check a set of files or directories
+      server  Start a language server
+      help    Print this message or the help of the given subcommand(s)
 
-Global options:
-      --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+    Options:
+      -h, --help     Print help
+      -V, --version  Print version
 
-For help with a specific command, see: `jarl help <command>`.
+    Global options:
+          --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
 
------ stderr -----
-"
+    For help with a specific command, see: `jarl help <command>`.
+
+    ----- stderr -----
+    "
     );
 }
 
@@ -106,6 +109,7 @@ fn test_help_check() {
             .run()
             .normalize_os_executable_name(),
         @r#"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -195,39 +199,40 @@ fn test_help_check() {
             .run()
             .normalize_os_executable_name(),
         @r#"
-success: true
-exit_code: 0
------ stdout -----
-Check a set of files or directories
 
-Usage: jarl check [OPTIONS] <FILES>...
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    Check a set of files or directories
 
-Arguments:
-  <FILES>...  List of files or directories to check or fix lints, for example `jarl check .`.
+    Usage: jarl check [OPTIONS] <FILES>...
 
-Options:
-  -f, --fix                            Automatically fix issues detected by the linter.
-  -u, --unsafe-fixes                   Include fixes that may not retain the original intent of the  code.
-      --fix-only                       Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
-      --allow-dirty                    Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
-      --allow-no-vcs                   Apply fixes even if there is no version control system.
-  -s, --select <SELECT>                Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ]
-  -e, --extend-select <EXTEND_SELECT>  Like `--select` but adds additional rules in addition to those already specified. [default: ]
-  -i, --ignore <IGNORE>                Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ]
-  -w, --with-timing                    Show the time taken by the function.
-  -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
-      --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: full] [possible values: full, concise, github, json]
-      --assignment <ASSIGNMENT>        [DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`.
-      --no-default-exclude             Do not apply the default set of file patterns that should be excluded.
-      --statistics                     Show counts for every rule with at least one violation.
-      --add-jarl-ignore[=<REASON>]     Automatically insert a `# jarl-ignore` comment to suppress all violations.
-                                       The default reason can be customized with `--add-jarl-ignore="my_reason"`.
-  -h, --help                           Print help (see more with '--help')
+    Arguments:
+      <FILES>...  List of files or directories to check or fix lints, for example `jarl check .`.
 
-Global options:
-      --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+    Options:
+      -f, --fix                            Automatically fix issues detected by the linter.
+      -u, --unsafe-fixes                   Include fixes that may not retain the original intent of the  code.
+          --fix-only                       Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
+          --allow-dirty                    Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
+          --allow-no-vcs                   Apply fixes even if there is no version control system.
+      -s, --select <SELECT>                Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ]
+      -e, --extend-select <EXTEND_SELECT>  Like `--select` but adds additional rules in addition to those already specified. [default: ]
+      -i, --ignore <IGNORE>                Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ]
+      -w, --with-timing                    Show the time taken by the function.
+      -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
+          --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: full] [possible values: full, concise, github, json]
+          --assignment <ASSIGNMENT>        [DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`.
+          --no-default-exclude             Do not apply the default set of file patterns that should be excluded.
+          --statistics                     Show counts for every rule with at least one violation.
+          --add-jarl-ignore[=<REASON>]     Automatically insert a `# jarl-ignore` comment to suppress all violations.
+                                           The default reason can be customized with `--add-jarl-ignore="my_reason"`.
+      -h, --help                           Print help (see more with '--help')
 
------ stderr -----
-"#
+    Global options:
+          --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+
+    ----- stderr -----
+    "#
     );
 }

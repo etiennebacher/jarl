@@ -242,11 +242,12 @@ impl PackageCacheMap {
 
 /// Find the R project root for a given file path.
 ///
-/// Walks up the directory tree looking for markers of an R project environment:
-/// - `renv.lock` — renv project (changes `.libPaths()` via auto-activation)
-/// - `DESCRIPTION` — R package root
+/// Only renv projects get their own root, because renv changes `.libPaths()`
+/// via auto-activation in `.Rprofile`. Non-renv projects (including plain R
+/// packages with a DESCRIPTION) all use the system library and share a single
+/// cache (`None`).
 ///
-/// Returns `None` if no marker is found (system R installation).
+/// Returns `None` if no renv project is found.
 pub fn find_r_project_root(file_path: &Path) -> Option<PathBuf> {
     let start = if file_path.is_file() {
         file_path.parent()?
@@ -256,11 +257,7 @@ pub fn find_r_project_root(file_path: &Path) -> Option<PathBuf> {
 
     let mut dir = start;
     loop {
-        // renv takes priority: it changes the entire library path
         if dir.join("renv.lock").exists() {
-            return Some(dir.to_path_buf());
-        }
-        if dir.join("DESCRIPTION").exists() {
             return Some(dir.to_path_buf());
         }
         match dir.parent() {
@@ -268,6 +265,63 @@ pub fn find_r_project_root(file_path: &Path) -> Option<PathBuf> {
             None => return None,
         }
     }
+}
+
+/// Check whether any of the given files might reference the given packages.
+///
+/// Performs a fast text scan (no parsing) looking for:
+/// - `library(pkg)` or `require(pkg)` calls
+/// - `pkg::` namespace prefixes
+/// - The package name in DESCRIPTION `Imports`/`Depends` (for R package files)
+///
+/// This is used to skip expensive Rscript calls when no file in the batch
+/// actually uses any of the target packages.
+pub fn any_file_references_packages(paths: &[PathBuf], packages: &[&str]) -> bool {
+    // Build search patterns: "library(pkg)", "require(pkg)", "pkg::"
+    let patterns: Vec<String> = packages
+        .iter()
+        .flat_map(|pkg| {
+            vec![
+                format!("library({pkg}"),
+                format!("require({pkg}"),
+                format!("{pkg}::"),
+            ]
+        })
+        .collect();
+
+    // Track which DESCRIPTION files we've already checked
+    let mut checked_descriptions: HashSet<PathBuf> = HashSet::new();
+
+    for path in paths {
+        // For files in an R package (R/*.R), check the DESCRIPTION
+        if let Some(parent) = path.parent()
+            && parent.file_name().is_some_and(|n| n == "R")
+            && let Some(pkg_root) = parent.parent()
+        {
+            let desc_path = pkg_root.join("DESCRIPTION");
+            if !checked_descriptions.contains(&desc_path) {
+                checked_descriptions.insert(desc_path.clone());
+                if let Ok(desc_content) = std::fs::read_to_string(&desc_path) {
+                    for pkg in packages {
+                        if desc_content.contains(pkg) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Fast text scan of the file itself
+        if let Ok(content) = std::fs::read_to_string(path) {
+            for pattern in &patterns {
+                if content.contains(pattern.as_str()) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    false
 }
 
 /// Per-file package context for resolving bare function names to packages.
@@ -576,7 +630,7 @@ mod tests {
     }
 
     #[test]
-    fn test_find_root_description_in_parent() {
+    fn test_find_root_description_alone_is_not_a_root() {
         let dir = tempfile::TempDir::new().unwrap();
         std::fs::write(
             dir.path().join("DESCRIPTION"),
@@ -588,7 +642,8 @@ mod tests {
         let file = r_dir.join("foo.R");
         std::fs::write(&file, "").unwrap();
 
-        assert_eq!(find_r_project_root(&file), Some(dir.path().to_path_buf()));
+        // DESCRIPTION alone doesn't change .libPaths(), so no distinct root
+        assert_eq!(find_r_project_root(&file), None);
     }
 
     #[test]
@@ -624,12 +679,12 @@ mod tests {
         let file = sub.join("R").join("foo.R");
         std::fs::write(&file, "").unwrap();
 
-        // DESCRIPTION is closer, so the subproject is the root
-        assert_eq!(find_r_project_root(&file), Some(sub));
+        // Only renv.lock matters, DESCRIPTION is ignored for root detection
+        assert_eq!(find_r_project_root(&file), Some(dir.path().to_path_buf()));
     }
 
     #[test]
-    fn test_find_root_file_at_root_level() {
+    fn test_find_root_file_at_root_level_description_only() {
         let dir = tempfile::TempDir::new().unwrap();
         std::fs::write(
             dir.path().join("DESCRIPTION"),
@@ -639,7 +694,8 @@ mod tests {
         let file = dir.path().join("script.R");
         std::fs::write(&file, "").unwrap();
 
-        assert_eq!(find_r_project_root(&file), Some(dir.path().to_path_buf()));
+        // DESCRIPTION alone doesn't change .libPaths(), so no distinct root
+        assert_eq!(find_r_project_root(&file), None);
     }
 
     // ── PackageCacheMap tests ──────────────────────────────────────────
@@ -687,22 +743,14 @@ mod tests {
     fn test_cache_map_different_roots_get_separate_caches() {
         let map = PackageCacheMap::new();
 
-        // Two separate project directories
+        // Two separate renv projects (only renv.lock creates distinct roots)
         let dir_a = tempfile::TempDir::new().unwrap();
-        std::fs::write(
-            dir_a.path().join("DESCRIPTION"),
-            "Package: pkg_a\nVersion: 0.1.0\n",
-        )
-        .unwrap();
+        std::fs::write(dir_a.path().join("renv.lock"), "{}").unwrap();
         let file_a = dir_a.path().join("script.R");
         std::fs::write(&file_a, "").unwrap();
 
         let dir_b = tempfile::TempDir::new().unwrap();
-        std::fs::write(
-            dir_b.path().join("DESCRIPTION"),
-            "Package: pkg_b\nVersion: 0.2.0\n",
-        )
-        .unwrap();
+        std::fs::write(dir_b.path().join("renv.lock"), "{}").unwrap();
         let file_b = dir_b.path().join("script.R");
         std::fs::write(&file_b, "").unwrap();
 
@@ -718,7 +766,7 @@ mod tests {
         let cache_a = map.get_or_create(&file_a, &["base"]);
         let cache_b = map.get_or_create(&file_b, &["base"]);
 
-        // Different project roots → different cache instances
+        // Different renv roots → different cache instances
         assert!(cache_a.is_some());
         assert!(cache_b.is_some());
         assert!(!Arc::ptr_eq(
@@ -840,5 +888,59 @@ mod tests {
             cache_renv.as_ref().unwrap(),
             cache_plain.as_ref().unwrap()
         ));
+    }
+
+    // ── any_file_references_packages tests ───────────────────────────
+
+    #[test]
+    fn test_references_library_call() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let file = dir.path().join("script.R");
+        std::fs::write(&file, "library(dplyr)\nx |> group_by(g)").unwrap();
+
+        assert!(any_file_references_packages(&[file], &["dplyr"]));
+    }
+
+    #[test]
+    fn test_references_require_call() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let file = dir.path().join("script.R");
+        std::fs::write(&file, "require(dplyr)").unwrap();
+
+        assert!(any_file_references_packages(&[file], &["dplyr"]));
+    }
+
+    #[test]
+    fn test_references_namespace_prefix() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let file = dir.path().join("script.R");
+        std::fs::write(&file, "dplyr::group_by(x, g)").unwrap();
+
+        assert!(any_file_references_packages(&[file], &["dplyr"]));
+    }
+
+    #[test]
+    fn test_references_description_imports() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("DESCRIPTION"),
+            "Package: mypkg\nImports: dplyr\n",
+        )
+        .unwrap();
+        let r_dir = dir.path().join("R");
+        std::fs::create_dir(&r_dir).unwrap();
+        let file = r_dir.join("foo.R");
+        std::fs::write(&file, "group_by(x, g)").unwrap();
+
+        assert!(any_file_references_packages(&[file], &["dplyr"]));
+    }
+
+    #[test]
+    fn test_no_references() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let file = dir.path().join("script.R");
+        std::fs::write(&file, "x + 1").unwrap();
+
+        assert!(!any_file_references_packages(&[file], &["dplyr"]));
     }
 }

@@ -15,3 +15,5 @@ docs/_site
 docs/\.quarto
 Makefile
 mypkg
+test_jarl*
+mutants*

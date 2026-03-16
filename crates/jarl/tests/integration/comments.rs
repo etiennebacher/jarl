@@ -25,7 +25,46 @@ any(is.na(x))
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_jarl_ignore_inline_suppression_in_pipe() -> anyhow::Result<()> {
+    let directory = TempDir::new()?;
+    let directory = directory.path();
+
+    let test_path = "test.R";
+    std::fs::write(
+        directory.join(test_path),
+        "
+# jarl-ignore any_is_na: legacy code
+x |>
+  is.na() |>
+  any()
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut Command::new(binary_path())
+            .current_dir(directory)
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -61,7 +100,8 @@ any(is.na(z))
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -102,7 +142,8 @@ any(is.na(w))
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -158,7 +199,8 @@ any(is.na(y))
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -206,7 +248,8 @@ x = any(is.na(y))
             .arg("assignment")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -244,7 +287,8 @@ foo(
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -284,7 +328,8 @@ any(is.na(z))
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
