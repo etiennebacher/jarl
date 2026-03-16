@@ -319,15 +319,14 @@ mod tests {
     fn test_fix_single_group() {
         assert_snapshot!(
             "fix_output",
-            get_fixed_text(
+            get_unsafe_fixed_text(
                 vec![
                     "x |> group_by(grp) |> summarize(a = mean(b)) |> ungroup()",
                     "x |> group_by(grp) |> mutate(a = mean(b)) |> ungroup()",
                     "x |> group_by(grp) |> filter(a > 1) |> ungroup()",
                     "x |> group_by(grp) |> slice_head(n = 1) |> ungroup()",
                 ],
-                "dplyr_group_by_ungroup",
-                None
+                "dplyr_group_by_ungroup"
             )
         );
     }
@@ -336,10 +335,9 @@ mod tests {
     fn test_fix_multiple_groups() {
         assert_snapshot!(
             "fix_multiple_groups",
-            get_fixed_text(
+            get_unsafe_fixed_text(
                 vec!["x |> group_by(grp1, grp2) |> summarize(a = mean(b)) |> ungroup()",],
-                "dplyr_group_by_ungroup",
-                None
+                "dplyr_group_by_ungroup"
             )
         );
     }
@@ -348,10 +346,9 @@ mod tests {
     fn test_fix_magrittr_pipe() {
         assert_snapshot!(
             "fix_magrittr",
-            get_fixed_text(
+            get_unsafe_fixed_text(
                 vec!["x %>% group_by(grp) %>% summarize(a = mean(b)) %>% ungroup()",],
-                "dplyr_group_by_ungroup",
-                None
+                "dplyr_group_by_ungroup"
             )
         );
     }
@@ -360,10 +357,9 @@ mod tests {
     fn test_no_fix_group_by_not_piped() {
         assert_snapshot!(
             "no_fix_not_piped",
-            get_fixed_text(
+            get_unsafe_fixed_text(
                 vec!["group_by(x, grp) |> summarize(a = mean(b)) |> ungroup()",],
-                "dplyr_group_by_ungroup",
-                None
+                "dplyr_group_by_ungroup"
             )
         );
     }
@@ -372,12 +368,11 @@ mod tests {
     fn test_fix_namespaced() {
         assert_snapshot!(
             "fix_namespaced",
-            get_fixed_text(
+            get_unsafe_fixed_text(
                 vec![
                     "x |> dplyr::group_by(grp) |> dplyr::summarize(a = mean(b)) |> dplyr::ungroup()",
                 ],
-                "dplyr_group_by_ungroup",
-                None
+                "dplyr_group_by_ungroup"
             )
         );
     }
@@ -403,10 +398,9 @@ mod tests {
     fn test_fix_splice() {
         assert_snapshot!(
             "fix_splice",
-            get_fixed_text(
+            get_unsafe_fixed_text(
                 vec!["x |> group_by(!!!syms(grps)) |> summarize(a = mean(b)) |> ungroup()",],
                 "dplyr_group_by_ungroup",
-                None
             )
         );
     }
