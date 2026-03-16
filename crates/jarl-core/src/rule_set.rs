@@ -642,6 +642,17 @@ declare_rules! {
     },
 
     //
+    // ------------- DPLYR -------------
+    //
+    DplyrGroupByUngroup => {
+        name: "dplyr_group_by_ungroup",
+        categories: [Dplyr],
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
+
+    //
     // ------------- TESTTHAT -------------
     //
     TestthatExpectLength => {
