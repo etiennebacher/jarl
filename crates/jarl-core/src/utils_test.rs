@@ -120,6 +120,7 @@ fn apply_fixes(
     unsafe_fixes: bool,
     min_r_version: Option<&str>,
     settings: Option<Settings>,
+    cache: Option<&Arc<PackageCache>>,
 ) -> String {
     let temp_file = Builder::new()
         .prefix("test-jarl")
@@ -146,12 +147,16 @@ fn apply_fixes(
     let resolver = setup_resolver(temp_file.path(), settings);
     let toml_settings = resolver.items().first().map(|item| item.value());
 
-    let config = crate::config::build_config(
+    let mut config = crate::config::build_config(
         &check_config,
         toml_settings,
         vec![temp_file.path().to_path_buf()],
     )
     .expect("Failed to build config");
+
+    if let Some(c) = cache {
+        config.package_cache = Some(c.clone());
+    }
 
     let _results = check(config);
 
@@ -205,7 +210,7 @@ pub fn get_fixed_text_with_settings(
 
     for txt in text.iter() {
         let original_content = txt;
-        let modified_content = apply_fixes(txt, rule, false, min_r_version, settings.clone());
+        let modified_content = apply_fixes(txt, rule, false, min_r_version, settings.clone(), None);
 
         output.push_str(
             format!("OLD:\n====\n{original_content}\nNEW:\n====\n{modified_content}\n\n").as_str(),
@@ -281,6 +286,26 @@ pub fn get_unsafe_fixed_text(text: Vec<&str>, rule: &str) -> String {
     get_unsafe_fixed_text_with_settings(text, rule, None)
 }
 
+/// Get fixed text with unsafe fixes, using a pre-built package cache.
+pub fn get_unsafe_fixed_text_with_cache(
+    text: Vec<&str>,
+    rule: &str,
+    cache: &Arc<PackageCache>,
+) -> String {
+    let mut output: String = String::new();
+
+    for txt in text.iter() {
+        let original_content = txt;
+        let modified_content = apply_fixes(txt, rule, true, None, None, Some(cache));
+
+        output.push_str(
+            format!("OLD:\n====\n{original_content}\nNEW:\n====\n{modified_content}\n\n").as_str(),
+        );
+    }
+
+    output.trim_end().to_string()
+}
+
 /// Get fixed text with unsafe fixes for a series of code snippets, with custom settings
 pub fn get_unsafe_fixed_text_with_settings(
     text: Vec<&str>,
@@ -291,7 +316,7 @@ pub fn get_unsafe_fixed_text_with_settings(
 
     for txt in text.iter() {
         let original_content = txt;
-        let modified_content = apply_fixes(txt, rule, true, None, settings.clone());
+        let modified_content = apply_fixes(txt, rule, true, None, settings.clone(), None);
 
         output.push_str(
             format!("OLD:\n====\n{original_content}\nNEW:\n====\n{modified_content}\n\n").as_str(),
