@@ -93,11 +93,11 @@ pub fn dplyr_group_by_ungroup(
 
     // `ungroup()` must have no unnamed arguments (piped input only)
     let ungroup_args = ast.arguments()?;
-    let has_unnamed_args = ungroup_args
+    let ungroup_has_unnamed_args = ungroup_args
         .items()
         .into_iter()
         .any(|x| x.is_ok_and(|a| a.name_clause().is_none()));
-    if has_unnamed_args {
+    if ungroup_has_unnamed_args {
         return Ok(None);
     }
 
@@ -158,6 +158,17 @@ pub fn dplyr_group_by_ungroup(
     let group_by_args = group_by_call.arguments()?;
     let group_by_items: Vec<_> = group_by_args.items().into_iter().collect();
     if group_by_items.is_empty() {
+        return Ok(None);
+    }
+
+    // `group_by()` must have no named arguments because they don't translate to
+    // .by / by
+    let group_by_has_named_args = group_by_args
+        .items()
+        .into_iter()
+        .any(|x| x.is_ok_and(|a| a.name_clause().is_some()));
+
+    if group_by_has_named_args {
         return Ok(None);
     }
 

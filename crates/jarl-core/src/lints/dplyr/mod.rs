@@ -23,6 +23,12 @@ mod tests {
             "dplyr_group_by_ungroup",
             None,
         );
+        // group_by() with arguments (not a simple pipe ungroup)
+        expect_no_lint(
+            "x |> group_by(grp1, grp2, .add = TRUE) |> summarize(a = mean(b)) |> ungroup()",
+            "dplyr_group_by_ungroup",
+            None,
+        );
         // ungroup() with arguments (not a simple pipe ungroup)
         expect_no_lint(
             "x |> group_by(grp1, grp2) |> summarize(a = mean(b)) |> ungroup(grp1)",
