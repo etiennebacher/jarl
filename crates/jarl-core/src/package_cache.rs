@@ -267,6 +267,63 @@ pub fn find_r_project_root(file_path: &Path) -> Option<PathBuf> {
     }
 }
 
+/// Check whether any of the given files might reference the given packages.
+///
+/// Performs a fast text scan (no parsing) looking for:
+/// - `library(pkg)` or `require(pkg)` calls
+/// - `pkg::` namespace prefixes
+/// - The package name in DESCRIPTION `Imports`/`Depends` (for R package files)
+///
+/// This is used to skip expensive Rscript calls when no file in the batch
+/// actually uses any of the target packages.
+pub fn any_file_references_packages(paths: &[PathBuf], packages: &[&str]) -> bool {
+    // Build search patterns: "library(pkg)", "require(pkg)", "pkg::"
+    let patterns: Vec<String> = packages
+        .iter()
+        .flat_map(|pkg| {
+            vec![
+                format!("library({pkg}"),
+                format!("require({pkg}"),
+                format!("{pkg}::"),
+            ]
+        })
+        .collect();
+
+    // Track which DESCRIPTION files we've already checked
+    let mut checked_descriptions: HashSet<PathBuf> = HashSet::new();
+
+    for path in paths {
+        // For files in an R package (R/*.R), check the DESCRIPTION
+        if let Some(parent) = path.parent()
+            && parent.file_name().is_some_and(|n| n == "R")
+            && let Some(pkg_root) = parent.parent()
+        {
+            let desc_path = pkg_root.join("DESCRIPTION");
+            if !checked_descriptions.contains(&desc_path) {
+                checked_descriptions.insert(desc_path.clone());
+                if let Ok(desc_content) = std::fs::read_to_string(&desc_path) {
+                    for pkg in packages {
+                        if desc_content.contains(pkg) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Fast text scan of the file itself
+        if let Ok(content) = std::fs::read_to_string(path) {
+            for pattern in &patterns {
+                if content.contains(pattern.as_str()) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    false
+}
+
 /// Per-file package context for resolving bare function names to packages.
 ///
 /// Built during the pre-pass from `library()`/`require()` calls found in
@@ -831,5 +888,59 @@ mod tests {
             cache_renv.as_ref().unwrap(),
             cache_plain.as_ref().unwrap()
         ));
+    }
+
+    // ── any_file_references_packages tests ───────────────────────────
+
+    #[test]
+    fn test_references_library_call() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let file = dir.path().join("script.R");
+        std::fs::write(&file, "library(dplyr)\nx |> group_by(g)").unwrap();
+
+        assert!(any_file_references_packages(&[file], &["dplyr"]));
+    }
+
+    #[test]
+    fn test_references_require_call() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let file = dir.path().join("script.R");
+        std::fs::write(&file, "require(dplyr)").unwrap();
+
+        assert!(any_file_references_packages(&[file], &["dplyr"]));
+    }
+
+    #[test]
+    fn test_references_namespace_prefix() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let file = dir.path().join("script.R");
+        std::fs::write(&file, "dplyr::group_by(x, g)").unwrap();
+
+        assert!(any_file_references_packages(&[file], &["dplyr"]));
+    }
+
+    #[test]
+    fn test_references_description_imports() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("DESCRIPTION"),
+            "Package: mypkg\nImports: dplyr\n",
+        )
+        .unwrap();
+        let r_dir = dir.path().join("R");
+        std::fs::create_dir(&r_dir).unwrap();
+        let file = r_dir.join("foo.R");
+        std::fs::write(&file, "group_by(x, g)").unwrap();
+
+        assert!(any_file_references_packages(&[file], &["dplyr"]));
+    }
+
+    #[test]
+    fn test_no_references() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let file = dir.path().join("script.R");
+        std::fs::write(&file, "x + 1").unwrap();
+
+        assert!(!any_file_references_packages(&[file], &["dplyr"]));
     }
 }
