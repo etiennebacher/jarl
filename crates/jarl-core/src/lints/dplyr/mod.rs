@@ -61,6 +61,11 @@ mod tests {
             "dplyr_group_by_ungroup",
             None,
         );
+        expect_no_lint(
+            "x |> group_by(grp) |> other::summarize(a = 1) |> ungroup()",
+            "dplyr_group_by_ungroup",
+            None,
+        );
     }
 
     #[test]
