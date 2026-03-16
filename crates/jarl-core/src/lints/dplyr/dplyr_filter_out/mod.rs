@@ -251,6 +251,37 @@ mod tests {
     }
 
     #[test]
+    fn test_fix_is_na_guard_multiple_args() {
+        // Multiple comma-separated args (AND) → joined with | (OR) by De Morgan
+        assert_snapshot!(
+            snapshot_fix("x |> dplyr::filter(a > 1 | is.na(a), b < 2 | is.na(b))"),
+            @r"
+        OLD:
+        ====
+        x |> dplyr::filter(a > 1 | is.na(a), b < 2 | is.na(b))
+        NEW:
+        ====
+        x |> dplyr::filter_out(a <= 1 | b >= 2)
+        "
+        );
+    }
+
+    #[test]
+    fn test_fix_is_na_guard_multiple_args_with_named() {
+        assert_snapshot!(
+            snapshot_fix("x |> dplyr::filter(a > 1 | is.na(a), b < 2 | is.na(b), .by = grp)"),
+            @r"
+        OLD:
+        ====
+        x |> dplyr::filter(a > 1 | is.na(a), b < 2 | is.na(b), .by = grp)
+        NEW:
+        ====
+        x |> dplyr::filter_out(a <= 1 | b >= 2, .by = grp)
+        "
+        );
+    }
+
+    #[test]
     fn test_lint_parenthesized_negation() {
         assert_snapshot!(
             snapshot_lint("x |> dplyr::filter(!(a > 1))"),

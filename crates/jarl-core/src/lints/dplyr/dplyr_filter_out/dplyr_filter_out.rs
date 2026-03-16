@@ -30,15 +30,19 @@ use biome_rowan::AstNode;
 ///
 /// ```r
 /// library(dplyr)
+/// x <- tibble(a = c(1, 2, 2, NA), b = c(1, 1, 2, 3))
+///
+/// x |> filter(a > 1 | is.na(a))
+///
+/// x |> filter(a > 1 | is.na(a), b < 2)
+/// ```
+///
+/// Use instead:
+/// ```r
+/// library(dplyr)
 /// x <- tibble(a = c(1, 2, NA))
 ///
-/// # Verbose NA guard — filter_out() is clearer:
-/// x |> filter(a > 1 | is.na(a))
-/// # Same result:
 /// x |> filter_out(a <= 1)
-///
-/// # Negations could also use filter_out(), but NA handling differs:
-/// x |> filter(!is.na(val))
 /// ```
 ///
 /// ## References
@@ -136,7 +140,9 @@ fn check_is_na_guard_pattern(
     }
 
     let ns_prefix = fn_ns.as_deref().unwrap_or("");
-    let filter_out_cond = negated_conds.join(", ");
+    // Multiple comma-separated args in filter() are AND conditions, so we
+    // should join the rewritten conditions with OR.
+    let filter_out_cond = negated_conds.join(" | ");
 
     let mut replacement_args = vec![filter_out_cond];
     for named in named_args {
