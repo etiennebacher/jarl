@@ -1,4 +1,5 @@
 use crate::check::Checker;
+use crate::checker::PackageOrigin;
 use crate::diagnostic::*;
 use crate::utils::{get_function_name, get_function_namespace_prefix, node_contains_comments};
 use air_r_syntax::*;
@@ -83,6 +84,18 @@ pub fn dplyr_group_by_ungroup(
         && ns != "dplyr::"
     {
         return Ok(None);
+    }
+
+    // Without an explicit namespace, use the package cache to resolve
+    // the package, falling back to requiring a pipe (which makes it
+    // unlikely to be `stats::filter()`).
+    if fn_ns.is_none() {
+        match checker.resolve_package("ungroup") {
+            PackageOrigin::Resolved(ref pkg) if pkg == "dplyr" => {}
+            PackageOrigin::Resolved(_) | PackageOrigin::Ambiguous(_) | PackageOrigin::Unknown => {
+                return Ok(None);
+            }
+        }
     }
 
     // `.by` was introduced in dplyr 1.1.0. Skip if the installed
