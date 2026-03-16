@@ -190,6 +190,19 @@ mod tests {
     #[test]
     fn test_lint_slice_verbs() {
         assert_snapshot!(
+            snapshot_lint("x |> group_by(grp) |> slice(n = 1) |> ungroup()"),
+            @"
+        warning: dplyr_group_by_ungroup
+         --> <test>:1:6
+          |
+        1 | x |> group_by(grp) |> slice(n = 1) |> ungroup()
+          |      ------------------------------------------ `group_by()` followed by `slice()` and `ungroup()` can be simplified.
+          |
+          = help: Use `slice(..., .by = grp)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
             snapshot_lint("x |> group_by(grp) |> slice_head(n = 1) |> ungroup()"),
             @"
         warning: dplyr_group_by_ungroup
@@ -363,6 +376,35 @@ mod tests {
                 vec![
                     "x |> dplyr::group_by(grp) |> dplyr::summarize(a = mean(b)) |> dplyr::ungroup()",
                 ],
+                "dplyr_group_by_ungroup",
+                None
+            )
+        );
+    }
+
+    #[test]
+    fn test_lint_splice() {
+        assert_snapshot!(
+            snapshot_lint("x |> group_by(!!!syms(grps)) |> summarize(a = mean(b)) |> ungroup()"),
+            @"
+        warning: dplyr_group_by_ungroup
+         --> <test>:1:6
+          |
+        1 | x |> group_by(!!!syms(grps)) |> summarize(a = mean(b)) |> ungroup()
+          |      -------------------------------------------------------------- `group_by()` followed by `summarize()` and `ungroup()` can be simplified.
+          |
+          = help: Use `summarize(..., .by = c(!!!syms(grps)))` instead.
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_fix_splice() {
+        assert_snapshot!(
+            "fix_splice",
+            get_fixed_text(
+                vec!["x |> group_by(!!!syms(grps)) |> summarize(a = mean(b)) |> ungroup()",],
                 "dplyr_group_by_ungroup",
                 None
             )

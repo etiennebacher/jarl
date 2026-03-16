@@ -12,6 +12,7 @@ const VERBS_WITH_BY: &[&str] = &[
     "mutate",
     "filter",
     "reframe",
+    "slice",
     "slice_head",
     "slice_tail",
     "slice_min",
@@ -21,6 +22,7 @@ const VERBS_WITH_BY: &[&str] = &[
 
 // Return the name of the grouping argument for a given verb.
 fn by_arg_name(verb: &str) -> &'static str {
+    // slice() has ".by", its variants have "by"
     if verb.starts_with("slice_") {
         "by"
     } else {
@@ -303,9 +305,14 @@ fn get_grouping_args_text(
         return Ok(None);
     }
 
-    if grouping_parts.len() == 1 {
-        Ok(Some(grouping_parts.into_iter().next().unwrap()))
-    } else {
+    // Wrap in c() when there are multiple args, or when any arg uses !!!
+    // (splice), since !!! expands to multiple values at runtime.
+    let needs_c_wrap =
+        grouping_parts.len() > 1 || grouping_parts.iter().any(|p| p.starts_with("!!!"));
+
+    if needs_c_wrap {
         Ok(Some(format!("c({})", grouping_parts.join(", "))))
+    } else {
+        Ok(Some(grouping_parts.into_iter().next().unwrap()))
     }
 }
