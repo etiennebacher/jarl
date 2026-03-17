@@ -91,7 +91,8 @@ From now on, all file paths refer to the subfolder `crates/jarl-core`.
 As we progress in the implementation of a new rule, it can be very helpful to have a small R file on which we can run the new rule.
 This allows us to see if the behavior is correct or not, before implementing proper tests.
 
-This file should contain one or two examples of code that should be reported and code that shouldn't, so that we can quickly detect false positives and false negatives. We can store an R file, for instance `test.R`, at the root of the project and call:
+This file should contain one or two examples of code that should be reported and code that shouldn't, so that we can quickly detect false positives and false negatives.
+We can store an R file, for instance `test.R`, at the root of the project and call:
 
 ```
 cargo run --bin jarl -- check test.R --select <my_rule_name>
