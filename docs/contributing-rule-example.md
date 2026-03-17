@@ -84,6 +84,16 @@ Here's a basic idea of the workflow to add a new rule:
 
 From now on, all file paths refer to the subfolder `crates/jarl-core`.
 
+::: {.callout-note}
+## Trying your new rule locally
+
+As we progress in the implementation of a new rule, it can be very helpful to have a small R file on which we can run the new rule.
+This allows us to see if the behavior is correct or not, before implementing proper tests.
+You should keep one or two examples of code that should be reported and code that shouldn't, so that you can quickly detect false positives and false negatives.
+You can store an R file, for instance `test.R`, at the root of the project and call `cargo run --bin jarl -- check test.R --select <my_rule_name>` to run the current implementation on this file.
+:::
+
+
 ### Add the new rule to the list of rules
 
 There are three places to modify: `rule_set.rs`, `lints/base/mod.rs` (note that `base` could be another of the `lints` subfolders, depending on the rule), and one file in the `analyze` folder.
