@@ -17,8 +17,6 @@ If you want to add a rule that is not in `lintr`, please [open an issue](https:/
 
 Note that not all `lintr` rules are suitable for Jarl.
 In particular, rules that are only about formatting (spaces before parenthesis, newlines between arguments, etc.) are **out of scope** for Jarl.
-Moreover, you should look for rules that require "pattern detection" only, meaning that they don't need information about the rest of the code (or only very little).
-For example, [`unreachable_code`](https://lintr.r-lib.org/dev/reference/unreachable_code_linter.html) is **out of scope** for now because we need a way to analyze the rest of the code, which Jarl doesn't have so far.
 **If you are unsure about whether a rule can or should be implemented, open an issue first.**
 
 ### Get familiar with the rule
@@ -88,7 +86,7 @@ From now on, all file paths refer to the subfolder `crates/jarl-core`.
 
 ### Add the new rule to the list of rules
 
-There are three places to modify: `rule_set.rs`, `lints/mod.rs`, and one file in the `analyze` folder.
+There are three places to modify: `rule_set.rs`, `lints/base/mod.rs` (note that `base` could be another of the `lints` subfolders, depending on the rule), and one file in the `analyze` folder.
 
 `rule_set.rs` contains the list of all rules provided by Jarl, including their metadata: whether they have a fix or not, whether they are enabled by default, the group(s) they belong to, and an optional minimum R version required for the rule to be enabled:
 
@@ -106,7 +104,7 @@ declare_rules! {
 }
 ```
 
-We also need to add the following line in `lints/mod.rs`:
+We also need to add the following line in `lints/base/mod.rs`:
 
 ```rust
 pub(crate) mod list2df;
