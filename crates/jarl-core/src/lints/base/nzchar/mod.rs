@@ -40,6 +40,20 @@ mod tests {
          Found 1 error.
          "#
         );
+        
+        assert_snapshot!(
+            "fix_output",
+            get_unsafe_fixed_text(
+                vec![
+                    "x == ''",
+                    "x != ''",
+                    "x %in% ''",
+                    "foo(x(y)) == ''",
+                    "'' == x",
+                ],
+                "nzchar",
+            )
+        );
     }
 
     #[test]
