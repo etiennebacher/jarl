@@ -247,7 +247,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="choosing-the-version-of-jarl-to-use" class="level2">
 <h2 class="anchored" data-anchor-id="choosing-the-version-of-jarl-to-use">Choosing the version of Jarl to use</h2>
 <p>The <code>rev</code> parameter determines the version of Jarl to use. Starting from 0.4.0, all releases of Jarl have a matching release in <code>jarl-pre-commit</code> (see <a href="https://github.com/etiennebacher/jarl-pre-commit/tags" target="_blank"><code>jarl-pre-commit</code> tags</a>).</p>
-<p>When you call <code>pre-commit</code> or <code>prek</code>, it fetches the corresponding Jarl binary and caches it in <code>~/.cache/jarl-pre-commit</code> (for instance <code>~/.cache/jarl-pre-commit/jarl-0.4.0</code>). This implies two things:</p>
+<p>When you set up <code>pre-commit</code> or <code>prek</code>, it fetches the corresponding Jarl binary and caches it in <code>~/.cache/pre-commit</code> (for instance <code>~/.cache/pre-commit/jarl-0.4.0</code>). This implies two things:</p>
 <ul>
 <li>you may have projects with <code>pre-commit</code> config files that use different versions of Jarl;</li>
 <li>the version of Jarl on the <code>$PATH</code> is not affected, meaning that projects that don’t use <code>pre-commit</code> are not affected by the version of Jarl used in a project with <code>pre-commit</code>.</li>
