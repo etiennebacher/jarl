@@ -17,6 +17,7 @@ If you want to add a rule that is not in `lintr`, please [open an issue](https:/
 
 Note that not all `lintr` rules are suitable for Jarl.
 In particular, rules that are only about formatting (spaces before parenthesis, newlines between arguments, etc.) are **out of scope** for Jarl.
+
 **If you are unsure about whether a rule can or should be implemented, open an issue first.**
 
 ### Get familiar with the rule
@@ -70,8 +71,8 @@ Do `cargo check` or `cargo test` to know if you are correctly set up.
 As an example for this entire tutorial, we will analyze [PR #182](https://github.com/etiennebacher/jarl/pull/182/files), which added the rule [`list2df`](https://jarl.etiennebacher.com/rules/list2df).
 This PR adds a rule to replace calls like `do.call(cbind.data.frame, x)` by `list2DF(x)`.
 Importantly, `list2DF()` was added in R 4.0.0.
-I encourage you to check this PR as you advance in this tutorial.
-Note that the code described below has slightly evolved since this PR, but the implementation is still similar.
+
+**Note that the code and the structure described below have slightly evolved since this PR, but the implementation is still similar.**
 
 Here's a basic idea of the workflow to add a new rule:
 
@@ -89,8 +90,14 @@ From now on, all file paths refer to the subfolder `crates/jarl-core`.
 
 As we progress in the implementation of a new rule, it can be very helpful to have a small R file on which we can run the new rule.
 This allows us to see if the behavior is correct or not, before implementing proper tests.
-You should keep one or two examples of code that should be reported and code that shouldn't, so that you can quickly detect false positives and false negatives.
-You can store an R file, for instance `test.R`, at the root of the project and call `cargo run --bin jarl -- check test.R --select <my_rule_name>` to run the current implementation on this file.
+
+This file should contain one or two examples of code that should be reported and code that shouldn't, so that we can quickly detect false positives and false negatives. We can store an R file, for instance `test.R`, at the root of the project and call:
+
+```
+cargo run --bin jarl -- check test.R --select <my_rule_name>
+```
+
+to run the current implementation on this file.
 :::
 
 
