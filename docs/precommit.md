@@ -39,7 +39,7 @@ hooks = [
 The `rev` parameter determines the version of Jarl to use.
 Starting from 0.4.0, all releases of Jarl have a matching release in `jarl-pre-commit` (see [`jarl-pre-commit` tags](https://github.com/etiennebacher/jarl-pre-commit/tags)).
 
-When you call `pre-commit` or `prek`, it fetches the corresponding Jarl binary and caches it in `~/.cache/jarl-pre-commit` (for instance `~/.cache/jarl-pre-commit/jarl-0.4.0`).
+When you set up `pre-commit` or `prek`, it fetches the corresponding Jarl binary and caches it in `~/.cache/pre-commit` (for instance `~/.cache/pre-commit/jarl-0.4.0`).
 This implies two things:
 
 - you may have projects with `pre-commit` config files that use different versions of Jarl;
