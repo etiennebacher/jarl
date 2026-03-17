@@ -446,6 +446,13 @@ declare_rules! {
         default: Enabled,
         fix: Safe,
         min_r_version: None,
+    },    
+    NzChar => {
+        name: "nzchar",
+        categories: [Perf, Read],
+        default: Enabled,
+        fix: Unsafe,
+        min_r_version: None,
     },
     OuterNegation => {
         name: "outer_negation",
