@@ -1,19 +1,17 @@
 pub(crate) mod nzchar;
 
-
 #[cfg(test)]
 mod tests {
     use crate::utils_test::*;
     use insta::assert_snapshot;
 
     fn snapshot_lint(code: &str) -> String {
-      format_diagnostics(code, "nzchar", None)
+        format_diagnostics(code, "nzchar", None)
     }
 
     #[test]
     fn test_lint_nzchar() {
-
-         assert_snapshot!(
+        assert_snapshot!(
             snapshot_lint("x == ''"),
             @r#"
          warning: nzchar
@@ -27,7 +25,7 @@ mod tests {
          "#
         );
 
-         assert_snapshot!(
+        assert_snapshot!(
             snapshot_lint("x != ''"),
             @r#"
          warning: nzchar
@@ -40,7 +38,7 @@ mod tests {
          Found 1 error.
          "#
         );
-        
+
         assert_snapshot!(
             "fix_output",
             get_unsafe_fixed_text(

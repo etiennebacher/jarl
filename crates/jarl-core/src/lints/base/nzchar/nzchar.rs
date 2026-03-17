@@ -1,7 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{
-    node_contains_comments,
-};
+use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -14,11 +12,11 @@ pub struct NzChar;
 ///
 /// ## Why is this bad?
 ///
-/// One crucial difference is in the default handling of `NA_character_`, 
-// i.e., missing strings. `nzchar(NA_character_)` is TRUE, 
-// while `NA_character_ == ""` and `nchar(NA_character_) == 0` are both NA. 
-// Therefore, for strict compatibility, use `nzchar(x, keepNA = TRUE)`. 
-// If the input is known to be complete (no missing entries), 
+/// One crucial difference is in the default handling of `NA_character_`,
+// i.e., missing strings. `nzchar(NA_character_)` is TRUE,
+// while `NA_character_ == ""` and `nchar(NA_character_) == 0` are both NA.
+// Therefore, for strict compatibility, use `nzchar(x, keepNA = TRUE)`.
+// If the input is known to be complete (no missing entries),
 // this argument can be dropped for conciseness.
 ///
 /// This rule comes with a unsafe fix.
@@ -60,16 +58,30 @@ pub fn nzchar(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let operator = operator?;
     let right = right?;
 
-    if operator.kind() != RSyntaxKind::EQUAL2
-        && operator.kind() != RSyntaxKind::NOT_EQUAL
-    {
+    if operator.kind() != RSyntaxKind::EQUAL2 && operator.kind() != RSyntaxKind::NOT_EQUAL {
         return Ok(None);
     };
 
-    let left_is_empty_string = left.clone().into_syntax().text_trimmed().to_string().trim_matches('"').trim_matches('\'').is_empty();
-    let right_is_empty_string = right.clone().into_syntax().text_trimmed().to_string().trim_matches('"').trim_matches('\'').is_empty();
+    let left_is_empty_string = left
+        .clone()
+        .into_syntax()
+        .text_trimmed()
+        .to_string()
+        .trim_matches('"')
+        .trim_matches('\'')
+        .is_empty();
+    let right_is_empty_string = right
+        .clone()
+        .into_syntax()
+        .text_trimmed()
+        .to_string()
+        .trim_matches('"')
+        .trim_matches('\'')
+        .is_empty();
 
-    if (left_is_empty_string && right_is_empty_string) || (!left_is_empty_string && !right_is_empty_string) {
+    if (left_is_empty_string && right_is_empty_string)
+        || (!left_is_empty_string && !right_is_empty_string)
+    {
         return Ok(None);
     }
 
