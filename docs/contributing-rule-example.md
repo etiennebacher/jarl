@@ -465,6 +465,7 @@ Once all of this is done, it is time to open a PR!
 ### PR title
 
 Jarl follows [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary), meaning that your PR must start with "feat:", "fix:", or another appropriate name (see the linked documentation).
+Use backticks to format rule names as code.
 In this case, the PR is titled "feat: Add `list2df_linter`".
 
 ### PR automated comments
