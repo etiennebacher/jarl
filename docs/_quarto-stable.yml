@@ -8,6 +8,3 @@ website:
         href: https://jarl.etiennebacher.com/
       - text: "dev"
         href: https://jarl.etiennebacher.com/dev/
-    - icon: github
-      href: https://github.com/etiennebacher/jarl
-      aria-label: GitHub

@@ -2,9 +2,6 @@ website:
   site-url: https://jarl.etiennebacher.com/dev/
   navbar:
     right:
-    - icon: github
-      href: https://github.com/etiennebacher/jarl
-      aria-label: GitHub
     - text: "dev"
       menu:
       - text: "stable"
