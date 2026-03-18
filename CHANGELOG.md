@@ -80,6 +80,8 @@
 
 * Suppression comments now work better when inserted in piped chains (#397).
 
+* Fix a wrong parsing error when using `next()` or `break()` (#417).
+
 ## 0.4.0
 
 ### Breaking changes
