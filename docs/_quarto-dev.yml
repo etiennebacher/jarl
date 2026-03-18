@@ -1,0 +1,20 @@
+website:
+  site-url: https://jarl.etiennebacher.com/dev/
+  navbar:
+    right:
+    - icon: github
+      href: https://github.com/etiennebacher/jarl
+      aria-label: GitHub
+    - text: "dev"
+      menu:
+      - text: "stable"
+        href: https://jarl.etiennebacher.com/
+      - text: "dev"
+        href: https://jarl.etiennebacher.com/dev/
+  announcement:
+    icon: info-circle
+    dismissable: true
+    content: "You are viewing the development version of the documentation. Use the dropdown on the top right to see the stable version."
+    type: primary
+    position: below-navbar
+

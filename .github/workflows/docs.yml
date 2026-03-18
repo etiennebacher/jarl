@@ -1,5 +1,19 @@
-# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
-# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+# Renders and deploys the documentation to the gh-pages branch, which Netlify
+# serves as the website. Two versions of the docs coexist on the branch:
+#
+# - /       (stable) — deployed on release via the Release workflow
+# - /dev/   (dev)    — deployed on every push to main
+#
+# The build step renders the documentation (i.e. creates the _site folder) and
+# saves it with the name "docs-site". It uses the dev profile by default, except
+# if we're in a release workflow.
+#
+# The deploy step deletes the appropriate directory and replaces it with
+# "docs-site":
+# - if we're in dev mode, we delete gh-pages/dev and copy the new one in there
+# - if we're in stable mode, we delete gh-pages except for the "dev" folder and
+#   copy the new one in "/".
+
 on:
   push:
     branches:
@@ -18,20 +32,27 @@ on:
       - crates/**/src/**
       - crates/**/Cargo.toml
   workflow_dispatch:
+    inputs:
+      version:
+        description: Version to deploy (dev or stable)
+        required: false
+        default: dev
+        type: choice
+        options:
+          - dev
+          - stable
 
 name: Docs
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  docs:
+  build:
     runs-on: windows-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v6
 
@@ -51,9 +72,62 @@ jobs:
         run: source("docs/make_docs.R")
         shell: Rscript {0}
 
-      - name: Render and Publish Quarto Project (main branch)
+      - name: Render Quarto docs (dev)
+        if: github.event_name != 'workflow_dispatch' || inputs.version == 'dev'
+        shell: bash
+        run: quarto render docs --profile dev
+
+      - name: Render Quarto docs (stable)
+        if: github.event_name == 'workflow_dispatch' && inputs.version == 'stable'
+        shell: bash
+        run: quarto render docs --profile stable
+
+      - name: Upload rendered docs
         if: github.event_name != 'pull_request'
-        uses: quarto-dev/quarto-actions/publish@v2
+        uses: actions/upload-artifact@v7
         with:
-          target: gh-pages
-          path: docs
+          name: docs-site
+          path: docs/_site/
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v6
+        with:
+          ref: gh-pages
+          path: gh-pages-dist
+
+      - name: Download rendered docs
+        uses: actions/download-artifact@v8
+        with:
+          name: docs-site
+          path: docs-site/
+
+      - name: Deploy to /dev/
+        if: github.event_name != 'workflow_dispatch' || inputs.version == 'dev'
+        run: |
+          rm -rf gh-pages-dist/dev
+          mkdir -p gh-pages-dist/dev
+          cp -r docs-site/. gh-pages-dist/dev/
+
+      - name: Deploy to root (stable)
+        if: github.event_name == 'workflow_dispatch' && inputs.version == 'stable'
+        run: |
+          # Clear everything at the root of gh-pages except the /dev/ folder
+          # (which holds the dev docs), then copy the stable build in.
+          find gh-pages-dist -maxdepth 1 ! -name 'dev' ! -name '.git' ! -name '.' -exec rm -rf {} +
+          cp -r docs-site/. gh-pages-dist/
+
+      - name: Commit and push
+        run: |
+          cd gh-pages-dist
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --staged --quiet || git commit -m "Deploy docs [skip ci]"
+          git push
