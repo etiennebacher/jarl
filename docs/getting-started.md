@@ -18,7 +18,8 @@ Jarl comes with a [list of rules](rules.qmd) but not all of them are enabled by 
 You can select or ignore rules via the CLI, for example:
 
 ```bash
-# Check all files with all rules
+# Check all files with all rules (even those deactivated
+# by default)
 jarl check . --select ALL
 
 # Check a single file, ignoring a specific rule
