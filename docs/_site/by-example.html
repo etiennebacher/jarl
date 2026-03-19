@@ -360,13 +360,15 @@ Found 2 errors.
 <pre><strong>test.R</strong></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9" data-filename="test.R"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">is.na</span>(x))</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(data)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(data)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">duplicated</span>(x))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="code-with-filename">
 <div class="code-with-filename-file">
 <pre><strong>Terminal</strong></pre>
 </div>
-<pre data-filename="Terminal"><code>$&gt; jarl check test.R --select any_is_na
+<pre data-filename="Terminal"><code># Note that there must be no space between after the comma!
+$&gt; jarl check test.R --select any_is_na,any_duplicated
 
 warning: any_is_na
  --&gt; test.R:1:1
@@ -376,10 +378,15 @@ warning: any_is_na
   |
   = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.</code></pre>
+warning: any_duplicated
+ --&gt; test.R:3:1
+  |
+3 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) &gt; 0` instead.</code></pre>
 </div>
-<p>Only the <code>any_is_na</code> rule is applied; <code>seq</code> is not reported.</p>
+<p>Only the <code>any_is_na</code> and <code>any_duplicated</code> rules are applied, <code>seq</code> is not reported.</p>
 <p>You can also select by family:</p>
 <div class="code-with-filename">
 <div class="code-with-filename-file">

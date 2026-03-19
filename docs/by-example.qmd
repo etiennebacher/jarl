@@ -86,10 +86,12 @@ if (isTRUE(all.equal(x, y))) {
 ```{.r filename="test.R"}
 any(is.na(x))
 1:nrow(data)
+any(duplicated(x))
 ```
 
 ```{filename="Terminal"}
-$> jarl check test.R --select any_is_na
+# Note that there must be no space between after the comma!
+$> jarl check test.R --select any_is_na,any_duplicated
 
 warning: any_is_na
  --> test.R:1:1
@@ -99,11 +101,16 @@ warning: any_is_na
   |
   = help: Use `anyNA(...)` instead.
 
-Found 1 error.
-1 fixable with the `--fix` option.
+warning: any_duplicated
+ --> test.R:3:1
+  |
+3 | any(duplicated(x))
+  | ------------------ `any(duplicated(...))` is inefficient.
+  |
+  = help: Use `anyDuplicated(...) > 0` instead.
 ```
 
-Only the `any_is_na` rule is applied; `seq` is not reported.
+Only the `any_is_na` and `any_duplicated` rules are applied, `seq` is not reported.
 
 You can also select by family:
 
