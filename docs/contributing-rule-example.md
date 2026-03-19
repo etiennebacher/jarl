@@ -89,7 +89,7 @@ From now on, all file paths refer to the subfolder `crates/jarl-core`.
 ## Trying your new rule locally
 
 As we progress in the implementation of a new rule, it can be very helpful to have a small R file on which we can run the new rule.
-This allows us to see if the behavior is correct or not, before implementing proper tests.
+This allows us to see whether the behavior is correct, before implementing proper tests.
 
 This file should contain one or two examples of code that should be reported and code that shouldn't, so that we can quickly detect false positives and false negatives.
 We can create `test.R` at the root of the project (this file is already listed in `.gitignore`) and call:
