@@ -20,7 +20,7 @@ For documentation, you will need to have [Quarto](https://quarto.org/) and the R
 
 Contributors are allowed to use AI tools, with some conditions.
 
-* Write your own comments in issues and PRs, don't participate with AI generated comments. AI generated comments may be hidden without notice. If you use AI for translation, please mention it at the top of the comment and ensure it matches your own thoughts.
+* Write your own comments in issues and PRs, don't participate with AI generated comments. AI generated comments may be hidden without notice.
 
 * In PRs, review all the generated code and, if needed, explain the PR in your own words. Particular attention should be given to documentation and code comments, where AI tools tend to be incorrect or overly verbose.
 
