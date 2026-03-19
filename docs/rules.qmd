@@ -33,17 +33,21 @@ The column "Has fix" can take the following values:
 -   ❌ No fix
 
 ```{css, eval=TRUE, echo=FALSE}
-.tabulator, .tabulator-header, .tabulator-col, .tabulator-row, .tabulator-cell, .tabulator-table {
+.Reactable {
 	background-color: transparent !important;
 }
 
-.tabulator-header-filter > input {
+.rt-text-content, .rt-td-inner {
+  color: #303d64
+}
+
+.rt-filter {
 	background-color: transparent !important;
 }
 ```
 
 ```{r, eval=TRUE, echo=FALSE, warning=FALSE}
-library(tinytable)
+library(reactable)
 dat <- as.data.frame(
   rbind(
     c("all_equal", "suspicious", "❗", ""),
@@ -115,6 +119,19 @@ dat <- as.data.frame(
   )
 )
 names(dat) <- c("Rule name", "Group", "Has fix", "Conditions")
-tt(dat) |>
-  theme_html(engine = "tabulator", tabulator_search = "column")
+
+reactable(
+  dat,
+  columns = list(
+    `Rule name` = colDef(cell = function(value) {
+      htmltools::tags$a(
+        href = paste0("rules/", value, ".html"),
+        target = "_blank",
+        value
+      )
+    })
+  ),
+  defaultPageSize = 1000,
+  filterable = TRUE
+)
 ```
