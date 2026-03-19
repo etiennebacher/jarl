@@ -72,7 +72,7 @@ As an example for this entire tutorial, we will analyze [PR #182](https://github
 This PR adds a rule to replace calls like `do.call(cbind.data.frame, x)` by `list2DF(x)`.
 Importantly, `list2DF()` was added in R 4.0.0.
 
-**Note that the code and the structure described below have slightly evolved since this PR, but the implementation is still similar.**
+**Note that the code and the structure described below have slightly evolved since this PR, but the implementation is still similar** (you can see other PRs that implemented new rules [here](https://github.com/etiennebacher/jarl/pulls?q=is%3Apr+label%3Anew-rule+)).
 
 Here's a basic idea of the workflow to add a new rule:
 
