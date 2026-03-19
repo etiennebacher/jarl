@@ -24,7 +24,8 @@ fn test_min_r_version_from_cli_only() -> anyhow::Result<()> {
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -46,7 +47,8 @@ fn test_min_r_version_from_cli_only() -> anyhow::Result<()> {
             .arg("4.4.0")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -66,7 +68,8 @@ fn test_min_r_version_from_cli_only() -> anyhow::Result<()> {
             .arg("4.6.0")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -116,7 +119,8 @@ Depends: R (>= 4.4.0), utils, stats"#,
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -141,7 +145,8 @@ Depends: R (>= 4.6.0), utils, stats"#,
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----

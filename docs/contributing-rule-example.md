@@ -17,8 +17,7 @@ If you want to add a rule that is not in `lintr`, please [open an issue](https:/
 
 Note that not all `lintr` rules are suitable for Jarl.
 In particular, rules that are only about formatting (spaces before parenthesis, newlines between arguments, etc.) are **out of scope** for Jarl.
-Moreover, you should look for rules that require "pattern detection" only, meaning that they don't need information about the rest of the code (or only very little).
-For example, [`unreachable_code`](https://lintr.r-lib.org/dev/reference/unreachable_code_linter.html) is **out of scope** for now because we need a way to analyze the rest of the code, which Jarl doesn't have so far.
+
 **If you are unsure about whether a rule can or should be implemented, open an issue first.**
 
 ### Get familiar with the rule
@@ -72,8 +71,8 @@ Do `cargo check` or `cargo test` to know if you are correctly set up.
 As an example for this entire tutorial, we will analyze [PR #182](https://github.com/etiennebacher/jarl/pull/182/files), which added the rule [`list2df`](rules/list2df.md).
 This PR adds a rule to replace calls like `do.call(cbind.data.frame, x)` by `list2DF(x)`.
 Importantly, `list2DF()` was added in R 4.0.0.
-I encourage you to check this PR as you advance in this tutorial.
-Note that the code described below has slightly evolved since this PR, but the implementation is still similar.
+
+**Note that the code and the structure described below have slightly evolved since this PR, but the implementation is still similar** (you can see other PRs that implemented new rules [here](https://github.com/etiennebacher/jarl/pulls?q=is%3Apr+label%3Anew-rule+)).
 
 Here's a basic idea of the workflow to add a new rule:
 
@@ -86,9 +85,26 @@ Here's a basic idea of the workflow to add a new rule:
 
 From now on, all file paths refer to the subfolder `crates/jarl-core`.
 
+::: {.callout-note}
+## Trying your new rule locally
+
+As we progress in the implementation of a new rule, it can be very helpful to have a small R file on which we can run the new rule.
+This allows us to see whether the behavior is correct, before implementing proper tests.
+
+This file should contain one or two examples of code that should be reported and code that shouldn't, so that we can quickly detect false positives and false negatives.
+We can create `test.R` at the root of the project (this file is already listed in `.gitignore`) and call:
+
+```
+cargo run --bin jarl -- check test.R --select <my_rule_name>
+```
+
+to run the current implementation on this file.
+:::
+
+
 ### Add the new rule to the list of rules
 
-There are three places to modify: `rule_set.rs`, `lints/mod.rs`, and one file in the `analyze` folder.
+There are three places to modify: `rule_set.rs`, `lints/base/mod.rs` (note that `base` could be another of the `lints` subfolders, depending on the rule), and one file in the `analyze` folder.
 
 `rule_set.rs` contains the list of all rules provided by Jarl, including their metadata: whether they have a fix or not, whether they are enabled by default, the group(s) they belong to, and an optional minimum R version required for the rule to be enabled:
 
@@ -106,7 +122,7 @@ declare_rules! {
 }
 ```
 
-We also need to add the following line in `lints/mod.rs`:
+We also need to add the following line in `lints/base/mod.rs`:
 
 ```rust
 pub(crate) mod list2df;
@@ -467,6 +483,7 @@ Once all of this is done, it is time to open a PR!
 ### PR title
 
 Jarl follows [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary), meaning that your PR must start with "feat:", "fix:", or another appropriate name (see the linked documentation).
+Use backticks to format rule names as code.
 In this case, the PR is titled "feat: Add `list2df_linter`".
 
 ### PR automated comments

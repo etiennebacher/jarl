@@ -46,7 +46,8 @@ foo <- function(x) x
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -92,7 +93,8 @@ foo <- function(x) x
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -142,7 +144,8 @@ foo <- function(x) x
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -183,7 +186,8 @@ foo <- function(x) x
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -229,7 +233,8 @@ bar <- function(y) y
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -295,7 +300,8 @@ check-roxygen = false
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -336,7 +342,8 @@ foo <- function(x) x
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -380,7 +387,8 @@ foo <- function(x) x
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -429,7 +437,8 @@ foo <- function(x) x
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -479,7 +488,8 @@ foo <- function(x) x
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -544,7 +554,8 @@ f <- function() 1
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -614,7 +625,7 @@ fix-roxygen = true
     let fixed = std::fs::read_to_string(r_dir.join("test.R"))?;
     insta::assert_snapshot!(
         fixed,
-        @r"
+        @"
     #' @title hi
     #' @description
     #' hello
@@ -668,7 +679,7 @@ fix-roxygen = true
     let fixed = std::fs::read_to_string(r_dir.join("test.R"))?;
     insta::assert_snapshot!(
         fixed,
-        @r"
+        @"
     #' Title
     #' @examples
     #' 1 + 1
@@ -708,7 +719,8 @@ foo <- function(x) x
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----

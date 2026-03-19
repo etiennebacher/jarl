@@ -33,7 +33,7 @@ mod tests {
     fn test_lint_outer_negation() {
         assert_snapshot!(
             snapshot_lint("any(!x)"),
-            @r"
+            @"
         warning: outer_negation
          --> <test>:1:1
           |
@@ -46,7 +46,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("any(!(x + y))"),
-            @r"
+            @"
         warning: outer_negation
          --> <test>:1:1
           |
@@ -59,7 +59,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("all(!x)"),
-            @r"
+            @"
         warning: outer_negation
          --> <test>:1:1
           |
@@ -72,7 +72,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("all(!(x + y))"),
-            @r"
+            @"
         warning: outer_negation
          --> <test>:1:1
           |

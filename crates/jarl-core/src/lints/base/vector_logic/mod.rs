@@ -36,7 +36,7 @@ mod tests {
     fn test_lint_vector_logic() {
         assert_snapshot!(
             snapshot_lint("if (TRUE & FALSE) 1"),
-            @r"
+            @"
         warning: vector_logic
          --> <test>:1:5
           |
@@ -48,7 +48,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (TRUE | FALSE) 1"),
-            @r"
+            @"
         warning: vector_logic
          --> <test>:1:5
           |
@@ -60,7 +60,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (TRUE | FALSE & TRUE) 1"),
-            @r"
+            @"
         warning: vector_logic
          --> <test>:1:5
           |
@@ -72,7 +72,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("while (TRUE & FALSE) 1"),
-            @r"
+            @"
         warning: vector_logic
          --> <test>:1:8
           |
@@ -84,7 +84,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("while (TRUE | FALSE) 1"),
-            @r"
+            @"
         warning: vector_logic
          --> <test>:1:8
           |
@@ -96,7 +96,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if ((x > 1) & (y < 2)) 1"),
-            @r"
+            @"
         warning: vector_logic
          --> <test>:1:5
           |

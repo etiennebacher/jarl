@@ -40,16 +40,17 @@ any(is.na(x))
             .run()
             .normalize_os_executable_name(),
         @"
-success: false
-exit_code: 1
------ stdout -----
-   12 [*] any_is_na
-    1 [ ] implicit_assignment
 
-Rules with `[*]` have an automatic fix.
+    success: false
+    exit_code: 1
+    ----- stdout -----
+       12 [*] any_is_na
+        1 [ ] implicit_assignment
 
------ stderr -----
-"
+    Rules with `[*]` have an automatic fix.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -73,13 +74,14 @@ fn test_stats_no_violation() -> anyhow::Result<()> {
             .run()
             .normalize_os_executable_name(),
         @"
-success: true
-exit_code: 0
------ stdout -----
-All checks passed!
 
------ stderr -----
-"
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    All checks passed!
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -121,7 +123,8 @@ any(is.na(x))
             .arg("concise")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -192,7 +195,8 @@ any(is.na(x))
             .env("JARL_N_VIOLATIONS_HINT_STAT", "25")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----

@@ -12,7 +12,7 @@ mod tests {
     fn test_lint_blanket_suppression() {
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore
-any_is_na(x)"), @r"
+any_is_na(x)"), @"
         warning: blanket_suppression
          --> <test>:2:1
           |
@@ -26,7 +26,7 @@ any_is_na(x)"), @r"
 
         insta::assert_snapshot!(snapshot_lint("
 #jarl-ignore
-any_is_na(x)"), @r"
+any_is_na(x)"), @"
         warning: blanket_suppression
          --> <test>:2:1
           |
@@ -40,7 +40,7 @@ any_is_na(x)"), @r"
 
         insta::assert_snapshot!(snapshot_lint("
 #jarl-ignore: <reason>
-any_is_na(x)"), @r"
+any_is_na(x)"), @"
         warning: blanket_suppression
          --> <test>:2:1
           |
@@ -54,7 +54,7 @@ any_is_na(x)"), @r"
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore : <reason>
-any_is_na(x)"), @r"
+any_is_na(x)"), @"
         warning: blanket_suppression
          --> <test>:2:1
           |

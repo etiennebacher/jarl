@@ -54,6 +54,7 @@
 
 * New rules:
 
+  - `dplyr_group_by_ungroup` (#393)
   - `duplicated_function_definition` (#358)
   - `expect_match` (#364, @bjyberg)
   - `expect_no_match` (#368, @bjyberg)
@@ -76,6 +77,10 @@
 
 * Some fixes to ensure that automatic fixes don't introduce new violations or
   new parsing errors (#389).
+
+* Suppression comments now work better when inserted in piped chains (#397).
+
+* Fix a wrong parsing error when using `next()` or `break()` (#417).
 
 ## 0.4.0
 

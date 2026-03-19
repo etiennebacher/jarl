@@ -41,7 +41,7 @@ x <- 1",
     fn test_lint_misplaced_suppression() {
         insta::assert_snapshot!(
             snapshot_lint(
-            "any(is.na(x)) # jarl-ignore any_is_na: <reason>"), @r"
+            "any(is.na(x)) # jarl-ignore any_is_na: <reason>"), @"
         warning: misplaced_suppression
          --> <test>:1:15
           |
@@ -56,7 +56,7 @@ x <- 1",
         insta::assert_snapshot!(snapshot_lint("
 any(
   is.na(x)
-) # jarl-ignore any_is_na: <reason>"), @r"
+) # jarl-ignore any_is_na: <reason>"), @"
         warning: misplaced_suppression
          --> <test>:4:3
           |
@@ -71,7 +71,7 @@ any(
         insta::assert_snapshot!(
 
             snapshot_lint(
-            "any(is.na(x)) # jarl-ignore-file any_is_na: <reason>"), @r"
+            "any(is.na(x)) # jarl-ignore-file any_is_na: <reason>"), @"
         warning: misplaced_suppression
          --> <test>:1:15
           |
@@ -86,7 +86,7 @@ any(
         insta::assert_snapshot!(
 
             snapshot_lint(
-            "any(is.na(x)) # jarl-ignore-start any_is_na: <reason>"), @r"
+            "any(is.na(x)) # jarl-ignore-start any_is_na: <reason>"), @"
         warning: misplaced_suppression
          --> <test>:1:15
           |

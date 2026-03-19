@@ -42,7 +42,8 @@ exclude = ["R/foo.R"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -90,7 +91,8 @@ exclude = ["R/foo.R"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -138,7 +140,8 @@ include = ["R/foo2.R"]
             .arg(".")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: true
     exit_code: 0
     ----- stdout -----
@@ -186,7 +189,8 @@ exclude = ["R/foo.R"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -240,7 +244,8 @@ include = ["R/foo2.R"]
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----

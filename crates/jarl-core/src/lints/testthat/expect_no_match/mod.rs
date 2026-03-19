@@ -45,7 +45,7 @@ mod tests {
 
     #[test]
     fn test_lint_expect_no_match() {
-        assert_snapshot!(snapshot_lint("testthat::expect_false(grepl('fun', 'Testing is fun'))"), @r"
+        assert_snapshot!(snapshot_lint("testthat::expect_false(grepl('fun', 'Testing is fun'))"), @"
         warning: expect_no_match
          --> <test>:1:1
           |
@@ -55,7 +55,7 @@ mod tests {
           = help: Use `expect_no_match(...)` instead.
         Found 1 error.
         ");
-        assert_snapshot!(snapshot_lint("show_failure(expect_false(grepl('fun', 'Testing is fun')))"), @r"
+        assert_snapshot!(snapshot_lint("show_failure(expect_false(grepl('fun', 'Testing is fun')))"), @"
         warning: expect_no_match
          --> <test>:1:14
           |
@@ -67,7 +67,7 @@ mod tests {
         ");
         assert_snapshot!(
             snapshot_lint("expect_false(grepl('fun', 'Testing is fun'), info = 'msg')"),
-            @r"
+            @"
         warning: expect_no_match
          --> <test>:1:1
           |
@@ -80,7 +80,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_false(grepl(pattern = 'fun', x = 'Testing is fun'))"),
-            @r"
+            @"
         warning: expect_no_match
          --> <test>:1:1
           |
@@ -93,7 +93,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_false(grepl(x = 'Testing is fun', perl = TRUE, pattern = 'fun'))"),
-            @r"
+            @"
         warning: expect_no_match
          --> <test>:1:1
           |
@@ -104,7 +104,7 @@ mod tests {
         Found 1 error.
         "
         );
-        assert_snapshot!(snapshot_lint("expect_false(base::grepl('fun', 'Testing is fun'))"), @r"
+        assert_snapshot!(snapshot_lint("expect_false(base::grepl('fun', 'Testing is fun'))"), @"
         warning: expect_no_match
          --> <test>:1:1
           |
@@ -114,7 +114,7 @@ mod tests {
           = help: Use `expect_no_match(...)` instead.
         Found 1 error.
         ");
-        assert_snapshot!(snapshot_lint("grepl('fun', 'Testing is fun') |> expect_false()"), @r"
+        assert_snapshot!(snapshot_lint("grepl('fun', 'Testing is fun') |> expect_false()"), @"
         warning: expect_no_match
          --> <test>:1:1
           |
@@ -126,7 +126,7 @@ mod tests {
         ");
         assert_snapshot!(
             snapshot_lint("'Testing is fun' |> grepl(pattern = 'fun') |> expect_false()"),
-            @r"
+            @"
         warning: expect_no_match
          --> <test>:1:1
           |

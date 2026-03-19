@@ -7,10 +7,11 @@ All rules belong to at least one category:
 
 -   **comments** (COMM): mistakes in the suppression comments (`# jarl-ignore`).
 -   **correctness** (CORR): code that is outright wrong or useless.
--   **suspicious** (SUSP): code that is most likely wrong or useless.
+-   **dplyr** (DPLYR): rules for the package `dplyr`. Disabled by default.
 -   **performance** (PERF): code that can be written to run faster.
 -   **readability** (READ): code is correct but can be written in a way that is easier to read.
--   **testthat** (TESTTHAT): rules for the `testthat` package. Disabled by default.
+-   **suspicious** (SUSP): code that is most likely wrong or useless.
+-   **testthat** (TESTTHAT): rules for the package `testthat`. Disabled by default.
 
 You can find the list of available rules below, and more detailed explanations and examples in pages in the sidebar.
 
@@ -54,6 +55,7 @@ dat <- as.data.frame(
     c("class_equals", "suspicious", "❗", ""),
     c("coalesce", "readability", "✅", "R >= 4.4"),
     c("comparison_negation", "readability", "✅", ""),
+    c("dplyr_group_by_ungroup", "dplyr", "❗", "Disabled by default"),
     c("download_file", "suspicious", "❌", ""),
     c("duplicated_arguments", "suspicious", "❌", ""),
     c("duplicated_function_definition", "correctness", "❌", ""),

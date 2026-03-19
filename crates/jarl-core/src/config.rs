@@ -1,6 +1,7 @@
 use crate::{
     description::Description,
     lints::all_rules_enabled_by_default,
+    package_cache::PackageCache,
     rule_options::ResolvedRuleOptions,
     rule_set::{Category, Rule, RuleSet},
     settings::Settings,
@@ -84,6 +85,9 @@ pub struct Config {
     pub fix_roxygen: bool,
     /// Resolved per-rule options (wrapped in Arc to avoid expensive clones)
     pub rule_options: Arc<ResolvedRuleOptions>,
+    /// Shared cache of installed R package metadata for package-specific rules.
+    /// `None` if library path discovery was not performed (e.g., no package rules enabled).
+    pub package_cache: Option<Arc<PackageCache>>,
 }
 
 pub fn build_config(
@@ -169,6 +173,7 @@ pub fn build_config(
         check_roxygen,
         fix_roxygen,
         rule_options: Arc::new(rule_options),
+        package_cache: None,
     })
 }
 
