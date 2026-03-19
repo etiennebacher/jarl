@@ -11,7 +11,7 @@ assignment operator in a project.
 
 Set the following option in `jarl.toml` to use `=` as the preferred operator:
 
-```
+```toml
 [lint.assignment]
 operator = "=" # or "<-"
 ```

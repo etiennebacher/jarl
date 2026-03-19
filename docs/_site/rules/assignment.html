@@ -678,8 +678,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
 <p>In most cases using <code>=</code> and <code>&lt;-</code> is equivalent. Some very popular packages use <code>=</code> without problems. This rule only ensures the consistency of the assignment operator in a project.</p>
 <p>Set the following option in <code>jarl.toml</code> to use <code>=</code> as the preferred operator:</p>
-<pre><code>[lint.assignment]
-operator = "=" # or "&lt;-"</code></pre>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.assignment]</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="dt">operator</span> <span class="op">=</span> <span class="st">"="</span> <span class="co"># or "&lt;-"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
