@@ -223,8 +223,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#arguments" id="toc-arguments" class="nav-link active" data-scroll-target="#arguments">Arguments</a></li>
+  <li><a href="#options" id="toc-options" class="nav-link" data-scroll-target="#options">Options</a></li>
+  <li><a href="#global-options" id="toc-global-options" class="nav-link" data-scroll-target="#global-options">Global options</a></li>
+  <li><a href="#examples" id="toc-examples" class="nav-link" data-scroll-target="#examples">Examples</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/reference/cli.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -248,86 +257,83 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>Jarl comes with various options available directly from the command line. These can be listed with <code>jarl check --help</code>:</p>
-<pre><code>Check a set of files or directories
-
-Usage: jarl check [OPTIONS] &lt;FILES&gt;...
-
-Arguments:
-  &lt;FILES&gt;...
-          List of files or directories to check or fix lints, for example `jarl check .`.
-
-Options:
-  -f, --fix
-          Automatically fix issues detected by the linter.
-
-  -u, --unsafe-fixes
-          Include fixes that may not retain the original intent of the  code.
-
-      --fix-only
-          Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
-
-      --allow-dirty
-          Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
-
-      --allow-no-vcs
-          Apply fixes even if there is no version control system.
-
-  -s, --select &lt;SELECT&gt;
-          Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF".
-
-          [default: ]
-
-  -e, --extend-select &lt;EXTEND_SELECT&gt;
-          Like `--select` but adds additional rules in addition to those already specified.
-
-          [default: ]
-
-  -i, --ignore &lt;IGNORE&gt;
-          Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF".
-
-          [default: ]
-
-  -w, --with-timing
-          Show the time taken by the function.
-
-  -m, --min-r-version &lt;MIN_R_VERSION&gt;
-          The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
-
-      --output-format &lt;OUTPUT_FORMAT&gt;
-          Output serialization format for violations.
-
-          Possible values:
-          - full:    Print diagnostics with full context using annotated code snippets
-          - concise: Print diagnostics in a concise format, one per line
-          - github:  Print diagnostics as GitHub format
-          - json:    Print diagnostics as JSON
-
-          [default: full]
-
-      --assignment &lt;ASSIGNMENT&gt;
-          [DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `&lt;-` or `=`.
-
-      --no-default-exclude
-          Do not apply the default set of file patterns that should be excluded.
-
-      --statistics
-          Show counts for every rule with at least one violation.
-
-      --add-jarl-ignore[=&lt;REASON&gt;]
-          Automatically insert a `# jarl-ignore` comment to suppress all violations.
-          The default reason can be customized with `--add-jarl-ignore="my_reason"`.
-
-  -h, --help
-          Print help (see a summary with '-h')
-
-Global options:
-      --log-level &lt;LOG_LEVEL&gt;
-          The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`</code></pre>
-<p>You can pass multiple options at once, for instance</p>
+<p>Jarl comes with various options available directly from the command line. These can be listed with <code>jarl check --help</code>.</p>
+<pre><code>Usage: jarl check [OPTIONS] &lt;FILES&gt;...</code></pre>
+<section id="arguments" class="level2">
+<h2 class="anchored" data-anchor-id="arguments">Arguments</h2>
+<p><strong><code>&lt;FILES&gt;...</code></strong></p>
+<p>List of files or directories to check or fix lints, for example <code>jarl check .</code> or <code>jarl check doc1.R doc2.R</code>.</p>
+</section>
+<section id="options" class="level2">
+<h2 class="anchored" data-anchor-id="options">Options</h2>
+<p><strong><code>-f, --fix</code></strong></p>
+<p>Automatically fix issues detected by the linter.</p>
+<hr>
+<p><strong><code>-u, --unsafe-fixes</code></strong></p>
+<p>Include fixes that may not retain the original intent of the code.</p>
+<hr>
+<p><strong><code>--fix-only</code></strong></p>
+<p>Apply fixes to resolve lint violations, but don’t report on leftover violations. Implies <code>--fix</code>.</p>
+<hr>
+<p><strong><code>--allow-dirty</code></strong></p>
+<p>Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.</p>
+<hr>
+<p><strong><code>--allow-no-vcs</code></strong></p>
+<p>Apply fixes even if there is no version control system.</p>
+<hr>
+<p><strong><code>-s, --select &lt;SELECT&gt;</code></strong></p>
+<p>Names of rules to include, separated by a comma (no spaces). Also accepts names of groups of rules, such as <code>"PERF"</code>.</p>
+<hr>
+<p><strong><code>-e, --extend-select &lt;EXTEND_SELECT&gt;</code></strong></p>
+<p>Like <code>--select</code> but adds additional rules in addition to those already specified.</p>
+<hr>
+<p><strong><code>-i, --ignore &lt;IGNORE&gt;</code></strong></p>
+<p>Names of rules to exclude, separated by a comma (no spaces). Also accepts names of groups of rules, such as <code>"PERF"</code>.</p>
+<hr>
+<p><strong><code>-w, --with-timing</code></strong></p>
+<p>Show the time taken by the function.</p>
+<hr>
+<p><strong><code>-m, --min-r-version &lt;MIN_R_VERSION&gt;</code></strong></p>
+<p>The minimum R version to be used by the linter. Some rules only work starting from a specific version.</p>
+<hr>
+<p><strong><code>--output-format &lt;OUTPUT_FORMAT&gt;</code></strong></p>
+<p>Output serialization format for violations. Possible values:</p>
+<ul>
+<li><code>full</code> (default): Print diagnostics with full context using annotated code snippets</li>
+<li><code>concise</code>: Print diagnostics in a concise format, one per line</li>
+<li><code>github</code>: Print diagnostics as GitHub format</li>
+<li><code>json</code>: Print diagnostics as JSON</li>
+</ul>
+<hr>
+<p><strong><code>--assignment &lt;ASSIGNMENT&gt;</code></strong></p>
+<p>[DEPRECATED: use <code>[lint.assignment]</code> in <code>jarl.toml</code>]</p>
+<p>Assignment operator to use, can be either <code>&lt;-</code> or <code>=</code>.</p>
+<hr>
+<p><strong><code>--no-default-exclude</code></strong></p>
+<p>Do not apply the default set of file patterns that should be excluded.</p>
+<hr>
+<p><strong><code>--statistics</code></strong></p>
+<p>Show counts for every rule with at least one violation.</p>
+<hr>
+<p><strong><code>--add-jarl-ignore[=&lt;REASON&gt;]</code></strong></p>
+<p>Automatically insert a <code># jarl-ignore</code> comment to suppress all violations. The default reason can be customized with <code>--add-jarl-ignore="my_reason"</code>.</p>
+<hr>
+<p><strong><code>-h, --help</code></strong></p>
+<p>Print help (see a summary with <code>-h</code>).</p>
+</section>
+<section id="global-options" class="level2">
+<h2 class="anchored" data-anchor-id="global-options">Global options</h2>
+<hr>
+<p><strong><code>--log-level &lt;LOG_LEVEL&gt;</code></strong></p>
+<p>The log level. One of: <code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code>, or <code>trace</code>. [default: <code>warn</code>]</p>
+</section>
+<section id="examples" class="level2">
+<h2 class="anchored" data-anchor-id="examples">Examples</h2>
+<p>You can pass multiple options at once, for instance:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--fix</span> <span class="at">--select</span> any_is_na,class_equals</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -735,4 +741,4 @@ Global options:
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/reference/cli.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/reference/cli.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

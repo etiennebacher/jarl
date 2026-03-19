@@ -269,14 +269,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>This page will briefly present the main features of Jarl, assuming you have installed it following the <a href="./index.html#installation" target="_blank">“Installation” section</a> on the homepage.</p>
-<p>It is organized in three sections:</p>
-<ul>
-<li>“Quick start” for basic information on occasional usage;</li>
-<li>“Day-to-day usage” to see how to set up Jarl for regular usage;</li>
-<li>“Integration with external tools” to see how it interacts with other tools.</li>
-</ul>
-<p>This page is complemented by the <a href="./by-example.html" target="_blank">By Example</a> page, that shows concrete examples.</p>
+<p>This page presents the main features of Jarl, assuming you have installed it following the <a href="./index.html#installation" target="_blank">“Installation” section</a> on the homepage.</p>
 <section id="quick-start" class="level2">
 <h2 class="anchored" data-anchor-id="quick-start">Quick start</h2>
 <section id="linting" class="level3">
@@ -284,11 +277,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Jarl is a command-line tool and therefore must run in the terminal (not in an R console).</p>
 <p><code>jarl check</code> is the command used to diagnose one or several files. It takes a path as its first argument, such as <code>jarl check .</code> to check all files starting from the current directory. This command will return a list of diagnostics, one per rule violation.</p>
 <p>Jarl comes with a <a href="./rules.html" target="_blank">list of rules</a> but not all of them are enabled by default. You can select or ignore rules via the CLI, for example:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check all files with all rules</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--select</span> ALL</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Check a single file, ignoring a specific rule</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check my_file.R <span class="at">--ignore</span> assignment</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check all files with all rules (even those deactivated</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># by default)</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--select</span> ALL</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Check a single file, ignoring a specific rule</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check my_file.R <span class="at">--ignore</span> assignment</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>The full list of rules and families is available on the <a href="./rules.html" target="_blank">Rules</a> page. See the <a href="./reference/cli.html" target="_blank">CLI reference</a> for all available arguments.</p>
 </section>
 <section id="fixing" class="level3">

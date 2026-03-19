@@ -324,6 +324,7 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <li><p>New option <code>include</code> in <code>jarl.toml</code>, to complement <code>exclude</code> (#349).</p></li>
 <li><p>New rules:</p>
 <ul>
+<li><code>dplyr_group_by_ungroup</code> (#393)</li>
 <li><code>duplicated_function_definition</code> (#358)</li>
 <li><code>expect_match</code> (#364, <span class="citation" data-cites="bjyberg">@bjyberg</span>)</li>
 <li><code>expect_no_match</code> (#368, <span class="citation" data-cites="bjyberg">@bjyberg</span>)</li>
@@ -342,6 +343,8 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <ul>
 <li><p><code>fixed_regex</code> could loop infinitely trying to add <code>fixed = TRUE</code>. This is fixed (#388).</p></li>
 <li><p>Some fixes to ensure that automatic fixes don’t introduce new violations or new parsing errors (#389).</p></li>
+<li><p>Suppression comments now work better when inserted in piped chains (#397).</p></li>
+<li><p>Fix a wrong parsing error when using <code>next()</code> or <code>break()</code> (#417).</p></li>
 </ul>
 </section>
 </section>
