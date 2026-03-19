@@ -72,8 +72,11 @@ Persistent rule selection, file inclusion/exclusion, and rule-specific options c
 ```toml
 [lint]
 select = ["ALL"]
-ignore = ["assignment"]
+ignore = ["any_is_na"]
 exclude = ["my_folder/"]
+
+[lint.assignment]
+operator = "="
 ```
 
 See the [Configuration file](reference/config-file.md) reference for all options.
@@ -84,8 +87,8 @@ See the [Configuration file](reference/config-file.md) reference for all options
 You can use `# jarl-ignore` comments (aka *suppression comments*) to ignore a diagnostic on a specific piece of code (e.g. for a false positive):
 
 ```r
-# jarl-ignore assignment: third-party API expects `=`
-x = foo()
+# jarl-ignore duplicated_arguments: we let data.frame() fix the arg names
+x = data.frame(a = 1, a = 1)
 ```
 
 Those follow a very specific syntax, see [Suppression comments](howto/suppression-comments.md) for the full guide.

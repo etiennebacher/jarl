@@ -9,11 +9,12 @@ In most cases using `=` and `<-` is equivalent. Some very popular packages
 use `=` without problems. This rule only ensures the consistency of the
 assignment operator in a project.
 
-Note that Jarl doesn't force you to use `<-` as assignment operator, it
-simply uses it as default. To use `=` as the preferred operator:
+Set the following option in `jarl.toml` to use `=` as the preferred operator:
 
-- in the CLI (temporary change), use `--assignment "="`;
-- in `jarl.toml` (permanent change): set `assignment = "="`.
+```
+[lint.assignment]
+operator = "=" # or "<-"
+```
 
 ## Example
 
