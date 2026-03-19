@@ -92,7 +92,7 @@ As we progress in the implementation of a new rule, it can be very helpful to ha
 This allows us to see if the behavior is correct or not, before implementing proper tests.
 
 This file should contain one or two examples of code that should be reported and code that shouldn't, so that we can quickly detect false positives and false negatives.
-We can store an R file, for instance `test.R`, at the root of the project and call:
+We can create `test.R` at the root of the project (this file is already listed in `.gitignore`) and call:
 
 ```
 cargo run --bin jarl -- check test.R --select <my_rule_name>
