@@ -2,13 +2,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.27">
+<meta name="generator" content="quarto-1.9.36">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Pre-commit tools – jarl</title>
+<title>CLI options – jarl</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -58,24 +61,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
-<script src="site_libs/clipboard/clipboard.min.js"></script>
-<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="site_libs/quarto-search/fuse.min.js"></script>
-<script src="site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="./">
-<script src="site_libs/quarto-html/quarto.js" type="module"></script>
-<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
-<script src="site_libs/quarto-html/popper.min.js"></script>
-<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
-<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-2476e11da28413e5372408b8e28f10e3.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-91252c94a8c29af6a11c1f9076f09451.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -102,7 +104,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 }</script>
 
 
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="../styles.css">
 </head>
 
 <body class="nav-fixed quarto-light">
@@ -112,7 +114,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a class="navbar-brand" href="./index.html">
+    <a class="navbar-brand" href="../index.html">
     <span class="navbar-title">jarl</span>
     </a>
   </div>
@@ -123,33 +125,64 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link" href="./using-jarl.html"> 
-<span class="menu-text">Using Jarl</span></a>
+    <a class="nav-link" href="../getting-started.html"> 
+<span class="menu-text">Getting started</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./config.html"> 
-<span class="menu-text">Configuration</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./rules.html"> 
-<span class="menu-text">Rules</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./editors.html"> 
-<span class="menu-text">Editors</span></a>
+    <a class="nav-link" href="../by-example.html"> 
+<span class="menu-text">By Example</span></a>
   </li>  
   <li class="nav-item dropdown ">
-    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-integrations" role="link" data-bs-toggle="dropdown" aria-expanded="false">
- <span class="menu-text">Integrations</span>
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-how-to" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">How-to</span>
     </a>
-    <ul class="dropdown-menu" aria-labelledby="nav-menu-integrations">    
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-how-to">    
         <li>
-    <a class="dropdown-item" href="./ci.html">
+    <a class="dropdown-item" href="../howto/suppression-comments.html">
+ <span class="dropdown-text">Suppression comments</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../howto/rmarkdown-quarto.html">
+ <span class="dropdown-text">R Markdown &amp; Quarto</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../howto/r-versions.html">
+ <span class="dropdown-text">R versions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../howto/editors.html">
+ <span class="dropdown-text">Editor setup</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../howto/ci.html">
  <span class="dropdown-text">Continuous integration</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./precommit.html">
+    <a class="dropdown-item" href="../howto/precommit.html">
  <span class="dropdown-text">Pre-commit tools</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-reference" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Reference</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-reference">    
+        <li>
+    <a class="dropdown-item" href="../rules.html">
+ <span class="dropdown-text">Rules</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/cli.html">
+ <span class="dropdown-text">CLI options</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/config-file.html">
+ <span class="dropdown-text">Configuration file</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/envvars.html">
+ <span class="dropdown-text">Environment variables</span></a>
   </li>  
     </ul>
   </li>
@@ -159,17 +192,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     </a>
     <ul class="dropdown-menu" aria-labelledby="nav-menu-contributing">    
         <li>
-    <a class="dropdown-item" href="./contributing.html">
+    <a class="dropdown-item" href="../contributing.html">
  <span class="dropdown-text">General information</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./contributing-rule-example.html">
+    <a class="dropdown-item" href="../contributing-rule-example.html">
  <span class="dropdown-text">Tutorial: add a new rule</span></a>
   </li>  
     </ul>
   </li>
   <li class="nav-item">
-    <a class="nav-link" href="./changelog.html"> 
+    <a class="nav-link" href="../changelog.html"> 
 <span class="menu-text">Changelog</span></a>
   </li>  
 </ul>
@@ -195,18 +228,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#pre-commit" id="toc-pre-commit" class="nav-link active" data-scroll-target="#pre-commit"><code>pre-commit</code></a></li>
-  <li><a href="#prek" id="toc-prek" class="nav-link" data-scroll-target="#prek"><code>prek</code></a></li>
-  <li><a href="#choosing-the-version-of-jarl-to-use" id="toc-choosing-the-version-of-jarl-to-use" class="nav-link" data-scroll-target="#choosing-the-version-of-jarl-to-use">Choosing the version of Jarl to use</a></li>
+  <li><a href="#arguments" id="toc-arguments" class="nav-link active" data-scroll-target="#arguments">Arguments</a></li>
+  <li><a href="#options" id="toc-options" class="nav-link" data-scroll-target="#options">Options</a></li>
+  <li><a href="#global-options" id="toc-global-options" class="nav-link" data-scroll-target="#global-options">Global options</a></li>
+  <li><a href="#examples" id="toc-examples" class="nav-link" data-scroll-target="#examples">Examples</a></li>
   </ul>
-<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/precommit.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/reference/cli.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Pre-commit tools</h1>
+<h1 class="title">CLI options</h1>
 </div>
 
 
@@ -223,35 +257,80 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>Pre-commit tools run a configurable number of checks every time you want to commit some code. Their purpose is to catch some easily avoidable errors, such as linting or styling errors, before they are pushed to a branch. The two main pre-commit tools are <a href="https://pre-commit.com/" target="_blank"><code>pre-commit</code></a> and <a href="https://prek.j178.dev/" target="_blank"><code>prek</code></a>. Jarl provides a pre-commit hook that works with both of these tools: <a href="https://github.com/etiennebacher/jarl-pre-commit" target="_blank"><code>jarl-pre-commit</code></a>.</p>
-<section id="pre-commit" class="level2">
-<h2 class="anchored" data-anchor-id="pre-commit"><code>pre-commit</code></h2>
-<p>Use this in <code>.pre-commit-config.yaml</code>:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span><span class="kw">:</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at">   </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> https://github.com/etiennebacher/jarl-pre-commit</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">rev</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.4.0</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">hooks</span><span class="kw">:</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">id</span><span class="kw">:</span><span class="at"> jarl-check</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Jarl comes with various options available directly from the command line. These can be listed with <code>jarl check --help</code>.</p>
+<pre><code>Usage: jarl check [OPTIONS] &lt;FILES&gt;...</code></pre>
+<section id="arguments" class="level2">
+<h2 class="anchored" data-anchor-id="arguments">Arguments</h2>
+<p><strong><code>&lt;FILES&gt;...</code></strong></p>
+<p>List of files or directories to check or fix lints, for example <code>jarl check .</code> or <code>jarl check doc1.R doc2.R</code>.</p>
 </section>
-<section id="prek" class="level2">
-<h2 class="anchored" data-anchor-id="prek"><code>prek</code></h2>
-<p><code>prek</code> can read <code>.pre-commit-config.yaml</code> but also has its own format, <code>prek.toml</code>.</p>
-<p>Use this in <code>prek.toml</code>:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[[repos]]</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="dt">repo</span> <span class="op">=</span> <span class="st">"https://github.com/etiennebacher/jarl-pre-commit"</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="dt">rev</span> <span class="op">=</span> <span class="st">"0.4.0"</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="dt">hooks</span> <span class="op">=</span> <span class="op">[</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">{ </span><span class="dt">id</span><span class="op"> =</span> <span class="st">"jarl-check"</span><span class="op"> },</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="choosing-the-version-of-jarl-to-use" class="level2">
-<h2 class="anchored" data-anchor-id="choosing-the-version-of-jarl-to-use">Choosing the version of Jarl to use</h2>
-<p>The <code>rev</code> parameter determines the version of Jarl to use. Starting from 0.4.0, all releases of Jarl have a matching release in <code>jarl-pre-commit</code> (see <a href="https://github.com/etiennebacher/jarl-pre-commit/tags" target="_blank"><code>jarl-pre-commit</code> tags</a>).</p>
-<p>When you set up <code>pre-commit</code> or <code>prek</code>, it fetches the corresponding Jarl binary and caches it in <code>~/.cache/pre-commit</code> (for instance <code>~/.cache/pre-commit/jarl-0.4.0</code>). This implies two things:</p>
+<section id="options" class="level2">
+<h2 class="anchored" data-anchor-id="options">Options</h2>
+<p><strong><code>-f, --fix</code></strong></p>
+<p>Automatically fix issues detected by the linter.</p>
+<hr>
+<p><strong><code>-u, --unsafe-fixes</code></strong></p>
+<p>Include fixes that may not retain the original intent of the code.</p>
+<hr>
+<p><strong><code>--fix-only</code></strong></p>
+<p>Apply fixes to resolve lint violations, but don’t report on leftover violations. Implies <code>--fix</code>.</p>
+<hr>
+<p><strong><code>--allow-dirty</code></strong></p>
+<p>Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.</p>
+<hr>
+<p><strong><code>--allow-no-vcs</code></strong></p>
+<p>Apply fixes even if there is no version control system.</p>
+<hr>
+<p><strong><code>-s, --select &lt;SELECT&gt;</code></strong></p>
+<p>Names of rules to include, separated by a comma (no spaces). Also accepts names of groups of rules, such as <code>"PERF"</code>.</p>
+<hr>
+<p><strong><code>-e, --extend-select &lt;EXTEND_SELECT&gt;</code></strong></p>
+<p>Like <code>--select</code> but adds additional rules in addition to those already specified.</p>
+<hr>
+<p><strong><code>-i, --ignore &lt;IGNORE&gt;</code></strong></p>
+<p>Names of rules to exclude, separated by a comma (no spaces). Also accepts names of groups of rules, such as <code>"PERF"</code>.</p>
+<hr>
+<p><strong><code>-w, --with-timing</code></strong></p>
+<p>Show the time taken by the function.</p>
+<hr>
+<p><strong><code>-m, --min-r-version &lt;MIN_R_VERSION&gt;</code></strong></p>
+<p>The minimum R version to be used by the linter. Some rules only work starting from a specific version.</p>
+<hr>
+<p><strong><code>--output-format &lt;OUTPUT_FORMAT&gt;</code></strong></p>
+<p>Output serialization format for violations. Possible values:</p>
 <ul>
-<li>you may have projects with <code>pre-commit</code> config files that use different versions of Jarl;</li>
-<li>the version of Jarl on the <code>$PATH</code> is not affected, meaning that projects that don’t use <code>pre-commit</code> are not affected by the version of Jarl used in a project with <code>pre-commit</code>.</li>
+<li><code>full</code> (default): Print diagnostics with full context using annotated code snippets</li>
+<li><code>concise</code>: Print diagnostics in a concise format, one per line</li>
+<li><code>github</code>: Print diagnostics as GitHub format</li>
+<li><code>json</code>: Print diagnostics as JSON</li>
 </ul>
+<hr>
+<p><strong><code>--assignment &lt;ASSIGNMENT&gt;</code></strong></p>
+<p>[DEPRECATED: use <code>[lint.assignment]</code> in <code>jarl.toml</code>]</p>
+<p>Assignment operator to use, can be either <code>&lt;-</code> or <code>=</code>.</p>
+<hr>
+<p><strong><code>--no-default-exclude</code></strong></p>
+<p>Do not apply the default set of file patterns that should be excluded.</p>
+<hr>
+<p><strong><code>--statistics</code></strong></p>
+<p>Show counts for every rule with at least one violation.</p>
+<hr>
+<p><strong><code>--add-jarl-ignore[=&lt;REASON&gt;]</code></strong></p>
+<p>Automatically insert a <code># jarl-ignore</code> comment to suppress all violations. The default reason can be customized with <code>--add-jarl-ignore="my_reason"</code>.</p>
+<hr>
+<p><strong><code>-h, --help</code></strong></p>
+<p>Print help (see a summary with <code>-h</code>).</p>
+</section>
+<section id="global-options" class="level2">
+<h2 class="anchored" data-anchor-id="global-options">Global options</h2>
+<hr>
+<p><strong><code>--log-level &lt;LOG_LEVEL&gt;</code></strong></p>
+<p>The log level. One of: <code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code>, or <code>trace</code>. [default: <code>warn</code>]</p>
+</section>
+<section id="examples" class="level2">
+<h2 class="anchored" data-anchor-id="examples">Examples</h2>
+<p>You can pass multiple options at once, for instance:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--fix</span> <span class="at">--select</span> any_is_na,class_equals</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>
@@ -662,4 +741,4 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/precommit.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/reference/cli.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

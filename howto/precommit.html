@@ -2,13 +2,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.27">
+<meta name="generator" content="quarto-1.9.36">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Editor support – jarl</title>
+<title>Pre-commit tools – jarl</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -58,24 +61,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
-<script src="site_libs/clipboard/clipboard.min.js"></script>
-<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="site_libs/quarto-search/fuse.min.js"></script>
-<script src="site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="./">
-<script src="site_libs/quarto-html/quarto.js" type="module"></script>
-<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
-<script src="site_libs/quarto-html/popper.min.js"></script>
-<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
-<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-2476e11da28413e5372408b8e28f10e3.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-91252c94a8c29af6a11c1f9076f09451.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -102,7 +104,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 }</script>
 
 
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="../styles.css">
 </head>
 
 <body class="nav-fixed quarto-light">
@@ -112,7 +114,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a class="navbar-brand" href="./index.html">
+    <a class="navbar-brand" href="../index.html">
     <span class="navbar-title">jarl</span>
     </a>
   </div>
@@ -123,33 +125,64 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link" href="./using-jarl.html"> 
-<span class="menu-text">Using Jarl</span></a>
+    <a class="nav-link" href="../getting-started.html"> 
+<span class="menu-text">Getting started</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./config.html"> 
-<span class="menu-text">Configuration</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./rules.html"> 
-<span class="menu-text">Rules</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link active" href="./editors.html" aria-current="page"> 
-<span class="menu-text">Editors</span></a>
+    <a class="nav-link" href="../by-example.html"> 
+<span class="menu-text">By Example</span></a>
   </li>  
   <li class="nav-item dropdown ">
-    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-integrations" role="link" data-bs-toggle="dropdown" aria-expanded="false">
- <span class="menu-text">Integrations</span>
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-how-to" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">How-to</span>
     </a>
-    <ul class="dropdown-menu" aria-labelledby="nav-menu-integrations">    
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-how-to">    
         <li>
-    <a class="dropdown-item" href="./ci.html">
+    <a class="dropdown-item" href="../howto/suppression-comments.html">
+ <span class="dropdown-text">Suppression comments</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../howto/rmarkdown-quarto.html">
+ <span class="dropdown-text">R Markdown &amp; Quarto</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../howto/r-versions.html">
+ <span class="dropdown-text">R versions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../howto/editors.html">
+ <span class="dropdown-text">Editor setup</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../howto/ci.html">
  <span class="dropdown-text">Continuous integration</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./precommit.html">
+    <a class="dropdown-item" href="../howto/precommit.html">
  <span class="dropdown-text">Pre-commit tools</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-reference" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Reference</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-reference">    
+        <li>
+    <a class="dropdown-item" href="../rules.html">
+ <span class="dropdown-text">Rules</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/cli.html">
+ <span class="dropdown-text">CLI options</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/config-file.html">
+ <span class="dropdown-text">Configuration file</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/envvars.html">
+ <span class="dropdown-text">Environment variables</span></a>
   </li>  
     </ul>
   </li>
@@ -159,17 +192,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     </a>
     <ul class="dropdown-menu" aria-labelledby="nav-menu-contributing">    
         <li>
-    <a class="dropdown-item" href="./contributing.html">
+    <a class="dropdown-item" href="../contributing.html">
  <span class="dropdown-text">General information</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./contributing-rule-example.html">
+    <a class="dropdown-item" href="../contributing-rule-example.html">
  <span class="dropdown-text">Tutorial: add a new rule</span></a>
   </li>  
     </ul>
   </li>
   <li class="nav-item">
-    <a class="nav-link" href="./changelog.html"> 
+    <a class="nav-link" href="../changelog.html"> 
 <span class="menu-text">Changelog</span></a>
   </li>  
 </ul>
@@ -195,20 +228,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#vs-code-positron" id="toc-vs-code-positron" class="nav-link active" data-scroll-target="#vs-code-positron">VS Code / Positron</a></li>
-  <li><a href="#zed" id="toc-zed" class="nav-link" data-scroll-target="#zed">Zed</a></li>
-  <li><a href="#rstudio" id="toc-rstudio" class="nav-link" data-scroll-target="#rstudio">RStudio</a></li>
-  <li><a href="#helix" id="toc-helix" class="nav-link" data-scroll-target="#helix">Helix</a></li>
-  <li><a href="#neovim" id="toc-neovim" class="nav-link" data-scroll-target="#neovim">Neovim</a></li>
+  <li><a href="#pre-commit" id="toc-pre-commit" class="nav-link active" data-scroll-target="#pre-commit"><code>pre-commit</code></a></li>
+  <li><a href="#prek" id="toc-prek" class="nav-link" data-scroll-target="#prek"><code>prek</code></a></li>
+  <li><a href="#choosing-the-version-of-jarl-to-use" id="toc-choosing-the-version-of-jarl-to-use" class="nav-link" data-scroll-target="#choosing-the-version-of-jarl-to-use">Choosing the version of Jarl to use</a></li>
   </ul>
-<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/editors.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/howto/precommit.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Editor support</h1>
+<h1 class="title">Pre-commit tools</h1>
 </div>
 
 
@@ -225,117 +256,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-Note
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>Version numbers of the Jarl extensions may differ from the version number of Jarl itself. This is made on purpose so that it is easier to make releases that are specific to each extension or to Jarl itself.</p>
-<p>To get the version number of Jarl itself, use <code>jarl --version</code>.</p>
-</div>
-</div>
-<section id="vs-code-positron" class="level2">
-<h2 class="anchored" data-anchor-id="vs-code-positron">VS Code / Positron</h2>
-<p>Both VS Code and Positron have access to the Jarl extension via the <a href="https://marketplace.visualstudio.com/items?itemName=EtienneBacher.jarl-vscode" target="_blank">VS Marketplace</a> and <a href="https://open-vsx.org/extension/etiennebacher/jarl-vscode" target="_blank">Open VSX</a>.</p>
-<div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-Note
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>The extension comes with a bundled version of Jarl. This means you don’t need to install Jarl via the command line.</p>
-<p>This can be changed in the editor’s settings, for instance to manually install a pre-released version of Jarl and have the extension use it. To do so, look for “Jarl: Executable Strategy” in the settings and set it to “path”. Then, add the path to the Jarl binary in “Jarl: Executable Path”.</p>
-</div>
-</div>
-<p>This extension provides code higlights and quick fixes:</p>
+<p>Pre-commit tools run a configurable number of checks every time you want to commit some code. Their purpose is to catch some easily avoidable errors, such as linting or styling errors, before they are pushed to a branch. The two main pre-commit tools are <a href="https://pre-commit.com/" target="_blank"><code>pre-commit</code></a> and <a href="https://prek.j178.dev/" target="_blank"><code>prek</code></a>. Jarl provides a pre-commit hook that works with both of these tools: <a href="https://github.com/etiennebacher/jarl-pre-commit" target="_blank"><code>jarl-pre-commit</code></a>.</p>
+<section id="pre-commit" class="level2">
+<h2 class="anchored" data-anchor-id="pre-commit"><code>pre-commit</code></h2>
+<p>Use this in <code>.pre-commit-config.yaml</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at">   </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> https://github.com/etiennebacher/jarl-pre-commit</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">rev</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.4.0</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">hooks</span><span class="kw">:</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">id</span><span class="kw">:</span><span class="at"> jarl-check</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="prek" class="level2">
+<h2 class="anchored" data-anchor-id="prek"><code>prek</code></h2>
+<p><code>prek</code> can read <code>.pre-commit-config.yaml</code> but also has its own format, <code>prek.toml</code>.</p>
+<p>Use this in <code>prek.toml</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[[repos]]</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="dt">repo</span> <span class="op">=</span> <span class="st">"https://github.com/etiennebacher/jarl-pre-commit"</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="dt">rev</span> <span class="op">=</span> <span class="st">"0.4.0"</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="dt">hooks</span> <span class="op">=</span> <span class="op">[</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">{ </span><span class="dt">id</span><span class="op"> =</span> <span class="st">"jarl-check"</span><span class="op"> },</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="choosing-the-version-of-jarl-to-use" class="level2">
+<h2 class="anchored" data-anchor-id="choosing-the-version-of-jarl-to-use">Choosing the version of Jarl to use</h2>
+<p>The <code>rev</code> parameter determines the version of Jarl to use. Starting from 0.4.0, all releases of Jarl have a matching release in <code>jarl-pre-commit</code> (see <a href="https://github.com/etiennebacher/jarl-pre-commit/tags" target="_blank"><code>jarl-pre-commit</code> tags</a>).</p>
+<p>When you set up <code>pre-commit</code> or <code>prek</code>, it fetches the corresponding Jarl binary and caches it in <code>~/.cache/pre-commit</code> (for instance <code>~/.cache/pre-commit/jarl-0.4.0</code>). This implies two things:</p>
 <ul>
-<li>code highlights will underline pieces of code that violate any rule in your setup:</li>
+<li>you may have projects with <code>pre-commit</code> config files that use different versions of Jarl;</li>
+<li>the version of Jarl on the <code>$PATH</code> is not affected, meaning that projects that don’t use <code>pre-commit</code> are not affected by the version of Jarl used in a project with <code>pre-commit</code>.</li>
 </ul>
-<p><img src="img/code_highlight.PNG" class="img-fluid" alt="R script with `any(is.na(x))` underlined in yellow, indicating a rule violation. A popup shows Jarl message."></p>
-<ul>
-<li>quick fixes lightbulb icons will appear when the cursor is next to a highlighted piece of code. Clicking this icon will give you several options: apply the fix only for this piece of code, add a comment to ignore this specific violation, or add a comment to ignore all violations present in this piece of code. The screenshots below show the procedure to apply the fix:</li>
-</ul>
-<p><img src="img/code_quick_fix_1.PNG" class="img-fluid" alt="R script showing the code `any(is.na(x))`. A blue lightbulb shows that a quick fix is available for this piece of code."></p>
-<p><img src="img/code_quick_fix_2.PNG" class="img-fluid" alt="After clicking on the lightbulb, a popup appears with a button to automatically apply the fix."></p>
-<p><img src="img/code_quick_fix_3.PNG" class="img-fluid" alt="The fix has been applied, the screenshot now shows `anyNA(x)`."></p>
-<p>Use <a href="./config.html" target="_blank"><code>jarl.toml</code></a> to configure Jarl (rules to select or ignore, files to skip, assignment operator to use, etc.).</p>
-<div class="callout callout-style-default callout-tip callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-Tip
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>The <a href="https://github.com/tombi-toml/tombi" target="_blank">Tombi extension</a> is useful to have suggestions and autocompletion when editing <code>jarl.toml</code>.</p>
-</div>
-</div>
-</section>
-<section id="zed" class="level2">
-<h2 class="anchored" data-anchor-id="zed">Zed</h2>
-<p>Jarl is available in the list of Zed extensions. After installing it, you will need to update <code>settings.json</code>, in particular the field <code>languages</code>:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="er">"languages":</span> <span class="fu">{</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"Python"</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="er">[...]</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"R"</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"language_servers"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"jarl"</span><span class="ot">]</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><code>language_servers</code> accepts multiple values, so you may have <code>"language_servers": ["jarl", "air"]</code> for example.</p>
-</section>
-<section id="rstudio" class="level2">
-<h2 class="anchored" data-anchor-id="rstudio">RStudio</h2>
-<p>Currently, Jarl cannot be integrated in RStudio to highlight code or provide quick fix actions in the editor. The only way to use Jarl in RStudio is via the Terminal.</p>
-</section>
-<section id="helix" class="level2">
-<h2 class="anchored" data-anchor-id="helix">Helix</h2>
-<p>To use Jarl as language server in the Helix editor, you need first to add it to the <a href="https://docs.helix-editor.com/languages.html" target="_blank">language configuration file</a>, for instance <code>~/.config/helix/languages.toml</code>:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[language-server.jarl]</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="dt">command</span> <span class="op">=</span> <span class="st">"jarl"</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="dt">args</span> <span class="op">=</span> <span class="op">[</span><span class="st">"server"</span><span class="op">]</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">[[language]]</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="dt">name</span> <span class="op">=</span> <span class="st">"r"</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="dt">language-servers</span> <span class="op">=</span> <span class="op">[</span><span class="st">"jarl"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Jarl should then be active in the editor, providing code highlighting and showing the message when the cursor is on the highlighted code:</p>
-<p><img src="img/helix_highlight.png" class="img-fluid" alt="R script showing several pieces of code that trigger rule violations, such as `any(is.na(x))`. This is displayed in the Helix editor. The code is underlined in yellow and the violation message appears next to the code."></p>
-<p>Helix also provides a code-action keybinding. When the cursor is on some code reported by Jarl and when the editor is in “Normal” mode, press “Space” then “a” to show the different code actions:</p>
-<p><img src="img/helix_quick_fix.png" class="img-fluid" alt="The same R script as before, but this time there is a list of three actions next to the highlighted piece of code: apply fix, ignore this rule, and ignore all rules."></p>
-</section>
-<section id="neovim" class="level2">
-<h2 class="anchored" data-anchor-id="neovim">Neovim</h2>
-<p>To use Jarl as an LSP in Neovim, you need to configure it with the <a href="https://neovim.io/doc/user/lsp.html#lsp-config" target="_blank">built-in Neovim LSP (vim.lsp.config)</a> or through nvim-lspconfig. It is not yet available through <a href="https://github.com/williamboman/mason.nvim" target="_blank">Mason</a> or part of the nvim-lspconfig collection. Below is an example using the built-in system with Neovim 0.11+.</p>
-<p>Create an LSP config file at <code>~/.config/nvim/lsp/jarl.lua</code>:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode lua code-with-copy"><code class="sourceCode lua"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span><span class="an">@type</span><span class="co"> vim.lsp.Config</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> <span class="op">{</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">cmd</span> <span class="op">=</span> <span class="op">{</span> <span class="st">'jarl'</span><span class="op">,</span> <span class="st">'server'</span> <span class="op">},</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">filetypes</span> <span class="op">=</span> <span class="op">{</span> <span class="st">'r'</span><span class="op">,</span> <span class="st">'rmd'</span><span class="op">},</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">-- root_markers = { '.git' },</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="va">root_dir</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">bufnr</span><span class="op">,</span> <span class="va">on_dir</span><span class="op">)</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    on_dir<span class="op">(</span><span class="va">vim</span><span class="op">.</span><span class="va">fs</span><span class="op">.</span>root<span class="op">(</span><span class="va">bufnr</span><span class="op">,</span> <span class="st">'.git'</span><span class="op">)</span> <span class="kw">or</span> <span class="va">vim</span><span class="op">.</span><span class="va">uv</span><span class="op">.</span>os_homedir<span class="op">())</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">end</span><span class="op">,</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Then enable the server in your Neovim configuration (e.g.&nbsp;<code>init.lua</code> or <code>lspconfig.lua</code>):</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode lua code-with-copy"><code class="sourceCode lua"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- simply</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="va">vim</span><span class="op">.</span><span class="va">lsp</span><span class="op">.</span>enable <span class="st">'jarl'</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- or to pass custom config command</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="va">vim</span><span class="op">.</span><span class="va">lsp</span><span class="op">.</span>config<span class="op">(</span><span class="st">'jarl'</span><span class="op">,</span> <span class="op">{})</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="va">vim</span><span class="op">.</span><span class="va">lsp</span><span class="op">.</span>enable <span class="st">'jarl'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>This enables the code-actions and diagnostics.</p>
-<p><img src="img/nvim_diagnostic.png" class="img-fluid" alt="R script with multiple errors showing in-line indicating a rule violation."></p>
-<p><img src="img/nvim_quick_fix.png" class="img-fluid" alt="The same R script as before, but this time there is a list of three actions next to the piece of code: apply fix, ignore this rule, and ignore all rules."></p>
 
 
 </section>
@@ -746,4 +695,4 @@ Tip
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/editors.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/howto/precommit.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
