@@ -100,7 +100,13 @@ pub fn dplyr_filter_out(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
             Ok(a) => a,
             Err(_) => continue,
         };
-        if arg.name_clause().is_some() {
+        if let Some(arg_name) = arg.name_clause()
+            && let Ok(arg_name) = arg_name.name()
+        {
+            let arg_name = arg_name.to_trimmed_text();
+            if arg_name != ".by" && arg_name != ".preserve" {
+                return Ok(None);
+            }
             named_args.push(arg.clone());
         } else if let Some(value) = arg.value() {
             unnamed_args.push(value);

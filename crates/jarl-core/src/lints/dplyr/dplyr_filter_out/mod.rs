@@ -53,6 +53,12 @@ mod tests {
             "dplyr_filter_out",
             None,
         );
+        // unknown named arg, don't report
+        expect_no_lint(
+            "x |> dplyr::filter(a > 1 | is.na(a), foo = 1)",
+            "dplyr_filter_out",
+            None,
+        );
     }
 
     // ---- Negation pattern: lint only, no fix ----
