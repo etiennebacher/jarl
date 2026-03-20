@@ -80,8 +80,7 @@ pub fn dplyr_filter_out(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
         }
     }
 
-    // `filter_out()` was introduced in dplyr 1.2.0. Skip if the installed
-    // version is older.
+    // `filter_out()` was introduced in dplyr 1.2.0.
     if let Some(version) = checker.package_version("dplyr")
         && version < (1, 2, 0)
     {
@@ -91,7 +90,6 @@ pub fn dplyr_filter_out(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
     let args = ast.arguments()?;
     let items: Vec<_> = args.items().into_iter().collect();
 
-    // Separate unnamed (filtering) args from named args
     let mut unnamed_args: Vec<AnyRExpression> = Vec::new();
     let mut named_args: Vec<RArgument> = Vec::new();
 
@@ -103,6 +101,7 @@ pub fn dplyr_filter_out(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
         if let Some(arg_name) = arg.name_clause()
             && let Ok(arg_name) = arg_name.name()
         {
+            // Named args other than ".by" and ".preserve" don't work in filter()
             let arg_name = arg_name.to_trimmed_text();
             if arg_name != ".by" && arg_name != ".preserve" {
                 return Ok(None);
@@ -117,13 +116,13 @@ pub fn dplyr_filter_out(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
         return Ok(None);
     }
 
-    // Try the `cond | is.na(var)` pattern first (safe fix available).
+    // Try the `cond | is.na(var)` pattern first (unsafe fix available).
     if let Some(diagnostic) = check_is_na_guard_pattern(ast, &fn_ns, &unnamed_args, &named_args) {
         return Ok(Some(diagnostic));
     }
 
-    // Fall back to plain negation pattern (no auto-fix).
-    check_negation_pattern(ast, &unnamed_args)
+    // Fall back to plain negation pattern (unsafe fix).
+    check_negation_pattern(ast, &fn_ns, &unnamed_args, &named_args)
 }
 
 /// Detect `filter(cond | is.na(var), ...)` and offer a safe fix to
@@ -286,18 +285,34 @@ fn negate_expression(expr: &AnyRExpression) -> String {
 
 /// Detect `filter(!cond, ...)` where all unnamed args are negated.
 ///
-/// Emits a diagnostic without an auto-fix because `filter(!cond)` and
+/// Produces an unsafe fix to `filter_out(cond)` because `filter(!cond)` and
 /// `filter_out(cond)` handle `NA`s differently.
 fn check_negation_pattern(
     ast: &RCall,
+    fn_ns: &Option<String>,
     unnamed_args: &[AnyRExpression],
+    named_args: &[RArgument],
 ) -> anyhow::Result<Option<Diagnostic>> {
+    let mut inner_conds: Vec<String> = Vec::new();
+
     for value in unnamed_args {
-        if extract_negated_inner(value).is_none() {
-            return Ok(None);
+        match extract_negated_inner(value) {
+            Some(inner) => inner_conds.push(inner),
+            None => return Ok(None),
         }
     }
 
+    let ns_prefix = fn_ns.as_deref().unwrap_or("");
+    // Multiple comma-separated args in filter() are AND conditions, so we
+    // should join the rewritten conditions with OR.
+    let inner_conds = inner_conds.join(" | ");
+
+    let mut replacement_args = vec![inner_conds];
+    for named in named_args {
+        replacement_args.push(named.syntax().text_trimmed().to_string());
+    }
+
+    let replacement = format!("{}filter_out({})", ns_prefix, replacement_args.join(", "));
     let range = ast.syntax().text_trimmed_range();
 
     Ok(Some(Diagnostic::new(
@@ -307,7 +322,12 @@ fn check_negation_pattern(
             Some("You could use `filter_out()` instead (but beware of `NA` handling).".to_string()),
         ),
         range,
-        Fix::empty(),
+        Fix {
+            content: replacement,
+            start: range.start().into(),
+            end: range.end().into(),
+            to_skip: node_contains_comments(ast.syntax()),
+        },
     )))
 }
 
@@ -338,20 +358,42 @@ fn extract_negated_inner(value: &AnyRExpression) -> Option<String> {
         return None;
     }
 
-    // Strip outer parentheses: `!(expr)` → `expr`
-    let text = if operand.kind() == RSyntaxKind::R_PARENTHESIZED_EXPRESSION {
-        operand
-            .children()
-            .find(|child| {
-                child.kind() != RSyntaxKind::L_PAREN && child.kind() != RSyntaxKind::R_PAREN
-            })
-            .map(|child| child.text_trimmed().to_string())
-            .unwrap_or_else(|| operand.text_trimmed().to_string())
+    // Strip outer parentheses: `!(expr)` → get inner node
+    let inner = if operand.kind() == RSyntaxKind::R_PARENTHESIZED_EXPRESSION {
+        operand.children().find(|child| {
+            child.kind() != RSyntaxKind::L_PAREN && child.kind() != RSyntaxKind::R_PAREN
+        })?
     } else {
-        operand.text_trimmed().to_string()
+        operand
     };
 
-    Some(text)
+    // If the inner expression is a comparison, invert the operator
+    if let Some(binary) = RBinaryExpression::cast(inner.clone())
+        && let Ok(op) = binary.operator()
+    {
+        let inverted = match op.kind() {
+            RSyntaxKind::GREATER_THAN => Some("<="),
+            RSyntaxKind::GREATER_THAN_OR_EQUAL_TO => Some("<"),
+            RSyntaxKind::LESS_THAN => Some(">="),
+            RSyntaxKind::LESS_THAN_OR_EQUAL_TO => Some(">"),
+            RSyntaxKind::EQUAL2 => Some("!="),
+            RSyntaxKind::NOT_EQUAL => Some("=="),
+            _ => None,
+        };
+
+        if let Some(inv_op) = inverted
+            && let (Ok(left), Ok(right)) = (binary.left(), binary.right())
+        {
+            return Some(format!(
+                "{} {} {}",
+                left.syntax().text_trimmed(),
+                inv_op,
+                right.syntax().text_trimmed()
+            ));
+        }
+    }
+
+    Some(inner.text_trimmed().to_string())
 }
 
 /// Check if a call node receives input from a pipe (i.e., is on the right side).

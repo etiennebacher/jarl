@@ -47,6 +47,11 @@ mod tests {
             "dplyr_filter_out",
             None,
         );
+        expect_no_lint(
+            "x |> dplyr::filter(!(a > 1), is.na(b))",
+            "dplyr_filter_out",
+            None,
+        );
         // is.na guard for a different variable — don't match
         expect_no_lint(
             "x |> dplyr::filter(a > 1 | is.na(b))",
@@ -61,7 +66,7 @@ mod tests {
         );
     }
 
-    // ---- Negation pattern: lint only, no fix ----
+    // ---- Negation pattern: lint + unsafe fix ----
 
     #[test]
     fn test_lint_negation_namespaced() {
@@ -113,8 +118,7 @@ mod tests {
     }
 
     #[test]
-    fn test_no_fix_negation() {
-        // Negation pattern should NOT produce a fix (behavior changes)
+    fn test_fix_negation() {
         assert_snapshot!(
             snapshot_fix("x |> dplyr::filter(!is.na(val))"),
             @r"
@@ -123,7 +127,7 @@ mod tests {
         x |> dplyr::filter(!is.na(val))
         NEW:
         ====
-        x |> dplyr::filter(!is.na(val))
+        x |> dplyr::filter_out(is.na(val))
         "
         );
     }
@@ -300,6 +304,51 @@ mod tests {
           |
           = help: You could use `filter_out()` instead (but beware of `NA` handling).
         Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_fix_parenthesized_negation() {
+        assert_snapshot!(
+            snapshot_fix("x |> dplyr::filter(!(a > 1))"),
+            @r"
+        OLD:
+        ====
+        x |> dplyr::filter(!(a > 1))
+        NEW:
+        ====
+        x |> dplyr::filter_out(a <= 1)
+        "
+        );
+    }
+
+    #[test]
+    fn test_fix_parenthesized_negation_multi_args() {
+        assert_snapshot!(
+            snapshot_fix("x |> dplyr::filter(!(a > 1), !foo(a))"),
+            @r"
+        OLD:
+        ====
+        x |> dplyr::filter(!(a > 1), !foo(a))
+        NEW:
+        ====
+        x |> dplyr::filter_out(a <= 1 | foo(a))
+        "
+        );
+    }
+
+    #[test]
+    fn test_fix_parenthesized_negation_multi_args_with_named_arg() {
+        assert_snapshot!(
+            snapshot_fix("x |> dplyr::filter(!(a > 1), !foo(a), .by = g)"),
+            @r"
+        OLD:
+        ====
+        x |> dplyr::filter(!(a > 1), !foo(a), .by = g)
+        NEW:
+        ====
+        x |> dplyr::filter_out(a <= 1 | foo(a), .by = g)
         "
         );
     }
