@@ -35,7 +35,7 @@ use biome_rowan::AstNode;
 ///
 /// This rule suggests an automatic fix to rewrite them with `filter_out()`. It
 /// is only valid for `dplyr` >= 1.2.0, and only works on `filter()` calls where
-/// all conditions are made of one negation + `is.na()` on the same column.
+/// all conditions are made of one expression + `is.na()` on the same column.
 ///
 /// ## Example
 ///
