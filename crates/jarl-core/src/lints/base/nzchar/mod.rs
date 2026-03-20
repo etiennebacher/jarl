@@ -14,29 +14,29 @@ mod tests {
         assert_snapshot!(
             snapshot_lint("x == ''"),
             @r#"
-         warning: nzchar
-          --> <test>:1:1
-           |
-         1 | x == ''
-           | ------- `x == ""` is inefficient and can be hard to read.
-           |
-           = help: Use `!nzchar(x)` instead.
-         Found 1 error.
-         "#
+        warning: nzchar
+         --> <test>:1:1
+          |
+        1 | x == ''
+          | ------- `x == ""` is inefficient.
+          |
+          = help: Use `!nzchar(x)` instead.
+        Found 1 error.
+        "#
         );
 
         assert_snapshot!(
             snapshot_lint("x != ''"),
             @r#"
-         warning: nzchar
-          --> <test>:1:1
-           |
-         1 | x != ''
-           | ------- `x == ""` is inefficient and can be hard to read.
-           |
-           = help: Use `!nzchar(x)` instead.
-         Found 1 error.
-         "#
+        warning: nzchar
+         --> <test>:1:1
+          |
+        1 | x != ''
+          | ------- `x == ""` is inefficient.
+          |
+          = help: Use `!nzchar(x)` instead.
+        Found 1 error.
+        "#
         );
 
         assert_snapshot!(
@@ -45,7 +45,6 @@ mod tests {
                 vec![
                     "x == ''",
                     "x != ''",
-                    "x %in% ''",
                     "foo(x(y)) == ''",
                     "'' == x",
                     "which(c(a, b, c) == '')"
@@ -61,6 +60,8 @@ mod tests {
     fn test_no_lint_nzchar() {
         // `x %in% NaN` returns missings, but `NaN %in% x` returns TRUE/FALSE.
         expect_no_lint("'' %in% x", "nzchar", None);
+        
+        expect_no_lint("x %in% ''", "nzchar", None);
 
         expect_no_lint("x + ''", "nzchar", None);
     }
