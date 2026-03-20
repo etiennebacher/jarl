@@ -26,7 +26,7 @@ mod tests {
     fn test_lint_any_na() {
         assert_snapshot!(
             snapshot_lint("any(is.na(x))"),
-            @r"
+            @"
         warning: any_is_na
          --> <test>:1:1
           |
@@ -39,7 +39,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("any(is.na(foo(x)))"),
-            @r"
+            @"
         warning: any_is_na
          --> <test>:1:1
           |
@@ -52,7 +52,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("base::any(is.na(foo(x)))"),
-            @r"
+            @"
         warning: any_is_na
          --> <test>:1:1
           |
@@ -65,7 +65,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("any(is.na(x), na.rm = TRUE)"),
-            @r"
+            @"
         warning: any_is_na
          --> <test>:1:1
           |
@@ -78,7 +78,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("NA %in% x"),
-            @r"
+            @"
         warning: any_is_na
          --> <test>:1:1
           |
@@ -92,7 +92,7 @@ mod tests {
 
         assert_snapshot!(
             snapshot_lint("is.na(x) |> \n any()"),
-            @r"
+            @"
         warning: any_is_na
          --> <test>:1:1
           |
@@ -106,7 +106,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x |> \n is.na() |> \n any()"),
-            @r"
+            @"
         warning: any_is_na
          --> <test>:1:1
           |
@@ -121,7 +121,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("foo(x) |> \n is.na() |> \n any()"),
-            @r"
+            @"
         warning: any_is_na
          --> <test>:1:1
           |

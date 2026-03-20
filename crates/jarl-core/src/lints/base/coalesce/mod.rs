@@ -43,7 +43,7 @@ mod tests {
 
             snapshot_lint("if (is.null(x)) y else x"),
 
-            @r"
+            @"
         warning: coalesce
          --> <test>:1:1
           |
@@ -56,7 +56,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (is.null(x)) { y } else x"),
-            @r"
+            @"
         warning: coalesce
          --> <test>:1:1
           |
@@ -69,7 +69,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (is.null(x)) y else { x }"),
-            @r"
+            @"
         warning: coalesce
          --> <test>:1:1
           |
@@ -82,7 +82,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (is.null(x)) { y } else { x }"),
-            @r"
+            @"
         warning: coalesce
          --> <test>:1:1
           |
@@ -95,7 +95,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (is.null(x[1])) y else x[1]"),
-            @r"
+            @"
         warning: coalesce
          --> <test>:1:1
           |
@@ -108,7 +108,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (is.null(foo(x))) y else foo(x)"),
-            @r"
+            @"
         warning: coalesce
          --> <test>:1:1
           |
@@ -121,7 +121,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (!is.null(x)) x else y"),
-            @r"
+            @"
         warning: coalesce
          --> <test>:1:1
           |
@@ -134,7 +134,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (!is.null(x)) { x } else y"),
-            @r"
+            @"
         warning: coalesce
          --> <test>:1:1
           |
@@ -147,7 +147,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (!is.null(x)) x else { y }"),
-            @r"
+            @"
         warning: coalesce
          --> <test>:1:1
           |
@@ -160,7 +160,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (!is.null(x)) { x } else { y }"),
-            @r"
+            @"
         warning: coalesce
          --> <test>:1:1
           |
@@ -173,7 +173,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (!is.null(x[1])) x[1] else y"),
-            @r"
+            @"
         warning: coalesce
          --> <test>:1:1
           |
@@ -186,7 +186,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (!is.null(foo(x))) foo(x) else y"),
-            @r"
+            @"
         warning: coalesce
          --> <test>:1:1
           |

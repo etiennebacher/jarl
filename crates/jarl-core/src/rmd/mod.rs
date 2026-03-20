@@ -10,6 +10,7 @@ mod tests {
     use crate::check::get_checks;
     use crate::config::{ArgsConfig, build_config};
     use crate::diagnostic::Diagnostic;
+    use crate::package::PackageAnalysis;
 
     /// Run `get_checks` on a temporary `.Rmd` file with the default rule set.
     fn check_rmd(content: &str) -> Vec<Diagnostic> {
@@ -38,7 +39,8 @@ mod tests {
         let config =
             build_config(&check_config, None, vec![path.clone()]).expect("Failed to build config");
 
-        get_checks(content, &path, &config).expect("get_checks failed")
+        let pkg = PackageAnalysis::default();
+        get_checks(content, &path, &config, &pkg).expect("get_checks failed")
     }
 
     // --- Lint detection ---
@@ -360,7 +362,8 @@ mod tests {
             assignment: None,
         };
         let config = build_config(&check_config, None, vec![path.clone()]).unwrap();
-        let result = get_checks(content, &path, &config);
+        let pkg = PackageAnalysis::default();
+        let result = get_checks(content, &path, &config, &pkg);
         assert!(
             result.is_ok(),
             "parse error in a chunk should not bubble up as Err"

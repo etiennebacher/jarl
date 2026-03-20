@@ -13,7 +13,7 @@ mod tests {
     fn test_lint_numeric_leading_zero() {
         assert_snapshot!(
             snapshot_lint("a <- .1"),
-            @r"
+            @"
         warning: numeric_leading_zero
          --> <test>:1:6
           |
@@ -24,7 +24,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("b <- -.2"),
-            @r"
+            @"
         warning: numeric_leading_zero
          --> <test>:1:7
           |
@@ -35,7 +35,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("c <- .3 + 4.5i"),
-            @r"
+            @"
         warning: numeric_leading_zero
          --> <test>:1:6
           |
@@ -50,7 +50,7 @@ mod tests {
         // assert_snapshot!(snapshot_lint("d <- 6.7+.8i"), @"");
         assert_snapshot!(
             snapshot_lint("e <- .9e10"),
-            @r"
+            @"
         warning: numeric_leading_zero
          --> <test>:1:6
           |

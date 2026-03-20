@@ -23,7 +23,7 @@ any(is.na(x))",
     fn test_lint_unexplained_suppression() {
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore any_is_na
-any(is.na(x))"), @r"
+any(is.na(x))"), @"
         warning: unexplained_suppression
          --> <test>:2:1
           |
@@ -37,7 +37,7 @@ any(is.na(x))"), @r"
 
         insta::assert_snapshot!(snapshot_lint("
 # jarl-ignore any_is_na:
-any(is.na(x))"), @r"
+any(is.na(x))"), @"
         warning: unexplained_suppression
          --> <test>:2:1
           |
@@ -52,7 +52,7 @@ any(is.na(x))"), @r"
         insta::assert_snapshot!(
 
             snapshot_lint(
-            "\n# jarl-ignore any_is_na:     \nany(is.na(x))"), @r"
+            "\n# jarl-ignore any_is_na:     \nany(is.na(x))"), @"
         warning: unexplained_suppression
          --> <test>:2:1
           |

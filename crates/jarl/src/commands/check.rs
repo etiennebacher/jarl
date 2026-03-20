@@ -1,5 +1,7 @@
 use air_workspace::resolve::PathResolver;
 use jarl_core::discovery::{discover_r_file_paths, discover_settings};
+use jarl_core::library_paths::is_r_available;
+use jarl_core::package_cache::{PackageCache, any_file_references_packages, find_r_project_root};
 use jarl_core::rule_set::Rule;
 use jarl_core::{
     config::ArgsConfig,
@@ -19,10 +21,11 @@ use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::env;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Instant;
 
 use crate::args::CheckCommand;
-use crate::output_format::{self, GithubEmitter};
+use crate::output_format::{self, GithubEmitter, print_notes, print_summary, print_warnings};
 use crate::statistics::print_statistics;
 use crate::status::ExitStatus;
 
@@ -90,7 +93,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         min_r_version: args.min_r_version.clone(),
         allow_dirty: args.allow_dirty,
         allow_no_vcs: args.allow_no_vcs,
-        assignment: args.assignment,
+        assignment: args.assignment.clone(),
     };
 
     // Group paths by their closest resolved config directory, so each file is
@@ -103,24 +106,10 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         groups.entry(key).or_default().push(path);
     }
 
-    // Emit deprecation warnings for old assignment syntax
-    if check_config.assignment.is_some() {
-        eprintln!(
-            "{}: `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.",
-            "Warning".yellow().bold()
-        );
-    }
-
-    // Check if the deprecated `assignment = "..."` top-level string form was used in TOML
-    for item in resolver.items() {
-        if item.value().linter.deprecated_assignment_syntax {
-            eprintln!(
-                "{}: `assignment = \"...\"` in `[lint]` is deprecated. \
-                 Use `[lint.assignment]` with `operator = \"...\"` instead.",
-                "Warning".yellow().bold()
-            );
-        }
-    }
+    // Track whether we've already verified R is available (avoid repeated checks).
+    let mut r_available_checked = false;
+    // Cache of project root - PackageCache to avoid duplicate Rscript calls.
+    let mut root_caches: HashMap<Option<PathBuf>, Option<Arc<PackageCache>>> = HashMap::new();
 
     let mut file_results = Vec::new();
     for (dir_key, group_paths) in groups {
@@ -128,8 +117,73 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
             .as_deref()
             .and_then(|dir| resolver.items().iter().find(|item| item.path() == dir))
             .map(|item| item.value());
-        let config = build_config(&check_config, settings, group_paths)?;
-        file_results.extend(jarl_core::check::check(config));
+
+        let config = build_config(&check_config, settings, group_paths.clone())?;
+
+        if !config.rules_to_apply.has_package_specific_rules() {
+            file_results.extend(jarl_core::check::check(config));
+            continue;
+        }
+
+        // Package-specific rules are enabled — need per-project-root caches.
+        if !r_available_checked {
+            if !is_r_available() {
+                let pkg_categories: Vec<_> = config
+                    .rules_to_apply
+                    .package_specific_categories()
+                    .into_iter()
+                    .map(|c| c.as_str())
+                    .collect();
+                return Err(anyhow::anyhow!(
+                    "Package-specific rules are enabled ({}) but R is not available.\n\n\
+                     These rules require R and installed packages to resolve function origins.\n\n\
+                     If running in CI with `setup-jarl`, uncomment (or add yourself) the R setup steps in your workflow:\n\n\
+                     \x20 - uses: r-lib/actions/setup-r@v2\n\
+                     \x20 - uses: r-lib/actions/setup-r-dependencies@v2\n\n\
+                     You can also disable these rules instead.",
+                    pkg_categories.join(", "),
+                ));
+            }
+            r_available_checked = true;
+        }
+
+        let r_pkg_names = config.rules_to_apply.pkg_names_from_category();
+        drop(config);
+
+        // Skip the expensive Rscript call if no file in this group actually
+        // references any of the target packages. In that case, strip the
+        // package-specific rules since they can't produce meaningful results
+        // without a PackageCache.
+        if !any_file_references_packages(&group_paths, &r_pkg_names) {
+            let mut config = build_config(&check_config, settings, group_paths)?;
+            config.rules_to_apply = config
+                .rules_to_apply
+                .filter(|r| !r.categories().iter().any(|c| c.is_package_specific()));
+            file_results.extend(jarl_core::check::check(config));
+            continue;
+        }
+
+        // Sub-group files by R project root so each renv/system project
+        // gets its own PackageCache.
+        let mut by_root: HashMap<Option<PathBuf>, Vec<PathBuf>> = HashMap::new();
+        for path in &group_paths {
+            let root = find_r_project_root(path);
+            by_root.entry(root).or_default().push(path.clone());
+        }
+
+        for (root, sub_paths) in by_root {
+            let mut config = build_config(&check_config, settings, sub_paths)?;
+
+            let cache = root_caches
+                .entry(root.clone())
+                .or_insert_with(|| {
+                    PackageCache::from_rscript(&r_pkg_names, root.as_deref()).map(Arc::new)
+                })
+                .clone();
+
+            config.package_cache = cache;
+            file_results.extend(jarl_core::check::check(config));
+        }
     }
 
     let mut all_errors = Vec::new();
@@ -152,6 +206,9 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     if let Some(reason) = &args.add_jarl_ignore {
         return add_jarl_ignore_comments(&all_diagnostics, reason, parent_config_path);
     }
+
+    let (unused_fn_hidden, unused_fn_count) =
+        hide_unused_function_if_needed(&mut all_diagnostics, &args, &resolver);
 
     // Flatten all diagnostics into a single vector and sort globally
     let mut all_diagnostics_flat: Vec<&Diagnostic> = all_diagnostics
@@ -182,26 +239,56 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         }
     }
 
-    // For human-readable formats, print timing and config info
-    // Skip for JSON/GitHub to avoid corrupting structured output
-    let is_structured_format = matches!(
+    // For human-readable formats, print sections (summary, warnings, notes).
+    // Skip for JSON/GitHub to avoid corrupting structured output.
+    let is_human_format = matches!(
         args.output_format,
-        OutputFormat::Json | OutputFormat::Github
+        OutputFormat::Full | OutputFormat::Concise
     );
 
-    if !is_structured_format {
-        // Emit deprecation warnings for explicitly-used deprecated rules.
-        // Collect rule names from CLI args and TOML settings.
+    if is_human_format {
+        // ── Summary ──
+        print_summary(&all_diagnostics_flat, !all_errors.is_empty());
+
+        // ── Warnings ──
+        let mut warnings: Vec<String> = Vec::new();
+
+        if check_config.assignment.is_some() {
+            warnings.push(
+                "`--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead."
+                    .to_string(),
+            );
+        }
+
+        if unused_fn_hidden {
+            warnings.push(format!(
+                "{} `unused_function` diagnostics hidden (likely false positives).\n\
+                 To show them:\n  \
+                 - set 'threshold-ignore' in `[lint.unused_function]` in jarl.toml,\n  \
+                 - or explicitly include 'unused_function' in the set of rules.",
+                unused_fn_count
+            ));
+        }
+
+        for item in resolver.items() {
+            if item.value().linter.deprecated_assignment_syntax {
+                warnings.push(
+                    "Argument `assignment` in `[lint]` is deprecated. \
+                     Use `[lint.assignment]` with `operator` instead."
+                        .to_string(),
+                );
+            }
+        }
+
+        // Deprecation warnings for explicitly-used deprecated rules.
         let mut explicit_rule_names: BTreeSet<String> = BTreeSet::new();
 
-        // CLI args (comma-separated)
         for arg_str in [&args.select, &args.extend_select, &args.ignore] {
             for name in arg_str.split(',').map(str::trim).filter(|s| !s.is_empty()) {
                 explicit_rule_names.insert(name.to_string());
             }
         }
 
-        // TOML settings from all discovered configs
         for item in resolver.items() {
             let linter = &item.value().linter;
             for names in [&linter.select, &linter.extend_select, &linter.ignore]
@@ -218,25 +305,28 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
             if let Some(rule) = Rule::from_name(name)
                 && let Some(dep) = rule.deprecation()
             {
-                eprintln!(
-                    "{}: Rule `{}` is deprecated since v{}. Use `{}` instead.",
-                    "Warning".yellow().bold(),
-                    name,
-                    dep.version,
-                    dep.replacement,
-                );
+                warnings.push(format!(
+                    "Rule `{}` is deprecated since v{}. Use `{}` instead.",
+                    name, dep.version, dep.replacement,
+                ));
             }
         }
 
-        // Inform the user if the config file used comes from a parent directory.
-        if let Some(config_path) = parent_config_path {
-            println!("\nUsed '{}'", config_path.display());
-        }
+        print_warnings(&warnings);
+
+        // ── Notes ──
+        let mut notes: Vec<String> = Vec::new();
 
         if let Some(start) = start {
             let duration = start.elapsed();
-            println!("\nChecked files in: {duration:?}");
+            notes.push(format!("Checked files in: {duration:?}"));
         }
+
+        if let Some(config_path) = parent_config_path {
+            notes.push(format!("Used '{}'", config_path.display()));
+        }
+
+        print_notes(&notes);
     }
 
     if !all_errors.is_empty() {
@@ -327,7 +417,7 @@ fn add_jarl_ignore_comments(
         }
 
         // Sort by offset ascending to group edits at the same offset
-        raw_edits.sort_by(|a, b| a.0.cmp(&b.0));
+        raw_edits.sort_by_key(|a| a.0);
 
         // Merge edits at the same offset: collect all rule names for each offset
         let mut merged_edits: Vec<(usize, String, bool, Vec<String>)> = Vec::new();
@@ -346,7 +436,7 @@ fn add_jarl_ignore_comments(
         }
 
         // Sort by offset in descending order so we can apply edits without shifting positions
-        merged_edits.sort_by(|a, b| b.0.cmp(&a.0));
+        merged_edits.sort_by_key(|b| std::cmp::Reverse(b.0));
 
         // Apply edits to the content
         let mut modified_content = content.clone();
@@ -402,4 +492,62 @@ fn add_jarl_ignore_comments(
     }
 
     Ok(ExitStatus::Success)
+}
+
+/// Hide `unused_function` diagnostics when they exceed the configured
+/// threshold (likely false positives). Suppression is skipped when the
+/// rule is explicitly listed in `--select` / `--extend-select` (CLI) or
+/// in the corresponding TOML fields.
+///
+/// Returns `(hidden, total_count)` where `hidden` is `true` when the
+/// diagnostics were removed and `total_count` is the original number of
+/// `unused_function` diagnostics.
+fn hide_unused_function_if_needed(
+    all_diagnostics: &mut Vec<(String, Vec<Diagnostic>)>,
+    args: &CheckCommand,
+    resolver: &PathResolver<Settings>,
+) -> (bool, usize) {
+    let explicitly_selected = args
+        .select
+        .split(',')
+        .chain(args.extend_select.split(','))
+        .any(|s| s.trim() == "unused_function")
+        || resolver.items().iter().any(|item| {
+            let linter = &item.value().linter;
+            linter
+                .select
+                .iter()
+                .chain(linter.extend_select.iter())
+                .flatten()
+                .any(|s| s == "unused_function")
+        });
+
+    let threshold_ignore = resolver
+        .items()
+        .iter()
+        .map(|item| {
+            item.value()
+                .linter
+                .rule_options
+                .unused_function
+                .threshold_ignore
+        })
+        .min()
+        .unwrap_or(50);
+
+    let unused_fn_count = all_diagnostics
+        .iter()
+        .flat_map(|(_path, diagnostics)| diagnostics.iter())
+        .filter(|d| d.message.name == "unused_function")
+        .count();
+
+    let hidden = !explicitly_selected && unused_fn_count > threshold_ignore;
+    if hidden {
+        for (_path, diagnostics) in all_diagnostics.iter_mut() {
+            diagnostics.retain(|d| d.message.name != "unused_function");
+        }
+        all_diagnostics.retain(|(_path, diagnostics)| !diagnostics.is_empty());
+    }
+
+    (hidden, unused_fn_count)
 }

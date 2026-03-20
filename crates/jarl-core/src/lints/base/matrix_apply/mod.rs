@@ -32,7 +32,7 @@ mod tests {
     fn test_lint_matrix_apply() {
         assert_snapshot!(
             snapshot_lint("apply(x, 1, sum)"),
-            @r"
+            @"
         warning: matrix_apply
          --> <test>:1:1
           |
@@ -45,7 +45,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("base::apply(x, 1, sum)"),
-            @r"
+            @"
         warning: matrix_apply
          --> <test>:1:1
           |
@@ -58,7 +58,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("apply(x, MARGIN = 1, FUN = sum)"),
-            @r"
+            @"
         warning: matrix_apply
          --> <test>:1:1
           |
@@ -71,7 +71,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("apply(x, 1L, sum)"),
-            @r"
+            @"
         warning: matrix_apply
          --> <test>:1:1
           |
@@ -84,7 +84,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("apply(x, 1, mean)"),
-            @r"
+            @"
         warning: matrix_apply
          --> <test>:1:1
           |
@@ -97,7 +97,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("apply(x, MARGIN = 1, FUN = mean)"),
-            @r"
+            @"
         warning: matrix_apply
          --> <test>:1:1
           |
@@ -110,7 +110,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("apply(x, 1L, mean)"),
-            @r"
+            @"
         warning: matrix_apply
          --> <test>:1:1
           |
@@ -126,7 +126,7 @@ mod tests {
 
             snapshot_lint("apply(x, 1, sum, na.rm = TRUE)"),
 
-            @r"
+            @"
         warning: matrix_apply
          --> <test>:1:1
           |
@@ -139,7 +139,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("apply(x, 1, sum, na.rm = FALSE)"),
-            @r"
+            @"
         warning: matrix_apply
          --> <test>:1:1
           |
@@ -152,7 +152,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("apply(x, 1, sum, na.rm = foo)"),
-            @r"
+            @"
         warning: matrix_apply
          --> <test>:1:1
           |

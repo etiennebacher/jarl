@@ -53,7 +53,7 @@ mod tests {
     fn test_lint_expect_named() {
         assert_snapshot!(
             snapshot_lint("expect_equal(names(x), 'a')"),
-            @r"
+            @"
         warning: expect_named
          --> <test>:1:1
           |
@@ -66,7 +66,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_equal(names(x), c('a', 'b'))"),
-            @r"
+            @"
         warning: expect_named
          --> <test>:1:1
           |
@@ -79,7 +79,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_identical(names(x), 'a')"),
-            @r"
+            @"
         warning: expect_named
          --> <test>:1:1
           |
@@ -92,7 +92,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_equal(names(x), NULL)"),
-            @r"
+            @"
         warning: expect_named
          --> <test>:1:1
           |
@@ -124,7 +124,7 @@ mod tests {
         // Should detect lint but skip fix when comments are present
         assert_snapshot!(
             snapshot_lint("expect_equal(# comment\nnames(x), 'a')"),
-            @r"
+            @"
         warning: expect_named
          --> <test>:1:1
           |

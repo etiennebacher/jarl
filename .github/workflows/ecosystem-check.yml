@@ -29,6 +29,8 @@ env:
     mlr-org/mlr3@127da9a11073142226b76235ce4391ea0029477d
     nlmixr2/nlmixr2est@78f8d3e19e04a628337b3739e27821eca1d31699
     pola-rs/r-polars@055f891d977d6a8004fe8ab1bb5d47cfdd44872a
+    R-ArcGIS/arcgisgeocode@3a7877641ca2f3a761ef0ec3a7486820ab94c9cc
+    RcppCore/RcppArmadillo@201718fa64d78191cb42142c794e50e2581be3b3
     Rdatatable/data.table@d7833cb3a0c36ab329fcfe5cc1523449663f898f
     ropensci/targets@d45243e1a239da467c6e96e0069ecb7368f78021
     ropensci-review-tools/pkgcheck@12d80c8ad3bc39c94174f0276386869a52568135
@@ -44,7 +46,7 @@ jobs:
 
     steps:
       - name: Checkout current PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         # Need to specify this otherwise using on: pull_request_target checks out
         # the main branch.
         with:
@@ -55,6 +57,21 @@ jobs:
 
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Set up R for package-specific rules and to process results
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      # Note: in an ideal world, we'd install all dependencies of the packages
+      # we test below, but this would make the CI much slower.
+      - name: Install packages that have rules in Jarl
+        run: |
+          Rscript -e "install.packages(c('dplyr'))"
+
+      - name: Install packages to process results
+        run: |
+          R -e "install.packages(c('data.table', 'jsonlite'))"
 
       - name: Build jarl binary from PR
         run: cargo build --release --package jarl
@@ -101,19 +118,10 @@ jobs:
           done
 
       - name: Upload all result JSONs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jarl-json-results
           path: results/
-
-      - name: Setup R to process lint results
-        uses: r-lib/actions/setup-r@v2
-        with:
-          use-public-rspm: true
-
-      - name: Install R dependencies
-        run: |
-          R -e "install.packages(c('data.table', 'jsonlite'))"
 
       - name: Process lint results
         run: |
@@ -122,7 +130,7 @@ jobs:
 
       - name: Upload results
         id: artifact-upload-step
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lint-results
           path: .github/scripts/

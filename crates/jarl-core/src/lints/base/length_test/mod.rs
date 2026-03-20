@@ -13,7 +13,7 @@ mod tests {
     fn test_lint_length_test() {
         assert_snapshot!(
             snapshot_lint("length(x != 0)"),
-            @r"
+            @"
         warning: length_test
          --> <test>:1:1
           |
@@ -24,7 +24,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("length(x >= 0)"),
-            @r"
+            @"
         warning: length_test
          --> <test>:1:1
           |
@@ -35,7 +35,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("length(x <= 0)"),
-            @r"
+            @"
         warning: length_test
          --> <test>:1:1
           |
@@ -46,7 +46,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("length(x > 0)"),
-            @r"
+            @"
         warning: length_test
          --> <test>:1:1
           |
@@ -57,7 +57,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("length(x < 0)"),
-            @r"
+            @"
         warning: length_test
          --> <test>:1:1
           |
@@ -68,7 +68,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("length(x < 0)"),
-            @r"
+            @"
         warning: length_test
          --> <test>:1:1
           |
@@ -79,7 +79,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("length(x + y == 2)"),
-            @r"
+            @"
         warning: length_test
          --> <test>:1:1
           |

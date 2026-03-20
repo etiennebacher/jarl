@@ -4,11 +4,10 @@
 //! It handles diagnostics, code actions, and fixes for automatic issue resolution.
 
 use anyhow::{Result, anyhow};
-use lsp_types::{Diagnostic, DiagnosticSeverity, Position, Range};
+use lsp_types::{Diagnostic, DiagnosticSeverity, NumberOrString, Position, Range};
 use serde::{Deserialize, Serialize};
-use tempfile::TempDir;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::DIAGNOSTIC_SOURCE;
 use crate::document::PositionEncoding;
@@ -16,11 +15,13 @@ use crate::session::DocumentSnapshot;
 use crate::utils::should_exclude_file_based_on_settings;
 
 use air_workspace::resolve::PathResolver;
-use jarl_core::discovery::{DiscoveredSettings, discover_r_file_paths, discover_settings};
-use jarl_core::{
-    config::ArgsConfig, config::build_config, diagnostic::Diagnostic as JarlDiagnostic,
-    settings::Settings,
-};
+use jarl_core::check::get_checks;
+use jarl_core::config::{ArgsConfig, build_config};
+use jarl_core::diagnostic::Diagnostic as JarlDiagnostic;
+use jarl_core::discovery::{DiscoveredSettings, discover_settings};
+use jarl_core::fs::{has_r_extension, relativize_path};
+use jarl_core::package::{compute_package_analysis, is_in_r_package};
+use jarl_core::settings::Settings;
 
 /// Fix information that can be attached to a diagnostic for code actions
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -41,18 +42,34 @@ pub struct DiagnosticFix {
     pub diagnostic_end: usize,
 }
 
+/// Result of linting a document, including diagnostics and information about
+/// hidden unused_function diagnostics.
+pub struct LintOutput {
+    pub diagnostics: Vec<Diagnostic>,
+    /// Number of unused_function diagnostics hidden because the package-wide
+    /// count exceeded `threshold-ignore`. Zero if none were hidden.
+    pub unused_fn_hidden_count: usize,
+    /// Package names whose cached metadata was refreshed because they changed
+    /// on disk (e.g. after `install.packages()`). Empty most of the time.
+    pub refreshed_packages: Vec<String>,
+}
+
 /// Main entry point for linting a document
 ///
 /// Takes a document snapshot, runs your Jarl linter, and returns LSP diagnostics
 /// for highlighting issues in the editor. The diagnostics include fix information
 /// that can be used for code actions if needed.
-pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<Vec<Diagnostic>> {
+pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<LintOutput> {
     let content = snapshot.content();
     let file_path = snapshot.file_path();
     let encoding = snapshot.position_encoding();
 
     // Run the actual linting
-    let jarl_diagnostics = run_jarl_linting(content, file_path.as_deref())?;
+    let LintInternalOutput {
+        diagnostics: jarl_diagnostics,
+        unused_fn_hidden_count,
+        refreshed_packages,
+    } = run_jarl_linting(content, file_path.as_deref(), snapshot)?;
 
     // Convert to LSP diagnostics with fix information
     let mut lsp_diagnostics = Vec::new();
@@ -61,22 +78,42 @@ pub fn lint_document(snapshot: &DocumentSnapshot) -> Result<Vec<Diagnostic>> {
         lsp_diagnostics.push(lsp_diagnostic);
     }
 
-    Ok(lsp_diagnostics)
+    Ok(LintOutput {
+        diagnostics: lsp_diagnostics,
+        unused_fn_hidden_count,
+        refreshed_packages,
+    })
+}
+
+struct LintInternalOutput {
+    diagnostics: Vec<JarlDiagnostic>,
+    unused_fn_hidden_count: usize,
+    refreshed_packages: Vec<String>,
 }
 
 /// Run the Jarl linting engine on the given content
-fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlDiagnostic>> {
+fn run_jarl_linting(
+    content: &str,
+    file_path: Option<&Path>,
+    snapshot: &DocumentSnapshot,
+) -> Result<LintInternalOutput> {
+    let empty = LintInternalOutput {
+        diagnostics: Vec::new(),
+        unused_fn_hidden_count: 0,
+        refreshed_packages: Vec::new(),
+    };
+
     let file_path = match file_path {
         Some(path) => path,
         None => {
             tracing::warn!("No file path provided for linting");
-            return Ok(Vec::new());
+            return Ok(empty);
         }
     };
 
     if file_path.to_str().is_none() {
         tracing::warn!("File path contains invalid UTF-8: {:?}", file_path);
-        return Ok(Vec::new());
+        return Ok(empty);
     }
 
     // Discover settings from the actual file path.
@@ -91,36 +128,11 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlD
     // (`exclude` or `default-exclude`).
     if should_exclude_file_based_on_settings(file_path, &resolver) {
         tracing::debug!("Skipping linting for excluded file: {:?}", file_path);
-        return Ok(Vec::new());
+        return Ok(empty);
     }
 
-    // TODO: we shoudln't have to write the content to a tempfile to then read
-    // it and get diagnostic. The check function should be able to take the R
-    // code as a string.
-    // Write in-memory content to a temporary file for linting.
-    // Preserve the original extension so Rmd/Qmd files go through the correct
-    // code path (get_checks_rmd) rather than the plain-R path.
-    let ext = file_path
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("R");
-    let temp_dir = TempDir::new()?;
-    let temp_dir = temp_dir.path();
-    let temp_file = temp_dir.join(format!("jarl_lsp_{}.{}", std::process::id(), ext));
-
-    std::fs::write(&temp_file, content)
-        .map_err(|e| anyhow!("Failed to write temporary file: {}", e))?;
-    let temp_path_str = temp_file.to_string_lossy().to_string();
-    let temp_path: Vec<String> = vec![temp_path_str];
-
-    // Use temp path for discovering R file paths (just the temp file itself)
-    let paths = discover_r_file_paths(&temp_path, &resolver, true, true)
-        .into_iter()
-        .filter_map(Result::ok)
-        .collect::<Vec<_>>();
-
     let check_config = ArgsConfig {
-        files: temp_path.iter().map(|s| s.into()).collect(),
+        files: vec![file_path.to_path_buf()],
         fix: false,
         unsafe_fixes: false,
         fix_only: false,
@@ -134,34 +146,94 @@ fn run_jarl_linting(content: &str, file_path: Option<&Path>) -> Result<Vec<JarlD
     };
 
     let toml_settings = resolver.items().first().map(|item| item.value());
-    let config = build_config(&check_config, toml_settings, paths)?;
+    let mut config = build_config(&check_config, toml_settings, vec![file_path.to_path_buf()])?;
 
-    let diagnostics = jarl_core::check::check(config);
-    let mut all_diagnostics: Vec<JarlDiagnostic> = diagnostics
-        .into_iter()
-        .flat_map(|(_, result)| match result {
-            Ok(diags) => {
-                tracing::debug!("Found {} diagnostics for file", diags.len());
-                diags
+    let mut refreshed_packages = Vec::new();
+    if config.rules_to_apply.has_package_specific_rules() {
+        let pkgs = config.rules_to_apply.pkg_names_from_category();
+        // Get or create a per-project-root cache (spawns Rscript once per root).
+        let package_cache = snapshot.get_or_create_package_cache(&pkgs);
+        // Check if any tracked packages have changed on disk (cheap stat()).
+        if let Some(ref cache) = package_cache {
+            refreshed_packages = cache.refresh_if_stale(&pkgs);
+        }
+        config.package_cache = package_cache;
+    }
+
+    // Compute package-level analysis using the real file's sibling R files.
+    let pkg = if let Some(package_files) = collect_sibling_r_files(file_path) {
+        compute_package_analysis(&package_files, &config)
+    } else {
+        Default::default()
+    };
+
+    // Call get_checks directly with the in-memory content and the real
+    // (relativized) file path, avoiding the old tempfile round-trip.
+    let rel_path = PathBuf::from(relativize_path(file_path));
+    let mut diagnostics = get_checks(content, &rel_path, &config, &pkg)?;
+
+    // Hide unused_function diagnostics when the package-wide count exceeds
+    // the threshold, matching the CLI behaviour. The LSP never passes
+    // `--select unused_function` so we only check the toml settings.
+    let unused_fn_hidden_count = {
+        let explicitly_selected = resolver.items().iter().any(|item| {
+            let linter = &item.value().linter;
+            linter
+                .select
+                .iter()
+                .chain(linter.extend_select.iter())
+                .flatten()
+                .any(|s| s == "unused_function")
+        });
+
+        if explicitly_selected {
+            0
+        } else {
+            let total_unused: usize = pkg.unused_functions.values().map(|v| v.len()).sum();
+            let threshold = resolver
+                .items()
+                .iter()
+                .map(|item| {
+                    item.value()
+                        .linter
+                        .rule_options
+                        .unused_function
+                        .threshold_ignore
+                })
+                .min()
+                .unwrap_or(50);
+
+            if total_unused > threshold {
+                diagnostics.retain(|d| d.message.name != "unused_function");
+                total_unused
+            } else {
+                0
             }
-            Err(e) => {
-                tracing::error!("Error checking file: {}", e);
-                Vec::new()
-            }
-        })
+        }
+    };
+
+    tracing::debug!("Found {} diagnostics for file", diagnostics.len());
+    Ok(LintInternalOutput {
+        diagnostics,
+        unused_fn_hidden_count,
+        refreshed_packages,
+    })
+}
+
+/// If `file_path` lives inside an R package's `R/` directory, return all
+/// `.R` files in that directory. Returns `None` otherwise.
+fn collect_sibling_r_files(file_path: &Path) -> Option<Vec<PathBuf>> {
+    if !is_in_r_package(file_path).unwrap_or(false) {
+        return None;
+    }
+    let r_dir = file_path.parent()?;
+    let entries = std::fs::read_dir(r_dir).ok()?;
+    let files = entries
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| has_r_extension(p))
         .collect();
-
-    // Clean up temporary file
-    if let Err(e) = std::fs::remove_file(&temp_file) {
-        tracing::warn!("Failed to remove temporary file {:?}: {}", temp_file, e);
-    }
-
-    // Update diagnostics to point to the original file instead of temp file
-    for diagnostic in &mut all_diagnostics {
-        diagnostic.filename = file_path.to_path_buf();
-    }
-
-    Ok(all_diagnostics)
+    Some(files)
 }
 
 /// Convert a Jarl diagnostic to LSP diagnostic format with fix information
@@ -208,7 +280,7 @@ fn convert_to_lsp_diagnostic(
     let diagnostic = Diagnostic {
         range,
         severity: Some(severity),
-        code: None,
+        code: Some(NumberOrString::String(jarl_diag.message.name.clone())),
         code_description: None,
         source: Some(DIAGNOSTIC_SOURCE.to_string()),
         message,
@@ -303,6 +375,8 @@ pub fn byte_offset_to_lsp_position(
 
 #[cfg(test)]
 mod tests {
+    use tempfile::TempDir;
+
     use super::*;
     use crate::document::{DocumentKey, TextDocument};
     use crate::session::DocumentSnapshot;
@@ -324,8 +398,8 @@ mod tests {
     #[test]
     fn test_empty_document() {
         let snapshot = create_test_snapshot("");
-        let diagnostics = lint_document(&snapshot).unwrap();
-        assert!(diagnostics.is_empty());
+        let output = lint_document(&snapshot).unwrap();
+        assert!(output.diagnostics.is_empty());
     }
 
     #[test]
@@ -433,11 +507,11 @@ mod tests {
         );
 
         // Should return no diagnostics because file is excluded
-        let diagnostics = lint_document(&snapshot).unwrap();
+        let output = lint_document(&snapshot).unwrap();
         assert!(
-            diagnostics.is_empty(),
+            output.diagnostics.is_empty(),
             "Expected no diagnostics but got: {:?}",
-            diagnostics
+            output.diagnostics
         );
 
         Ok(())
@@ -476,7 +550,7 @@ mod tests {
         );
 
         // Should return diagnostics because file is not excluded
-        let diagnostics = lint_document(&snapshot).unwrap();
+        let diagnostics = lint_document(&snapshot).unwrap().diagnostics;
         assert!(
             !diagnostics.is_empty(),
             "Expected a diagnostic but didn't get any"
@@ -507,7 +581,7 @@ mod tests {
             PositionEncoding::UTF8,
             ClientCapabilities::default(),
         );
-        lint_document(&snapshot).unwrap()
+        lint_document(&snapshot).unwrap().diagnostics
     }
 
     /// Filter diagnostics by rule name stored in the `data` field.
@@ -642,6 +716,120 @@ mod tests {
         );
     }
 
+    // --- Package-level duplicate function definition tests ---
+
+    /// Create a minimal R package in a temp dir and return (temp_dir, R/ path).
+    /// The TempDir is returned to keep it alive for the duration of the test.
+    fn create_test_package() -> (TempDir, std::path::PathBuf) {
+        let dir = TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("DESCRIPTION"),
+            "Package: testpkg\nVersion: 0.1.0\n",
+        )
+        .unwrap();
+        let r_dir = dir.path().join("R");
+        std::fs::create_dir(&r_dir).unwrap();
+        (dir, r_dir)
+    }
+
+    /// Create a snapshot backed by a real file on disk.
+    fn create_snapshot_for_file(file_path: &std::path::Path, content: &str) -> DocumentSnapshot {
+        let uri = Url::from_file_path(file_path).unwrap();
+        let key = DocumentKey::from(uri);
+        let document = TextDocument::new(content.to_string(), 1);
+        DocumentSnapshot::new(
+            document,
+            key,
+            PositionEncoding::UTF8,
+            ClientCapabilities::default(),
+        )
+    }
+
+    #[test]
+    fn test_duplicate_function_same_file() {
+        let (_dir, r_dir) = create_test_package();
+
+        let content = "foo <- function() 1\nfoo <- function() 2\n";
+        let file = r_dir.join("foo.R");
+        std::fs::write(&file, content).unwrap();
+
+        let snapshot = create_snapshot_for_file(&file, content);
+        let diagnostics = lint_document(&snapshot).unwrap().diagnostics;
+
+        let hits = diagnostics_for_rule(&diagnostics, "duplicated_function_definition");
+        assert_eq!(
+            hits.len(),
+            1,
+            "expected one duplicate diagnostic, got: {hits:?}"
+        );
+        assert!(
+            hits[0].message.contains("`foo` is defined more than once"),
+            "message should mention `foo`, got: {}",
+            hits[0].message
+        );
+    }
+
+    #[test]
+    fn test_duplicate_function_cross_file() {
+        let (_dir, r_dir) = create_test_package();
+
+        // aaa.R defines `foo` first (alphabetically), bbb.R is the duplicate
+        std::fs::write(r_dir.join("aaa.R"), "foo <- function() 1\n").unwrap();
+        let content = "foo <- function() 2\n";
+        let file = r_dir.join("bbb.R");
+        std::fs::write(&file, content).unwrap();
+
+        let snapshot = create_snapshot_for_file(&file, content);
+        let diagnostics = lint_document(&snapshot).unwrap().diagnostics;
+
+        let hits = diagnostics_for_rule(&diagnostics, "duplicated_function_definition");
+        assert_eq!(
+            hits.len(),
+            1,
+            "expected one duplicate diagnostic on bbb.R, got: {hits:?}"
+        );
+    }
+
+    #[test]
+    fn test_no_duplicate_outside_package() {
+        // No DESCRIPTION so not a package, rule should not fire
+        let dir = TempDir::new().unwrap();
+        let r_dir = dir.path().join("R");
+        std::fs::create_dir(&r_dir).unwrap();
+
+        let content = "foo <- function() 1\nfoo <- function() 2\n";
+        let file = r_dir.join("foo.R");
+        std::fs::write(&file, content).unwrap();
+
+        let snapshot = create_snapshot_for_file(&file, content);
+        let diagnostics = lint_document(&snapshot).unwrap().diagnostics;
+
+        let hits = diagnostics_for_rule(&diagnostics, "duplicated_function_definition");
+        assert!(
+            hits.is_empty(),
+            "should not flag duplicates outside a package, got: {hits:?}"
+        );
+    }
+
+    #[test]
+    fn test_no_duplicate_unique_names() {
+        let (_dir, r_dir) = create_test_package();
+
+        std::fs::write(r_dir.join("aaa.R"), "foo <- function() 1\n").unwrap();
+        let content = "bar <- function() 2\n";
+        let file = r_dir.join("bbb.R");
+        std::fs::write(&file, content).unwrap();
+
+        let snapshot = create_snapshot_for_file(&file, content);
+        let diagnostics = lint_document(&snapshot).unwrap().diagnostics;
+
+        let hits = diagnostics_for_rule(&diagnostics, "duplicated_function_definition");
+        assert!(
+            hits.is_empty(),
+            "unique names should not be flagged, got: {hits:?}"
+        );
+    }
+
     #[test]
     fn test_exclusion_with_custom_exclude_pattern() -> Result<(), Box<dyn std::error::Error>> {
         let directory = TempDir::new()?;
@@ -673,7 +861,7 @@ mod tests {
         );
 
         // Should return no diagnostics because file matches exclude pattern
-        let diagnostics = lint_document(&snapshot).unwrap();
+        let diagnostics = lint_document(&snapshot).unwrap().diagnostics;
         assert!(
             diagnostics.is_empty(),
             "Expected no diagnostics for excluded generated file, but got: {:?}",

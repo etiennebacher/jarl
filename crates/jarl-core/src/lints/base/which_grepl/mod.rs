@@ -13,7 +13,7 @@ mod tests {
     fn test_lint_which_grepl() {
         assert_snapshot!(
             snapshot_lint("which(grepl('^a', x))"),
-            @r"
+            @"
         warning: which_grepl
          --> <test>:1:1
           |
@@ -26,7 +26,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("which(grepl('^a', x, perl = TRUE, fixed = TRUE))"),
-            @r"
+            @"
         warning: which_grepl
          --> <test>:1:1
           |
@@ -64,7 +64,7 @@ mod tests {
     fn test_lint_which_grepl_piped() {
         assert_snapshot!(
             snapshot_lint("grepl('^a', x) |> \n which()"),
-            @r"
+            @"
         warning: which_grepl
          --> <test>:1:1
           |

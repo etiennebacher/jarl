@@ -13,7 +13,7 @@ mod tests {
     fn test_lint_equals_nan() {
         assert_snapshot!(
             snapshot_lint("x == NaN"),
-            @r"
+            @"
         warning: equals_nan
          --> <test>:1:1
           |
@@ -26,7 +26,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x != NaN"),
-            @r"
+            @"
         warning: equals_nan
          --> <test>:1:1
           |
@@ -39,7 +39,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x %in% NaN"),
-            @r"
+            @"
         warning: equals_nan
          --> <test>:1:1
           |
@@ -52,7 +52,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("foo(x(y)) == NaN"),
-            @r"
+            @"
         warning: equals_nan
          --> <test>:1:1
           |
@@ -65,7 +65,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("NaN == x"),
-            @r"
+            @"
         warning: equals_nan
          --> <test>:1:1
           |

@@ -14,6 +14,16 @@ cargo install cargo-insta
 Jarl uses [just](https://github.com/casey/just) to quickly run several useful commands, such as `just document` or `just lint` (see the list of commands with `just -l`).
 This is not mandatory but convenient.
 
+For documentation, you will need to have [Quarto](https://quarto.org/) and the R packages `reactable` and `rmarkdown` installed.
+
+## AI policy
+
+Contributors are allowed to use AI tools, with some conditions.
+
+* Write your own comments in issues and PRs, don't participate with AI generated comments. AI generated comments may be hidden without notice.
+
+* In PRs, review all the generated code and, if needed, explain the PR in your own words. Particular attention should be given to documentation and code comments, where AI tools tend to be incorrect or overly verbose.
+
 ## Basic structure of the repository
 
 The folder `crates` contains several sub-crates.

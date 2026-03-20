@@ -24,7 +24,7 @@ mod tests {
     fn test_lint_seq2() {
         assert_snapshot!(
             snapshot_lint("seq(length(x))"),
-            @r"
+            @"
         warning: seq2
          --> <test>:1:1
           |
@@ -37,7 +37,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("base::seq(base::length(x))"),
-            @r"
+            @"
         warning: seq2
          --> <test>:1:1
           |
@@ -50,7 +50,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("seq(nrow(x))"),
-            @r"
+            @"
         warning: seq2
          --> <test>:1:1
           |
@@ -63,7 +63,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("seq(ncol(x))"),
-            @r"
+            @"
         warning: seq2
          --> <test>:1:1
           |
@@ -76,7 +76,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("seq(NROW(x))"),
-            @r"
+            @"
         warning: seq2
          --> <test>:1:1
           |
@@ -89,7 +89,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("seq(NCOL(x))"),
-            @r"
+            @"
         warning: seq2
          --> <test>:1:1
           |
@@ -123,7 +123,7 @@ mod tests {
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             snapshot_lint("seq(length(\n # a comment \nfoo(x)))"),
-            @r"
+            @"
         warning: seq2
          --> <test>:1:1
           |

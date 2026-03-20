@@ -33,7 +33,7 @@ mod tests {
     fn test_lint_class_equals() {
         assert_snapshot!(
             snapshot_lint("if (class(x) == 'character') 1"),
-            @r"
+            @"
         warning: class_equals
          --> <test>:1:5
           |
@@ -46,7 +46,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (base::class(x) == 'character') 1"),
-            @r"
+            @"
         warning: class_equals
          --> <test>:1:5
           |
@@ -59,7 +59,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if ('character' %in% class(x)) 1"),
-            @r"
+            @"
         warning: class_equals
          --> <test>:1:5
           |
@@ -72,7 +72,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (class(x) %in% 'character') 1"),
-            @r"
+            @"
         warning: class_equals
          --> <test>:1:5
           |
@@ -85,7 +85,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (class(x) != 'character') 1"),
-            @r"
+            @"
         warning: class_equals
          --> <test>:1:5
           |
@@ -98,7 +98,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("while (class(x) != 'character') 1"),
-            @r"
+            @"
         warning: class_equals
          --> <test>:1:8
           |
@@ -111,7 +111,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x[if (class(x) == 'foo') 1 else 2]"),
-            @r"
+            @"
         warning: class_equals
          --> <test>:1:7
           |
@@ -159,7 +159,7 @@ mod tests {
     fn test_lint_identical_class() {
         assert_snapshot!(
             snapshot_lint("is_regression <- identical(class(x), 'lm')"),
-            @r"
+            @"
         warning: class_equals
          --> <test>:1:18
           |
@@ -172,7 +172,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("is_regression <- identical('lm', class(x))"),
-            @r"
+            @"
         warning: class_equals
          --> <test>:1:18
           |
@@ -185,7 +185,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (identical(class(x), 'character')) 1"),
-            @r"
+            @"
         warning: class_equals
          --> <test>:1:5
           |
@@ -198,7 +198,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (identical('character', class(x))) 1"),
-            @r"
+            @"
         warning: class_equals
          --> <test>:1:5
           |
@@ -211,7 +211,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("while (identical(class(x), 'foo')) 1"),
-            @r"
+            @"
         warning: class_equals
          --> <test>:1:8
           |

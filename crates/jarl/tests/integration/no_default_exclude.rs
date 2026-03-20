@@ -20,7 +20,16 @@ fn test_no_default_exclude() -> anyhow::Result<()> {
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    Warning: No R files found under the given path(s).
+
+    ----- stderr -----
+    "
     );
 
     insta::assert_snapshot!(
@@ -30,7 +39,27 @@ fn test_no_default_exclude() -> anyhow::Result<()> {
             .arg(".")
             .arg("--no-default-exclude")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> cpp11.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
@@ -58,7 +87,27 @@ default-exclude = true
             .arg(".")
             .arg("--no-default-exclude")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> cpp11.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
     Ok(())
 }

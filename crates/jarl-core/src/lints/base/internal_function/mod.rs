@@ -19,7 +19,7 @@ mod tests {
     fn test_lint_internal_function() {
         assert_snapshot!(
             snapshot_lint("foo:::bar()"),
-            @r"
+            @"
         warning: internal_function
          --> <test>:1:1
           |
@@ -32,7 +32,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("foo:::bar"),
-            @r"
+            @"
         warning: internal_function
          --> <test>:1:1
           |

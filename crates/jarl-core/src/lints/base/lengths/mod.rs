@@ -13,7 +13,7 @@ mod tests {
     fn test_lint_lengths() {
         assert_snapshot!(
             snapshot_lint("sapply(x, length)"),
-            @r"
+            @"
         warning: lengths
          --> <test>:1:1
           |
@@ -26,7 +26,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("sapply(x, FUN = length)"),
-            @r"
+            @"
         warning: lengths
          --> <test>:1:1
           |
@@ -40,7 +40,7 @@ mod tests {
         // TODO: the fix in this case is broken
         assert_snapshot!(
             snapshot_lint("sapply(FUN = length, x)"),
-            @r"
+            @"
         warning: lengths
          --> <test>:1:1
           |
@@ -53,7 +53,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("vapply(x, length, integer(1))"),
-            @r"
+            @"
         warning: lengths
          --> <test>:1:1
           |

@@ -34,7 +34,7 @@ mod tests {
     fn test_lint_assignment() {
         assert_snapshot!(
             snapshot_lint("blah=1"),
-            @r"
+            @"
         warning: assignment
          --> <test>:1:1
           |
@@ -45,7 +45,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("blah = 1"),
-            @r"
+            @"
         warning: assignment
          --> <test>:1:1
           |
@@ -56,7 +56,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("blah = fun(1)"),
-            @r"
+            @"
         warning: assignment
          --> <test>:1:1
           |
@@ -67,7 +67,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("names(blah) = 'a'"),
-            @r"
+            @"
         warning: assignment
          --> <test>:1:1
           |
@@ -78,7 +78,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x[[1]] = 2"),
-            @r"
+            @"
         warning: assignment
          --> <test>:1:1
           |
@@ -89,7 +89,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("fun((blah = fun(1)))"),
-            @r"
+            @"
         warning: assignment
          --> <test>:1:6
           |
@@ -100,7 +100,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("1 -> fun"),
-            @r"
+            @"
         warning: assignment
          --> <test>:1:3
           |
@@ -111,7 +111,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("1 -> names(fun)"),
-            @r"
+            @"
         warning: assignment
          --> <test>:1:3
           |
@@ -122,7 +122,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("2 -> x[[1]]"),
-            @r"
+            @"
         warning: assignment
          --> <test>:1:3
           |
@@ -180,7 +180,7 @@ mod tests {
         // `y <- 1` should lint when operator = "="
         assert_snapshot!(
             snapshot_lint_with_settings("y <- 1", settings.clone()),
-            @r"
+            @"
         warning: assignment
          --> <test>:1:1
           |
@@ -193,7 +193,7 @@ mod tests {
         // `1 -> z` should lint when operator = "="
         assert_snapshot!(
             snapshot_lint_with_settings("1 -> z", settings),
-            @r"
+            @"
         warning: assignment
          --> <test>:1:3
           |
@@ -220,7 +220,7 @@ mod tests {
 
         assert_snapshot!(
             snapshot_lint_with_settings("x = 1", settings.clone()),
-            @r"
+            @"
         warning: assignment
          --> <test>:1:1
           |

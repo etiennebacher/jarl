@@ -57,7 +57,7 @@ mod tests {
                 for (x in 1:4) {
                     x
                 }
-            }"), @r"
+            }"), @"
         warning: for_loop_dup_index
          --> <test>:2:22
           |
@@ -74,7 +74,7 @@ mod tests {
                 for (  x    in 1:4) {
                     x
                 }
-            }"), @r"
+            }"), @"
         warning: for_loop_dup_index
          --> <test>:2:24
           |
@@ -93,7 +93,7 @@ mod tests {
                 for (i in 1:4) {
                     i
                 }
-            }"), @r"
+            }"), @"
         warning: for_loop_dup_index
          --> <test>:4:22
           |
@@ -112,7 +112,7 @@ mod tests {
                         i
                     }
                 }
-            }"), @r"
+            }"), @"
         warning: for_loop_dup_index
          --> <test>:3:26
           |
@@ -131,7 +131,7 @@ mod tests {
                         k
                     }
                 }
-            }"), @r"
+            }"), @"
         warning: for_loop_dup_index
          --> <test>:2:22
           |

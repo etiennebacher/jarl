@@ -1,13 +1,14 @@
 use crate::{
     description::Description,
     lints::all_rules_enabled_by_default,
+    package_cache::PackageCache,
     rule_options::ResolvedRuleOptions,
     rule_set::{Category, Rule, RuleSet},
     settings::Settings,
 };
 use air_r_syntax::RSyntaxKind;
 use anyhow::Result;
-use std::{collections::HashSet, fs, path::PathBuf};
+use std::{collections::HashSet, fs, path::PathBuf, sync::Arc};
 
 use crate::rule_options::assignment::ResolvedAssignmentOptions;
 
@@ -78,8 +79,15 @@ pub struct Config {
     /// Rules that are allowed to have fixes applied (from fixable setting)
     /// None means all rules with fixes can be applied
     pub fixable: Option<HashSet<String>>,
-    /// Resolved per-rule options
-    pub rule_options: ResolvedRuleOptions,
+    /// Whether to lint R code inside roxygen `@examples` sections
+    pub check_roxygen: bool,
+    /// Whether to apply autofixes to roxygen examples
+    pub fix_roxygen: bool,
+    /// Resolved per-rule options (wrapped in Arc to avoid expensive clones)
+    pub rule_options: Arc<ResolvedRuleOptions>,
+    /// Shared cache of installed R package metadata for package-specific rules.
+    /// `None` if library path discovery was not performed (e.g., no package rules enabled).
+    pub package_cache: Option<Arc<PackageCache>>,
 }
 
 pub fn build_config(
@@ -143,6 +151,14 @@ pub fn build_config(
         rule_options.assignment = parse_assignment_cli(cli_assignment)?;
     }
 
+    let check_roxygen = toml_settings
+        .and_then(|s| s.linter.check_roxygen)
+        .unwrap_or(true);
+
+    let fix_roxygen = toml_settings
+        .and_then(|s| s.linter.fix_roxygen)
+        .unwrap_or(false);
+
     Ok(Config {
         paths,
         rules,
@@ -154,7 +170,10 @@ pub fn build_config(
         allow_no_vcs: check_config.allow_no_vcs,
         unfixable: unfixable_toml,
         fixable: fixable_toml,
-        rule_options,
+        check_roxygen,
+        fix_roxygen,
+        rule_options: Arc::new(rule_options),
+        package_cache: None,
     })
 }
 

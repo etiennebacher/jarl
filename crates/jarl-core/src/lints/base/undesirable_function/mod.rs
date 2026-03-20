@@ -48,7 +48,7 @@ mod tests {
     fn test_lint_undesirable_function() {
         assert_snapshot!(
             snapshot_lint("browser()"),
-            @r"
+            @"
         warning: undesirable_function
          --> <test>:1:1
           |
@@ -59,7 +59,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("utils::browser()"),
-            @r"
+            @"
         warning: undesirable_function
          --> <test>:1:1
           |
@@ -83,7 +83,7 @@ mod tests {
         // "debug" is in the custom list -> lints
         assert_snapshot!(
             snapshot_lint_with_settings("debug(x)", settings),
-            @r"
+            @"
         warning: undesirable_function
          --> <test>:1:1
           |
@@ -104,7 +104,7 @@ mod tests {
         // "browser" is still in the defaults -> lints
         assert_snapshot!(
             snapshot_lint_with_settings("browser()", settings.clone()),
-            @r"
+            @"
         warning: undesirable_function
          --> <test>:1:1
           |
@@ -117,7 +117,7 @@ mod tests {
         // "debug" was added via extend -> lints
         assert_snapshot!(
             snapshot_lint_with_settings("debug(x)", settings),
-            @r"
+            @"
         warning: undesirable_function
          --> <test>:1:1
           |

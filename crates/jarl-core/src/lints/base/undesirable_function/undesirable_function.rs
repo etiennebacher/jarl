@@ -1,4 +1,4 @@
-use crate::check::Checker;
+use crate::checker::Checker;
 use crate::diagnostic::*;
 use crate::utils::get_function_name;
 use air_r_syntax::*;
@@ -24,7 +24,7 @@ pub struct UndesirableFunction {
 /// `jarl.toml`:
 ///
 /// ```toml
-/// [lint.undesirable-function]
+/// [lint.undesirable_function]
 /// # Replace the default list entirely:
 /// functions = ["browser", "debug"]
 ///

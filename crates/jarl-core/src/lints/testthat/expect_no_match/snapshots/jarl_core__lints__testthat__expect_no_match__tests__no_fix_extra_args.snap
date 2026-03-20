@@ -1,0 +1,17 @@
+---
+source: crates/jarl-core/src/lints/testthat/expect_no_match/mod.rs
+expression: "get_fixed_text(vec![\"expect_false(grepl('fun', 'Testing is fun'), info = 'msg')\",\n\"expect_false(grepl('fun', 'Testing is fun', FALSE, FALSE, FALSE, FALSE))\",],\n\"expect_no_match\", None,)"
+---
+OLD:
+====
+expect_false(grepl('fun', 'Testing is fun'), info = 'msg')
+NEW:
+====
+expect_false(grepl('fun', 'Testing is fun'), info = 'msg')
+
+OLD:
+====
+expect_false(grepl('fun', 'Testing is fun', FALSE, FALSE, FALSE, FALSE))
+NEW:
+====
+expect_false(grepl('fun', 'Testing is fun', FALSE, FALSE, FALSE, FALSE))

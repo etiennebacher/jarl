@@ -43,7 +43,7 @@ mod tests {
     fn test_lint_expect_null() {
         assert_snapshot!(
             snapshot_lint("expect_equal(x, NULL)"),
-            @r"
+            @"
         warning: expect_null
          --> <test>:1:1
           |
@@ -56,7 +56,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("testthat::expect_equal(x, NULL)"),
-            @r"
+            @"
         warning: expect_null
          --> <test>:1:1
           |
@@ -69,7 +69,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_identical(x, NULL)"),
-            @r"
+            @"
         warning: expect_null
          --> <test>:1:1
           |
@@ -82,7 +82,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_equal(NULL, x)"),
-            @r"
+            @"
         warning: expect_null
          --> <test>:1:1
           |
@@ -95,7 +95,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_true(is.null(foo(x)))"),
-            @r"
+            @"
         warning: expect_null
          --> <test>:1:1
           |

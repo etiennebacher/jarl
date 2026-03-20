@@ -284,39 +284,71 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
 
     let mut files = state.finish();
 
-    // Post-filter: if include patterns are set, only keep files matching at least one.
-    if use_linter_settings && let Some(settings_item) = resolver.items().first() {
-        let settings = settings_item.value();
-        if let Some(include_patterns) = &settings.linter.include
-            && !include_patterns.is_empty()
-        {
-            let root = settings_item.path();
-            let mut override_builder = ignore::overrides::OverrideBuilder::new(root);
-            for pattern in include_patterns {
-                // Convert directory patterns like "R/" → "R/**" so they match
-                // the files inside, not just the directory entry itself.
-                let file_pattern = if pattern.ends_with('/') {
-                    format!("{}**", pattern)
-                } else {
-                    pattern.clone()
-                };
-                if let Err(e) = override_builder.add(&file_pattern) {
-                    tracing::warn!("Failed to add include pattern '{}': {}", pattern, e);
+    // Post-filter: apply per-config exclude and include patterns.
+    //
+    // The WalkBuilder above only applies the first config's exclude patterns.
+    // When there are multiple configs (e.g. root jarl.toml + mypkg/jarl.toml),
+    // nested configs' exclude/include patterns must be enforced here by
+    // resolving each file to its nearest config.
+    if use_linter_settings {
+        files.retain(|result| {
+            let Ok(path) = result else {
+                return true;
+            };
+
+            let Some(item) = resolver.resolve(path) else {
+                return true;
+            };
+
+            let settings = item.value();
+            let root = item.path();
+
+            // Exclude filter: remove files matching any exclude pattern
+            if let Some(exclude_patterns) = &settings.linter.exclude
+                && !exclude_patterns.is_empty()
+            {
+                let mut override_builder = ignore::overrides::OverrideBuilder::new(root);
+                for pattern in exclude_patterns {
+                    if let Err(e) = override_builder.add(&format!("!{pattern}")) {
+                        tracing::warn!("Failed to add exclude pattern '{}': {}", pattern, e);
+                    }
+                }
+                if let Ok(overrides) = override_builder.build() {
+                    let relative = path.strip_prefix(root).unwrap_or(path.as_path());
+                    if matches!(overrides.matched(relative, false), ignore::Match::Ignore(_)) {
+                        return false;
+                    }
                 }
             }
-            if let Ok(overrides) = override_builder.build() {
-                files.retain(|result| match result {
-                    Ok(path) => {
-                        let relative = path.strip_prefix(root).unwrap_or(path.as_path());
-                        matches!(
-                            overrides.matched(relative, false),
-                            ignore::Match::Whitelist(_)
-                        )
+
+            // Include filter: if set, only keep files matching at least one pattern
+            if let Some(include_patterns) = &settings.linter.include
+                && !include_patterns.is_empty()
+            {
+                let mut override_builder = ignore::overrides::OverrideBuilder::new(root);
+                for pattern in include_patterns {
+                    let file_pattern = if pattern.ends_with('/') {
+                        format!("{}**", pattern)
+                    } else {
+                        pattern.clone()
+                    };
+                    if let Err(e) = override_builder.add(&file_pattern) {
+                        tracing::warn!("Failed to add include pattern '{}': {}", pattern, e);
                     }
-                    Err(_) => true,
-                });
+                }
+                if let Ok(overrides) = override_builder.build() {
+                    let relative = path.strip_prefix(root).unwrap_or(path.as_path());
+                    if !matches!(
+                        overrides.matched(relative, false),
+                        ignore::Match::Whitelist(_)
+                    ) {
+                        return false;
+                    }
+                }
             }
-        }
+
+            true
+        });
     }
 
     files

@@ -14,6 +14,9 @@ use rustc_hash::FxHashMap;
 use serde::Deserialize;
 
 use std::path::PathBuf;
+use std::sync::Arc;
+
+use jarl_core::package_cache::PackageCacheMap;
 
 use crate::LspResult;
 use crate::client::Client;
@@ -45,6 +48,9 @@ pub struct Session {
     client: Client,
     /// Whether we've shown the config notification
     config_notification_shown: bool,
+    /// Per-project package caches for package-specific rules. Keyed by R
+    /// project root so that renv and system projects get separate caches.
+    package_cache_map: Arc<PackageCacheMap>,
 }
 
 /// Immutable snapshot of a document and its context
@@ -57,6 +63,9 @@ pub struct DocumentSnapshot {
     position_encoding: PositionEncoding,
     /// Client capabilities
     client_capabilities: ClientCapabilities,
+    /// Shared reference to the session-level cache map. The lint code
+    /// creates per-project caches on first use.
+    package_cache_map: Arc<PackageCacheMap>,
 }
 
 impl Session {
@@ -75,6 +84,7 @@ impl Session {
             workspace_roots,
             client,
             config_notification_shown: false,
+            package_cache_map: Arc::new(PackageCacheMap::new()),
         }
     }
 
@@ -200,20 +210,18 @@ impl Session {
             key,
             position_encoding: self.position_encoding,
             client_capabilities: self.client_capabilities.clone(),
+            package_cache_map: Arc::clone(&self.package_cache_map),
         })
+    }
+
+    /// Get the shared cache map.
+    pub fn package_cache_map(&self) -> &Arc<PackageCacheMap> {
+        &self.package_cache_map
     }
 
     /// Get all open document URIs
     pub fn open_documents(&self) -> impl Iterator<Item = &Url> {
         self.documents.keys().map(|key| key.uri())
-    }
-
-    /// Check if the client supports pull diagnostics
-    /// For JARL, we always prefer push diagnostics for real-time linting
-    pub fn supports_pull_diagnostics(&self) -> bool {
-        // Always use push diagnostics for immediate feedback
-        // This ensures diagnostics are sent automatically on document changes
-        false
     }
 
     /// Get the position encoding
@@ -322,6 +330,7 @@ impl DocumentSnapshot {
             key,
             position_encoding,
             client_capabilities,
+            package_cache_map: Arc::new(PackageCacheMap::new()),
         }
     }
 
@@ -358,6 +367,21 @@ impl DocumentSnapshot {
     /// Get the client capabilities
     pub fn client_capabilities(&self) -> &ClientCapabilities {
         &self.client_capabilities
+    }
+
+    /// Get or create the package cache for this document's project root.
+    pub fn get_or_create_package_cache(
+        &self,
+        packages: &[&str],
+    ) -> Option<Arc<jarl_core::package_cache::PackageCache>> {
+        let file_path = self.file_path()?;
+        self.package_cache_map.get_or_create(&file_path, packages)
+    }
+
+    /// Get the existing package cache for this document's project root, if any.
+    pub fn package_cache(&self) -> Option<Arc<jarl_core::package_cache::PackageCache>> {
+        let file_path = self.file_path()?;
+        self.package_cache_map.get_for_file(&file_path)
     }
 
     /// Get the language ID if available

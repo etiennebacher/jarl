@@ -1,5 +1,4 @@
 use crate::diagnostic::*;
-use crate::utils::drop_arg_by_name_or_position;
 use crate::utils::{get_arg_by_name_then_position, get_function_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -60,27 +59,20 @@ pub fn fixed_regex(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         _ => return Ok(None),
     };
 
-    // Check if fixed is already set to TRUE
-    if let Some(fixed_arg) = get_arg_by_name_then_position(&args, "fixed", fixed_position)
-        && let Some(value) = fixed_arg.value()
-        && value.syntax().text_trimmed() == "TRUE"
-    {
-        // fixed = TRUE is already set, no need to lint
+    // Check if `fixed` is already explicitly supplied (by name or position).
+    // If the user wrote `fixed = TRUE`, `fixed = FALSE`, or `fixed = some_var`,
+    // they are making a deliberate choice and we should not second-guess it.
+    if get_arg_by_name_then_position(&args, "fixed", fixed_position).is_some() {
         return Ok(None);
     }
 
-    // Check if ignore.case is set to TRUE (implies regex interpretation)
+    // Check if ignore.case is explicitly supplied (implies regex interpretation)
     let ignore_case_position = match fn_name.as_str() {
         "gsub" | "sub" => 4,
         "regexpr" | "gregexpr" | "regexec" | "grep" | "grepl" => 3,
         _ => return Ok(None),
     };
-    if let Some(ignore_case_arg) =
-        get_arg_by_name_then_position(&args, "ignore.case", ignore_case_position)
-        && let Some(value) = ignore_case_arg.value()
-        && value.syntax().text_trimmed() == "TRUE"
-    {
-        // ignore.case = TRUE implies regex interpretation is needed
+    if get_arg_by_name_then_position(&args, "ignore.case", ignore_case_position).is_some() {
         return Ok(None);
     }
 
@@ -101,26 +93,13 @@ pub fn fixed_regex(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    // Pattern is fixed but fixed = TRUE is not set
-    // Build the fix by adding fixed = TRUE to the arguments or changing the value
-    // of fixed = FALSE.
-    let args_text = if let Some(fixed_arg) =
-        get_arg_by_name_then_position(&args, "fixed", fixed_position)
-        && let Some(value) = fixed_arg.value()
-        && value.syntax().text_trimmed() == "FALSE"
-    {
-        unwrap_or_return_none!(drop_arg_by_name_or_position(&args, "fixed", fixed_position))
-            .into_iter()
-            .map(|arg| arg.syntax().text_trimmed().to_string())
-            .collect::<Vec<_>>()
-            .join(", ")
-    } else {
-        args.into_iter()
-            .filter_map(|arg| arg.ok())
-            .map(|arg| arg.syntax().text_trimmed().to_string())
-            .collect::<Vec<_>>()
-            .join(", ")
-    };
+    // Pattern is fixed but `fixed` is not set — build fix by adding `fixed = TRUE`.
+    let args_text = args
+        .into_iter()
+        .filter_map(|arg| arg.ok())
+        .map(|arg| arg.syntax().text_trimmed().to_string())
+        .collect::<Vec<_>>()
+        .join(", ");
 
     let fixed_content = format!("{}({}, fixed = TRUE)", fn_name, args_text);
 

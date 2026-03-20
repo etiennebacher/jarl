@@ -43,12 +43,6 @@ pub enum Task {
         snapshot: Box<DocumentSnapshot>,
         client: Client,
     },
-    /// Handle a diagnostic request
-    HandleDiagnosticRequest {
-        snapshot: Box<DocumentSnapshot>,
-        request_id: RequestId,
-        client: Client,
-    },
     /// Handle a code action request
     HandleCodeActionRequest {
         snapshot: Box<DocumentSnapshot>,
@@ -229,24 +223,8 @@ impl Server {
                 client.send_response(request.id, ())?;
                 Ok(())
             }
-            types::request::DocumentDiagnosticRequest::METHOD => {
-                let params: types::DocumentDiagnosticParams =
-                    serde_json::from_value(request.params)?;
-
-                if let Some(snapshot) = session.take_snapshot(params.text_document.uri) {
-                    task_sender.send(Task::HandleDiagnosticRequest {
-                        snapshot: Box::new(snapshot),
-                        request_id: request.id,
-                        client,
-                    })?;
-                } else {
-                    client.send_error_response(
-                        request.id,
-                        anyhow!("Document not found").to_lsp_error(),
-                    )?;
-                }
-                Ok(())
-            }
+            // Pull diagnostics are disabled: diagnostics are only published on save.
+            // This avoids showing stale or partial diagnostics while typing.
             types::request::CodeActionRequest::METHOD => {
                 let params: types::CodeActionParams = serde_json::from_value(request.params)?;
                 let uri = params.text_document.uri.clone();
@@ -314,17 +292,7 @@ impl Server {
                     session.check_and_notify_config(&file_path);
                 }
 
-                // Trigger linting for push diagnostics (real-time as you type)
-                let supports_pull_diagnostics = session.supports_pull_diagnostics();
-
-                if !supports_pull_diagnostics
-                    && let Some(snapshot) = session.take_snapshot(params.text_document.uri)
-                {
-                    task_sender.send(Task::LintDocument {
-                        snapshot: Box::new(snapshot),
-                        client: session.client().clone(),
-                    })?;
-                }
+                // Don't trigger linting on open, only on save
                 Ok(())
             }
             types::notification::DidChangeTextDocument::METHOD => {
@@ -360,11 +328,7 @@ impl Server {
 
                 tracing::debug!("Document saved: {}", params.text_document.uri);
 
-                let supports_pull_diagnostics = session.supports_pull_diagnostics();
-
-                if !supports_pull_diagnostics
-                    && let Some(snapshot) = session.take_snapshot(params.text_document.uri)
-                {
+                if let Some(snapshot) = session.take_snapshot(params.text_document.uri) {
                     task_sender.send(Task::LintDocument {
                         snapshot: Box::new(snapshot),
                         client: session.client().clone(),
@@ -383,23 +347,13 @@ impl Server {
     fn worker_thread(
         _id: usize,
         task_receiver: channel::Receiver<Task>,
-        event_sender: channel::Sender<Event>,
+        _event_sender: channel::Sender<Event>,
     ) {
         while let Ok(task) = task_receiver.recv() {
             match task {
                 Task::LintDocument { snapshot, client } => {
                     if let Err(e) = Self::handle_lint_task(*snapshot, client) {
                         tracing::error!("Error in lint task: {}", e);
-                    }
-                }
-                Task::HandleDiagnosticRequest { snapshot, request_id, client } => {
-                    if let Err(e) = Self::handle_diagnostic_request(
-                        *snapshot,
-                        request_id,
-                        client,
-                        &event_sender,
-                    ) {
-                        tracing::error!("Error in diagnostic request task: {}", e);
                     }
                 }
                 Task::HandleCodeActionRequest { snapshot, request_id, params, client } => {
@@ -412,50 +366,33 @@ impl Server {
     /// Handle linting a document and publishing diagnostics
     fn handle_lint_task(snapshot: DocumentSnapshot, client: Client) -> LspResult<()> {
         let start = Instant::now();
-        let diagnostics = lint::lint_document(&snapshot)?;
+        let output = lint::lint_document(&snapshot)?;
         let elapsed = start.elapsed();
 
         tracing::debug!(
             "Linted {} in {:?}: {} diagnostics found",
             snapshot.uri(),
             elapsed,
-            diagnostics.len()
+            output.diagnostics.len()
         );
+
+        if output.unused_fn_hidden_count > 0 {
+            let _ = client.notify_unused_fn_threshold_once(output.unused_fn_hidden_count);
+        }
+
+        if !output.refreshed_packages.is_empty() {
+            let pkgs = output.refreshed_packages.join(", ");
+            let _ = client.show_message(
+                &format!("Jarl updated its information for the following package(s): {pkgs}"),
+                types::MessageType::INFO,
+            );
+        }
 
         client.publish_diagnostics(
             snapshot.uri().clone(),
-            diagnostics,
+            output.diagnostics,
             Some(snapshot.version()),
         )?;
-        Ok(())
-    }
-
-    /// Handle a diagnostic request
-    fn handle_diagnostic_request(
-        snapshot: DocumentSnapshot,
-        request_id: RequestId,
-        _client: Client,
-        event_sender: &channel::Sender<Event>,
-    ) -> LspResult<()> {
-        let diagnostics = lint::lint_document(&snapshot)?;
-
-        let result = types::DocumentDiagnosticReportResult::Report(
-            types::DocumentDiagnosticReport::Full(types::RelatedFullDocumentDiagnosticReport {
-                related_documents: None,
-                full_document_diagnostic_report: types::FullDocumentDiagnosticReport {
-                    result_id: None,
-                    items: diagnostics,
-                },
-            }),
-        );
-
-        let response = Response {
-            id: request_id,
-            result: Some(serde_json::to_value(result)?),
-            error: None,
-        };
-
-        event_sender.send(Event::SendResponse(response))?;
         Ok(())
     }
 
@@ -466,18 +403,17 @@ impl Server {
         params: types::CodeActionParams,
         client: Client,
     ) {
-        match Self::generate_code_actions(&snapshot, &params) {
-            Ok(actions) => {
-                if let Err(e) = client.send_response(request_id, actions) {
-                    tracing::error!("Failed to send code actions: {}", e);
-                }
-            }
+        let actions = match Self::generate_code_actions(&snapshot, &params) {
+            Ok(actions) => actions,
             Err(e) => {
-                tracing::error!("Failed to generate code actions: {}", e);
-                if let Err(send_err) = client.send_error_response(request_id, e.to_lsp_error()) {
-                    tracing::error!("Failed to send error response: {}", send_err);
-                }
+                // Syntax errors are expected while typing; return an empty list
+                // instead of an error response to avoid noisy notifications.
+                tracing::debug!("Skipping code actions due to error: {}", e);
+                Vec::new()
             }
+        };
+        if let Err(e) = client.send_response(request_id, actions) {
+            tracing::error!("Failed to send code actions: {}", e);
         }
     }
 
@@ -489,7 +425,7 @@ impl Server {
         use crate::lint::lint_document;
 
         // Get diagnostics with fix information
-        let diagnostics = lint_document(snapshot)?;
+        let diagnostics = lint_document(snapshot)?.diagnostics;
 
         let mut actions = Vec::new();
 
@@ -897,7 +833,7 @@ select = ["ALL"]
         let snapshot = env.create_snapshot(&content);
 
         // Run the linter to get real diagnostics
-        let diagnostics = lint::lint_document(&snapshot).ok()?;
+        let diagnostics = lint::lint_document(&snapshot).ok()?.diagnostics;
 
         // Find the diagnostic at cursor position
         let cursor_lsp_pos = offset_to_position(&content, cursor_pos);
@@ -931,7 +867,7 @@ select = ["ALL"]
         let snapshot = env.create_snapshot(&content);
 
         // Run the linter to get real diagnostics
-        let diagnostics = lint::lint_document(&snapshot).ok()?;
+        let diagnostics = lint::lint_document(&snapshot).ok()?.diagnostics;
 
         // Find the diagnostic at cursor position
         let cursor_lsp_pos = offset_to_position(&content, cursor_pos);
@@ -965,7 +901,7 @@ select = ["ALL"]
         let snapshot = env.create_snapshot(&content);
 
         // Run the linter to get real diagnostics
-        let diagnostics = lint::lint_document(&snapshot).ok()?;
+        let diagnostics = lint::lint_document(&snapshot).ok()?.diagnostics;
 
         // Find the diagnostic at cursor position
         let cursor_lsp_pos = offset_to_position(&content, cursor_pos);
@@ -1023,7 +959,7 @@ select = ["ALL"]
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
         x = 1
         x <- 2
         ");
@@ -1074,7 +1010,8 @@ select = ["ALL"]
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         # jarl-ignore any_is_na: <reason>
         any(is.na(x))
         ");
@@ -1089,7 +1026,8 @@ x <- foo(<CURS>any(is.na(x)))
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         # jarl-ignore any_is_na: <reason>
         x <- foo(any(is.na(x)))
         ");
@@ -1105,7 +1043,8 @@ x = 1
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         x = 1
         # jarl-ignore assignment: <reason>
         x = 2
@@ -1122,7 +1061,8 @@ x = 1
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         # jarl-ignore foo: some reason
         # jarl-ignore assignment: <reason>
         x = 1
@@ -1140,7 +1080,8 @@ f <- function() {
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         f <- function() {
           # jarl-ignore assignment: <reason>
           x = 1
@@ -1159,7 +1100,8 @@ f <- function(a = <CURS>any(is.na(x))) {
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         f <- function(
                       # jarl-ignore any_is_na: <reason>
                       a = any(is.na(x))) {
@@ -1178,7 +1120,8 @@ f <- function(
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         f <- function(
             # jarl-ignore any_is_na: <reason>
             a = any(is.na(x))
@@ -1197,7 +1140,8 @@ x <- foo[<CURS>any(is.na(x))]
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         # jarl-ignore any_is_na: <reason>
         x <- foo[any(is.na(x))]
         ");
@@ -1210,7 +1154,8 @@ x <- foo[
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         x <- foo[
             # jarl-ignore any_is_na: <reason>
             any(is.na(x))
@@ -1227,7 +1172,8 @@ x <- foo[[<CURS>any(is.na(x))]]
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         # jarl-ignore any_is_na: <reason>
         x <- foo[[any(is.na(x))]]
         ");
@@ -1240,7 +1186,8 @@ x <- foo[[
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         x <- foo[[
             # jarl-ignore any_is_na: <reason>
             any(is.na(x))
@@ -1257,7 +1204,8 @@ x <- ~ <CURS>any(is.na(x))
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         # jarl-ignore any_is_na: <reason>
         x <- ~ any(is.na(x))
         ");
@@ -1270,7 +1218,8 @@ x <- ~
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         x <- ~
             # jarl-ignore any_is_na: <reason>
             any(is.na(x))
@@ -1290,7 +1239,8 @@ if (x) {
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         if (x) {
           x = 1
         } else if (
@@ -1312,7 +1262,8 @@ if (x) {
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         if (x) {
           # jarl-ignore any_is_na: <reason>
           any(is.na(x))
@@ -1331,7 +1282,8 @@ for (<CURS>x in x) {
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         # jarl-ignore for_loop_index: <reason>
         for (x in x) {
             print(1)
@@ -1350,7 +1302,8 @@ for (x in y) {
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         for (x in y) {
             # jarl-ignore any_is_na: <reason>
             any(is.na(x))
@@ -1369,7 +1322,8 @@ while (<CURS>TRUE) {
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         # jarl-ignore repeat: <reason>
         while (TRUE) {
             print(1)
@@ -1388,7 +1342,8 @@ while (x > y) {
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         while (x > y) {
             # jarl-ignore any_is_na: <reason>
             any(is.na(x))
@@ -1408,7 +1363,8 @@ x |>
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         x |>
           foo() |>
           # jarl-ignore download_file: <reason>
@@ -1440,7 +1396,8 @@ x |>
         )
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
+
         # jarl-ignore
         # jarl-ignore assignment: <reason>
         x = 1
@@ -1457,7 +1414,7 @@ x |>
         let result =
             apply_jarl_ignore_chunk_at_cursor("```{r}\n<CURS>any(is.na(x))\n```\n").unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
         ```{r}
         #| jarl-ignore-chunk:
         #|   - any_is_na: <reason>
@@ -1478,7 +1435,7 @@ x |>
         ))
         .unwrap();
 
-        insta::assert_snapshot!(result, @r"
+        insta::assert_snapshot!(result, @"
         ```{r}
         #| jarl-ignore-chunk:
         #|   - any_is_na: <reason>
@@ -1495,7 +1452,7 @@ x |>
         let env = TestEnv::new(content);
         let snapshot = env.create_snapshot(content);
 
-        let diagnostics = lint::lint_document(&snapshot).unwrap();
+        let diagnostics = lint::lint_document(&snapshot).unwrap().diagnostics;
         let diagnostic = diagnostics
             .iter()
             .find(|d| {
@@ -1526,7 +1483,7 @@ x |>
         );
         let env = TestEnv::new_rmd(content);
         let snapshot = env.create_snapshot(content);
-        let diagnostics = lint::lint_document(&snapshot).unwrap();
+        let diagnostics = lint::lint_document(&snapshot).unwrap().diagnostics;
         let any_is_na_diags: Vec<_> = diagnostics
             .iter()
             .filter(|d| {
@@ -1555,7 +1512,7 @@ x |>
         );
         let env = TestEnv::new_rmd(content);
         let snapshot = env.create_snapshot(content);
-        let diagnostics = lint::lint_document(&snapshot).unwrap();
+        let diagnostics = lint::lint_document(&snapshot).unwrap().diagnostics;
         let any_is_na_diags: Vec<_> = diagnostics
             .iter()
             .filter(|d| {
@@ -1582,7 +1539,7 @@ x |>
         let env = TestEnv::new(content);
         let snapshot = env.create_snapshot(content);
 
-        let diagnostics = lint::lint_document(&snapshot).unwrap();
+        let diagnostics = lint::lint_document(&snapshot).unwrap().diagnostics;
         let diagnostic = diagnostics.first().unwrap();
 
         let action = Server::diagnostic_to_code_action(diagnostic, &snapshot).unwrap();
@@ -1598,7 +1555,7 @@ x |>
         let env = TestEnv::new(content);
         let snapshot = env.create_snapshot(content);
 
-        let diagnostics = lint::lint_document(&snapshot).unwrap();
+        let diagnostics = lint::lint_document(&snapshot).unwrap().diagnostics;
         let diagnostic = diagnostics.first().unwrap();
 
         let action = Server::diagnostic_to_jarl_ignore_rule_action(diagnostic, &snapshot).unwrap();

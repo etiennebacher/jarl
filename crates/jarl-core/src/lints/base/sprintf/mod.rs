@@ -48,7 +48,7 @@ mod tests {
     fn test_lint_sprintf_no_arg() {
         assert_snapshot!(
             snapshot_lint("sprintf('a')"),
-            @r"
+            @"
         warning: sprintf
          --> <test>:1:1
           |
@@ -75,7 +75,7 @@ mod tests {
         // "%%" is used to escape the "%" symbol
         assert_snapshot!(
             snapshot_lint("sprintf('%%')"),
-            @r"
+            @"
         warning: sprintf
          --> <test>:1:1
           |
@@ -88,7 +88,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("sprintf('%%', '')"),
-            @r"
+            @"
         warning: sprintf
          --> <test>:1:1
           |
@@ -119,7 +119,7 @@ mod tests {
     fn test_lint_sprintf_mismatch() {
         assert_snapshot!(
             snapshot_lint("sprintf('%a')"),
-            @r"
+            @"
         warning: sprintf
          --> <test>:1:1
           |
@@ -132,7 +132,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("sprintf('%a %s', 1)"),
-            @r"
+            @"
         warning: sprintf
          --> <test>:1:1
           |
@@ -146,7 +146,7 @@ mod tests {
         // Mix of indexed and non-indexed special chars
         assert_snapshot!(
             snapshot_lint("sprintf('hello %1$s %s', '1', '2')"),
-            @r"
+            @"
         warning: sprintf
          --> <test>:1:1
           |
@@ -174,7 +174,7 @@ mod tests {
     fn test_lint_sprintf_wrong_special_chars() {
         assert_snapshot!(
             snapshot_lint("sprintf('%y', 'a')"),
-            @r"
+            @"
         warning: sprintf
          --> <test>:1:1
           |
@@ -185,7 +185,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("sprintf('%', 'a')"),
-            @r"
+            @"
         warning: sprintf
          --> <test>:1:1
           |
@@ -196,7 +196,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("sprintf('1%', 'a')"),
-            @r"
+            @"
         warning: sprintf
          --> <test>:1:1
           |
@@ -207,7 +207,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("sprintf('%s%', 'a')"),
-            @r"
+            @"
         warning: sprintf
          --> <test>:1:1
           |
@@ -230,7 +230,7 @@ mod tests {
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             snapshot_lint("sprintf(\n # a comment \n'a')"),
-            @r"
+            @"
         warning: sprintf
          --> <test>:1:1
           |

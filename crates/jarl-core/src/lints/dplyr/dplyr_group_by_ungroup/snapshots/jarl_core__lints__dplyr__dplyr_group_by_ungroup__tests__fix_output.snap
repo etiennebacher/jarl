@@ -1,0 +1,31 @@
+---
+source: crates/jarl-core/src/lints/dplyr/dplyr_group_by_ungroup/mod.rs
+expression: "get_unsafe_fixed_text_with_cache(vec![\"library(dplyr); x |> group_by(grp) |> summarize(a = mean(b)) |> ungroup()\",\n\"library(dplyr); x |> group_by(grp) |> mutate(a = mean(b)) |> ungroup()\",\n\"library(dplyr); x |> group_by(grp) |> filter(a > 1) |> ungroup()\",\n\"library(dplyr); x |> group_by(grp) |> slice_head(n = 1) |> ungroup()\",],\n\"dplyr_group_by_ungroup\", &NS,)"
+---
+OLD:
+====
+library(dplyr); x |> group_by(grp) |> summarize(a = mean(b)) |> ungroup()
+NEW:
+====
+library(dplyr); x |> summarize(a = mean(b), .by = grp)
+
+OLD:
+====
+library(dplyr); x |> group_by(grp) |> mutate(a = mean(b)) |> ungroup()
+NEW:
+====
+library(dplyr); x |> mutate(a = mean(b), .by = grp)
+
+OLD:
+====
+library(dplyr); x |> group_by(grp) |> filter(a > 1) |> ungroup()
+NEW:
+====
+library(dplyr); x |> filter(a > 1, .by = grp)
+
+OLD:
+====
+library(dplyr); x |> group_by(grp) |> slice_head(n = 1) |> ungroup()
+NEW:
+====
+library(dplyr); x |> slice_head(n = 1, by = grp)

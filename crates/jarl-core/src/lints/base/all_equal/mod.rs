@@ -35,7 +35,7 @@ mod tests {
     fn test_lint_all_equal() {
         assert_snapshot!(
             snapshot_lint("if (all.equal(a, b, tolerance = 1e-3)) message('equal')"),
-            @r"
+            @"
         warning: all_equal
          --> <test>:1:5
           |
@@ -48,7 +48,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("if (all.equal(a, b)) message('equal')"),
-            @r"
+            @"
         warning: all_equal
          --> <test>:1:5
           |
@@ -61,7 +61,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("!all.equal(a, b)"),
-            @r"
+            @"
         warning: all_equal
          --> <test>:1:1
           |
@@ -74,7 +74,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("while (all.equal(a, b)) message('equal')"),
-            @r"
+            @"
         warning: all_equal
          --> <test>:1:8
           |
@@ -87,7 +87,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("isFALSE(all.equal(a, b))"),
-            @r"
+            @"
         warning: all_equal
          --> <test>:1:1
           |
@@ -121,7 +121,7 @@ mod tests {
     fn test_lint_all_equal_piped() {
         assert_snapshot!(
             snapshot_lint("all.equal(a, b) |> \n isFALSE()"),
-            @r"
+            @"
         warning: all_equal
          --> <test>:1:1
           |

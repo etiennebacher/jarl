@@ -1,10 +1,10 @@
-use git2::*;
 use std::process::Command;
 use tempfile::TempDir;
 
 use crate::helpers::CommandExt;
 use crate::helpers::binary_path;
 use crate::helpers::create_commit;
+use crate::helpers::git_init;
 
 #[test]
 fn test_clean_git_repo() -> anyhow::Result<()> {
@@ -20,8 +20,8 @@ fn test_clean_git_repo() -> anyhow::Result<()> {
     let test_contents = "any(is.na(x))";
     std::fs::write(&file_path, test_contents)?;
 
-    let repo = Repository::init(directory)?;
-    create_commit(file_path, repo)?;
+    git_init(directory)?;
+    create_commit(&file_path, directory)?;
 
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
@@ -30,7 +30,17 @@ fn test_clean_git_repo() -> anyhow::Result<()> {
             .arg(".")
             .arg("--fix")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
     );
     Ok(())
 }
@@ -45,7 +55,7 @@ fn test_dirty_git_repo_does_not_block_lint() -> anyhow::Result<()> {
     std::fs::create_dir_all(directory.join("demos"))?;
     std::fs::write(directory.join(test_path), test_contents)?;
 
-    let _ = Repository::init(directory)?;
+    git_init(directory)?;
 
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
@@ -53,7 +63,27 @@ fn test_dirty_git_repo_does_not_block_lint() -> anyhow::Result<()> {
             .arg("check")
             .arg(".")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> demos/test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
     Ok(())
 }
@@ -72,7 +102,7 @@ fn test_dirty_git_repo_blocks_fix() -> anyhow::Result<()> {
     std::fs::write(directory.join(test_path), test_contents)?;
     std::fs::write(directory.join(test_path_2), test_contents)?;
 
-    let _ = Repository::init(directory)?;
+    git_init(directory)?;
 
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
@@ -81,7 +111,19 @@ fn test_dirty_git_repo_blocks_fix() -> anyhow::Result<()> {
             .arg(".")
             .arg("--fix")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    Error: `jarl check --fix` can potentially perform destructive changes but the working directory of this project has uncommitted changes, so no fixes were applied.
+    To apply the fixes, either add `--allow-dirty` to the call, or commit the changes to these files:
+
+      * demos/ (dirty)
+    "
     );
     Ok(())
 }
@@ -96,7 +138,7 @@ fn test_dirty_git_repo_allow_dirty() -> anyhow::Result<()> {
     std::fs::create_dir_all(directory.join("demos"))?;
     std::fs::write(directory.join(test_path), test_contents)?;
 
-    let _ = Repository::init(directory)?;
+    git_init(directory)?;
 
     insta::assert_snapshot!(
         &mut Command::new(binary_path())
@@ -106,7 +148,17 @@ fn test_dirty_git_repo_allow_dirty() -> anyhow::Result<()> {
             .arg("--fix")
             .arg("--allow-dirty")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
     );
     Ok(())
 }
@@ -128,11 +180,11 @@ fn test_mixed_dirty_status_blocks_fix() -> anyhow::Result<()> {
     std::fs::write(dirty_subdir.join("test.R"), test_contents)?;
 
     // Each subdir is a separate repo
-    let clean_repo = Repository::init(clean_subdir.clone())?;
-    let _ = Repository::init(dirty_subdir)?;
+    git_init(&clean_subdir)?;
+    git_init(&dirty_subdir)?;
 
     // Make only one of these two repos clean, leaving the other dirty
-    create_commit(clean_subdir.join("test.R"), clean_repo)?;
+    create_commit(&clean_subdir.join("test.R"), &clean_subdir)?;
 
     // Try to fix both subdirs - should fail because one has dirty changes
     insta::assert_snapshot!(
@@ -142,7 +194,19 @@ fn test_mixed_dirty_status_blocks_fix() -> anyhow::Result<()> {
             .arg(".")
             .arg("--fix")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    Error: `jarl check --fix` can potentially perform destructive changes but the working directory of this project has uncommitted changes, so no fixes were applied.
+    To apply the fixes, either add `--allow-dirty` to the call, or commit the changes to these files:
+
+      * test.R (dirty)
+    "
     );
     Ok(())
 }
@@ -164,12 +228,12 @@ fn test_two_clean_subdirs() -> anyhow::Result<()> {
     std::fs::write(subdir_2.join("test.R"), test_contents)?;
 
     // Each subdir is a separate repo
-    let repo_1 = Repository::init(subdir_1.clone())?;
-    let repo_2 = Repository::init(subdir_2.clone())?;
+    git_init(&subdir_1)?;
+    git_init(&subdir_2)?;
 
     // Both repos are clean
-    create_commit(subdir_1.join("test.R"), repo_1)?;
-    create_commit(subdir_2.join("test.R"), repo_2)?;
+    create_commit(&subdir_1.join("test.R"), &subdir_1)?;
+    create_commit(&subdir_2.join("test.R"), &subdir_2)?;
 
     // Parent folder is not a git repo, but all files in subfolders are covered
     // by Git (even if the repos are different).
@@ -180,7 +244,17 @@ fn test_two_clean_subdirs() -> anyhow::Result<()> {
             .arg(".")
             .arg("--fix")
             .run()
-            .normalize_os_executable_name()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
     );
     Ok(())
 }

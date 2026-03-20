@@ -1,42 +1,33 @@
+use crate::description::Description;
 use crate::error::ParseError;
+use crate::namespace::parse_namespace_imports;
+use crate::package::{PackageAnalysis, compute_package_analysis, is_in_r_package};
+use crate::roxygen::{extract_roxygen_examples, remap_roxygen_fix, remap_roxygen_range};
 use crate::rule_set::Rule;
 use crate::suppression::SuppressionManager;
 use crate::vcs::check_version_control;
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
-use air_r_syntax::RExpressionList;
-use air_r_syntax::{
-    AnyRExpression, RBinaryExpressionFields, RForStatementFields, RIfStatementFields, RSyntaxNode,
-    RWhileStatementFields,
-};
+use air_r_syntax::{RExpressionList, RSyntaxNode};
 use anyhow::{Context, Result};
-use biome_rowan::{AstNode, AstNodeList, TextSize};
+use biome_rowan::TextSize;
 use rayon::prelude::*;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use crate::analyze;
+use crate::analyze::document::check_document;
+use crate::analyze::expression::check_expression;
+pub use crate::checker::Checker;
 use crate::config::Config;
 use crate::diagnostic::*;
 use crate::fix::*;
-use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
-use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
-use crate::lints::comments::invalid_chunk_suppression::invalid_chunk_suppression::invalid_chunk_suppression;
-use crate::lints::comments::misnamed_suppression::misnamed_suppression::misnamed_suppression;
-use crate::lints::comments::misplaced_file_suppression::misplaced_file_suppression::misplaced_file_suppression;
-use crate::lints::comments::misplaced_suppression::misplaced_suppression::misplaced_suppression;
-use crate::lints::comments::outdated_suppression::outdated_suppression::outdated_suppression;
-use crate::lints::comments::unexplained_suppression::unexplained_suppression::unexplained_suppression;
-use crate::lints::comments::unmatched_range_suppression::unmatched_range_suppression::{
-    unmatched_range_suppression_end, unmatched_range_suppression_start,
-};
-use crate::rule_options::ResolvedRuleOptions;
-use crate::rule_set::RuleSet;
 use crate::utils::*;
 
 pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
+    let pkg = compute_package_analysis(&config.paths, &config);
+
     // Ensure that all paths are covered by VCS. This is conservative because
     // technically we could apply fixes on those that are covered by VCS and
     // error for the others, but I'd rather be on the safe side and force the
@@ -49,62 +40,82 @@ pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Err
         }
     }
 
-    // Wrap config in Arc to avoid expensive clones in parallel execution
+    // Wrap config and package analysis in Arc to avoid expensive clones in parallel execution
     let config = Arc::new(config);
+    let pkg = Arc::new(pkg);
 
     config
         .paths
         .par_iter()
         .map(|file| {
-            let res = check_path(file, Arc::clone(&config));
+            let res = check_path(file, Arc::clone(&config), Arc::clone(&pkg));
             (relativize_path(file), res)
         })
         .collect()
 }
 
-pub fn check_path(path: &PathBuf, config: Arc<Config>) -> Result<Vec<Diagnostic>, anyhow::Error> {
+pub fn check_path(
+    path: &PathBuf,
+    config: Arc<Config>,
+    pkg: Arc<PackageAnalysis>,
+) -> Result<Vec<Diagnostic>, anyhow::Error> {
     if config.apply_fixes || config.apply_unsafe_fixes {
-        lint_fix(path, config)
+        lint_fix(path, config, pkg)
     } else {
-        lint_only(path, config)
+        lint_only(path, config, pkg)
     }
 }
 
-pub fn lint_only(path: &PathBuf, config: Arc<Config>) -> Result<Vec<Diagnostic>, anyhow::Error> {
+pub fn lint_only(
+    path: &PathBuf,
+    config: Arc<Config>,
+    pkg: Arc<PackageAnalysis>,
+) -> Result<Vec<Diagnostic>, anyhow::Error> {
     let path = relativize_path(path);
     let contents = fs::read_to_string(Path::new(&path))
         .with_context(|| format!("Failed to read file: {path}"))?;
 
-    let checks = get_checks(&contents, &PathBuf::from(&path), &config)
+    let checks = get_checks(&contents, &PathBuf::from(&path), &config, &pkg)
         .with_context(|| format!("Failed to get checks for file: {path}"))?;
 
     Ok(checks)
 }
 
-pub fn lint_fix(path: &PathBuf, config: Arc<Config>) -> Result<Vec<Diagnostic>, anyhow::Error> {
+pub fn lint_fix(
+    path: &PathBuf,
+    config: Arc<Config>,
+    pkg: Arc<PackageAnalysis>,
+) -> Result<Vec<Diagnostic>, anyhow::Error> {
     // Rmd/Qmd files never get autofixes applied.
     if crate::fs::has_rmd_extension(path) {
-        return lint_only(path, config);
+        return lint_only(path, config, pkg);
     }
 
     let path = relativize_path(path);
 
-    let mut has_skipped_fixes = true;
     let mut checks: Vec<Diagnostic>;
 
     loop {
         let contents = fs::read_to_string(Path::new(&path))
             .with_context(|| format!("Failed to read file: {path}",))?;
 
-        checks = get_checks(&contents, &PathBuf::from(&path), &config)
+        checks = get_checks(&contents, &PathBuf::from(&path), &config, &pkg)
             .with_context(|| format!("Failed to get checks for file: {path}",))?;
 
-        if !has_skipped_fixes {
+        let has_fixable = checks
+            .iter()
+            .any(|d| d.has_safe_fix() || d.has_unsafe_fix());
+        if !has_fixable {
             break;
         }
 
-        let (new_has_skipped_fixes, fixed_text) = apply_fixes(&checks, &contents);
-        has_skipped_fixes = new_has_skipped_fixes;
+        let fixed_text = apply_fixes(&checks, &contents);
+
+        // No progress was made (e.g. all fixes overlap), stop to avoid an
+        // infinite loop.
+        if fixed_text == contents {
+            break;
+        }
 
         fs::write(&path, fixed_text).with_context(|| format!("Failed to write file: {path}",))?;
     }
@@ -112,54 +123,17 @@ pub fn lint_fix(path: &PathBuf, config: Arc<Config>) -> Result<Vec<Diagnostic>, 
     Ok(checks)
 }
 
-#[derive(Debug)]
-// The object that will collect diagnostics in check_expressions(). One per
-// analyzed file.
-pub struct Checker {
-    // The diagnostics to report (possibly empty).
-    pub diagnostics: Vec<Diagnostic>,
-    // A set of rules to apply. Each rule contains metadata about whether it
-    // has a safe fix, unsafe fix, or no fix, and the minimum R version required.
-    pub rule_set: RuleSet,
-    // The R version that is manually passed by the user in the CLI. Any rule
-    // that has a minimum R version higher than this value will be deactivated.
-    pub minimum_r_version: Option<(u32, u32, u32)>,
-    // Tracks comment-based suppression directives like `# jarl-ignore`
-    pub suppression: SuppressionManager,
-    // Per-rule options resolved from configuration
-    pub rule_options: ResolvedRuleOptions,
-}
-
-impl Checker {
-    fn new(suppression: SuppressionManager, rule_options: ResolvedRuleOptions) -> Self {
-        Self {
-            diagnostics: vec![],
-            rule_set: RuleSet::empty(),
-            minimum_r_version: None,
-            suppression,
-            rule_options,
-        }
-    }
-
-    // This takes an Option<Diagnostic> because each lint rule reports a
-    // Some(Diagnostic) or None.
-    pub(crate) fn report_diagnostic(&mut self, diagnostic: Option<Diagnostic>) {
-        if let Some(diagnostic) = diagnostic {
-            self.diagnostics.push(diagnostic);
-        }
-    }
-
-    pub(crate) fn is_rule_enabled(&mut self, rule: Rule) -> bool {
-        self.rule_set.contains(&rule)
-    }
-}
-
 // Takes the R code as a string, parses it, and obtains a (possibly empty)
 // vector of `Diagnostic`s.
 //
 // If there are diagnostics to report, this is also where their range in the
 // string is converted to their location (row, column).
-pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Diagnostic>> {
+pub fn get_checks(
+    contents: &str,
+    file: &Path,
+    config: &Config,
+    pkg: &PackageAnalysis,
+) -> Result<Vec<Diagnostic>> {
     if crate::fs::has_rmd_extension(file) {
         return get_checks_rmd(contents, file, config);
     }
@@ -180,6 +154,19 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
 
+    // Wire up the package cache for package-specific rules.
+    if config.package_cache.is_some() {
+        setup_package_context(&mut checker, file, expressions, config);
+    }
+
+    // Look up per-file data from PackageAnalysis
+    let duplicate_assignments = pkg
+        .duplicate_assignments
+        .get(file)
+        .cloned()
+        .unwrap_or_default();
+    let unused_functions = pkg.unused_functions.get(file).cloned().unwrap_or_default();
+
     // We run checks at expression-level. This gathers all violations, no matter
     // whether they are suppressed or not. They are filtered out in the next
     // step (this is also Ruff's approach).
@@ -192,7 +179,12 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     // checks (blanket, unexplained, misplaced, misnamed, unused suppressions).
     // This must run after checking expressions because we filter out those that
     // are unused.
-    check_document(expressions, &mut checker)?;
+    check_document(
+        expressions,
+        &mut checker,
+        &duplicate_assignments,
+        &unused_functions,
+    )?;
 
     // Some rules have a fix available in their implementation but do not have
     // fix in the config, for instance because they are part of the "unfixable"
@@ -235,10 +227,122 @@ pub fn get_checks(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
         })
         .collect();
 
+    // Lint R code inside roxygen @examples / @examplesIf sections.
+    // Only applies to files inside an R package (R/ dir with DESCRIPTION above).
+    let mut diagnostics = diagnostics;
+    if config.check_roxygen
+        && contents.contains("#'")
+        && contents.contains("@examples")
+        && is_in_r_package(file) == Some(true)
+    {
+        let roxygen_diagnostics = get_checks_roxygen(syntax, file, config, contents)?;
+        diagnostics.extend(roxygen_diagnostics);
+    }
+
     let loc_new_lines = find_new_lines(syntax)?;
     let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
 
     Ok(diagnostics)
+}
+
+/// Set up package resolution on the checker for package-specific rules.
+///
+/// Inside an R package, uses DESCRIPTION `Depends`/`Imports` and NAMESPACE
+/// `importFrom()` directives. In scripts, scans for `library()`/`require()` calls.
+fn setup_package_context(
+    checker: &mut Checker,
+    file: &Path,
+    expressions: &RExpressionList,
+    config: &Config,
+) {
+    let mut packages = crate::checker::DEFAULT_PACKAGES
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<Vec<_>>();
+
+    if is_in_r_package(file) == Some(true) {
+        if let Some(pkg_root) = file.parent().and_then(|p| p.parent()) {
+            let desc_path = pkg_root.join("DESCRIPTION");
+            if let Ok(desc_content) = fs::read_to_string(&desc_path) {
+                packages.extend(Description::get_package_deps(
+                    &desc_content,
+                    &["Depends", "Imports"],
+                ));
+            }
+
+            let ns_path = pkg_root.join("NAMESPACE");
+            if let Ok(ns_content) = fs::read_to_string(&ns_path) {
+                let imports = parse_namespace_imports(&ns_content);
+                checker.import_from = imports.import_from;
+                for pkg in imports.blanket_imports {
+                    if !packages.contains(&pkg) {
+                        packages.push(pkg);
+                    }
+                }
+            }
+        }
+    } else {
+        packages.extend(crate::library_calls::extract_library_calls(expressions));
+    }
+
+    checker.loaded_packages = packages;
+    checker.package_cache = config.package_cache.clone();
+}
+
+/// Lint R code inside roxygen `@examples` and `@examplesIf` sections.
+///
+/// Each examples section is extracted, parsed as standalone R code, and linted.
+/// Diagnostic byte ranges are remapped to point to the correct position in the
+/// original file. Autofixes are disabled because the `#'` prefix makes
+/// position-based edits unsafe.
+fn get_checks_roxygen(
+    syntax: &RSyntaxNode,
+    file: &Path,
+    config: &Config,
+    contents: &str,
+) -> Result<Vec<Diagnostic>> {
+    let chunks = extract_roxygen_examples(syntax, contents);
+    let mut all_diagnostics: Vec<Diagnostic> = Vec::new();
+
+    for chunk in &chunks {
+        let parsed = air_r_parser::parse(&chunk.code, RParserOptions::default());
+        if parsed.has_error() {
+            // Examples may contain pseudo-code, \dontrun{} wrappers, etc.
+            continue;
+        }
+
+        let expressions = &parsed.tree().expressions();
+        let suppression = SuppressionManager::from_node(&parsed.syntax(), &chunk.code);
+        let has_suppressions = suppression.has_any_suppressions;
+        let mut checker = Checker::new(suppression, config.rule_options.clone());
+        checker.rule_set = config.rules_to_apply.clone();
+        checker.minimum_r_version = config.minimum_r_version;
+
+        for expr in expressions {
+            check_expression(&expr, &mut checker)?;
+        }
+
+        // Only run document-level checks if the examples code has inline
+        // suppression comments. Most examples don't, and check_document is
+        // otherwise unnecessary here (no package-level analysis, no
+        // suppression-related diagnostics to report).
+        if has_suppressions {
+            check_document(expressions, &mut checker, &[], &[])?;
+        }
+
+        for mut d in checker.diagnostics {
+            d.range = remap_roxygen_range(d.range, chunk);
+            if config.fix_roxygen {
+                d.fix = remap_roxygen_fix(&d.fix, chunk, contents);
+            } else {
+                d.fix = Fix::empty();
+            }
+            d.filename = file.to_path_buf();
+            all_diagnostics.push(d);
+        }
+    }
+
+    Ok(all_diagnostics)
 }
 
 /// Lint an Rmd/Qmd file by extracting R code chunks and checking each one.
@@ -323,7 +427,8 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
         }
         // check_document runs suppression filtering internally, so
         // checker.diagnostics is the post-suppression list after this call.
-        check_document(expressions, &mut checker)?;
+        // Rmd chunks don't participate in package-level analysis, so pass empty slices.
+        check_document(expressions, &mut checker, &[], &[])?;
 
         let offset = TextSize::from(start_byte as u32);
         let diagnostics = checker.diagnostics.into_iter().map(|mut d| {
@@ -377,232 +482,54 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     Ok(compute_lints_location(all_diagnostics, &loc_new_lines))
 }
 
-pub fn check_document(expressions: &RExpressionList, checker: &mut Checker) -> anyhow::Result<()> {
-    // --- Document-level analysis ---
+#[cfg(test)]
+mod tests {
+    use crate::utils_test::*;
+    use insta::assert_snapshot;
 
-    let expressions: Vec<RSyntaxNode> = expressions.iter().map(|e| e.syntax().clone()).collect();
-
-    // Check for unreachable code at top level
-    if checker.is_rule_enabled(Rule::UnreachableCode) {
-        for diagnostic in unreachable_code_top_level(&expressions, checker)? {
-            checker.report_diagnostic(Some(diagnostic));
-        }
+    #[test]
+    fn test_fix_does_not_introduce_new_lints() {
+        // Fixing `outer_negation` on this code would produce
+        // `expect_true(!any(is.na(x)))`, which introduced new
+        // `expect_not` and `any_is_na` lints. The fix loop should keep
+        // going until the code is fully clean.
+        assert_snapshot!(
+            get_fixed_text(
+                vec!["expect_true(all(!is.na(x)))"],
+                "ALL",
+                None
+            ),
+            @"
+        OLD:
+        ====
+        expect_true(all(!is.na(x)))
+        NEW:
+        ====
+        expect_false(anyNA(x))
+        "
+        );
     }
 
-    // --- Comment/suppression checks ---
-
-    // Report blanket suppression comments (file-level, done once)
-    if checker.is_rule_enabled(Rule::BlanketSuppression) {
-        let diagnostics = blanket_suppression(&checker.suppression.blanket_suppressions);
-        for diagnostic in diagnostics {
-            checker.report_diagnostic(Some(diagnostic));
-        }
+    #[test]
+    fn test_overlapping_fixes_do_not_corrupt() {
+        // `fixed_regex` replaces the whole call (adding `, fixed = TRUE`)
+        // while `quotes` replaces just the string inside it. The nested
+        // fix must be skipped in the first pass and applied in the next
+        // iteration, not applied on stale offsets.
+        assert_snapshot!(
+            get_fixed_text(
+                vec!["grepl('/', repo)"],
+                "ALL",
+                None
+            ),
+            @r#"
+        OLD:
+        ====
+        grepl('/', repo)
+        NEW:
+        ====
+        grepl("/", repo, fixed = TRUE)
+        "#
+        );
     }
-
-    // Report chunk suppressions that use the single-line `#|` form
-    if checker.is_rule_enabled(Rule::InvalidChunkSuppression) {
-        let diagnostics =
-            invalid_chunk_suppression(&checker.suppression.invalid_chunk_suppressions);
-        for diagnostic in diagnostics {
-            checker.report_diagnostic(Some(diagnostic));
-        }
-    }
-
-    // Report suppressions missing explanations
-    if checker.is_rule_enabled(Rule::UnexplainedSuppression) {
-        let diagnostics = unexplained_suppression(&checker.suppression.unexplained_suppressions);
-        for diagnostic in diagnostics {
-            checker.report_diagnostic(Some(diagnostic));
-        }
-    }
-
-    // Report misplaced file-level suppressions
-    if checker.is_rule_enabled(Rule::MisplacedFileSuppression) {
-        let diagnostics =
-            misplaced_file_suppression(&checker.suppression.misplaced_file_suppressions);
-        for diagnostic in diagnostics {
-            checker.report_diagnostic(Some(diagnostic));
-        }
-    }
-
-    // Report misplaced (end-of-line) suppression comments
-    if checker.is_rule_enabled(Rule::MisplacedSuppression) {
-        let diagnostics = misplaced_suppression(&checker.suppression.misplaced_suppressions);
-        for diagnostic in diagnostics {
-            checker.report_diagnostic(Some(diagnostic));
-        }
-    }
-
-    // Report suppressions with invalid rule names
-    if checker.is_rule_enabled(Rule::MisnamedSuppression) {
-        let diagnostics = misnamed_suppression(&checker.suppression.misnamed_suppressions);
-        for diagnostic in diagnostics {
-            checker.report_diagnostic(Some(diagnostic));
-        }
-    }
-
-    // Report unmatched start/end suppression comments
-    if checker.is_rule_enabled(Rule::UnmatchedRangeSuppression) {
-        let start_diagnostics =
-            unmatched_range_suppression_start(&checker.suppression.unmatched_start_suppressions);
-        for diagnostic in start_diagnostics {
-            checker.report_diagnostic(Some(diagnostic));
-        }
-        let end_diagnostics =
-            unmatched_range_suppression_end(&checker.suppression.unmatched_end_suppressions);
-        for diagnostic in end_diagnostics {
-            checker.report_diagnostic(Some(diagnostic));
-        }
-    }
-
-    // Filter diagnostics by suppressions. This removes suppressed violations
-    // and tracks which suppressions were used (for outdated suppression detection).
-    // Must happen BEFORE checking for outdated suppressions.
-    checker.diagnostics = checker
-        .suppression
-        .filter_diagnostics(std::mem::take(&mut checker.diagnostics));
-
-    // Report outdated suppressions (suppressions that didn't suppress anything).
-    if checker.is_rule_enabled(Rule::OutdatedSuppression) {
-        let unused = checker.suppression.get_unused_suppressions();
-        let outdated_diagnostics = outdated_suppression(&unused);
-        for diag in outdated_diagnostics {
-            checker.report_diagnostic(Some(diag));
-        }
-    }
-
-    Ok(())
-}
-
-/// Filter diagnostics by suppressions and report outdated suppressions.
-///
-// This function does two things:
-// - dispatch an expression to its appropriate set of rules, e.g. binary
-//   expressions are sent to the rules stored in
-//   analyze::binary_expression::binary_expression.
-// - apply the function recursively to the expression's children (if any, which
-//   is not guaranteed, e.g. for RIdentifier).
-//
-// Some expression types do both (e.g. RBinaryExpression), some only do the
-// dispatch to rules (e.g. RIdentifier), some only do the recursive call (e.g.
-// RFunctionDefinition).
-//
-// Not all patterns are covered but they don't necessarily have to be.
-// For instance, there are currently no rule for RNaExpression and
-// it doesn't have any children expression on which we need to call
-// check_expression().
-//
-// If a rule needs to be applied on RNaExpression in the future, then
-// we can add the corresponding match arm at this moment.
-fn check_expression(
-    expression: &air_r_syntax::AnyRExpression,
-    checker: &mut Checker,
-) -> anyhow::Result<()> {
-    match expression {
-        AnyRExpression::AnyRValue(children) => {
-            analyze::anyvalue::anyvalue(children, checker)?;
-        }
-        AnyRExpression::RBinaryExpression(children) => {
-            analyze::binary_expression::binary_expression(children, checker)?;
-            let RBinaryExpressionFields { left, right, .. } = children.as_fields();
-            check_expression(&left?, checker)?;
-            check_expression(&right?, checker)?;
-        }
-        AnyRExpression::RBracedExpressions(children) => {
-            for expr in children.expressions() {
-                check_expression(&expr, checker)?;
-            }
-        }
-        AnyRExpression::RCall(children) => {
-            analyze::call::call(children, checker)?;
-
-            if let Some(ns_expr) = children.function()?.as_r_namespace_expression() {
-                analyze::namespace_expression::namespace_expression(ns_expr, checker)?;
-            }
-
-            for arg in children.arguments()?.items() {
-                if let Some(expr) = arg.unwrap().as_fields().value {
-                    check_expression(&expr, checker)?;
-                }
-            }
-        }
-        AnyRExpression::RForStatement(children) => {
-            analyze::for_loop::for_loop(children, checker)?;
-            let RForStatementFields { variable, sequence, body, .. } = children.as_fields();
-            analyze::identifier::identifier(&variable?, checker)?;
-
-            check_expression(&sequence?, checker)?;
-            check_expression(&body?, checker)?;
-        }
-        AnyRExpression::RFunctionDefinition(children) => {
-            analyze::function_definition::function_definition(children, checker)?;
-            let params = children.parameters()?.items();
-            for param in params {
-                let default = param?.default();
-                if let Some(default) = default
-                    && let Ok(default) = default.value()
-                {
-                    check_expression(&default, checker)?;
-                }
-            }
-            check_expression(&children.body()?, checker)?;
-        }
-        AnyRExpression::RIdentifier(x) => {
-            analyze::identifier::identifier(x, checker)?;
-        }
-        AnyRExpression::RIfStatement(children) => {
-            analyze::if_::if_(children, checker)?;
-
-            let RIfStatementFields { condition, consequence, else_clause, .. } =
-                children.as_fields();
-            check_expression(&condition?, checker)?;
-            check_expression(&consequence?, checker)?;
-            if let Some(else_clause) = else_clause {
-                let alternative = else_clause.alternative();
-                check_expression(&alternative?, checker)?;
-            }
-        }
-        AnyRExpression::RNamespaceExpression(children) => {
-            analyze::namespace_expression::namespace_expression(children, checker)?;
-        }
-        AnyRExpression::RParenthesizedExpression(children) => {
-            let body = children.body();
-            check_expression(&body?, checker)?;
-        }
-        AnyRExpression::RRepeatStatement(children) => {
-            let body = children.body();
-            check_expression(&body?, checker)?;
-        }
-        AnyRExpression::RSubset(children) => {
-            analyze::subset::subset(children, checker)?;
-
-            for arg in children.arguments()?.items() {
-                if let Some(expr) = arg?.value() {
-                    check_expression(&expr, checker)?;
-                }
-            }
-        }
-        AnyRExpression::RSubset2(children) => {
-            for arg in children.arguments()?.items() {
-                if let Some(expr) = arg?.value() {
-                    check_expression(&expr, checker)?;
-                }
-            }
-        }
-        AnyRExpression::RUnaryExpression(children) => {
-            analyze::unary_expression::unary_expression(children, checker)?;
-
-            let argument = children.argument();
-            check_expression(&argument?, checker)?;
-        }
-        AnyRExpression::RWhileStatement(children) => {
-            analyze::while_::while_(children, checker)?;
-            let RWhileStatementFields { condition, body, .. } = children.as_fields();
-            check_expression(&condition?, checker)?;
-            check_expression(&body?, checker)?;
-        }
-        _ => {}
-    }
-
-    Ok(())
 }

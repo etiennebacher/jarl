@@ -15,7 +15,7 @@ language:
 execute:
   eval: false
 website:
-  title: jarl
+  title: Jarl
   repo-url: https://github.com/etiennebacher/jarl
   repo-subdir: docs
   repo-actions:
@@ -31,16 +31,34 @@ website:
       href: https://github.com/etiennebacher/jarl
       aria-label: GitHub
     left:
-    - text: Using Jarl
-      href: using-jarl.md
-    - text: Configuration
-      href: config.md
-    - text: Rules
-      href: rules.qmd
-    - text: Editors
-      href: editors.md
-    - text: Integrations
-      href: integrations.md
+    - text: Getting started
+      href: getting-started.md
+    - text: By Example
+      href: by-example.qmd
+    - text: How-to
+      menu:
+      - text: Suppression comments
+        href: howto/suppression-comments.md
+      - text: R Markdown & Quarto
+        href: howto/rmarkdown-quarto.md
+      - text: R versions
+        href: howto/r-versions.md
+      - text: Editor setup
+        href: howto/editors.md
+      - text: Continuous integration
+        href: howto/ci.md
+      - text: Pre-commit tools
+        href: howto/precommit.md
+    - text: Reference
+      menu:
+      - text: Rules
+        href: rules.qmd
+      - text: CLI options
+        href: reference/cli.md
+      - text: Configuration file
+        href: reference/config-file.md
+      - text: Environment variables
+        href: reference/envvars.md
     - text: Contributing
       menu:
       - text: General information
@@ -66,12 +84,17 @@ website:
       - rules/coalesce.md
       - rules/comparison_negation.md
       - rules/download_file.md
+      - rules/dplyr_filter_out.md
+      - rules/dplyr_group_by_ungroup.md
       - rules/duplicated_arguments.md
+      - rules/duplicated_function_definition.md
       - rules/equals_na.md
       - rules/equals_nan.md
       - rules/equals_null.md
       - rules/expect_length.md
+      - rules/expect_match.md
       - rules/expect_named.md
+      - rules/expect_no_match.md
       - rules/expect_not.md
       - rules/expect_null.md
       - rules/expect_s3_class.md
@@ -97,6 +120,7 @@ website:
       - rules/numeric_leading_zero.md
       - rules/outdated_suppression.md
       - rules/outer_negation.md
+      - rules/quotes.md
       - rules/redundant_equals.md
       - rules/redundant_ifelse.md
       - rules/repeat.md
@@ -113,5 +137,6 @@ website:
       - rules/unmatched_range_suppression.md
       - rules/unnecessary_nesting.md
       - rules/unreachable_code.md
+      - rules/unused_function.md
       - rules/vector_logic.md
       - rules/which_grepl.md

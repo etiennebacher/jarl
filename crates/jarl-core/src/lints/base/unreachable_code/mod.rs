@@ -68,7 +68,7 @@ foo <- function() {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -93,7 +93,7 @@ foo <- function(x) {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:8:3
           |
@@ -116,7 +116,7 @@ foo <- function() {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:5:5
           |
@@ -139,7 +139,7 @@ foo <- function() {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:5:5
           |
@@ -193,7 +193,7 @@ foo <- function() {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:5:3
           |
@@ -218,7 +218,7 @@ outer <- function() {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:5:5
           |
@@ -303,7 +303,7 @@ foo <- function(bar) {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:3:14
           |
@@ -360,7 +360,7 @@ foo <- function(bar) {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:5:5
           |
@@ -412,7 +412,7 @@ foo <- function(bar) {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:5:5
           |
@@ -462,7 +462,7 @@ foo <- function() {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -480,7 +480,7 @@ foo <- function() {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -498,7 +498,7 @@ foo <- function() {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -516,7 +516,7 @@ foo <- function() {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -596,7 +596,7 @@ foo <- function(x) {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
           --> <test>:15:3
            |
@@ -618,7 +618,7 @@ foo <- function(x) {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:5:3
           |
@@ -650,7 +650,7 @@ foo <- \(x) {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -672,7 +672,7 @@ foo <- function(x) {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:5:6
           |
@@ -716,7 +716,7 @@ foo <- function(x) {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:5:10
           |
@@ -795,7 +795,7 @@ foo <- function(x) {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:3:18
           |
@@ -854,7 +854,7 @@ if (TRUE) {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:4:8
           |
@@ -878,7 +878,7 @@ for (i in 1:10) {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -899,7 +899,7 @@ for (i in 1:10) {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -918,7 +918,7 @@ x <- 1
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:3:1
           |
@@ -940,7 +940,7 @@ if (condition) {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -963,7 +963,7 @@ x <- 1
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:7:1
           |
@@ -989,7 +989,7 @@ if (outer_condition) {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:8:3
           |
@@ -1029,7 +1029,7 @@ foo <- function() {
 "#;
         insta::assert_snapshot!(
             snapshot_lint_with_settings(code, settings),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -1057,7 +1057,7 @@ foo <- function() {
 "#;
         insta::assert_snapshot!(
             snapshot_lint_with_settings(code, settings.clone()),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -1076,7 +1076,7 @@ foo <- function() {
 "#;
         insta::assert_snapshot!(
             snapshot_lint_with_settings(code, settings),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -1101,7 +1101,7 @@ x <- 1
 "#;
         insta::assert_snapshot!(
             snapshot_lint_with_settings(code, settings),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:3:1
           |
@@ -1124,7 +1124,7 @@ foo <- function() {
 "#;
         insta::assert_snapshot!(
             snapshot_lint(code),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:4:3
           |
@@ -1151,7 +1151,7 @@ foo <- function() {
 "#;
         insta::assert_snapshot!(
             snapshot_lint_with_settings(code, settings),
-            @r"
+            @"
         warning: unreachable_code
          --> <test>:4:3
           |

@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::check::Checker;
+use crate::checker::Checker;
 use crate::diagnostic::*;
 use air_r_syntax::*;
 use anyhow::anyhow;
@@ -29,27 +29,29 @@ pub fn duplicated_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Op
     let RCallFields { function, arguments } = ast.as_fields();
 
     let fun_name = match function? {
-        AnyRExpression::RNamespaceExpression(x) => {
-            x.right()?.into_syntax().text_trimmed().to_string()
-        }
+        AnyRExpression::AnyRValue(x) => x.into_syntax().text_trimmed().to_string(),
         AnyRExpression::RBracedExpressions(x) => x
             .expressions()
             .into_iter()
             .map(|x| x.to_string())
             .collect::<Vec<String>>()
             .join(""),
+        AnyRExpression::RBreakExpression(_) => "break".to_string(),
         AnyRExpression::RExtractExpression(x) => {
             x.right()?.into_syntax().text_trimmed().to_string()
         }
         AnyRExpression::RCall(x) => x.function()?.into_syntax().text_trimmed().to_string(),
-        AnyRExpression::RSubset(x) => x.arguments()?.into_syntax().text_trimmed().to_string(),
-        AnyRExpression::RSubset2(x) => x.arguments()?.into_syntax().text_trimmed().to_string(),
         AnyRExpression::RIdentifier(x) => x.into_syntax().text_trimmed().to_string(),
-        AnyRExpression::AnyRValue(x) => x.into_syntax().text_trimmed().to_string(),
+        AnyRExpression::RNamespaceExpression(x) => {
+            x.right()?.into_syntax().text_trimmed().to_string()
+        }
+        AnyRExpression::RNextExpression(_) => "next".to_string(),
         AnyRExpression::RParenthesizedExpression(x) => {
             x.body()?.into_syntax().text_trimmed().to_string()
         }
         AnyRExpression::RReturnExpression(x) => x.into_syntax().text_trimmed().to_string(),
+        AnyRExpression::RSubset(x) => x.arguments()?.into_syntax().text_trimmed().to_string(),
+        AnyRExpression::RSubset2(x) => x.arguments()?.into_syntax().text_trimmed().to_string(),
         _ => {
             return Err(anyhow!(
                 "couldn't find function name for duplicated_arguments linter.",
@@ -98,7 +100,7 @@ pub fn duplicated_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Op
             ViolationData::new(
                 "duplicated_arguments".to_string(),
                 [
-                    "Avoid duplicate arguments in function calls. Duplicated argument(s): ",
+                    "Avoid duplicated arguments in function calls. Duplicated argument(s): ",
                     &duplicated_arg_names
                         .iter()
                         .map(|s| format!("\"{s}\""))

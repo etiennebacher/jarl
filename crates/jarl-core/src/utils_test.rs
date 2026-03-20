@@ -1,11 +1,43 @@
 use crate::check::check;
 use crate::diagnostic::Diagnostic;
+use crate::package_cache::PackageCache;
 use crate::settings::Settings;
 use crate::{config::ArgsConfig, discovery::discover_settings};
 use air_workspace::resolve::PathResolver;
 use std::fs;
 use std::path::Path;
+use std::sync::Arc;
 use tempfile::Builder;
+
+/// Declare a fake package namespace for use in tests.
+///
+/// Creates a `lazy_static` `NS` variable containing an `Arc<PackageCache>` built
+/// from in-memory declarations. This avoids requiring R or installing packages
+/// to run tests, which is important in CI.
+///
+/// # Example
+///
+/// ```ignore
+/// declare_ns! {
+///     "stats" => ["filter", "lag"],
+///     "dplyr" => ["filter", "mutate", "select"],
+/// }
+///
+/// fn snapshot_lint(code: &str) -> String {
+///     format_diagnostics_with_cache(code, "my_rule", None, Some(&NS))
+/// }
+/// ```
+#[macro_export]
+macro_rules! declare_ns {
+    ( $( $pkg:expr => [ $( $export:expr ),* $(,)? ] ),* $(,)? ) => {
+        static NS: std::sync::LazyLock<std::sync::Arc<$crate::package_cache::PackageCache>> =
+            std::sync::LazyLock::new(|| {
+                std::sync::Arc::new($crate::package_cache::PackageCache::from_exports(&[
+                    $( ($pkg, &[ $( $export ),* ]) ),*
+                ]))
+            });
+    };
+}
 
 /// Set up the resolver, optionally with custom settings.
 fn setup_resolver(file_path: &Path, settings: Option<Settings>) -> PathResolver<Settings> {
@@ -25,110 +57,14 @@ fn setup_resolver(file_path: &Path, settings: Option<Settings>) -> PathResolver<
     resolver
 }
 
-/// Test utility function to check if a given R code does NOT contain a specific lint
-fn has_no_lint(
+/// Core helper: build a check config, optionally inject a package cache, and run
+/// the linter. Returns diagnostics for the file.
+fn run_check(
     text: &str,
     rule: &str,
     min_r_version: Option<&str>,
     settings: Option<Settings>,
-) -> bool {
-    let temp_file = Builder::new()
-        .prefix("test-jarl")
-        .suffix(".R")
-        .tempfile()
-        .unwrap();
-
-    fs::write(&temp_file, text).expect("Failed to write initial content");
-
-    let check_config = ArgsConfig {
-        files: vec![temp_file.path().to_path_buf()],
-        fix: false,
-        unsafe_fixes: false,
-        fix_only: false,
-        select: rule.to_string(),
-        extend_select: String::new(),
-        ignore: String::new(),
-        min_r_version: min_r_version.map(|s| s.to_string()),
-        allow_dirty: false,
-        allow_no_vcs: true,
-        assignment: None,
-    };
-
-    let resolver = setup_resolver(temp_file.path(), settings);
-    let toml_settings = resolver.items().first().map(|item| item.value());
-
-    let config = crate::config::build_config(
-        &check_config,
-        toml_settings,
-        vec![temp_file.path().to_path_buf()],
-    )
-    .expect("Failed to build config");
-
-    let results = check(config);
-
-    for (_, result) in results {
-        if let Ok(diagnostics) = result
-            && !diagnostics.is_empty()
-        {
-            return false;
-        }
-    }
-
-    true
-}
-
-/// Test utility to apply fixes to R code and return the fixed version
-fn apply_fixes(
-    text: &str,
-    rule: &str,
-    unsafe_fixes: bool,
-    min_r_version: Option<&str>,
-    settings: Option<Settings>,
-) -> String {
-    let temp_file = Builder::new()
-        .prefix("test-jarl")
-        .suffix(".R")
-        .tempfile()
-        .unwrap();
-
-    fs::write(&temp_file, text).expect("Failed to write initial content");
-
-    let check_config = ArgsConfig {
-        files: vec![temp_file.path().to_path_buf()],
-        fix: true,
-        unsafe_fixes,
-        fix_only: false,
-        select: rule.to_string(),
-        extend_select: String::new(),
-        ignore: String::new(),
-        min_r_version: min_r_version.map(|s| s.to_string()),
-        allow_dirty: false,
-        allow_no_vcs: true,
-        assignment: None,
-    };
-
-    let resolver = setup_resolver(temp_file.path(), settings);
-    let toml_settings = resolver.items().first().map(|item| item.value());
-
-    let config = crate::config::build_config(
-        &check_config,
-        toml_settings,
-        vec![temp_file.path().to_path_buf()],
-    )
-    .expect("Failed to build config");
-
-    let _results = check(config);
-
-    // Read the fixed content back
-    fs::read_to_string(&temp_file).expect("Failed to read fixed content")
-}
-
-/// Check if code has any diagnostics for the given rule
-fn check_code_with_settings(
-    text: &str,
-    rule: &str,
-    min_r_version: Option<&str>,
-    settings: Option<Settings>,
+    cache: Option<&Arc<PackageCache>>,
 ) -> Vec<Diagnostic> {
     let temp_file = Builder::new()
         .prefix("test-jarl")
@@ -155,12 +91,16 @@ fn check_code_with_settings(
     let resolver = setup_resolver(temp_file.path(), settings);
     let toml_settings = resolver.items().first().map(|item| item.value());
 
-    let config = crate::config::build_config(
+    let mut config = crate::config::build_config(
         &check_config,
         toml_settings,
         vec![temp_file.path().to_path_buf()],
     )
     .expect("Failed to build config");
+
+    if let Some(c) = cache {
+        config.package_cache = Some(c.clone());
+    }
 
     let results = check(config);
 
@@ -173,14 +113,70 @@ fn check_code_with_settings(
     Vec::new()
 }
 
+/// Test utility to apply fixes to R code and return the fixed version
+fn apply_fixes(
+    text: &str,
+    rule: &str,
+    unsafe_fixes: bool,
+    min_r_version: Option<&str>,
+    settings: Option<Settings>,
+    cache: Option<&Arc<PackageCache>>,
+) -> String {
+    let temp_file = Builder::new()
+        .prefix("test-jarl")
+        .suffix(".R")
+        .tempfile()
+        .unwrap();
+
+    fs::write(&temp_file, text).expect("Failed to write initial content");
+
+    let check_config = ArgsConfig {
+        files: vec![temp_file.path().to_path_buf()],
+        fix: true,
+        unsafe_fixes,
+        fix_only: false,
+        select: rule.to_string(),
+        extend_select: String::new(),
+        ignore: String::new(),
+        min_r_version: min_r_version.map(|s| s.to_string()),
+        allow_dirty: false,
+        allow_no_vcs: true,
+        assignment: None,
+    };
+
+    let resolver = setup_resolver(temp_file.path(), settings);
+    let toml_settings = resolver.items().first().map(|item| item.value());
+
+    let mut config = crate::config::build_config(
+        &check_config,
+        toml_settings,
+        vec![temp_file.path().to_path_buf()],
+    )
+    .expect("Failed to build config");
+
+    if let Some(c) = cache {
+        config.package_cache = Some(c.clone());
+    }
+
+    let _results = check(config);
+
+    // Read the fixed content back
+    fs::read_to_string(&temp_file).expect("Failed to read fixed content")
+}
+
 /// Check if code has any diagnostics for the given rule
 pub fn check_code(text: &str, rule: &str, min_r_version: Option<&str>) -> Vec<Diagnostic> {
-    check_code_with_settings(text, rule, min_r_version, None)
+    run_check(text, rule, min_r_version, None, None)
 }
 
 /// Convenience function to assert that code has no lint
 pub fn expect_no_lint(text: &str, rule: &str, min_r_version: Option<&str>) {
-    assert!(has_no_lint(text, rule, min_r_version, None));
+    let diagnostics = run_check(text, rule, min_r_version, None, None);
+    assert!(
+        diagnostics.is_empty(),
+        "Expected no lint for rule '{rule}' but got {} diagnostic(s)",
+        diagnostics.len()
+    );
 }
 
 /// Convenience function to assert that code has no lint, with custom settings
@@ -190,7 +186,12 @@ pub fn expect_no_lint_with_settings(
     min_r_version: Option<&str>,
     settings: Settings,
 ) {
-    assert!(has_no_lint(text, rule, min_r_version, Some(settings)));
+    let diagnostics = run_check(text, rule, min_r_version, Some(settings), None);
+    assert!(
+        diagnostics.is_empty(),
+        "Expected no lint for rule '{rule}' but got {} diagnostic(s)",
+        diagnostics.len()
+    );
 }
 
 /// Get fixed text for a series of code snippets
@@ -209,7 +210,7 @@ pub fn get_fixed_text_with_settings(
 
     for txt in text.iter() {
         let original_content = txt;
-        let modified_content = apply_fixes(txt, rule, false, min_r_version, settings.clone());
+        let modified_content = apply_fixes(txt, rule, false, min_r_version, settings.clone(), None);
 
         output.push_str(
             format!("OLD:\n====\n{original_content}\nNEW:\n====\n{modified_content}\n\n").as_str(),
@@ -285,6 +286,26 @@ pub fn get_unsafe_fixed_text(text: Vec<&str>, rule: &str) -> String {
     get_unsafe_fixed_text_with_settings(text, rule, None)
 }
 
+/// Get fixed text with unsafe fixes, using a pre-built package cache.
+pub fn get_unsafe_fixed_text_with_cache(
+    text: Vec<&str>,
+    rule: &str,
+    cache: &Arc<PackageCache>,
+) -> String {
+    let mut output: String = String::new();
+
+    for txt in text.iter() {
+        let original_content = txt;
+        let modified_content = apply_fixes(txt, rule, true, None, None, Some(cache));
+
+        output.push_str(
+            format!("OLD:\n====\n{original_content}\nNEW:\n====\n{modified_content}\n\n").as_str(),
+        );
+    }
+
+    output.trim_end().to_string()
+}
+
 /// Get fixed text with unsafe fixes for a series of code snippets, with custom settings
 pub fn get_unsafe_fixed_text_with_settings(
     text: Vec<&str>,
@@ -295,7 +316,7 @@ pub fn get_unsafe_fixed_text_with_settings(
 
     for txt in text.iter() {
         let original_content = txt;
-        let modified_content = apply_fixes(txt, rule, true, None, settings.clone());
+        let modified_content = apply_fixes(txt, rule, true, None, settings.clone(), None);
 
         output.push_str(
             format!("OLD:\n====\n{original_content}\nNEW:\n====\n{modified_content}\n\n").as_str(),
@@ -305,28 +326,43 @@ pub fn get_unsafe_fixed_text_with_settings(
     output.trim_end().to_string()
 }
 
-/// Format diagnostics as they would appear in the console for snapshot testing
+/// Format diagnostics as they would appear in the console for snapshot testing.
 pub fn format_diagnostics(text: &str, rule: &str, min_r_version: Option<&str>) -> String {
-    format_diagnostics_with_settings(text, rule, min_r_version, None)
+    render_diagnostics(text, rule, min_r_version, None, None)
 }
 
-/// Format diagnostics as they would appear in the console for snapshot testing,
-/// with custom settings.
-///
-/// This function uses the shared `render_diagnostic()` (same rendering logic as
-/// the CLI) to format diagnostics with line numbers, highlighted ranges, and
-/// suggestion footers.
+/// Format diagnostics with custom settings for snapshot testing.
 pub fn format_diagnostics_with_settings(
     text: &str,
     rule: &str,
     min_r_version: Option<&str>,
     settings: Option<Settings>,
 ) -> String {
+    render_diagnostics(text, rule, min_r_version, settings, None)
+}
+
+/// Format diagnostics with a fake package cache for snapshot testing.
+pub fn format_diagnostics_with_cache(
+    text: &str,
+    rule: &str,
+    min_r_version: Option<&str>,
+    cache: &Arc<PackageCache>,
+) -> String {
+    render_diagnostics(text, rule, min_r_version, None, Some(cache))
+}
+
+fn render_diagnostics(
+    text: &str,
+    rule: &str,
+    min_r_version: Option<&str>,
+    settings: Option<Settings>,
+    cache: Option<&Arc<PackageCache>>,
+) -> String {
     use annotate_snippets::Renderer;
 
     use crate::diagnostic::render_diagnostic;
 
-    let diagnostics = check_code_with_settings(text, rule, min_r_version, settings);
+    let diagnostics = run_check(text, rule, min_r_version, settings, cache);
 
     if diagnostics.is_empty() {
         return "All checks passed!".to_string();

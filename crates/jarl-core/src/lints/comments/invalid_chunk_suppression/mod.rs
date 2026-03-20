@@ -13,7 +13,7 @@ mod tests {
         // `#| jarl-ignore-chunk <rule>: <reason>` must be reported.
         insta::assert_snapshot!(snapshot_lint(
             "#| jarl-ignore-chunk any_is_na: legacy code\nany(is.na(x))\n"
-        ), @r"
+        ), @"
         warning: invalid_chunk_suppression
          --> <test>:1:1
           |
@@ -33,7 +33,7 @@ mod tests {
         // `# jarl-ignore-chunk <rule>: <reason>` must also be reported.
         insta::assert_snapshot!(snapshot_lint(
             "# jarl-ignore-chunk any_is_na: legacy code\nany(is.na(x))\n"
-        ), @r"
+        ), @"
         warning: invalid_chunk_suppression
          --> <test>:1:1
           |
