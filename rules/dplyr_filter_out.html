@@ -645,7 +645,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h1>dplyr_filter_out</h1>
 <section id="what-it-does" class="level2">
 <h2 class="anchored" data-anchor-id="what-it-does">What it does</h2>
-<p>Checks for negations inside <code>dplyr::filter()</code> that can be replaced with <code>dplyr::filter_out()</code>.</p>
+<p>Checks <code>dplyr::filter()</code> calls with complex conditions and suggests using <code>dplyr::filter_out()</code> instead.</p>
 </section>
 <section id="why-is-this-bad" class="level2">
 <h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
