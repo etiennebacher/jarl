@@ -151,10 +151,9 @@ pub fn dplyr_filter_out(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
     Ok(Some(Diagnostic::new(
         ViolationData::new(
             "dplyr_filter_out".to_string(),
-            "This `| is.na()` pattern can be replaced by `filter_out()`.".to_string(),
+            "This `filter()` contains complex negated condition(s).".to_string(),
             Some(
-                "`filter_out()` keeps `NA` rows automatically, so the guard is unnecessary."
-                    .to_string(),
+                "It can be simplified by using `filter_out()`, which keeps `NA` rows.".to_string(),
             ),
         ),
         range,

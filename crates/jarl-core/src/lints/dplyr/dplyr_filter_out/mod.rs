@@ -80,14 +80,14 @@ mod tests {
     fn test_lint_is_na_guard() {
         assert_snapshot!(
             snapshot_lint("x |> dplyr::filter(a > 1 | is.na(a))"),
-            @r"
+            @"
         warning: dplyr_filter_out
          --> <test>:1:6
           |
         1 | x |> dplyr::filter(a > 1 | is.na(a))
-          |      ------------------------------- This `| is.na()` pattern can be replaced by `filter_out()`.
+          |      ------------------------------- This `filter()` contains complex negated condition(s).
           |
-          = help: `filter_out()` keeps `NA` rows automatically, so the guard is unnecessary.
+          = help: It can be simplified by using `filter_out()`, which keeps `NA` rows.
         Found 1 error.
         "
         );
