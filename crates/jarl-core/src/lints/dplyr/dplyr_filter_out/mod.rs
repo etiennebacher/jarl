@@ -21,7 +21,7 @@ mod tests {
 
     #[test]
     fn test_no_lint() {
-        // No negation
+        // No is.na() guard pattern
         expect_no_lint("x |> dplyr::filter(a > 1)", "dplyr_filter_out", None);
         // Already using filter_out
         expect_no_lint(
@@ -37,11 +37,10 @@ mod tests {
             "dplyr_filter_out",
             None,
         );
-        // Double bang (tidy eval injection)
-        expect_no_lint("x |> dplyr::filter(!!cond)", "dplyr_filter_out", None);
-        // Triple bang (tidy eval splice)
-        expect_no_lint("x |> dplyr::filter(!!!filters)", "dplyr_filter_out", None);
-        // Not all unnamed args are negated
+        // Plain negation without is.na() guard
+        expect_no_lint("x |> dplyr::filter(!is.na(val))", "dplyr_filter_out", None);
+        expect_no_lint("x |> dplyr::filter(!(a > 1))", "dplyr_filter_out", None);
+        // Not all unnamed args match `cond | is.na(var)`
         expect_no_lint(
             "x |> dplyr::filter(a > 1, !is.na(b))",
             "dplyr_filter_out",
@@ -52,87 +51,19 @@ mod tests {
             "dplyr_filter_out",
             None,
         );
-        // is.na guard for a different variable — don't match
+        // is.na() guard for a different variable
         expect_no_lint(
             "x |> dplyr::filter(a > 1 | is.na(b))",
             "dplyr_filter_out",
             None,
         );
-        // unknown named arg, don't report
+        // Unknown named arg
         expect_no_lint(
             "x |> dplyr::filter(a > 1 | is.na(a), foo = 1)",
             "dplyr_filter_out",
             None,
         );
     }
-
-    // ---- Negation pattern: lint + unsafe fix ----
-
-    #[test]
-    fn test_lint_negation_namespaced() {
-        assert_snapshot!(
-            snapshot_lint("x |> dplyr::filter(!is.na(val))"),
-            @r"
-        warning: dplyr_filter_out
-         --> <test>:1:6
-          |
-        1 | x |> dplyr::filter(!is.na(val))
-          |      -------------------------- Negating conditions in `filter()` can be hard to read.
-          |
-          = help: You could use `filter_out()` instead (but beware of `NA` handling).
-        Found 1 error.
-        "
-        );
-    }
-
-    #[test]
-    fn test_lint_with_library() {
-        // Can't know if filter() is from stats or dplyr.
-        // Use heuristic: if part of a pipe chain, assume it's from dplyr.
-        // Non-piped filter(x, ...) is not reported.
-        assert_snapshot!(
-            snapshot_lint("
-            library(dplyr)
-            filter(x, !is.na(val))
-            x |> filter(!is.na(val))
-            x %>% filter(!is.na(val))
-            "),
-            @r"
-        warning: dplyr_filter_out
-         --> <test>:4:18
-          |
-        4 |             x |> filter(!is.na(val))
-          |                  ------------------- Negating conditions in `filter()` can be hard to read.
-          |
-          = help: You could use `filter_out()` instead (but beware of `NA` handling).
-        warning: dplyr_filter_out
-         --> <test>:5:19
-          |
-        5 |             x %>% filter(!is.na(val))
-          |                   ------------------- Negating conditions in `filter()` can be hard to read.
-          |
-          = help: You could use `filter_out()` instead (but beware of `NA` handling).
-        Found 2 errors.
-        "
-        );
-    }
-
-    #[test]
-    fn test_fix_negation() {
-        assert_snapshot!(
-            snapshot_fix("x |> dplyr::filter(!is.na(val))"),
-            @r"
-        OLD:
-        ====
-        x |> dplyr::filter(!is.na(val))
-        NEW:
-        ====
-        x |> dplyr::filter_out(is.na(val))
-        "
-        );
-    }
-
-    // ---- is.na() guard pattern: lint + safe fix ----
 
     #[test]
     fn test_lint_is_na_guard() {
@@ -287,68 +218,6 @@ mod tests {
         NEW:
         ====
         x |> dplyr::filter_out(a <= 1 | b >= 2, .by = grp)
-        "
-        );
-    }
-
-    #[test]
-    fn test_lint_parenthesized_negation() {
-        assert_snapshot!(
-            snapshot_lint("x |> dplyr::filter(!(a > 1))"),
-            @r"
-        warning: dplyr_filter_out
-         --> <test>:1:6
-          |
-        1 | x |> dplyr::filter(!(a > 1))
-          |      ----------------------- Negating conditions in `filter()` can be hard to read.
-          |
-          = help: You could use `filter_out()` instead (but beware of `NA` handling).
-        Found 1 error.
-        "
-        );
-    }
-
-    #[test]
-    fn test_fix_parenthesized_negation() {
-        assert_snapshot!(
-            snapshot_fix("x |> dplyr::filter(!(a > 1))"),
-            @r"
-        OLD:
-        ====
-        x |> dplyr::filter(!(a > 1))
-        NEW:
-        ====
-        x |> dplyr::filter_out(a > 1)
-        "
-        );
-    }
-
-    #[test]
-    fn test_fix_parenthesized_negation_multi_args() {
-        assert_snapshot!(
-            snapshot_fix("x |> dplyr::filter(!(a > 1), !foo(a))"),
-            @r"
-        OLD:
-        ====
-        x |> dplyr::filter(!(a > 1), !foo(a))
-        NEW:
-        ====
-        x |> dplyr::filter_out(a > 1 | foo(a))
-        "
-        );
-    }
-
-    #[test]
-    fn test_fix_parenthesized_negation_multi_args_with_named_arg() {
-        assert_snapshot!(
-            snapshot_fix("x |> dplyr::filter(!(a > 1), !foo(a), .by = g)"),
-            @r"
-        OLD:
-        ====
-        x |> dplyr::filter(!(a > 1), !foo(a), .by = g)
-        NEW:
-        ====
-        x |> dplyr::filter_out(a > 1 | foo(a), .by = g)
         "
         );
     }

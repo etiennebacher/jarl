@@ -11,20 +11,30 @@ use biome_rowan::AstNode;
 ///
 /// ## Why is this bad?
 ///
-/// `filter(!condition)` drops rows where `condition` is `TRUE` **and** rows
-/// where it is `NA`. `filter_out(condition)` drops only `TRUE` rows, keeping
-/// `NA`s. Using `filter_out()` avoids accidentally dropping `NA` rows and
-/// removes the need for verbose `| is.na()` guards.
+/// Using `filter()` with negated conditions can be hard to read, especially
+/// when we also want to retain missing values. `filter(!condition)` drops rows
+/// where `condition` is `TRUE` **and** rows where it is `NA`, meaning that
+/// we have to complement the condition with `is.na()`:
 ///
-/// ## Details
+/// ```r
+/// # We want to drop rows whose value for `col` is larger than the average
+/// # of `col`:
+/// larger_than_average <- function(x) x > mean(x, na.rm = TRUE)
+/// x |> filter(!larger_than_average(col) | is.na(larger_than_average(col)))
+/// ```
 ///
-/// `filter_out()` was introduced in dplyr 1.2.0.
+/// `dplyr` 1.2.0 introduced `filter_out()` as a complement to `filter()`.
+/// `filter_out()` drops rows that match the condition, meaning that rows where
+/// the condition is `NA` are retained. We can then rewrite the code above like
+/// this:
 ///
-/// Note that `filter(!cond)` and `filter_out(cond)` handle `NA` values
-/// differently: `filter()` drops `NA` rows while `filter_out()` keeps them.
-/// The automatic fix is only applied for the `cond | is.na(var)` pattern,
-/// where the replacement is semantically equivalent. For plain negations
-/// (`filter(!cond)`), only a diagnostic is emitted.
+/// ```r
+/// x |> filter_out(larger_than_average(col))
+/// ```
+///
+/// This rule suggests an automatic fix to rewrite them with `filter_out()`. It
+/// is only valid for `dplyr` >= 1.2.0, and only works on `filter()` calls where
+/// all conditions are made of one negation + `is.na()` on the same column.
 ///
 /// ## Example
 ///
@@ -34,15 +44,17 @@ use biome_rowan::AstNode;
 ///
 /// x |> filter(a > 1 | is.na(a))
 ///
-/// x |> filter(a > 1 | is.na(a), b < 2)
+/// x |> filter(a > 1 | is.na(a), is.na(b) | b <= 2)
 /// ```
 ///
 /// Use instead:
 /// ```r
 /// library(dplyr)
-/// x <- tibble(a = c(1, 2, NA))
+/// x <- tibble(a = c(1, 2, 2, NA), b = c(1, 1, 2, 3))
 ///
 /// x |> filter_out(a <= 1)
+///
+/// x |> filter_out(a <= 1 | b > 2)
 /// ```
 ///
 /// ## References
@@ -116,13 +128,12 @@ pub fn dplyr_filter_out(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
         return Ok(None);
     }
 
-    // Try the `cond | is.na(var)` pattern first (unsafe fix available).
-    if let Some(diagnostic) = check_is_na_guard_pattern(ast, &fn_ns, &unnamed_args, &named_args) {
-        return Ok(Some(diagnostic));
-    }
-
-    // Fall back to plain negation pattern (unsafe fix).
-    check_negation_pattern(ast, &fn_ns, &unnamed_args, &named_args)
+    Ok(check_is_na_guard_pattern(
+        ast,
+        &fn_ns,
+        &unnamed_args,
+        &named_args,
+    ))
 }
 
 /// Detect `filter(cond | is.na(var), ...)` and offer a safe fix to
@@ -144,7 +155,18 @@ fn check_is_na_guard_pattern(
         negated_conds.push(cond_text);
     }
 
-    let replacement = build_filter_out_replacement(ast, fn_ns, &negated_conds, named_args);
+    let ns_prefix = fn_ns.as_deref().unwrap_or("");
+    // Multiple comma-separated args in filter() are AND conditions, so we
+    // join the rewritten conditions with OR.
+    let joined_conds = negated_conds.join(" | ");
+
+    let mut replacement_args = vec![joined_conds];
+    for named in named_args {
+        replacement_args.push(named.syntax().text_trimmed().to_string());
+    }
+
+    let replacement = format!("{}filter_out({})", ns_prefix, replacement_args.join(", "));
+    let range = ast.syntax().text_trimmed_range();
 
     Some(Diagnostic::new(
         ViolationData::new(
@@ -155,8 +177,13 @@ fn check_is_na_guard_pattern(
                     .to_string(),
             ),
         ),
-        replacement.range,
-        replacement.fix,
+        range,
+        Fix {
+            content: replacement,
+            start: range.start().into(),
+            end: range.end().into(),
+            to_skip: node_contains_comments(ast.syntax()),
+        },
     ))
 }
 
@@ -215,42 +242,6 @@ fn extract_is_na_arg(expr: &AnyRExpression) -> Option<String> {
     Some(value.syntax().text_trimmed().to_string())
 }
 
-/// Build the `filter_out(...)` replacement string and associated fix metadata.
-struct Replacement {
-    range: biome_rowan::TextRange,
-    fix: Fix,
-}
-
-fn build_filter_out_replacement(
-    ast: &RCall,
-    fn_ns: &Option<String>,
-    conditions: &[String],
-    named_args: &[RArgument],
-) -> Replacement {
-    let ns_prefix = fn_ns.as_deref().unwrap_or("");
-    // Multiple comma-separated args in filter() are AND conditions, so we
-    // join the rewritten conditions with OR.
-    let joined_conds = conditions.join(" | ");
-
-    let mut replacement_args = vec![joined_conds];
-    for named in named_args {
-        replacement_args.push(named.syntax().text_trimmed().to_string());
-    }
-
-    let content = format!("{}filter_out({})", ns_prefix, replacement_args.join(", "));
-    let range = ast.syntax().text_trimmed_range();
-
-    Replacement {
-        range,
-        fix: Fix {
-            content,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
-    }
-}
-
 /// Negate an expression for use in `filter_out()`.
 ///
 /// - If already negated (`!expr`), strips the `!`
@@ -301,38 +292,6 @@ fn negate_expression(expr: &AnyRExpression) -> String {
     } else {
         format!("!({text})")
     }
-}
-
-/// Detect `filter(!cond, ...)` where all unnamed args are negated.
-///
-/// Produces an unsafe fix to `filter_out(cond)` because `filter(!cond)` and
-/// `filter_out(cond)` handle `NA`s differently.
-fn check_negation_pattern(
-    ast: &RCall,
-    fn_ns: &Option<String>,
-    unnamed_args: &[AnyRExpression],
-    named_args: &[RArgument],
-) -> anyhow::Result<Option<Diagnostic>> {
-    let mut inner_conds: Vec<String> = Vec::new();
-
-    for value in unnamed_args {
-        match extract_negated_inner(value) {
-            Some(inner) => inner_conds.push(inner),
-            None => return Ok(None),
-        }
-    }
-
-    let replacement = build_filter_out_replacement(ast, fn_ns, &inner_conds, named_args);
-
-    Ok(Some(Diagnostic::new(
-        ViolationData::new(
-            "dplyr_filter_out".to_string(),
-            "Negating conditions in `filter()` can be hard to read.".to_string(),
-            Some("You could use `filter_out()` instead (but beware of `NA` handling).".to_string()),
-        ),
-        replacement.range,
-        replacement.fix,
-    )))
 }
 
 /// Extract the inner expression from a negated value (`!expr`).
