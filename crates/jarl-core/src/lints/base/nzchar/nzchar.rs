@@ -65,18 +65,12 @@ pub fn nzchar(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     };
 
     let left_is_empty_string = left
-        .clone()
-        .into_syntax()
-        .text_trimmed()
-        .to_string()
+        .to_trimmed_string()
         .trim_matches('"')
         .trim_matches('\'')
         .is_empty();
     let right_is_empty_string = right
-        .clone()
-        .into_syntax()
-        .text_trimmed()
-        .to_string()
+        .to_trimmed_string()
         .trim_matches('"')
         .trim_matches('\'')
         .is_empty();
