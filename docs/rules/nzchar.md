@@ -20,16 +20,14 @@ This rule comes with a unsafe fix.
 ## Example
 
 ```r
-if (x == "") {
-  message("empty string")
-}
+x <- sample(c("abcdefghijklmn", "", "opqrstuvwyz"), 1e7, TRUE)
+x[x == ""]
 ```
 
 Use instead:
 ```r
-if (!nzchar(x)) {
-  message("empty string")
-}
+x <- sample(c("abcdefghijklmn", "", "opqrstuvwyz"), 1e7, TRUE)
+x[!nzchar(x)]
 ```
 
 ## References
