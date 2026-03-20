@@ -144,18 +144,7 @@ fn check_is_na_guard_pattern(
         negated_conds.push(cond_text);
     }
 
-    let ns_prefix = fn_ns.as_deref().unwrap_or("");
-    // Multiple comma-separated args in filter() are AND conditions, so we
-    // should join the rewritten conditions with OR.
-    let filter_out_cond = negated_conds.join(" | ");
-
-    let mut replacement_args = vec![filter_out_cond];
-    for named in named_args {
-        replacement_args.push(named.syntax().text_trimmed().to_string());
-    }
-
-    let replacement = format!("{}filter_out({})", ns_prefix, replacement_args.join(", "));
-    let range = ast.syntax().text_trimmed_range();
+    let replacement = build_filter_out_replacement(ast, fn_ns, &negated_conds, named_args);
 
     Some(Diagnostic::new(
         ViolationData::new(
@@ -166,13 +155,8 @@ fn check_is_na_guard_pattern(
                     .to_string(),
             ),
         ),
-        range,
-        Fix {
-            content: replacement,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        replacement.range,
+        replacement.fix,
     ))
 }
 
@@ -231,6 +215,42 @@ fn extract_is_na_arg(expr: &AnyRExpression) -> Option<String> {
     Some(value.syntax().text_trimmed().to_string())
 }
 
+/// Build the `filter_out(...)` replacement string and associated fix metadata.
+struct Replacement {
+    range: biome_rowan::TextRange,
+    fix: Fix,
+}
+
+fn build_filter_out_replacement(
+    ast: &RCall,
+    fn_ns: &Option<String>,
+    conditions: &[String],
+    named_args: &[RArgument],
+) -> Replacement {
+    let ns_prefix = fn_ns.as_deref().unwrap_or("");
+    // Multiple comma-separated args in filter() are AND conditions, so we
+    // join the rewritten conditions with OR.
+    let joined_conds = conditions.join(" | ");
+
+    let mut replacement_args = vec![joined_conds];
+    for named in named_args {
+        replacement_args.push(named.syntax().text_trimmed().to_string());
+    }
+
+    let content = format!("{}filter_out({})", ns_prefix, replacement_args.join(", "));
+    let range = ast.syntax().text_trimmed_range();
+
+    Replacement {
+        range,
+        fix: Fix {
+            content,
+            start: range.start().into(),
+            end: range.end().into(),
+            to_skip: node_contains_comments(ast.syntax()),
+        },
+    }
+}
+
 /// Negate an expression for use in `filter_out()`.
 ///
 /// - If already negated (`!expr`), strips the `!`
@@ -247,7 +267,7 @@ fn negate_expression(expr: &AnyRExpression) -> String {
     if let Some(binary) = expr.as_r_binary_expression()
         && let Ok(op) = binary.operator()
     {
-        let inverted = match op.kind() {
+        let inv_op = match op.kind() {
             RSyntaxKind::GREATER_THAN => Some("<="),
             RSyntaxKind::GREATER_THAN_OR_EQUAL_TO => Some("<"),
             RSyntaxKind::LESS_THAN => Some(">="),
@@ -257,7 +277,7 @@ fn negate_expression(expr: &AnyRExpression) -> String {
             _ => None,
         };
 
-        if let Some(inv_op) = inverted
+        if let Some(inv_op) = inv_op
             && let (Ok(left), Ok(right)) = (binary.left(), binary.right())
         {
             return format!(
@@ -302,18 +322,7 @@ fn check_negation_pattern(
         }
     }
 
-    let ns_prefix = fn_ns.as_deref().unwrap_or("");
-    // Multiple comma-separated args in filter() are AND conditions, so we
-    // should join the rewritten conditions with OR.
-    let inner_conds = inner_conds.join(" | ");
-
-    let mut replacement_args = vec![inner_conds];
-    for named in named_args {
-        replacement_args.push(named.syntax().text_trimmed().to_string());
-    }
-
-    let replacement = format!("{}filter_out({})", ns_prefix, replacement_args.join(", "));
-    let range = ast.syntax().text_trimmed_range();
+    let replacement = build_filter_out_replacement(ast, fn_ns, &inner_conds, named_args);
 
     Ok(Some(Diagnostic::new(
         ViolationData::new(
@@ -321,13 +330,8 @@ fn check_negation_pattern(
             "Negating conditions in `filter()` can be hard to read.".to_string(),
             Some("You could use `filter_out()` instead (but beware of `NA` handling).".to_string()),
         ),
-        range,
-        Fix {
-            content: replacement,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        replacement.range,
+        replacement.fix,
     )))
 }
 
@@ -366,32 +370,6 @@ fn extract_negated_inner(value: &AnyRExpression) -> Option<String> {
     } else {
         operand
     };
-
-    // If the inner expression is a comparison, invert the operator
-    if let Some(binary) = RBinaryExpression::cast(inner.clone())
-        && let Ok(op) = binary.operator()
-    {
-        let inverted = match op.kind() {
-            RSyntaxKind::GREATER_THAN => Some("<="),
-            RSyntaxKind::GREATER_THAN_OR_EQUAL_TO => Some("<"),
-            RSyntaxKind::LESS_THAN => Some(">="),
-            RSyntaxKind::LESS_THAN_OR_EQUAL_TO => Some(">"),
-            RSyntaxKind::EQUAL2 => Some("!="),
-            RSyntaxKind::NOT_EQUAL => Some("=="),
-            _ => None,
-        };
-
-        if let Some(inv_op) = inverted
-            && let (Ok(left), Ok(right)) = (binary.left(), binary.right())
-        {
-            return Some(format!(
-                "{} {} {}",
-                left.syntax().text_trimmed(),
-                inv_op,
-                right.syntax().text_trimmed()
-            ));
-        }
-    }
 
     Some(inner.text_trimmed().to_string())
 }

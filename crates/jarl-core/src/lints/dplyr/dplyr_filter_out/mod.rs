@@ -318,7 +318,7 @@ mod tests {
         x |> dplyr::filter(!(a > 1))
         NEW:
         ====
-        x |> dplyr::filter_out(a <= 1)
+        x |> dplyr::filter_out(a > 1)
         "
         );
     }
@@ -333,7 +333,7 @@ mod tests {
         x |> dplyr::filter(!(a > 1), !foo(a))
         NEW:
         ====
-        x |> dplyr::filter_out(a <= 1 | foo(a))
+        x |> dplyr::filter_out(a > 1 | foo(a))
         "
         );
     }
@@ -348,7 +348,7 @@ mod tests {
         x |> dplyr::filter(!(a > 1), !foo(a), .by = g)
         NEW:
         ====
-        x |> dplyr::filter_out(a <= 1 | foo(a), .by = g)
+        x |> dplyr::filter_out(a > 1 | foo(a), .by = g)
         "
         );
     }
