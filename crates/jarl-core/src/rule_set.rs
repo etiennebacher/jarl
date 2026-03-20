@@ -450,7 +450,7 @@ declare_rules! {
     NzChar => {
         name: "nzchar",
         categories: [Perf],
-        default: Enabled,
+        default: Disabled,
         fix: Unsafe,
         min_r_version: None,
     },
