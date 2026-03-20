@@ -72,14 +72,13 @@ mod tests {
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",
-            get_fixed_text(
+            get_unsafe_fixed_text(
                 vec![
                     "# leading comment\nx == ''",
                     "x # comment\n== ''",
                     "x == '' # trailing comment",
                 ],
-                "nzchar",
-                None
+                "nzchar"
             )
         );
     }
