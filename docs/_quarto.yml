@@ -70,6 +70,7 @@ website:
       - rules/coalesce.md
       - rules/comparison_negation.md
       - rules/download_file.md
+      - rules/dplyr_filter_out.md
       - rules/dplyr_group_by_ungroup.md
       - rules/duplicated_arguments.md
       - rules/duplicated_function_definition.md
