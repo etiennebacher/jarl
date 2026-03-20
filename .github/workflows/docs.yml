@@ -55,6 +55,17 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-tags: true
+
+      - name: Inject version into navbar
+        shell: bash
+        run: |
+          # Latest non-prerelease tag (strip 'v' prefix)
+          STABLE_VERSION=$(git tag -l 'v*' | grep -vE '-' | sort -V | tail -1 | sed 's/^v//')
+          if [ -n "$STABLE_VERSION" ]; then
+            sed -i "s/text: \"stable\"/text: \"stable ($STABLE_VERSION)\"/g" docs/_quarto-stable.yml docs/_quarto-dev.yml
+          fi
 
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
