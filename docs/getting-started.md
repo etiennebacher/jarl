@@ -60,6 +60,7 @@ It can be hard to inspect the changes or to revert a large number of changes, so
 :::
 
 Note that Jarl is not a code formatter, so automatic fixes may not match your expected code style.
+To automatically format code, use [Air](https://posit-dev.github.io/air/) or [`styler`](https://styler.r-lib.org/).
 
 
 ## Day-to-day usage
