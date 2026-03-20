@@ -8,7 +8,7 @@ Checks for usage of `x != ""` or `x == ""`
 
 One crucial difference is in the default handling of `NA_character_`,
 i.e., missing strings. `nzchar(NA_character_)` is TRUE,
-while `NA_character_ == ""` and `nchar(NA_character_) == 0` are both NA.
+while `NA_character_ == ""` is NA.
 Therefore, for strict compatibility, use `nzchar(x, keepNA = TRUE)`.
 If the input is known to be complete (no missing entries),
 this argument can be dropped for conciseness.
