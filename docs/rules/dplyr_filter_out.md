@@ -1,8 +1,8 @@
 # dplyr_filter_out
 ## What it does
 
-Checks for negations inside `dplyr::filter()` that can be replaced with
-`dplyr::filter_out()`.
+Checks `dplyr::filter()` calls with complex conditions and suggests using
+`dplyr::filter_out()` instead.
 
 ## Why is this bad?
 
