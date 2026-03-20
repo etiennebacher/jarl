@@ -9,6 +9,7 @@ mod tests {
     declare_ns! {
         "stats" => ["filter"],
         "dplyr" => ["filter"],
+        "tidytable" => ["filter"],
     }
 
     fn snapshot_lint(code: &str) -> String {
@@ -74,6 +75,10 @@ mod tests {
             "dplyr_filter_out",
             None,
         );
+        // No arg
+        expect_no_lint("x |> dplyr::filter()", "dplyr_filter_out", None);
+        // No unnamed arg
+        expect_no_lint("x |> dplyr::filter(.by = a)", "dplyr_filter_out", None);
     }
 
     #[test]
@@ -85,7 +90,7 @@ mod tests {
          --> <test>:1:6
           |
         1 | x |> dplyr::filter(a > 1 | is.na(a))
-          |      ------------------------------- This `filter()` contains complex negated condition(s).
+          |      ------------------------------- This `filter()` contains complex condition(s).
           |
           = help: It can be simplified by using `filter_out()`, which keeps `NA` rows.
         Found 1 error.
@@ -230,6 +235,49 @@ mod tests {
         ====
         x |> dplyr::filter_out(a <= 1 | b >= 2, .by = grp)
         "
+        );
+    }
+
+    // Test namespace -----------------------
+
+    #[test]
+    fn test_lint_library_call() {
+        assert_snapshot!(
+            snapshot_lint("library(dplyr); x |> filter(a > 1 | is.na(a))"),
+            @"
+        warning: dplyr_filter_out
+         --> <test>:1:22
+          |
+        1 | library(dplyr); x |> filter(a > 1 | is.na(a))
+          |                      ------------------------ This `filter()` contains complex condition(s).
+          |
+          = help: It can be simplified by using `filter_out()`, which keeps `NA` rows.
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_lint_library_call_not_dplyr() {
+        assert_snapshot!(
+            snapshot_lint("library(tidytable); x |> filter(a > 1 | is.na(a))"),
+            @"All checks passed!"
+        );
+    }
+
+    #[test]
+    fn test_lint_library_call_not_only_dplyr() {
+        assert_snapshot!(
+            snapshot_lint("library(tidytable); library(dplyr); x |> filter(a > 1 | is.na(a))"),
+            @"All checks passed!"
+        );
+    }
+
+    #[test]
+    fn test_lint_library_call_but_not_in_pipe() {
+        assert_snapshot!(
+            snapshot_lint("library(dplyr); filter(x, a > 1 | is.na(a))"),
+            @"All checks passed!"
         );
     }
 }

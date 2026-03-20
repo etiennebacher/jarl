@@ -83,9 +83,14 @@ pub fn dplyr_filter_out(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
             PackageOrigin::Resolved(ref pkg) if pkg == "dplyr" => {}
             PackageOrigin::Resolved(_) => return Ok(None),
             // Multiple packages export `filter` (e.g. stats and dplyr).
-            // Use pipe as a heuristic: piped `filter()` is likely dplyr.
-            PackageOrigin::Ambiguous(_) => {
-                if !checker.resolve_package("filter").includes("dplyr") || !is_piped_into(ast) {
+            // Only lint when the ambiguity is solely between dplyr and
+            // base/recommended packages (like stats) which are always loaded.
+            PackageOrigin::Ambiguous(ref pkgs) => {
+                let non_base = pkgs
+                    .iter()
+                    .filter(|p| !is_base_package(p))
+                    .collect::<Vec<_>>();
+                if non_base.len() != 1 || non_base[0] != "dplyr" {
                     return Ok(None);
                 }
             }
@@ -151,7 +156,7 @@ pub fn dplyr_filter_out(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
     Ok(Some(Diagnostic::new(
         ViolationData::new(
             "dplyr_filter_out".to_string(),
-            "This `filter()` contains complex negated condition(s).".to_string(),
+            "This `filter()` contains complex condition(s).".to_string(),
             Some(
                 "It can be simplified by using `filter_out()`, which keeps `NA` rows.".to_string(),
             ),
@@ -214,6 +219,14 @@ fn extract_is_na_guard(value: &AnyRExpression) -> Option<(AnyRExpression, AnyREx
     } else {
         None
     }
+}
+
+/// Check if a package is one of the default R packages (always loaded).
+fn is_base_package(pkg: &str) -> bool {
+    matches!(
+        pkg,
+        "base" | "utils" | "stats" | "methods" | "grDevices" | "graphics" | "datasets"
+    )
 }
 
 /// Check if an expression is an `is.na(...)` call.
@@ -334,16 +347,4 @@ fn extract_negated_inner(value: &AnyRExpression) -> Option<String> {
     };
 
     Some(inner.text_trimmed().to_string())
-}
-
-/// Check if a call node receives input from a pipe (i.e., is on the right side).
-fn is_piped_into(call: &RCall) -> bool {
-    call.syntax()
-        .prev_sibling_or_token()
-        .map(|prev| {
-            prev.kind() == RSyntaxKind::PIPE
-                || (prev.kind() == RSyntaxKind::SPECIAL
-                    && prev.as_token().is_some_and(|t| t.text_trimmed() == "%>%"))
-        })
-        .unwrap_or(false)
 }
