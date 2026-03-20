@@ -44,7 +44,7 @@ impl Violation for NzChar {
         "nzchar".to_string()
     }
     fn body(&self) -> String {
-        "`x == \"\"` is inefficient and can be hard to read.".to_string()
+        "`x == \"\"` is inefficient.".to_string()
     }
     fn suggestion(&self) -> Option<String> {
         Some("Use `!nzchar(x)` instead.".to_string())
