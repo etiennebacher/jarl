@@ -23,17 +23,17 @@ This extension provides code higlights and quick fixes:
 
 * code highlights will underline pieces of code that violate any rule in your setup:
 
-![](img/code_highlight.PNG){fig-alt="R script with `any(is.na(x))` underlined in yellow, indicating a rule violation. A popup shows Jarl message."}
+![](../img/code_highlight.PNG){fig-alt="R script with `any(is.na(x))` underlined in yellow, indicating a rule violation. A popup shows Jarl message."}
 
 * quick fixes lightbulb icons will appear when the cursor is next to a highlighted piece of code. Clicking this icon will give you several options: apply the fix only for this piece of code, add a comment to ignore this specific violation, or add a comment to ignore all violations present in this piece of code. The screenshots below show the procedure to apply the fix:
 
-![](img/code_quick_fix_1.PNG){fig-alt="R script showing the code `any(is.na(x))`. A blue lightbulb shows that a quick fix is available for this piece of code."}
+![](../img/code_quick_fix_1.PNG){fig-alt="R script showing the code `any(is.na(x))`. A blue lightbulb shows that a quick fix is available for this piece of code."}
 
-![](img/code_quick_fix_2.PNG){fig-alt="After clicking on the lightbulb, a popup appears with a button to automatically apply the fix."}
+![](../img/code_quick_fix_2.PNG){fig-alt="After clicking on the lightbulb, a popup appears with a button to automatically apply the fix."}
 
-![](img/code_quick_fix_3.PNG){fig-alt="The fix has been applied, the screenshot now shows `anyNA(x)`."}
+![](../img/code_quick_fix_3.PNG){fig-alt="The fix has been applied, the screenshot now shows `anyNA(x)`."}
 
-Use [`jarl.toml`](config.md) to configure Jarl (rules to select or ignore, files to skip, assignment operator to use, etc.).
+Use [`jarl.toml`](../reference/config-file.md) to configure Jarl (rules to select or ignore, files to skip, assignment operator to use, etc.).
 
 ::: {.callout-tip}
 The [Tombi extension](https://github.com/tombi-toml/tombi) is useful to have suggestions and autocompletion when editing `jarl.toml`.
@@ -79,12 +79,12 @@ language-servers = ["jarl"]
 
 Jarl should then be active in the editor, providing code highlighting and showing the message when the cursor is on the highlighted code:
 
-![](img/helix_highlight.png){fig-alt="R script showing several pieces of code that trigger rule violations, such as `any(is.na(x))`. This is displayed in the Helix editor. The code is underlined in yellow and the violation message appears next to the code."}
+![](../img/helix_highlight.png){fig-alt="R script showing several pieces of code that trigger rule violations, such as `any(is.na(x))`. This is displayed in the Helix editor. The code is underlined in yellow and the violation message appears next to the code."}
 
 Helix also provides a code-action keybinding.
 When the cursor is on some code reported by Jarl and when the editor is in "Normal" mode, press "Space" then "a" to show the different code actions:
 
-![](img/helix_quick_fix.png){fig-alt="The same R script as before, but this time there is a list of three actions next to the highlighted piece of code: apply fix, ignore this rule, and ignore all rules."}
+![](../img/helix_quick_fix.png){fig-alt="The same R script as before, but this time there is a list of three actions next to the highlighted piece of code: apply fix, ignore this rule, and ignore all rules."}
 
 ## Neovim
 
@@ -115,6 +115,6 @@ vim.lsp.enable 'jarl'
 
 This enables the code-actions and diagnostics.
 
-![](img/nvim_diagnostic.png){fig-alt="R script with multiple errors showing in-line indicating a rule violation."}
+![](../img/nvim_diagnostic.png){fig-alt="R script with multiple errors showing in-line indicating a rule violation."}
 
-![](img/nvim_quick_fix.png){fig-alt="The same R script as before, but this time there is a list of three actions next to the piece of code: apply fix, ignore this rule, and ignore all rules."}
+![](../img/nvim_quick_fix.png){fig-alt="The same R script as before, but this time there is a list of three actions next to the piece of code: apply fix, ignore this rule, and ignore all rules."}

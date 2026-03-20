@@ -76,7 +76,7 @@ jobs:
         uses: quarto-dev/quarto-actions/setup@v2
 
       - name: Install R dependencies
-        run: install.packages(c("rmarkdown", "tinytable", "yaml"))
+        run: install.packages(c("rmarkdown", "reactable", "yaml"))
         shell: Rscript {0}
 
       - name: Generate rules documentation
