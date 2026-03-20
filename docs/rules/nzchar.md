@@ -2,7 +2,7 @@
 ## What it does
 
 Checks for usage of `x != ""` or `x == ""`
- rather than `nzchar(x)` or `!nzchar(x)`.
+ instead of `nzchar(x)` or `!nzchar(x)`.
 
 ## Why is this bad?
 
