@@ -11,7 +11,7 @@ site/docs
 # local symlink to site directory for testing github deployed paths
 /R
 
-# docs/_site
+docs/_site
 docs/\.quarto
 Makefile
 mypkg
