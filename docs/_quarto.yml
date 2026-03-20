@@ -15,7 +15,7 @@ language:
 execute:
   eval: false
 website:
-  title: jarl
+  title: Jarl
   repo-url: https://github.com/etiennebacher/jarl
   repo-subdir: docs
   repo-actions:
