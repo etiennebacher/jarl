@@ -90,7 +90,7 @@ any(duplicated(x))
 ```
 
 ```{filename="Terminal"}
-# Note that there must be no space between after the comma!
+# Note that there must be no space between commas!
 $> jarl check test.R --select any_is_na,any_duplicated
 
 warning: any_is_na
