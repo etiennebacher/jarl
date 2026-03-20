@@ -48,10 +48,13 @@ mod tests {
                     "x %in% ''",
                     "foo(x(y)) == ''",
                     "'' == x",
+                    "which(c(a, b, c) == '')"
                 ],
                 "nzchar",
             )
         );
+
+        
     }
 
     #[test]
