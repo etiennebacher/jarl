@@ -13,8 +13,9 @@ use biome_rowan::AstNode;
 ///
 /// Using `filter()` with negated conditions can be hard to read, especially
 /// when we also want to retain missing values. `filter(!condition)` drops rows
-/// where `condition` is `TRUE` **and** rows where it is `NA`, meaning that
-/// we have to complement the condition with `is.na()`:
+/// where `condition` is `TRUE` **and** rows where it is `NA`, meaning that if
+/// we want to retain those then we have to complement the condition with
+/// `is.na()`:
 ///
 /// ```r
 /// # We want to drop rows whose value for `col` is larger than the average
@@ -221,9 +222,7 @@ fn extract_is_na_guard(value: &AnyRExpression) -> Option<String> {
     }
 
     // Negate the condition for filter_out().
-    // Simple expressions get `!expr`, complex ones get `!(expr)`.
-    let negated = negate_expression(&cond);
-    Some(negated)
+    negate_expression(&cond)
 }
 
 /// Check if an expression is an `is.na(...)` call.
@@ -244,14 +243,27 @@ fn extract_is_na_arg(expr: &AnyRExpression) -> Option<String> {
 
 /// Negate an expression for use in `filter_out()`.
 ///
+/// Returns `None` for tidy eval expressions (`!!` / `!!!`).
+///
 /// - If already negated (`!expr`), strips the `!`
 /// - Comparison operators are inverted: `a > 1` → `a <= 1`
 /// - Simple identifiers/calls: `!expr`
 /// - Complex expressions (binary, etc.): `!(expr)`
-fn negate_expression(expr: &AnyRExpression) -> String {
-    // If the expression is already `!something`, just unwrap it
+fn negate_expression(expr: &AnyRExpression) -> Option<String> {
+    // If the expression is already `!something`, just unwrap it.
+    // `extract_negated_inner` returns `None` for `!!` / `!!!` (tidy eval),
+    // so we fall through to the tidy-eval guard below.
     if let Some(inner) = extract_negated_inner(expr) {
-        return inner;
+        return Some(inner);
+    }
+
+    // Reject tidy eval expressions (`!!x`, `!!!x`)
+    if expr
+        .as_r_unary_expression()
+        .and_then(|u| u.operator().ok())
+        .is_some_and(|op| op.kind() == RSyntaxKind::BANG)
+    {
+        return None;
     }
 
     // Invert comparison operators directly: `a > 1` → `a <= 1`
@@ -271,12 +283,12 @@ fn negate_expression(expr: &AnyRExpression) -> String {
         if let Some(inv_op) = inv_op
             && let (Ok(left), Ok(right)) = (binary.left(), binary.right())
         {
-            return format!(
+            return Some(format!(
                 "{} {} {}",
                 left.syntax().text_trimmed(),
                 inv_op,
                 right.syntax().text_trimmed()
-            );
+            ));
         }
     }
 
@@ -288,9 +300,9 @@ fn negate_expression(expr: &AnyRExpression) -> String {
         || expr.as_r_parenthesized_expression().is_some();
 
     if is_simple {
-        format!("!{text}")
+        Some(format!("!{text}"))
     } else {
-        format!("!({text})")
+        Some(format!("!({text})"))
     }
 }
 

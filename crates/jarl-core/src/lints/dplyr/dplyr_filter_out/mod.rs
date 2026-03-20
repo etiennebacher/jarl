@@ -57,6 +57,17 @@ mod tests {
             "dplyr_filter_out",
             None,
         );
+        // Tidy eval splice in condition
+        expect_no_lint(
+            "x |> dplyr::filter(!!!args | is.na(a))",
+            "dplyr_filter_out",
+            None,
+        );
+        expect_no_lint(
+            "x |> dplyr::filter(!!expr | is.na(a))",
+            "dplyr_filter_out",
+            None,
+        );
         // Unknown named arg
         expect_no_lint(
             "x |> dplyr::filter(a > 1 | is.na(a), foo = 1)",
