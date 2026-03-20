@@ -52,15 +52,13 @@ mod tests {
                 "nzchar",
             )
         );
-
-        
     }
 
     #[test]
     fn test_no_lint_nzchar() {
         // `x %in% NaN` returns missings, but `NaN %in% x` returns TRUE/FALSE.
         expect_no_lint("'' %in% x", "nzchar", None);
-        
+
         expect_no_lint("x %in% ''", "nzchar", None);
 
         expect_no_lint("x + ''", "nzchar", None);
