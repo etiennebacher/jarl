@@ -5,6 +5,8 @@ Checks for usage of `x != ""` or `x == ""`
  instead of `nzchar(x)` or `!nzchar(x)`.
 
 ## Why is this bad?
+`x == ""` is less efficient than `!nzchar(x)`
+when x is a large vector of long strings. 
 
 One crucial difference is in the default handling of `NA_character_`,
 i.e., missing strings. `nzchar(NA_character_)` is TRUE,
