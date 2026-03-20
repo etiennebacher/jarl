@@ -449,7 +449,7 @@ declare_rules! {
     },
     NzChar => {
         name: "nzchar",
-        categories: [Perf, Read],
+        categories: [Perf],
         default: Enabled,
         fix: Unsafe,
         min_r_version: None,
