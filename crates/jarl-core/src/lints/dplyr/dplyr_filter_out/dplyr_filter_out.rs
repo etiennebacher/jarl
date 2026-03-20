@@ -129,47 +129,26 @@ pub fn dplyr_filter_out(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
         return Ok(None);
     }
 
-    Ok(check_is_na_guard_pattern(
-        ast,
-        &fn_ns,
-        &unnamed_args,
-        &named_args,
-    ))
-}
-
-/// Detect `filter(cond | is.na(var), ...)` and offer a safe fix to
-/// `filter_out(!cond, ...)`.
-///
-/// This is semantically equivalent because `filter_out()` already keeps
-/// `NA` rows, so the explicit `| is.na()` guard is redundant.
-fn check_is_na_guard_pattern(
-    ast: &RCall,
-    fn_ns: &Option<String>,
-    unnamed_args: &[AnyRExpression],
-    named_args: &[RArgument],
-) -> Option<Diagnostic> {
-    // All unnamed args must match `cond | is.na(var)`
-    let mut negated_conds: Vec<String> = Vec::new();
-
-    for value in unnamed_args {
-        let cond_text = extract_is_na_guard(value)?;
-        negated_conds.push(cond_text);
-    }
+    // Extract the conditions from the `cond | is.na(var)` pattern and negate
+    // them for `filter_out()`. Returns `None` if any condition doesn't match.
+    let Some(conditions) = convert_conditions(&unnamed_args) else {
+        return Ok(None);
+    };
 
     let ns_prefix = fn_ns.as_deref().unwrap_or("");
     // Multiple comma-separated args in filter() are AND conditions, so we
     // join the rewritten conditions with OR.
-    let joined_conds = negated_conds.join(" | ");
+    let joined_conds = conditions.join(" | ");
 
     let mut replacement_args = vec![joined_conds];
-    for named in named_args {
+    for named in &named_args {
         replacement_args.push(named.syntax().text_trimmed().to_string());
     }
 
     let replacement = format!("{}filter_out({})", ns_prefix, replacement_args.join(", "));
     let range = ast.syntax().text_trimmed_range();
 
-    Some(Diagnostic::new(
+    Ok(Some(Diagnostic::new(
         ViolationData::new(
             "dplyr_filter_out".to_string(),
             "This `| is.na()` pattern can be replaced by `filter_out()`.".to_string(),
@@ -185,14 +164,39 @@ fn check_is_na_guard_pattern(
             end: range.end().into(),
             to_skip: node_contains_comments(ast.syntax()),
         },
-    ))
+    )))
 }
 
-/// Extract the condition from a `cond | is.na(var)` expression.
+/// For each unnamed arg, extract the condition from a `cond | is.na(var)`
+/// pattern and negate it for `filter_out()`.
 ///
-/// Returns the negated condition text (prefixed with `!`) suitable for
-/// `filter_out()`. Returns `None` if the expression doesn't match.
-fn extract_is_na_guard(value: &AnyRExpression) -> Option<String> {
+/// Returns `None` if any argument doesn't match the pattern.
+fn convert_conditions(args: &[AnyRExpression]) -> Option<Vec<String>> {
+    let mut negated_conds: Vec<String> = Vec::new();
+
+    for value in args {
+        let (cond, is_na_call) = extract_is_na_guard(value)?;
+
+        // Verify the is.na() argument appears in the condition.
+        // This avoids matching `a > 1 | is.na(b)` where the guard is for
+        // a different variable.
+        let is_na_arg = extract_is_na_arg(&is_na_call)?;
+        let cond_text = cond.syntax().text_trimmed().to_string();
+        if !cond_text.contains(&is_na_arg) {
+            return None;
+        }
+
+        negated_conds.push(negate_expression(&cond)?);
+    }
+
+    Some(negated_conds)
+}
+
+/// Extract the two sides of a `cond | is.na(var)` expression.
+///
+/// Returns `(condition, is_na_call)` in canonical order regardless of which
+/// side `is.na()` appears on. Returns `None` if the expression doesn't match.
+fn extract_is_na_guard(value: &AnyRExpression) -> Option<(AnyRExpression, AnyRExpression)> {
     let binary = value.as_r_binary_expression()?;
     let operator = binary.operator().ok()?;
 
@@ -204,25 +208,13 @@ fn extract_is_na_guard(value: &AnyRExpression) -> Option<String> {
     let right = binary.right().ok()?;
 
     // Try both orientations: `cond | is.na(var)` and `is.na(var) | cond`
-    let (cond, is_na_call) = if is_is_na_call(&right) {
-        (left, right)
+    if is_is_na_call(&right) {
+        Some((left, right))
     } else if is_is_na_call(&left) {
-        (right, left)
+        Some((right, left))
     } else {
-        return None;
-    };
-
-    // Verify the is.na() argument appears in the condition.
-    // This avoids matching `a > 1 | is.na(b)` where the guard is for
-    // a different variable.
-    let is_na_arg = extract_is_na_arg(&is_na_call)?;
-    let cond_text = cond.syntax().text_trimmed().to_string();
-    if !cond_text.contains(&is_na_arg) {
-        return None;
+        None
     }
-
-    // Negate the condition for filter_out().
-    negate_expression(&cond)
 }
 
 /// Check if an expression is an `is.na(...)` call.
