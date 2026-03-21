@@ -39,17 +39,17 @@ fn test_empty_toml_uses_all_rules() -> anyhow::Result<()> {
      --> test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_duplicated
      --> test.R:2:1
       |
     2 | any(duplicated(x))
-      | ------------------ `any(duplicated(...))` is inefficient.
+      | ^^^^^^^^^^^^^^^^^^ `any(duplicated(...))` is inefficient.
       |
-      = help: Use `anyDuplicated(...) > 0` instead.
+    help: Use `anyDuplicated(...) > 0` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -171,17 +171,17 @@ ignore = []
      --> test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_duplicated
      --> test.R:2:1
       |
     2 | any(duplicated(x))
-      | ------------------ `any(duplicated(...))` is inefficient.
+      | ^^^^^^^^^^^^^^^^^^ `any(duplicated(...))` is inefficient.
       |
-      = help: Use `anyDuplicated(...) > 0` instead.
+    help: Use `anyDuplicated(...) > 0` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -260,9 +260,9 @@ select = ["any_is_na"]
      --> test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -314,17 +314,17 @@ any(duplicated(x))
      --> test.R:2:1
       |
     2 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: all_equal
      --> test.R:4:1
       |
     4 | !all.equal(x, y)
-      | ---------------- If `all.equal()` is false, it will return a string and not `FALSE`.
+      | ^^^^^^^^^^^^^^^^ If `all.equal()` is false, it will return a string and not `FALSE`.
       |
-      = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
+    help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
 
 
     ── Summary ──────────────────────────────────────
@@ -373,9 +373,9 @@ ignore = ["any_duplicated"]
      --> test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -427,17 +427,17 @@ length(levels(x))"#;
      --> test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_duplicated
      --> test.R:2:1
       |
     2 | any(duplicated(x))
-      | ------------------ `any(duplicated(...))` is inefficient.
+      | ^^^^^^^^^^^^^^^^^^ `any(duplicated(...))` is inefficient.
       |
-      = help: Use `anyDuplicated(...) > 0` instead.
+    help: Use `anyDuplicated(...) > 0` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -494,9 +494,9 @@ length(levels(x))"#;
      --> test.R:2:1
       |
     2 | any(duplicated(x))
-      | ------------------ `any(duplicated(...))` is inefficient.
+      | ^^^^^^^^^^^^^^^^^^ `any(duplicated(...))` is inefficient.
       |
-      = help: Use `anyDuplicated(...) > 0` instead.
+    help: Use `anyDuplicated(...) > 0` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -551,9 +551,9 @@ length(levels(x))"#;
      --> test.R:2:1
       |
     2 | any(duplicated(x))
-      | ------------------ `any(duplicated(...))` is inefficient.
+      | ^^^^^^^^^^^^^^^^^^ `any(duplicated(...))` is inefficient.
       |
-      = help: Use `anyDuplicated(...) > 0` instead.
+    help: Use `anyDuplicated(...) > 0` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -820,17 +820,17 @@ fn test_toml_without_linter_section() -> anyhow::Result<()> {
      --> test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_duplicated
      --> test.R:2:1
       |
     2 | any(duplicated(x))
-      | ------------------ `any(duplicated(...))` is inefficient.
+      | ^^^^^^^^^^^^^^^^^^ `any(duplicated(...))` is inefficient.
       |
-      = help: Use `anyDuplicated(...) > 0` instead.
+    help: Use `anyDuplicated(...) > 0` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -952,17 +952,17 @@ fn test_no_toml_file_uses_all_rules() -> anyhow::Result<()> {
      --> test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_duplicated
      --> test.R:2:1
       |
     2 | any(duplicated(x))
-      | ------------------ `any(duplicated(...))` is inefficient.
+      | ^^^^^^^^^^^^^^^^^^ `any(duplicated(...))` is inefficient.
       |
-      = help: Use `anyDuplicated(...) > 0` instead.
+    help: Use `anyDuplicated(...) > 0` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -1037,17 +1037,17 @@ default-exclude = false
      --> cpp11.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_duplicated
      --> cpp11.R:2:1
       |
     2 | any(duplicated(x))
-      | ------------------ `any(duplicated(...))` is inefficient.
+      | ^^^^^^^^^^^^^^^^^^ `any(duplicated(...))` is inefficient.
       |
-      = help: Use `anyDuplicated(...) > 0` instead.
+    help: Use `anyDuplicated(...) > 0` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -1176,9 +1176,9 @@ exclude = ["excluded.R"]
      --> included.R:1:1
       |
     1 | any(is.na(y))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -1228,9 +1228,9 @@ exclude = ["excluded_dir/"]
      --> included.R:1:1
       |
     1 | any(is.na(y))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -1279,9 +1279,9 @@ exclude = ["test-*.R"]
      --> normal.R:1:1
       |
     1 | any(is.na(z))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -1333,9 +1333,9 @@ exclude = ["excluded.R", "temp/", "*.tmp.R"]
      --> included.R:1:1
       |
     1 | any(is.na(d))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -1387,17 +1387,17 @@ exclude = ["custom_exclude.R"]
      --> cpp11.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_is_na
      --> normal.R:1:1
       |
     1 | any(is.na(z))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -1451,9 +1451,9 @@ exclude = ["**/test/**"]
      --> other/main.R:1:1
       |
     1 | any(is.na(z))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -1498,9 +1498,9 @@ exclude = []
      --> test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -1658,9 +1658,9 @@ fixable = ["any_is_na"]
      --> test.R:2:1
       |
     2 | any(duplicated(x))
-      | ------------------ `any(duplicated(...))` is inefficient.
+      | ^^^^^^^^^^^^^^^^^^ `any(duplicated(...))` is inefficient.
       |
-      = help: Use `anyDuplicated(...) > 0` instead.
+    help: Use `anyDuplicated(...) > 0` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -2074,17 +2074,17 @@ fixable = ["any_is_na"]
      --> test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_duplicated
      --> test.R:2:1
       |
     2 | any(duplicated(x))
-      | ------------------ `any(duplicated(...))` is inefficient.
+      | ^^^^^^^^^^^^^^^^^^ `any(duplicated(...))` is inefficient.
       |
-      = help: Use `anyDuplicated(...) > 0` instead.
+    help: Use `anyDuplicated(...) > 0` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -2176,17 +2176,17 @@ expect_equal(foo(x), TRUE)
      --> test.R:2:1
       |
     2 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: expect_true_false
      --> test.R:3:1
       |
     3 | expect_equal(foo(x), TRUE)
-      | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
       |
-      = help: Use `expect_true(x)` instead.
+    help: Use `expect_true(x)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -2242,17 +2242,17 @@ expect_equal(foo(x), TRUE)
      --> test.R:2:1
       |
     2 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: expect_true_false
      --> test.R:4:1
       |
     4 | expect_equal(foo(x), TRUE)
-      | -------------------------- `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_equal(x, TRUE)` is not as clear as `expect_true(x)`.
       |
-      = help: Use `expect_true(x)` instead.
+    help: Use `expect_true(x)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -2342,9 +2342,9 @@ include = ["included.R"]
      --> included.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -2394,9 +2394,9 @@ include = ["R/"]
      --> R/utils.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -2446,17 +2446,17 @@ include = ["R-*.R"]
      --> R-helpers.R:1:1
       |
     1 | any(is.na(y))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_is_na
      --> R-utils.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -2502,9 +2502,9 @@ include = []
      --> test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -2557,9 +2557,9 @@ exclude = ["R/generated.R"]
      --> R/utils.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -2616,17 +2616,17 @@ include = ["**/*.{Rmd,qmd}"]
      --> analysis.qmd:6:1
       |
     6 | any(is.na(y))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_is_na
      --> report.Rmd:6:1
       |
     6 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -2767,17 +2767,17 @@ select = ["any_duplicated"]
      --> root.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_duplicated
      --> subfolder/sub.R:2:1
       |
     2 | any(duplicated(x))
-      | ------------------ `any(duplicated(...))` is inefficient.
+      | ^^^^^^^^^^^^^^^^^^ `any(duplicated(...))` is inefficient.
       |
-      = help: Use `anyDuplicated(...) > 0` instead.
+    help: Use `anyDuplicated(...) > 0` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -2835,17 +2835,17 @@ select = ["any_is_na"]
      --> root.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_is_na
      --> subfolder/sub.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -2912,17 +2912,17 @@ select = ["any_duplicated"]
      --> root.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_duplicated
      --> subfolder/sub.R:2:1
       |
     2 | any(duplicated(x))
-      | ------------------ `any(duplicated(...))` is inefficient.
+      | ^^^^^^^^^^^^^^^^^^ `any(duplicated(...))` is inefficient.
       |
-      = help: Use `anyDuplicated(...) > 0` instead.
+    help: Use `anyDuplicated(...) > 0` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -2985,17 +2985,17 @@ exclude = ["bar.R"]
      --> root.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_is_na
      --> subfolder/foo.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -3058,17 +3058,17 @@ include = ["foo.R"]
      --> root.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_is_na
      --> subfolder/foo.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────

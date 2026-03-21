@@ -198,9 +198,9 @@ exclude = ["R/foo.R"]
      --> R/foo2.R:1:1
       |
     1 | f <- function() 2
-      | - `f` is defined more than once in this package.
+      | ^ `f` is defined more than once in this package.
       |
-      = help: Other definition at R/foo.R:1:1
+    help: Other definition at R/foo.R:1:1
 
 
     ── Summary ──────────────────────────────────────
@@ -253,9 +253,9 @@ include = ["R/foo2.R"]
      --> R/foo2.R:1:1
       |
     1 | f <- function() 2
-      | - `f` is defined more than once in this package.
+      | ^ `f` is defined more than once in this package.
       |
-      = help: Other definition at R/foo.R:1:1
+    help: Other definition at R/foo.R:1:1
 
 
     ── Summary ──────────────────────────────────────

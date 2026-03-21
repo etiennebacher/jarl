@@ -38,9 +38,9 @@ fn test_rmd_basic_lint() -> anyhow::Result<()> {
      --> test.Rmd:6:1
       |
     6 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -80,9 +80,9 @@ fn test_qmd_basic_lint() -> anyhow::Result<()> {
      --> test.qmd:6:1
       |
     6 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -127,17 +127,17 @@ fn test_rmd_ignore_chunk_suppresses() -> anyhow::Result<()> {
      --> test.Rmd:2:1
       |
     2 | #| jarl-ignore-chunk
-      | -------------------- This comment isn't used by Jarl because it is missing a rule to ignore.
+      | ^^^^^^^^^^^^^^^^^^^^ This comment isn't used by Jarl because it is missing a rule to ignore.
       |
-      = help: Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`.
+    help: Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`.
 
     warning: any_is_na
      --> test.Rmd:3:1
       |
     3 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -304,9 +304,9 @@ fn test_rmd_pipe_suppression() -> anyhow::Result<()> {
      --> test.Rmd:3:1
       |
     3 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -351,9 +351,9 @@ fn test_rmd_fix_not_applied() -> anyhow::Result<()> {
      --> test.Rmd:2:1
       |
     2 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────

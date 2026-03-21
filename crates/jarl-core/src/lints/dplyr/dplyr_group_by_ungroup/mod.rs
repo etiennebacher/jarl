@@ -91,9 +91,9 @@ x |> group_by(grp) |> summarize(a = mean(b)) |> ungroup()
          --> <test>:3:6
           |
         3 | x |> group_by(grp) |> summarize(a = mean(b)) |> ungroup()
-          |      ---------------------------------------------------- `group_by()` followed by `summarize()` and `ungroup()` can be simplified.
+          |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `group_by()` followed by `summarize()` and `ungroup()` can be simplified.
           |
-          = help: Use `summarize(..., .by = grp)` instead.
+        help: Use `summarize(..., .by = grp)` instead.
         Found 1 error.
         "
         );
@@ -111,9 +111,9 @@ x |> group_by(grp) |> summarise(a = mean(b)) |> ungroup()
          --> <test>:3:6
           |
         3 | x |> group_by(grp) |> summarise(a = mean(b)) |> ungroup()
-          |      ---------------------------------------------------- `group_by()` followed by `summarise()` and `ungroup()` can be simplified.
+          |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `group_by()` followed by `summarise()` and `ungroup()` can be simplified.
           |
-          = help: Use `summarise(..., .by = grp)` instead.
+        help: Use `summarise(..., .by = grp)` instead.
         Found 1 error.
         "
         );
@@ -131,9 +131,9 @@ x |> group_by(grp) |> mutate(a = mean(b)) |> ungroup()
          --> <test>:3:6
           |
         3 | x |> group_by(grp) |> mutate(a = mean(b)) |> ungroup()
-          |      ------------------------------------------------- `group_by()` followed by `mutate()` and `ungroup()` can be simplified.
+          |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `group_by()` followed by `mutate()` and `ungroup()` can be simplified.
           |
-          = help: Use `mutate(..., .by = grp)` instead.
+        help: Use `mutate(..., .by = grp)` instead.
         Found 1 error.
         "
         );
@@ -151,9 +151,9 @@ x |> group_by(grp) |> filter(a > 1) |> ungroup()"
          --> <test>:3:6
           |
         3 | x |> group_by(grp) |> filter(a > 1) |> ungroup()
-          |      ------------------------------------------- `group_by()` followed by `filter()` and `ungroup()` can be simplified.
+          |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `group_by()` followed by `filter()` and `ungroup()` can be simplified.
           |
-          = help: Use `filter(..., .by = grp)` instead.
+        help: Use `filter(..., .by = grp)` instead.
         Found 1 error.
         "
         );
@@ -171,9 +171,9 @@ x |> group_by(grp1, grp2) |> summarize(a = mean(b)) |> ungroup()
          --> <test>:3:6
           |
         3 | x |> group_by(grp1, grp2) |> summarize(a = mean(b)) |> ungroup()
-          |      ----------------------------------------------------------- `group_by()` followed by `summarize()` and `ungroup()` can be simplified.
+          |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `group_by()` followed by `summarize()` and `ungroup()` can be simplified.
           |
-          = help: Use `summarize(..., .by = c(grp1, grp2))` instead.
+        help: Use `summarize(..., .by = c(grp1, grp2))` instead.
         Found 1 error.
         "
         );
@@ -191,9 +191,9 @@ x |> dplyr::group_by(grp) |> dplyr::summarize(a = mean(b)) |> dplyr::ungroup()
          --> <test>:3:6
           |
         3 | x |> dplyr::group_by(grp) |> dplyr::summarize(a = mean(b)) |> dplyr::ungroup()
-          |      ------------------------------------------------------------------------- `group_by()` followed by `summarize()` and `ungroup()` can be simplified.
+          |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `group_by()` followed by `summarize()` and `ungroup()` can be simplified.
           |
-          = help: Use `summarize(..., .by = grp)` instead.
+        help: Use `summarize(..., .by = grp)` instead.
         Found 1 error.
         "
         );
@@ -211,9 +211,9 @@ x %>% group_by(grp) %>% summarize(a = mean(b)) %>% ungroup()
          --> <test>:3:7
           |
         3 | x %>% group_by(grp) %>% summarize(a = mean(b)) %>% ungroup()
-          |       ------------------------------------------------------ `group_by()` followed by `summarize()` and `ungroup()` can be simplified.
+          |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `group_by()` followed by `summarize()` and `ungroup()` can be simplified.
           |
-          = help: Use `summarize(..., .by = grp)` instead.
+        help: Use `summarize(..., .by = grp)` instead.
         Found 1 error.
         "
         );
@@ -231,9 +231,9 @@ x |> group_by(grp) |> slice(n = 1) |> ungroup()
          --> <test>:3:6
           |
         3 | x |> group_by(grp) |> slice(n = 1) |> ungroup()
-          |      ------------------------------------------ `group_by()` followed by `slice()` and `ungroup()` can be simplified.
+          |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `group_by()` followed by `slice()` and `ungroup()` can be simplified.
           |
-          = help: Use `slice(..., .by = grp)` instead.
+        help: Use `slice(..., .by = grp)` instead.
         Found 1 error.
         "
         );
@@ -247,9 +247,9 @@ x |> group_by(grp) |> slice_head(n = 1) |> ungroup()
          --> <test>:3:6
           |
         3 | x |> group_by(grp) |> slice_head(n = 1) |> ungroup()
-          |      ----------------------------------------------- `group_by()` followed by `slice_head()` and `ungroup()` can be simplified.
+          |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `group_by()` followed by `slice_head()` and `ungroup()` can be simplified.
           |
-          = help: Use `slice_head(..., by = grp)` instead.
+        help: Use `slice_head(..., by = grp)` instead.
         Found 1 error.
         "
         );
@@ -263,9 +263,9 @@ x |> group_by(grp) |> slice_tail(n = 1) |> ungroup()
          --> <test>:3:6
           |
         3 | x |> group_by(grp) |> slice_tail(n = 1) |> ungroup()
-          |      ----------------------------------------------- `group_by()` followed by `slice_tail()` and `ungroup()` can be simplified.
+          |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `group_by()` followed by `slice_tail()` and `ungroup()` can be simplified.
           |
-          = help: Use `slice_tail(..., by = grp)` instead.
+        help: Use `slice_tail(..., by = grp)` instead.
         Found 1 error.
         "
         );
@@ -279,9 +279,9 @@ x |> group_by(grp) |> slice_min(val) |> ungroup()
          --> <test>:3:6
           |
         3 | x |> group_by(grp) |> slice_min(val) |> ungroup()
-          |      -------------------------------------------- `group_by()` followed by `slice_min()` and `ungroup()` can be simplified.
+          |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `group_by()` followed by `slice_min()` and `ungroup()` can be simplified.
           |
-          = help: Use `slice_min(..., by = grp)` instead.
+        help: Use `slice_min(..., by = grp)` instead.
         Found 1 error.
         "
         );
@@ -295,9 +295,9 @@ x |> group_by(grp) |> slice_max(val) |> ungroup()
          --> <test>:3:6
           |
         3 | x |> group_by(grp) |> slice_max(val) |> ungroup()
-          |      -------------------------------------------- `group_by()` followed by `slice_max()` and `ungroup()` can be simplified.
+          |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `group_by()` followed by `slice_max()` and `ungroup()` can be simplified.
           |
-          = help: Use `slice_max(..., by = grp)` instead.
+        help: Use `slice_max(..., by = grp)` instead.
         Found 1 error.
         "
         );
@@ -311,9 +311,9 @@ x |> group_by(grp) |> slice_sample(n = 5) |> ungroup()
          --> <test>:3:6
           |
         3 | x |> group_by(grp) |> slice_sample(n = 5) |> ungroup()
-          |      ------------------------------------------------- `group_by()` followed by `slice_sample()` and `ungroup()` can be simplified.
+          |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `group_by()` followed by `slice_sample()` and `ungroup()` can be simplified.
           |
-          = help: Use `slice_sample(..., by = grp)` instead.
+        help: Use `slice_sample(..., by = grp)` instead.
         Found 1 error.
         "
         );
@@ -341,9 +341,9 @@ x |> group_by(grp) |> slice_sample(n = 5) |> ungroup()
         6 | |     a = mean(b)
         7 | |   ) |>
         8 | |   ungroup()
-          | |___________- `group_by()` followed by `summarize()` and `ungroup()` can be simplified.
+          | |___________^ `group_by()` followed by `summarize()` and `ungroup()` can be simplified.
           |
-          = help: Use `summarize(..., .by = grp)` instead.
+        help: Use `summarize(..., .by = grp)` instead.
         Found 1 error.
         "
         );
@@ -362,9 +362,9 @@ group_by(x, grp) |> summarize(a = mean(b)) |> ungroup()
          --> <test>:3:1
           |
         3 | group_by(x, grp) |> summarize(a = mean(b)) |> ungroup()
-          | ------------------------------------------------------- `group_by()` followed by `summarize()` and `ungroup()` can be simplified.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `group_by()` followed by `summarize()` and `ungroup()` can be simplified.
           |
-          = help: Use `summarize(..., .by = grp)` instead.
+        help: Use `summarize(..., .by = grp)` instead.
         Found 1 error.
         "
         );
@@ -468,9 +468,9 @@ x |> group_by(!!!syms(grps)) |> summarize(a = mean(b)) |> ungroup()
          --> <test>:3:6
           |
         3 | x |> group_by(!!!syms(grps)) |> summarize(a = mean(b)) |> ungroup()
-          |      -------------------------------------------------------------- `group_by()` followed by `summarize()` and `ungroup()` can be simplified.
+          |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `group_by()` followed by `summarize()` and `ungroup()` can be simplified.
           |
-          = help: Use `summarize(..., .by = c(!!!syms(grps)))` instead.
+        help: Use `summarize(..., .by = c(!!!syms(grps)))` instead.
         Found 1 error.
         "
         );

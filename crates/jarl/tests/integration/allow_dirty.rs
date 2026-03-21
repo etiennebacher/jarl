@@ -73,9 +73,9 @@ fn test_dirty_git_repo_does_not_block_lint() -> anyhow::Result<()> {
      --> demos/test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────

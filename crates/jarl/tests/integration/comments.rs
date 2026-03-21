@@ -151,17 +151,17 @@ any(is.na(w))
      --> test.R:2:1
       |
     2 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_is_na
      --> test.R:9:1
       |
     9 | any(is.na(w))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -208,9 +208,9 @@ any(is.na(y))
      --> test.R:6:1
       |
     6 | any(is.na(y))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -337,25 +337,25 @@ any(is.na(z))
      --> test.R:3:1
       |
     3 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_is_na
      --> test.R:5:1
       |
     5 | any(is.na(y))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_is_na
      --> test.R:7:1
       |
     7 | any(is.na(z))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────

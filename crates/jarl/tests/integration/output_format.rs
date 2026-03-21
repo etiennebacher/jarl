@@ -34,17 +34,17 @@ fn test_output_default() -> anyhow::Result<()> {
      --> test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_duplicated
      --> test2.R:1:1
       |
     1 | any(duplicated(x))
-      | ------------------ `any(duplicated(...))` is inefficient.
+      | ^^^^^^^^^^^^^^^^^^ `any(duplicated(...))` is inefficient.
       |
-      = help: Use `anyDuplicated(...) > 0` instead.
+    help: Use `anyDuplicated(...) > 0` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -130,17 +130,17 @@ fn test_output_full() -> anyhow::Result<()> {
      --> test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_duplicated
      --> test2.R:1:1
       |
     1 | any(duplicated(x))
-      | ------------------ `any(duplicated(...))` is inefficient.
+      | ^^^^^^^^^^^^^^^^^^ `any(duplicated(...))` is inefficient.
       |
-      = help: Use `anyDuplicated(...) > 0` instead.
+    help: Use `anyDuplicated(...) > 0` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -397,9 +397,9 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
      --> test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────

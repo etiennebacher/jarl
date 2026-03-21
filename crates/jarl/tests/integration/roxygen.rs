@@ -55,9 +55,9 @@ foo <- function(x) x
      --> R/test.R:4:4
       |
     4 | #' any(is.na(x))
-      |    ------------- `any(is.na(...))` is inefficient.
+      |    ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -102,9 +102,9 @@ foo <- function(x) x
      --> R/test.R:3:4
       |
     3 | #' any(is.na(x))
-      |    ------------- `any(is.na(...))` is inefficient.
+      |    ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -242,17 +242,17 @@ bar <- function(y) y
      --> R/test.R:3:4
       |
     3 | #' any(is.na(x))
-      |    ------------- `any(is.na(...))` is inefficient.
+      |    ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_is_na
      --> R/test.R:8:4
       |
     8 | #' any(is.na(y))
-      |    ------------- `any(is.na(...))` is inefficient.
+      |    ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -396,9 +396,9 @@ foo <- function(x) x
      --> R/test.R:4:4
       |
     4 | #' any(is.na(x))
-      |    ------------- `any(is.na(...))` is inefficient.
+      |    ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -446,9 +446,9 @@ foo <- function(x) x
      --> R/test.R:4:4
       |
     4 | #' any(is.na(x))
-      |    ------------- `any(is.na(...))` is inefficient.
+      |    ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -497,17 +497,17 @@ foo <- function(x) x
      --> R/test.R:3:4
       |
     3 | #' any(is.na(x))
-      |    ------------- `any(is.na(...))` is inefficient.
+      |    ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_is_na
      --> R/test.R:5:4
       |
     5 | #' any(is.na(y))
-      |    ------------- `any(is.na(...))` is inefficient.
+      |    ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -563,9 +563,9 @@ f <- function() 1
      --> R/test.R:5:4
       |
     5 | #' any(is.na(x))
-      |    ------------- `any(is.na(...))` is inefficient.
+      |    ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -728,9 +728,9 @@ foo <- function(x) x
      --> R/test.R:3:5
       |
     3 | ##' any(is.na(x))
-      |     ------------- `any(is.na(...))` is inefficient.
+      |     ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────

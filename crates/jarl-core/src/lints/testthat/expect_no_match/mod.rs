@@ -50,9 +50,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | testthat::expect_false(grepl('fun', 'Testing is fun'))
-          | ------------------------------------------------------ `expect_false(grepl(...))` is not as clear as `expect_no_match(...)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_false(grepl(...))` is not as clear as `expect_no_match(...)`.
           |
-          = help: Use `expect_no_match(...)` instead.
+        help: Use `expect_no_match(...)` instead.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("show_failure(expect_false(grepl('fun', 'Testing is fun')))"), @"
@@ -60,9 +60,9 @@ mod tests {
          --> <test>:1:14
           |
         1 | show_failure(expect_false(grepl('fun', 'Testing is fun')))
-          |              -------------------------------------------- `expect_false(grepl(...))` is not as clear as `expect_no_match(...)`.
+          |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_false(grepl(...))` is not as clear as `expect_no_match(...)`.
           |
-          = help: Use `expect_no_match(...)` instead.
+        help: Use `expect_no_match(...)` instead.
         Found 1 error.
         ");
         assert_snapshot!(
@@ -72,9 +72,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_false(grepl('fun', 'Testing is fun'), info = 'msg')
-          | ---------------------------------------------------------- `expect_false(grepl(...))` is not as clear as `expect_no_match(...)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_false(grepl(...))` is not as clear as `expect_no_match(...)`.
           |
-          = help: Use `expect_no_match(...)` instead.
+        help: Use `expect_no_match(...)` instead.
         Found 1 error.
         "
         );
@@ -85,9 +85,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_false(grepl(pattern = 'fun', x = 'Testing is fun'))
-          | ---------------------------------------------------------- `expect_false(grepl(...))` is not as clear as `expect_no_match(...)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_false(grepl(...))` is not as clear as `expect_no_match(...)`.
           |
-          = help: Use `expect_no_match(...)` instead.
+        help: Use `expect_no_match(...)` instead.
         Found 1 error.
         "
         );
@@ -98,9 +98,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_false(grepl(x = 'Testing is fun', perl = TRUE, pattern = 'fun'))
-          | ----------------------------------------------------------------------- `expect_false(grepl(...))` is not as clear as `expect_no_match(...)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_false(grepl(...))` is not as clear as `expect_no_match(...)`.
           |
-          = help: Use `expect_no_match(...)` instead.
+        help: Use `expect_no_match(...)` instead.
         Found 1 error.
         "
         );
@@ -109,9 +109,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_false(base::grepl('fun', 'Testing is fun'))
-          | -------------------------------------------------- `expect_false(grepl(...))` is not as clear as `expect_no_match(...)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_false(grepl(...))` is not as clear as `expect_no_match(...)`.
           |
-          = help: Use `expect_no_match(...)` instead.
+        help: Use `expect_no_match(...)` instead.
         Found 1 error.
         ");
         assert_snapshot!(snapshot_lint("grepl('fun', 'Testing is fun') |> expect_false()"), @"
@@ -119,9 +119,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | grepl('fun', 'Testing is fun') |> expect_false()
-          | ------------------------------------------------ `expect_false(grepl(...))` is not as clear as `expect_no_match(...)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_false(grepl(...))` is not as clear as `expect_no_match(...)`.
           |
-          = help: Use `expect_no_match(...)` instead.
+        help: Use `expect_no_match(...)` instead.
         Found 1 error.
         ");
         assert_snapshot!(
@@ -131,9 +131,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | 'Testing is fun' |> grepl(pattern = 'fun') |> expect_false()
-          | ------------------------------------------------------------ `expect_false(grepl(...))` is not as clear as `expect_no_match(...)`.
+          | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `expect_false(grepl(...))` is not as clear as `expect_no_match(...)`.
           |
-          = help: Use `expect_no_match(...)` instead.
+        help: Use `expect_no_match(...)` instead.
         Found 1 error.
         "
         );

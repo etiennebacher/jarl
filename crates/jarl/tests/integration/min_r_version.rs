@@ -77,9 +77,9 @@ fn test_min_r_version_from_cli_only() -> anyhow::Result<()> {
      --> test.R:1:1
       |
     1 | grep('a.*', x, value = TRUE)
-      | ---------------------------- `grep(..., value = TRUE)` can be simplified.
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `grep(..., value = TRUE)` can be simplified.
       |
-      = help: Use `grepv(...)` instead.
+    help: Use `grepv(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -154,9 +154,9 @@ Depends: R (>= 4.6.0), utils, stats"#,
      --> test.R:1:1
       |
     1 | grep('a.*', x, value = TRUE)
-      | ---------------------------- `grep(..., value = TRUE)` can be simplified.
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `grep(..., value = TRUE)` can be simplified.
       |
-      = help: Use `grepv(...)` instead.
+    help: Use `grepv(...)` instead.
 
 
     ── Summary ──────────────────────────────────────

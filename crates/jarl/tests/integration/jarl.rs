@@ -139,9 +139,9 @@ fn test_parsing_error_for_some_files() -> anyhow::Result<()> {
      --> test2.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -274,9 +274,9 @@ fn test_one_lint() -> anyhow::Result<()> {
      --> test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -316,17 +316,17 @@ fn test_several_lints_one_file() -> anyhow::Result<()> {
      --> test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_duplicated
      --> test.R:2:1
       |
     2 | any(duplicated(x))
-      | ------------------ `any(duplicated(...))` is inefficient.
+      | ^^^^^^^^^^^^^^^^^^ `any(duplicated(...))` is inefficient.
       |
-      = help: Use `anyDuplicated(...) > 0` instead.
+    help: Use `anyDuplicated(...) > 0` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -370,17 +370,17 @@ fn test_several_lints_several_files() -> anyhow::Result<()> {
      --> test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: any_duplicated
      --> test2.R:1:1
       |
     1 | any(duplicated(x))
-      | ------------------ `any(duplicated(...))` is inefficient.
+      | ^^^^^^^^^^^^^^^^^^ `any(duplicated(...))` is inefficient.
       |
-      = help: Use `anyDuplicated(...) > 0` instead.
+    help: Use `anyDuplicated(...) > 0` instead.
 
 
     ── Summary ──────────────────────────────────────
@@ -424,16 +424,15 @@ fn test_not_all_fixable_lints() -> anyhow::Result<()> {
      --> test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: duplicated_arguments
      --> test2.R:1:1
       |
     1 | list(x = 1, x = 2)
-      | ------------------ Avoid duplicated arguments in function calls. Duplicated argument(s): "x".
-      |
+      | ^^^^^^^^^^^^^^^^^^ Avoid duplicated arguments in function calls. Duplicated argument(s): "x".
 
 
     ── Summary ──────────────────────────────────────
@@ -509,8 +508,7 @@ fn test_fix_options() -> anyhow::Result<()> {
      --> test.R:3:1
       |
     3 | list(x = 1, x = 2)
-      | ------------------ Avoid duplicated arguments in function calls. Duplicated argument(s): "x".
-      |
+      | ^^^^^^^^^^^^^^^^^^ Avoid duplicated arguments in function calls. Duplicated argument(s): "x".
 
 
     ── Summary ──────────────────────────────────────
@@ -540,8 +538,7 @@ fn test_fix_options() -> anyhow::Result<()> {
      --> test.R:3:1
       |
     3 | list(x = 1, x = 2)
-      | ------------------ Avoid duplicated arguments in function calls. Duplicated argument(s): "x".
-      |
+      | ^^^^^^^^^^^^^^^^^^ Avoid duplicated arguments in function calls. Duplicated argument(s): "x".
 
 
     ── Summary ──────────────────────────────────────
@@ -654,17 +651,17 @@ fn test_safe_and_unsafe_lints() -> anyhow::Result<()> {
      --> test.R:1:1
       |
     1 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
     warning: all_equal
      --> test2.R:1:1
       |
     1 | !all.equal(x, y)
-      | ---------------- If `all.equal()` is false, it will return a string and not `FALSE`.
+      | ^^^^^^^^^^^^^^^^ If `all.equal()` is false, it will return a string and not `FALSE`.
       |
-      = help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
+    help: Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.
 
 
     ── Summary ──────────────────────────────────────
@@ -704,9 +701,9 @@ fn test_newline_character_in_string() -> anyhow::Result<()> {
      --> test.R:2:1
       |
     2 | any(is.na(x))
-      | ------------- `any(is.na(...))` is inefficient.
+      | ^^^^^^^^^^^^^ `any(is.na(...))` is inefficient.
       |
-      = help: Use `anyNA(...)` instead.
+    help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────

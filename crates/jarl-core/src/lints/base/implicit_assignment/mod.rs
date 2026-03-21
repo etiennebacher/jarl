@@ -210,8 +210,7 @@ mod tests {
          --> <test>:1:14
           |
         1 | expect_error(a <- 1)
-          |              ------ Avoid implicit assignments in function calls.
-          |
+          |              ^^^^^^ Avoid implicit assignments in function calls.
         Found 1 error.
         "
         );
@@ -249,8 +248,7 @@ mod tests {
          --> <test>:1:5
           |
         1 | foo(a <- 1)
-          |     ------ Avoid implicit assignments in function calls.
-          |
+          |     ^^^^^^ Avoid implicit assignments in function calls.
         Found 1 error.
         "
         );
@@ -281,8 +279,7 @@ mod tests {
           |
         2 | /                 a <- # xxx
         3 | |                 1,
-          | |_________________- Avoid implicit assignments in function calls.
-          |
+          | |_________________^ Avoid implicit assignments in function calls.
         Found 1 error.
         "
         );
@@ -306,8 +303,7 @@ mod tests {
          --> <test>:1:7
           |
         1 | myfun(a <- 1)
-          |       ------ Avoid implicit assignments in function calls.
-          |
+          |       ^^^^^^ Avoid implicit assignments in function calls.
         Found 1 error.
         "
         );

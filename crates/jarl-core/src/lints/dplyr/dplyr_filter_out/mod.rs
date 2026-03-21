@@ -90,9 +90,9 @@ mod tests {
          --> <test>:1:6
           |
         1 | x |> dplyr::filter(a > 1 | is.na(a))
-          |      ------------------------------- This `filter()` contains complex condition(s).
+          |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ This `filter()` contains complex condition(s).
           |
-          = help: It can be simplified by using `filter_out()`, which keeps `NA` rows.
+        help: It can be simplified by using `filter_out()`, which keeps `NA` rows.
         Found 1 error.
         "
         );
@@ -249,9 +249,9 @@ mod tests {
          --> <test>:1:22
           |
         1 | library(dplyr); x |> filter(a > 1 | is.na(a))
-          |                      ------------------------ This `filter()` contains complex condition(s).
+          |                      ^^^^^^^^^^^^^^^^^^^^^^^^ This `filter()` contains complex condition(s).
           |
-          = help: It can be simplified by using `filter_out()`, which keeps `NA` rows.
+        help: It can be simplified by using `filter_out()`, which keeps `NA` rows.
         Found 1 error.
         "
         );

@@ -41,15 +41,13 @@ y <- 2
      --> test.R:2:1
       |
     2 | x = 1
-      | --- Use `<-` for assignment.
-      |
+      | ^^^ Use `<-` for assignment.
 
     warning: assignment
      --> test.R:4:3
       |
     4 | 3 -> z
-      |   ---- Use `<-` for assignment.
-      |
+      |   ^^^^ Use `<-` for assignment.
 
 
     ── Summary ──────────────────────────────────────
@@ -83,15 +81,13 @@ y <- 2
      --> test.R:3:1
       |
     3 | y <- 2
-      | ---- Use `=` for assignment.
-      |
+      | ^^^^ Use `=` for assignment.
 
     warning: assignment
      --> test.R:4:3
       |
     4 | 3 -> z
-      |   ---- Use `=` for assignment.
-      |
+      |   ^^^^ Use `=` for assignment.
 
 
     ── Summary ──────────────────────────────────────
@@ -211,15 +207,13 @@ operator = "<-"
      --> test.R:2:1
       |
     2 | x = 1
-      | --- Use `<-` for assignment.
-      |
+      | ^^^ Use `<-` for assignment.
 
     warning: assignment
      --> test.R:4:3
       |
     4 | 3 -> z
-      |   ---- Use `<-` for assignment.
-      |
+      |   ^^^^ Use `<-` for assignment.
 
 
     ── Summary ──────────────────────────────────────
@@ -255,15 +249,13 @@ operator = "="
      --> test.R:3:1
       |
     3 | y <- 2
-      | ---- Use `=` for assignment.
-      |
+      | ^^^^ Use `=` for assignment.
 
     warning: assignment
      --> test.R:4:3
       |
     4 | 3 -> z
-      |   ---- Use `=` for assignment.
-      |
+      |   ^^^^ Use `=` for assignment.
 
 
     ── Summary ──────────────────────────────────────
@@ -400,15 +392,13 @@ operator = "<-"
      --> test.R:3:1
       |
     3 | y <- 2
-      | ---- Use `=` for assignment.
-      |
+      | ^^^^ Use `=` for assignment.
 
     warning: assignment
      --> test.R:4:3
       |
     4 | 3 -> z
-      |   ---- Use `=` for assignment.
-      |
+      |   ^^^^ Use `=` for assignment.
 
 
     ── Summary ──────────────────────────────────────
@@ -466,15 +456,13 @@ assignment = "<-"
      --> test.R:2:1
       |
     2 | x = 1
-      | --- Use `<-` for assignment.
-      |
+      | ^^^ Use `<-` for assignment.
 
     warning: assignment
      --> test.R:4:3
       |
     4 | 3 -> z
-      |   ---- Use `<-` for assignment.
-      |
+      |   ^^^^ Use `<-` for assignment.
 
 
     ── Summary ──────────────────────────────────────
@@ -513,15 +501,13 @@ assignment = "="
      --> test.R:3:1
       |
     3 | y <- 2
-      | ---- Use `=` for assignment.
-      |
+      | ^^^^ Use `=` for assignment.
 
     warning: assignment
      --> test.R:4:3
       |
     4 | 3 -> z
-      |   ---- Use `=` for assignment.
-      |
+      |   ^^^^ Use `=` for assignment.
 
 
     ── Summary ──────────────────────────────────────
@@ -657,15 +643,13 @@ assignment = "<-"
      --> test.R:3:1
       |
     3 | y <- 2
-      | ---- Use `=` for assignment.
-      |
+      | ^^^^ Use `=` for assignment.
 
     warning: assignment
      --> test.R:4:3
       |
     4 | 3 -> z
-      |   ---- Use `=` for assignment.
-      |
+      |   ^^^^ Use `=` for assignment.
 
 
     ── Summary ──────────────────────────────────────
