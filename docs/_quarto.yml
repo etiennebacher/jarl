@@ -6,7 +6,11 @@ filters:
 format:
   html:
     theme: morph
-    css: styles.css
+    css:
+    - styles.css
+    - dark-mode.css
+    include-in-header:
+      text: '<script src="dark-mode.js"></script>'
     toc: true
     toc-depth: 4
     code-copy: true
