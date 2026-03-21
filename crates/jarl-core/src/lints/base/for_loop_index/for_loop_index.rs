@@ -4,6 +4,8 @@ use biome_rowan::{AstNode, Text};
 
 pub struct ForLoopIndex;
 
+/// Version added: 0.0.16
+///
 /// ## What it does
 ///
 /// Checks whether the index symbol in a for loop is already used anywhere in

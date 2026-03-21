@@ -1,4 +1,7 @@
 # true_false_symbol
+::: {.callout-note title="Added in [0.0.8](https://github.com/etiennebacher/jarl/releases/tag/0.0.8)" .low-opacity}
+:::
+
 ## What it does
 
 Checks for usage of `T` and `F` symbols. If they correspond to the `TRUE`

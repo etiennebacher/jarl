@@ -4,6 +4,8 @@ use biome_rowan::{AstNode, SyntaxToken};
 
 pub struct NumericLeadingZero;
 
+/// Version added: 0.0.19
+///
 /// ## What it does
 ///
 /// Checks for double or complex values with a decimal component and a

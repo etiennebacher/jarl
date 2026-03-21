@@ -16,10 +16,31 @@ rule_names <- gsub("\\.rs$", "", basename(rules))
 
 ### Create individual qmd files for rules
 
-docs <- lapply(rules, \(x) {
-  content <- readLines(x)
+docs <- lapply(seq_along(rules), \(x) {
+  content <- readLines(rules[x])
   if (!any(grepl("## What it does", content, fixed = TRUE))) {
     return()
+  }
+
+  added_in_version <- grep("/// Version added:", content, value = TRUE)
+  added_in_version <- gsub(
+    "/// Version added: (\\d\\.\\d\\.\\d)",
+    "\\1",
+    added_in_version
+  )
+
+  if (
+    length(added_in_version) != 1 ||
+      !grepl("\\d+\\.\\d+\\.\\d+", added_in_version)
+  ) {
+    stop(
+      paste0(
+        "Couldn't find the 'Version added' line for rule '",
+        rule_names[x],
+        "'."
+      ),
+      call. = FALSE
+    )
   }
 
   start <- grep("## What it does", content, fixed = TRUE)
@@ -29,7 +50,19 @@ docs <- lapply(rules, \(x) {
 
   doc <- content[start:end]
   doc <- gsub("^///(| )", "", doc)
-  # doc <- gsub("^```r", "```\\{r\\}", doc)
+
+  doc <- c(
+    paste0(
+      '::: {.callout-note title="Added in [',
+      added_in_version,
+      '](https://github.com/etiennebacher/jarl/releases/tag/',
+      added_in_version,
+      ')" .low-opacity}',
+      '\n',
+      ':::\n'
+    ),
+    doc
+  )
 
   doc
 })

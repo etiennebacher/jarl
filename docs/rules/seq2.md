@@ -1,4 +1,7 @@
 # seq2
+::: {.callout-note title="Added in [0.2.0](https://github.com/etiennebacher/jarl/releases/tag/0.2.0)" .low-opacity}
+:::
+
 ## What it does
 
 Checks for `seq(length(...))`, `seq(nrow(...))`, `seq(ncol(...))`,

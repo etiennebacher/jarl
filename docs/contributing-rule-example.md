@@ -157,6 +157,8 @@ use biome_rowan::AstNode;
 
 pub struct List2Df;
 
+/// Version added: 0.1.2
+///
 /// ## What it does
 ///
 /// Checks for usage of `do.call(cbind.data.frame, x)`.
@@ -182,7 +184,7 @@ pub fn list2df(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 Let's analyze this by blocks:
 
 * the first lines import required crates and functions, and define a struct using the rule name (in TitleCase);
-* then there is some documentation (truncated here for conciseness);
+* then there is some documentation (truncated here for conciseness). The version number corresponds to the next version, not the current one.
 * the `impl` block is where we define the name and the main message (`body`) that will be used in the output of Jarl. Note that there is also a `suggestion()` function which is not always necessary.
 * finally, we define the function where we parse the AST.
 

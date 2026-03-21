@@ -5,6 +5,8 @@ use biome_rowan::AstNode;
 
 pub struct Browser;
 
+/// Version added: 0.1.2
+///
 /// ## What it does
 ///
 /// Checks for lingering presence of `browser()` which should not be present in

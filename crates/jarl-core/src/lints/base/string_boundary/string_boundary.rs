@@ -3,6 +3,8 @@ use crate::utils::{get_function_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// Version added: 0.3.0
+///
 /// ## What it does
 ///
 /// Checks for `substr()` and `substring()` calls that can be replaced with

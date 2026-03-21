@@ -2,6 +2,8 @@ use crate::diagnostic::*;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// Version added: 0.4.0
+///
 /// ## What it does
 ///
 /// Checks for usage of `:::`.

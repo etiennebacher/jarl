@@ -1,4 +1,7 @@
 # numeric_leading_zero
+::: {.callout-note title="Added in [0.0.19](https://github.com/etiennebacher/jarl/releases/tag/0.0.19)" .low-opacity}
+:::
+
 ## What it does
 
 Checks for double or complex values with a decimal component and a

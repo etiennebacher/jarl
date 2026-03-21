@@ -1,6 +1,8 @@
 use crate::diagnostic::*;
 use biome_rowan::TextRange;
 
+/// Version added: 0.4.0
+///
 /// ## What it does
 ///
 /// Checks for suppression comments with an invalid rule name.

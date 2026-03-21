@@ -1,4 +1,7 @@
 # for_loop_dup_index
+::: {.callout-note title="Added in [0.4.0](https://github.com/etiennebacher/jarl/releases/tag/0.4.0)" .low-opacity}
+:::
+
 ## What it does
 
 Checks whether the index symbol in a `for` loop is already used in a parent

@@ -1,4 +1,7 @@
 # matrix_apply
+::: {.callout-note title="Added in [0.0.16](https://github.com/etiennebacher/jarl/releases/tag/0.0.16)" .low-opacity}
+:::
+
 ## What it does
 
 Checks for usage of `apply(x, 1/2, mean/sum)`.

@@ -1,4 +1,7 @@
 # which_grepl
+::: {.callout-note title="Added in [0.0.8](https://github.com/etiennebacher/jarl/releases/tag/0.0.8)" .low-opacity}
+:::
+
 ## What it does
 
 Checks for usage of `which(grepl(...))` and replaces it with `grep(...)`.

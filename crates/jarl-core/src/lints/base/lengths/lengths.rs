@@ -6,6 +6,8 @@ use biome_rowan::AstNode;
 
 pub struct Lengths;
 
+/// Version added: 0.0.8
+///
 /// ## What it does
 ///
 /// Checks for usage of `length()` in several functions that apply it to each

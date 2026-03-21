@@ -3,6 +3,8 @@ use crate::utils::{get_arg_by_name_then_position, get_function_name, node_contai
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
+/// Version added: 0.4.0
+///
 /// ## What it does
 ///
 /// This checks for cases of `ifelse()`, `dplyr::if_else()`, and

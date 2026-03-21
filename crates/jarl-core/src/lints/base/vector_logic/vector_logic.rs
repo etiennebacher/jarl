@@ -4,6 +4,8 @@ use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// Version added: 0.3.0
+///
 /// ## What it does
 ///
 /// Checks for calls to `&` and `|` in the conditions of `if` and `while`

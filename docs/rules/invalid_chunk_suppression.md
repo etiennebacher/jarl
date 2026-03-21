@@ -1,4 +1,7 @@
 # invalid_chunk_suppression
+::: {.callout-note title="Added in [0.5.0](https://github.com/etiennebacher/jarl/releases/tag/0.5.0)" .low-opacity}
+:::
+
 ## What it does
 
 Checks for `jarl-ignore-chunk` comments that use a single-line form

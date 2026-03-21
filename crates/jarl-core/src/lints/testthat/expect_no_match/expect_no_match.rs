@@ -8,6 +8,8 @@ use biome_rowan::{AstNode, AstSeparatedList};
 
 pub struct ExpectNoMatch;
 
+/// Version added: 0.5.0
+///
 /// ## What it does
 ///
 /// Checks for usage of `expect_false(grepl(...))`.

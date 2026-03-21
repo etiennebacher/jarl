@@ -1,4 +1,7 @@
 # vector_logic
+::: {.callout-note title="Added in [0.3.0](https://github.com/etiennebacher/jarl/releases/tag/0.3.0)" .low-opacity}
+:::
+
 ## What it does
 
 Checks for calls to `&` and `|` in the conditions of `if` and `while`
