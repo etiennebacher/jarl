@@ -105,3 +105,19 @@ ul.navbar-nav > li.nav-item.dropdown > ul.dropdown-menu.show > li > a.dropdown-i
 div.callout-note.callout {
 	border-left-color: #4b5f9b;
 }
+
+/* Banner to indicate the reader is on the dev version of docs */
+#quarto-header > nav {
+	margin-bottom: 0;
+}
+
+#quarto-announcement {
+	background-color: #4b5f9b;
+  border-radius: 0
+}
+
+#quarto-announcement > .quarto-announcement-icon,
+#quarto-announcement > .quarto-announcement-action,
+#quarto-announcement > .quarto-announcement-content > p {
+  color: white !important;
+}

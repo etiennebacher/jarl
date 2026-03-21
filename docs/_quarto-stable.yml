@@ -1,0 +1,10 @@
+website:
+  site-url: https://jarl.etiennebacher.com/
+  navbar:
+    right:
+    - text: "stable"
+      menu:
+      - text: "stable"
+        href: https://jarl.etiennebacher.com/
+      - text: "dev"
+        href: https://jarl.etiennebacher.com/dev/
