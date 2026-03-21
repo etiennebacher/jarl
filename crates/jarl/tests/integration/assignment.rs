@@ -1,8 +1,4 @@
-use std::process::Command;
-use tempfile::TempDir;
-
-use crate::helpers::CommandExt;
-use crate::helpers::binary_path;
+use crate::helpers::{CliTest, CommandExt};
 
 // ---------------------------------------------------------------------------
 // CLI (--assignment is deprecated, so these always emit a deprecation warning)
@@ -10,20 +6,18 @@ use crate::helpers::binary_path;
 
 #[test]
 fn test_assignment_from_cli() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 x = 1
 y <- 2
 3 -> z
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
+",
+    )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -64,8 +58,8 @@ y <- 2
     );
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -110,19 +104,18 @@ y <- 2
 
 #[test]
 fn test_assignment_wrong_value_from_cli() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 x = 1
 y <- 2
 3 -> z
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
+",
+    )?;
+
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -144,8 +137,8 @@ y <- 2
     );
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -175,27 +168,25 @@ y <- 2
 
 #[test]
 fn test_assignment_from_toml() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 x = 1
 y <- 2
 3 -> z
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
+",
+    )?;
 
-    std::fs::write(
-        directory.join("jarl.toml"),
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint.assignment]
 operator = "<-"
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -230,16 +221,16 @@ operator = "<-"
     "
     );
 
-    std::fs::write(
-        directory.join("jarl.toml"),
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint.assignment]
 operator = "="
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -279,27 +270,25 @@ operator = "="
 
 #[test]
 fn test_assignment_wrong_value_from_toml() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 x = 1
 y <- 2
 3 -> z
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
+",
+    )?;
 
-    std::fs::write(
-        directory.join("jarl.toml"),
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint.assignment]
 operator = "foo"
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -320,16 +309,16 @@ operator = "foo"
     "#
     );
 
-    std::fs::write(
-        directory.join("jarl.toml"),
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint.assignment]
 operator = 1
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -363,26 +352,25 @@ operator = 1
 
 #[test]
 fn test_assignment_cli_overrides_toml() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 x = 1
 y <- 2
 3 -> z
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
-    std::fs::write(
-        directory.join("jarl.toml"),
+",
+    )?;
+
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint.assignment]
 operator = "<-"
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -430,27 +418,25 @@ operator = "<-"
 
 #[test]
 fn test_assignment_from_toml_deprecated() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 x = 1
 y <- 2
 3 -> z
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
+",
+    )?;
 
-    std::fs::write(
-        directory.join("jarl.toml"),
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint]
 assignment = "<-"
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -488,16 +474,16 @@ assignment = "<-"
     "
     );
 
-    std::fs::write(
-        directory.join("jarl.toml"),
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint]
 assignment = "="
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -540,27 +526,25 @@ assignment = "="
 
 #[test]
 fn test_assignment_wrong_value_from_toml_deprecated() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 x = 1
 y <- 2
 3 -> z
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
+",
+    )?;
 
-    std::fs::write(
-        directory.join("jarl.toml"),
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint]
 assignment = "foo"
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -581,16 +565,16 @@ assignment = "foo"
     "#
     );
 
-    std::fs::write(
-        directory.join("jarl.toml"),
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint]
 assignment = 1
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -620,26 +604,25 @@ assignment = 1
 
 #[test]
 fn test_assignment_cli_overrides_toml_deprecated() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 x = 1
 y <- 2
 3 -> z
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
-    std::fs::write(
-        directory.join("jarl.toml"),
+",
+    )?;
+
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint]
 assignment = "<-"
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")

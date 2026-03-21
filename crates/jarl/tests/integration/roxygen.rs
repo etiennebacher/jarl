@@ -1,22 +1,4 @@
-use std::process::Command;
-
-use tempfile::TempDir;
-
-use crate::helpers::CommandExt;
-use crate::helpers::binary_path;
-
-/// Set up a minimal R package directory structure inside the given directory.
-/// Creates `DESCRIPTION` and `R/` subdirectory. Returns the path to `R/`.
-fn setup_r_package(directory: &std::path::Path) -> std::path::PathBuf {
-    std::fs::write(
-        directory.join("DESCRIPTION"),
-        "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-    )
-    .unwrap();
-    let r_dir = directory.join("R");
-    std::fs::create_dir_all(&r_dir).unwrap();
-    r_dir
-}
+use crate::helpers::{CliTest, CommandExt};
 
 // ---------------------------------------------------------------------------
 // Basic lint detection
@@ -24,24 +6,26 @@ fn setup_r_package(directory: &std::path::Path) -> std::path::PathBuf {
 
 #[test]
 fn test_roxygen_examples_lint() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-    let r_dir = setup_r_package(directory);
-
-    std::fs::write(
-        r_dir.join("test.R"),
-        "\
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
 #' Title
 #' @param x A value
 #' @examples
 #' any(is.na(x))
 foo <- function(x) x
 ",
-    )?;
+        ),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -72,23 +56,25 @@ foo <- function(x) x
 
 #[test]
 fn test_roxygen_examples_if_lint() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-    let r_dir = setup_r_package(directory);
-
-    std::fs::write(
-        r_dir.join("test.R"),
-        "\
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
 #' Title
 #' @examplesIf interactive()
 #' any(is.na(x))
 foo <- function(x) x
 ",
-    )?;
+        ),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -123,23 +109,25 @@ foo <- function(x) x
 
 #[test]
 fn test_roxygen_clean_examples() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-    let r_dir = setup_r_package(directory);
-
-    std::fs::write(
-        r_dir.join("test.R"),
-        "\
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
 #' Title
 #' @examples
 #' x <- 1
 foo <- function(x) x
 ",
-    )?;
+        ),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -165,23 +153,25 @@ foo <- function(x) x
 
 #[test]
 fn test_roxygen_parse_error_skipped() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-    let r_dir = setup_r_package(directory);
-
-    std::fs::write(
-        r_dir.join("test.R"),
-        "\
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
 #' Title
 #' @examples
 #' 1 +
 foo <- function(x) x
 ",
-    )?;
+        ),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -207,13 +197,14 @@ foo <- function(x) x
 
 #[test]
 fn test_roxygen_multiple_blocks() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-    let r_dir = setup_r_package(directory);
-
-    std::fs::write(
-        r_dir.join("test.R"),
-        "\
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
 #' First function
 #' @examples
 #' any(is.na(x))
@@ -224,11 +215,12 @@ foo <- function(x) x
 #' any(is.na(y))
 bar <- function(y) y
 ",
-    )?;
+        ),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -271,31 +263,32 @@ bar <- function(y) y
 
 #[test]
 fn test_roxygen_disabled_via_toml() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-    let r_dir = setup_r_package(directory);
-
-    std::fs::write(
-        r_dir.join("test.R"),
-        "\
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
 #' Title
 #' @examples
 #' any(is.na(x))
 foo <- function(x) x
 ",
-    )?;
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        "\
+        ),
+        (
+            "jarl.toml",
+            "\
 [lint]
 check-roxygen = false
 ",
-    )?;
+        ),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -321,12 +314,9 @@ check-roxygen = false
 
 #[test]
 fn test_roxygen_skipped_outside_package() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
     // No DESCRIPTION, no R/ directory — just a plain R file
-    std::fs::write(
-        directory.join("test.R"),
+    let case = CliTest::with_file(
+        "test.R",
         "\
 #' Title
 #' @examples
@@ -336,8 +326,8 @@ foo <- function(x) x
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -364,13 +354,14 @@ foo <- function(x) x
 /// Code inside `\dontrun{}` is linted — the wrapper is stripped.
 #[test]
 fn test_roxygen_dontrun_linted() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-    let r_dir = setup_r_package(directory);
-
-    std::fs::write(
-        r_dir.join("test.R"),
-        "\
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
 #' Title
 #' @examples
 #' \\dontrun{
@@ -378,11 +369,12 @@ fn test_roxygen_dontrun_linted() -> anyhow::Result<()> {
 #' }
 foo <- function(x) x
 ",
-    )?;
+        ),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -414,13 +406,14 @@ foo <- function(x) x
 /// Code inside `\donttest{}` is linted — the wrapper is stripped.
 #[test]
 fn test_roxygen_donttest_linted() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-    let r_dir = setup_r_package(directory);
-
-    std::fs::write(
-        r_dir.join("test.R"),
-        "\
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
 #' Title
 #' @examples
 #' \\donttest{
@@ -428,11 +421,12 @@ fn test_roxygen_donttest_linted() -> anyhow::Result<()> {
 #' }
 foo <- function(x) x
 ",
-    )?;
+        ),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -464,13 +458,14 @@ foo <- function(x) x
 /// Code both inside and outside `\dontrun{}` is linted.
 #[test]
 fn test_roxygen_dontrun_with_surrounding_code() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-    let r_dir = setup_r_package(directory);
-
-    std::fs::write(
-        r_dir.join("test.R"),
-        "\
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
 #' Title
 #' @examples
 #' any(is.na(x))
@@ -479,11 +474,12 @@ fn test_roxygen_dontrun_with_surrounding_code() -> anyhow::Result<()> {
 #' }
 foo <- function(x) x
 ",
-    )?;
+        ),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -527,13 +523,14 @@ foo <- function(x) x
 /// Code after `@return` (or any other tag) should NOT be linted as examples.
 #[test]
 fn test_roxygen_examples_stopped_by_tag() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-    let r_dir = setup_r_package(directory);
-
-    std::fs::write(
-        r_dir.join("test.R"),
-        "\
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
 #' @title hi
 #' @description
 #' hello
@@ -543,13 +540,14 @@ fn test_roxygen_examples_stopped_by_tag() -> anyhow::Result<()> {
 #' any(is.na(x))
 f <- function() 1
 ",
-    )?;
+        ),
+    ])?;
 
     // Only the first any(is.na(x)) (inside @examples) should be reported.
     // The second one is under @return and is not R code.
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -585,13 +583,14 @@ f <- function() 1
 /// Multi-line roxygen example is correctly fixed in place.
 #[test]
 fn test_roxygen_fix_multiline() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-    let r_dir = setup_r_package(directory);
-
-    std::fs::write(
-        r_dir.join("test.R"),
-        "\
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
 #' @title hi
 #' @description
 #' hello
@@ -604,25 +603,24 @@ fn test_roxygen_fix_multiline() -> anyhow::Result<()> {
 #' @return foo
 f <- function() 1
 ",
-    )?;
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        "\
+        ),
+        (
+            "jarl.toml",
+            "\
 [lint]
 fix-roxygen = true
 ",
-    )?;
+        ),
+    ])?;
 
-    Command::new(binary_path())
-        .current_dir(directory)
+    case.command()
         .arg("check")
         .arg(".")
         .arg("--fix")
         .arg("--allow-no-vcs")
         .run();
 
-    let fixed = std::fs::read_to_string(r_dir.join("test.R"))?;
+    let fixed = case.read_file("R/test.R")?;
     insta::assert_snapshot!(
         fixed,
         @"
@@ -644,13 +642,14 @@ fix-roxygen = true
 /// Single-line roxygen example is correctly fixed in place.
 #[test]
 fn test_roxygen_fix_single_line() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-    let r_dir = setup_r_package(directory);
-
-    std::fs::write(
-        r_dir.join("test.R"),
-        "\
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
 #' Title
 #' @examples
 #' 1 + 1
@@ -658,25 +657,24 @@ fn test_roxygen_fix_single_line() -> anyhow::Result<()> {
 #' 1 + 1
 foo <- function(x) x
 ",
-    )?;
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        "\
+        ),
+        (
+            "jarl.toml",
+            "\
 [lint]
 fix-roxygen = true
 ",
-    )?;
+        ),
+    ])?;
 
-    Command::new(binary_path())
-        .current_dir(directory)
+    case.command()
         .arg("check")
         .arg(".")
         .arg("--fix")
         .arg("--allow-no-vcs")
         .run();
 
-    let fixed = std::fs::read_to_string(r_dir.join("test.R"))?;
+    let fixed = case.read_file("R/test.R")?;
     insta::assert_snapshot!(
         fixed,
         @"
@@ -698,23 +696,25 @@ fix-roxygen = true
 
 #[test]
 fn test_double_hash_is_roxygen() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-    let r_dir = setup_r_package(directory);
-
-    std::fs::write(
-        r_dir.join("test.R"),
-        "\
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
 ##' Title
 ##' @examples
 ##' any(is.na(x))
 foo <- function(x) x
 ",
-    )?;
+        ),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()

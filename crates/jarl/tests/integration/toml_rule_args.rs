@@ -1,30 +1,23 @@
-use std::process::Command;
-
-use tempfile::TempDir;
-
-use crate::helpers::CommandExt;
-use crate::helpers::binary_path;
+use crate::helpers::{CliTest, CommandExt};
 
 // assignment ----------------------------------------
 
 #[test]
 fn test_assignment_unknown_field_is_error() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        r#"
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
 [lint.assignment]
 unknown-option = "foo"
 "#,
-    )?;
-
-    std::fs::write(directory.join("test.R"), "x <- 1")?;
+        ),
+        ("test.R", "x <- 1"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -54,25 +47,23 @@ unknown-option = "foo"
 
 #[test]
 fn test_duplicated_arguments_both_skipped_and_extend_is_error() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        r#"
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
 [lint]
 
 [lint.duplicated_arguments]
 skipped-functions = ["list"]
 extend-skipped-functions = ["my_fun"]
 "#,
-    )?;
-
-    std::fs::write(directory.join("test.R"), "list(a = 1, a = 2)")?;
+        ),
+        ("test.R", "list(a = 1, a = 2)"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -96,24 +87,22 @@ extend-skipped-functions = ["my_fun"]
 
 #[test]
 fn test_duplicated_arguments_unknown_field_is_error() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        r#"
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
 [lint]
 
 [lint.duplicated_arguments]
 unknown-option = ["list"]
 "#,
-    )?;
-
-    std::fs::write(directory.join("test.R"), "list(a = 1, a = 2)")?;
+        ),
+        ("test.R", "list(a = 1, a = 2)"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -143,25 +132,23 @@ unknown-option = ["list"]
 
 #[test]
 fn test_implicit_assignment_both_skipped_and_extend_is_error() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        r#"
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
 [lint]
 
 [lint.implicit_assignment]
 skipped-functions = ["list"]
 extend-skipped-functions = ["my_fun"]
 "#,
-    )?;
-
-    std::fs::write(directory.join("test.R"), "list(a = 1, a = 2)")?;
+        ),
+        ("test.R", "list(a = 1, a = 2)"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -185,24 +172,22 @@ extend-skipped-functions = ["my_fun"]
 
 #[test]
 fn test_implicit_assignment_unknown_field_is_error() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        r#"
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
 [lint]
 
 [lint.implicit_assignment]
 unknown-option = ["list"]
 "#,
-    )?;
-
-    std::fs::write(directory.join("test.R"), "list(a = 1, a = 2)")?;
+        ),
+        ("test.R", "list(a = 1, a = 2)"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -232,24 +217,22 @@ unknown-option = ["list"]
 
 #[test]
 fn test_quotes_unknown_field_is_error() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        r#"
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
 [lint]
 
 [lint.quotes]
 unknown-option = "x"
 "#,
-    )?;
-
-    std::fs::write(directory.join("test.R"), "'x'")?;
+        ),
+        ("test.R", "'x'"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -277,25 +260,23 @@ unknown-option = "x"
 
 #[test]
 fn test_quotes_invalid_quote_is_error() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        r#"
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
 [lint]
 extend-select = ["quotes"]
 
 [lint.quotes]
 quote = "foo"
 "#,
-    )?;
-
-    std::fs::write(directory.join("test.R"), "'x'")?;
+        ),
+        ("test.R", "'x'"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -321,33 +302,31 @@ quote = "foo"
 
 #[test]
 fn test_unreachable_code_both_stopping_and_extend_is_error() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        r#"
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
 [lint]
 
 [lint.unreachable_code]
 stopping-functions = ["stop"]
 extend-stopping-functions = ["my_stop"]
 "#,
-    )?;
-
-    std::fs::write(
-        directory.join("test.R"),
-        r#"
+        ),
+        (
+            "test.R",
+            r#"
 foo <- function() {
   stop("error")
   1 + 1
 }
 "#,
-    )?;
+        ),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()

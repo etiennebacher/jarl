@@ -1,26 +1,15 @@
-use std::process::Command;
-
-use tempfile::TempDir;
-
-use crate::helpers::CommandExt;
-use crate::helpers::binary_path;
+use crate::helpers::{CliTest, CommandExt};
 
 #[test]
 fn test_output_default() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
-
-    let test_path_2 = "test2.R";
-    let test_contents_2 = "any(duplicated(x))";
-    std::fs::write(directory.join(test_path_2), test_contents_2)?;
+    let case = CliTest::with_files([
+        ("test.R", "any(is.na(x))"),
+        ("test2.R", "any(duplicated(x))"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -60,20 +49,14 @@ fn test_output_default() -> anyhow::Result<()> {
 
 #[test]
 fn test_output_concise() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
-
-    let test_path_2 = "test2.R";
-    let test_contents_2 = "any(duplicated(x))";
-    std::fs::write(directory.join(test_path_2), test_contents_2)?;
+    let case = CliTest::with_files([
+        ("test.R", "any(is.na(x))"),
+        ("test2.R", "any(duplicated(x))"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--output-format")
@@ -101,20 +84,14 @@ fn test_output_concise() -> anyhow::Result<()> {
 
 #[test]
 fn test_output_full() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
-
-    let test_path_2 = "test2.R";
-    let test_contents_2 = "any(duplicated(x))";
-    std::fs::write(directory.join(test_path_2), test_contents_2)?;
+    let case = CliTest::with_files([
+        ("test.R", "any(is.na(x))"),
+        ("test2.R", "any(duplicated(x))"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--output-format")
@@ -156,20 +133,14 @@ fn test_output_full() -> anyhow::Result<()> {
 
 #[test]
 fn test_output_json() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
-
-    let test_path_2 = "test2.R";
-    let test_contents_2 = "any(duplicated(x))";
-    std::fs::write(directory.join(test_path_2), test_contents_2)?;
+    let case = CliTest::with_files([
+        ("test.R", "any(is.na(x))"),
+        ("test2.R", "any(duplicated(x))"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--output-format")
@@ -236,8 +207,8 @@ fn test_output_json() -> anyhow::Result<()> {
 
     // Additional info such as timing isn't included in output, #254
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--output-format")
@@ -308,20 +279,14 @@ fn test_output_json() -> anyhow::Result<()> {
 
 #[test]
 fn test_output_github() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
-
-    let test_path_2 = "test2.R";
-    let test_contents_2 = "any(duplicated(x))";
-    std::fs::write(directory.join(test_path_2), test_contents_2)?;
+    let case = CliTest::with_files([
+        ("test.R", "any(is.na(x))"),
+        ("test2.R", "any(duplicated(x))"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--output-format")
@@ -342,8 +307,8 @@ fn test_output_github() -> anyhow::Result<()> {
 
     // Additional info such as timing isn't included in output, #254
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--output-format")
@@ -368,20 +333,11 @@ fn test_output_github() -> anyhow::Result<()> {
 
 #[test]
 fn test_with_parsing_error() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
-
-    let test_path_2 = "test2.R";
-    let test_contents_2 = "any(";
-    std::fs::write(directory.join(test_path_2), test_contents_2)?;
+    let case = CliTest::with_files([("test.R", "any(is.na(x))"), ("test2.R", "any(")])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--output-format")
@@ -412,8 +368,8 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
     );
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--output-format")
@@ -437,8 +393,8 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
     );
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--output-format")
@@ -487,8 +443,8 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
     );
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--output-format")

@@ -1,17 +1,11 @@
-use std::process::Command;
-
-use tempfile::TempDir;
-
-use crate::helpers::CommandExt;
-use crate::helpers::binary_path;
+use crate::helpers::{CliTest, CommandExt};
 
 #[test]
 fn test_must_pass_path() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
+    let case = CliTest::new()?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .run()
             .normalize_os_executable_name(),
@@ -58,14 +52,12 @@ fn test_must_pass_path() -> anyhow::Result<()> {
 
 #[test]
 fn test_no_r_files() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
+    let case = CliTest::new()?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
-            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -84,17 +76,12 @@ fn test_no_r_files() -> anyhow::Result<()> {
 
 #[test]
 fn test_parsing_error() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let path = "test.R";
-    std::fs::write(directory.join(path), "f <-")?;
+    let case = CliTest::with_file("test.R", "f <-")?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
-            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -113,21 +100,13 @@ fn test_parsing_error() -> anyhow::Result<()> {
 
 #[test]
 fn test_parsing_error_for_some_files() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let path = "test.R";
-    std::fs::write(directory.join(path), "f <-")?;
-
-    let path = "test2.R";
-    std::fs::write(directory.join(path), "any(is.na(x))")?;
+    let case = CliTest::with_files([("test.R", "f <-"), ("test2.R", "any(is.na(x))")])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
-            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -158,20 +137,12 @@ fn test_parsing_error_for_some_files() -> anyhow::Result<()> {
 
 #[test]
 fn test_parsing_weird_raw_strings() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let path = "test.R";
-    std::fs::write(
-        directory.join(path),
-        "c(r\"(abc(\\w+))\")\nr\"(c(\"\\dots\"))\"",
-    )?;
+    let case = CliTest::with_file("test.R", "c(r\"(abc(\\w+))\")\nr\"(c(\"\\dots\"))\"")?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
-            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -191,17 +162,12 @@ fn test_parsing_weird_raw_strings() -> anyhow::Result<()> {
 
 #[test]
 fn test_parsing_braced_anonymous_function() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let path = "test.R";
-    std::fs::write(directory.join(path), "{ a }(10)")?;
+    let case = CliTest::with_file("test.R", "{ a }(10)")?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
-            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -221,17 +187,12 @@ fn test_parsing_braced_anonymous_function() -> anyhow::Result<()> {
 
 #[test]
 fn test_no_lints() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let path = "test.R";
-    std::fs::write(directory.join(path), "any(x)")?;
+    let case = CliTest::with_file("test.R", "any(x)")?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
-            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -251,18 +212,12 @@ fn test_no_lints() -> anyhow::Result<()> {
 
 #[test]
 fn test_one_lint() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
+    let case = CliTest::with_file("test.R", "any(is.na(x))")?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
-            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -292,19 +247,13 @@ fn test_one_lint() -> anyhow::Result<()> {
 
 #[test]
 fn test_several_lints_one_file() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))\nany(duplicated(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
+    let case = CliTest::with_file("test.R", "any(is.na(x))\nany(duplicated(x))")?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
-            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -342,23 +291,16 @@ fn test_several_lints_one_file() -> anyhow::Result<()> {
 
 #[test]
 fn test_several_lints_several_files() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
-
-    let test_path_2 = "test2.R";
-    let test_contents_2 = "any(duplicated(x))";
-    std::fs::write(directory.join(test_path_2), test_contents_2)?;
+    let case = CliTest::with_files([
+        ("test.R", "any(is.na(x))"),
+        ("test2.R", "any(duplicated(x))"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
-            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -396,23 +338,16 @@ fn test_several_lints_several_files() -> anyhow::Result<()> {
 
 #[test]
 fn test_not_all_fixable_lints() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
-
-    let test_path_2 = "test2.R";
-    let test_contents_2 = "list(x = 1, x = 2)";
-    std::fs::write(directory.join(test_path_2), test_contents_2)?;
+    let case = CliTest::with_files([
+        ("test.R", "any(is.na(x))"),
+        ("test2.R", "list(x = 1, x = 2)"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
-            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
         @r#"
@@ -449,18 +384,12 @@ fn test_not_all_fixable_lints() -> anyhow::Result<()> {
 
 #[test]
 fn test_corner_case() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "x %>% length()";
-    std::fs::write(directory.join(test_path), test_contents)?;
+    let case = CliTest::with_file("test.R", "x %>% length()")?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
-            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -480,20 +409,19 @@ fn test_corner_case() -> anyhow::Result<()> {
 
 #[test]
 fn test_fix_options() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
     // File with 3 lints:
     // - any_is_na (has fix)
     // - class_equals (has unsafe fix)
     // - duplicated_arguments (has no fix)
-    let test_path = "test.R";
+    let case = CliTest::with_file(
+        "test.R",
+        "any(is.na(x))\nclass(x) == 'foo'\nlist(x = 1, x = 2)",
+    )?;
     let test_contents = "any(is.na(x))\nclass(x) == 'foo'\nlist(x = 1, x = 2)";
-    std::fs::write(directory.join(test_path), test_contents)?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--fix")
@@ -520,10 +448,10 @@ fn test_fix_options() -> anyhow::Result<()> {
     "#
     );
 
-    std::fs::write(directory.join(test_path), test_contents)?;
+    case.write_file("test.R", test_contents)?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--fix")
@@ -551,10 +479,10 @@ fn test_fix_options() -> anyhow::Result<()> {
     "#
     );
 
-    std::fs::write(directory.join(test_path), test_contents)?;
+    case.write_file("test.R", test_contents)?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--fix")
@@ -575,10 +503,10 @@ fn test_fix_options() -> anyhow::Result<()> {
     "
     );
 
-    std::fs::write(directory.join(test_path), test_contents)?;
+    case.write_file("test.R", test_contents)?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--fix")
@@ -598,10 +526,10 @@ fn test_fix_options() -> anyhow::Result<()> {
     "
     );
 
-    std::fs::write(directory.join(test_path), test_contents)?;
+    case.write_file("test.R", test_contents)?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--unsafe-fixes")
@@ -626,23 +554,13 @@ fn test_fix_options() -> anyhow::Result<()> {
 
 #[test]
 fn test_safe_and_unsafe_lints() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
-
-    let test_path_2 = "test2.R";
-    let test_contents_2 = "!all.equal(x, y)";
-    std::fs::write(directory.join(test_path_2), test_contents_2)?;
+    let case = CliTest::with_files([("test.R", "any(is.na(x))"), ("test2.R", "!all.equal(x, y)")])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
-            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -680,19 +598,13 @@ fn test_safe_and_unsafe_lints() -> anyhow::Result<()> {
 
 #[test]
 fn test_newline_character_in_string() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "print(\"hi there\\n\")\nany(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
+    let case = CliTest::with_file("test.R", "print(\"hi there\\n\")\nany(is.na(x))")?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
-            .arg("--allow-no-vcs")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -732,11 +644,8 @@ fn test_newline_character_in_string() -> anyhow::Result<()> {
 /// This specific example used to make the `fix-check` workflow fail.
 #[test]
 fn test_overlapping_fixes_no_corruption() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    std::fs::write(
-        directory.join("test.R"),
+    let case = CliTest::with_file(
+        "test.R",
         r#"f <- function() {
   expect_length(which(grepl("A__", str)), 1L)
   expect_length(which(grepl("B__", str)), 1L)
@@ -747,8 +656,7 @@ fn test_overlapping_fixes_no_corruption() -> anyhow::Result<()> {
 "#,
     )?;
 
-    Command::new(binary_path())
-        .current_dir(directory)
+    case.command()
         .arg("check")
         .arg(".")
         .arg("--select")
@@ -757,7 +665,7 @@ fn test_overlapping_fixes_no_corruption() -> anyhow::Result<()> {
         .arg("--allow-no-vcs")
         .run();
 
-    let fixed = std::fs::read_to_string(directory.join("test.R"))?;
+    let fixed = case.read_file("test.R")?;
     insta::assert_snapshot!(
         fixed,
         @r#"

@@ -1,12 +1,10 @@
-use std::process::Command;
-
-use crate::helpers::CommandExt;
-use crate::helpers::binary_path;
+use crate::helpers::{CliTest, CommandExt};
 
 #[test]
-fn test_help() {
+fn test_help() -> anyhow::Result<()> {
+    let case = CliTest::new()?;
     insta::assert_snapshot!(
-        Command::new(binary_path())
+        case.command()
             .arg("help")
             .run()
             .normalize_os_executable_name(),
@@ -37,7 +35,7 @@ fn test_help() {
     "
     );
     insta::assert_snapshot!(
-        Command::new(binary_path())
+        case.command()
             .arg("--help")
             .run()
             .normalize_os_executable_name(),
@@ -68,7 +66,7 @@ fn test_help() {
     "
     );
     insta::assert_snapshot!(
-        Command::new(binary_path())
+        case.command()
             .arg("-h")
             .run()
             .normalize_os_executable_name(),
@@ -98,12 +96,14 @@ fn test_help() {
     ----- stderr -----
     "
     );
+    Ok(())
 }
 
 #[test]
-fn test_help_check() {
+fn test_help_check() -> anyhow::Result<()> {
+    let case = CliTest::new()?;
     insta::assert_snapshot!(
-        Command::new(binary_path())
+        case.command()
             .arg("check")
             .arg("--help")
             .run()
@@ -193,7 +193,7 @@ fn test_help_check() {
     "#
     );
     insta::assert_snapshot!(
-        Command::new(binary_path())
+        case.command()
             .arg("check")
             .arg("-h")
             .run()
@@ -235,4 +235,5 @@ fn test_help_check() {
     ----- stderr -----
     "#
     );
+    Ok(())
 }
