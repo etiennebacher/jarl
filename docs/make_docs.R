@@ -57,7 +57,7 @@ docs <- lapply(seq_along(rules), \(x) {
       added_in_version,
       '](https://github.com/etiennebacher/jarl/releases/tag/',
       added_in_version,
-      ')"}',
+      ')" .low-opacity}',
       '\n',
       ':::\n'
     ),

@@ -1,5 +1,5 @@
 # sort
-::: {.callout-note title="Added in [0.0.16](https://github.com/etiennebacher/jarl/releases/tag/0.0.16)"}
+::: {.callout-note title="Added in [0.0.16](https://github.com/etiennebacher/jarl/releases/tag/0.0.16)" .low-opacity}
 :::
 
 ## What it does
