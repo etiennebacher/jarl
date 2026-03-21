@@ -10,7 +10,7 @@ format:
     - styles.css
     - dark-mode.css
     include-in-header:
-      text: '<script src="dark-mode.js"></script>'
+      file: dark-mode-header.html
     toc: true
     toc-depth: 4
     code-copy: true
