@@ -459,9 +459,17 @@ Found 2 errors.
 </section>
 <section id="development-version" class="level3">
 <h3 class="anchored" data-anchor-id="development-version">Development version</h3>
-<p>Some pre-releases may be available from the <a href="https://github.com/etiennebacher/jarl/releases" target="_blank">Releases page</a> (the version usually contains <code>alpha</code>).</p>
+<p>Some pre-releases may be available from the <a href="https://github.com/etiennebacher/jarl/releases" target="_blank">Releases page</a> (the version usually contains <code>alpha</code>, see the installation instructions there).</p>
 <p>Alternatively, if you have Rust installed, you should be able to get the development version with:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install <span class="at">--git</span> https://github.com/etiennebacher/jarl jarl <span class="at">--profile</span><span class="op">=</span>release</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<details>
+<summary style="padding-bottom: 0.5rem;">
+Click if you installed the development version via <code>cargo</code>
+</summary>
+<p>Using the pre-built binaries will install Jarl in <code>$HOME/.local/bin</code>, e.g.&nbsp;<code>/home/etienne/.local/bin/jarl</code>.</p>
+<p>Using <code>cargo</code> will install Jarl in <code>$HOME/.cargo/bin</code>, e.g.&nbsp;<code>/home/etienne/.cargo/bin/jarl</code>.</p>
+<p>If you have both installed, the <code>.local/bin</code> one will take precedence. Therefore, to run the version compiled with <code>cargo</code>, you must either delete the one in <code>.local/bin</code> or use the absolute path, e.g.&nbsp;<code>/home/etienne/.cargo/bin/jarl check .</code>.</p>
+</details>
 </section>
 </section>
 <section id="related-work" class="level2">
