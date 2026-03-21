@@ -1,8 +1,4 @@
-use std::process::Command;
-use tempfile::TempDir;
-
-use crate::helpers::CommandExt;
-use crate::helpers::binary_path;
+use crate::helpers::{CliTest, CommandExt};
 
 // This collects edge cases and runs them with all rules to ensure that we didn't
 // fix just one particular rule but left errors in another one;
@@ -10,12 +6,8 @@ use crate::helpers::binary_path;
 // https://github.com/etiennebacher/jarl/issues/416
 #[test]
 fn test_jarl_break_and_next_kw_as_call() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
+    let case = CliTest::with_file(
+        "test.R",
         "
 for (i in 1:3) {
     break()
@@ -26,8 +18,8 @@ for (i in 1:3) {
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()

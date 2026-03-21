@@ -1,21 +1,10 @@
-use std::process::Command;
-
-use tempfile::TempDir;
-
-use crate::helpers::CommandExt;
-use crate::helpers::binary_path;
+use crate::helpers::{CliTest, CommandExt};
 
 #[test]
 fn test_one_non_existing_selected_rule() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
+    let case = CliTest::with_file("test.R", "any(is.na(x))")?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -39,15 +28,9 @@ fn test_one_non_existing_selected_rule() -> anyhow::Result<()> {
 
 #[test]
 fn test_several_non_existing_selected_rules() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
+    let case = CliTest::with_file("test.R", "any(is.na(x))")?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -71,15 +54,9 @@ fn test_several_non_existing_selected_rules() -> anyhow::Result<()> {
 
 #[test]
 fn test_one_non_existing_ignored_rule() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
+    let case = CliTest::with_file("test.R", "any(is.na(x))")?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--ignore")
@@ -103,15 +80,9 @@ fn test_one_non_existing_ignored_rule() -> anyhow::Result<()> {
 
 #[test]
 fn test_several_non_existing_ignored_rules() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
+    let case = CliTest::with_file("test.R", "any(is.na(x))")?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--ignore")
@@ -135,16 +106,10 @@ fn test_several_non_existing_ignored_rules() -> anyhow::Result<()> {
 
 #[test]
 fn test_selected_and_ignored() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
+    let case = CliTest::with_file("test.R", "any(is.na(x))")?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -170,20 +135,13 @@ fn test_selected_and_ignored() -> anyhow::Result<()> {
 
 #[test]
 fn test_correct_rule_selection_and_exclusion() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
-
-    let test_path_2 = "test2.R";
-    let test_contents_2 = "any(duplicated(x))";
-    std::fs::write(directory.join(test_path_2), test_contents_2)?;
+    let case = CliTest::with_files([
+        ("test.R", "any(is.na(x))"),
+        ("test2.R", "any(duplicated(x))"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -219,20 +177,17 @@ fn test_correct_rule_selection_and_exclusion() -> anyhow::Result<()> {
 
 #[test]
 fn test_select_rule_group() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 any(is.na(x))
 !all.equal(x, y)
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
+",
+    )?;
 
     // Works with only group name
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -263,8 +218,7 @@ any(is.na(x))
 
     // Can mix group name and rule name
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -303,8 +257,7 @@ any(is.na(x))
 
     // Can mix group name and rule name that is part of the same group
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -338,20 +291,17 @@ any(is.na(x))
 
 #[test]
 fn test_ignore_rule_group() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 any(is.na(x))
 !all.equal(x, y)
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
+",
+    )?;
 
     // Works with only group name
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--ignore")
@@ -382,8 +332,7 @@ any(is.na(x))
 
     // Can mix group name and rule name
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--ignore")
@@ -404,8 +353,7 @@ any(is.na(x))
 
     // Can mix group name and rule name that is part of the same group
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--ignore")
@@ -439,17 +387,11 @@ any(is.na(x))
 
 #[test]
 fn test_invalid_rule_group() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
+    let case = CliTest::with_file("test.R", "any(is.na(x))")?;
 
     // Works with only group name
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--ignore")
@@ -473,19 +415,16 @@ fn test_invalid_rule_group() -> anyhow::Result<()> {
 
 #[test]
 fn test_select_ignore_interaction_with_rule_group() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 any(is.na(x))
 !all.equal(x, y)
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
+",
+    )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -507,8 +446,7 @@ any(is.na(x))
     );
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -544,21 +482,18 @@ any(is.na(x))
 
 #[test]
 fn test_non_default_rule_groups_are_ignored() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 any(is.na(x))
 expect_equal(foo(x), TRUE)
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
+",
+    )?;
 
     // The rule group TESTTHAT is disabled by default, so the second line is not
     // reported.
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .run()
@@ -590,20 +525,17 @@ expect_equal(foo(x), TRUE)
 
 #[test]
 fn test_select_all_keyword() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 any(is.na(x))
 expect_equal(foo(x), TRUE)
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
+",
+    )?;
 
     // Using ALL should select all rules including opt-in ones like TESTTHAT
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -642,8 +574,7 @@ expect_equal(foo(x), TRUE)
 
     // ALL can be combined with ignore
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -679,20 +610,17 @@ expect_equal(foo(x), TRUE)
 
 #[test]
 fn test_extend_select() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 any(is.na(x))
 expect_equal(foo(x), TRUE)
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
+",
+    )?;
 
     // With extend-select TESTTHAT, both default rules and TESTTHAT rules are active
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--extend-select")
@@ -731,8 +659,7 @@ expect_equal(foo(x), TRUE)
 
     // extend-select can also be used with specific rule names
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--extend-select")
@@ -774,16 +701,10 @@ expect_equal(foo(x), TRUE)
 
 #[test]
 fn test_extend_select_unknown_rule() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "any(is.na(x))";
-    std::fs::write(directory.join(test_path), test_contents)?;
+    let case = CliTest::with_file("test.R", "any(is.na(x))")?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--extend-select")
@@ -806,17 +727,11 @@ fn test_extend_select_unknown_rule() -> anyhow::Result<()> {
 
 #[test]
 fn test_deprecated_rule_warning_from_cli() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "browser()";
-    std::fs::write(directory.join(test_path), test_contents)?;
+    let case = CliTest::with_file("test.R", "browser()")?;
 
     // Selecting `browser` via --select should emit a deprecation warning on stderr
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -851,25 +766,20 @@ fn test_deprecated_rule_warning_from_cli() -> anyhow::Result<()> {
 
 #[test]
 fn test_deprecated_rule_warning_from_toml() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "browser()";
-    std::fs::write(directory.join(test_path), test_contents)?;
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        r#"
+    let case = CliTest::with_files([
+        ("test.R", "browser()"),
+        (
+            "jarl.toml",
+            r#"
 [lint]
 select = ["browser"]
 "#,
-    )?;
+        ),
+    ])?;
 
     // Using `browser` in TOML select should emit a deprecation warning
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case.command()
             .arg("check")
             .arg(".")
             .run()
