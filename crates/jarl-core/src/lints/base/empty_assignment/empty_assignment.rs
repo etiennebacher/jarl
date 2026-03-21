@@ -29,7 +29,6 @@ pub struct EmptyAssignment;
 /// a <- NULL
 /// b <- NULL
 /// ```
-
 impl Violation for EmptyAssignment {
     fn name(&self) -> String {
         "empty_assignment".to_string()
