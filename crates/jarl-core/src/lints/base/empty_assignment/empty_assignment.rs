@@ -4,7 +4,7 @@ use biome_rowan::AstNode;
 
 pub struct EmptyAssignment;
 
-/// Version added: 0.0.9
+/// Version added: 0.0.8
 ///
 /// ## What it does
 ///
