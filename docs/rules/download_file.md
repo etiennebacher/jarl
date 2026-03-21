@@ -1,4 +1,7 @@
 # download_file
+::: {.callout-note title="Added in [0.0.24](https://github.com/etiennebacher/jarl/releases/tag/0.0.24)"}
+:::
+
 ## What it does
 
 Checks for usage of `download.file()` with `mode = "a"` or `mode = "w"`.

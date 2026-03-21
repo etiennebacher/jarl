@@ -1,4 +1,7 @@
 # expect_s3_class
+::: {.callout-note title="Added in [0.3.0](https://github.com/etiennebacher/jarl/releases/tag/0.3.0)"}
+:::
+
 ## What it does
 
 Checks for usage of `expect_equal(class(x), "y")` and

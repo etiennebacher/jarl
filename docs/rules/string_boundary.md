@@ -1,4 +1,7 @@
 # string_boundary
+::: {.callout-note title="Added in [0.3.0](https://github.com/etiennebacher/jarl/releases/tag/0.3.0)"}
+:::
+
 ## What it does
 
 Checks for `substr()` and `substring()` calls that can be replaced with

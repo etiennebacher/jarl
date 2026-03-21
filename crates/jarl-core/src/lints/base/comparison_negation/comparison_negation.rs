@@ -3,6 +3,8 @@ use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// Version added: 0.0.23
+///
 /// ## What it does
 ///
 /// Checks for patterns similar to `!(... < ...)`.

@@ -1,4 +1,7 @@
 # equals_null
+::: {.callout-note title="Added in [0.4.0](https://github.com/etiennebacher/jarl/releases/tag/0.4.0)"}
+:::
+
 ## What it does
 
 Check for `x == NULL`, `x != NULL` and `x %in% NULL`, and replaces those by

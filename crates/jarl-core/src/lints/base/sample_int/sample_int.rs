@@ -8,6 +8,8 @@ use biome_rowan::AstNode;
 
 pub struct SampleInt;
 
+/// Version added: 0.0.16
+///
 /// ## What it does
 ///
 /// Checks for usage of `sample(1:n, m, ...)` and replaces it with

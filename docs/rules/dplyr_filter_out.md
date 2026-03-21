@@ -1,4 +1,7 @@
 # dplyr_filter_out
+::: {.callout-note title="Added in [0.5.0](https://github.com/etiennebacher/jarl/releases/tag/0.5.0)"}
+:::
+
 ## What it does
 
 Checks `dplyr::filter()` calls with complex conditions and suggests using

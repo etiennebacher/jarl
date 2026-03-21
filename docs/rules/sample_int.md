@@ -1,4 +1,7 @@
 # sample_int
+::: {.callout-note title="Added in [0.0.16](https://github.com/etiennebacher/jarl/releases/tag/0.0.16)"}
+:::
+
 ## What it does
 
 Checks for usage of `sample(1:n, m, ...)` and replaces it with

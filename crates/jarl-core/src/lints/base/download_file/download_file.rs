@@ -3,6 +3,8 @@ use crate::utils::{get_arg_by_name_then_position, get_function_name};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// Version added: 0.0.24
+///
 /// ## What it does
 ///
 /// Checks for usage of `download.file()` with `mode = "a"` or `mode = "w"`.

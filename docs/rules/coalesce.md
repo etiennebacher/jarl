@@ -1,4 +1,7 @@
 # coalesce
+::: {.callout-note title="Added in [0.0.19](https://github.com/etiennebacher/jarl/releases/tag/0.0.19)"}
+:::
+
 ## What it does
 
 Checks for usage of `if (is.null(x)) y else x` or

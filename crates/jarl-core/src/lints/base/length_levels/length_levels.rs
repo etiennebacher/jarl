@@ -3,6 +3,8 @@ use crate::utils::{get_nested_functions_content, node_contains_comments};
 use air_r_syntax::*;
 pub struct LengthLevels;
 
+/// Version added: 0.0.8
+///
 /// ## What it does
 ///
 /// Check for `length(levels(...))` and replace it with `nlevels(...)`.

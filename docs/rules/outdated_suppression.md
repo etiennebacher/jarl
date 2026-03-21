@@ -1,4 +1,7 @@
 # outdated_suppression
+::: {.callout-note title="Added in [0.4.0](https://github.com/etiennebacher/jarl/releases/tag/0.4.0)"}
+:::
+
 ## What it does
 
 Checks for suppression comments that don't suppress any actual violations.

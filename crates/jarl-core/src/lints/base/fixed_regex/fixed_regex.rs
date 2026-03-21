@@ -5,6 +5,8 @@ use biome_rowan::AstNode;
 
 pub struct FixedRegex;
 
+/// Version added: 0.3.0
+///
 /// ## What it does
 ///
 /// Checks for regex functions (`grep`, `grepl`, `gsub`, `sub`, `regexpr`,

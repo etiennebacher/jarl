@@ -105,3 +105,8 @@ ul.navbar-nav > li.nav-item.dropdown > ul.dropdown-menu.show > li > a.dropdown-i
 div.callout-note.callout {
 	border-left-color: #4b5f9b;
 }
+
+/* Link for 'Added in version ...' in rule pages */
+.low-opacity {
+  opacity: 0.75;
+}

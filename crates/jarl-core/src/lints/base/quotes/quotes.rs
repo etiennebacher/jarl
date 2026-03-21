@@ -35,6 +35,8 @@ impl ParsedString<'_> {
     }
 }
 
+/// Version added: 0.5.0
+///
 /// ## What it does
 ///
 /// Checks for consistency of quote delimiters in string literals.

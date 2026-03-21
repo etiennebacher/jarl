@@ -1,4 +1,7 @@
 # expect_true_false
+::: {.callout-note title="Added in [0.2.0](https://github.com/etiennebacher/jarl/releases/tag/0.2.0)"}
+:::
+
 ## What it does
 
 Checks for usage of `expect_equal(x, TRUE)`, `expect_equal(x, FALSE)`,

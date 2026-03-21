@@ -5,6 +5,8 @@ use biome_rowan::AstNode;
 
 pub struct RedundantEquals;
 
+/// Version added: 0.0.8
+///
 /// ## What it does
 ///
 /// Checks for usage of `==` and `!=` where one of the sides of the operation

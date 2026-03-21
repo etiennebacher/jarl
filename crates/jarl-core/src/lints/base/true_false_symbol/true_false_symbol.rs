@@ -4,6 +4,8 @@ use biome_rowan::AstNode;
 
 pub struct TrueFalseSymbol;
 
+/// Version added: 0.0.8
+///
 /// ## What it does
 ///
 /// Checks for usage of `T` and `F` symbols. If they correspond to the `TRUE`

@@ -1,4 +1,7 @@
 # sprintf
+::: {.callout-note title="Added in [0.3.0](https://github.com/etiennebacher/jarl/releases/tag/0.3.0)"}
+:::
+
 ## What it does
 
 Multiple checks for `sprintf()`:

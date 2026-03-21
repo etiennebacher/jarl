@@ -5,6 +5,8 @@ use crate::{
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// Version added: 0.2.0
+///
 /// ## What it does
 ///
 /// Checks for `1:length(...)`, `1:nrow(...)`, `1:ncol(...)`, `1:NROW(...)` and

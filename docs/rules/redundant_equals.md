@@ -1,4 +1,7 @@
 # redundant_equals
+::: {.callout-note title="Added in [0.0.8](https://github.com/etiennebacher/jarl/releases/tag/0.0.8)"}
+:::
+
 ## What it does
 
 Checks for usage of `==` and `!=` where one of the sides of the operation

@@ -5,6 +5,8 @@ use biome_rowan::AstNode;
 
 pub struct EqualsNaN;
 
+/// Version added: 0.4.0
+///
 /// ## What it does
 ///
 /// Check for `x == NaN`, `x != NaN` and `x %in% NaN`, and replaces those by

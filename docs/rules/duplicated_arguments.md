@@ -1,4 +1,7 @@
 # duplicated_arguments
+::: {.callout-note title="Added in [0.0.8](https://github.com/etiennebacher/jarl/releases/tag/0.0.8)"}
+:::
+
 ## What it does
 
 Checks for duplicated arguments in function calls.

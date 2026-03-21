@@ -5,6 +5,8 @@ use std::path::{Path, PathBuf};
 use crate::namespace::parse_namespace_exports;
 use crate::package::{FileScope, SharedFileData};
 
+/// Version added: 0.5.0
+///
 /// ## What it does
 ///
 /// Checks for unused functions in R packages. It looks for:

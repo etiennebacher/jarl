@@ -1,4 +1,7 @@
 # lengths
+::: {.callout-note title="Added in [0.0.8](https://github.com/etiennebacher/jarl/releases/tag/0.0.8)"}
+:::
+
 ## What it does
 
 Checks for usage of `length()` in several functions that apply it to each

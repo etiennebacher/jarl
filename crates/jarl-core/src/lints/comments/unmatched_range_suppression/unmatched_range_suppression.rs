@@ -1,6 +1,8 @@
 use crate::diagnostic::*;
 use biome_rowan::TextRange;
 
+/// Version added: 0.4.0
+///
 /// ## What it does
 ///
 /// Checks for `jarl-ignore-start` and `jarl-ignore-end` comments that don't have

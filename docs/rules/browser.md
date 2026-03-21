@@ -1,4 +1,7 @@
 # browser
+::: {.callout-note title="Added in [0.1.2](https://github.com/etiennebacher/jarl/releases/tag/0.1.2)"}
+:::
+
 ## What it does
 
 Checks for lingering presence of `browser()` which should not be present in

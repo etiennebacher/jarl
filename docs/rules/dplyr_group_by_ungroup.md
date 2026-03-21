@@ -1,4 +1,7 @@
 # dplyr_group_by_ungroup
+::: {.callout-note title="Added in [0.5.0](https://github.com/etiennebacher/jarl/releases/tag/0.5.0)"}
+:::
+
 ## What it does
 
 Checks for `group_by() |> verb() |> ungroup()` patterns that can be
