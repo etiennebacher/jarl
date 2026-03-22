@@ -907,7 +907,6 @@ version = "0.5.0-alpha.4"
 dependencies = [
  "annotate-snippets",
  "anyhow",
- "biome_rowan",
  "clap",
  "colored",
  "fs",
