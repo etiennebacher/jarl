@@ -42,12 +42,11 @@ air_fs.workspace = true
 
 # Additional utilities
 regex.workspace = true
-tempfile.workspace = true
 tracing-subscriber = "0.3.20"
 
 annotate-snippets = "0.11"
 
 [dev-dependencies]
-tempfile.workspace = true
 insta.workspace = true
 regex.workspace = true
+tempfile.workspace = true
