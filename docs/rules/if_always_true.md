@@ -1,6 +1,5 @@
 # if_always_true
-::: {.callout-note title="Added in [0.4.0](https://github.com/etiennebacher/jarl/releases/tag/0.4.0)" .low-opacity}
-:::
+::: {.callout-note title="Added in 0.4.0" .low-opacity}
 
 ## What it does
 

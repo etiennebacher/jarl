@@ -53,13 +53,9 @@ docs <- lapply(seq_along(rules), \(x) {
 
   doc <- c(
     paste0(
-      '::: {.callout-note title="Added in [',
+      '::: {.callout-note title="Added in ',
       added_in_version,
-      '](https://github.com/etiennebacher/jarl/releases/tag/',
-      added_in_version,
-      ')" .low-opacity}',
-      '\n',
-      ':::\n'
+      '" .low-opacity}\n'
     ),
     doc
   )

@@ -1,6 +1,5 @@
 # empty_assignment
-::: {.callout-note title="Added in [0.0.8](https://github.com/etiennebacher/jarl/releases/tag/0.0.8)" .low-opacity}
-:::
+::: {.callout-note title="Added in 0.0.8" .low-opacity}
 
 ## What it does
 
@@ -25,4 +24,3 @@ Use instead:
 a <- NULL
 b <- NULL
 ```
-
