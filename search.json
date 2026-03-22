@@ -14,7 +14,7 @@
     "href": "rules/vector_logic.html",
     "title": "vector_logic",
     "section": "",
-    "text": "NoteAdded in 0.3.0\n\n\n\n\n\n\n\n\nChecks for calls to & and | in the conditions of if and while statements.\n\n\n\nUsing & and | requires evaluating both sides of the expression, which can be expensive. In contrast, && and || have early exits. For example, a && b will not evaluate b if a is FALSE because we already know that the output of the entire expression will be FALSE, regardless of the value of b. Similarly, a || b will not evaluate b if a is TRUE.\nThis rule only reports cases where the binary expression is the top operation of the condition in an if or while statement. For example, if (x & y) will be reported but if (foo(x & y)) will not. The reason for this is that in those two contexts, the length of condition must be equal to 1 (otherwise R would error as of 4.3.0), so using & / | or && / || is equivalent.\nThis rule doesn’t have an automatic fix.\n\n\n\nif (x & y) 1\nif (x | y) 1\nUse instead:\nif (x && y) 1\nif (x || y) 1\n\n\n\nSee ?Logic",
+    "text": "NoteAdded in 0.3.0\n\n\n\n\n\nChecks for calls to & and | in the conditions of if and while statements.\n\n\n\nUsing & and | requires evaluating both sides of the expression, which can be expensive. In contrast, && and || have early exits. For example, a && b will not evaluate b if a is FALSE because we already know that the output of the entire expression will be FALSE, regardless of the value of b. Similarly, a || b will not evaluate b if a is TRUE.\nThis rule only reports cases where the binary expression is the top operation of the condition in an if or while statement. For example, if (x & y) will be reported but if (foo(x & y)) will not. The reason for this is that in those two contexts, the length of condition must be equal to 1 (otherwise R would error as of 4.3.0), so using & / | or && / || is equivalent.\nThis rule doesn’t have an automatic fix.\n\n\n\nif (x & y) 1\nif (x | y) 1\nUse instead:\nif (x && y) 1\nif (x || y) 1\n\n\n\nSee ?Logic",
     "crumbs": [
       "List of rules",
       "vector_logic"
@@ -69,7 +69,7 @@
     "href": "rules/unreachable_code.html",
     "title": "unreachable_code",
     "section": "",
-    "text": "NoteAdded in 0.4.0\n\n\n\n\n\n\n\n\nDetects code that can never be executed because it appears after control flow statements like return, break, or next, or in branches that cannot be reached.\n\n\n\nUnreachable code indicates a logic error or dead code that should be removed. It clutters the codebase, confuses readers, and may indicate unintended behavior.\n\n\n\nif (x &gt; 5) {\n  stop(\"hi\")\n} else {\n  stop(\"bye\")\n}\n1 + 1 # unreachable\nfoo &lt;- function(x) {\n  return(x + 1)\n  print(\"hi\")  # unreachable\n}\nfoo &lt;- function(x) {\n  for (i in 1:10) {\n    x &lt;- x + 1\n    if (x &gt; 10) {\n       break\n       print(\"x is greater than 10\") # unreachable\n    }\n  }\n}",
+    "text": "NoteAdded in 0.4.0\n\n\n\n\n\nDetects code that can never be executed because it appears after control flow statements like return, break, or next, or in branches that cannot be reached.\n\n\n\nUnreachable code indicates a logic error or dead code that should be removed. It clutters the codebase, confuses readers, and may indicate unintended behavior.\n\n\n\nif (x &gt; 5) {\n  stop(\"hi\")\n} else {\n  stop(\"bye\")\n}\n1 + 1 # unreachable\nfoo &lt;- function(x) {\n  return(x + 1)\n  print(\"hi\")  # unreachable\n}\nfoo &lt;- function(x) {\n  for (i in 1:10) {\n    x &lt;- x + 1\n    if (x &gt; 10) {\n       break\n       print(\"x is greater than 10\") # unreachable\n    }\n  }\n}",
     "crumbs": [
       "List of rules",
       "unreachable_code"
@@ -113,7 +113,7 @@
     "href": "rules/unmatched_range_suppression.html",
     "title": "unmatched_range_suppression",
     "section": "",
-    "text": "NoteAdded in 0.4.0\n\n\n\n\n\n\n\n\nChecks for jarl-ignore-start and jarl-ignore-end comments that don’t have a matching counterpart at the same nesting level.\n\n\n\nStart and end suppression comments must be matched at the same nesting level. A start comment inside a function body cannot be closed by an end comment outside that function, and vice versa. Unmatched suppressions indicate a mistake in the suppression structure and may not suppress what you intended.\n\n\n\n# The start and end are at different nesting levels, so both are unmatched.\n# jarl-ignore-start any_is_na: &lt;reason&gt;\nf &lt;- function() {\n  any(is.na(x))\n  # jarl-ignore-end any_is_na\n}\nany(is.na(x))  # This is NOT suppressed!\nUse instead:\n# Start and end at the same level\n# jarl-ignore-start any_is_na: &lt;reason&gt;\nany(is.na(x))\n# jarl-ignore-end any_is_na",
+    "text": "NoteAdded in 0.4.0\n\n\n\n\n\nChecks for jarl-ignore-start and jarl-ignore-end comments that don’t have a matching counterpart at the same nesting level.\n\n\n\nStart and end suppression comments must be matched at the same nesting level. A start comment inside a function body cannot be closed by an end comment outside that function, and vice versa. Unmatched suppressions indicate a mistake in the suppression structure and may not suppress what you intended.\n\n\n\n# The start and end are at different nesting levels, so both are unmatched.\n# jarl-ignore-start any_is_na: &lt;reason&gt;\nf &lt;- function() {\n  any(is.na(x))\n  # jarl-ignore-end any_is_na\n}\nany(is.na(x))  # This is NOT suppressed!\nUse instead:\n# Start and end at the same level\n# jarl-ignore-start any_is_na: &lt;reason&gt;\nany(is.na(x))\n# jarl-ignore-end any_is_na",
     "crumbs": [
       "List of rules",
       "unmatched_range_suppression"
@@ -157,7 +157,7 @@
     "href": "rules/undesirable_function.html",
     "title": "undesirable_function",
     "section": "",
-    "text": "NoteAdded in 0.5.0\n\n\n\n\n\n\n\n\nChecks for calls to functions listed as undesirable.\n\n\n\nSome functions should not appear in production code. For example, browser() is a debugging tool that interrupts execution, and should be removed before committing.\n\n\n\nBy default, only browser is flagged. You can customise the list in jarl.toml:\n[lint.undesirable_function]\n# Replace the default list entirely:\nfunctions = [\"browser\", \"debug\"]\n\n# Or add to the defaults:\nextend-functions = [\"debug\"]\n\n\n\ndo_something &lt;- function(abc = 1) {\n   xyz &lt;- abc + 1\n   browser()      # flagged by default\n   xyz\n}",
+    "text": "NoteAdded in 0.5.0\n\n\n\n\n\nChecks for calls to functions listed as undesirable.\n\n\n\nSome functions should not appear in production code. For example, browser() is a debugging tool that interrupts execution, and should be removed before committing.\n\n\n\nBy default, only browser is flagged. You can customise the list in jarl.toml:\n[lint.undesirable_function]\n# Replace the default list entirely:\nfunctions = [\"browser\", \"debug\"]\n\n# Or add to the defaults:\nextend-functions = [\"debug\"]\n\n\n\ndo_something &lt;- function(abc = 1) {\n   xyz &lt;- abc + 1\n   browser()      # flagged by default\n   xyz\n}",
     "crumbs": [
       "List of rules",
       "undesirable_function"
@@ -212,7 +212,7 @@
     "href": "rules/system_file.html",
     "title": "system_file",
     "section": "",
-    "text": "NoteAdded in 0.1.2\n\n\n\n\n\n\n\n\nChecks for usage of system.file(file.path(...)) and replaces it with system.file(...).\n\n\n\nIn system.file(), all unnamed arguments are already passed to file.path() under the hood, so system.file(file.path(...)) is redundant and harder to read.\n\n\n\nsystem.file(file.path(\"my_dir\", \"my_sub_dir\"), package = \"foo\")\nUse instead:\nsystem.file(\"my_dir\", \"my_sub_dir\", package = \"foo\")\n\n\n\nSee ?system.file",
+    "text": "NoteAdded in 0.1.2\n\n\n\n\n\nChecks for usage of system.file(file.path(...)) and replaces it with system.file(...).\n\n\n\nIn system.file(), all unnamed arguments are already passed to file.path() under the hood, so system.file(file.path(...)) is redundant and harder to read.\n\n\n\nsystem.file(file.path(\"my_dir\", \"my_sub_dir\"), package = \"foo\")\nUse instead:\nsystem.file(\"my_dir\", \"my_sub_dir\", package = \"foo\")\n\n\n\nSee ?system.file",
     "crumbs": [
       "List of rules",
       "system_file"
@@ -267,7 +267,7 @@
     "href": "rules/sprintf.html",
     "title": "sprintf",
     "section": "",
-    "text": "NoteAdded in 0.3.0\n\n\n\n\n\n\n\n\nMultiple checks for sprintf():\n\nchecks whether the fmt argument is a constant string (in which case sprintf() is not needed);\nchecks whether there is a mismatch between the number of special characters and the number of arguments;\nchecks whether the fmt argument contains invalid special characters.\n\n\n\n\nFor 1, using sprintf() with a constant string, e.g. sprintf(\"abc\"), is useless and less readable. This has a safe fix that extracts the string.\nFor 2, a mismatch between the number of special characters and the number of arguments would generate a runtime error or a warning:\n\nif the number of special characters &gt; number of arguments, it errors, e.g. sprintf(\"%s %s\", \"a\");\notherwise, it warns, e.g. sprintf(\"%s\", \"a\", \"b\").\n\nFor 3, passing invalid special characters would error at runtime, e.g. sprintf(\"%y\", \"a\").\nCases 2 and 3 do not have an automatic fix.\n\n\n\nsprintf(\"abc\")\nsprintf(\"%s %s\", \"a\") # would error\nsprintf(\"%y\", \"a\") # would error\nUse instead:\n\"abc\"\n\n\n\nSee ?sprintf",
+    "text": "NoteAdded in 0.3.0\n\n\n\n\n\nMultiple checks for sprintf():\n\nchecks whether the fmt argument is a constant string (in which case sprintf() is not needed);\nchecks whether there is a mismatch between the number of special characters and the number of arguments;\nchecks whether the fmt argument contains invalid special characters.\n\n\n\n\nFor 1, using sprintf() with a constant string, e.g. sprintf(\"abc\"), is useless and less readable. This has a safe fix that extracts the string.\nFor 2, a mismatch between the number of special characters and the number of arguments would generate a runtime error or a warning:\n\nif the number of special characters &gt; number of arguments, it errors, e.g. sprintf(\"%s %s\", \"a\");\notherwise, it warns, e.g. sprintf(\"%s\", \"a\", \"b\").\n\nFor 3, passing invalid special characters would error at runtime, e.g. sprintf(\"%y\", \"a\").\nCases 2 and 3 do not have an automatic fix.\n\n\n\nsprintf(\"abc\")\nsprintf(\"%s %s\", \"a\") # would error\nsprintf(\"%y\", \"a\") # would error\nUse instead:\n\"abc\"\n\n\n\nSee ?sprintf",
     "crumbs": [
       "List of rules",
       "sprintf"
@@ -322,7 +322,7 @@
     "href": "rules/seq2.html",
     "title": "seq2",
     "section": "",
-    "text": "NoteAdded in 0.2.0\n\n\n\n\n\n\n\n\nChecks for seq(length(...)), seq(nrow(...)), seq(ncol(...)), seq(NROW(...)), seq(NCOL(...)). See also seq.\n\n\n\nThose patterns are often used to generate sequences from 1 to a given number. However, when length(...) is 0, then this creates a sequence 1,0 which is often overlooked.\nThis rule comes with safe automatic fixes using seq_along() or seq_len().\n\n\n\nfor (i in seq(nrow(data))) {\n  print(\"hi\")\n}\n\nfor (i in seq(length(data))) {\n  print(\"hi\")\n}\nUse instead:\nfor (i in seq_len(nrow(data))) {\n  print(\"hi\")\n}\n\nfor (i in seq_along(data)) {\n  print(\"hi\")\n}",
+    "text": "NoteAdded in 0.2.0\n\n\n\n\n\nChecks for seq(length(...)), seq(nrow(...)), seq(ncol(...)), seq(NROW(...)), seq(NCOL(...)). See also seq.\n\n\n\nThose patterns are often used to generate sequences from 1 to a given number. However, when length(...) is 0, then this creates a sequence 1,0 which is often overlooked.\nThis rule comes with safe automatic fixes using seq_along() or seq_len().\n\n\n\nfor (i in seq(nrow(data))) {\n  print(\"hi\")\n}\n\nfor (i in seq(length(data))) {\n  print(\"hi\")\n}\nUse instead:\nfor (i in seq_len(nrow(data))) {\n  print(\"hi\")\n}\n\nfor (i in seq_along(data)) {\n  print(\"hi\")\n}",
     "crumbs": [
       "List of rules",
       "seq2"
@@ -366,7 +366,7 @@
     "href": "rules/sample_int.html",
     "title": "sample_int",
     "section": "",
-    "text": "NoteAdded in 0.0.16\n\n\n\n\n\n\n\n\nChecks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.\n\n\n\nsample() calls sample.int() internally so they have the same performance, but the latter is more readable.\nThis rule is disabled by default.\n\n\n\nsample(1:10, 2)\nUse instead:\nsample.int(10, 2)\n\n\n\nSee ?sample",
+    "text": "NoteAdded in 0.0.16\n\n\n\n\n\nChecks for usage of sample(1:n, m, ...) and replaces it with sample.int(n, m, ...) for readability.\n\n\n\nsample() calls sample.int() internally so they have the same performance, but the latter is more readable.\nThis rule is disabled by default.\n\n\n\nsample(1:10, 2)\nUse instead:\nsample.int(10, 2)\n\n\n\nSee ?sample",
     "crumbs": [
       "List of rules",
       "sample_int"
@@ -421,7 +421,7 @@
     "href": "rules/redundant_ifelse.html",
     "title": "redundant_ifelse",
     "section": "",
-    "text": "NoteAdded in 0.4.0\n\n\n\n\n\n\n\n\nThis checks for cases of ifelse(), dplyr::if_else(), and data.table::fifelse() where the output is always a boolean. In those cases, using the condition directly is enough, the function call is redundant.\n\n\n\nThis rule looks for 4 cases:\n\nifelse(condition, TRUE, FALSE)\nifelse(condition, FALSE, TRUE)\nifelse(condition, TRUE, TRUE)\nifelse(condition, FALSE, FALSE)\n\nThe first two cases can be simplified to condition and !condition respectively. The last two cases are very likely to be mistakes since the output is always the same.\nThis rule has a safe fix and doesn’t handle calls to dplyr::if_else() and data.table::fifelse() when they have additional arguments.\n\n\n\nifelse(x %in% letters, TRUE, FALSE)\ndplyr::if_else(x &gt; 1, FALSE, TRUE)\nUse instead:\nx %in% letters\n!(x &gt; 1) # (or `x &lt;= 1`)",
+    "text": "NoteAdded in 0.4.0\n\n\n\n\n\nThis checks for cases of ifelse(), dplyr::if_else(), and data.table::fifelse() where the output is always a boolean. In those cases, using the condition directly is enough, the function call is redundant.\n\n\n\nThis rule looks for 4 cases:\n\nifelse(condition, TRUE, FALSE)\nifelse(condition, FALSE, TRUE)\nifelse(condition, TRUE, TRUE)\nifelse(condition, FALSE, FALSE)\n\nThe first two cases can be simplified to condition and !condition respectively. The last two cases are very likely to be mistakes since the output is always the same.\nThis rule has a safe fix and doesn’t handle calls to dplyr::if_else() and data.table::fifelse() when they have additional arguments.\n\n\n\nifelse(x %in% letters, TRUE, FALSE)\ndplyr::if_else(x &gt; 1, FALSE, TRUE)\nUse instead:\nx %in% letters\n!(x &gt; 1) # (or `x &lt;= 1`)",
     "crumbs": [
       "List of rules",
       "redundant_ifelse"
@@ -465,7 +465,7 @@
     "href": "rules/quotes.html",
     "title": "quotes",
     "section": "",
-    "text": "NoteAdded in 0.5.0\n\n\n\n\n\n\n\n\nChecks for consistency of quote delimiters in string literals. This rule is disabled by default.\n\n\n\nIn general, single (') and double (\") quotes can be used interchangeably within R. However, inconsistent use of quote styles decreases readability.\nBase R documentation and the Tidyverse style guide recommend using double quotes for all strings, except for when the string already contains double quotes. Therefore, by default, this rule expects double quotes (\").\nTo prefer single quotes, set this in jarl.toml:\n[lint.quotes]\nquote = \"single\"\nFor regular strings, this rule allows the opposite quote when needed to avoid escaping the preferred quote. For example,\ncat('R says \"Hello world\" ...')\nis easier to read than\ncat(\"R says \\\"Hello world\\\" ...\")\nRaw strings also allow the use of the opposite quote for readability and to prevent early termination.\nFor example:\nr'(\"rawstring\")'\nis more readable than\nr\"(\"rawstring\")\"\nUsing the wrong delimiter can also terminate the string early. For example:\nr'(abc)\"def)'\nis valid R, but\nr\"(abc)\"def)\"\nresults in early termination and a syntax error.\n\n\n\nx &lt;- 'hello'\nprint(r'-('hello')-')\nUse instead:\nx &lt;- \"hello\"\nprint(r\"-('hello')-\")\n\n\n\nSee:\n\nTidyverse style guide\nR documentation",
+    "text": "NoteAdded in 0.5.0\n\n\n\n\n\nChecks for consistency of quote delimiters in string literals. This rule is disabled by default.\n\n\n\nIn general, single (') and double (\") quotes can be used interchangeably within R. However, inconsistent use of quote styles decreases readability.\nBase R documentation and the Tidyverse style guide recommend using double quotes for all strings, except for when the string already contains double quotes. Therefore, by default, this rule expects double quotes (\").\nTo prefer single quotes, set this in jarl.toml:\n[lint.quotes]\nquote = \"single\"\nFor regular strings, this rule allows the opposite quote when needed to avoid escaping the preferred quote. For example,\ncat('R says \"Hello world\" ...')\nis easier to read than\ncat(\"R says \\\"Hello world\\\" ...\")\nRaw strings also allow the use of the opposite quote for readability and to prevent early termination.\nFor example:\nr'(\"rawstring\")'\nis more readable than\nr\"(\"rawstring\")\"\nUsing the wrong delimiter can also terminate the string early. For example:\nr'(abc)\"def)'\nis valid R, but\nr\"(abc)\"def)\"\nresults in early termination and a syntax error.\n\n\n\nx &lt;- 'hello'\nprint(r'-('hello')-')\nUse instead:\nx &lt;- \"hello\"\nprint(r\"-('hello')-\")\n\n\n\nSee:\n\nTidyverse style guide\nR documentation",
     "crumbs": [
       "List of rules",
       "quotes"
@@ -520,7 +520,7 @@
     "href": "rules/outdated_suppression.html",
     "title": "outdated_suppression",
     "section": "",
-    "text": "NoteAdded in 0.4.0\n\n\n\n\n\n\n\n\nChecks for suppression comments that don’t suppress any actual violations.\n\n\n\nSuppression comments that are no longer needed can be confusing and may indicate that the underlying code has changed but the comment was not updated. They also add noise to the codebase.\n\n\n\n# The suppression below is unnecessary because there's no any_is_na violation.\n# jarl-ignore any_is_na: &lt;reason&gt;\nx &lt;- 1\nUse instead:\n# Remove the suppression comment since it's not needed.\nx &lt;- 1",
+    "text": "NoteAdded in 0.4.0\n\n\n\n\n\nChecks for suppression comments that don’t suppress any actual violations.\n\n\n\nSuppression comments that are no longer needed can be confusing and may indicate that the underlying code has changed but the comment was not updated. They also add noise to the codebase.\n\n\n\n# The suppression below is unnecessary because there's no any_is_na violation.\n# jarl-ignore any_is_na: &lt;reason&gt;\nx &lt;- 1\nUse instead:\n# Remove the suppression comment since it's not needed.\nx &lt;- 1",
     "crumbs": [
       "List of rules",
       "outdated_suppression"
@@ -564,7 +564,7 @@
     "href": "rules/misplaced_suppression.html",
     "title": "misplaced_suppression",
     "section": "",
-    "text": "NoteAdded in 0.4.0\n\n\n\n\n\n\n\n\nChecks for suppression comments placed at the end of a line.\n\n\n\nEnd-of-line suppression comments (trailing comments) are not supported by Jarl because the comment system attaches them to the expression they follow, not to the next expression. This means the suppression would not apply to the intended code.\n\n\n\n# The comment below isn't applied because it's at the end of a line.\nany(is.na(x)) # jarl-ignore any_is_na: &lt;reason&gt;\nUse instead:\n# jarl-ignore any_is_na: &lt;reason&gt;\nany(is.na(x))",
+    "text": "NoteAdded in 0.4.0\n\n\n\n\n\nChecks for suppression comments placed at the end of a line.\n\n\n\nEnd-of-line suppression comments (trailing comments) are not supported by Jarl because the comment system attaches them to the expression they follow, not to the next expression. This means the suppression would not apply to the intended code.\n\n\n\n# The comment below isn't applied because it's at the end of a line.\nany(is.na(x)) # jarl-ignore any_is_na: &lt;reason&gt;\nUse instead:\n# jarl-ignore any_is_na: &lt;reason&gt;\nany(is.na(x))",
     "crumbs": [
       "List of rules",
       "misplaced_suppression"
@@ -608,7 +608,7 @@
     "href": "rules/misnamed_suppression.html",
     "title": "misnamed_suppression",
     "section": "",
-    "text": "NoteAdded in 0.4.0\n\n\n\n\n\n\n\n\nChecks for suppression comments with an invalid rule name.\n\n\n\nA suppression comment with an unrecognized rule name will not suppress any violations. This could be due to a typo in the rule name or using a rule name that doesn’t exist.\n\n\n\n# The comment below isn't applied because \"any_isna\" is not a valid rule.\n# jarl-ignore any_isna: &lt;reason&gt;\nany(is.na(x))\nUse instead:\n# jarl-ignore any_is_na: &lt;reason&gt;\nany(is.na(x))",
+    "text": "NoteAdded in 0.4.0\n\n\n\n\n\nChecks for suppression comments with an invalid rule name.\n\n\n\nA suppression comment with an unrecognized rule name will not suppress any violations. This could be due to a typo in the rule name or using a rule name that doesn’t exist.\n\n\n\n# The comment below isn't applied because \"any_isna\" is not a valid rule.\n# jarl-ignore any_isna: &lt;reason&gt;\nany(is.na(x))\nUse instead:\n# jarl-ignore any_is_na: &lt;reason&gt;\nany(is.na(x))",
     "crumbs": [
       "List of rules",
       "misnamed_suppression"
@@ -652,7 +652,7 @@
     "href": "rules/list2df.html",
     "title": "list2df",
     "section": "",
-    "text": "NoteAdded in 0.1.2\n\n\n\n\n\n\n\n\nChecks for usage of do.call(cbind.data.frame, x).\n\n\n\nThe goal of do.call(cbind.data.frame, x) is to concatenate multiple lists elements of the same length into a data.frame. Since R 4.0.0, it is possible to do this with list2DF(x), which is more efficient and easier to read than do.call(cbind.data.frame, x).\nThis rule comes with a safe fix but is only enabled if the project explicitly uses R &gt;= 4.0.0 (or if the argument --min-r-version is passed with a version &gt;= 4.0.0).\n\n\n\nx &lt;- list(a = 1:10, b = 11:20)\ndo.call(cbind.data.frame, x)\nUse instead:\nx &lt;- list(a = 1:10, b = 11:20)\nlist2DF(x)\n\n\n\nSee ?list2DF",
+    "text": "NoteAdded in 0.1.2\n\n\n\n\n\nChecks for usage of do.call(cbind.data.frame, x).\n\n\n\nThe goal of do.call(cbind.data.frame, x) is to concatenate multiple lists elements of the same length into a data.frame. Since R 4.0.0, it is possible to do this with list2DF(x), which is more efficient and easier to read than do.call(cbind.data.frame, x).\nThis rule comes with a safe fix but is only enabled if the project explicitly uses R &gt;= 4.0.0 (or if the argument --min-r-version is passed with a version &gt;= 4.0.0).\n\n\n\nx &lt;- list(a = 1:10, b = 11:20)\ndo.call(cbind.data.frame, x)\nUse instead:\nx &lt;- list(a = 1:10, b = 11:20)\nlist2DF(x)\n\n\n\nSee ?list2DF",
     "crumbs": [
       "List of rules",
       "list2df"
@@ -707,7 +707,7 @@
     "href": "rules/length_levels.html",
     "title": "length_levels",
     "section": "",
-    "text": "NoteAdded in 0.0.8\n\n\n\n\n\n\n\n\nCheck for length(levels(...)) and replace it with nlevels(...).\n\n\n\nlength(levels(...)) is harder to read nlevels(...).\nInternally, nlevels() calls length(levels(...)) so there are no performance gains.\n\n\n\nx &lt;- factor(1:3)\nlength(levels(x))\nUse instead:\nx &lt;- factor(1:3)\nnlevels(x)",
+    "text": "NoteAdded in 0.0.8\n\n\n\n\n\nCheck for length(levels(...)) and replace it with nlevels(...).\n\n\n\nlength(levels(...)) is harder to read nlevels(...).\nInternally, nlevels() calls length(levels(...)) so there are no performance gains.\n\n\n\nx &lt;- factor(1:3)\nlength(levels(x))\nUse instead:\nx &lt;- factor(1:3)\nnlevels(x)",
     "crumbs": [
       "List of rules",
       "length_levels"
@@ -751,7 +751,7 @@
     "href": "rules/is_numeric.html",
     "title": "is_numeric",
     "section": "",
-    "text": "NoteAdded in 0.0.16\n\n\n\n\n\n\n\n\nChecks for usage of is.numeric(x) || is.integer(x).\n\n\n\nis.numeric(x) returns TRUE when x is double or integer. Therefore, testing is.numeric(x) || is.integer(x) is redundant and can be simplified.\n\n\n\nx &lt;- 1:3\nis.numeric(x) || is.integer(x)\nUse instead:\nx &lt;- 1:3\nis.numeric(x)\n\n\n\nSee ?is.numeric",
+    "text": "NoteAdded in 0.0.16\n\n\n\n\n\nChecks for usage of is.numeric(x) || is.integer(x).\n\n\n\nis.numeric(x) returns TRUE when x is double or integer. Therefore, testing is.numeric(x) || is.integer(x) is redundant and can be simplified.\n\n\n\nx &lt;- 1:3\nis.numeric(x) || is.integer(x)\nUse instead:\nx &lt;- 1:3\nis.numeric(x)\n\n\n\nSee ?is.numeric",
     "crumbs": [
       "List of rules",
       "is_numeric"
@@ -806,7 +806,7 @@
     "href": "rules/internal_function.html",
     "title": "internal_function",
     "section": "",
-    "text": "NoteAdded in 0.4.0\n\n\n\n\n\n\n\n\nChecks for usage of :::.\n\n\n\nUsing ::: to access a package’s internal functions is unsafe. Those functions are not part of the package’s public interface and may be changed or removed by the maintainers without notice. Use public functions via :: instead.\nThis rule doesn’t have an automatic fix.",
+    "text": "NoteAdded in 0.4.0\n\n\n\n\n\nChecks for usage of :::.\n\n\n\nUsing ::: to access a package’s internal functions is unsafe. Those functions are not part of the package’s public interface and may be changed or removed by the maintainers without notice. Use public functions via :: instead.\nThis rule doesn’t have an automatic fix.",
     "crumbs": [
       "List of rules",
       "internal_function"
@@ -839,7 +839,7 @@
     "href": "rules/if_always_true.html",
     "title": "if_always_true",
     "section": "",
-    "text": "NoteAdded in 0.4.0\n\n\n\n\n\n\n\n\nDetects if conditions that always evaluate to TRUE. This is only triggered for if statements without an else clause, these are handled by unreachable_code.\n\n\n\nCode in an if statement whose condition always evaluates to TRUE will always run. It clutters the code and makes it more difficult to read. In these cases, the if condition should be removed.\nThis rule does not have an automatic fix.\n\n\n\nif (TRUE) {\n  print(\"always true\")\n}\n\nif (TRUE || ...) {\n  print(\"always true\")\n}\n\nif (!FALSE) {\n  print(\"always true\")\n}\nUse instead:\nprint(\"always true\")",
+    "text": "NoteAdded in 0.4.0\n\n\n\n\n\nDetects if conditions that always evaluate to TRUE. This is only triggered for if statements without an else clause, these are handled by unreachable_code.\n\n\n\nCode in an if statement whose condition always evaluates to TRUE will always run. It clutters the code and makes it more difficult to read. In these cases, the if condition should be removed.\nThis rule does not have an automatic fix.\n\n\n\nif (TRUE) {\n  print(\"always true\")\n}\n\nif (TRUE || ...) {\n  print(\"always true\")\n}\n\nif (!FALSE) {\n  print(\"always true\")\n}\nUse instead:\nprint(\"always true\")",
     "crumbs": [
       "List of rules",
       "if_always_true"
@@ -883,7 +883,7 @@
     "href": "rules/for_loop_index.html",
     "title": "for_loop_index",
     "section": "",
-    "text": "NoteAdded in 0.0.16\n\n\n\n\n\n\n\n\nChecks whether the index symbol in a for loop is already used anywhere in the sequence of the same for loop.\n\n\n\nfor (x in x) or for (x in foo(x)) are confusing to read and can lead to errors.\n\n\n\nx &lt;- c(1, 2, 3)\nfor (x in x) {\n  x + 1\n}\nUse instead:\nx &lt;- c(1, 2, 3)\nfor (xi in x) {\n  xi + 1\n}",
+    "text": "NoteAdded in 0.0.16\n\n\n\n\n\nChecks whether the index symbol in a for loop is already used anywhere in the sequence of the same for loop.\n\n\n\nfor (x in x) or for (x in foo(x)) are confusing to read and can lead to errors.\n\n\n\nx &lt;- c(1, 2, 3)\nfor (x in x) {\n  x + 1\n}\nUse instead:\nx &lt;- c(1, 2, 3)\nfor (xi in x) {\n  xi + 1\n}",
     "crumbs": [
       "List of rules",
       "for_loop_index"
@@ -927,7 +927,7 @@
     "href": "rules/fixed_regex.html",
     "title": "fixed_regex",
     "section": "",
-    "text": "NoteAdded in 0.3.0\n\n\n\n\n\n\n\n\nChecks for regex functions (grep, grepl, gsub, sub, regexpr, gregexpr, regexec) called with a pattern that contains no special regex characters and without fixed = TRUE.\n\n\n\nWhen a pattern contains no special regex characters, using fixed = TRUE provides a significant performance boost because it uses simple string matching instead of regex engine pattern matching.\nThis rule has a safe automatic fix.\n\n\n\ngrep(\"hello\", x)\ngsub(\"world\", \"universe\", text)\nUse instead:\ngrep(\"hello\", x, fixed = TRUE)\ngsub(\"world\", \"universe\", text, fixed = TRUE)\n\n\n\nSee ?grep and ?fixed",
+    "text": "NoteAdded in 0.3.0\n\n\n\n\n\nChecks for regex functions (grep, grepl, gsub, sub, regexpr, gregexpr, regexec) called with a pattern that contains no special regex characters and without fixed = TRUE.\n\n\n\nWhen a pattern contains no special regex characters, using fixed = TRUE provides a significant performance boost because it uses simple string matching instead of regex engine pattern matching.\nThis rule has a safe automatic fix.\n\n\n\ngrep(\"hello\", x)\ngsub(\"world\", \"universe\", text)\nUse instead:\ngrep(\"hello\", x, fixed = TRUE)\ngsub(\"world\", \"universe\", text, fixed = TRUE)\n\n\n\nSee ?grep and ?fixed",
     "crumbs": [
       "List of rules",
       "fixed_regex"
@@ -982,7 +982,7 @@
     "href": "rules/expect_true_false.html",
     "title": "expect_true_false",
     "section": "",
-    "text": "NoteAdded in 0.2.0\n\n\n\n\n\n\n\n\nChecks for usage of expect_equal(x, TRUE), expect_equal(x, FALSE), expect_identical(x, TRUE), and expect_identical(x, FALSE) in tests.\n\n\n\nexpect_true() and expect_false() are more explicit and clearer in intent than comparing with expect_equal() or expect_identical(). They also provide better error messages when tests fail.\nThis rule is disabled by default. Select it either with the rule name \"expect_true_false\" or with the rule group \"TESTTHAT\".\n\n\n\nexpect_equal(is.numeric(x), TRUE)\nexpect_identical(is.character(y), FALSE)\nUse instead:\nexpect_true(is.numeric(x))\nexpect_false(is.character(y))",
+    "text": "NoteAdded in 0.2.0\n\n\n\n\n\nChecks for usage of expect_equal(x, TRUE), expect_equal(x, FALSE), expect_identical(x, TRUE), and expect_identical(x, FALSE) in tests.\n\n\n\nexpect_true() and expect_false() are more explicit and clearer in intent than comparing with expect_equal() or expect_identical(). They also provide better error messages when tests fail.\nThis rule is disabled by default. Select it either with the rule name \"expect_true_false\" or with the rule group \"TESTTHAT\".\n\n\n\nexpect_equal(is.numeric(x), TRUE)\nexpect_identical(is.character(y), FALSE)\nUse instead:\nexpect_true(is.numeric(x))\nexpect_false(is.character(y))",
     "crumbs": [
       "List of rules",
       "expect_true_false"
@@ -1026,7 +1026,7 @@
     "href": "rules/expect_null.html",
     "title": "expect_null",
     "section": "",
-    "text": "NoteAdded in 0.2.0\n\n\n\n\n\n\n\n\nChecks for usage of expect_equal(x, NULL), expect_identical(x, NULL), and expect_true(is.null(x)).\n\n\n\nexpect_null() is more explicit and clearer in intent than comparing with expect_equal(), expect_identical(), or wrapping is.null() in expect_true(). It also provides better error messages when tests fail.\nThis rule is disabled by default. Select it either with the rule name \"expect_null\" or with the rule group \"TESTTHAT\".\n\n\n\nexpect_equal(x, NULL)\nexpect_identical(x, NULL)\nexpect_true(is.null(foo(x)))\nUse instead:\nexpect_null(x)\nexpect_null(x)\nexpect_null(foo(x))",
+    "text": "NoteAdded in 0.2.0\n\n\n\n\n\nChecks for usage of expect_equal(x, NULL), expect_identical(x, NULL), and expect_true(is.null(x)).\n\n\n\nexpect_null() is more explicit and clearer in intent than comparing with expect_equal(), expect_identical(), or wrapping is.null() in expect_true(). It also provides better error messages when tests fail.\nThis rule is disabled by default. Select it either with the rule name \"expect_null\" or with the rule group \"TESTTHAT\".\n\n\n\nexpect_equal(x, NULL)\nexpect_identical(x, NULL)\nexpect_true(is.null(foo(x)))\nUse instead:\nexpect_null(x)\nexpect_null(x)\nexpect_null(foo(x))",
     "crumbs": [
       "List of rules",
       "expect_null"
@@ -1070,7 +1070,7 @@
     "href": "rules/expect_not.html",
     "title": "expect_not",
     "section": "",
-    "text": "NoteAdded in 0.2.0\n\n\n\n\n\n\n\n\nChecks for usage of expect_true(!x) and expect_false(!x) in tests.\n\n\n\nUsing expect_false(x) is clearer and more direct than expect_true(!x), and vice versa.\nThis rule is disabled by default. Select it either with the rule name \"expect_not\" or with the rule group \"TESTTHAT\".\n\n\n\nexpect_true(!x)\nexpect_false(!foo(x))\nexpect_true(!(x && y))\n\n# rlang \"!!!\" operator is left unmodified\nexpect_true(!!!x)\nUse instead:\nexpect_false(x)\nexpect_true(foo(x))\nexpect_false(x && y)\n\n# rlang \"!!!\" operator is left unmodified\nexpect_true(!!!x)",
+    "text": "NoteAdded in 0.2.0\n\n\n\n\n\nChecks for usage of expect_true(!x) and expect_false(!x) in tests.\n\n\n\nUsing expect_false(x) is clearer and more direct than expect_true(!x), and vice versa.\nThis rule is disabled by default. Select it either with the rule name \"expect_not\" or with the rule group \"TESTTHAT\".\n\n\n\nexpect_true(!x)\nexpect_false(!foo(x))\nexpect_true(!(x && y))\n\n# rlang \"!!!\" operator is left unmodified\nexpect_true(!!!x)\nUse instead:\nexpect_false(x)\nexpect_true(foo(x))\nexpect_false(x && y)\n\n# rlang \"!!!\" operator is left unmodified\nexpect_true(!!!x)",
     "crumbs": [
       "List of rules",
       "expect_not"
@@ -1114,7 +1114,7 @@
     "href": "rules/expect_match.html",
     "title": "expect_match",
     "section": "",
-    "text": "NoteAdded in 0.5.0\n\n\n\n\n\n\n\n\nChecks for usage of expect_true(grepl(...)).\n\n\n\nexpect_match() is more explicit and clearer in intent than wrapping grepl() in expect_true(). It also provides better error messages when tests fail.\nThis rule is disabled by default. Select it either with the rule name \"expect_match\" or with the rule group \"TESTTHAT\".\nThis rule has an automatic fix but the fix is disabled if grepl() arguments other than pattern and x are unnamed.\n\n\n\nexpect_true(grepl(\"foo\", x))\nexpect_true(grepl(\"bar\", x, perl = FALSE, fixed = FALSE))\nUse instead:\nexpect_match(x, \"foo\")\nexpect_match(x, \"bar\", perl = FALSE, fixed = FALSE)",
+    "text": "NoteAdded in 0.5.0\n\n\n\n\n\nChecks for usage of expect_true(grepl(...)).\n\n\n\nexpect_match() is more explicit and clearer in intent than wrapping grepl() in expect_true(). It also provides better error messages when tests fail.\nThis rule is disabled by default. Select it either with the rule name \"expect_match\" or with the rule group \"TESTTHAT\".\nThis rule has an automatic fix but the fix is disabled if grepl() arguments other than pattern and x are unnamed.\n\n\n\nexpect_true(grepl(\"foo\", x))\nexpect_true(grepl(\"bar\", x, perl = FALSE, fixed = FALSE))\nUse instead:\nexpect_match(x, \"foo\")\nexpect_match(x, \"bar\", perl = FALSE, fixed = FALSE)",
     "crumbs": [
       "List of rules",
       "expect_match"
@@ -1158,7 +1158,7 @@
     "href": "rules/equals_null.html",
     "title": "equals_null",
     "section": "",
-    "text": "NoteAdded in 0.4.0\n\n\n\n\n\n\n\n\nCheck for x == NULL, x != NULL and x %in% NULL, and replaces those by is.null() calls.\n\n\n\nComparing a value to NULL using == returns a logical(0) in many cases:\nx &lt;- NULL\nx == NULL\n#&gt; logical(0)\nwhich is very likely not the expected output.\n\n\n\nx &lt;- c(1, 2, 3)\ny &lt;- NULL\n\nx == NULL\ny == NULL\nUse instead:\nx &lt;- c(1, 2, 3)\ny &lt;- NULL\n\nis.null(x)\nis.null(y)",
+    "text": "NoteAdded in 0.4.0\n\n\n\n\n\nCheck for x == NULL, x != NULL and x %in% NULL, and replaces those by is.null() calls.\n\n\n\nComparing a value to NULL using == returns a logical(0) in many cases:\nx &lt;- NULL\nx == NULL\n#&gt; logical(0)\nwhich is very likely not the expected output.\n\n\n\nx &lt;- c(1, 2, 3)\ny &lt;- NULL\n\nx == NULL\ny == NULL\nUse instead:\nx &lt;- c(1, 2, 3)\ny &lt;- NULL\n\nis.null(x)\nis.null(y)",
     "crumbs": [
       "List of rules",
       "equals_null"
@@ -1202,7 +1202,7 @@
     "href": "rules/equals_na.html",
     "title": "equals_na",
     "section": "",
-    "text": "NoteAdded in 0.0.8\n\n\n\n\n\n\n\n\nCheck for x == NA, x != NA and x %in% NA, and replaces those by is.na() calls.\n\n\n\nComparing a value to NA using == returns NA in many cases:\nx &lt;- c(1, 2, 3, NA)\nx == NA\n#&gt; [1] NA NA NA NA\nwhich is very likely not the expected output.\n\n\n\nx &lt;- c(1, 2, 3, NA)\nx == NA\nUse instead:\nx &lt;- c(1, 2, 3, NA)\nis.na(x)",
+    "text": "NoteAdded in 0.0.8\n\n\n\n\n\nCheck for x == NA, x != NA and x %in% NA, and replaces those by is.na() calls.\n\n\n\nComparing a value to NA using == returns NA in many cases:\nx &lt;- c(1, 2, 3, NA)\nx == NA\n#&gt; [1] NA NA NA NA\nwhich is very likely not the expected output.\n\n\n\nx &lt;- c(1, 2, 3, NA)\nx == NA\nUse instead:\nx &lt;- c(1, 2, 3, NA)\nis.na(x)",
     "crumbs": [
       "List of rules",
       "equals_na"
@@ -1246,7 +1246,7 @@
     "href": "rules/duplicated_function_definition.html",
     "title": "duplicated_function_definition",
     "section": "",
-    "text": "NoteAdded in 0.5.0\n\n\n\n\n\n\n\n\nChecks for duplicated function definitions in R packages.\n\n\n\nHaving two functions with the same name is likely an error since development tools such as devtools::load_all() will only load one of them. This rule looks for function definitions shared across files in the same R package, meaning files that are in a folder named “R” whose parent folder has a DESCRIPTION file.\nThis rule doesn’t have an automatic fix.\n\n\n\n# In \"R/foo1.R\":\nfoo &lt;- function(x) {\n  x + 1\n}\n\n# In \"R/foo2.R\":\nfoo &lt;- function(x) {\n  x + 2\n}\n\n# Function \"foo\" is defined in two different scripts in the same package,\n# which is likely due to a mistake.",
+    "text": "NoteAdded in 0.5.0\n\n\n\n\n\nChecks for duplicated function definitions in R packages.\n\n\n\nHaving two functions with the same name is likely an error since development tools such as devtools::load_all() will only load one of them. This rule looks for function definitions shared across files in the same R package, meaning files that are in a folder named “R” whose parent folder has a DESCRIPTION file.\nThis rule doesn’t have an automatic fix.\n\n\n\n# In \"R/foo1.R\":\nfoo &lt;- function(x) {\n  x + 1\n}\n\n# In \"R/foo2.R\":\nfoo &lt;- function(x) {\n  x + 2\n}\n\n# Function \"foo\" is defined in two different scripts in the same package,\n# which is likely due to a mistake.",
     "crumbs": [
       "List of rules",
       "duplicated_function_definition"
@@ -1290,7 +1290,7 @@
     "href": "rules/dplyr_group_by_ungroup.html",
     "title": "dplyr_group_by_ungroup",
     "section": "",
-    "text": "NoteAdded in 0.5.0\n\n\n\n\n\n\n\n\nChecks for group_by() |&gt; verb() |&gt; ungroup() patterns that can be simplified using the .by or by argument.\n\n\n\nSince dplyr 1.1.0, verbs like summarize(), mutate(), filter(), reframe(), and the slice_*() family support a .by or by argument. Using .by / by is shorter and does not require a subsequent ungroup() call.\n\n\n\nx |&gt;\n  group_by(grp) |&gt;\n  slice_head(mean_val = mean(val)) |&gt;\n  ungroup()\n\nx |&gt;\n  group_by(grp1, grp2) |&gt;\n  summarize(mean_val = mean(val)) |&gt;\n  ungroup()\nUse instead:\nx |&gt;\n  slice_head(mean_val = mean(val), by = grp)\n\nx |&gt;\n  summarize(mean_val = mean(val), .by = c(grp1, grp2))\n\n\n\nSee the .by argument in ?dplyr::summarize.",
+    "text": "NoteAdded in 0.5.0\n\n\n\n\n\nChecks for group_by() |&gt; verb() |&gt; ungroup() patterns that can be simplified using the .by or by argument.\n\n\n\nSince dplyr 1.1.0, verbs like summarize(), mutate(), filter(), reframe(), and the slice_*() family support a .by or by argument. Using .by / by is shorter and does not require a subsequent ungroup() call.\n\n\n\nx |&gt;\n  group_by(grp) |&gt;\n  slice_head(mean_val = mean(val)) |&gt;\n  ungroup()\n\nx |&gt;\n  group_by(grp1, grp2) |&gt;\n  summarize(mean_val = mean(val)) |&gt;\n  ungroup()\nUse instead:\nx |&gt;\n  slice_head(mean_val = mean(val), by = grp)\n\nx |&gt;\n  summarize(mean_val = mean(val), .by = c(grp1, grp2))\n\n\n\nSee the .by argument in ?dplyr::summarize.",
     "crumbs": [
       "List of rules",
       "dplyr_group_by_ungroup"
@@ -1345,7 +1345,7 @@
     "href": "rules/download_file.html",
     "title": "download_file",
     "section": "",
-    "text": "NoteAdded in 0.0.24\n\n\n\n\n\n\n\n\nChecks for usage of download.file() with mode = \"a\" or mode = \"w\".\n\n\n\nmode = \"a\" or mode = \"w\" can generate broken files on Windows. download.file() documentation recommends using mode = \"wb\" and mode = \"a\" instead. If method = \"curl\" or method = \"wget\", no mode should be provided as it will be ignored.\n\n\n\ndownload.file(x = my_url)\ndownload.file(x = my_url, mode = \"w\")\nUse instead:\ndownload.file(x = my_url, mode = \"wb\")\n\n\n\nSee ?download.file",
+    "text": "NoteAdded in 0.0.24\n\n\n\n\n\nChecks for usage of download.file() with mode = \"a\" or mode = \"w\".\n\n\n\nmode = \"a\" or mode = \"w\" can generate broken files on Windows. download.file() documentation recommends using mode = \"wb\" and mode = \"a\" instead. If method = \"curl\" or method = \"wget\", no mode should be provided as it will be ignored.\n\n\n\ndownload.file(x = my_url)\ndownload.file(x = my_url, mode = \"w\")\nUse instead:\ndownload.file(x = my_url, mode = \"wb\")\n\n\n\nSee ?download.file",
     "crumbs": [
       "List of rules",
       "download_file"
@@ -1400,7 +1400,7 @@
     "href": "rules/coalesce.html",
     "title": "coalesce",
     "section": "",
-    "text": "NoteAdded in 0.0.19\n\n\n\n\n\n\n\n\nChecks for usage of if (is.null(x)) y else x or if (!is.null(x)) x else y and recommends using x %||% y instead.\n\n\n\nUsing the coalesce operator %||% is more concise and readable than an if-else statement checking for null.\nThis rule is only enabled if the project uses R &gt;= 4.4.0, since %||% was introduced in this version.\nThis rule contains some automatic fixes, but only for cases where the branches are on a single line. For instance,\nif (is.null(x)) {\n  y\n} else {\n  x\n}\nwould be simplified to x %||% y, but\nif (is.null(x)) {\n  y &lt;- 1\n  y\n} else {\n  x\n}\nwouldn’t.\n\n\n\nx &lt;- 1\ny &lt;- 2\n\nif (is.null(x)) y else x\n\nif (!is.null(x)) {\n  x\n} else {\n  y\n}\nUse instead:\nx &lt;- 1\ny &lt;- 2\n\nx %||% y # (in both cases)\n\n\n\nSee ?Control",
+    "text": "NoteAdded in 0.0.19\n\n\n\n\n\nChecks for usage of if (is.null(x)) y else x or if (!is.null(x)) x else y and recommends using x %||% y instead.\n\n\n\nUsing the coalesce operator %||% is more concise and readable than an if-else statement checking for null.\nThis rule is only enabled if the project uses R &gt;= 4.4.0, since %||% was introduced in this version.\nThis rule contains some automatic fixes, but only for cases where the branches are on a single line. For instance,\nif (is.null(x)) {\n  y\n} else {\n  x\n}\nwould be simplified to x %||% y, but\nif (is.null(x)) {\n  y &lt;- 1\n  y\n} else {\n  x\n}\nwouldn’t.\n\n\n\nx &lt;- 1\ny &lt;- 2\n\nif (is.null(x)) y else x\n\nif (!is.null(x)) {\n  x\n} else {\n  y\n}\nUse instead:\nx &lt;- 1\ny &lt;- 2\n\nx %||% y # (in both cases)\n\n\n\nSee ?Control",
     "crumbs": [
       "List of rules",
       "coalesce"
@@ -1455,7 +1455,7 @@
     "href": "rules/browser.html",
     "title": "browser",
     "section": "",
-    "text": "NoteAdded in 0.1.2\n\n\n\n\n\n\n\n\nChecks for lingering presence of browser() which should not be present in released code.\nThis rule is deprecated and will be removed in a future version. Use the rule undesirable_function and configure it to report calls to browser() instead.\n\n\n\nbrowser() interrupts the execution of an expression and allows the inspection of the environment where browser() was called from. This is helpful while developing a function, but is not expected to be called by the user. Does not remove the call as it does not have a suitable replacement.\n\n\n\ndo_something &lt;- function(abc = 1) {\n   xyz &lt;- abc + 1\n   browser()      # This should be removed.\n   xyz\n}\n\n\n\nSee ?browser",
+    "text": "NoteAdded in 0.1.2\n\n\n\n\n\nChecks for lingering presence of browser() which should not be present in released code.\nThis rule is deprecated and will be removed in a future version. Use the rule undesirable_function and configure it to report calls to browser() instead.\n\n\n\nbrowser() interrupts the execution of an expression and allows the inspection of the environment where browser() was called from. This is helpful while developing a function, but is not expected to be called by the user. Does not remove the call as it does not have a suitable replacement.\n\n\n\ndo_something &lt;- function(abc = 1) {\n   xyz &lt;- abc + 1\n   browser()      # This should be removed.\n   xyz\n}\n\n\n\nSee ?browser",
     "crumbs": [
       "List of rules",
       "browser"
@@ -1510,7 +1510,7 @@
     "href": "rules/assignment.html",
     "title": "assignment",
     "section": "",
-    "text": "NoteAdded in 0.0.8\n\n\n\n\n\n\n\n\nChecks for consistency of assignment operator.\n\n\n\nIn most cases using = and &lt;- is equivalent. Some very popular packages use = without problems. This rule only ensures the consistency of the assignment operator in a project.\nSet the following option in jarl.toml to use = as the preferred operator:\n[lint.assignment]\noperator = \"=\" # or \"&lt;-\"\n\n\n\nx = \"a\"\nUse instead:\nx &lt;- \"a\"\n\n\n\nSee:\n\nhttps://style.tidyverse.org/syntax.html#assignment-1",
+    "text": "NoteAdded in 0.0.8\n\n\n\n\n\nChecks for consistency of assignment operator.\n\n\n\nIn most cases using = and &lt;- is equivalent. Some very popular packages use = without problems. This rule only ensures the consistency of the assignment operator in a project.\nSet the following option in jarl.toml to use = as the preferred operator:\n[lint.assignment]\noperator = \"=\" # or \"&lt;-\"\n\n\n\nx = \"a\"\nUse instead:\nx &lt;- \"a\"\n\n\n\nSee:\n\nhttps://style.tidyverse.org/syntax.html#assignment-1",
     "crumbs": [
       "List of rules",
       "assignment"
@@ -1565,7 +1565,7 @@
     "href": "rules/any_duplicated.html",
     "title": "any_duplicated",
     "section": "",
-    "text": "NoteAdded in 0.0.8\n\n\n\n\n\n\n\n\nChecks for usage of any(duplicated(...)).\n\n\n\nany(duplicated(...)) is valid code but requires the evaluation of duplicated() on the entire input first.\nThere is a more efficient function in base R called anyDuplicated() that is more efficient, both in speed and memory used. anyDuplicated() returns the index of the first duplicated value, or 0 if there is none.\nTherefore, we can replace any(duplicated(...)) by anyDuplicated(...) &gt; 0.\n\n\n\nx &lt;- c(1:10000, 1, NA)\nany(duplicated(x))\nUse instead:\nx &lt;- c(1:10000, 1, NA)\nanyDuplicated(x) &gt; 0\n\n\n\nSee ?anyDuplicated",
+    "text": "NoteAdded in 0.0.8\n\n\n\n\n\nChecks for usage of any(duplicated(...)).\n\n\n\nany(duplicated(...)) is valid code but requires the evaluation of duplicated() on the entire input first.\nThere is a more efficient function in base R called anyDuplicated() that is more efficient, both in speed and memory used. anyDuplicated() returns the index of the first duplicated value, or 0 if there is none.\nTherefore, we can replace any(duplicated(...)) by anyDuplicated(...) &gt; 0.\n\n\n\nx &lt;- c(1:10000, 1, NA)\nany(duplicated(x))\nUse instead:\nx &lt;- c(1:10000, 1, NA)\nanyDuplicated(x) &gt; 0\n\n\n\nSee ?anyDuplicated",
     "crumbs": [
       "List of rules",
       "any_duplicated"
@@ -2145,7 +2145,7 @@
     "href": "rules/all_equal.html",
     "title": "all_equal",
     "section": "",
-    "text": "NoteAdded in 0.0.19\n\n\n\n\n\n\n\n\nChecks for dangerous usage of all.equal(...), for instance in if() conditions or while() loops.\n\n\n\nall.equal() returns TRUE in the absence of differences but returns a character string (not FALSE) in the presence of differences. Usage of all.equal() without wrapping it in isTRUE() are thus likely to generate unexpected errors if the compared objects have differences. An alternative is to use identical() to compare vector of strings or when exact equality is expected.\nThis rule has automated fixes that are marked unsafe and therefore require passing --unsafe-fixes. This is because automatically fixing those cases can change the runtime behavior if some code relied on the behaviour of all.equal() (likely by mistake).\n\n\n\na &lt;- 1\nb &lt;- 1\n\nif (all.equal(a, b, tolerance = 1e-3)) message('equal')\nif (all.equal(a, b)) message('equal')\n!all.equal(a, b)\nisFALSE(all.equal(a, b))\nUse instead:\na &lt;- 1\nb &lt;- 1\n\nif (isTRUE(all.equal(a, b, tolerance = 1e-3))) message('equal')\nif (isTRUE(all.equal(a, b))) message('equal')\n!isTRUE(all.equal(a, b))\n!isTRUE(all.equal(a, b))\n\n\n\nSee ?all.equal",
+    "text": "NoteAdded in 0.0.19\n\n\n\n\n\nChecks for dangerous usage of all.equal(...), for instance in if() conditions or while() loops.\n\n\n\nall.equal() returns TRUE in the absence of differences but returns a character string (not FALSE) in the presence of differences. Usage of all.equal() without wrapping it in isTRUE() are thus likely to generate unexpected errors if the compared objects have differences. An alternative is to use identical() to compare vector of strings or when exact equality is expected.\nThis rule has automated fixes that are marked unsafe and therefore require passing --unsafe-fixes. This is because automatically fixing those cases can change the runtime behavior if some code relied on the behaviour of all.equal() (likely by mistake).\n\n\n\na &lt;- 1\nb &lt;- 1\n\nif (all.equal(a, b, tolerance = 1e-3)) message('equal')\nif (all.equal(a, b)) message('equal')\n!all.equal(a, b)\nisFALSE(all.equal(a, b))\nUse instead:\na &lt;- 1\nb &lt;- 1\n\nif (isTRUE(all.equal(a, b, tolerance = 1e-3))) message('equal')\nif (isTRUE(all.equal(a, b))) message('equal')\n!isTRUE(all.equal(a, b))\n!isTRUE(all.equal(a, b))\n\n\n\nSee ?all.equal",
     "crumbs": [
       "List of rules",
       "all_equal"
@@ -2200,7 +2200,7 @@
     "href": "rules/any_is_na.html",
     "title": "any_is_na",
     "section": "",
-    "text": "NoteAdded in 0.0.8\n\n\n\n\n\n\n\n\nChecks for usage of any(is.na(...)) and NA %in% x.\n\n\n\nWhile both cases are valid R code, the base R function anyNA() is more efficient (both in speed and memory used).\n\n\n\nx &lt;- c(1:10000, NA)\nany(is.na(x))\nNA %in% x\nUse instead:\nx &lt;- c(1:10000, NA)\nanyNA(x)\n\n\n\nSee ?anyNA",
+    "text": "NoteAdded in 0.0.8\n\n\n\n\n\nChecks for usage of any(is.na(...)) and NA %in% x.\n\n\n\nWhile both cases are valid R code, the base R function anyNA() is more efficient (both in speed and memory used).\n\n\n\nx &lt;- c(1:10000, NA)\nany(is.na(x))\nNA %in% x\nUse instead:\nx &lt;- c(1:10000, NA)\nanyNA(x)\n\n\n\nSee ?anyNA",
     "crumbs": [
       "List of rules",
       "any_is_na"
@@ -2255,7 +2255,7 @@
     "href": "rules/blanket_suppression.html",
     "title": "blanket_suppression",
     "section": "",
-    "text": "NoteAdded in 0.4.0\n\n\n\n\n\n\n\n\nChecks for blanket suppression comments. Those are comments such as # jarl-ignore: &lt;reason&gt; where a rule isn’t specified.\n\n\n\nThis type of comment isn’t supported by Jarl as it would suppress all possible violations. Suppression comments should always target one or a few rules, but never all of them.\n\n\n\n# The comment below isn't applied, the code below is still reported.\n# jarl-ignore: &lt;reason&gt;\nany(is.na(x))\nUse instead to ignore the violation:\n# jarl-ignore any_is_na: &lt;reason&gt;\nany(is.na(x))",
+    "text": "NoteAdded in 0.4.0\n\n\n\n\n\nChecks for blanket suppression comments. Those are comments such as # jarl-ignore: &lt;reason&gt; where a rule isn’t specified.\n\n\n\nThis type of comment isn’t supported by Jarl as it would suppress all possible violations. Suppression comments should always target one or a few rules, but never all of them.\n\n\n\n# The comment below isn't applied, the code below is still reported.\n# jarl-ignore: &lt;reason&gt;\nany(is.na(x))\nUse instead to ignore the violation:\n# jarl-ignore any_is_na: &lt;reason&gt;\nany(is.na(x))",
     "crumbs": [
       "List of rules",
       "blanket_suppression"
@@ -2299,7 +2299,7 @@
     "href": "rules/class_equals.html",
     "title": "class_equals",
     "section": "",
-    "text": "NoteAdded in 0.0.8\n\n\n\n\n\n\n\n\nChecks for usage of class(...) == \"some_class\", class(...) %in% \"some_class\", and identical(class(...), \"some_class\").\nFor == and %in% operators, the only cases that are flagged (and potentially fixed) are cases that:\n\nhappen in the condition part of an if () statement or of a while () statement,\nand are not nested in other calls.\n\nFor example, if (class(x) == \"foo\") would be reported, but not if (my_function(class(x) == \"foo\")).\nFor identical() calls, all cases are flagged regardless of context.\n\n\n\nAn R object can have several classes. Therefore, class(...) == \"some_class\" would return a logical vector with as many values as the object has classes, which is rarely desirable.\nIt is better to use inherits(..., \"some_class\") instead. inherits() checks whether any of the object’s classes match the desired class.\nThe same rationale applies to class(...) %in% \"some_class\". Similarly, identical(class(...), \"some_class\") would break if a class is added or removed to the object being tested.\n\n\n\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nif (class(x) == \"lm\") {\n  # &lt;do something&gt;\n}\n\nidentical(class(x), \"foo\")\nUse instead:\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nif (inherits(x, \"lm\")) {\n  # &lt;do something&gt;\n}\n\ninherits(x, \"foo\")\n\n\n\nSee ?inherits",
+    "text": "NoteAdded in 0.0.8\n\n\n\n\n\nChecks for usage of class(...) == \"some_class\", class(...) %in% \"some_class\", and identical(class(...), \"some_class\").\nFor == and %in% operators, the only cases that are flagged (and potentially fixed) are cases that:\n\nhappen in the condition part of an if () statement or of a while () statement,\nand are not nested in other calls.\n\nFor example, if (class(x) == \"foo\") would be reported, but not if (my_function(class(x) == \"foo\")).\nFor identical() calls, all cases are flagged regardless of context.\n\n\n\nAn R object can have several classes. Therefore, class(...) == \"some_class\" would return a logical vector with as many values as the object has classes, which is rarely desirable.\nIt is better to use inherits(..., \"some_class\") instead. inherits() checks whether any of the object’s classes match the desired class.\nThe same rationale applies to class(...) %in% \"some_class\". Similarly, identical(class(...), \"some_class\") would break if a class is added or removed to the object being tested.\n\n\n\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nif (class(x) == \"lm\") {\n  # &lt;do something&gt;\n}\n\nidentical(class(x), \"foo\")\nUse instead:\nx &lt;- lm(drat ~ mpg, mtcars)\nclass(x) &lt;- c(\"my_class\", class(x))\n\nif (inherits(x, \"lm\")) {\n  # &lt;do something&gt;\n}\n\ninherits(x, \"foo\")\n\n\n\nSee ?inherits",
     "crumbs": [
       "List of rules",
       "class_equals"
@@ -2354,7 +2354,7 @@
     "href": "rules/comparison_negation.html",
     "title": "comparison_negation",
     "section": "",
-    "text": "NoteAdded in 0.0.23\n\n\n\n\n\n\n\n\nChecks for patterns similar to !(... &lt; ...).\n\n\n\nThis pattern may be hard to read and could be simplified by removing the ! operator and inverting the operator (e.g. &lt; would become &gt;=).\nThis rule has a safe fix.\n\n\n\n!(x &lt; y + 1)\n!(x == y + 1)\nUse instead:\nx &gt;= y + 1\nx != y + 1",
+    "text": "NoteAdded in 0.0.23\n\n\n\n\n\nChecks for patterns similar to !(... &lt; ...).\n\n\n\nThis pattern may be hard to read and could be simplified by removing the ! operator and inverting the operator (e.g. &lt; would become &gt;=).\nThis rule has a safe fix.\n\n\n\n!(x &lt; y + 1)\n!(x == y + 1)\nUse instead:\nx &gt;= y + 1\nx != y + 1",
     "crumbs": [
       "List of rules",
       "comparison_negation"
@@ -2398,7 +2398,7 @@
     "href": "rules/dplyr_filter_out.html",
     "title": "dplyr_filter_out",
     "section": "",
-    "text": "NoteAdded in 0.5.0\n\n\n\n\n\n\n\n\nChecks dplyr::filter() calls with complex conditions and suggests using dplyr::filter_out() instead.\n\n\n\nUsing filter() with negated conditions can be hard to read, especially when we also want to retain missing values. filter(!condition) drops rows where condition is TRUE and rows where it is NA, meaning that if we want to retain those then we have to complement the condition with is.na():\n# We want to drop rows whose value for `col` is larger than the average\n# of `col`:\nlarger_than_average &lt;- function(x) x &gt; mean(x, na.rm = TRUE)\nx |&gt; filter(!larger_than_average(col) | is.na(larger_than_average(col)))\ndplyr 1.2.0 introduced filter_out() as a complement to filter(). filter_out() drops rows that match the condition, meaning that rows where the condition is NA are retained. We can then rewrite the code above like this:\nx |&gt; filter_out(larger_than_average(col))\nThis rule suggests an automatic fix to rewrite them with filter_out(). It is only valid for dplyr &gt;= 1.2.0, and only works on filter() calls where all conditions are made of one expression + is.na() on the same column.\n\n\n\nlibrary(dplyr)\nx &lt;- tibble(a = c(1, 2, 2, NA), b = c(1, 1, 2, 3))\n\nx |&gt; filter(a &gt; 1 | is.na(a))\n\nx |&gt; filter(a &gt; 1 | is.na(a), is.na(b) | b &lt;= 2)\nUse instead:\nlibrary(dplyr)\nx &lt;- tibble(a = c(1, 2, 2, NA), b = c(1, 1, 2, 3))\n\nx |&gt; filter_out(a &lt;= 1)\n\nx |&gt; filter_out(a &lt;= 1 | b &gt; 2)\n\n\n\n\nhttps://dplyr.tidyverse.org/reference/filter.html",
+    "text": "NoteAdded in 0.5.0\n\n\n\n\n\nChecks dplyr::filter() calls with complex conditions and suggests using dplyr::filter_out() instead.\n\n\n\nUsing filter() with negated conditions can be hard to read, especially when we also want to retain missing values. filter(!condition) drops rows where condition is TRUE and rows where it is NA, meaning that if we want to retain those then we have to complement the condition with is.na():\n# We want to drop rows whose value for `col` is larger than the average\n# of `col`:\nlarger_than_average &lt;- function(x) x &gt; mean(x, na.rm = TRUE)\nx |&gt; filter(!larger_than_average(col) | is.na(larger_than_average(col)))\ndplyr 1.2.0 introduced filter_out() as a complement to filter(). filter_out() drops rows that match the condition, meaning that rows where the condition is NA are retained. We can then rewrite the code above like this:\nx |&gt; filter_out(larger_than_average(col))\nThis rule suggests an automatic fix to rewrite them with filter_out(). It is only valid for dplyr &gt;= 1.2.0, and only works on filter() calls where all conditions are made of one expression + is.na() on the same column.\n\n\n\nlibrary(dplyr)\nx &lt;- tibble(a = c(1, 2, 2, NA), b = c(1, 1, 2, 3))\n\nx |&gt; filter(a &gt; 1 | is.na(a))\n\nx |&gt; filter(a &gt; 1 | is.na(a), is.na(b) | b &lt;= 2)\nUse instead:\nlibrary(dplyr)\nx &lt;- tibble(a = c(1, 2, 2, NA), b = c(1, 1, 2, 3))\n\nx |&gt; filter_out(a &lt;= 1)\n\nx |&gt; filter_out(a &lt;= 1 | b &gt; 2)\n\n\n\n\nhttps://dplyr.tidyverse.org/reference/filter.html",
     "crumbs": [
       "List of rules",
       "dplyr_filter_out"
@@ -2453,7 +2453,7 @@
     "href": "rules/duplicated_arguments.html",
     "title": "duplicated_arguments",
     "section": "",
-    "text": "NoteAdded in 0.0.8\n\n\n\n\n\n\n\n\nChecks for duplicated arguments in function calls.\n\n\n\nWhile some cases of duplicated arguments generate run-time errors (e.g. mean(x = 1:5, x = 2:3)), this is not always the case (e.g. c(a = 1, a = 2)).\nThis linter is used to discourage explicitly providing duplicate names to objects. Duplicate-named objects are hard to work with programmatically and should typically be avoided.\n\n\n\nlist(x = 1, x = 2)",
+    "text": "NoteAdded in 0.0.8\n\n\n\n\n\nChecks for duplicated arguments in function calls.\n\n\n\nWhile some cases of duplicated arguments generate run-time errors (e.g. mean(x = 1:5, x = 2:3)), this is not always the case (e.g. c(a = 1, a = 2)).\nThis linter is used to discourage explicitly providing duplicate names to objects. Duplicate-named objects are hard to work with programmatically and should typically be avoided.\n\n\n\nlist(x = 1, x = 2)",
     "crumbs": [
       "List of rules",
       "duplicated_arguments"
@@ -2497,7 +2497,7 @@
     "href": "rules/empty_assignment.html",
     "title": "empty_assignment",
     "section": "",
-    "text": "NoteAdded in 0.0.8\n\n\n\n\n\n\n\n\nLooks for patterns such as x &lt;- {}.\n\n\n\nAssignment of {} is the same as assignment of NULL, but the latter is clearer.\n\n\n\na &lt;- {}\nb &lt;- {\n\n}\nUse instead:\na &lt;- NULL\nb &lt;- NULL",
+    "text": "NoteAdded in 0.0.8\n\n\n\n\n\nLooks for patterns such as x &lt;- {}.\n\n\n\nAssignment of {} is the same as assignment of NULL, but the latter is clearer.\n\n\n\na &lt;- {}\nb &lt;- {\n\n}\nUse instead:\na &lt;- NULL\nb &lt;- NULL",
     "crumbs": [
       "List of rules",
       "empty_assignment"
@@ -2541,7 +2541,7 @@
     "href": "rules/equals_nan.html",
     "title": "equals_nan",
     "section": "",
-    "text": "NoteAdded in 0.4.0\n\n\n\n\n\n\n\n\nCheck for x == NaN, x != NaN and x %in% NaN, and replaces those by is.nan() calls.\n\n\n\nComparing a value to NaN using == returns NaN in many cases:\nx &lt;- c(1, 2, 3, NaN)\nx == NaN\n#&gt; [1] NA NA NA NA\nwhich is very likely not the expected output.\n\n\n\nx &lt;- c(1, 2, 3, NaN)\nx == NaN\nUse instead:\nx &lt;- c(1, 2, 3, NaN)\nis.nan(x)",
+    "text": "NoteAdded in 0.4.0\n\n\n\n\n\nCheck for x == NaN, x != NaN and x %in% NaN, and replaces those by is.nan() calls.\n\n\n\nComparing a value to NaN using == returns NaN in many cases:\nx &lt;- c(1, 2, 3, NaN)\nx == NaN\n#&gt; [1] NA NA NA NA\nwhich is very likely not the expected output.\n\n\n\nx &lt;- c(1, 2, 3, NaN)\nx == NaN\nUse instead:\nx &lt;- c(1, 2, 3, NaN)\nis.nan(x)",
     "crumbs": [
       "List of rules",
       "equals_nan"
@@ -2585,7 +2585,7 @@
     "href": "rules/expect_length.html",
     "title": "expect_length",
     "section": "",
-    "text": "NoteAdded in 0.2.0\n\n\n\n\n\n\n\n\nChecks for usage of expect_equal(length(x), n) and expect_identical(length(x), n).\n\n\n\nexpect_length(x, n) is more explicit and clearer in intent than using expect_equal() or expect_identical() with length(). It also provides better error messages when tests fail.\nThis rule is disabled by default. Select it either with the rule name \"expect_length\" or with the rule group \"TESTTHAT\".\n\n\n\nexpect_equal(length(x), 2)\nexpect_identical(length(x), n)\nexpect_equal(2L, length(x))\nUse instead:\nexpect_length(x, 2)\nexpect_length(x, n)\nexpect_length(x, 2L)",
+    "text": "NoteAdded in 0.2.0\n\n\n\n\n\nChecks for usage of expect_equal(length(x), n) and expect_identical(length(x), n).\n\n\n\nexpect_length(x, n) is more explicit and clearer in intent than using expect_equal() or expect_identical() with length(). It also provides better error messages when tests fail.\nThis rule is disabled by default. Select it either with the rule name \"expect_length\" or with the rule group \"TESTTHAT\".\n\n\n\nexpect_equal(length(x), 2)\nexpect_identical(length(x), n)\nexpect_equal(2L, length(x))\nUse instead:\nexpect_length(x, 2)\nexpect_length(x, n)\nexpect_length(x, 2L)",
     "crumbs": [
       "List of rules",
       "expect_length"
@@ -2629,7 +2629,7 @@
     "href": "rules/expect_named.html",
     "title": "expect_named",
     "section": "",
-    "text": "NoteAdded in 0.2.0\n\n\n\n\n\n\n\n\nChecks for usage of expect_equal(names(x), n) and expect_identical(names(x), n).\n\n\n\nexpect_named(x, n) is more explicit and clearer in intent than using expect_equal() or expect_identical() with names(). It also provides better error messages when tests fail.\nThis rule is disabled by default. Select it either with the rule name \"expect_named\" or with the rule group \"TESTTHAT\".\n\n\n\nexpect_equal(names(x), \"a\")\nexpect_identical(names(x), c(\"a\", \"b\"))\nUse instead:\nexpect_named(x, \"a\")\nexpect_named(x, c(\"a\", \"b\"))",
+    "text": "NoteAdded in 0.2.0\n\n\n\n\n\nChecks for usage of expect_equal(names(x), n) and expect_identical(names(x), n).\n\n\n\nexpect_named(x, n) is more explicit and clearer in intent than using expect_equal() or expect_identical() with names(). It also provides better error messages when tests fail.\nThis rule is disabled by default. Select it either with the rule name \"expect_named\" or with the rule group \"TESTTHAT\".\n\n\n\nexpect_equal(names(x), \"a\")\nexpect_identical(names(x), c(\"a\", \"b\"))\nUse instead:\nexpect_named(x, \"a\")\nexpect_named(x, c(\"a\", \"b\"))",
     "crumbs": [
       "List of rules",
       "expect_named"
@@ -2673,7 +2673,7 @@
     "href": "rules/expect_no_match.html",
     "title": "expect_no_match",
     "section": "",
-    "text": "NoteAdded in 0.5.0\n\n\n\n\n\n\n\n\nChecks for usage of expect_false(grepl(...)).\n\n\n\nexpect_no_match() is more explicit and clearer in intent than wrapping grepl() in expect_false(). It also provides better error messages when tests fail.\nNote: negated forms like expect_false(!grepl(...)) are intentionally ignored by this rule and handled by expect_not.\nThis rule is disabled by default. Select it either with the rule name \"expect_no_match\" or with the rule group \"TESTTHAT\".\n\n\n\nexpect_false(grepl(\"foo\", x))\nexpect_false(grepl(\"bar\", x, perl = FALSE, fixed = FALSE))\nUse instead:\nexpect_no_match(x, \"foo\")\nexpect_no_match(x, \"bar\", perl = FALSE, fixed = FALSE)",
+    "text": "NoteAdded in 0.5.0\n\n\n\n\n\nChecks for usage of expect_false(grepl(...)).\n\n\n\nexpect_no_match() is more explicit and clearer in intent than wrapping grepl() in expect_false(). It also provides better error messages when tests fail.\nNote: negated forms like expect_false(!grepl(...)) are intentionally ignored by this rule and handled by expect_not.\nThis rule is disabled by default. Select it either with the rule name \"expect_no_match\" or with the rule group \"TESTTHAT\".\n\n\n\nexpect_false(grepl(\"foo\", x))\nexpect_false(grepl(\"bar\", x, perl = FALSE, fixed = FALSE))\nUse instead:\nexpect_no_match(x, \"foo\")\nexpect_no_match(x, \"bar\", perl = FALSE, fixed = FALSE)",
     "crumbs": [
       "List of rules",
       "expect_no_match"
@@ -2717,7 +2717,7 @@
     "href": "rules/expect_s3_class.html",
     "title": "expect_s3_class",
     "section": "",
-    "text": "NoteAdded in 0.3.0\n\n\n\n\n\n\n\n\nChecks for usage of expect_equal(class(x), \"y\") and expect_identical(class(x), \"y\").\n\n\n\nexpect_equal(class(x), \"y\") will fail if x gets more classes in the future, even if \"y\" is still one of those classes. expect_s3_class(x, \"y\") is more robust because the test success doesn’t depend on the number or on the order of classes of x. This function also gives clearer error messages in case of failure.\nTo test that x only has the class \"y\", then one can use expect_s3_class(x, \"y\", exact = TRUE).\nThis rule is disabled by default. Select it either with the rule name \"expect_s3_class\" or with the rule group \"TESTTHAT\".\nThis rule has a safe automatic fix but doesn’t report cases where:\n\nexpect_s3_class() would fail, such as:\ntestthat::expect_s3_class(list(1), \"list\")\ntestthat::expect_s3_class(1L, \"integer\")\nFor those cases, it is recommended to use expect_type() instead.\nthe expected object could have multiple values, such as:\ntestthat::expect_equal(class(x), c(\"foo\", \"bar\"))\ntestthat::expect_equal(class(x), vec_of_classes)\n\nFinally, the intent of the test cannot be inferred with the code only, so the user will have to add exact = TRUE if necessary.\n\n\n\nexpect_equal(class(x), \"data.frame\")\nexpect_identical(class(x), \"Date\")\nUse instead:\nexpect_s3_class(x, \"data.frame\")\nexpect_s3_class(x, \"Date\")",
+    "text": "NoteAdded in 0.3.0\n\n\n\n\n\nChecks for usage of expect_equal(class(x), \"y\") and expect_identical(class(x), \"y\").\n\n\n\nexpect_equal(class(x), \"y\") will fail if x gets more classes in the future, even if \"y\" is still one of those classes. expect_s3_class(x, \"y\") is more robust because the test success doesn’t depend on the number or on the order of classes of x. This function also gives clearer error messages in case of failure.\nTo test that x only has the class \"y\", then one can use expect_s3_class(x, \"y\", exact = TRUE).\nThis rule is disabled by default. Select it either with the rule name \"expect_s3_class\" or with the rule group \"TESTTHAT\".\nThis rule has a safe automatic fix but doesn’t report cases where:\n\nexpect_s3_class() would fail, such as:\ntestthat::expect_s3_class(list(1), \"list\")\ntestthat::expect_s3_class(1L, \"integer\")\nFor those cases, it is recommended to use expect_type() instead.\nthe expected object could have multiple values, such as:\ntestthat::expect_equal(class(x), c(\"foo\", \"bar\"))\ntestthat::expect_equal(class(x), vec_of_classes)\n\nFinally, the intent of the test cannot be inferred with the code only, so the user will have to add exact = TRUE if necessary.\n\n\n\nexpect_equal(class(x), \"data.frame\")\nexpect_identical(class(x), \"Date\")\nUse instead:\nexpect_s3_class(x, \"data.frame\")\nexpect_s3_class(x, \"Date\")",
     "crumbs": [
       "List of rules",
       "expect_s3_class"
@@ -2761,7 +2761,7 @@
     "href": "rules/expect_type.html",
     "title": "expect_type",
     "section": "",
-    "text": "NoteAdded in 0.3.0\n\n\n\n\n\n\n\n\nChecks for usage of expect_equal(typeof(x), type), expect_identical(typeof(x), type), and expect_true(is.&lt;type&gt;(x)) in tests.\n\n\n\nexpect_type() is more explicit and clearer in intent than comparing with expect_equal(), expect_identical(), or wrapping type checks in expect_true(). It also provides better error messages when tests fail.\nThis rule is disabled by default. Select it either with the rule name \"expect_type\" or with the rule group \"TESTTHAT\".\n\n\n\nexpect_equal(typeof(x), \"double\")\nexpect_identical(typeof(x), \"integer\")\nexpect_true(is.character(x))\nUse instead:\nexpect_type(x, \"double\")\nexpect_type(x, \"integer\")\nexpect_type(x, \"character\")",
+    "text": "NoteAdded in 0.3.0\n\n\n\n\n\nChecks for usage of expect_equal(typeof(x), type), expect_identical(typeof(x), type), and expect_true(is.&lt;type&gt;(x)) in tests.\n\n\n\nexpect_type() is more explicit and clearer in intent than comparing with expect_equal(), expect_identical(), or wrapping type checks in expect_true(). It also provides better error messages when tests fail.\nThis rule is disabled by default. Select it either with the rule name \"expect_type\" or with the rule group \"TESTTHAT\".\n\n\n\nexpect_equal(typeof(x), \"double\")\nexpect_identical(typeof(x), \"integer\")\nexpect_true(is.character(x))\nUse instead:\nexpect_type(x, \"double\")\nexpect_type(x, \"integer\")\nexpect_type(x, \"character\")",
     "crumbs": [
       "List of rules",
       "expect_type"
@@ -2805,7 +2805,7 @@
     "href": "rules/for_loop_dup_index.html",
     "title": "for_loop_dup_index",
     "section": "",
-    "text": "NoteAdded in 0.4.0\n\n\n\n\n\n\n\n\nChecks whether the index symbol in a for loop is already used in a parent for loop.\n\n\n\nIn nested loops, using the same index symbol for several loops can lead to unexpected and incorrect results.\nThis rules doesn’t have an automatic fix.\n\n\n\nfor (x in 1:3) {\n  for (x in 1:4) {\n    print(x + 1)\n  }\n}\nfor (x_outer in 1:3) {\n  for (x_inner in 1:4) {\n    print(x_inner + 1)\n  }\n}",
+    "text": "NoteAdded in 0.4.0\n\n\n\n\n\nChecks whether the index symbol in a for loop is already used in a parent for loop.\n\n\n\nIn nested loops, using the same index symbol for several loops can lead to unexpected and incorrect results.\nThis rules doesn’t have an automatic fix.\n\n\n\nfor (x in 1:3) {\n  for (x in 1:4) {\n    print(x + 1)\n  }\n}\nfor (x_outer in 1:3) {\n  for (x_inner in 1:4) {\n    print(x_inner + 1)\n  }\n}",
     "crumbs": [
       "List of rules",
       "for_loop_dup_index"
@@ -2849,7 +2849,7 @@
     "href": "rules/grepv.html",
     "title": "grepv",
     "section": "",
-    "text": "NoteAdded in 0.0.16\n\n\n\n\n\n\n\n\nChecks for usage of grep(..., value = TRUE) and recommends using grepv() instead (only if the R version used in the project is &gt;= 4.5).\n\n\n\nStarting from R 4.5, there is a function grepv() that is identical to grep() except that it uses value = TRUE by default.\nUsing grepv(...) is therefore more readable than grep(...).\n\n\n\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrep(\"i\", x, value = TRUE)\nUse instead:\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrepv(\"i\", x)\n\n\n\nSee ?grepv",
+    "text": "NoteAdded in 0.0.16\n\n\n\n\n\nChecks for usage of grep(..., value = TRUE) and recommends using grepv() instead (only if the R version used in the project is &gt;= 4.5).\n\n\n\nStarting from R 4.5, there is a function grepv() that is identical to grep() except that it uses value = TRUE by default.\nUsing grepv(...) is therefore more readable than grep(...).\n\n\n\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrep(\"i\", x, value = TRUE)\nUse instead:\nx &lt;- c(\"hello\", \"hi\", \"howdie\")\ngrepv(\"i\", x)\n\n\n\nSee ?grepv",
     "crumbs": [
       "List of rules",
       "grepv"
@@ -2904,7 +2904,7 @@
     "href": "rules/implicit_assignment.html",
     "title": "implicit_assignment",
     "section": "",
-    "text": "NoteAdded in 0.0.17\n\n\n\n\n\n\n\n\nChecks for implicit assignment in function calls and other situations.\n\n\n\nAssigning inside function calls or other situations such as in if() makes the code difficult to read, and should be avoided.\n\n\n\nmean(x &lt;- c(1, 2, 3))\nx\n\nif (any(y &lt;- x &gt; 0)) {\n  print(y)\n}\nUse instead:\nx &lt;- c(1, 2, 3)\nmean(x)\nx\n\nlarger &lt;- x &gt; 0\nif (any(larger)) {\n  print(larger)\n}\n\n\n\nSee:\n\nhttps://style.tidyverse.org/syntax.html#assignment",
+    "text": "NoteAdded in 0.0.17\n\n\n\n\n\nChecks for implicit assignment in function calls and other situations.\n\n\n\nAssigning inside function calls or other situations such as in if() makes the code difficult to read, and should be avoided.\n\n\n\nmean(x &lt;- c(1, 2, 3))\nx\n\nif (any(y &lt;- x &gt; 0)) {\n  print(y)\n}\nUse instead:\nx &lt;- c(1, 2, 3)\nmean(x)\nx\n\nlarger &lt;- x &gt; 0\nif (any(larger)) {\n  print(larger)\n}\n\n\n\nSee:\n\nhttps://style.tidyverse.org/syntax.html#assignment",
     "crumbs": [
       "List of rules",
       "implicit_assignment"
@@ -2959,7 +2959,7 @@
     "href": "rules/invalid_chunk_suppression.html",
     "title": "invalid_chunk_suppression",
     "section": "",
-    "text": "NoteAdded in 0.5.0\n\n\n\n\n\n\n\n\nChecks for jarl-ignore-chunk comments that use a single-line form instead of the required Quarto YAML array form.\n\n\n\nIn Quarto and R Markdown documents, #| comments are parsed as YAML chunk options. The single-line form\n#| jarl-ignore-chunk any_is_na: &lt;reason&gt;\nis not idiomatic YAML and therefore Quarto will not compile. The correct form is a YAML array:\n#| jarl-ignore-chunk:\n#|   - any_is_na: &lt;reason&gt;\n\n\n\n#| jarl-ignore-chunk any_is_na: &lt;reason&gt;\nany(is.na(x))\nUse instead:\n#| jarl-ignore-chunk:\n#|   - any_is_na: &lt;reason&gt;\nany(is.na(x))",
+    "text": "NoteAdded in 0.5.0\n\n\n\n\n\nChecks for jarl-ignore-chunk comments that use a single-line form instead of the required Quarto YAML array form.\n\n\n\nIn Quarto and R Markdown documents, #| comments are parsed as YAML chunk options. The single-line form\n#| jarl-ignore-chunk any_is_na: &lt;reason&gt;\nis not idiomatic YAML and therefore Quarto will not compile. The correct form is a YAML array:\n#| jarl-ignore-chunk:\n#|   - any_is_na: &lt;reason&gt;\n\n\n\n#| jarl-ignore-chunk any_is_na: &lt;reason&gt;\nany(is.na(x))\nUse instead:\n#| jarl-ignore-chunk:\n#|   - any_is_na: &lt;reason&gt;\nany(is.na(x))",
     "crumbs": [
       "List of rules",
       "invalid_chunk_suppression"
@@ -3003,7 +3003,7 @@
     "href": "rules/lengths.html",
     "title": "lengths",
     "section": "",
-    "text": "NoteAdded in 0.0.8\n\n\n\n\n\n\n\n\nChecks for usage of length() in several functions that apply it to each element of a list, such as lapply(), vapply(), purrr::map(), etc., and replaces it with lengths().\n\n\n\nlengths() is faster and more memory-efficient than applying length() on each element of the list.\n\n\n\nx &lt;- list(a = 1, b = 2:3, c = 1:10)\nsapply(x, length)\nUse instead:\nx &lt;- list(a = 1, b = 2:3, c = 1:10)\nlengths(x)\n\n\n\nSee ?lengths",
+    "text": "NoteAdded in 0.0.8\n\n\n\n\n\nChecks for usage of length() in several functions that apply it to each element of a list, such as lapply(), vapply(), purrr::map(), etc., and replaces it with lengths().\n\n\n\nlengths() is faster and more memory-efficient than applying length() on each element of the list.\n\n\n\nx &lt;- list(a = 1, b = 2:3, c = 1:10)\nsapply(x, length)\nUse instead:\nx &lt;- list(a = 1, b = 2:3, c = 1:10)\nlengths(x)\n\n\n\nSee ?lengths",
     "crumbs": [
       "List of rules",
       "lengths"
@@ -3058,7 +3058,7 @@
     "href": "rules/length_test.html",
     "title": "length_test",
     "section": "",
-    "text": "NoteAdded in 0.0.8\n\n\n\n\n\n\n\n\nChecks for usage of length(... == some_val) and replaces it with length(...) == some_val.\n\n\n\nThis is very likely a mistake since computing the length of the output of == is the same as computing the length of the inputs.\n\n\n\nx &lt;- 1:3\nlength(x == 1)\nUse instead:\nx &lt;- 1:3\nlength(x) == 1",
+    "text": "NoteAdded in 0.0.8\n\n\n\n\n\nChecks for usage of length(... == some_val) and replaces it with length(...) == some_val.\n\n\n\nThis is very likely a mistake since computing the length of the output of == is the same as computing the length of the inputs.\n\n\n\nx &lt;- 1:3\nlength(x == 1)\nUse instead:\nx &lt;- 1:3\nlength(x) == 1",
     "crumbs": [
       "List of rules",
       "length_test"
@@ -3102,7 +3102,7 @@
     "href": "rules/matrix_apply.html",
     "title": "matrix_apply",
     "section": "",
-    "text": "NoteAdded in 0.0.16\n\n\n\n\n\n\n\n\nChecks for usage of apply(x, 1/2, mean/sum).\n\n\n\napply() with FUN = sum or FUN = mean are inefficient when MARGIN is 1 or 2. colSums(), rowSums(), colMeans(), rowMeans() are both easier to read and much more efficient.\nThis rule provides an automated fix, except when extra arguments (outside of na.rm) are provided. In other words, this would be marked as lint and could be automatically replaced:\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, na.rm = TRUE)\nbut this wouldn’t:\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, trim = 0.2)\n\n\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, sum)\napply(dat, 2, sum)\napply(dat, 1, mean)\napply(dat, 2, mean)\napply(dat, 2, mean, na.rm = TRUE)\nUse instead:\ndat &lt;- data.frame(x = 1:3, y = 4:6)\nrowSums(dat)\ncolSums(dat)\nrowMeans(dat)\ncolMeans(dat)\ncolMeans(dat, na.rm = TRUE)\n\n\n\nSee ?colSums",
+    "text": "NoteAdded in 0.0.16\n\n\n\n\n\nChecks for usage of apply(x, 1/2, mean/sum).\n\n\n\napply() with FUN = sum or FUN = mean are inefficient when MARGIN is 1 or 2. colSums(), rowSums(), colMeans(), rowMeans() are both easier to read and much more efficient.\nThis rule provides an automated fix, except when extra arguments (outside of na.rm) are provided. In other words, this would be marked as lint and could be automatically replaced:\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, na.rm = TRUE)\nbut this wouldn’t:\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, mean, trim = 0.2)\n\n\n\ndat &lt;- data.frame(x = 1:3, y = 4:6)\napply(dat, 1, sum)\napply(dat, 2, sum)\napply(dat, 1, mean)\napply(dat, 2, mean)\napply(dat, 2, mean, na.rm = TRUE)\nUse instead:\ndat &lt;- data.frame(x = 1:3, y = 4:6)\nrowSums(dat)\ncolSums(dat)\nrowMeans(dat)\ncolMeans(dat)\ncolMeans(dat, na.rm = TRUE)\n\n\n\nSee ?colSums",
     "crumbs": [
       "List of rules",
       "matrix_apply"
@@ -3157,7 +3157,7 @@
     "href": "rules/misplaced_file_suppression.html",
     "title": "misplaced_file_suppression",
     "section": "",
-    "text": "NoteAdded in 0.4.0\n\n\n\n\n\n\n\n\nChecks for # jarl-ignore-file comments that are not at the top of the file.\n\n\n\nFile-level suppression comments must appear at the very beginning of the file (before any code) to be applied. A # jarl-ignore-file comment placed elsewhere in the file is silently ignored by Jarl.\n\n\n\nx &lt;- 1\n\n# The comment below isn't applied because it's not at the top of the file.\n# jarl-ignore-file any_is_na: &lt;reason&gt;\nany(is.na(x))\nUse instead:\n# jarl-ignore-file any_is_na: &lt;reason&gt;\n\nx &lt;- 1\nany(is.na(x))",
+    "text": "NoteAdded in 0.4.0\n\n\n\n\n\nChecks for # jarl-ignore-file comments that are not at the top of the file.\n\n\n\nFile-level suppression comments must appear at the very beginning of the file (before any code) to be applied. A # jarl-ignore-file comment placed elsewhere in the file is silently ignored by Jarl.\n\n\n\nx &lt;- 1\n\n# The comment below isn't applied because it's not at the top of the file.\n# jarl-ignore-file any_is_na: &lt;reason&gt;\nany(is.na(x))\nUse instead:\n# jarl-ignore-file any_is_na: &lt;reason&gt;\n\nx &lt;- 1\nany(is.na(x))",
     "crumbs": [
       "List of rules",
       "misplaced_file_suppression"
@@ -3201,7 +3201,7 @@
     "href": "rules/numeric_leading_zero.html",
     "title": "numeric_leading_zero",
     "section": "",
-    "text": "NoteAdded in 0.0.19\n\n\n\n\n\n\n\n\nChecks for double or complex values with a decimal component and a leading ..\n\n\n\nWhile .1 and 0.1 mean the same thing, the latter is easier to read due to the small size of the . glyph.\n\n\n\nx &lt;- .1\nUse instead:\nx &lt;- 0.1",
+    "text": "NoteAdded in 0.0.19\n\n\n\n\n\nChecks for double or complex values with a decimal component and a leading ..\n\n\n\nWhile .1 and 0.1 mean the same thing, the latter is easier to read due to the small size of the . glyph.\n\n\n\nx &lt;- .1\nUse instead:\nx &lt;- 0.1",
     "crumbs": [
       "List of rules",
       "numeric_leading_zero"
@@ -3245,7 +3245,7 @@
     "href": "rules/outer_negation.html",
     "title": "outer_negation",
     "section": "",
-    "text": "NoteAdded in 0.1.0\n\n\n\n\n\n\n\n\nChecks for usage of all(!x) or any(!x).\n\n\n\nThose two patterns may be hard to read and understand, especially when the expression after ! is lengthy. Using !any(x) instead of all(!x) and !all(x) instead of any(!x) may be more readable.\nIn addition, using the ! operator outside the function call is more efficient since it only has to invert one value instead of all values inside the function call.\n\n\n\nany(!x)\nall(!x)\nUse instead:\n!all(x)\n!any(x)",
+    "text": "NoteAdded in 0.1.0\n\n\n\n\n\nChecks for usage of all(!x) or any(!x).\n\n\n\nThose two patterns may be hard to read and understand, especially when the expression after ! is lengthy. Using !any(x) instead of all(!x) and !all(x) instead of any(!x) may be more readable.\nIn addition, using the ! operator outside the function call is more efficient since it only has to invert one value instead of all values inside the function call.\n\n\n\nany(!x)\nall(!x)\nUse instead:\n!all(x)\n!any(x)",
     "crumbs": [
       "List of rules",
       "outer_negation"
@@ -3289,7 +3289,7 @@
     "href": "rules/redundant_equals.html",
     "title": "redundant_equals",
     "section": "",
-    "text": "NoteAdded in 0.0.8\n\n\n\n\n\n\n\n\nChecks for usage of == and != where one of the sides of the operation is TRUE or FALSE.\n\n\n\nTesting x == TRUE is redundant if x is a logical vector. Wherever this is used to improve readability, the solution should instead be to improve the naming of the object to better indicate that its contents are logical. This can be done using prefixes (is, has, can, etc.). For example, is_child, has_parent_supervision, can_watch_horror_movie clarify their logical nature, while child, parent_supervision, watch_horror_movie don’t.\n\n\n\nx &lt;- c(TRUE, FALSE)\nif (any(x == TRUE)) {\n  print(\"hi\")\n}\nUse instead:\nx &lt;- c(TRUE, FALSE)\nif (any(x)) {\n  print(\"hi\")\n}",
+    "text": "NoteAdded in 0.0.8\n\n\n\n\n\nChecks for usage of == and != where one of the sides of the operation is TRUE or FALSE.\n\n\n\nTesting x == TRUE is redundant if x is a logical vector. Wherever this is used to improve readability, the solution should instead be to improve the naming of the object to better indicate that its contents are logical. This can be done using prefixes (is, has, can, etc.). For example, is_child, has_parent_supervision, can_watch_horror_movie clarify their logical nature, while child, parent_supervision, watch_horror_movie don’t.\n\n\n\nx &lt;- c(TRUE, FALSE)\nif (any(x == TRUE)) {\n  print(\"hi\")\n}\nUse instead:\nx &lt;- c(TRUE, FALSE)\nif (any(x)) {\n  print(\"hi\")\n}",
     "crumbs": [
       "List of rules",
       "redundant_equals"
@@ -3333,7 +3333,7 @@
     "href": "rules/repeat.html",
     "title": "repeat",
     "section": "",
-    "text": "NoteAdded in 0.0.19\n\n\n\n\n\n\n\n\nChecks use of while (TRUE) and recommends the use of repeat instead.\n\n\n\nwhile (TRUE) is valid R code but repeat better expresses the intent of infinite loop.\n\n\n\nwhile (TRUE) {\n  # ...\n  break\n}\nUse instead:\nrepeat {\n  # ...\n  break\n}",
+    "text": "NoteAdded in 0.0.19\n\n\n\n\n\nChecks use of while (TRUE) and recommends the use of repeat instead.\n\n\n\nwhile (TRUE) is valid R code but repeat better expresses the intent of infinite loop.\n\n\n\nwhile (TRUE) {\n  # ...\n  break\n}\nUse instead:\nrepeat {\n  # ...\n  break\n}",
     "crumbs": [
       "List of rules",
       "repeat"
@@ -3377,7 +3377,7 @@
     "href": "rules/seq.html",
     "title": "seq",
     "section": "",
-    "text": "NoteAdded in 0.2.0\n\n\n\n\n\n\n\n\nChecks for 1:length(...), 1:nrow(...), 1:ncol(...), 1:NROW(...) and 1:NCOL(...) expressions. See also seq2.\n\n\n\nThose patterns are often used to generate sequences from 1 to a given number. However, when the right-hand side of : is 0, then this creates a sequence 1,0 which is often overlooked.\nThis rule comes with safe automatic fixes using seq_along() or seq_len().\n\n\n\nfor (i in 1:nrow(data)) {\n  print(\"hi\")\n}\n\nfor (i in 1:length(data)) {\n  print(\"hi\")\n}\nUse instead:\nfor (i in seq_len(nrow(data))) {\n  print(\"hi\")\n}\n\nfor (i in seq_along(data)) {\n  print(\"hi\")\n}",
+    "text": "NoteAdded in 0.2.0\n\n\n\n\n\nChecks for 1:length(...), 1:nrow(...), 1:ncol(...), 1:NROW(...) and 1:NCOL(...) expressions. See also seq2.\n\n\n\nThose patterns are often used to generate sequences from 1 to a given number. However, when the right-hand side of : is 0, then this creates a sequence 1,0 which is often overlooked.\nThis rule comes with safe automatic fixes using seq_along() or seq_len().\n\n\n\nfor (i in 1:nrow(data)) {\n  print(\"hi\")\n}\n\nfor (i in 1:length(data)) {\n  print(\"hi\")\n}\nUse instead:\nfor (i in seq_len(nrow(data))) {\n  print(\"hi\")\n}\n\nfor (i in seq_along(data)) {\n  print(\"hi\")\n}",
     "crumbs": [
       "List of rules",
       "seq"
@@ -3421,7 +3421,7 @@
     "href": "rules/sort.html",
     "title": "sort",
     "section": "",
-    "text": "NoteAdded in 0.0.16\n\n\n\n\n\n\n\n\nChecks for usage of x[order(x, ...)].\n\n\n\nIt is better to use sort(x, ...), which is more readable than x[order(x, ...)] and more efficient.\n\n\n\nx &lt;- c(3, 2, 5, 1, 5, 6)\nx[order(x)]\nx[order(x, na.last = TRUE)]\nx[order(x, decreasing = TRUE)]\nUse instead:\nx &lt;- c(3, 2, 5, 1, 5, 6)\nsort(x)\nsort(x, na.last = TRUE)\nsort(x, decreasing = TRUE)\n\n\n\nSee ?sort",
+    "text": "NoteAdded in 0.0.16\n\n\n\n\n\nChecks for usage of x[order(x, ...)].\n\n\n\nIt is better to use sort(x, ...), which is more readable than x[order(x, ...)] and more efficient.\n\n\n\nx &lt;- c(3, 2, 5, 1, 5, 6)\nx[order(x)]\nx[order(x, na.last = TRUE)]\nx[order(x, decreasing = TRUE)]\nUse instead:\nx &lt;- c(3, 2, 5, 1, 5, 6)\nsort(x)\nsort(x, na.last = TRUE)\nsort(x, decreasing = TRUE)\n\n\n\nSee ?sort",
     "crumbs": [
       "List of rules",
       "sort"
@@ -3476,7 +3476,7 @@
     "href": "rules/string_boundary.html",
     "title": "string_boundary",
     "section": "",
-    "text": "NoteAdded in 0.3.0\n\n\n\n\n\n\n\n\nChecks for substr() and substring() calls that can be replaced with startsWith() or endsWith().\n\n\n\nUsing startsWith() and endsWith() is both more readable and more efficient than extracting substrings and comparing them.\nThis rule has a safe fix.\n\n\n\nsubstr(x, 1L, 3L) == \"abc\"\nsubstring(x, nchar(x) - 2L, nchar(x)) == \"xyz\"\nUse instead:\nstartsWith(x, \"abc\")\nendsWith(x, \"xyz\")\n\n\n\nSee ?startsWith and ?substr",
+    "text": "NoteAdded in 0.3.0\n\n\n\n\n\nChecks for substr() and substring() calls that can be replaced with startsWith() or endsWith().\n\n\n\nUsing startsWith() and endsWith() is both more readable and more efficient than extracting substrings and comparing them.\nThis rule has a safe fix.\n\n\n\nsubstr(x, 1L, 3L) == \"abc\"\nsubstring(x, nchar(x) - 2L, nchar(x)) == \"xyz\"\nUse instead:\nstartsWith(x, \"abc\")\nendsWith(x, \"xyz\")\n\n\n\nSee ?startsWith and ?substr",
     "crumbs": [
       "List of rules",
       "string_boundary"
@@ -3531,7 +3531,7 @@
     "href": "rules/true_false_symbol.html",
     "title": "true_false_symbol",
     "section": "",
-    "text": "NoteAdded in 0.0.8\n\n\n\n\n\n\n\n\nChecks for usage of T and F symbols. If they correspond to the TRUE and FALSE values, then replace them by that. If they correspond to something else, such as an object or a variable name, then no automatic fixes are applied.\n\n\n\nT and F are not reserved symbols (like break) and therefore can be used as variable names. Therefore, it is better for readability to replace them by TRUE and FALSE.\nIt is also recommended to rename objects or parameters named F and T to avoid confusion.\n\n\n\nx &lt;- T\ny &lt;- F\nUse instead:\nx &lt;- TRUE\ny &lt;- FALSE",
+    "text": "NoteAdded in 0.0.8\n\n\n\n\n\nChecks for usage of T and F symbols. If they correspond to the TRUE and FALSE values, then replace them by that. If they correspond to something else, such as an object or a variable name, then no automatic fixes are applied.\n\n\n\nT and F are not reserved symbols (like break) and therefore can be used as variable names. Therefore, it is better for readability to replace them by TRUE and FALSE.\nIt is also recommended to rename objects or parameters named F and T to avoid confusion.\n\n\n\nx &lt;- T\ny &lt;- F\nUse instead:\nx &lt;- TRUE\ny &lt;- FALSE",
     "crumbs": [
       "List of rules",
       "true_false_symbol"
@@ -3575,7 +3575,7 @@
     "href": "rules/unexplained_suppression.html",
     "title": "unexplained_suppression",
     "section": "",
-    "text": "NoteAdded in 0.4.0\n\n\n\n\n\n\n\n\nChecks for suppression comments that are missing an explanation.\n\n\n\nSuppression comments without explanations make it hard to understand why a rule was suppressed. Over time, these unexplained suppressions can lead to technical debt as developers may not know if the suppression is still needed or what the original reason was.\nA # jarl-ignore comment without an explanation is ignored by Jarl.\n\n\n\n# The comment below isn't applied, the code below is still reported.\n# jarl-ignore any_is_na\nany(is.na(x))\nUse instead:\n# jarl-ignore any_is_na: &lt;reason&gt;\nany(is.na(x))",
+    "text": "NoteAdded in 0.4.0\n\n\n\n\n\nChecks for suppression comments that are missing an explanation.\n\n\n\nSuppression comments without explanations make it hard to understand why a rule was suppressed. Over time, these unexplained suppressions can lead to technical debt as developers may not know if the suppression is still needed or what the original reason was.\nA # jarl-ignore comment without an explanation is ignored by Jarl.\n\n\n\n# The comment below isn't applied, the code below is still reported.\n# jarl-ignore any_is_na\nany(is.na(x))\nUse instead:\n# jarl-ignore any_is_na: &lt;reason&gt;\nany(is.na(x))",
     "crumbs": [
       "List of rules",
       "unexplained_suppression"
@@ -3619,7 +3619,7 @@
     "href": "rules/unnecessary_nesting.html",
     "title": "unnecessary_nesting",
     "section": "",
-    "text": "NoteAdded in 0.4.0\n\n\n\n\n\n\n\n\nThis rule detects nested if conditions that could be gathered into a single one.\n\n\n\nNesting if conditions when it is not necessary may hurt readability.\nThis rule has a safe fix, in the sense that it will not change the meaning of the code. However, it may produce code that is incorrectly formatted.\n\n\n\nif (x &gt; 0) {\n  if (y &gt; 0) {\n    print(\"x and y are greather than 0\")\n  }\n}\nUse instead:\nif (x &gt; 0 && y &gt; 0) {\n  print(\"x and y are greather than 0\")\n}",
+    "text": "NoteAdded in 0.4.0\n\n\n\n\n\nThis rule detects nested if conditions that could be gathered into a single one.\n\n\n\nNesting if conditions when it is not necessary may hurt readability.\nThis rule has a safe fix, in the sense that it will not change the meaning of the code. However, it may produce code that is incorrectly formatted.\n\n\n\nif (x &gt; 0) {\n  if (y &gt; 0) {\n    print(\"x and y are greather than 0\")\n  }\n}\nUse instead:\nif (x &gt; 0 && y &gt; 0) {\n  print(\"x and y are greather than 0\")\n}",
     "crumbs": [
       "List of rules",
       "unnecessary_nesting"
@@ -3663,7 +3663,7 @@
     "href": "rules/unused_function.html",
     "title": "unused_function",
     "section": "",
-    "text": "NoteAdded in 0.5.0\n\n\n\n\n\n\n\n\nChecks for unused functions in R packages. It looks for:\n\nFunctions defined in R/ that are not exported and not used anywhere in the package (including R/, inst/tinytest/, inst/tests/, src/, and tests/).\nFunctions defined in tests/ that are not used anywhere in tests/.\nFunctions defined in inst/tinytest/ or inst/tests/ that are not used anywhere within that directory.\n\n\n\n\nAn internal function that is never called is likely dead code left over from refactoring. Removing it keeps the codebase easier to understand and maintain.\n\n\n\nThere are many ways to call a function in R code (e.g. foo(), do.call(\"foo\", ...), lapply(x, foo) among others). Jarl tries to limit false positives as much as possible, at the expense of false negatives. This means that reporting a function that is actually used somewhere (false positive) is considered a bug, but not reporting a function that isn’t used anywhere (false negative) isn’t considered a bug (but can be suggested as a feature request).\n\n\n\n# In NAMESPACE: export(public_fn)\n\n# In R/public.R:\npublic_fn &lt;- function(x) {\n  check_character(x)\n}\n\n# In R/helper.R:\ncheck_character &lt;- function(x) {\n  stopifnot(is.character(x))\n}\ncheck_length &lt;- function(x, y) {\n  stopifnot(length(x) == y)\n}\n\n# `public_fn()` is exported by the package, so it is considered used.\n# `check_character()` isn't exported but used in `public_fn`.\n# `check_length()` isn't exported but and isn't used anywhere, so it is\n# reported.",
+    "text": "NoteAdded in 0.5.0\n\n\n\n\n\nChecks for unused functions in R packages. It looks for:\n\nFunctions defined in R/ that are not exported and not used anywhere in the package (including R/, inst/tinytest/, inst/tests/, src/, and tests/).\nFunctions defined in tests/ that are not used anywhere in tests/.\nFunctions defined in inst/tinytest/ or inst/tests/ that are not used anywhere within that directory.\n\n\n\n\nAn internal function that is never called is likely dead code left over from refactoring. Removing it keeps the codebase easier to understand and maintain.\n\n\n\nThere are many ways to call a function in R code (e.g. foo(), do.call(\"foo\", ...), lapply(x, foo) among others). Jarl tries to limit false positives as much as possible, at the expense of false negatives. This means that reporting a function that is actually used somewhere (false positive) is considered a bug, but not reporting a function that isn’t used anywhere (false negative) isn’t considered a bug (but can be suggested as a feature request).\n\n\n\n# In NAMESPACE: export(public_fn)\n\n# In R/public.R:\npublic_fn &lt;- function(x) {\n  check_character(x)\n}\n\n# In R/helper.R:\ncheck_character &lt;- function(x) {\n  stopifnot(is.character(x))\n}\ncheck_length &lt;- function(x, y) {\n  stopifnot(length(x) == y)\n}\n\n# `public_fn()` is exported by the package, so it is considered used.\n# `check_character()` isn't exported but used in `public_fn`.\n# `check_length()` isn't exported but and isn't used anywhere, so it is\n# reported.",
     "crumbs": [
       "List of rules",
       "unused_function"
@@ -3718,7 +3718,7 @@
     "href": "rules/which_grepl.html",
     "title": "which_grepl",
     "section": "",
-    "text": "NoteAdded in 0.0.8\n\n\n\n\n\n\n\n\nChecks for usage of which(grepl(...)) and replaces it with grep(...).\n\n\n\nwhich(grepl(...)) is harder to read and is less efficient than grep() since it requires two passes on the vector.\n\n\n\nx &lt;- c(\"hello\", \"there\")\nwhich(grepl(\"hell\", x))\nwhich(grepl(\"foo\", x))\nUse instead:\nx &lt;- c(\"hello\", \"there\")\ngrep(\"hell\", x)\ngrep(\"foo\", x)\n\n\n\nSee ?grep",
+    "text": "NoteAdded in 0.0.8\n\n\n\n\n\nChecks for usage of which(grepl(...)) and replaces it with grep(...).\n\n\n\nwhich(grepl(...)) is harder to read and is less efficient than grep() since it requires two passes on the vector.\n\n\n\nx &lt;- c(\"hello\", \"there\")\nwhich(grepl(\"hell\", x))\nwhich(grepl(\"foo\", x))\nUse instead:\nx &lt;- c(\"hello\", \"there\")\ngrep(\"hell\", x)\ngrep(\"foo\", x)\n\n\n\nSee ?grep",
     "crumbs": [
       "List of rules",
       "which_grepl"
