@@ -105,7 +105,7 @@ pub fn compute_lints_location(
 pub fn get_unnamed_args(args: &RArgumentList) -> Vec<RArgument> {
     args.into_iter()
         .filter_map(|x| {
-            let arg = x.clone().unwrap();
+            let arg = x.ok()?;
             (arg.name_clause().is_none()).then_some(arg)
         })
         .collect()
@@ -115,7 +115,7 @@ pub fn get_unnamed_args(args: &RArgumentList) -> Vec<RArgument> {
 pub fn get_named_args(args: &RArgumentList) -> Vec<RArgument> {
     args.into_iter()
         .filter_map(|x| {
-            let arg = x.clone().unwrap();
+            let arg = x.ok()?;
             (arg.name_clause().is_some()).then_some(arg)
         })
         .collect()
@@ -123,25 +123,17 @@ pub fn get_named_args(args: &RArgumentList) -> Vec<RArgument> {
 
 /// Takes a list of arguments and tries to extract the one named `name`.
 pub fn get_arg_by_name(args: &RArgumentList, name: &str) -> Option<RArgument> {
-    args.into_iter()
-        .find(|x| {
-            let name_clause = x.clone().unwrap().name_clause();
-            if let Some(name_clause) = name_clause {
-                match name_clause.name() {
-                    Ok(name_clause) => name_clause.to_string().trim() == name,
-                    _ => false,
-                }
-            } else {
-                false
-            }
-        })
-        .map(|x| x.unwrap())
+    args.into_iter().filter_map(|x| x.ok()).find(|arg| {
+        arg.name_clause()
+            .and_then(|nc| nc.name().ok())
+            .is_some_and(|n| n.to_string().trim() == name)
+    })
 }
 
 /// Takes a list of arguments and tries to extract the one in position `pos`.
 /// Argument `pos` is 1-indexed.
 pub fn get_arg_by_position(args: &RArgumentList, pos: usize) -> Option<RArgument> {
-    args.iter().nth(pos - 1).map(|x| x.unwrap())
+    args.iter().nth(pos - 1).and_then(|x| x.ok())
 }
 
 /// Takes a list of arguments and tries to extract the unnamed one in position `pos`.
@@ -184,7 +176,7 @@ pub fn drop_arg_by_name_or_position(
     let by_name: Vec<RArgument> = args
         .iter()
         .filter_map(|arg| {
-            let arg = arg.clone().unwrap();
+            let arg = arg.ok()?;
             if let Some(name_clause) = arg.name_clause()
                 && let Ok(n) = name_clause.name()
                 && n.to_string().trim() == name
@@ -207,7 +199,7 @@ pub fn drop_arg_by_name_or_position(
             if i == pos - 1 {
                 return None;
             }
-            Some(arg.clone().unwrap())
+            arg.ok()
         })
         .collect();
 
@@ -309,7 +301,7 @@ pub fn get_nested_functions_content(
     let unnamed_arg = arguments?
         .items()
         .into_iter()
-        .find(|x| x.clone().unwrap().name_clause().is_none());
+        .find(|x| x.as_ref().is_ok_and(|arg| arg.name_clause().is_none()));
 
     if let Some(arg) = unnamed_arg {
         let value = arg?.value();
