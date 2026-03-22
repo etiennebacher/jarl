@@ -18,7 +18,7 @@ air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air
 anyhow = "1.0.94"
 biome_formatter = { git = "https://github.com/lionel-/biome", rev = "41d799cfa4cedd25625fc3f6bd7898532873f051" }
 biome_rowan = { git = "https://github.com/lionel-/biome", rev = "41d799cfa4cedd25625fc3f6bd7898532873f051" }
-clap = { version = "4.5.21", features = ["derive"] }
+clap = { version = "4.6.0", features = ["derive"] }
 colored = "3.1.1"
 ignore = "0.4.23"
 insta = { version = "1.42.0", features = ["yaml"] }
@@ -32,7 +32,7 @@ rustc-hash = "2.1.1"
 schemars = "1.1.0"
 serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.143"
-tempfile = "3.14.0"
+tempfile = "3.27.0"
 toml = "1.0.2"
 tracing = "0.1.41"
 

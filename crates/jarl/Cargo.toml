@@ -45,7 +45,7 @@ regex.workspace = true
 tempfile.workspace = true
 tracing-subscriber = "0.3.20"
 
-annotate-snippets = "0.11"
+annotate-snippets = "0.12"
 
 [dev-dependencies]
 tempfile.workspace = true

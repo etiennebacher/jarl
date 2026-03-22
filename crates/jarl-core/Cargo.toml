@@ -43,7 +43,7 @@ rayon.workspace = true
 regex.workspace = true
 
 schemars = { workspace = true, optional = true }
-annotate-snippets = "0.11"
+annotate-snippets = "0.12"
 
 [dev-dependencies]
 insta.workspace = true
