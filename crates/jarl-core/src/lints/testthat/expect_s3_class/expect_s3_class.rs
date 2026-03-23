@@ -6,6 +6,8 @@ use crate::utils::{
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
+/// Version added: 0.3.0
+///
 /// ## What it does
 ///
 /// Checks for usage of `expect_equal(class(x), "y")` and

@@ -31,6 +31,8 @@ fn by_arg_name(verb: &str) -> &'static str {
     }
 }
 
+/// Version added: 0.5.0
+///
 /// ## What it does
 ///
 /// Checks for `group_by() |> verb() |> ungroup()` patterns that can be

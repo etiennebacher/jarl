@@ -1,4 +1,7 @@
 # unreachable_code
+::: {.callout-note title="Added in 0.4.0" .low-opacity}
+:::
+
 ## What it does
 
 Detects code that can never be executed because it appears after control

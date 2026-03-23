@@ -6,7 +6,11 @@ filters:
 format:
   html:
     theme: morph
-    css: styles.css
+    css:
+    - styles.css
+    - dark-mode.css
+    include-in-header:
+      file: dark-mode-header.html
     toc: true
     toc-depth: 4
     code-copy: true
@@ -88,6 +92,7 @@ website:
       - rules/dplyr_group_by_ungroup.md
       - rules/duplicated_arguments.md
       - rules/duplicated_function_definition.md
+      - rules/empty_assignment.md
       - rules/equals_na.md
       - rules/equals_nan.md
       - rules/equals_null.md

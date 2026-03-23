@@ -5,6 +5,8 @@ use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// Version added: 0.0.17
+///
 /// ## What it does
 ///
 /// Checks for implicit assignment in function calls and other situations.

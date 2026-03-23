@@ -1,12 +1,10 @@
-use std::process::Command;
-
-use crate::helpers::CommandExt;
-use crate::helpers::binary_path;
+use crate::helpers::{CliTest, CommandExt};
 
 #[test]
-fn test_help() {
+fn test_help() -> anyhow::Result<()> {
+    let case = CliTest::new()?;
     insta::assert_snapshot!(
-        Command::new(binary_path())
+        case.command()
             .arg("help")
             .run()
             .normalize_os_executable_name(),
@@ -37,7 +35,7 @@ fn test_help() {
     "
     );
     insta::assert_snapshot!(
-        Command::new(binary_path())
+        case.command()
             .arg("--help")
             .run()
             .normalize_os_executable_name(),
@@ -68,7 +66,7 @@ fn test_help() {
     "
     );
     insta::assert_snapshot!(
-        Command::new(binary_path())
+        case.command()
             .arg("-h")
             .run()
             .normalize_os_executable_name(),
@@ -98,12 +96,14 @@ fn test_help() {
     ----- stderr -----
     "
     );
+    Ok(())
 }
 
 #[test]
-fn test_help_check() {
+fn test_help_check() -> anyhow::Result<()> {
+    let case = CliTest::new()?;
     insta::assert_snapshot!(
-        Command::new(binary_path())
+        case.command()
             .arg("check")
             .arg("--help")
             .run()
@@ -140,17 +140,17 @@ fn test_help_check() {
       -s, --select <SELECT>
               Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF".
               
-              [default: ]
+              [default: ""]
 
       -e, --extend-select <EXTEND_SELECT>
               Like `--select` but adds additional rules in addition to those already specified.
               
-              [default: ]
+              [default: ""]
 
       -i, --ignore <IGNORE>
               Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF".
               
-              [default: ]
+              [default: ""]
 
       -w, --with-timing
               Show the time taken by the function.
@@ -193,7 +193,7 @@ fn test_help_check() {
     "#
     );
     insta::assert_snapshot!(
-        Command::new(binary_path())
+        case.command()
             .arg("check")
             .arg("-h")
             .run()
@@ -216,9 +216,9 @@ fn test_help_check() {
           --fix-only                       Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
           --allow-dirty                    Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
           --allow-no-vcs                   Apply fixes even if there is no version control system.
-      -s, --select <SELECT>                Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ]
-      -e, --extend-select <EXTEND_SELECT>  Like `--select` but adds additional rules in addition to those already specified. [default: ]
-      -i, --ignore <IGNORE>                Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ]
+      -s, --select <SELECT>                Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ""]
+      -e, --extend-select <EXTEND_SELECT>  Like `--select` but adds additional rules in addition to those already specified. [default: ""]
+      -i, --ignore <IGNORE>                Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ""]
       -w, --with-timing                    Show the time taken by the function.
       -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
           --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: full] [possible values: full, concise, github, json]
@@ -235,4 +235,5 @@ fn test_help_check() {
     ----- stderr -----
     "#
     );
+    Ok(())
 }

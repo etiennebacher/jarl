@@ -1,17 +1,9 @@
-use std::process::Command;
-use tempfile::TempDir;
-
-use crate::helpers::CommandExt;
-use crate::helpers::binary_path;
+use crate::helpers::{CliTest, CommandExt};
 
 #[test]
 fn test_jarl_ignore_inline_suppression() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
+    let case = CliTest::with_file(
+        "test.R",
         "
 # jarl-ignore any_is_na: legacy code
 any(is.na(x))
@@ -19,8 +11,8 @@ any(is.na(x))
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -42,12 +34,8 @@ any(is.na(x))
 
 #[test]
 fn test_jarl_ignore_inline_suppression_in_pipe() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
+    let case = CliTest::with_file(
+        "test.R",
         "
 # jarl-ignore any_is_na: legacy code
 x |>
@@ -57,8 +45,8 @@ x |>
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -80,12 +68,8 @@ x |>
 
 #[test]
 fn test_jarl_ignore_file_suppression() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
+    let case = CliTest::with_file(
+        "test.R",
         "# jarl-ignore-file any_is_na: this file has many false positives
 any(is.na(x))
 any(is.na(y))
@@ -94,8 +78,8 @@ any(is.na(z))
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -117,12 +101,8 @@ any(is.na(z))
 
 #[test]
 fn test_jarl_ignore_region_suppression() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
+    let case = CliTest::with_file(
+        "test.R",
         "
 any(is.na(x))
 
@@ -136,8 +116,8 @@ any(is.na(w))
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -177,12 +157,8 @@ any(is.na(w))
 
 #[test]
 fn test_jarl_ignore_cascading_suppression() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
+    let case = CliTest::with_file(
+        "test.R",
         "
 # jarl-ignore any_is_na: cascades to children
 x <- function(x) {
@@ -193,8 +169,8 @@ any(is.na(y))
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -226,12 +202,8 @@ any(is.na(y))
 
 #[test]
 fn test_jarl_ignore_multiple_rules_with_extend_select() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
+    let case = CliTest::with_file(
+        "test.R",
         "
 # jarl-ignore any_is_na: first rule
 # jarl-ignore assignment: second rule
@@ -240,8 +212,8 @@ x = any(is.na(y))
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--extend-select")
@@ -265,12 +237,8 @@ x = any(is.na(y))
 
 #[test]
 fn test_jarl_ignore_nested_in_call_second_argument() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
+    let case = CliTest::with_file(
+        "test.R",
         "
 foo(
   first_arg,
@@ -281,8 +249,8 @@ foo(
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
@@ -304,12 +272,8 @@ foo(
 
 #[test]
 fn test_nolint_format_not_recognized() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    std::fs::write(
-        directory.join(test_path),
+    let case = CliTest::with_file(
+        "test.R",
         "
 # nolint
 any(is.na(x))
@@ -322,8 +286,8 @@ any(is.na(z))
     )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()

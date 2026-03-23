@@ -4,6 +4,8 @@ use crate::utils::{get_function_name, get_function_namespace_prefix, node_contai
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// Version added: 0.5.0
+///
 /// ## What it does
 ///
 /// Checks `dplyr::filter()` calls with complex conditions and suggests using

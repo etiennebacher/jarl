@@ -2,6 +2,8 @@ use crate::diagnostic::*;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// Version added: 0.0.8
+///
 /// ## What it does
 ///
 /// Checks for consistency of assignment operator.

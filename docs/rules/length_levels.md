@@ -1,4 +1,7 @@
 # length_levels
+::: {.callout-note title="Added in 0.0.8" .low-opacity}
+:::
+
 ## What it does
 
 Check for `length(levels(...))` and replace it with `nlevels(...)`.

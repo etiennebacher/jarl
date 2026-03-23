@@ -4,6 +4,8 @@ use biome_rowan::AstNode;
 
 pub struct Repeat;
 
+/// Version added: 0.0.19
+///
 /// ## What it does
 ///
 /// Checks use of `while (TRUE)` and recommends the use of `repeat` instead.

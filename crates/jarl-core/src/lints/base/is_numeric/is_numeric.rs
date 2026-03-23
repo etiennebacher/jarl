@@ -5,6 +5,8 @@ use biome_rowan::AstNode;
 
 pub struct IsNumeric;
 
+/// Version added: 0.0.16
+///
 /// ## What it does
 ///
 /// Checks for usage of `is.numeric(x) || is.integer(x)`.
