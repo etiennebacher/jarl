@@ -141,6 +141,10 @@ pub struct CheckCommand {
         default_missing_value = "<reason>",
         num_args = 0..=1,
         require_equals = true,
+        conflicts_with = "statistics",
+        conflicts_with = "fix",
+        conflicts_with = "unsafe_fixes",
+        conflicts_with = "fix_only",
         help = "Automatically insert a `# jarl-ignore` comment to suppress all violations.\nThe default reason can be customized with `--add-jarl-ignore=\"my_reason\"`."
     )]
     pub add_jarl_ignore: Option<String>,

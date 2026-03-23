@@ -72,6 +72,8 @@
 
 * Jarl can be used with `pre-commit` and `prek`, see [Pre-commit tools](https://jarl.etiennebacher.com/howto/precommit) (#379).
 
+* The CLI now errors early when some incompatible arguments are used (#437).
+
 ### Bug fixes
 
 * `fixed_regex` could loop infinitely trying to add `fixed = TRUE`. This is
