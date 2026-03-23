@@ -15,6 +15,7 @@ mod edge_cases;
 mod exclude;
 mod help;
 mod helpers;
+mod incompatible_args;
 mod jarl;
 mod min_r_version;
 mod no_default_exclude;
