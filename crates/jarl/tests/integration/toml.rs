@@ -678,7 +678,8 @@ select = ["any_is_na"
       |
     2 | [lint
       |      ^
-    unclosed table, expected `]`
+    invalid table header
+    expected `.`, `]`
     "
     );
 
