@@ -33,7 +33,6 @@ anyhow.workspace = true
 tracing.workspace = true
 path-absolutize.workspace = true
 ignore.workspace = true
-tempfile.workspace = true
 etcetera.workspace = true
 
 # Parallel processing
@@ -47,7 +46,7 @@ annotate-snippets = "0.11"
 
 [dev-dependencies]
 insta.workspace = true
-
+tempfile.workspace = true
 
 [lints.clippy]
 module-inception = "allow"
