@@ -1,5 +1,6 @@
 # for_loop_index
 ::: {.callout-note title="Added in 0.0.16" .low-opacity}
+:::
 
 ## What it does
 

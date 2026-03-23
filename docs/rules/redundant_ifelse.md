@@ -1,5 +1,6 @@
 # redundant_ifelse
 ::: {.callout-note title="Added in 0.4.0" .low-opacity}
+:::
 
 ## What it does
 

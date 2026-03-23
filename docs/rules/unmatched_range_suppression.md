@@ -1,5 +1,6 @@
 # unmatched_range_suppression
 ::: {.callout-note title="Added in 0.4.0" .low-opacity}
+:::
 
 ## What it does
 

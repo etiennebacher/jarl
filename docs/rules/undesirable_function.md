@@ -1,5 +1,6 @@
 # undesirable_function
 ::: {.callout-note title="Added in 0.5.0" .low-opacity}
+:::
 
 ## What it does
 

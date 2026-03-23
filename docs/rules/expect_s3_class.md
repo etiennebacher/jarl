@@ -1,5 +1,6 @@
 # expect_s3_class
 ::: {.callout-note title="Added in 0.3.0" .low-opacity}
+:::
 
 ## What it does
 

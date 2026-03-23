@@ -55,7 +55,8 @@ docs <- lapply(seq_along(rules), \(x) {
     paste0(
       '::: {.callout-note title="Added in ',
       added_in_version,
-      '" .low-opacity}\n'
+      '" .low-opacity}\n',
+      ":::\n"
     ),
     doc
   )

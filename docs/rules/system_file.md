@@ -1,5 +1,6 @@
 # system_file
 ::: {.callout-note title="Added in 0.1.2" .low-opacity}
+:::
 
 ## What it does
 

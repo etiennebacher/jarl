@@ -1,5 +1,6 @@
 # sample_int
 ::: {.callout-note title="Added in 0.0.16" .low-opacity}
+:::
 
 ## What it does
 
