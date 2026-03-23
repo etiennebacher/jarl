@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>redundant_ifelse – Jarl</title>
+<title>Package-specific rules – Jarl</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -214,7 +214,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link rel="stylesheet" href="../dark-mode.css">
 </head>
 
-<body class="nav-sidebar floating nav-fixed quarto-light">
+<body class="nav-fixed quarto-light">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -329,505 +329,142 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
       </div> <!-- /container-fluid -->
     </nav>
-  <nav class="quarto-secondary-nav">
-    <div class="container-fluid d-flex">
-      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
-        <i class="bi bi-layout-text-sidebar-reverse"></i>
-      </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../rules/all_equal.html">List of rules</a></li><li class="breadcrumb-item"><a href="../rules/redundant_ifelse.html">redundant_ifelse</a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
-        </a>
-    </div>
-  </nav>
 </header>
 <!-- content -->
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
-    <div class="sidebar-menu-container"> 
-    <ul class="list-unstyled mt-1">
-        <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Rules</span></a>
-  </div>
-</li>
-        <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
- <span class="menu-text">List of rules</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
-      </div>
-      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/all_equal.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">all_equal</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/any_duplicated.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">any_duplicated</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/any_is_na.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">any_is_na</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/assignment.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">assignment</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/blanket_suppression.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">blanket_suppression</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/browser.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">browser</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/class_equals.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">class_equals</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/coalesce.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">coalesce</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/comparison_negation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">comparison_negation</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/download_file.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">download_file</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/dplyr_filter_out.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">dplyr_filter_out</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/dplyr_group_by_ungroup.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">dplyr_group_by_ungroup</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/duplicated_arguments.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">duplicated_arguments</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/duplicated_function_definition.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">duplicated_function_definition</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/empty_assignment.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">empty_assignment</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/equals_na.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">equals_na</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/equals_nan.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">equals_nan</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/equals_null.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">equals_null</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/expect_length.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">expect_length</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/expect_match.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">expect_match</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/expect_named.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">expect_named</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/expect_no_match.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">expect_no_match</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/expect_not.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">expect_not</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/expect_null.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">expect_null</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/expect_s3_class.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">expect_s3_class</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/expect_true_false.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">expect_true_false</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/expect_type.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">expect_type</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/fixed_regex.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">fixed_regex</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/for_loop_dup_index.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">for_loop_dup_index</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/for_loop_index.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">for_loop_index</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/grepv.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">grepv</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/if_always_true.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">if_always_true</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/implicit_assignment.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">implicit_assignment</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/internal_function.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">internal_function</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/invalid_chunk_suppression.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">invalid_chunk_suppression</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/is_numeric.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">is_numeric</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/length_levels.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">length_levels</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/length_test.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">length_test</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/lengths.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">lengths</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/list2df.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">list2df</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/matrix_apply.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">matrix_apply</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/misnamed_suppression.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">misnamed_suppression</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/misplaced_file_suppression.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">misplaced_file_suppression</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/misplaced_suppression.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">misplaced_suppression</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/numeric_leading_zero.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">numeric_leading_zero</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/outdated_suppression.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">outdated_suppression</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/outer_negation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">outer_negation</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/quotes.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">quotes</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/redundant_equals.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">redundant_equals</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/redundant_ifelse.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">redundant_ifelse</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/repeat.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">repeat</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/sample_int.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">sample_int</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/seq.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">seq</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/seq2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">seq2</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/sort.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">sort</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/sprintf.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">sprintf</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/string_boundary.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">string_boundary</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/system_file.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">system_file</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/true_false_symbol.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">true_false_symbol</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/undesirable_function.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">undesirable_function</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/unexplained_suppression.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">unexplained_suppression</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/unmatched_range_suppression.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">unmatched_range_suppression</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/unnecessary_nesting.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">unnecessary_nesting</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/unreachable_code.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">unreachable_code</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/unused_function.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">unused_function</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/vector_logic.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">vector_logic</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../rules/which_grepl.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">which_grepl</span></a>
-  </div>
-</li>
-      </ul>
-  </li>
-    </ul>
-    </div>
-</nav>
-<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
         <nav id="TOC" role="doc-toc" class="toc-active">
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#redundant_ifelse" id="toc-redundant_ifelse" class="nav-link active" data-scroll-target="#redundant_ifelse">redundant_ifelse</a>
+  <li><a href="#differences-in-usage-and-limitations" id="toc-differences-in-usage-and-limitations" class="nav-link active" data-scroll-target="#differences-in-usage-and-limitations">Differences in usage and limitations</a>
   <ul>
-  <li><a href="#what-it-does" id="toc-what-it-does" class="nav-link" data-scroll-target="#what-it-does">What it does</a></li>
-  <li><a href="#why-is-this-bad" id="toc-why-is-this-bad" class="nav-link" data-scroll-target="#why-is-this-bad">Why is this bad?</a></li>
-  <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
+  <li><a href="#no-multi-file-analysis" id="toc-no-multi-file-analysis" class="nav-link" data-scroll-target="#no-multi-file-analysis">No multi-file analysis</a></li>
+  <li><a href="#r-must-be-installed" id="toc-r-must-be-installed" class="nav-link" data-scroll-target="#r-must-be-installed">R must be installed</a></li>
+  <li><a href="#your-system-matters" id="toc-your-system-matters" class="nav-link" data-scroll-target="#your-system-matters">Your system matters</a></li>
+  </ul></li>
+  <li><a href="#why-those-differences" id="toc-why-those-differences" class="nav-link" data-scroll-target="#why-those-differences">Why those differences?</a>
+  <ul>
+  <li><a href="#static-analysis-vs-dynamic-namespace" id="toc-static-analysis-vs-dynamic-namespace" class="nav-link" data-scroll-target="#static-analysis-vs-dynamic-namespace">Static analysis vs dynamic namespace</a></li>
+  <li><a href="#getting-package-namespaces-and-versions" id="toc-getting-package-namespaces-and-versions" class="nav-link" data-scroll-target="#getting-package-namespaces-and-versions">Getting package namespaces and versions</a></li>
+  <li><a href="#using-this-information-in-rules" id="toc-using-this-information-in-rules" class="nav-link" data-scroll-target="#using-this-information-in-rules">Using this information in rules</a></li>
   </ul></li>
   </ul>
-<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/redundant_ifelse.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/howto/package-specific.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../rules/all_equal.html">List of rules</a></li><li class="breadcrumb-item"><a href="../rules/redundant_ifelse.html">redundant_ifelse</a></li></ol></nav></header>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Package-specific rules</h1>
+</div>
 
 
 
+<div class="quarto-title-meta">
 
-<section id="redundant_ifelse" class="level1">
-<h1>redundant_ifelse</h1>
-<div class="low-opacity callout callout-style-default callout-note callout-empty-content callout-titled" title="Added in 0.4.0">
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>As of 0.5.0, Jarl allows package-specific rules, such as rules that only apply to <code>dplyr</code> functions. Those rules are more complicated to handle than the others, so this page will present some of their differences and limitations, and then explain why that is.</p>
+<section id="differences-in-usage-and-limitations" class="level2">
+<h2 class="anchored" data-anchor-id="differences-in-usage-and-limitations">Differences in usage and limitations</h2>
+<section id="no-multi-file-analysis" class="level3">
+<h3 class="anchored" data-anchor-id="no-multi-file-analysis">No multi-file analysis</h3>
+<p>To know which packages are present in the namespace of a given R script, Jarl looks at <code>library()</code> and <code>require()</code> calls only in the same script. For instance, if you have <code>analysis.R</code> and <code>master.R</code> like this:</p>
+<ul>
+<li><p><code>master.R</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<li><p><code>analysis.R</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">"master.R"</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">filter</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+</ul>
+<p>then Jarl will not consider that <code>filter()</code> can come from <code>dplyr</code>.</p>
+<p>The exception for multi-file analysis is for R packages: if <code>dplyr</code> is imported (either fully or partially), then all files in the <code>R</code> folder have access to it.</p>
+</section>
+<section id="r-must-be-installed" class="level3">
+<h3 class="anchored" data-anchor-id="r-must-be-installed">R must be installed</h3>
+<p>If you want to use package-specific rules (all disabled by default), you must have R installed. This might seem an obvious requirement, but it makes a difference if you want to use Jarl in CI since you will now need to install R and the packages in your project before running Jarl.</p>
+</section>
+<section id="your-system-matters" class="level3">
+<h3 class="anchored" data-anchor-id="your-system-matters">Your system matters</h3>
+<p>This was already a bit true because some rules depend on your R version, but it’s even more important for package-specific rules. Some of those rules are only valid for some package versions, so depending on your system, some diagnostics may appear or disappear. Jarl checks packages stored in <code>.libPaths()</code>, meaning that if you use <code>renv</code> for instance, it will grab the versions of packages stored in <code>renv/library</code>.</p>
+<p>If the project that is checked is an R package, Jarl will look at the content of <code>DESCRIPTION</code> and <code>NAMESPACE</code>.</p>
+</section>
+</section>
+<section id="why-those-differences" class="level2">
+<h2 class="anchored" data-anchor-id="why-those-differences">Why those differences?</h2>
+<p>This section explains broadly how Jarl handles package-specific rules internally, it is not required to know that to use Jarl (all the necessary information is above).</p>
+<section id="static-analysis-vs-dynamic-namespace" class="level3">
+<h3 class="anchored" data-anchor-id="static-analysis-vs-dynamic-namespace">Static analysis vs dynamic namespace</h3>
+<p>To implement package-specific rules, we must be able to tell from which package a function comes from. This is relatively simple when we have access to an R session:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>filter</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; function (x, filter, method = c("convolution", "recursive"),</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     sides = 2L, circular = FALSE, init = NULL)</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; {</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   [...]</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; }</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;bytecode: 0x5b3495e0cfe0&gt;</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;environment: namespace:stats&gt;</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr, <span class="at">warn.conflicts =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>filter</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; function (.data, ..., .by = NULL, .preserve = FALSE)</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; {</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     [...]</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; }</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;bytecode: 0x630942de7a38&gt;</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; &lt;environment: namespace:dplyr&gt;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>namespace:</code> shows the origin of the function. However, Jarl does static analysis and therefore doesn’t run R code, in part because it would slow it down.</p>
+<p>Then, the question is: how can we resolve a function’s origin without running R code, or with running minimal R code?</p>
+<p>This is quite easy in other languages, such as Python:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>pl.DataFrame() <span class="co"># &lt;---- we know this comes from polars</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Using explicit namespaces such as <code>dplyr::filter()</code> would make this task straightforward, but it is very common to load packages once with <code>library()</code> and then rely on the implicit namespace resolution, making this way more challenging. To solve this, Jarl has to run a very short R script (but only in the case where some package-specific rules are enabled).</p>
+</section>
+<section id="getting-package-namespaces-and-versions" class="level3">
+<h3 class="anchored" data-anchor-id="getting-package-namespaces-and-versions">Getting package namespaces and versions</h3>
+<p>Once we have collected the list of packages used in a script from <code>library()</code> and <code>require()</code> calls, we need to get their versions and their namespaces. This is where we need to run a small R script calling <code>packageVersion()</code> and <code>getNamespaceExports()</code> for the packages we’re interested in.</p>
+</section>
+<section id="using-this-information-in-rules" class="level3">
+<h3 class="anchored" data-anchor-id="using-this-information-in-rules">Using this information in rules</h3>
+<p>Now that we have collected the packages whose namespaces are available in a given script and the version of these packages, we can use this information in the rule. We try to resolve the origin of a function, which can lead to several situations:</p>
+<ul>
+<li><p>the origin is resolved, meaning that the function comes from a single package:</p>
+<ul>
+<li>if the package is what we want, keep going;</li>
+<li>otherwise, exit the rule.</li>
+</ul></li>
+<li><p>the origin is unknown, meaning that we don’t know where the function comes from. This can happen when the <code>library()</code> calls is located in another script. In this case, we exit the rule.</p></li>
+<li><p>the origin is ambiguous, meaning that the function is provided by two or more packages. In this case, whether we should exit the rule or not depends on the context. For instance, if we’re adding a rule for <code>dplyr::filter()</code>, we might want to assume that a <code>filter()</code> in a chain of pipes belongs to <code>dplyr</code> but a <code>filter()</code> outside a chain doesn’t.</p></li>
+</ul>
+<div class="callout callout-style-default callout-note callout-titled" title="Why not using packages loading order?">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Added in 0.4.0
+<span class="screen-reader-only">Note</span>Why not using packages loading order?
 </div>
 </div>
 <div class="callout-body-container callout-body">
-
+<p>The order in which packages are loaded is very important because it tells us which namespace is used in case of namespace conflict.</p>
+<p>We might think we can use this information to resolve the origin of a function, but this is not necessarily the case because there exists ways to explicitly prefer a certain package after it is loaded, such as the <a href="https://conflicted.r-lib.org/index.html" target="_blank"><code>conflicted</code></a> package.</p>
 </div>
 </div>
-<section id="what-it-does" class="level2">
-<h2 class="anchored" data-anchor-id="what-it-does">What it does</h2>
-<p>This checks for cases of <code>ifelse()</code>, <code>dplyr::if_else()</code>, and <code>data.table::fifelse()</code> where the output is always a boolean. In those cases, using the condition directly is enough, the function call is redundant.</p>
-</section>
-<section id="why-is-this-bad" class="level2">
-<h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
-<p>This rule looks for 4 cases:</p>
-<ul>
-<li><code>ifelse(condition, TRUE, FALSE)</code></li>
-<li><code>ifelse(condition, FALSE, TRUE)</code></li>
-<li><code>ifelse(condition, TRUE, TRUE)</code></li>
-<li><code>ifelse(condition, FALSE, FALSE)</code></li>
-</ul>
-<p>The first two cases can be simplified to <code>condition</code> and <code>!condition</code> respectively. The last two cases are very likely to be mistakes since the output is always the same.</p>
-<p>This rule has a safe fix and doesn’t handle calls to <code>dplyr::if_else()</code> and <code>data.table::fifelse()</code> when they have additional arguments.</p>
-</section>
-<section id="example" class="level2">
-<h2 class="anchored" data-anchor-id="example">Example</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ifelse</span>(x <span class="sc">%in%</span> letters, <span class="cn">TRUE</span>, <span class="cn">FALSE</span>)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>dplyr<span class="sc">::</span><span class="fu">if_else</span>(x <span class="sc">&gt;</span> <span class="dv">1</span>, <span class="cn">FALSE</span>, <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Use instead:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>x <span class="sc">%in%</span> letters</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="sc">!</span>(x <span class="sc">&gt;</span> <span class="dv">1</span>) <span class="co"># (or `x &lt;= 1`)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>
@@ -1239,4 +876,4 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/redundant_ifelse.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/howto/package-specific.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
