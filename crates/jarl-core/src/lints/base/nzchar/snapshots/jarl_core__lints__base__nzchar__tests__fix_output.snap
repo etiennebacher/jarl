@@ -1,0 +1,38 @@
+---
+source: crates/jarl-core/src/lints/base/nzchar/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"x == ''\", \"x != ''\", \"foo(x(y)) == ''\", \"'' == x\",\n\"which(c(a, b, c) == '')\"], \"nzchar\",)"
+---
+OLD:
+====
+x == ''
+NEW:
+====
+!nzchar(x)
+
+OLD:
+====
+x != ''
+NEW:
+====
+nzchar(x)
+
+OLD:
+====
+foo(x(y)) == ''
+NEW:
+====
+!nzchar(foo(x(y)))
+
+OLD:
+====
+'' == x
+NEW:
+====
+!nzchar(x)
+
+OLD:
+====
+which(c(a, b, c) == '')
+NEW:
+====
+which(!nzchar(c(a, b, c)))

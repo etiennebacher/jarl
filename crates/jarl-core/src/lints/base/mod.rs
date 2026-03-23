@@ -27,6 +27,7 @@ pub(crate) mod lengths;
 pub(crate) mod list2df;
 pub(crate) mod matrix_apply;
 pub(crate) mod numeric_leading_zero;
+pub(crate) mod nzchar;
 pub(crate) mod outer_negation;
 pub(crate) mod quotes;
 pub(crate) mod redundant_equals;
