@@ -47,6 +47,8 @@ website:
         href: howto/rmarkdown-quarto.md
       - text: R versions
         href: howto/r-versions.md
+      - text: Package-specific rules
+        href: howto/package-specific.md
       - text: Editor setup
         href: howto/editors.md
       - text: Continuous integration

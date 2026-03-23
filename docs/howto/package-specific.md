@@ -88,6 +88,7 @@ pl.DataFrame() # <---- we know this comes from polars
 ```
 
 Using explicit namespaces such as `dplyr::filter()` would make this task straightforward, but it is very common to load packages once with `library()` and then rely on the implicit namespace resolution, making this way more challenging.
+To solve this, Jarl has to run a very short R script (but only in the case where some package-specific rules are enabled).
 
 
 ### Getting package namespaces and versions
@@ -96,9 +97,23 @@ Once we have collected the list of packages used in a script from `library()` an
 This is where we need to run a small R script calling `packageVersion()` and `getNamespaceExports()` for the packages we're interested in.
 
 
-### Summary
+### Using this information in rules
 
-Jarl follows several steps:
+Now that we have collected the packages whose namespaces are available in a given script and the version of these packages, we can use this information in the rule.
+We try to resolve the origin of a function, which can lead to several situations:
 
-1. find `library()` and `require()` calls, giving us the packages used in this script;
-1.
+- the origin is resolved, meaning that the function comes from a single package:
+  - if the package is what we want, keep going;
+  - otherwise, exit the rule.
+
+- the origin is unknown, meaning that we don't know where the function comes from. This can happen when the `library()` calls is located in another script. In this case, we exit the rule.
+
+- the origin is ambiguous, meaning that the function is provided by two or more packages. In this case, whether we should exit the rule or not depends on the context. For instance, if we're adding a rule for `dplyr::filter()`, we might want to assume that a `filter()` in a chain of pipes belongs to `dplyr` but a `filter()` outside a chain doesn't.
+
+
+::: {.callout-note title="Why not using packages loading order?"}
+The order in which packages are loaded is very important because it tells us which namespace is used in case of namespace conflict.
+
+We might think we can use this information to resolve the origin of a function, but this is not necessarily the case because there exists ways to explicitly prefer a certain package after it is loaded, such as the [`conflicted`](https://conflicted.r-lib.org/index.html) package.
+:::
+
