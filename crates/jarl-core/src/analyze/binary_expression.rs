@@ -11,6 +11,7 @@ use crate::lints::base::equals_nan::equals_nan::equals_nan;
 use crate::lints::base::equals_null::equals_null::equals_null;
 use crate::lints::base::implicit_assignment::implicit_assignment::implicit_assignment;
 use crate::lints::base::is_numeric::is_numeric::is_numeric;
+use crate::lints::base::nzchar::nzchar::nzchar;
 use crate::lints::base::redundant_equals::redundant_equals::redundant_equals;
 use crate::lints::base::seq::seq::seq;
 use crate::lints::base::string_boundary::string_boundary::string_boundary;
@@ -49,6 +50,9 @@ pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> a
     }
     if checker.is_rule_enabled(Rule::IsNumeric) {
         checker.report_diagnostic(is_numeric(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::NzChar) {
+        checker.report_diagnostic(nzchar(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::RedundantEquals) {
         checker.report_diagnostic(redundant_equals(r_expr)?);
