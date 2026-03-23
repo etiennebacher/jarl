@@ -132,6 +132,9 @@ pub struct CheckCommand {
     #[arg(
         long,
         default_value = "false",
+        conflicts_with = "fix",
+        conflicts_with = "unsafe_fixes",
+        conflicts_with = "fix_only",
         help = "Show counts for every rule with at least one violation."
     )]
     pub statistics: bool,
