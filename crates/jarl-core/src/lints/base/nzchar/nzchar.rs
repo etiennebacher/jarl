@@ -3,8 +3,6 @@ use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
-pub struct NzChar;
-
 /// ## What it does
 ///
 /// Checks for usage of `x != ""` or `x == ""`
@@ -39,18 +37,6 @@ pub struct NzChar;
 /// ## References
 ///
 /// See `?nzchar`
-impl Violation for NzChar {
-    fn name(&self) -> String {
-        "nzchar".to_string()
-    }
-    fn body(&self) -> String {
-        "`x == \"\"` is inefficient.".to_string()
-    }
-    fn suggestion(&self) -> Option<String> {
-        Some("Use `!nzchar(x)` instead.".to_string())
-    }
-}
-
 pub fn nzchar(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 
@@ -89,7 +75,11 @@ pub fn nzchar(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
 
     let diagnostic = match operator.kind() {
         RSyntaxKind::EQUAL2 => Diagnostic::new(
-            NzChar,
+            ViolationData::new(
+                "nzchar".to_string(),
+                "`x == \"\"` is inefficient.".to_string(),
+                Some("Use `!nzchar(x)` instead.".to_string()),
+            ),
             range,
             Fix {
                 content: format!("!nzchar({replacement})"),
@@ -99,7 +89,11 @@ pub fn nzchar(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
             },
         ),
         RSyntaxKind::NOT_EQUAL => Diagnostic::new(
-            NzChar,
+            ViolationData::new(
+                "nzchar".to_string(),
+                "`x != \"\"` is inefficient.".to_string(),
+                Some("Use `nzchar(x)` instead.".to_string()),
+            ),
             range,
             Fix {
                 content: format!("nzchar({replacement})"),

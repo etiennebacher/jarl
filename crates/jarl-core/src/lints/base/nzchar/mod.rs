@@ -32,9 +32,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x != ''
-          | ------- `x == ""` is inefficient.
+          | ------- `x != ""` is inefficient.
           |
-          = help: Use `!nzchar(x)` instead.
+          = help: Use `nzchar(x)` instead.
         Found 1 error.
         "#
         );
