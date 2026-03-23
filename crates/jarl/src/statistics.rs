@@ -19,9 +19,10 @@ pub fn print_statistics(
 
     for diagnostic in diagnostics {
         let rule_name = &diagnostic.message.name;
-        hm.entry(rule_name).or_default().0 += 1;
-        if diagnostic.has_safe_fix() && !hm.entry(rule_name).or_default().1 {
-            hm.entry(rule_name).or_default().1 = true;
+        let entry = hm.entry(rule_name).or_default();
+        entry.0 += 1;
+        if diagnostic.has_safe_fix() {
+            entry.1 = true;
         }
     }
 

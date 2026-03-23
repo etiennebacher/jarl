@@ -1,4 +1,7 @@
 # blanket_suppression
+::: {.callout-note title="Added in 0.4.0" .low-opacity}
+:::
+
 ## What it does
 
 Checks for blanket suppression comments. Those are comments such as

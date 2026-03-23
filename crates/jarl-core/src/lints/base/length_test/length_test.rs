@@ -7,6 +7,8 @@ use biome_rowan::AstNode;
 
 pub struct LengthTest;
 
+/// Version added: 0.0.8
+///
 /// ## What it does
 ///
 /// Checks for usage of `length(... == some_val)` and replaces it with

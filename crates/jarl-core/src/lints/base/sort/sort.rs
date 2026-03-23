@@ -5,6 +5,8 @@ use biome_rowan::AstNode;
 
 pub struct Sort;
 
+/// Version added: 0.0.16
+///
 /// ## What it does
 ///
 /// Checks for usage of `x[order(x, ...)]`.

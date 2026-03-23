@@ -1,4 +1,7 @@
 # list2df
+::: {.callout-note title="Added in 0.1.2" .low-opacity}
+:::
+
 ## What it does
 
 Checks for usage of `do.call(cbind.data.frame, x)`.

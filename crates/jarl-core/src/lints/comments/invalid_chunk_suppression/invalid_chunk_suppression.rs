@@ -1,6 +1,8 @@
 use crate::diagnostic::*;
 use biome_rowan::TextRange;
 
+/// Version added: 0.5.0
+///
 /// ## What it does
 ///
 /// Checks for `jarl-ignore-chunk` comments that use a single-line form

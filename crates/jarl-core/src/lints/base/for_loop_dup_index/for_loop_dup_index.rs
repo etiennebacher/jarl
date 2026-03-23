@@ -4,6 +4,8 @@ use biome_rowan::AstNode;
 
 pub struct ForLoopDupIndex;
 
+/// Version added: 0.4.0
+///
 /// ## What it does
 ///
 /// Checks whether the index symbol in a `for` loop is already used in a parent

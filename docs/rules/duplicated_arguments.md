@@ -1,4 +1,7 @@
 # duplicated_arguments
+::: {.callout-note title="Added in 0.0.8" .low-opacity}
+:::
+
 ## What it does
 
 Checks for duplicated arguments in function calls.

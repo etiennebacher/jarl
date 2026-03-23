@@ -68,7 +68,7 @@ Do `cargo check` or `cargo test` to know if you are correctly set up.
 
 ## Adding a new rule: basic steps
 
-As an example for this entire tutorial, we will analyze [PR #182](https://github.com/etiennebacher/jarl/pull/182/files), which added the rule [`list2df`](https://jarl.etiennebacher.com/rules/list2df).
+As an example for this entire tutorial, we will analyze [PR #182](https://github.com/etiennebacher/jarl/pull/182/files), which added the rule [`list2df`](rules/list2df.md).
 This PR adds a rule to replace calls like `do.call(cbind.data.frame, x)` by `list2DF(x)`.
 Importantly, `list2DF()` was added in R 4.0.0.
 
@@ -157,6 +157,8 @@ use biome_rowan::AstNode;
 
 pub struct List2Df;
 
+/// Version added: 0.1.2
+///
 /// ## What it does
 ///
 /// Checks for usage of `do.call(cbind.data.frame, x)`.
@@ -182,7 +184,7 @@ pub fn list2df(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 Let's analyze this by blocks:
 
 * the first lines import required crates and functions, and define a struct using the rule name (in TitleCase);
-* then there is some documentation (truncated here for conciseness);
+* then there is some documentation (truncated here for conciseness). The version number corresponds to the next version, not the current one.
 * the `impl` block is where we define the name and the main message (`body`) that will be used in the output of Jarl. Note that there is also a `suggestion()` function which is not always necessary.
 * finally, we define the function where we parse the AST.
 
@@ -468,7 +470,7 @@ We now need to document this change:
 * update `CHANGELOG.md`
 * update `docs/rules.md`
 
-If you have installed `just` as [recommended](https://jarl.etiennebacher.com/contributing#tools), you can now run `just document` to update the website.
+If you have installed `just` as [recommended](contributing.md#tools), you can now run `just document` to update the website.
 
 Finally, run `just lint` to ensure that `clippy` (the Rust linter) doesn't report any issue and that the code is properly formatted.
 You can also run `just lint-fix` to apply `clippy`'s automatic fixes if there are any.

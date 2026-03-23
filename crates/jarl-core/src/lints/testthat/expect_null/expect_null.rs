@@ -6,6 +6,8 @@ use crate::utils::{
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// Version added: 0.2.0
+///
 /// ## What it does
 ///
 /// Checks for usage of `expect_equal(x, NULL)`, `expect_identical(x, NULL)`,

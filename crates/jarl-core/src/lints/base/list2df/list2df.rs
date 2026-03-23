@@ -7,6 +7,8 @@ use biome_rowan::AstNode;
 
 pub struct List2Df;
 
+/// Version added: 0.1.2
+///
 /// ## What it does
 ///
 /// Checks for usage of `do.call(cbind.data.frame, x)`.

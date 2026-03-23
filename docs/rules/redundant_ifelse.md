@@ -1,4 +1,7 @@
 # redundant_ifelse
+::: {.callout-note title="Added in 0.4.0" .low-opacity}
+:::
+
 ## What it does
 
 This checks for cases of `ifelse()`, `dplyr::if_else()`, and

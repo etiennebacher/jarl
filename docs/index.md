@@ -4,7 +4,6 @@
 <!-- ============ -->
 
 ---
-toc: false
 title: Jarl
 ---
 
@@ -32,16 +31,18 @@ Jarl is a fast linter for R: it does static code analysis to search for programm
 
 Jarl is built on [Air](https://posit-dev.github.io/air/), a fast formatter for R written in Rust.
 
-<br>
-
 [^benchmark]: Using 20 rules on the `dplyr` package (~25k lines of R code), Jarl took 0.131s, `flir` took 4.5s, and `lintr` took 18.5s (9s with caching enabled).
 
 
 ## Quick start
 
-You can use Jarl manually via the command line, or use [extensions](https://jarl.etiennebacher.com/editors) to have it integrated in your coding environment.
+See:
 
-This shows how to use it in the terminal:
+- ["Getting started"](https://jarl.etiennebacher.com/getting-started) for an intro to Jarl;
+- ["By Example"](https://jarl.etiennebacher.com/by-example) for short examples of what Jarl can do;
+- ["Editors"](https://jarl.etiennebacher.com/howto/editors), ["Continuous integration"](https://jarl.etiennebacher.com/howto/ci), and ["Pre-commit tools"](https://jarl.etiennebacher.com/howto/precommit) to integrate Jarl into your development tools.
+
+This shows what it looks like in the terminal:
 
 `test.R`:
 ```r
@@ -127,13 +128,25 @@ scoop update jarl
 
 ### Development version
 
-Some pre-releases may be available from the [Releases page](https://github.com/etiennebacher/jarl/releases) (the version usually contains `alpha`).
+Some pre-releases may be available from the [Releases page](https://github.com/etiennebacher/jarl/releases) (the version usually contains `alpha`, see the installation instructions there).
 
 Alternatively, if you have Rust installed, you should be able to get the development version with:
 
 ```sh
 cargo install --git https://github.com/etiennebacher/jarl jarl --profile=release
 ```
+
+<details>
+<summary style="padding-bottom: 0.5rem;">Click if you installed the development version via <code>cargo</code></summary>
+
+Using the pre-built binaries will install Jarl in `$HOME/.local/bin`, e.g. `/home/etienne/.local/bin/jarl`.
+
+Using `cargo` will install Jarl in `$HOME/.cargo/bin`, e.g. `/home/etienne/.cargo/bin/jarl`.
+
+If you have both installed, the `.local/bin` one will take precedence.
+Therefore, to run the version compiled with `cargo`, you must either delete the one in `.local/bin` or use the absolute path, e.g. `/home/etienne/.cargo/bin/jarl check .`.
+
+</details>
 
 ## Related work
 

@@ -6,6 +6,8 @@ use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// Version added: 0.3.0
+///
 /// ## What it does
 ///
 /// Multiple checks for `sprintf()`:

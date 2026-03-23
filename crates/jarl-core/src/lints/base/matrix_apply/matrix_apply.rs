@@ -6,6 +6,8 @@ use air_r_syntax::*;
 use biome_rowan::AstNode;
 use biome_rowan::AstSeparatedList;
 
+/// Version added: 0.0.16
+///
 /// ## What it does
 ///
 /// Checks for usage of `apply(x, 1/2, mean/sum)`.
