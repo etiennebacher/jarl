@@ -60,10 +60,10 @@
   - `expect_match` (#364, @bjyberg)
   - `expect_no_match` (#368, @bjyberg)
   - `invalid_chunk_suppression` (#350)
+  - `nzchar` (#406, @maelle)
   - `quotes` (#381, @bjyberg)
   - `undesirable_function` (replaces `browser`) (#336)
   - `unused_function` (#362)
-  - `nzchar` (#406, @maelle)
 
 * The output in terminal with output format `full` or `concise` is now organized
   in multiple sections (summary, warnings, notes) (#366).
