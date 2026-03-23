@@ -3,6 +3,8 @@ use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// Version added: 0.5.0
+///
 /// ## What it does
 ///
 /// Checks for usage of `x != ""` or `x == ""`
