@@ -771,7 +771,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#true_false_symbol" id="toc-true_false_symbol" class="nav-link active" data-scroll-target="#true_false_symbol">true_false_symbol</a></li>
+  <li><a href="#true_false_symbol" id="toc-true_false_symbol" class="nav-link active" data-scroll-target="#true_false_symbol">true_false_symbol</a>
+  <ul>
+  <li><a href="#what-it-does" id="toc-what-it-does" class="nav-link" data-scroll-target="#what-it-does">What it does</a></li>
+  <li><a href="#why-is-this-bad" id="toc-why-is-this-bad" class="nav-link" data-scroll-target="#why-is-this-bad">Why is this bad?</a></li>
+  <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
+  </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/true_false_symbol.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -783,7 +788,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="true_false_symbol" class="level1">
 <h1>true_false_symbol</h1>
-<div class="low-opacity callout callout-style-default callout-note callout-titled" title="Added in 0.0.8">
+<div class="low-opacity callout callout-style-default callout-note callout-empty-content callout-titled" title="Added in 0.0.8">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
@@ -793,6 +798,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <div class="callout-body-container callout-body">
+
+</div>
+</div>
 <section id="what-it-does" class="level2">
 <h2 class="anchored" data-anchor-id="what-it-does">What it does</h2>
 <p>Checks for usage of <code>T</code> and <code>F</code> symbols. If they correspond to the <code>TRUE</code> and <code>FALSE</code> values, then replace them by that. If they correspond to something else, such as an object or a variable name, then no automatic fixes are applied.</p>
@@ -812,8 +820,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 </section>
-</div>
-</div>
 </section>
 
 </main> <!-- /main -->
