@@ -9,10 +9,6 @@ code {
   background-color: #e5f0fb !important;
 }
 
-pre.sourceCode, pre {
-	border: 1px solid #a2a2a2;
-}
-
 p, a, li, .callout-title-container, table {
 	color: #303d64 !important;
 }
@@ -64,6 +60,31 @@ header {
     }
 }
 
+/* For code blocks with attribute "filename" */
+.code-with-filename-file  {
+  background-color: #4b5f9b !important;
+}
+.code-with-filename-file > pre {
+  background-color: #4b5f9b !important;
+  color: #e5f0fb;
+  padding: 0.1em !important;
+  margin: 0 !important;
+  border: 1px solid #a2a2a2 !important;
+  border: none !important;
+}
+
+.code-with-filename .sourceCode > pre,
+.code-with-filename > pre {
+  border-top: none !important;
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+  padding: 0.4em;
+}
+
+pre.sourceCode, pre {
+	border: 1px solid #a2a2a2;
+}
+
 /* Wrap text that overflows in codeblocks */
 pre {
   padding: 1em;
@@ -83,4 +104,9 @@ ul.navbar-nav > li.nav-item.dropdown > ul.dropdown-menu.show > li > a.dropdown-i
 /* Side color of note callouts */
 div.callout-note.callout {
 	border-left-color: #4b5f9b;
+}
+
+/* Link for 'Added in version ...' in rule pages */
+.low-opacity {
+  opacity: 0.75;
 }

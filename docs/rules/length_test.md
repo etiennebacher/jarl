@@ -1,4 +1,7 @@
 # length_test
+::: {.callout-note title="Added in 0.0.8" .low-opacity}
+:::
+
 ## What it does
 
 Checks for usage of `length(... == some_val)` and replaces it with

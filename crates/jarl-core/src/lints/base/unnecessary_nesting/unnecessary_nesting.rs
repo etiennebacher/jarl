@@ -3,6 +3,8 @@ use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstNodeList};
 
+/// Version added: 0.4.0
+///
 /// ## What it does
 ///
 /// This rule detects nested `if` conditions that could be gathered into a single

@@ -27,7 +27,7 @@ mod tests {
     fn test_lint_comparison_negation() {
         assert_snapshot!(
             snapshot_lint("!(x >= y)"),
-            @r"
+            @"
         warning: comparison_negation
          --> <test>:1:1
           |
@@ -40,7 +40,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("!(x > y)"),
-            @r"
+            @"
         warning: comparison_negation
          --> <test>:1:1
           |
@@ -53,7 +53,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("!(x <= y)"),
-            @r"
+            @"
         warning: comparison_negation
          --> <test>:1:1
           |
@@ -66,7 +66,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("!(x < y)"),
-            @r"
+            @"
         warning: comparison_negation
          --> <test>:1:1
           |
@@ -79,7 +79,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("!(x == y)"),
-            @r"
+            @"
         warning: comparison_negation
          --> <test>:1:1
           |
@@ -92,7 +92,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("!(x != y)"),
-            @r"
+            @"
         warning: comparison_negation
          --> <test>:1:1
           |
@@ -128,7 +128,7 @@ mod tests {
     fn test_comparison_negation_with_comments_no_fix() {
         assert_snapshot!(
             snapshot_lint("# leading comment\n!(x >= y)"),
-            @r"
+            @"
         warning: comparison_negation
          --> <test>:2:1
           |
@@ -141,7 +141,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("!(x \n # hello there \n >= y)"),
-            @r"
+            @"
         warning: comparison_negation
          --> <test>:1:1
           |
@@ -156,7 +156,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("!(x >= y) # trailing comment"),
-            @r"
+            @"
         warning: comparison_negation
          --> <test>:1:1
           |

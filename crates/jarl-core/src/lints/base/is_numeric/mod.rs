@@ -32,7 +32,7 @@ mod tests {
     fn test_lint_is_numeric() {
         assert_snapshot!(
             snapshot_lint("is.numeric(x) || is.integer(x)"),
-            @r"
+            @"
         warning: is_numeric
          --> <test>:1:1
           |
@@ -47,7 +47,7 @@ mod tests {
         // order doesn't matter
         assert_snapshot!(
             snapshot_lint("is.integer(x) || is.numeric(x)"),
-            @r"
+            @"
         warning: is_numeric
          --> <test>:1:1
           |
@@ -62,7 +62,7 @@ mod tests {
         // identical expressions match too
         assert_snapshot!(
             snapshot_lint("is.integer(DT$x) || is.numeric(DT$x)"),
-            @r"
+            @"
         warning: is_numeric
          --> <test>:1:1
           |
@@ -80,7 +80,7 @@ mod tests {
               is.integer(x)
               || is.numeric(x)
             ) TRUE
-          "), @r"
+          "), @"
         warning: is_numeric
          --> <test>:3:15
           |
@@ -96,7 +96,7 @@ mod tests {
         // caught when nesting
         assert_snapshot!(
             snapshot_lint("all(y > 5) && (is.integer(x) || is.numeric(x))"),
-            @r"
+            @"
         warning: is_numeric
          --> <test>:1:16
           |
@@ -111,7 +111,7 @@ mod tests {
         // implicit nesting
         assert_snapshot!(
             snapshot_lint("is.integer(x) || is.numeric(x) || is.logical(x)"),
-            @r"
+            @"
         warning: is_numeric
          --> <test>:1:1
           |

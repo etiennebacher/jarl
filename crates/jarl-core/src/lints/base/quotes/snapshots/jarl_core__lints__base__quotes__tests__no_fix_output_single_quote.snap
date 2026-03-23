@@ -1,0 +1,31 @@
+---
+source: crates/jarl-core/src/lints/base/quotes/mod.rs
+expression: "get_fixed_text_with_settings(vec![\"r\\\"('rawstring')\\\"\", \"r\\\"-( 'hello' )-\\\"\",\n\"r\\\"(abc)'def)\\\"\", \"\\\"'abc'\\\"\",], \"quotes\", None, Some(settings))"
+---
+OLD:
+====
+r"('rawstring')"
+NEW:
+====
+r"('rawstring')"
+
+OLD:
+====
+r"-( 'hello' )-"
+NEW:
+====
+r"-( 'hello' )-"
+
+OLD:
+====
+r"(abc)'def)"
+NEW:
+====
+r"(abc)'def)"
+
+OLD:
+====
+"'abc'"
+NEW:
+====
+"'abc'"

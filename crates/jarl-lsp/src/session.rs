@@ -14,6 +14,9 @@ use rustc_hash::FxHashMap;
 use serde::Deserialize;
 
 use std::path::PathBuf;
+use std::sync::Arc;
+
+use jarl_core::package_cache::PackageCacheMap;
 
 use crate::LspResult;
 use crate::client::Client;
@@ -45,6 +48,9 @@ pub struct Session {
     client: Client,
     /// Whether we've shown the config notification
     config_notification_shown: bool,
+    /// Per-project package caches for package-specific rules. Keyed by R
+    /// project root so that renv and system projects get separate caches.
+    package_cache_map: Arc<PackageCacheMap>,
 }
 
 /// Immutable snapshot of a document and its context
@@ -57,6 +63,9 @@ pub struct DocumentSnapshot {
     position_encoding: PositionEncoding,
     /// Client capabilities
     client_capabilities: ClientCapabilities,
+    /// Shared reference to the session-level cache map. The lint code
+    /// creates per-project caches on first use.
+    package_cache_map: Arc<PackageCacheMap>,
 }
 
 impl Session {
@@ -75,6 +84,7 @@ impl Session {
             workspace_roots,
             client,
             config_notification_shown: false,
+            package_cache_map: Arc::new(PackageCacheMap::new()),
         }
     }
 
@@ -200,20 +210,18 @@ impl Session {
             key,
             position_encoding: self.position_encoding,
             client_capabilities: self.client_capabilities.clone(),
+            package_cache_map: Arc::clone(&self.package_cache_map),
         })
+    }
+
+    /// Get the shared cache map.
+    pub fn package_cache_map(&self) -> &Arc<PackageCacheMap> {
+        &self.package_cache_map
     }
 
     /// Get all open document URIs
     pub fn open_documents(&self) -> impl Iterator<Item = &Url> {
         self.documents.keys().map(|key| key.uri())
-    }
-
-    /// Check if the client supports pull diagnostics
-    /// For JARL, we always prefer push diagnostics for real-time linting
-    pub fn supports_pull_diagnostics(&self) -> bool {
-        // Always use push diagnostics for immediate feedback
-        // This ensures diagnostics are sent automatically on document changes
-        false
     }
 
     /// Get the position encoding
@@ -255,17 +263,31 @@ impl Session {
     /// Check and notify about config file location if needed
     /// Returns true if notification was shown, false otherwise
     pub fn check_and_notify_config(&mut self, file_path: &std::path::Path) -> bool {
+        let cwd = match std::env::current_dir() {
+            Ok(cwd) => cwd,
+            Err(_) => return false,
+        };
+        self.check_and_notify_config_with_cwd(file_path, &cwd)
+    }
+
+    /// Check and notify about config file location if needed, using an
+    /// explicit `cwd` instead of reading `env::current_dir()`.
+    fn check_and_notify_config_with_cwd(
+        &mut self,
+        file_path: &std::path::Path,
+        cwd: &std::path::Path,
+    ) -> bool {
         use jarl_core::discovery::discover_settings;
-        use std::env;
 
         // Only show notification once per session
         if self.config_notification_shown {
             return false;
         }
 
-        // Get current working directory and canonicalize to handle symlinks
-        let cwd = match env::current_dir().and_then(|p| p.canonicalize()) {
-            Ok(cwd) => cwd,
+        // Canonicalize CWD to handle symlinks (especially on macOS where
+        // /tmp -> /private/tmp)
+        let cwd_canonical = match cwd.canonicalize() {
+            Ok(p) => p,
             Err(_) => return false,
         };
 
@@ -281,13 +303,13 @@ impl Session {
             if let Some(config_path) = &ds.config_path
                 && let Some(config_dir) = config_path.parent()
             {
-                // Canonicalize config_dir to handle symlinks (especially on macOS)
+                // Canonicalize config_dir to handle symlinks
                 let config_dir_canonical = match config_dir.canonicalize() {
                     Ok(p) => p,
                     Err(_) => continue,
                 };
 
-                if config_dir_canonical != cwd {
+                if config_dir_canonical != cwd_canonical {
                     // Config is from a parent directory, show notification
                     if let Err(e) = self.client.show_message(
                         &format!(
@@ -322,6 +344,7 @@ impl DocumentSnapshot {
             key,
             position_encoding,
             client_capabilities,
+            package_cache_map: Arc::new(PackageCacheMap::new()),
         }
     }
 
@@ -358,6 +381,21 @@ impl DocumentSnapshot {
     /// Get the client capabilities
     pub fn client_capabilities(&self) -> &ClientCapabilities {
         &self.client_capabilities
+    }
+
+    /// Get or create the package cache for this document's project root.
+    pub fn get_or_create_package_cache(
+        &self,
+        packages: &[&str],
+    ) -> Option<Arc<jarl_core::package_cache::PackageCache>> {
+        let file_path = self.file_path()?;
+        self.package_cache_map.get_or_create(&file_path, packages)
+    }
+
+    /// Get the existing package cache for this document's project root, if any.
+    pub fn package_cache(&self) -> Option<Arc<jarl_core::package_cache::PackageCache>> {
+        let file_path = self.file_path()?;
+        self.package_cache_map.get_for_file(&file_path)
     }
 
     /// Get the language ID if available
@@ -531,14 +569,11 @@ mod tests {
         let test_file = child_dir.join("test.R");
         fs::write(&test_file, "x <- 1\n").unwrap();
 
-        // Change to child directory (so config is in parent, not CWD)
-        std::env::set_current_dir(&child_dir).unwrap();
-
         // First call should show notification (config is in parent dir, not CWD)
-        let result1 = session.check_and_notify_config(&test_file);
+        let result1 = session.check_and_notify_config_with_cwd(&test_file, &child_dir);
 
         // Second call should not show notification again (flag is set)
-        let result2 = session.check_and_notify_config(&test_file);
+        let result2 = session.check_and_notify_config_with_cwd(&test_file, &child_dir);
 
         // Now run assertions
         assert!(result1, "Notification should be shown on first occurrence");
@@ -592,11 +627,8 @@ mod tests {
         let test_file = cwd.join("test.R");
         fs::write(&test_file, "x <- 1\n").unwrap();
 
-        // Change to this directory for the test
-        std::env::set_current_dir(cwd).unwrap();
-
         // Should not show notification for config in CWD
-        let result = session.check_and_notify_config(&test_file);
+        let result = session.check_and_notify_config_with_cwd(&test_file, cwd);
 
         // Notification should not be shown for CWD config
         assert!(
@@ -623,11 +655,8 @@ mod tests {
         let test_file = cwd.join("test.R");
         fs::write(&test_file, "x <- 1\n").unwrap();
 
-        // Change to this directory for the test
-        std::env::set_current_dir(cwd).unwrap();
-
         // Should not show notification when no config exists
-        let result = session.check_and_notify_config(&test_file);
+        let result = session.check_and_notify_config_with_cwd(&test_file, cwd);
 
         // Notification should not be shown when no config exists
         assert!(

@@ -3,6 +3,8 @@ use crate::utils::{get_function_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstNodeList};
 
+/// Version added: 0.0.19
+///
 /// ## What it does
 ///
 /// Checks for usage of `if (is.null(x)) y else x` or

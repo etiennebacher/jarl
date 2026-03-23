@@ -31,7 +31,7 @@ mod tests {
     fn test_lint_for_loop_index() {
         assert_snapshot!(
             snapshot_lint("for (x in x) {}"),
-            @r"
+            @"
         warning: for_loop_index
          --> <test>:1:6
           |
@@ -43,7 +43,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("for (x in foo(x)) {}"),
-            @r"
+            @"
         warning: for_loop_index
          --> <test>:1:6
           |
@@ -55,7 +55,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("for (x in foo(x = 1)) {}"),
-            @r"
+            @"
         warning: for_loop_index
          --> <test>:1:6
           |
@@ -67,7 +67,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("for (x in foo(bar(y, baz(2, x)))) {}"),
-            @r"
+            @"
         warning: for_loop_index
          --> <test>:1:6
           |
@@ -79,7 +79,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("for (x in foo(bar(y, baz(2, x = z)))) {}"),
-            @r"
+            @"
         warning: for_loop_index
          --> <test>:1:6
           |

@@ -5,6 +5,8 @@ use crate::{
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
+/// Version added: 0.2.0
+///
 /// ## What it does
 ///
 /// Checks for `seq(length(...))`, `seq(nrow(...))`, `seq(ncol(...))`,

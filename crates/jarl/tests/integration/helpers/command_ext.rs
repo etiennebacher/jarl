@@ -8,8 +8,6 @@ pub trait CommandExt {
     /// Like [Command::output], but also collects arguments
     ///
     /// The [Output] has a suitable [Display] method for capturing with insta
-    ///
-    /// Sets the `NO_COLOR` environment variable to disable colored output in tests
     fn run(&mut self) -> Output;
 }
 
@@ -59,10 +57,6 @@ impl Output {
 
 impl CommandExt for Command {
     fn run(&mut self) -> Output {
-        // Set NO_COLOR environment variable to disable colored output in tests
-        self.env("NO_COLOR", "1");
-
-        // Augment `std::process::Output` with the arguments
         let output = self.output().unwrap();
 
         // Go ahead and turn these into `String`

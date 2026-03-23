@@ -3,6 +3,7 @@ pub(crate) mod unused_function;
 #[cfg(test)]
 mod tests {
     use super::unused_function::*;
+    use crate::namespace::parse_namespace_exports;
     use crate::package::{scan_extra_package_paths, scan_r_package_paths};
     use std::collections::HashMap;
     use std::fs;
@@ -604,7 +605,7 @@ mod tests {
             }
         }
 
-        all_diagnostics.sort_by(|(a, _), (b, _)| a.cmp(b));
+        all_diagnostics.sort_by_key(|(a, _)| *a);
 
         let mut output = String::new();
         for (_, rendered) in &all_diagnostics {
@@ -651,7 +652,7 @@ mod tests {
 
         assert_snapshot!(
             apply_threshold(&diagnostics_output, count, threshold),
-            @r"
+            @"
         All checks passed!
         Warning: 5 `unused_function` diagnostics hidden (likely false positives).
         To show them:
@@ -835,7 +836,7 @@ mod tests {
 
         assert_snapshot!(
             apply_threshold(&diagnostics_output, count, threshold),
-            @r"
+            @"
         warning: unused_function
          --> [PKG]/R/unused_1.R:1:1
           |

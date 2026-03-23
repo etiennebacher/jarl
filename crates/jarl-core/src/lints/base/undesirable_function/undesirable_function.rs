@@ -8,6 +8,8 @@ pub struct UndesirableFunction {
     pub fn_name: String,
 }
 
+/// Version added: 0.5.0
+///
 /// ## What it does
 ///
 /// Checks for calls to functions listed as undesirable.

@@ -1,4 +1,7 @@
 # expect_length
+::: {.callout-note title="Added in 0.2.0" .low-opacity}
+:::
+
 ## What it does
 
 Checks for usage of `expect_equal(length(x), n)` and `expect_identical(length(x), n)`.

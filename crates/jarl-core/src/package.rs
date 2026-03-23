@@ -10,9 +10,9 @@ use crate::lints::base::duplicated_function_definition::duplicated_function_defi
     compute_duplicates_from_shared, scan_top_level_assignments,
 };
 use crate::lints::base::unused_function::unused_function::{
-    collect_files, compute_unused_from_shared, has_cpp_extension, parse_namespace_s3_methods,
-    scan_symbols,
+    collect_files, compute_unused_from_shared, has_cpp_extension, scan_symbols,
 };
+use crate::namespace::parse_namespace_s3_methods;
 use crate::rule_set::Rule;
 
 /// Scope of a file within an R package, determining how its definitions

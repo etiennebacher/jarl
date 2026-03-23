@@ -1,36 +1,30 @@
-use std::process::Command;
-
-use tempfile::TempDir;
-
-use crate::helpers::CommandExt;
-use crate::helpers::binary_path;
+use crate::helpers::{CliTest, CommandExt};
 
 // assignment ----------------------------------------
 
 #[test]
 fn test_assignment_unknown_field_is_error() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        r#"
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
 [lint.assignment]
 unknown-option = "foo"
 "#,
-    )?;
-
-    std::fs::write(directory.join("test.R"), "x <- 1")?;
+        ),
+        ("test.R", "x <- 1"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
+
     success: false
     exit_code: 255
     ----- stdout -----
@@ -43,7 +37,6 @@ unknown-option = "foo"
     3 | unknown-option = "foo"
       | ^^^^^^^^^^^^^^
     unknown field `unknown-option`, expected `operator`
-
     "#
     );
 
@@ -54,31 +47,30 @@ unknown-option = "foo"
 
 #[test]
 fn test_duplicated_arguments_both_skipped_and_extend_is_error() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        r#"
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
 [lint]
 
 [lint.duplicated_arguments]
 skipped-functions = ["list"]
 extend-skipped-functions = ["my_fun"]
 "#,
-    )?;
-
-    std::fs::write(directory.join("test.R"), "list(a = 1, a = 2)")?;
+        ),
+        ("test.R", "list(a = 1, a = 2)"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 255
     ----- stdout -----
@@ -95,30 +87,29 @@ extend-skipped-functions = ["my_fun"]
 
 #[test]
 fn test_duplicated_arguments_unknown_field_is_error() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        r#"
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
 [lint]
 
 [lint.duplicated_arguments]
 unknown-option = ["list"]
 "#,
-    )?;
-
-    std::fs::write(directory.join("test.R"), "list(a = 1, a = 2)")?;
+        ),
+        ("test.R", "list(a = 1, a = 2)"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
+
     success: false
     exit_code: 255
     ----- stdout -----
@@ -141,31 +132,30 @@ unknown-option = ["list"]
 
 #[test]
 fn test_implicit_assignment_both_skipped_and_extend_is_error() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        r#"
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
 [lint]
 
 [lint.implicit_assignment]
 skipped-functions = ["list"]
 extend-skipped-functions = ["my_fun"]
 "#,
-    )?;
-
-    std::fs::write(directory.join("test.R"), "list(a = 1, a = 2)")?;
+        ),
+        ("test.R", "list(a = 1, a = 2)"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 255
     ----- stdout -----
@@ -182,30 +172,29 @@ extend-skipped-functions = ["my_fun"]
 
 #[test]
 fn test_implicit_assignment_unknown_field_is_error() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        r#"
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
 [lint]
 
 [lint.implicit_assignment]
 unknown-option = ["list"]
 "#,
-    )?;
-
-    std::fs::write(directory.join("test.R"), "list(a = 1, a = 2)")?;
+        ),
+        ("test.R", "list(a = 1, a = 2)"),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
+
     success: false
     exit_code: 255
     ----- stdout -----
@@ -224,43 +213,127 @@ unknown-option = ["list"]
     Ok(())
 }
 
+// quotes ----------------------------------------
+
+#[test]
+fn test_quotes_unknown_field_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+
+[lint.quotes]
+unknown-option = "x"
+"#,
+        ),
+        ("test.R", "'x'"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 5, column 1
+      |
+    5 | unknown-option = "x"
+      | ^^^^^^^^^^^^^^
+    unknown field `unknown-option`, expected `quote`
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_quotes_invalid_quote_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+extend-select = ["quotes"]
+
+[lint.quotes]
+quote = "foo"
+"#,
+        ),
+        ("test.R", "'x'"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Invalid value for `quote` in `[lint.quotes]`: "foo". Expected "double" or "single".
+    "#
+    );
+
+    Ok(())
+}
+
 // unreachable_code ----------------------------------------
 
 #[test]
 fn test_unreachable_code_both_stopping_and_extend_is_error() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    std::fs::write(
-        directory.join("jarl.toml"),
-        r#"
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
 [lint]
 
 [lint.unreachable_code]
 stopping-functions = ["stop"]
 extend-stopping-functions = ["my_stop"]
 "#,
-    )?;
-
-    std::fs::write(
-        directory.join("test.R"),
-        r#"
+        ),
+        (
+            "test.R",
+            r#"
 foo <- function() {
   stop("error")
   1 + 1
 }
 "#,
-    )?;
+        ),
+    ])?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r"
+        @"
+
     success: false
     exit_code: 255
     ----- stdout -----

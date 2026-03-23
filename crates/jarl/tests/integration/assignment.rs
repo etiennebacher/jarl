@@ -1,8 +1,4 @@
-use std::process::Command;
-use tempfile::TempDir;
-
-use crate::helpers::CommandExt;
-use crate::helpers::binary_path;
+use crate::helpers::{CliTest, CommandExt};
 
 // ---------------------------------------------------------------------------
 // CLI (--assignment is deprecated, so these always emit a deprecation warning)
@@ -10,20 +6,18 @@ use crate::helpers::binary_path;
 
 #[test]
 fn test_assignment_from_cli() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 x = 1
 y <- 2
 3 -> z
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
+",
+    )?;
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -32,7 +26,8 @@ y <- 2
             .arg("<-")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -63,8 +58,8 @@ y <- 2
     );
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -73,7 +68,8 @@ y <- 2
             .arg("=")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -108,19 +104,18 @@ y <- 2
 
 #[test]
 fn test_assignment_wrong_value_from_cli() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 x = 1
 y <- 2
 3 -> z
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
+",
+    )?;
+
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -129,19 +124,21 @@ y <- 2
             .arg("foo")
             .run()
             .normalize_os_executable_name(),
-        @"success: false
-exit_code: 255
------ stdout -----
+        @"
 
------ stderr -----
-jarl failed
-  Cause: Invalid value in `--assignment`: foo
-"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid value in `--assignment`: foo
+    "
     );
 
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -150,14 +147,16 @@ jarl failed
             .arg("1")
             .run()
             .normalize_os_executable_name(),
-        @"success: false
-exit_code: 255
------ stdout -----
+        @"
 
------ stderr -----
-jarl failed
-  Cause: Invalid value in `--assignment`: 1
-"
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid value in `--assignment`: 1
+    "
     );
 
     Ok(())
@@ -169,34 +168,33 @@ jarl failed
 
 #[test]
 fn test_assignment_from_toml() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 x = 1
 y <- 2
 3 -> z
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
+",
+    )?;
 
-    std::fs::write(
-        directory.join("jarl.toml"),
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint.assignment]
 operator = "<-"
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
             .arg("assignment")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -223,23 +221,24 @@ operator = "<-"
     "
     );
 
-    std::fs::write(
-        directory.join("jarl.toml"),
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint.assignment]
 operator = "="
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
             .arg("assignment")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -271,27 +270,25 @@ operator = "="
 
 #[test]
 fn test_assignment_wrong_value_from_toml() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 x = 1
 y <- 2
 3 -> z
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
+",
+    )?;
 
-    std::fs::write(
-        directory.join("jarl.toml"),
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint.assignment]
 operator = "foo"
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -300,27 +297,28 @@ operator = "foo"
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
-Invalid value for `operator` in `[lint.assignment]`: "foo". Expected "<-" or "=".
-"#
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Invalid value for `operator` in `[lint.assignment]`: "foo". Expected "<-" or "=".
+    "#
     );
 
-    std::fs::write(
-        directory.join("jarl.toml"),
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint.assignment]
 operator = 1
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -329,20 +327,20 @@ operator = 1
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-TOML parse error at line 3, column 12
-  |
-3 | operator = 1
-  |            ^
-invalid type: integer `1`, expected a string
+    success: false
+    exit_code: 255
+    ----- stdout -----
 
-"
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 12
+      |
+    3 | operator = 1
+      |            ^
+    invalid type: integer `1`, expected a string
+    "
     );
 
     Ok(())
@@ -354,26 +352,25 @@ invalid type: integer `1`, expected a string
 
 #[test]
 fn test_assignment_cli_overrides_toml() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 x = 1
 y <- 2
 3 -> z
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
-    std::fs::write(
-        directory.join("jarl.toml"),
+",
+    )?;
+
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint.assignment]
 operator = "<-"
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -382,7 +379,8 @@ operator = "<-"
             .arg("=")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -420,34 +418,33 @@ operator = "<-"
 
 #[test]
 fn test_assignment_from_toml_deprecated() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 x = 1
 y <- 2
 3 -> z
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
+",
+    )?;
 
-    std::fs::write(
-        directory.join("jarl.toml"),
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint]
 assignment = "<-"
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
             .arg("assignment")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -477,23 +474,24 @@ assignment = "<-"
     "
     );
 
-    std::fs::write(
-        directory.join("jarl.toml"),
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint]
 assignment = "="
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
             .arg("assignment")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----
@@ -528,27 +526,25 @@ assignment = "="
 
 #[test]
 fn test_assignment_wrong_value_from_toml_deprecated() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 x = 1
 y <- 2
 3 -> z
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
+",
+    )?;
 
-    std::fs::write(
-        directory.join("jarl.toml"),
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint]
 assignment = "foo"
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -557,27 +553,28 @@ assignment = "foo"
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
-Invalid value for `operator` in `[lint.assignment]`: "foo". Expected "<-" or "=".
-"#
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Invalid value for `operator` in `[lint.assignment]`: "foo". Expected "<-" or "=".
+    "#
     );
 
-    std::fs::write(
-        directory.join("jarl.toml"),
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint]
 assignment = 1
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -586,20 +583,20 @@ assignment = 1
             .normalize_os_executable_name()
             .normalize_temp_paths(),
         @r#"
-success: false
-exit_code: 255
------ stdout -----
 
------ stderr -----
-jarl failed
-  Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-TOML parse error at line 3, column 14
-  |
-3 | assignment = 1
-  |              ^
-invalid type: integer `1`, expected a string (e.g. `assignment = "<-"`) or a table (e.g. `[lint.assignment]`)
+    success: false
+    exit_code: 255
+    ----- stdout -----
 
-"#
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 3, column 14
+      |
+    3 | assignment = 1
+      |              ^
+    invalid type: integer `1`, expected a string (e.g. `assignment = "<-"`) or a table (e.g. `[lint.assignment]`)
+    "#
     );
 
     Ok(())
@@ -607,26 +604,25 @@ invalid type: integer `1`, expected a string (e.g. `assignment = "<-"`) or a tab
 
 #[test]
 fn test_assignment_cli_overrides_toml_deprecated() -> anyhow::Result<()> {
-    let directory = TempDir::new()?;
-    let directory = directory.path();
-
-    let test_path = "test.R";
-    let test_contents = "
+    let case = CliTest::with_file(
+        "test.R",
+        "
 x = 1
 y <- 2
 3 -> z
-";
-    std::fs::write(directory.join(test_path), test_contents)?;
-    std::fs::write(
-        directory.join("jarl.toml"),
+",
+    )?;
+
+    case.write_file(
+        "jarl.toml",
         r#"
 [lint]
 assignment = "<-"
 "#,
     )?;
     insta::assert_snapshot!(
-        &mut Command::new(binary_path())
-            .current_dir(directory)
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--select")
@@ -635,7 +631,8 @@ assignment = "<-"
             .arg("=")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
+
     success: false
     exit_code: 1
     ----- stdout -----

@@ -4,6 +4,8 @@ use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 pub struct SystemFile;
 
+/// Version added: 0.1.2
+///
 /// ## What it does
 ///
 /// Checks for usage of `system.file(file.path(...))` and replaces it with

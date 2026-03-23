@@ -4,6 +4,8 @@ use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// Version added: 0.0.19
+///
 /// ## What it does
 ///
 /// Checks for dangerous usage of `all.equal(...)`, for instance in `if()`

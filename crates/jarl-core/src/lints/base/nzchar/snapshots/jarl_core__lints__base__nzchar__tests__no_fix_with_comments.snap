@@ -1,0 +1,28 @@
+---
+source: crates/jarl-core/src/lints/base/nzchar/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"# leading comment\\nx == ''\", \"x # comment\\n== ''\",\n\"x == '' # trailing comment\",], \"nzchar\")"
+---
+OLD:
+====
+# leading comment
+x == ''
+NEW:
+====
+# leading comment
+!nzchar(x)
+
+OLD:
+====
+x # comment
+== ''
+NEW:
+====
+x # comment
+== ''
+
+OLD:
+====
+x == '' # trailing comment
+NEW:
+====
+!nzchar(x) # trailing comment

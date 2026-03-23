@@ -1,4 +1,7 @@
 # seq
+::: {.callout-note title="Added in 0.2.0" .low-opacity}
+:::
+
 ## What it does
 
 Checks for `1:length(...)`, `1:nrow(...)`, `1:ncol(...)`, `1:NROW(...)` and

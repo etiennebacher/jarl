@@ -203,7 +203,7 @@ if (x) {
   if (y) {
     1L
   }
-}"), @r"
+}"), @"
         warning: unnecessary_nesting
          --> <test>:2:1
           |
@@ -227,7 +227,7 @@ if (x) {
       1L
     }
   }
-}"), @r"
+}"), @"
         warning: unnecessary_nesting
          --> <test>:2:1
           |

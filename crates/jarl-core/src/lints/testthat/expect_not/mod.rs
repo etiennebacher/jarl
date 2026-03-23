@@ -50,7 +50,7 @@ mod tests {
     fn test_lint_expect_not() {
         assert_snapshot!(
             snapshot_lint("expect_true(!x)"),
-            @r"
+            @"
         warning: expect_not
          --> <test>:1:1
           |
@@ -63,7 +63,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("testthat::expect_true(!x)"),
-            @r"
+            @"
         warning: expect_not
          --> <test>:1:1
           |
@@ -76,7 +76,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_false(!foo(x))"),
-            @r"
+            @"
         warning: expect_not
          --> <test>:1:1
           |
@@ -89,7 +89,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_true(!(x && y))"),
-            @r"
+            @"
         warning: expect_not
          --> <test>:1:1
           |
@@ -102,7 +102,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_false(!is.na(x))"),
-            @r"
+            @"
         warning: expect_not
          --> <test>:1:1
           |

@@ -5,6 +5,8 @@ use biome_rowan::AstNode;
 
 pub struct EqualsNa;
 
+/// Version added: 0.0.8
+///
 /// ## What it does
 ///
 /// Check for `x == NA`, `x != NA` and `x %in% NA`, and replaces those by

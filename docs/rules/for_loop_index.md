@@ -1,4 +1,7 @@
 # for_loop_index
+::: {.callout-note title="Added in 0.0.16" .low-opacity}
+:::
+
 ## What it does
 
 Checks whether the index symbol in a for loop is already used anywhere in

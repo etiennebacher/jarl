@@ -1,0 +1,31 @@
+---
+source: crates/jarl-core/src/lints/base/quotes/mod.rs
+expression: "get_fixed_text_with_settings(vec![\"\\\"abc\\\"\", \"fun(\\\"abc\\\")\",\n\"R\\\"(raw text)\\\"\", \"R\\\"---[ raw text ]---\\\"\",], \"quotes\", None,\nSome(settings))"
+---
+OLD:
+====
+"abc"
+NEW:
+====
+'abc'
+
+OLD:
+====
+fun("abc")
+NEW:
+====
+fun('abc')
+
+OLD:
+====
+R"(raw text)"
+NEW:
+====
+R'(raw text)'
+
+OLD:
+====
+R"---[ raw text ]---"
+NEW:
+====
+R'---[ raw text ]---'

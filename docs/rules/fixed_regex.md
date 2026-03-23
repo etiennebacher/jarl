@@ -1,4 +1,7 @@
 # fixed_regex
+::: {.callout-note title="Added in 0.3.0" .low-opacity}
+:::
+
 ## What it does
 
 Checks for regex functions (`grep`, `grepl`, `gsub`, `sub`, `regexpr`,

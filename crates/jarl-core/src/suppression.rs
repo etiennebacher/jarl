@@ -657,9 +657,13 @@ impl SuppressionManager {
             }
         }
 
-        // Check node-level suppressions (cascading: diagnostic within node range)
+        // Check node-level suppressions (cascading: diagnostic within node range,
+        // or node within diagnostic range for multi-node diagnostics like pipe chains)
         for sup in &self.node_suppressions {
-            if sup.rule == rule && sup.node_range.contains_range(diag.range) {
+            if sup.rule == rule
+                && (sup.node_range.contains_range(diag.range)
+                    || diag.range.contains_range(sup.node_range))
+            {
                 self.used_suppressions.insert(sup.comment_range);
                 return true;
             }

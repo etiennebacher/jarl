@@ -1,0 +1,147 @@
+# This workflow ensures that automatic fixes don't break R code. There are two
+# types of checks:
+# 1. idempotence: running --fix a second time doesn't make any changes (i.e
+#    running --fix once is enough). This is made by computing the SHA of the
+#    working directory, after the first fix and after the second fix.
+# 2. no new parsing errors: store the results before and after fix to JSON,
+#    compare the "errors" fields.
+
+name: Fix check
+
+on:
+  pull_request_target:
+    branches:
+      - main
+    paths:
+      - .github/workflows/fix-check.yml
+      - crates/**/src/**
+      - crates/**/Cargo.toml
+      - "!crates/jarl-lsp/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  TEST_REPOS: |
+    apache/arrow@ec56b377340feb8d46b289342b403aa489effaa1
+    easystats/datawizard@7466ff6f91040e25f826b224a4ef5e9aeb63b567
+    lrberge/stringmagic@87b187d40c745ea1d8496f071aee7229985da23c
+    mlr-org/mlr3@127da9a11073142226b76235ce4391ea0029477d
+    nlmixr2/nlmixr2est@78f8d3e19e04a628337b3739e27821eca1d31699
+    pola-rs/r-polars@055f891d977d6a8004fe8ab1bb5d47cfdd44872a
+    R-ArcGIS/arcgisgeocode@3a7877641ca2f3a761ef0ec3a7486820ab94c9cc
+    RcppCore/RcppArmadillo@201718fa64d78191cb42142c794e50e2581be3b3
+    Rdatatable/data.table@d7833cb3a0c36ab329fcfe5cc1523449663f898f
+    ropensci/targets@d45243e1a239da467c6e96e0069ecb7368f78021
+    ropensci-review-tools/pkgcheck@12d80c8ad3bc39c94174f0276386869a52568135
+    rstudio/shiny@b6e9e9d216cd574cf8985d23772399f51ee4a4ac
+    tidyverse/dplyr@384ff2c4af79a9bd9142d8bdab23efbcd52f275b
+    tidyverse/ggplot2@bed8e32d45c7dc98afb783b409edac98854d41a7
+    vincentarelbundock/marginaleffects@ffe5a4f5962a9ba51c3e68e1c55eea62887c25da
+# TODO: add this back once https://github.com/r-lib/tree-sitter-r/issues/191 is
+# fixed (infinite fixing loop otherwise)
+# wch/r-source@b5cf23a805f4305852f55c4148f2a302b06844b5
+
+jobs:
+  fix-check:
+    runs-on: macos-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout current PR branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Set up R for package-specific rules and to process results
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      # Note: in an ideal world, we'd install all dependencies of the packages
+      # we test below, but this would make the CI much slower.
+      - name: Install packages that have rules in Jarl
+        run: |
+          Rscript -e "install.packages(c('dplyr'))"
+
+      - name: Install packages to process results
+        run: |
+          R -e "install.packages(c('jsonlite'))"
+
+      - name: Build jarl binary from PR
+        run: cargo build --release --package jarl
+
+      - name: Save binary path
+        run: echo "JARL=$(pwd)/target/release/jarl" >> $GITHUB_ENV
+
+      - name: Clone all test repos
+        run: |
+          mkdir -p test-repos
+          cd test-repos
+          for repo in $TEST_REPOS; do
+            repo_name=$(echo "$repo" | cut -d'@' -f1)
+            commit_sha=$(echo "$repo" | cut -d'@' -f2)
+            repo_dir=$(echo "$repo_name" | tr '/' '_')
+
+            git clone --revision=$commit_sha --depth 1 https://github.com/$repo_name.git $repo_dir
+          done
+
+      - name: Apply safe fixes and collect results
+        run: |
+          mkdir -p results
+          cd test-repos
+          for repo in $TEST_REPOS; do
+            repo_name=$(echo "$repo" | cut -d'@' -f1)
+            repo_dir=$(echo "$repo_name" | tr '/' '_')
+
+            echo "=== [$repo_name] Starting ==="
+
+            echo "  [$repo_name] Lint before fixes..."
+            (cd "$repo_dir" && $JARL check . --select ALL --output-format json) > "../results/${repo_dir}_pre.json" || true
+            echo "  [$repo_name] Lint before fixes done."
+
+            echo "  [$repo_name] Applying safe fixes..."
+            (cd "$repo_dir" && $JARL check . --select ALL --fix --allow-no-vcs --allow-dirty) > /dev/null 2>&1 || true
+            echo "  [$repo_name] Applying safe fixes done."
+
+            echo "  [$repo_name] Lint after fixes..."
+            (cd "$repo_dir" && $JARL check . --select ALL --output-format json) > "../results/${repo_dir}_post.json" || true
+            echo "  [$repo_name] Lint after fixes done."
+
+            echo "  [$repo_name] SHA snapshot 1..."
+            find "$repo_dir" \( -name '*.R' -o -name '*.r' \) -print0 | sort -z | xargs -0 cat | shasum -a 256 | cut -d' ' -f1 > "../results/${repo_dir}_sha1.txt"
+            echo "  [$repo_name] SHA snapshot 1 done."
+
+            echo "  [$repo_name] Applying fixes (2nd pass)..."
+            (cd "$repo_dir" && $JARL check . --select ALL --fix --allow-no-vcs --allow-dirty) > /dev/null 2>&1 || true
+            echo "  [$repo_name] Applying fixes (2nd pass) done."
+
+            echo "  [$repo_name] SHA snapshot 2..."
+            find "$repo_dir" \( -name '*.R' -o -name '*.r' \) -print0 | sort -z | xargs -0 cat | shasum -a 256 | cut -d' ' -f1 > "../results/${repo_dir}_sha2.txt"
+            echo "  [$repo_name] SHA snapshot 2 done."
+
+            echo "=== [$repo_name] Finished ==="
+          done
+
+      - name: Upload result JSONs
+        uses: actions/upload-artifact@v7
+        with:
+          name: fix-check-results
+          path: results/
+
+      - name: Process fix results
+        run: |
+          source(".github/scripts/process_fix_ci.R", echo = TRUE)
+        shell: Rscript {0}
+

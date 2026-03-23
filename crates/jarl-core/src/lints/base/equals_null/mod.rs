@@ -13,7 +13,7 @@ mod tests {
     fn test_lint_equals_null() {
         assert_snapshot!(
             snapshot_lint("x == NULL"),
-            @r"
+            @"
         warning: equals_null
          --> <test>:1:1
           |
@@ -26,7 +26,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x != NULL"),
-            @r"
+            @"
         warning: equals_null
          --> <test>:1:1
           |
@@ -39,7 +39,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x %in% NULL"),
-            @r"
+            @"
         warning: equals_null
          --> <test>:1:1
           |
@@ -52,7 +52,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("foo(x(y)) == NULL"),
-            @r"
+            @"
         warning: equals_null
          --> <test>:1:1
           |
@@ -65,7 +65,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("NULL == x"),
-            @r"
+            @"
         warning: equals_null
          --> <test>:1:1
           |

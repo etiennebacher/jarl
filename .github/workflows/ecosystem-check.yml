@@ -46,7 +46,7 @@ jobs:
 
     steps:
       - name: Checkout current PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         # Need to specify this otherwise using on: pull_request_target checks out
         # the main branch.
         with:
@@ -57,6 +57,21 @@ jobs:
 
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Set up R for package-specific rules and to process results
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      # Note: in an ideal world, we'd install all dependencies of the packages
+      # we test below, but this would make the CI much slower.
+      - name: Install packages that have rules in Jarl
+        run: |
+          Rscript -e "install.packages(c('dplyr'))"
+
+      - name: Install packages to process results
+        run: |
+          R -e "install.packages(c('data.table', 'jsonlite'))"
 
       - name: Build jarl binary from PR
         run: cargo build --release --package jarl
@@ -103,19 +118,10 @@ jobs:
           done
 
       - name: Upload all result JSONs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jarl-json-results
           path: results/
-
-      - name: Setup R to process lint results
-        uses: r-lib/actions/setup-r@v2
-        with:
-          use-public-rspm: true
-
-      - name: Install R dependencies
-        run: |
-          R -e "install.packages(c('data.table', 'jsonlite'))"
 
       - name: Process lint results
         run: |
@@ -124,7 +130,7 @@ jobs:
 
       - name: Upload results
         id: artifact-upload-step
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lint-results
           path: .github/scripts/

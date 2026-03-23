@@ -31,7 +31,7 @@ mod tests {
     fn test_lint_any_duplicated() {
         assert_snapshot!(
             snapshot_lint("any(duplicated(x))"),
-            @r"
+            @"
         warning: any_duplicated
          --> <test>:1:1
           |
@@ -44,7 +44,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("any(duplicated(foo(x)))"),
-            @r"
+            @"
         warning: any_duplicated
          --> <test>:1:1
           |
@@ -57,7 +57,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("any(duplicated(x), na.rm = TRUE)"),
-            @r"
+            @"
         warning: any_duplicated
          --> <test>:1:1
           |
@@ -70,7 +70,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("any(na.rm = TRUE, duplicated(x))"),
-            @r"
+            @"
         warning: any_duplicated
          --> <test>:1:1
           |
@@ -83,7 +83,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("any(duplicated(x)); 1 + 1; any(duplicated(y))"),
-            @r"
+            @"
         warning: any_duplicated
          --> <test>:1:1
           |
@@ -119,7 +119,7 @@ mod tests {
     fn test_lint_any_duplicated_piped() {
         assert_snapshot!(
             snapshot_lint("duplicated(x) |> \n any()"),
-            @r"
+            @"
         warning: any_duplicated
          --> <test>:1:1
           |
@@ -133,7 +133,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("x |> \n duplicated() |> \n any()"),
-            @r"
+            @"
         warning: any_duplicated
          --> <test>:1:1
           |

@@ -1,5 +1,5 @@
 ---
-title: Integrations
+title: Continuous integration
 ---
 
 ## Github Actions

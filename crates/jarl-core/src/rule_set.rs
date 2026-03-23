@@ -16,6 +16,8 @@ pub enum Category {
     Read,
     /// Testthat-specific rules
     Testthat,
+    /// dplyr-specific rules (opt-in)
+    Dplyr,
 }
 
 impl Category {
@@ -27,6 +29,7 @@ impl Category {
             Self::Perf => "PERF",
             Self::Read => "READ",
             Self::Testthat => "TESTTHAT",
+            Self::Dplyr => "DPLYR",
         }
     }
 
@@ -37,7 +40,23 @@ impl Category {
         Category::Perf,
         Category::Read,
         Category::Testthat,
+        Category::Dplyr,
     ];
+
+    /// Whether this category is package-specific (requires library path
+    /// discovery and the `PackageCache` to be useful).
+    ///
+    /// `Testthat` is NOT package-specific: those rules only need to detect
+    /// that the file is inside a `tests/testthat/` directory, not resolve
+    /// function origins via installed packages.
+    pub const fn is_package_specific(self) -> bool {
+        !matches!(self, Self::Comm)
+            && !matches!(self, Self::Corr)
+            && !matches!(self, Self::Perf)
+            && !matches!(self, Self::Read)
+            && !matches!(self, Self::Susp)
+            && !matches!(self, Self::Testthat)
+    }
 }
 
 impl fmt::Display for Category {
@@ -57,6 +76,7 @@ impl FromStr for Category {
             "PERF" => Ok(Self::Perf),
             "READ" => Ok(Self::Read),
             "TESTTHAT" => Ok(Self::Testthat),
+            "DPLYR" => Ok(Self::Dplyr),
             _ => Err(format!("Unknown category: {}", s)),
         }
     }
@@ -219,6 +239,10 @@ macro_rules! declare_rules {
 
 // Declare all rules with their metadata
 declare_rules! {
+
+    //
+    // ------------- BASE -------------
+    //
     AllEqual => {
         name: "all_equal",
         categories: [Susp],
@@ -245,20 +269,6 @@ declare_rules! {
         categories: [Read],
         default: Disabled,
         fix: Safe,
-        min_r_version: None,
-    },
-    BlanketSuppression => {
-        name: "blanket_suppression",
-        categories: [Comm],
-        default: Enabled,
-        fix: None,
-        min_r_version: None,
-    },
-    InvalidChunkSuppression => {
-        name: "invalid_chunk_suppression",
-        categories: [Comm],
-        default: Enabled,
-        fix: None,
         min_r_version: None,
     },
     #[deprecated(version = "0.5.0", replacement = "undesirable_function")]
@@ -336,69 +346,6 @@ declare_rules! {
         name: "equals_null",
         categories: [Corr],
         default: Enabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    ExpectLength => {
-        name: "expect_length",
-        categories: [Testthat],
-        default: Disabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    ExpectMatch => {
-        name: "expect_match",
-        categories: [Testthat],
-        default: Disabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    ExpectNamed => {
-        name: "expect_named",
-        categories: [Testthat],
-        default: Disabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    ExpectNoMatch => {
-        name: "expect_no_match",
-        categories: [Testthat],
-        default: Disabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    ExpectNot => {
-        name: "expect_not",
-        categories: [Testthat],
-        default: Disabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    ExpectNull => {
-        name: "expect_null",
-        categories: [Testthat],
-        default: Disabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    ExpectS3Class => {
-        name: "expect_s3_class",
-        categories: [Testthat],
-        default: Disabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    ExpectTrueFalse => {
-        name: "expect_true_false",
-        categories: [Testthat],
-        default: Disabled,
-        fix: Safe,
-        min_r_version: None,
-    },
-    ExpectType => {
-        name: "expect_type",
-        categories: [Testthat],
-        default: Disabled,
         fix: Safe,
         min_r_version: None,
     },
@@ -493,27 +440,6 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
-    MisplacedFileSuppression => {
-        name: "misplaced_file_suppression",
-        categories: [Comm],
-        default: Enabled,
-        fix: None,
-        min_r_version: None,
-    },
-    MisplacedSuppression => {
-        name: "misplaced_suppression",
-        categories: [Comm],
-        default: Enabled,
-        fix: None,
-        min_r_version: None,
-    },
-    MisnamedSuppression => {
-        name: "misnamed_suppression",
-        categories: [Comm],
-        default: Enabled,
-        fix: None,
-        min_r_version: None,
-    },
     NumericLeadingZero => {
         name: "numeric_leading_zero",
         categories: [Read],
@@ -521,17 +447,24 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
-    OutdatedSuppression => {
-        name: "outdated_suppression",
-        categories: [Comm],
-        default: Enabled,
-        fix: None,
+    NzChar => {
+        name: "nzchar",
+        categories: [Perf],
+        default: Disabled,
+        fix: Unsafe,
         min_r_version: None,
     },
     OuterNegation => {
         name: "outer_negation",
         categories: [Perf, Read],
         default: Enabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    Quotes => {
+        name: "quotes",
+        categories: [Read],
+        default: Disabled,
         fix: Safe,
         min_r_version: None,
     },
@@ -619,20 +552,6 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
-    UnexplainedSuppression => {
-        name: "unexplained_suppression",
-        categories: [Comm],
-        default: Enabled,
-        fix: None,
-        min_r_version: None,
-    },
-    UnmatchedRangeSuppression => {
-        name: "unmatched_range_suppression",
-        categories: [Comm],
-        default: Enabled,
-        fix: None,
-        min_r_version: None,
-    },
     UnnecessaryNesting => {
         name: "unnecessary_nesting",
         categories: [Read],
@@ -650,7 +569,7 @@ declare_rules! {
     UnusedFunction => {
         name: "unused_function",
         categories: [Corr],
-        default: Disabled,
+        default: Enabled,
         fix: None,
         min_r_version: None,
     },
@@ -675,6 +594,152 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+
+    //
+    // ------------- COMMENTS -------------
+    //
+    BlanketSuppression => {
+        name: "blanket_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    InvalidChunkSuppression => {
+        name: "invalid_chunk_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    MisplacedFileSuppression => {
+        name: "misplaced_file_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    MisplacedSuppression => {
+        name: "misplaced_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    MisnamedSuppression => {
+        name: "misnamed_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    OutdatedSuppression => {
+        name: "outdated_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    UnexplainedSuppression => {
+        name: "unexplained_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    UnmatchedRangeSuppression => {
+        name: "unmatched_range_suppression",
+        categories: [Comm],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+
+    //
+    // ------------- DPLYR -------------
+    //
+    DplyrFilterOut => {
+        name: "dplyr_filter_out",
+        categories: [Dplyr],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    DplyrGroupByUngroup => {
+        name: "dplyr_group_by_ungroup",
+        categories: [Dplyr],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+
+    //
+    // ------------- TESTTHAT -------------
+    //
+    TestthatExpectLength => {
+        name: "expect_length",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    TestthatExpectMatch => {
+        name: "expect_match",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    TestthatExpectNamed => {
+        name: "expect_named",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    TestthatExpectNoMatch => {
+        name: "expect_no_match",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    TestthatExpectNot => {
+        name: "expect_not",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    TestthatExpectNull => {
+        name: "expect_null",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    TestthatExpectS3Class => {
+        name: "expect_s3_class",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    TestthatExpectTrueFalse => {
+        name: "expect_true_false",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    TestthatExpectType => {
+        name: "expect_type",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+
 }
 
 /// A collection of rules
@@ -722,6 +787,46 @@ impl RuleSet {
     /// Check if the rule set is empty
     pub fn is_empty(&self) -> bool {
         self.rules.is_empty()
+    }
+
+    /// Check if any rule in the set belongs to a package-specific category.
+    ///
+    /// Used to decide whether to discover R library paths and build a
+    /// `PackageCache` — an expensive operation that should be skipped
+    /// when no package-specific rules are enabled.
+    pub fn has_package_specific_rules(&self) -> bool {
+        self.rules
+            .iter()
+            .any(|r| r.categories().iter().any(|c| c.is_package_specific()))
+    }
+
+    /// Return the distinct package-specific categories present in this rule set.
+    pub fn package_specific_categories(&self) -> Vec<Category> {
+        let mut cats = Vec::new();
+        for rule in &self.rules {
+            for cat in rule.categories() {
+                if cat.is_package_specific() && !cats.contains(cat) {
+                    cats.push(*cat);
+                }
+            }
+        }
+        cats
+    }
+
+    /// Return the R package names targeted by the package-specific rules in
+    /// this set (e.g. `["dplyr"]`).
+    pub fn pkg_names_from_category(&self) -> Vec<&'static str> {
+        let mut pkgs = Vec::new();
+        for cat in self.package_specific_categories() {
+            let pkg = match cat {
+                Category::Dplyr => "dplyr",
+                _ => continue,
+            };
+            if !pkgs.contains(&pkg) {
+                pkgs.push(pkg);
+            }
+        }
+        pkgs
     }
 
     /// Filter rules by a predicate

@@ -60,7 +60,7 @@ mod tests {
     fn test_lint_string_boundary() {
         assert_snapshot!(
             snapshot_lint("substr(x, 1, 2) == 'ab'"),
-            @r"
+            @"
         warning: string_boundary
          --> <test>:1:1
           |
@@ -73,7 +73,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("substr(x, 1L, 2L) == 'ab'"),
-            @r"
+            @"
         warning: string_boundary
          --> <test>:1:1
           |
@@ -87,7 +87,7 @@ mod tests {
         // end doesn't matter, just anchoring to 1L
         assert_snapshot!(
             snapshot_lint("substr(x, 1L, end) == 'ab'"),
-            @r"
+            @"
         warning: string_boundary
          --> <test>:1:1
           |
@@ -101,7 +101,7 @@ mod tests {
         // != operator also works
         assert_snapshot!(
             snapshot_lint("substr(x, 1L, end) != 'ab'"),
-            @r"
+            @"
         warning: string_boundary
          --> <test>:1:1
           |
@@ -114,7 +114,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("substr(x, 3, nchar(x)) != 'ab'"),
-            @r"
+            @"
         warning: string_boundary
          --> <test>:1:1
           |
@@ -128,7 +128,7 @@ mod tests {
         // Works in the other direction
         assert_snapshot!(
             snapshot_lint("'ab' == substr(x, 1L, end)"),
-            @r"
+            @"
         warning: string_boundary
          --> <test>:1:1
           |
@@ -144,7 +144,7 @@ mod tests {
 
             snapshot_lint("substring(x, nchar(x) - 4L, nchar(x)) == 'abcde'"),
 
-            @r"
+            @"
         warning: string_boundary
          --> <test>:1:1
           |
@@ -158,7 +158,7 @@ mod tests {
         // start doesn't matter, just anchoring to nchar(x)
         assert_snapshot!(
             snapshot_lint("substring(x, start, nchar(x)) == 'abcde'"),
-            @r"
+            @"
         warning: string_boundary
          --> <test>:1:1
           |
@@ -172,7 +172,7 @@ mod tests {
         // more complicated expressions
         assert_snapshot!(
             snapshot_lint("substring(colnames(x), start, nchar(colnames(x))) == 'abc'"),
-            @r"
+            @"
         warning: string_boundary
          --> <test>:1:1
           |
@@ -186,7 +186,7 @@ mod tests {
         // comparing vectors
         assert_snapshot!(
             snapshot_lint("substr(c('abc', 'def'), 1, 1) == c('a', 'a')"),
-            @r"
+            @"
         warning: string_boundary
          --> <test>:1:1
           |
@@ -224,7 +224,7 @@ mod tests {
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             snapshot_lint("substr(x, \n # a comment \n1, 2) == 'ab'"),
-            @r"
+            @"
         warning: string_boundary
          --> <test>:1:1
           |

@@ -56,7 +56,7 @@ mod tests {
     fn test_lint_expect_s3_class() {
         assert_snapshot!(
             snapshot_lint("expect_equal(class(x), 'data.frame')"),
-            @r"
+            @"
         warning: expect_s3_class
          --> <test>:1:1
           |
@@ -82,7 +82,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("testthat::expect_equal(class(x), 'data.frame')"),
-            @r"
+            @"
         warning: expect_s3_class
          --> <test>:1:1
           |
@@ -95,7 +95,7 @@ mod tests {
         );
         assert_snapshot!(
             snapshot_lint("expect_equal('data.frame', class(x))"),
-            @r"
+            @"
         warning: expect_s3_class
          --> <test>:1:1
           |
@@ -126,7 +126,7 @@ mod tests {
         // Should detect lint but skip fix when comments are present
         assert_snapshot!(
             snapshot_lint("expect_equal(class(x),\n # a comment \n'data.frame')"),
-            @r"
+            @"
         warning: expect_s3_class
          --> <test>:1:1
           |
