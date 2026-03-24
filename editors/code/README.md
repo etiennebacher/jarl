@@ -18,6 +18,10 @@ See the website: https://jarl.etiennebacher.com/
 
 ## Changelog
 
+### 0.0.12
+
+This version bundles Jarl 0.5.0.
+
 ### 0.0.10
 
 - Removed the setting "assignment" from the VS Code / Positron settings. This
