@@ -1,0 +1,46 @@
+# This workflow triggers the update in the docs and the release. This allows
+# the current "dev" docs to be automatically moved to "stable".
+
+name: Release
+
+permissions:
+  actions: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release Tag
+        required: true
+        default: dry-run
+        type: string
+
+jobs:
+  docs-stable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'docs.yml',
+              ref: context.ref,
+              inputs: { version: 'stable' }
+            });
+
+  release:
+    needs: docs-stable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'release.yml',
+              ref: context.ref,
+              inputs: { tag: '${{ inputs.tag }}' }
+            });
