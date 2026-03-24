@@ -93,3 +93,9 @@ container = { image = "messense/cargo-xwin", host = "x86_64-unknown-linux-musl",
 # and therefore Tombi can get the JSON schema.
 artifacts = ["artifacts/jarl.schema.json"]
 build = ["echo"]
+
+# There's already release.yml to coordinate the update of release docs and the
+# publishing of release binaries. cargo-dist wants the binaries to be built
+# in release.yml by default, so setting this parameter means that binaries
+# can be built in custom-release.yml.
+tag-namespace = "custom"
