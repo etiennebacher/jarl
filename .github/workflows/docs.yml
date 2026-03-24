@@ -56,7 +56,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-tags: true
+          fetch-depth: 0
 
       - name: Inject version into navbar
         shell: bash

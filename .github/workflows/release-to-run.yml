@@ -16,7 +16,76 @@ on:
         type: string
 
 jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Record the time just before dispatching so we can find the run
+            const before = new Date().toISOString();
+
+            await github.rest.actions.createWorkflowDispatch({
+              owner,
+              repo,
+              workflow_id: 'release.yml',
+              ref: context.ref,
+              inputs: { tag: '${{ inputs.tag }}' }
+            });
+
+            // Wait a bit for GitHub to register the new run
+            await new Promise(r => setTimeout(r, 15000));
+
+            // Find the workflow run we just triggered
+            const workflows = await github.rest.actions.listWorkflowRuns({
+              owner,
+              repo,
+              workflow_id: 'release.yml',
+              created: `>=${before}`,
+              per_page: 1
+            });
+
+            if (workflows.data.workflow_runs.length === 0) {
+              throw new Error('Could not find the dispatched release workflow run');
+            }
+
+            const runId = workflows.data.workflow_runs[0].id;
+            core.info(`Found release workflow run: ${runId}`);
+
+            // Poll until the run completes
+            const pollInterval = 60000; // 1 minute
+            const timeout = 5400000; // 90 minutes
+            const start = Date.now();
+
+            while (Date.now() - start < timeout) {
+              const run = await github.rest.actions.getWorkflowRun({
+                owner,
+                repo,
+                run_id: runId
+              });
+
+              const status = run.data.status;
+              const conclusion = run.data.conclusion;
+              core.info(`Run ${runId}: status=${status}, conclusion=${conclusion}`);
+
+              if (status === 'completed') {
+                if (conclusion === 'success') {
+                  core.info('Release workflow completed successfully');
+                  return;
+                }
+                throw new Error(`Release workflow failed with conclusion: ${conclusion}`);
+              }
+
+              await new Promise(r => setTimeout(r, pollInterval));
+            }
+
+            throw new Error('Timed out waiting for release workflow to complete');
+
   docs-stable:
+    needs: release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v7
@@ -28,19 +97,4 @@ jobs:
               workflow_id: 'docs.yml',
               ref: context.ref,
               inputs: { version: 'stable' }
-            });
-
-  release:
-    needs: docs-stable
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'release.yml',
-              ref: context.ref,
-              inputs: { tag: '${{ inputs.tag }}' }
             });
