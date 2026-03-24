@@ -1,6 +1,6 @@
 # Changelog
 
-## Development version
+## 0.5.0
 
 ### Deprecations
 
