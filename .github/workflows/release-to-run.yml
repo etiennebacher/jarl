@@ -100,3 +100,17 @@ jobs:
               ref: context.ref,
               inputs: { version: 'stable' }
             });
+
+  pre-commit:
+    needs: release
+    # Do not trigger on alpha binaries release
+    if: ${{ !contains(inputs.tag, '-') }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.JARL_DISPATCH_PRE_COMMIT }}
+    steps:
+      - name: Update jarl-pre-commit
+        run: |
+          gh api repos/etiennebacher/jarl-pre-commit/dispatches \
+            -f event_type=jarl-release \
+            -f "client_payload[version]=${{ inputs.tag }}"
