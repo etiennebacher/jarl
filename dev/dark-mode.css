@@ -1,0 +1,43 @@
+/* Adapted from https://github.com/gadenbuie/quarto-auto-dark */
+
+/* Dark mode styles, applied when <html> has the "dark-mode" class */
+html.dark-mode body {
+  filter: invert(100%) hue-rotate(180deg);
+}
+
+html.dark-mode {
+  background-color: #111;
+}
+
+/* Re-invert media so images/videos look normal */
+html.dark-mode img,
+html.dark-mode video,
+html.dark-mode iframe,
+html.dark-mode svg:not(.bi, .fa) {
+  filter: invert(100%) hue-rotate(180deg);
+}
+
+html.dark-mode video:fullscreen {
+  filter: none;
+}
+
+html.dark-mode pre {
+  filter: invert(10%);
+}
+
+/* Toggle button in the navbar */
+.dark-mode-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding-top: 0.7rem;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: inherit;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.dark-mode-toggle:hover {
+  opacity: 1;
+}

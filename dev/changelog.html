@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>changelog – Jarl</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-91252c94a8c29af6a11c1f9076f09451.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "Search (press \"s\")",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script>
+
+// Dark mode toggle with localStorage persistence and OS preference detection
+
+(function () {
+
+  var STORAGE_KEY = "jarl-dark-mode";
+
+
+
+  function isDark() {
+
+    var stored = localStorage.getItem(STORAGE_KEY);
+
+    if (stored !== null) return stored === "true";
+
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+  }
+
+
+
+  function apply(dark) {
+
+    document.documentElement.classList.toggle("dark-mode", dark);
+
+    var btn = document.querySelector(".dark-mode-toggle");
+
+    if (btn) btn.innerHTML = dark ? '<i class="bi bi-sun"></i>' : '<i class="bi bi-moon-fill"></i>';
+
+  }
+
+
+
+  // Apply immediately to avoid flash
+
+  apply(isDark());
+
+
+
+  document.addEventListener("DOMContentLoaded", function () {
+
+    // Insert toggle button in the navbar
+
+    var navRight = document.querySelector(".navbar-nav.navbar-nav-scroll.ms-auto");
+
+    if (!navRight) navRight = document.querySelector(".navbar-nav.ms-auto");
+
+    if (!navRight) return;
+
+
+
+    var li = document.createElement("li");
+
+    li.className = "nav-item-compact";
+
+
+
+    var btn = document.createElement("button");
+
+    btn.className = "dark-mode-toggle nav-link";
+
+    btn.type = "button";
+
+    btn.setAttribute("aria-label", "Toggle dark mode");
+
+    btn.innerHTML = isDark() ? '<i class="bi bi-sun"></i>' : '<i class="bi bi-moon-fill"></i>';
+
+
+
+    btn.addEventListener("click", function () {
+
+      var dark = !document.documentElement.classList.contains("dark-mode");
+
+      localStorage.setItem(STORAGE_KEY, dark);
+
+      apply(dark);
+
+    });
+
+
+
+    li.appendChild(btn);
+
+    navRight.insertBefore(li, navRight.firstChild);
+
+  });
+
+
+
+  // Follow OS changes unless the user has set a manual preference
+
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
+
+    if (localStorage.getItem(STORAGE_KEY) === null) {
+
+      apply(e.matches);
+
+    }
+
+  });
+
+})();
+
+</script>
+
+
+
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="dark-mode.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Jarl</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="./getting-started.html"> 
+<span class="menu-text">Getting started</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./by-example.html"> 
+<span class="menu-text">By Example</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-how-to" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">How-to</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-how-to">    
+        <li>
+    <a class="dropdown-item" href="./howto/suppression-comments.html">
+ <span class="dropdown-text">Suppression comments</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./howto/rmarkdown-quarto.html">
+ <span class="dropdown-text">R Markdown &amp; Quarto</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./howto/r-versions.html">
+ <span class="dropdown-text">R versions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./howto/package-specific.html">
+ <span class="dropdown-text">Package-specific rules</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./howto/editors.html">
+ <span class="dropdown-text">Editor setup</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./howto/ci.html">
+ <span class="dropdown-text">Continuous integration</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./howto/precommit.html">
+ <span class="dropdown-text">Pre-commit tools</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-reference" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Reference</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-reference">    
+        <li>
+    <a class="dropdown-item" href="./rules.html">
+ <span class="dropdown-text">Rules</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./reference/cli.html">
+ <span class="dropdown-text">CLI options</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./reference/config-file.html">
+ <span class="dropdown-text">Configuration file</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./reference/envvars.html">
+ <span class="dropdown-text">Environment variables</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-contributing" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Contributing</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-contributing">    
+        <li>
+    <a class="dropdown-item" href="./contributing.html">
+ <span class="dropdown-text">General information</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./contributing-rule-example.html">
+ <span class="dropdown-text">Tutorial: add a new rule</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link active" href="./changelog.html" aria-current="page"> 
+<span class="menu-text">Changelog</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/etiennebacher/jarl"> <i class="bi bi-github" role="img" aria-label="GitHub">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-dev" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">dev</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-dev">    
+        <li>
+    <a class="dropdown-item" href="https://jarl.etiennebacher.com/">
+ <span class="dropdown-text">stable (0.5.0)</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://jarl.etiennebacher.com/dev/">
+ <span class="dropdown-text">dev</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <div id="quarto-announcement" data-announcement-id="6013599d9d969a1d3c09712ab96956c8" class="alert alert-primary hidden"><i class="bi bi-info-circle quarto-announcement-icon"></i><div class="quarto-announcement-content">
+<p>You are viewing the development version of the documentation. Use the dropdown on the top right to see the stable version.</p>
+</div><i class="bi bi-x-lg quarto-announcement-action"></i></div>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#changelog" id="toc-changelog" class="nav-link active" data-scroll-target="#changelog">Changelog</a>
+  <ul>
+  <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section">0.5.0</a>
+  <ul class="collapse">
+  <li><a href="#deprecations" id="toc-deprecations" class="nav-link" data-scroll-target="#deprecations">Deprecations</a></li>
+  <li><a href="#features" id="toc-features" class="nav-link" data-scroll-target="#features">Features</a></li>
+  <li><a href="#bug-fixes" id="toc-bug-fixes" class="nav-link" data-scroll-target="#bug-fixes">Bug fixes</a></li>
+  </ul></li>
+  <li><a href="#section-1" id="toc-section-1" class="nav-link" data-scroll-target="#section-1">0.4.0</a>
+  <ul class="collapse">
+  <li><a href="#breaking-changes" id="toc-breaking-changes" class="nav-link" data-scroll-target="#breaking-changes">Breaking changes</a></li>
+  <li><a href="#features-1" id="toc-features-1" class="nav-link" data-scroll-target="#features-1">Features</a></li>
+  <li><a href="#other-changes" id="toc-other-changes" class="nav-link" data-scroll-target="#other-changes">Other changes</a></li>
+  <li><a href="#bug-fixes-1" id="toc-bug-fixes-1" class="nav-link" data-scroll-target="#bug-fixes-1">Bug fixes</a></li>
+  <li><a href="#documentation" id="toc-documentation" class="nav-link" data-scroll-target="#documentation">Documentation</a></li>
+  </ul></li>
+  <li><a href="#section-2" id="toc-section-2" class="nav-link" data-scroll-target="#section-2">0.3.0</a>
+  <ul class="collapse">
+  <li><a href="#breaking-changes-1" id="toc-breaking-changes-1" class="nav-link" data-scroll-target="#breaking-changes-1">Breaking changes</a></li>
+  <li><a href="#features-2" id="toc-features-2" class="nav-link" data-scroll-target="#features-2">Features</a></li>
+  <li><a href="#fixes" id="toc-fixes" class="nav-link" data-scroll-target="#fixes">Fixes</a></li>
+  <li><a href="#other-changes-1" id="toc-other-changes-1" class="nav-link" data-scroll-target="#other-changes-1">Other changes</a></li>
+  </ul></li>
+  <li><a href="#section-3" id="toc-section-3" class="nav-link" data-scroll-target="#section-3">0.2.1</a>
+  <ul class="collapse">
+  <li><a href="#other" id="toc-other" class="nav-link" data-scroll-target="#other">Other</a></li>
+  </ul></li>
+  <li><a href="#section-4" id="toc-section-4" class="nav-link" data-scroll-target="#section-4">0.2.0</a>
+  <ul class="collapse">
+  <li><a href="#breaking-changes-2" id="toc-breaking-changes-2" class="nav-link" data-scroll-target="#breaking-changes-2">Breaking changes</a></li>
+  <li><a href="#features-3" id="toc-features-3" class="nav-link" data-scroll-target="#features-3">Features</a></li>
+  <li><a href="#fixes-1" id="toc-fixes-1" class="nav-link" data-scroll-target="#fixes-1">Fixes</a></li>
+  <li><a href="#documentation-1" id="toc-documentation-1" class="nav-link" data-scroll-target="#documentation-1">Documentation</a></li>
+  </ul></li>
+  <li><a href="#section-5" id="toc-section-5" class="nav-link" data-scroll-target="#section-5">0.1.2</a>
+  <ul class="collapse">
+  <li><a href="#features-4" id="toc-features-4" class="nav-link" data-scroll-target="#features-4">Features</a></li>
+  <li><a href="#fixes-2" id="toc-fixes-2" class="nav-link" data-scroll-target="#fixes-2">Fixes</a></li>
+  <li><a href="#documentation-2" id="toc-documentation-2" class="nav-link" data-scroll-target="#documentation-2">Documentation</a></li>
+  </ul></li>
+  <li><a href="#section-6" id="toc-section-6" class="nav-link" data-scroll-target="#section-6">0.1.1</a>
+  <ul class="collapse">
+  <li><a href="#fixes-3" id="toc-fixes-3" class="nav-link" data-scroll-target="#fixes-3">Fixes</a></li>
+  <li><a href="#documentation-3" id="toc-documentation-3" class="nav-link" data-scroll-target="#documentation-3">Documentation</a></li>
+  </ul></li>
+  <li><a href="#section-7" id="toc-section-7" class="nav-link" data-scroll-target="#section-7">0.1.0</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/changelog.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+
+
+
+
+<section id="changelog" class="level1">
+<h1>Changelog</h1>
+<section id="section" class="level2">
+<h2 class="anchored" data-anchor-id="section">0.5.0</h2>
+<section id="deprecations" class="level3">
+<h3 class="anchored" data-anchor-id="deprecations">Deprecations</h3>
+<ul>
+<li><p>The command-line argument <code>--assignment</code> and the <code>jarl.toml</code> argument <code>assignment</code> are both deprecated. Instead, you should use the following code in <code>jarl.toml</code>:</p>
+<pre><code>[lint.assignment]
+operator = "&lt;-" # or "="</code></pre>
+<p>More info on these rule-specific options in <code>jarl.toml</code> in the “Features” section below (#334).</p></li>
+<li><p>The rule <code>"browser"</code> is deprecated. Calls to <code>browser()</code> are now detected with the rule <code>"undesirable_function"</code> (#336).</p></li>
+</ul>
+</section>
+<section id="features" class="level3">
+<h3 class="anchored" data-anchor-id="features">Features</h3>
+<ul>
+<li><p><code>jarl.toml</code> now accepts rule-specific options in subsections <code>[lint.&lt;rule_name&gt;]</code>, such as:</p>
+<pre><code>[lint]
+...
+
+# In the rule `duplicated_arguments`, do not report calls to `my_function()`
+# and `list()` where multiple arguments have the same name.
+[lint.duplicated_arguments]
+extend-skipped-functions = ["my_function", "list"]</code></pre>
+<p>These options are listed in the <a href="https://jarl.etiennebacher.com/reference/config-file" target="_blank">Configuration page</a> (#333).</p></li>
+<li><p>Jarl now also analyzes piped functions, e.g.&nbsp;the following code is reported by the <code>any_is_na</code> rule:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">is.na</span>(x) <span class="sc">|&gt;</span> <span class="fu">any</span>()</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>x <span class="sc">|&gt;</span> <span class="fu">is.na</span>() <span class="sc">|&gt;</span> <span class="fu">any</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>(#338).</p></li>
+<li><p>Jarl now checks R code in more places:</p>
+<ul>
+<li>chunks in Quarto and R Markdown documents. More information in the <a href="https://jarl.etiennebacher.com/howto/rmarkdown-quarto" target="_blank">“R Markdown and Quarto”</a> section (#50).</li>
+<li><code>@examples</code> and <code>@examplesIf</code> sections in <code>roxygen2</code> comments (#385).</li>
+</ul></li>
+<li><p>Added support for multiple <code>jarl.toml</code>, i.e.&nbsp;each file now uses the nearest <code>jarl.toml</code>. For example, Jarl can check a folder where several subfolders have their own <code>jarl.toml</code> (before, this would error). (#353)</p></li>
+<li><p>New option <code>include</code> in <code>jarl.toml</code>, to complement <code>exclude</code> (#349).</p></li>
+<li><p>New rules:</p>
+<ul>
+<li><code>dplyr_filter_out</code> (#393)</li>
+<li><code>dplyr_group_by_ungroup</code> (#395)</li>
+<li><code>duplicated_function_definition</code> (#358)</li>
+<li><code>expect_match</code> (#364, <span class="citation" data-cites="bjyberg">@bjyberg</span>)</li>
+<li><code>expect_no_match</code> (#368, <span class="citation" data-cites="bjyberg">@bjyberg</span>)</li>
+<li><code>invalid_chunk_suppression</code> (#350)</li>
+<li><code>nzchar</code> (#406, <span class="citation" data-cites="maelle">@maelle</span>)</li>
+<li><code>quotes</code> (#381, <span class="citation" data-cites="bjyberg">@bjyberg</span>)</li>
+<li><code>undesirable_function</code> (replaces <code>browser</code>) (#336)</li>
+<li><code>unused_function</code> (#362)</li>
+</ul></li>
+<li><p>The output in terminal with output format <code>full</code> or <code>concise</code> is now organized in multiple sections (summary, warnings, notes) (#366).</p></li>
+<li><p>Hovering a diagnostic now shows the rule name (#377).</p></li>
+<li><p>Jarl can be used with <code>pre-commit</code> and <code>prek</code>, see <a href="https://jarl.etiennebacher.com/howto/precommit" target="_blank">Pre-commit tools</a> (#379).</p></li>
+<li><p>The CLI now errors early when some incompatible arguments are used (#437).</p></li>
+</ul>
+</section>
+<section id="bug-fixes" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h3>
+<ul>
+<li><p><code>fixed_regex</code> could loop infinitely trying to add <code>fixed = TRUE</code>. This is fixed (#388).</p></li>
+<li><p>Some fixes to ensure that automatic fixes don’t introduce new violations or new parsing errors (#389).</p></li>
+<li><p>Suppression comments now work better when inserted in piped chains (#397).</p></li>
+<li><p>Fix a wrong parsing error when using <code>next()</code> or <code>break()</code> (#417).</p></li>
+</ul>
+</section>
+</section>
+<section id="section-1" class="level2">
+<h2 class="anchored" data-anchor-id="section-1">0.4.0</h2>
+<section id="breaking-changes" class="level3">
+<h3 class="anchored" data-anchor-id="breaking-changes">Breaking changes</h3>
+<ul>
+<li><p>The support for comments to hide violations (aka <em>suppression comments</em>, aka <code># nolint</code> comments in <code>lintr</code>) has been entirely reworked (#218). It is no longer compatible with <code>lintr</code>’s comments. Instead, Jarl now uses <code># jarl-ignore</code> comments and follows different rules regarding the syntax and location of those comments. Detailed documentation is available in the section <a href="https://jarl.etiennebacher.com/howto/suppression-comments" target="_blank">“Suppression comments”</a> on the website. As part of this rewrite, the following rules have been added:</p>
+<ul>
+<li><code>blanket_suppression</code> (#243)</li>
+<li><code>misnamed_suppression</code> (#309)</li>
+<li><code>misplaced_file_suppression</code> (#305)</li>
+<li><code>misplaced_suppression</code> (#307)</li>
+<li><code>unexplained_suppression</code> (#304)</li>
+<li><code>unmatched_range_suppression</code> (#312)</li>
+<li><code>unused_suppression</code> (#310)</li>
+</ul></li>
+</ul>
+</section>
+<section id="features-1" class="level3">
+<h3 class="anchored" data-anchor-id="features-1">Features</h3>
+<ul>
+<li><p>New CLI argument <code>--statistics</code> to show the number of violations per rule instead of the details of each violation. Jarl prints a hint to use this argument when more than 15 violations are reported (only when <code>--output-format</code> is <code>concise</code> or <code>full</code>). This value can be configured with the environment variable <code>JARL_N_VIOLATIONS_HINT_STAT</code>. (#250, #266)</p></li>
+<li><p>Jarl now looks in parent folders for <code>jarl.toml</code>. It searches until the user config folder is reached (the location of this folder depends on the OS: <code>~/.config</code> on Unix and <code>~/AppData/Roaming</code> on Windows). Jarl uses the first <code>jarl.toml</code> that is found. This is useful to store settings that should be common to all projects (e.g.&nbsp;<code>assignment = "&lt;-"</code>) without creating a <code>jarl.toml</code>, which is a common situation for standalone R scripts. (#253)</p></li>
+<li><p>New rules:</p>
+<ul>
+<li><code>equals_nan</code> (#284)</li>
+<li><code>equals_null</code> (#283)</li>
+<li><code>for_loop_dup_index</code> (#327)</li>
+<li><code>if_always_true</code> (#311, <span class="citation" data-cites="bjyberg">@bjyberg</span>)</li>
+<li><code>internal_function</code> (#291)</li>
+<li><code>redundant_ifelse</code> (#260)</li>
+<li><code>unnecessary_nesting</code> (#268)</li>
+<li><code>unreachable_code</code> (#261)</li>
+</ul></li>
+<li><p>When the output format is <code>full</code> or <code>concise</code>, rule names now have a hyperlink leading to the website documentation (#278).</p></li>
+<li><p><code>any_is_na</code> now reports <code>NA %in% x</code> (#286).</p></li>
+</ul>
+</section>
+<section id="other-changes" class="level3">
+<h3 class="anchored" data-anchor-id="other-changes">Other changes</h3>
+<ul>
+<li><p>The following rules are now disabled by default. They still exist and the user can choose to use them, but they were deemed too noisy for limited benefit to be enabled by default:</p>
+<ul>
+<li><code>assignment</code> (#258)</li>
+<li><code>fixed_regex</code> (#279)</li>
+<li><code>sample_int</code> (#262)</li>
+</ul></li>
+<li><p><code>equals_na</code> now reports <code>x %in% NA</code> cases, as documented (#285).</p></li>
+<li><p>There are now binaries available for <code>linux-musl</code> (<code>x64</code> and <code>arm64</code>) (#287).</p></li>
+</ul>
+</section>
+<section id="bug-fixes-1" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-1">Bug fixes</h3>
+<ul>
+<li><p>When <code>output-format</code> is <code>json</code> or <code>github</code>, additional information displayed in the terminal (e.g.&nbsp;timing) isn’t included anymore to avoid parsing errors (#254).</p></li>
+<li><p>Fixed a bug in the number of “fixable diagnostics” reported when the arg <code>fixable</code> is present in <code>jarl.toml</code> but <code>--fix</code> is not passed (#255).</p></li>
+<li><p><code>fixed_regex</code> is now correctly classified as “Performance” instead of “Readability” rule internally (#279).</p></li>
+<li><p>Default values of function parameters are now analyzed too (#282).</p></li>
+<li><p><code>duplicated_arguments</code> doesn’t report anymore cases where argument names <code>"</code> and <code>'</code> were conflated, e.g.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="cf">switch</span>(x, <span class="st">`</span><span class="at">"</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"double"</span>, <span class="st">`</span><span class="at">'</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"single"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>(#288).</p></li>
+</ul>
+</section>
+<section id="documentation" class="level3">
+<h3 class="anchored" data-anchor-id="documentation">Documentation</h3>
+<ul>
+<li>New section in the <code>Integrations</code> page to show how to use Jarl in various CI/CD platforms (#289, <span class="citation" data-cites="philipp-baumann">@philipp-baumann</span>).</li>
+</ul>
+</section>
+</section>
+<section id="section-2" class="level2">
+<h2 class="anchored" data-anchor-id="section-2">0.3.0</h2>
+<section id="breaking-changes-1" class="level3">
+<h3 class="anchored" data-anchor-id="breaking-changes-1">Breaking changes</h3>
+<ul>
+<li><p>Jarl now excludes by default file paths matching the following patterns: <code>.git/</code>, <code>renv/</code>, <code>revdep/</code>, <code>cpp11.R</code>, <code>RcppExports.R</code>, <code>extendr-wrappers.R</code>, and <code>import-standalone-*.R</code>.</p>
+<p>A new CLI argument <code>--no-default-exclude</code> can be used to check those files as well. This argument overrides the <code>default-exclude = true</code> option when set in <code>jarl.toml</code> (#178, <span class="citation" data-cites="novica">@novica</span>).</p></li>
+</ul>
+</section>
+<section id="features-2" class="level3">
+<h3 class="anchored" data-anchor-id="features-2">Features</h3>
+<ul>
+<li><code>--output-format json</code> now contains two fields <code>diagnostics</code> and <code>errors</code> (#219).</li>
+<li>Better support for namespaced function calls, both when reporting violations and when fixing them (#221).</li>
+<li>The <code>class_equals</code> rule now also reports cases like <code>identical(class(x), "foo")</code> and <code>identical("foo", class(x))</code> (#234).</li>
+<li>New rules:
+<ul>
+<li><code>expect_s3_class</code> (#235)</li>
+<li><code>expect_type</code> (#226)</li>
+<li><code>fixed_regex</code> (#227)</li>
+<li><code>sprintf</code> (#224)</li>
+<li><code>string_boundary</code> (#225)</li>
+<li><code>vector_logic</code> (#238)</li>
+</ul></li>
+</ul>
+</section>
+<section id="fixes" class="level3">
+<h3 class="anchored" data-anchor-id="fixes">Fixes</h3>
+<ul>
+<li><p><code># nolint</code> comments are now properly applied to nodes that are function arguments, e.g.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">foo</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># nolint</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(x))</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>does not report a violation anymore (#229).</p></li>
+</ul>
+</section>
+<section id="other-changes-1" class="level3">
+<h3 class="anchored" data-anchor-id="other-changes-1">Other changes</h3>
+<ul>
+<li><code>expect_named</code> no longer reports cases like <code>expect_equal(x, names(y))</code> because rewriting those as <code>expect_named(y, x)</code> would potentially change the intent of the test and the way it is read (#220).</li>
+</ul>
+</section>
+</section>
+<section id="section-3" class="level2">
+<h2 class="anchored" data-anchor-id="section-3">0.2.1</h2>
+<section id="other" class="level3">
+<h3 class="anchored" data-anchor-id="other">Other</h3>
+<ul>
+<li>Important performance improvement when using <code>--fix</code>, in particular in projects with many R files (#217).</li>
+</ul>
+</section>
+</section>
+<section id="section-4" class="level2">
+<h2 class="anchored" data-anchor-id="section-4">0.2.0</h2>
+<section id="breaking-changes-2" class="level3">
+<h3 class="anchored" data-anchor-id="breaking-changes-2">Breaking changes</h3>
+<ul>
+<li>For consistency between CLI arguments and <code>jarl.toml</code> arguments, the following CLI arguments are renamed (#199):
+<ul>
+<li><code>--select-rules</code> becomes <code>--select</code></li>
+<li><code>--ignore-rules</code> becomes <code>--ignore</code></li>
+<li><code>--assignment-op</code> becomes <code>--assignment</code></li>
+</ul></li>
+</ul>
+</section>
+<section id="features-3" class="level3">
+<h3 class="anchored" data-anchor-id="features-3">Features</h3>
+<ul>
+<li>New argument <code>extend-select</code> in <code>jarl.toml</code> and <code>--extend-select</code> in the CLI to select additional rules on top of the existing selection. This can be useful to select opt-in rules in addition to the default set of rules (#193).</li>
+<li>Added support for <code>seq</code> and <code>seq2</code> rules (#187).</li>
+<li>Added support for several rules related to <code>testthat</code>. Those rules are disabled by default and can be enabled by combining <code>select</code> or <code>extend-select</code> with the rule name or the <code>TESTTHAT</code> group rule name. Those rules are:
+<ul>
+<li><code>expect_length</code> (#211)</li>
+<li><code>expect_named</code> (#212)</li>
+<li><code>expect_not</code> (#204)</li>
+<li><code>expect_null</code> (#202)</li>
+<li><code>expect_true_false</code> (#191)</li>
+</ul></li>
+</ul>
+</section>
+<section id="fixes-1" class="level3">
+<h3 class="anchored" data-anchor-id="fixes-1">Fixes</h3>
+<ul>
+<li><code>implicit_assignment</code> no longer reports cases inside <code>quote()</code> (#209).</li>
+</ul>
+</section>
+<section id="documentation-1" class="level3">
+<h3 class="anchored" data-anchor-id="documentation-1">Documentation</h3>
+<ul>
+<li>Added section on Neovim to the <a href="https://jarl.etiennebacher.com/howto/editors" target="_blank">Editors</a> page (#188, <span class="citation" data-cites="bjyberg">@bjyberg</span>).</li>
+<li>Added page “Tutorial: add a new rule” (#183).</li>
+</ul>
+</section>
+</section>
+<section id="section-5" class="level2">
+<h2 class="anchored" data-anchor-id="section-5">0.1.2</h2>
+<section id="features-4" class="level3">
+<h3 class="anchored" data-anchor-id="features-4">Features</h3>
+<ul>
+<li>Added support for <code>list2df</code> rule (#179).</li>
+<li>Added support for <code>browser</code> rule (#185, <span class="citation" data-cites="jonocarroll">@jonocarroll</span>).</li>
+<li>Added support for <code>system_file</code> rule (#186).</li>
+</ul>
+</section>
+<section id="fixes-2" class="level3">
+<h3 class="anchored" data-anchor-id="fixes-2">Fixes</h3>
+<ul>
+<li>(Hopefully) Fixed wrong printing of ANSI characters in multiple terminals on Windows (#179, thanks <span class="citation" data-cites="novica">@novica</span> for the report).</li>
+</ul>
+</section>
+<section id="documentation-2" class="level3">
+<h3 class="anchored" data-anchor-id="documentation-2">Documentation</h3>
+<ul>
+<li>Added sections on RStudio and Helix to the <a href="https://jarl.etiennebacher.com/howto/editors" target="_blank">Editors</a> page.</li>
+<li>Added installation instructions using Scoop on Windows.</li>
+</ul>
+</section>
+</section>
+<section id="section-6" class="level2">
+<h2 class="anchored" data-anchor-id="section-6">0.1.1</h2>
+<section id="fixes-3" class="level3">
+<h3 class="anchored" data-anchor-id="fixes-3">Fixes</h3>
+<ul>
+<li>Fix discovery of <code>jarl.toml</code> by the Jarl extension (#175, thanks <span class="citation" data-cites="DavisVaughan">@DavisVaughan</span> for the report).</li>
+<li>Rule <code>duplicated_argument</code> no longer reports <code>cli_</code> functions where multiple arguments have the same name (#176, thanks <span class="citation" data-cites="DavisVaughan">@DavisVaughan</span> for the report).</li>
+</ul>
+</section>
+<section id="documentation-3" class="level3">
+<h3 class="anchored" data-anchor-id="documentation-3">Documentation</h3>
+<ul>
+<li>The docs of <code>assignment</code> rule now explain how to change the preferred assignment operator.</li>
+</ul>
+</section>
+</section>
+<section id="section-7" class="level2">
+<h2 class="anchored" data-anchor-id="section-7">0.1.0</h2>
+<p>First release (announced)</p>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/jarl\.etiennebacher\.com\/dev\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/changelog.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
