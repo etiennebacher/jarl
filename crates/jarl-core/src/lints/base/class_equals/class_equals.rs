@@ -3,6 +3,8 @@ use crate::utils::{get_arg_by_position, get_function_name, node_contains_comment
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// Version added: 0.0.8
+///
 /// ## What it does
 ///
 /// Checks for usage of `class(...) == "some_class"`,

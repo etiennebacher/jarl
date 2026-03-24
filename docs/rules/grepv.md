@@ -1,4 +1,7 @@
 # grepv
+::: {.callout-note title="Added in 0.0.16" .low-opacity}
+:::
+
 ## What it does
 
 Checks for usage of `grep(..., value = TRUE)` and recommends using

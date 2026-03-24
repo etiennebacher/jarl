@@ -1,4 +1,7 @@
 # expect_named
+::: {.callout-note title="Added in 0.2.0" .low-opacity}
+:::
+
 ## What it does
 
 Checks for usage of `expect_equal(names(x), n)` and `expect_identical(names(x), n)`.

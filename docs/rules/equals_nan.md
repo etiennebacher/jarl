@@ -1,4 +1,7 @@
 # equals_nan
+::: {.callout-note title="Added in 0.4.0" .low-opacity}
+:::
+
 ## What it does
 
 Check for `x == NaN`, `x != NaN` and `x %in% NaN`, and replaces those by

@@ -121,3 +121,8 @@ div.callout-note.callout {
 #quarto-announcement > .quarto-announcement-content > p {
   color: white !important;
 }
+
+/* Link for 'Added in version ...' in rule pages */
+.low-opacity {
+  opacity: 0.75;
+}

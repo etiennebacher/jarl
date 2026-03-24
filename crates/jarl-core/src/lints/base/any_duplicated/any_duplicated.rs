@@ -4,6 +4,8 @@ use air_r_syntax::*;
 
 pub struct AnyDuplicated;
 
+/// Version added: 0.0.8
+///
 /// ## What it does
 ///
 /// Checks for usage of `any(duplicated(...))`.

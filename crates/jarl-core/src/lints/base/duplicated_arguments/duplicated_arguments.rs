@@ -6,6 +6,8 @@ use air_r_syntax::*;
 use anyhow::anyhow;
 use biome_rowan::AstNode;
 
+/// Version added: 0.0.8
+///
 /// ## What it does
 ///
 /// Checks for duplicated arguments in function calls.

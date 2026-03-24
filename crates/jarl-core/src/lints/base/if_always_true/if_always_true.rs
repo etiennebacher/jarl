@@ -4,6 +4,8 @@ use biome_rowan::AstNode;
 
 pub struct IfAlwaysTrue;
 
+/// Version added: 0.4.0
+///
 /// ## What it does
 ///
 /// Detects `if` conditions that always evaluate to `TRUE`. This is only triggered

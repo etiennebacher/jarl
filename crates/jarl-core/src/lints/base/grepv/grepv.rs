@@ -6,6 +6,8 @@ use air_r_syntax::*;
 use biome_rowan::AstNode;
 pub struct Grepv;
 
+/// Version added: 0.0.16
+///
 /// ## What it does
 ///
 /// Checks for usage of `grep(..., value = TRUE)` and recommends using

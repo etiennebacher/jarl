@@ -1,4 +1,7 @@
 # all_equal
+::: {.callout-note title="Added in 0.0.19" .low-opacity}
+:::
+
 ## What it does
 
 Checks for dangerous usage of `all.equal(...)`, for instance in `if()`

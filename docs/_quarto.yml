@@ -6,7 +6,11 @@ filters:
 format:
   html:
     theme: morph
-    css: styles.css
+    css:
+    - styles.css
+    - dark-mode.css
+    include-in-header:
+      file: dark-mode-header.html
     toc: true
     toc-depth: 4
     code-copy: true
@@ -15,7 +19,7 @@ language:
 execute:
   eval: false
 website:
-  title: jarl
+  title: Jarl
   repo-url: https://github.com/etiennebacher/jarl
   repo-subdir: docs
   repo-actions:
@@ -43,6 +47,8 @@ website:
         href: howto/rmarkdown-quarto.md
       - text: R versions
         href: howto/r-versions.md
+      - text: Package-specific rules
+        href: howto/package-specific.md
       - text: Editor setup
         href: howto/editors.md
       - text: Continuous integration
@@ -88,6 +94,7 @@ website:
       - rules/dplyr_group_by_ungroup.md
       - rules/duplicated_arguments.md
       - rules/duplicated_function_definition.md
+      - rules/empty_assignment.md
       - rules/equals_na.md
       - rules/equals_nan.md
       - rules/equals_null.md
@@ -118,6 +125,7 @@ website:
       - rules/misplaced_file_suppression.md
       - rules/misplaced_suppression.md
       - rules/numeric_leading_zero.md
+      - rules/nzchar.md
       - rules/outdated_suppression.md
       - rules/outer_negation.md
       - rules/quotes.md

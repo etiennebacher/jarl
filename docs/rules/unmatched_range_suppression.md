@@ -1,4 +1,7 @@
 # unmatched_range_suppression
+::: {.callout-note title="Added in 0.4.0" .low-opacity}
+:::
+
 ## What it does
 
 Checks for `jarl-ignore-start` and `jarl-ignore-end` comments that don't have

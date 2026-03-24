@@ -128,13 +128,25 @@ scoop update jarl
 
 ### Development version
 
-Some pre-releases may be available from the [Releases page](https://github.com/etiennebacher/jarl/releases) (the version usually contains `alpha`).
+Some pre-releases may be available from the [Releases page](https://github.com/etiennebacher/jarl/releases) (the version usually contains `alpha`, see the installation instructions there).
 
 Alternatively, if you have Rust installed, you should be able to get the development version with:
 
 ```sh
 cargo install --git https://github.com/etiennebacher/jarl jarl --profile=release
 ```
+
+<details>
+<summary style="padding-bottom: 0.5rem;">Click if you installed the development version via <code>cargo</code></summary>
+
+Using the pre-built binaries will install Jarl in `$HOME/.local/bin`, e.g. `/home/etienne/.local/bin/jarl`.
+
+Using `cargo` will install Jarl in `$HOME/.cargo/bin`, e.g. `/home/etienne/.cargo/bin/jarl`.
+
+If you have both installed, the `.local/bin` one will take precedence.
+Therefore, to run the version compiled with `cargo`, you must either delete the one in `.local/bin` or use the absolute path, e.g. `/home/etienne/.cargo/bin/jarl check .`.
+
+</details>
 
 ## Related work
 

@@ -4,6 +4,8 @@ use std::path::{Path, PathBuf};
 
 use crate::package::{FileScope, SharedFileData};
 
+/// Version added: 0.5.0
+///
 /// ## What it does
 ///
 /// Checks for duplicated function definitions in R packages.

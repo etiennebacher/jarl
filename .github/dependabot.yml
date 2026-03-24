@@ -25,6 +25,14 @@ updates:
     ignore:
       - dependency-name: '*'
         update-types: ['version-update:semver-patch']
+      # Replaces the "Url" type by "Uri", which doesn't make unanimity:
+      # https://github.com/gluon-lang/lsp-types/issues/284
+      - dependency-name: "lsp-types:*"
+      # Big perf hit in some cases: https://github.com/etiennebacher/jarl/pull/354
+      - dependency-name: "annotate-snippets:*"
+      # Enable this one once they have a proper changelog:
+      # https://github.com/zed-industries/zed/discussions/52144
+      - dependency-name: "zed_extension_api:*"
     commit-message:
       prefix: build
       prefix-development: chore(rust)
