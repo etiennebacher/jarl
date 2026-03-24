@@ -1,1 +1,1 @@
-Sitemap: https://etiennebacher.github.io/jarl/sitemap.xml
+Sitemap: https://jarl.etiennebacher.com/sitemap.xml

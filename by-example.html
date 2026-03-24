@@ -323,6 +323,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </i> 
 <span class="menu-text"></span></a>
   </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-stable-(0.0.18" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">stable (0.0.18)</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-stable-(0.0.18">    
+        <li>
+    <a class="dropdown-item" href="https://jarl.etiennebacher.com/">
+ <span class="dropdown-text">stable (0.0.18)</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="https://jarl.etiennebacher.com/dev/">
+ <span class="dropdown-text">dev</span></a>
+  </li>  
+    </ul>
+  </li>
 </ul>
           </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
@@ -747,7 +762,7 @@ Found 1 error.
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp("https:\/\/etiennebacher\.github\.io\/jarl\/");
+        var filterRegex = new RegExp("https:\/\/jarl\.etiennebacher\.com\/");
       var isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
