@@ -131,7 +131,7 @@ jobs:
         run: |
           # Clear everything at the root of gh-pages except the /dev/ folder
           # (which holds the dev docs), then copy the stable build in.
-          find gh-pages-dist -maxdepth 1 ! -name 'dev' ! -name '.git' ! -name '.' -exec rm -rf {} +
+          find gh-pages-dist -mindepth 1 -maxdepth 1 ! -name 'dev' ! -name '.git' -exec rm -rf {} +
           cp -r docs-site/. gh-pages-dist/
 
       - name: Commit and push
