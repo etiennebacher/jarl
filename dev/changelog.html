@@ -359,18 +359,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#changelog" id="toc-changelog" class="nav-link active" data-scroll-target="#changelog">Changelog</a>
   <ul>
+  <li><a href="#development-version" id="toc-development-version" class="nav-link" data-scroll-target="#development-version">Development version</a>
+  <ul class="collapse">
+  <li><a href="#bug-fixes" id="toc-bug-fixes" class="nav-link" data-scroll-target="#bug-fixes">Bug fixes</a></li>
+  </ul></li>
   <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section">0.5.0</a>
   <ul class="collapse">
   <li><a href="#deprecations" id="toc-deprecations" class="nav-link" data-scroll-target="#deprecations">Deprecations</a></li>
   <li><a href="#features" id="toc-features" class="nav-link" data-scroll-target="#features">Features</a></li>
-  <li><a href="#bug-fixes" id="toc-bug-fixes" class="nav-link" data-scroll-target="#bug-fixes">Bug fixes</a></li>
+  <li><a href="#bug-fixes-1" id="toc-bug-fixes-1" class="nav-link" data-scroll-target="#bug-fixes-1">Bug fixes</a></li>
   </ul></li>
   <li><a href="#section-1" id="toc-section-1" class="nav-link" data-scroll-target="#section-1">0.4.0</a>
   <ul class="collapse">
   <li><a href="#breaking-changes" id="toc-breaking-changes" class="nav-link" data-scroll-target="#breaking-changes">Breaking changes</a></li>
   <li><a href="#features-1" id="toc-features-1" class="nav-link" data-scroll-target="#features-1">Features</a></li>
   <li><a href="#other-changes" id="toc-other-changes" class="nav-link" data-scroll-target="#other-changes">Other changes</a></li>
-  <li><a href="#bug-fixes-1" id="toc-bug-fixes-1" class="nav-link" data-scroll-target="#bug-fixes-1">Bug fixes</a></li>
+  <li><a href="#bug-fixes-2" id="toc-bug-fixes-2" class="nav-link" data-scroll-target="#bug-fixes-2">Bug fixes</a></li>
   <li><a href="#documentation" id="toc-documentation" class="nav-link" data-scroll-target="#documentation">Documentation</a></li>
   </ul></li>
   <li><a href="#section-2" id="toc-section-2" class="nav-link" data-scroll-target="#section-2">0.3.0</a>
@@ -415,6 +419,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="changelog" class="level1">
 <h1>Changelog</h1>
+<section id="development-version" class="level2">
+<h2 class="anchored" data-anchor-id="development-version">Development version</h2>
+<section id="bug-fixes" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h3>
+<ul>
+<li>Suppression comments in <code>@examples</code> and <code>@examplesIf</code> now work correctly (#443).</li>
+</ul>
+</section>
+</section>
 <section id="section" class="level2">
 <h2 class="anchored" data-anchor-id="section">0.5.0</h2>
 <section id="deprecations" class="level3">
@@ -470,8 +483,8 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <li><p>The CLI now errors early when some incompatible arguments are used (#437).</p></li>
 </ul>
 </section>
-<section id="bug-fixes" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h3>
+<section id="bug-fixes-1" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-1">Bug fixes</h3>
 <ul>
 <li><p><code>fixed_regex</code> could loop infinitely trying to add <code>fixed = TRUE</code>. This is fixed (#388).</p></li>
 <li><p>Some fixes to ensure that automatic fixes don’t introduce new violations or new parsing errors (#389).</p></li>
@@ -530,8 +543,8 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <li><p>There are now binaries available for <code>linux-musl</code> (<code>x64</code> and <code>arm64</code>) (#287).</p></li>
 </ul>
 </section>
-<section id="bug-fixes-1" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-1">Bug fixes</h3>
+<section id="bug-fixes-2" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-2">Bug fixes</h3>
 <ul>
 <li><p>When <code>output-format</code> is <code>json</code> or <code>github</code>, additional information displayed in the terminal (e.g.&nbsp;timing) isn’t included anymore to avoid parsing errors (#254).</p></li>
 <li><p>Fixed a bug in the number of “fixable diagnostics” reported when the arg <code>fixable</code> is present in <code>jarl.toml</code> but <code>--fix</code> is not passed (#255).</p></li>
