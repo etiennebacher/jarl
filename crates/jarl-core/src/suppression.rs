@@ -371,20 +371,6 @@ impl SuppressionManager {
             );
         }
 
-        // Process dangling comments
-        for comment in comments.dangling_comments(node) {
-            Self::process_comment(
-                comment.piece().text(),
-                comment.piece().text_range(),
-                node_range,
-                full_node_range,
-                collector,
-                false,
-                false, // not trailing
-                nesting_level,
-            );
-        }
-
         // Recursively process children
         // Increment nesting level when entering braced expressions (function bodies, etc.)
         let mut is_first = is_first_expression;
