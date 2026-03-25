@@ -91,8 +91,12 @@ pub struct SkipRegion {
 /// Represents a node-level suppression (# jarl-ignore rule: explanation)
 #[derive(Debug, Clone)]
 pub struct NodeSuppression {
-    /// The range of the node this suppression applies to
+    /// The trimmed range of the node this suppression applies to (no trivia)
     pub node_range: TextRange,
+    /// The full range of the node including leading/trailing trivia.
+    /// Used to match roxygen diagnostics whose remapped ranges fall within
+    /// the leading comments of the node.
+    pub full_node_range: TextRange,
     /// The rule being suppressed
     pub rule: Rule,
     /// The range of the suppression comment
@@ -284,6 +288,7 @@ impl SuppressionManager {
         nesting_level: usize,
     ) {
         let node_range = node.text_trimmed_range();
+        let full_node_range = node.text_range_with_trivia();
 
         // Process leading comments (file suppressions only valid here).
         //
@@ -338,6 +343,7 @@ impl SuppressionManager {
                     text,
                     comment_range,
                     node_range,
+                    full_node_range,
                     collector,
                     is_first_expression,
                     false, // not trailing
@@ -357,6 +363,7 @@ impl SuppressionManager {
                 comment.piece().text(),
                 range,
                 node_range,
+                full_node_range,
                 collector,
                 false,
                 is_true_end_of_line,
@@ -370,6 +377,7 @@ impl SuppressionManager {
                 comment.piece().text(),
                 comment.piece().text_range(),
                 node_range,
+                full_node_range,
                 collector,
                 false,
                 false, // not trailing
@@ -421,11 +429,14 @@ impl SuppressionManager {
         }
     }
 
-    /// Process a single comment and update the collector
+    /// Process a single comment and update the collector.
+    /// `node_ranges` is `(trimmed_range, full_range_with_trivia)`.
+    #[allow(clippy::too_many_arguments)]
     fn process_comment(
         text: &str,
         comment_range: TextRange,
         node_range: TextRange,
+        full_node_range: TextRange,
         collector: &mut CommentCollector,
         allow_file_suppression: bool,
         is_trailing: bool,
@@ -486,6 +497,7 @@ impl SuppressionManager {
                         // Collect node-level suppressions
                         collector.node_suppressions.push(NodeSuppression {
                             node_range,
+                            full_node_range,
                             rule,
                             comment_range,
                         });
@@ -658,11 +670,14 @@ impl SuppressionManager {
         }
 
         // Check node-level suppressions (cascading: diagnostic within node range,
-        // or node within diagnostic range for multi-node diagnostics like pipe chains)
+        // or node within diagnostic range for multi-node diagnostics like pipe chains).
+        // Also check full_node_range (includes leading trivia) to match roxygen
+        // diagnostics whose remapped ranges fall within the node's leading comments.
         for sup in &self.node_suppressions {
             if sup.rule == rule
                 && (sup.node_range.contains_range(diag.range)
-                    || diag.range.contains_range(sup.node_range))
+                    || diag.range.contains_range(sup.node_range)
+                    || sup.full_node_range.contains_range(diag.range))
             {
                 self.used_suppressions.insert(sup.comment_range);
                 return true;

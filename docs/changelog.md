@@ -1,5 +1,11 @@
 # Changelog
 
+## Development version
+
+### Bug fixes
+
+* Suppression comments in `@examples` and `@examplesIf` now work correctly (#443).
+
 ## 0.5.0
 
 ### Deprecations

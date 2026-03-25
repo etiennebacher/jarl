@@ -89,16 +89,26 @@ pub fn extract_roxygen_examples(syntax: &RSyntaxNode, contents: &str) -> Vec<Rox
                     line_prefix_lengths.push(prefix_len);
                 }
             } else {
-                // Non-roxygen comment breaks the block
+                // Non-roxygen comment breaks the block, unless it is a
+                // `# jarl-ignore` directive meant to suppress a violation
+                // in the examples code that follows.
                 if in_block {
-                    flush_chunk(
-                        &mut chunks,
-                        &mut code_lines,
-                        &mut line_start_offsets,
-                        &mut line_prefix_lengths,
-                    );
-                    in_examples = false;
-                    in_block = false;
+                    if text.contains("jarl-ignore") {
+                        // Keep the roxygen block open so the examples
+                        // after this comment are still extracted and linted.
+                        // The directive itself stays in the main file's
+                        // suppression manager and is NOT injected into the
+                        // extracted chunk.
+                    } else {
+                        flush_chunk(
+                            &mut chunks,
+                            &mut code_lines,
+                            &mut line_start_offsets,
+                            &mut line_prefix_lengths,
+                        );
+                        in_examples = false;
+                        in_block = false;
+                    }
                 }
             }
         }
