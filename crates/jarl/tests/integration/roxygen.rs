@@ -742,3 +742,113 @@ foo <- function(x) x
 
     Ok(())
 }
+
+// ---------------------------------------------------------------------------
+// suppression comments work
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_suppression_comments() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+# jarl-ignore any_is_na: <reason>
+#' any(is.na(x))
+foo <- function(x) x
+
+#' Title
+#' @examples
+# jarl-ignore-start any_is_na: <reason>
+#' any(is.na(x))
+# jarl-ignore-end any_is_na
+foo2 <- function(x) x
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_unused_suppression_comments() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+# jarl-ignore any_duplicated: <reason>
+#' any(is.na(x))
+foo <- function(x) x
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: outdated_suppression
+     --> R/test.R:3:1
+      |
+    3 | # jarl-ignore any_duplicated: <reason>
+      | -------------------------------------- This suppression comment is unused, no violation would be reported without it.
+      |
+      = help: Remove this suppression comment or verify that it's still needed.
+
+    warning: any_is_na
+     --> R/test.R:4:4
+      |
+    4 | #' any(is.na(x))
+      |    ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}

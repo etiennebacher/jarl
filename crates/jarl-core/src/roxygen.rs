@@ -89,17 +89,9 @@ pub fn extract_roxygen_examples(syntax: &RSyntaxNode, contents: &str) -> Vec<Rox
                     line_prefix_lengths.push(prefix_len);
                 }
             } else {
-                // Non-roxygen comment breaks the block
-                if in_block {
-                    flush_chunk(
-                        &mut chunks,
-                        &mut code_lines,
-                        &mut line_start_offsets,
-                        &mut line_prefix_lengths,
-                    );
-                    in_examples = false;
-                    in_block = false;
-                }
+                // Non-roxygen comments (e.g. `# plain comment`) do not
+                // break a roxygen block. roxygen2 simply skips them, so
+                // we do the same: keep the block open and ignore the line.
             }
         }
 

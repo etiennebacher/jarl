@@ -174,6 +174,19 @@ pub fn get_checks(
         check_expression(&expr, &mut checker)?;
     }
 
+    // Lint R code inside roxygen @examples / @examplesIf sections.
+    // Collected before check_document so that suppression filtering (which
+    // runs inside check_document) can match `# jarl-ignore` comments in
+    // the main file against violations found in roxygen examples.
+    if config.check_roxygen
+        && contents.contains("#'")
+        && contents.contains("@examples")
+        && is_in_r_package(file) == Some(true)
+    {
+        let roxygen_diagnostics = get_checks_roxygen(syntax, file, config, contents)?;
+        checker.diagnostics.extend(roxygen_diagnostics);
+    }
+
     // We run checks at document-level. This includes checks that require the
     // entire document (like top-level unreachable code) and comment-related
     // checks (blanket, unexplained, misplaced, misnamed, unused suppressions).
@@ -226,18 +239,6 @@ pub fn get_checks(
             x
         })
         .collect();
-
-    // Lint R code inside roxygen @examples / @examplesIf sections.
-    // Only applies to files inside an R package (R/ dir with DESCRIPTION above).
-    let mut diagnostics = diagnostics;
-    if config.check_roxygen
-        && contents.contains("#'")
-        && contents.contains("@examples")
-        && is_in_r_package(file) == Some(true)
-    {
-        let roxygen_diagnostics = get_checks_roxygen(syntax, file, config, contents)?;
-        diagnostics.extend(roxygen_diagnostics);
-    }
 
     let loc_new_lines = find_new_lines(syntax)?;
     let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
