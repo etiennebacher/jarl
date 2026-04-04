@@ -158,6 +158,21 @@ mod tests {
         expect_no_lint("f <- function() x\nx <- 1", "unused_object", None);
     }
 
+    #[test]
+    fn test_no_lint_when_on_exit_refers_to_future_objects() {
+        expect_no_lint(
+            "
+        f <- function() {
+            on.exit(print(a))
+            a <- 1
+            'hi'
+        }
+        ",
+            "unused_object",
+            None,
+        );
+    }
+
     // ---------------------------------------------------------------
     // Lint cases
     // ---------------------------------------------------------------
