@@ -190,7 +190,7 @@ pub struct ControlDependency {
 ///
 /// Vertices represent values, variable uses, definitions, function calls and
 /// function definitions.  Edges encode how data flows between them.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct DataflowGraph {
     /// All vertices keyed by their [`NodeId`].
     vertices: FxHashMap<NodeId, DfVertex>,
@@ -281,6 +281,34 @@ impl DataflowGraph {
 impl Default for DataflowGraph {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl fmt::Debug for DataflowGraph {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut ids: Vec<_> = self.vertices.keys().copied().collect();
+        ids.sort();
+        let mut vertices = f.debug_map();
+        for id in &ids {
+            vertices.entry(id, &self.vertices[id]);
+        }
+        vertices.finish()?;
+
+        let mut edges_list: Vec<_> = self
+            .edges
+            .iter()
+            .flat_map(|(&from, targets)| targets.iter().map(move |(&to, &bits)| (from, to, bits)))
+            .collect();
+        edges_list.sort_by_key(|(from, to, _)| (*from, *to));
+
+        write!(f, " edges: [")?;
+        for (i, (from, to, bits)) in edges_list.iter().enumerate() {
+            if i > 0 {
+                write!(f, ", ")?;
+            }
+            write!(f, "{from} --{bits}--> {to}")?;
+        }
+        write!(f, "]")
     }
 }
 
