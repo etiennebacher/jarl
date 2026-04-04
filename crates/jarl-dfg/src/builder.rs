@@ -50,6 +50,35 @@ impl DfgBuilder {
     pub fn build_from_root(root: &RSyntaxNode) -> DataflowGraph {
         let mut builder = Self::new();
         builder.process_node(root);
+
+        // Collect unresolved closure references from all function definitions,
+        // then resolve them against the final top-level environment.
+        // This handles forward references like:
+        // ```
+        // f <- function() x
+        // x <- 1
+        // f()
+        // ```
+        let unresolved: Vec<(String, NodeId)> = builder
+            .graph
+            .vertices()
+            .filter(|v| v.kind == VertexKind::FunctionDef)
+            .filter_map(|v| match &v.data {
+                VertexData::FunctionDef { unresolved, .. } => Some(unresolved.clone()),
+                _ => None,
+            })
+            .flatten()
+            .collect();
+
+        for (name, ref_id) in &unresolved {
+            if let Some(defs) = builder.env.resolve(name) {
+                for def in defs {
+                    builder
+                        .graph
+                        .add_edge(*ref_id, def.node_id, EdgeType::Reads);
+                }
+            }
+        }
         builder.graph
     }
 
@@ -595,6 +624,7 @@ impl DfgBuilder {
             cds: self.active_cds.clone(),
             data: VertexData::FunctionDef {
                 params: param_ids,
+                unresolved: closure_refs.clone(),
                 body_nodes: body_ids,
                 exit_points: exit_point_ids,
             },

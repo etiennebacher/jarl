@@ -153,6 +153,11 @@ mod tests {
         expect_no_lint("local({\n  x <- 1\n  print(x)\n})", "unused_object", None);
     }
 
+    #[test]
+    fn test_no_lint_with_unresolved_refs_in_function_def_resolved_later() {
+        expect_no_lint("f <- function() x\nx <- 1", "unused_object", None);
+    }
+
     // ---------------------------------------------------------------
     // Lint cases
     // ---------------------------------------------------------------

@@ -154,6 +154,7 @@ pub enum VertexData {
     /// NodeIds that belong to the nested sub-graph.
     FunctionDef {
         params: Vec<NodeId>,
+        unresolved: Vec<(String, NodeId)>,
         body_nodes: Vec<NodeId>,
         exit_points: Vec<NodeId>,
     },
