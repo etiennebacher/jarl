@@ -159,7 +159,8 @@ mod tests {
     }
 
     #[test]
-    fn test_no_lint_when_on_exit_refers_to_future_objects() {
+    fn test_with_on_exit() {
+        // no lint when on.exit() refers to objects defined after it's called
         expect_no_lint(
             "
         f <- function() {
@@ -171,10 +172,7 @@ mod tests {
             "unused_object",
             None,
         );
-    }
 
-    #[test]
-    fn test_no_lint_when_on_exit_sees_object_defined_multiple_times() {
         // See comment in `process_call()`
         expect_no_lint(
             "
@@ -189,6 +187,31 @@ mod tests {
         ",
             "unused_object",
             None,
+        );
+        // report when on.exit() doesn't use objects
+        assert_snapshot!(
+            snapshot_lint("
+f <- function() {
+    foo <- TRUE
+    on.exit(print('bye'))
+    foo <- FALSE
+}
+        "),
+            @"
+        warning: unused_object
+         --> <test>:3:5
+          |
+        3 |     foo <- TRUE
+          |     --- Object `foo` is defined but never used.
+          |
+        warning: unused_object
+         --> <test>:5:5
+          |
+        5 |     foo <- FALSE
+          |     --- Object `foo` is defined but never used.
+          |
+        Found 2 errors.
+        "
         );
     }
 
