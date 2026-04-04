@@ -251,6 +251,10 @@ impl DfgBuilder {
         if op_kind == RSyntaxKind::PIPE {
             return self.process_pipe(node);
         }
+        // Handle `%<>%` (has a read and a write edge)
+        if op_kind == RSyntaxKind::SPECIAL && op.text_trimmed() == "%<>%" {
+            return self.process_pipe_assignment(node);
+        }
 
         // Arithmetic / logical / comparison — treat as a call to the operator
         let id = self.graph.fresh_id();
@@ -540,6 +544,99 @@ impl DfgBuilder {
         })
     }
 
+    /// `x %<>% f()`, rewritten as `x <- f(x)`
+    fn process_pipe_assignment(&mut self, node: &RSyntaxNode) -> Option<DataflowInformation> {
+        let bin = RBinaryExpression::cast_ref(node)?;
+        let fields = bin.as_fields();
+        let lhs = fields.left.ok()?;
+        let rhs = fields.right.ok()?;
+
+        let def_name = node_text(lhs.syntax());
+
+        // Process both sides. The LHS is read (piped into the RHS call).
+        let lhs_info = self.process_node(lhs.syntax());
+        let rhs_info = self.process_node(rhs.syntax());
+
+        // Pipe: rhs reads lhs.
+        if let (Some(li), Some(ri)) = (&lhs_info, &rhs_info) {
+            self.graph.add_edge(ri.node_id, li.node_id, EdgeType::Reads);
+        }
+
+        // Resolve the LHS unknown refs NOW, before we register the new
+        // definition.  Otherwise the Use(x) on the LHS would resolve to
+        // the new Definition(x) instead of the prior one.
+        let mut unknown_refs = Vec::new();
+        if let Some(li) = &lhs_info {
+            for (name, ref_id) in &li.unknown_refs {
+                if let Some(defs) = self.env.resolve(name) {
+                    for def in defs {
+                        self.graph.add_edge(*ref_id, def.node_id, EdgeType::Reads);
+                    }
+                } else {
+                    unknown_refs.push((name.clone(), *ref_id));
+                }
+            }
+        }
+
+        // Definition vertex for the write-back to `x`.
+        let def_id = self.graph.fresh_id();
+        self.graph.add_vertex(DfVertex {
+            id: def_id,
+            kind: VertexKind::Definition,
+            range: lhs.syntax().text_trimmed_range(),
+            name: def_name.clone(),
+            cds: self.active_cds.clone(),
+            data: VertexData::None,
+        });
+
+        // The definition's value comes from the RHS.
+        if let Some(ri) = &rhs_info {
+            self.graph.add_edge(def_id, ri.node_id, EdgeType::DefinedBy);
+        }
+
+        // FunctionCall vertex for the `%<>%` operator itself.
+        let assign_id = self.graph.fresh_id();
+        self.graph.add_vertex(DfVertex {
+            id: assign_id,
+            kind: VertexKind::FunctionCall,
+            range: node.text_trimmed_range(),
+            name: "%<>%".to_string(),
+            cds: self.active_cds.clone(),
+            data: VertexData::None,
+        });
+        self.graph.add_edge(assign_id, def_id, EdgeType::Returns);
+        if let Some(ri) = &rhs_info {
+            self.graph.add_edge(assign_id, ri.node_id, EdgeType::Reads);
+        }
+
+        // Register the new binding in the environment.
+        let id_def = IdentifierDef { node_id: def_id, cds: self.active_cds.clone() };
+        self.env.define(&def_name, id_def);
+
+        // LHS unknown_refs were already resolved above; only collect
+        // exit_points/on_exit_nodes from LHS, plus everything from RHS.
+        let mut exit_points = Vec::new();
+        let mut on_exit_nodes = Vec::new();
+        if let Some(li) = &lhs_info {
+            exit_points.extend(li.exit_points.iter().cloned());
+            on_exit_nodes.extend(li.on_exit_nodes.iter().cloned());
+        }
+        if let Some(ri) = &rhs_info {
+            unknown_refs.extend(ri.unknown_refs.iter().cloned());
+            exit_points.extend(ri.exit_points.iter().cloned());
+            on_exit_nodes.extend(ri.on_exit_nodes.iter().cloned());
+        }
+
+        Some(DataflowInformation {
+            node_id: assign_id,
+            unknown_refs,
+            reads: vec![],
+            writes: vec![(def_name, def_id)],
+            exit_points,
+            on_exit_nodes,
+        })
+    }
+
     // ------------------------------------------------------------------
     // Function definition
     // ------------------------------------------------------------------
@@ -737,12 +834,11 @@ impl DfgBuilder {
         // might use it if it thrown because of an error in between.
         if func_name == "on.exit" {
             let mut on_exit_nodes = Vec::new();
-            if let Ok(args) = call.as_fields().arguments {
-                if let Some(Ok(first_arg)) = args.items().iter().next() {
-                    if let Some(value) = first_arg.value() {
-                        on_exit_nodes.push(value.syntax().clone());
-                    }
-                }
+            if let Ok(args) = call.as_fields().arguments
+                && let Some(Ok(first_arg)) = args.items().iter().next()
+                && let Some(value) = first_arg.value()
+            {
+                on_exit_nodes.push(value.syntax().clone());
             }
             let mut result = self.process_call_inner(node, call_id, &func_name);
             result.on_exit_nodes = on_exit_nodes;

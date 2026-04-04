@@ -363,4 +363,33 @@ mod tests {
         "
         );
     }
+
+    #[test]
+    fn test_with_assignment_pipe() {
+        // should lint: re-assigned `x` isn't used
+        assert_snapshot!(
+            snapshot_lint("
+x <- 1:3
+x %<>% sum()"
+        ),
+            @"
+        warning: unused_object
+         --> <test>:3:1
+          |
+        3 | x %<>% sum()
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+        // shouldn't lint
+        assert_snapshot!(
+            snapshot_lint("
+x <- 1:3
+x %<>% sum()
+x + 1"
+        ),
+            @"All checks passed!"
+        );
+    }
 }

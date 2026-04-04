@@ -339,5 +339,5 @@ fn is_simple_identifier(name: &str) -> bool {
 
 /// Check if a vertex name is an assignment operator.
 fn is_assignment_op(name: &str) -> bool {
-    matches!(name, "<-" | "<<-" | "->" | "->>" | "=")
+    matches!(name, "<-" | "<<-" | "->" | "->>" | "=" | "%<>%")
 }
