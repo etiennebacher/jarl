@@ -7,6 +7,8 @@ mod tests {
 
     use tempfile::Builder;
 
+    use std::collections::HashMap;
+
     use crate::check::get_checks;
     use crate::config::{ArgsConfig, build_config};
     use crate::diagnostic::Diagnostic;
@@ -40,7 +42,15 @@ mod tests {
             build_config(&check_config, None, vec![path.clone()]).expect("Failed to build config");
 
         let pkg = PackageAnalysis::default();
-        get_checks(content, &path, &config, &pkg).expect("get_checks failed")
+        get_checks(
+            content,
+            &path,
+            &config,
+            &pkg,
+            &HashMap::new(),
+            &HashMap::new(),
+        )
+        .expect("get_checks failed")
     }
 
     // --- Lint detection ---
@@ -363,7 +373,14 @@ mod tests {
         };
         let config = build_config(&check_config, None, vec![path.clone()]).unwrap();
         let pkg = PackageAnalysis::default();
-        let result = get_checks(content, &path, &config, &pkg);
+        let result = get_checks(
+            content,
+            &path,
+            &config,
+            &pkg,
+            &HashMap::new(),
+            &HashMap::new(),
+        );
         assert!(
             result.is_ok(),
             "parse error in a chunk should not bubble up as Err"

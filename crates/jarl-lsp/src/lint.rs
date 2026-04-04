@@ -20,7 +20,7 @@ use jarl_core::config::{ArgsConfig, build_config};
 use jarl_core::diagnostic::Diagnostic as JarlDiagnostic;
 use jarl_core::discovery::{DiscoveredSettings, discover_settings};
 use jarl_core::fs::{has_r_extension, relativize_path};
-use jarl_core::package::{compute_package_analysis, is_in_r_package};
+use jarl_core::package::{is_in_r_package, make_package_analysis, summarize_package_info};
 use jarl_core::settings::Settings;
 
 /// Fix information that can be attached to a diagnostic for code actions
@@ -161,16 +161,30 @@ fn run_jarl_linting(
     }
 
     // Compute package-level analysis using the real file's sibling R files.
-    let pkg = if let Some(package_files) = collect_sibling_r_files(file_path) {
-        compute_package_analysis(&package_files, &config)
-    } else {
-        Default::default()
-    };
+    let analysis_paths =
+        collect_sibling_r_files(file_path).unwrap_or_else(|| vec![file_path.to_path_buf()]);
+    let (pkg_contexts, file_pkg_info) = summarize_package_info(&analysis_paths);
+    let namespace_contents: std::collections::HashMap<PathBuf, String> = pkg_contexts
+        .iter()
+        .filter_map(|(root, ctx)| {
+            ctx.namespace_content
+                .as_ref()
+                .map(|c| (root.clone(), c.clone()))
+        })
+        .collect();
+    let pkg = make_package_analysis(&analysis_paths, &config, &namespace_contents);
 
     // Call get_checks directly with the in-memory content and the real
     // (relativized) file path, avoiding the old tempfile round-trip.
     let rel_path = PathBuf::from(relativize_path(file_path));
-    let mut diagnostics = get_checks(content, &rel_path, &config, &pkg)?;
+    let mut diagnostics = get_checks(
+        content,
+        &rel_path,
+        &config,
+        &pkg,
+        &pkg_contexts,
+        &file_pkg_info,
+    )?;
 
     // Hide unused_function diagnostics when the package-wide count exceeds
     // the threshold, matching the CLI behaviour. The LSP never passes

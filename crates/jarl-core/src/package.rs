@@ -3,7 +3,9 @@ use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
+use crate::checker::DEFAULT_PACKAGES;
 use crate::config::Config;
+use crate::description::Description;
 use crate::fs::has_r_extension;
 pub use crate::lints::base::duplicated_function_definition::duplicated_function_definition::is_in_r_package;
 use crate::lints::base::duplicated_function_definition::duplicated_function_definition::{
@@ -12,12 +14,13 @@ use crate::lints::base::duplicated_function_definition::duplicated_function_defi
 use crate::lints::base::unused_function::unused_function::{
     collect_files, compute_unused_from_shared, has_cpp_extension, scan_symbols,
 };
+use crate::namespace::{parse_namespace_exports, parse_namespace_imports};
 use crate::rule_set::Rule;
 
 /// Scope of a file within an R package, determining how its definitions
 /// are checked for unused functions.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum FileScope {
+pub enum FileScope {
     /// R/ — definitions checked against all files; export check applies.
     R,
     /// tests/ — definitions checked only within tests/.
@@ -26,6 +29,29 @@ pub(crate) enum FileScope {
     Inst,
     /// src/ — C/C++ files; no definition checking.
     Src,
+}
+
+/// Pre-computed package metadata from DESCRIPTION + NAMESPACE.
+/// One instance per package root.
+#[derive(Clone, Debug, Default)]
+pub struct PackageContext {
+    pub namespace_exports: HashSet<String>,
+    pub import_from: HashMap<String, String>,
+    pub loaded_packages: Vec<String>,
+    /// Raw NAMESPACE content, retained so `compute_unused_from_shared()` can
+    /// call `parse_namespace_exports()` with the full `all_names` list.
+    pub namespace_content: Option<String>,
+}
+
+/// Per-file package classification, computed upfront by
+/// `summarize_package_info()`.
+#[derive(Clone, Debug)]
+pub enum FilePackageInfo {
+    InPackage {
+        package_root: PathBuf,
+        scope: FileScope,
+    },
+    Script,
 }
 
 /// Shared per-file data collected during the single parallel scan.
@@ -56,13 +82,140 @@ pub struct PackageAnalysis {
     pub unused_functions: HashMap<PathBuf, Vec<(String, TextRange, String)>>,
 }
 
+/// Classify every file and pre-compute per-package metadata in one pass.
+///
+/// For each R-package file the function identifies its package root and scope.
+/// For each unique package root it reads DESCRIPTION and NAMESPACE once,
+/// building a [`PackageContext`] that downstream code can use without
+/// touching the filesystem again.
+pub fn summarize_package_info(
+    paths: &[PathBuf],
+) -> (
+    HashMap<PathBuf, PackageContext>,
+    HashMap<PathBuf, FilePackageInfo>,
+) {
+    // Cache is_in_r_package per unique parent directory.
+    let r_dirs: HashSet<PathBuf> = paths
+        .iter()
+        .filter(|p| has_r_extension(p))
+        .filter_map(|p| p.parent().map(|d| d.to_path_buf()))
+        .collect();
+
+    let dir_is_package: HashMap<PathBuf, bool> = r_dirs
+        .into_iter()
+        .map(|dir| {
+            let in_pkg = dir
+                .file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|n| n == "R")
+                && dir.parent().is_some_and(|p| p.join("DESCRIPTION").exists());
+            (dir, in_pkg)
+        })
+        .collect();
+
+    let mut file_info: HashMap<PathBuf, FilePackageInfo> = HashMap::new();
+    let mut package_roots: HashSet<PathBuf> = HashSet::new();
+
+    // Insert file info under both the original path and its relativized form,
+    // since downstream code may look up by either.
+    let mut insert_info = |path: &PathBuf, info: FilePackageInfo| {
+        let rel = PathBuf::from(crate::fs::relativize_path(path));
+        file_info.insert(path.clone(), info.clone());
+        if rel != *path {
+            file_info.insert(rel, info);
+        }
+    };
+
+    for path in paths {
+        if !has_r_extension(path) {
+            insert_info(path, FilePackageInfo::Script);
+            continue;
+        }
+
+        // Check if this file is in an R/ directory inside a package.
+        let in_pkg = path
+            .parent()
+            .and_then(|d| dir_is_package.get(d))
+            .copied()
+            .unwrap_or(false);
+
+        if in_pkg && let Some(pkg_root) = path.parent().and_then(|r| r.parent()) {
+            let pkg_root = pkg_root.to_path_buf();
+            package_roots.insert(pkg_root.clone());
+            insert_info(
+                path,
+                FilePackageInfo::InPackage { package_root: pkg_root, scope: FileScope::R },
+            );
+            continue;
+        }
+
+        // Not in R/ — try to find a package root above (tests/, inst/, etc.).
+        if let Some(pkg_root) = find_package_root(path) {
+            let scope = file_scope_from_path(path);
+            package_roots.insert(pkg_root.clone());
+            insert_info(
+                path,
+                FilePackageInfo::InPackage { package_root: pkg_root, scope },
+            );
+        } else {
+            insert_info(path, FilePackageInfo::Script);
+        }
+    }
+
+    // Build a PackageContext for each unique package root.
+    let mut contexts: HashMap<PathBuf, PackageContext> = HashMap::new();
+    for root in &package_roots {
+        let mut packages: Vec<String> = DEFAULT_PACKAGES.iter().map(|s| s.to_string()).collect();
+        let mut import_from = HashMap::new();
+        let mut namespace_exports = HashSet::new();
+        let mut namespace_content = None;
+
+        let desc_path = root.join("DESCRIPTION");
+        if let Ok(desc) = std::fs::read_to_string(&desc_path) {
+            packages.extend(Description::get_package_deps(
+                &desc,
+                &["Depends", "Imports"],
+            ));
+        }
+
+        let ns_path = root.join("NAMESPACE");
+        if let Ok(ns) = std::fs::read_to_string(&ns_path) {
+            let imports = parse_namespace_imports(&ns);
+            import_from = imports.import_from;
+            for pkg in imports.blanket_imports {
+                if !packages.contains(&pkg) {
+                    packages.push(pkg);
+                }
+            }
+            namespace_exports = parse_namespace_exports(&ns, &[]);
+            namespace_content = Some(ns);
+        }
+
+        contexts.insert(
+            root.clone(),
+            PackageContext {
+                namespace_exports,
+                import_from,
+                loaded_packages: packages,
+                namespace_content,
+            },
+        );
+    }
+
+    (contexts, file_info)
+}
+
 /// Compute all package-level analysis for the given paths.
 ///
 /// Performs a single parallel scan over all R-package files, reading each file
 /// once and calling `scan_top_level_assignments` once (plus `scan_symbols` if
 /// the unused-function rule is enabled). The results are then dispatched to
 /// the duplicate and unused-function checkers.
-pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAnalysis {
+pub fn make_package_analysis(
+    paths: &[PathBuf],
+    config: &Config,
+    namespace_contents: &HashMap<PathBuf, String>,
+) -> PackageAnalysis {
     let rules = &config.rules_to_apply;
     let check_duplicates = rules.contains(&Rule::DuplicatedFunctionDefinition);
     let check_unused = rules.contains(&Rule::UnusedFunction);
@@ -105,11 +258,9 @@ pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAn
 
     // Discover package roots and collect excluded R/ files so they still
     // contribute to cross-file analysis (both duplicate and unused checks).
-    // Also collect extra files (tests/, inst/tinytest/, inst/tests/, src/) and
-    // NAMESPACE exports for the unused-function rule.
+    // Also collect extra files (tests/, inst/tinytest/, inst/tests/, src/).
     let mut extra_files: Vec<PathBuf> = Vec::new();
     let mut excluded_r_files: Vec<PathBuf> = Vec::new();
-    let mut namespace_contents: HashMap<PathBuf, String> = HashMap::new();
 
     let package_roots: HashSet<PathBuf> = r_dir_files
         .iter()
@@ -149,10 +300,6 @@ pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAn
             let src_dir = root.join("src");
             if src_dir.is_dir() {
                 extra_files.extend(collect_files(&src_dir, has_cpp_extension));
-            }
-            // Read NAMESPACE content (cheap, one per package)
-            if let Ok(ns_content) = std::fs::read_to_string(root.join("NAMESPACE")) {
-                namespace_contents.insert(root.clone(), ns_content);
             }
         }
     }
@@ -227,7 +374,7 @@ pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAn
         compute_unused_from_shared(
             &shared_data,
             &config.rule_options.unused_function,
-            &namespace_contents,
+            namespace_contents,
         )
     } else {
         HashMap::new()
@@ -237,7 +384,7 @@ pub fn compute_package_analysis(paths: &[PathBuf], config: &Config) -> PackageAn
 }
 
 /// Determine the `FileScope` for a non-R/ file based on its path.
-fn file_scope_from_path(path: &Path) -> FileScope {
+pub(crate) fn file_scope_from_path(path: &Path) -> FileScope {
     let components: Vec<_> = path
         .components()
         .map(|c| c.as_os_str().to_string_lossy().to_string())
@@ -261,7 +408,7 @@ fn file_scope_from_path(path: &Path) -> FileScope {
 }
 
 /// Walk up from a file path to find the package root (directory containing DESCRIPTION).
-fn find_package_root(path: &Path) -> Option<PathBuf> {
+pub(crate) fn find_package_root(path: &Path) -> Option<PathBuf> {
     let mut dir = path.parent()?;
     loop {
         if dir.join("DESCRIPTION").exists() {

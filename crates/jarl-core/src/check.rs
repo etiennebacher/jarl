@@ -1,11 +1,9 @@
-use crate::description::Description;
-use crate::error::ParseError;
-use crate::namespace::parse_namespace_imports;
-use crate::package::{PackageAnalysis, compute_package_analysis, is_in_r_package};
-use crate::roxygen::{extract_roxygen_examples, remap_roxygen_fix, remap_roxygen_range};
-use crate::rule_set::Rule;
-use crate::suppression::SuppressionManager;
-use crate::vcs::check_version_control;
+use std::collections::HashMap;
+use std::fs;
+use std::path::Path;
+use std::path::PathBuf;
+use std::sync::Arc;
+
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
 use air_r_syntax::{RExpressionList, RSyntaxNode};
@@ -13,10 +11,16 @@ use anyhow::{Context, Result};
 use biome_rowan::TextSize;
 use jarl_dfg::build_dfg;
 use rayon::prelude::*;
-use std::fs;
-use std::path::Path;
-use std::path::PathBuf;
-use std::sync::Arc;
+
+use crate::error::ParseError;
+use crate::package::{
+    FilePackageInfo, FileScope, PackageAnalysis, PackageContext, make_package_analysis,
+    summarize_package_info,
+};
+use crate::roxygen::{extract_roxygen_examples, remap_roxygen_fix, remap_roxygen_range};
+use crate::rule_set::Rule;
+use crate::suppression::SuppressionManager;
+use crate::vcs::check_version_control;
 
 use crate::analyze::document::check_document;
 use crate::analyze::expression::check_expression;
@@ -27,7 +31,20 @@ use crate::fix::*;
 use crate::utils::*;
 
 pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
-    let pkg = compute_package_analysis(&config.paths, &config);
+    let (pkg_contexts, file_pkg_info) = summarize_package_info(&config.paths);
+
+    let namespace_contents: HashMap<PathBuf, String> = pkg_contexts
+        .iter()
+        .filter_map(|(root, ctx)| {
+            ctx.namespace_content
+                .as_ref()
+                .map(|c| (root.clone(), c.clone()))
+        })
+        .collect();
+    let pkg = make_package_analysis(&config.paths, &config, &namespace_contents);
+
+    let pkg_contexts = Arc::new(pkg_contexts);
+    let file_pkg_info = Arc::new(file_pkg_info);
 
     // Ensure that all paths are covered by VCS. This is conservative because
     // technically we could apply fixes on those that are covered by VCS and
@@ -49,7 +66,13 @@ pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Err
         .paths
         .par_iter()
         .map(|file| {
-            let res = check_path(file, Arc::clone(&config), Arc::clone(&pkg));
+            let res = check_path(
+                file,
+                Arc::clone(&config),
+                Arc::clone(&pkg),
+                Arc::clone(&pkg_contexts),
+                Arc::clone(&file_pkg_info),
+            );
             (relativize_path(file), res)
         })
         .collect()
@@ -59,11 +82,13 @@ pub fn check_path(
     path: &PathBuf,
     config: Arc<Config>,
     pkg: Arc<PackageAnalysis>,
+    pkg_contexts: Arc<HashMap<PathBuf, PackageContext>>,
+    file_pkg_info: Arc<HashMap<PathBuf, FilePackageInfo>>,
 ) -> Result<Vec<Diagnostic>, anyhow::Error> {
     if config.apply_fixes || config.apply_unsafe_fixes {
-        lint_fix(path, config, pkg)
+        lint_fix(path, config, pkg, pkg_contexts, file_pkg_info)
     } else {
-        lint_only(path, config, pkg)
+        lint_only(path, config, pkg, pkg_contexts, file_pkg_info)
     }
 }
 
@@ -71,13 +96,22 @@ pub fn lint_only(
     path: &PathBuf,
     config: Arc<Config>,
     pkg: Arc<PackageAnalysis>,
+    pkg_contexts: Arc<HashMap<PathBuf, PackageContext>>,
+    file_pkg_info: Arc<HashMap<PathBuf, FilePackageInfo>>,
 ) -> Result<Vec<Diagnostic>, anyhow::Error> {
     let path = relativize_path(path);
     let contents = fs::read_to_string(Path::new(&path))
         .with_context(|| format!("Failed to read file: {path}"))?;
 
-    let checks = get_checks(&contents, &PathBuf::from(&path), &config, &pkg)
-        .with_context(|| format!("Failed to get checks for file: {path}"))?;
+    let checks = get_checks(
+        &contents,
+        &PathBuf::from(&path),
+        &config,
+        &pkg,
+        &pkg_contexts,
+        &file_pkg_info,
+    )
+    .with_context(|| format!("Failed to get checks for file: {path}"))?;
 
     Ok(checks)
 }
@@ -86,10 +120,12 @@ pub fn lint_fix(
     path: &PathBuf,
     config: Arc<Config>,
     pkg: Arc<PackageAnalysis>,
+    pkg_contexts: Arc<HashMap<PathBuf, PackageContext>>,
+    file_pkg_info: Arc<HashMap<PathBuf, FilePackageInfo>>,
 ) -> Result<Vec<Diagnostic>, anyhow::Error> {
     // Rmd/Qmd files never get autofixes applied.
     if crate::fs::has_rmd_extension(path) {
-        return lint_only(path, config, pkg);
+        return lint_only(path, config, pkg, pkg_contexts, file_pkg_info);
     }
 
     let path = relativize_path(path);
@@ -100,8 +136,15 @@ pub fn lint_fix(
         let contents = fs::read_to_string(Path::new(&path))
             .with_context(|| format!("Failed to read file: {path}",))?;
 
-        checks = get_checks(&contents, &PathBuf::from(&path), &config, &pkg)
-            .with_context(|| format!("Failed to get checks for file: {path}",))?;
+        checks = get_checks(
+            &contents,
+            &PathBuf::from(&path),
+            &config,
+            &pkg,
+            &pkg_contexts,
+            &file_pkg_info,
+        )
+        .with_context(|| format!("Failed to get checks for file: {path}",))?;
 
         let has_fixable = checks
             .iter()
@@ -134,6 +177,8 @@ pub fn get_checks(
     file: &Path,
     config: &Config,
     pkg: &PackageAnalysis,
+    pkg_contexts: &HashMap<PathBuf, PackageContext>,
+    file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
 ) -> Result<Vec<Diagnostic>> {
     if crate::fs::has_rmd_extension(file) {
         return get_checks_rmd(contents, file, config);
@@ -155,10 +200,15 @@ pub fn get_checks(
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
 
-    // Wire up the package cache for package-specific rules.
-    if config.package_cache.is_some() {
-        setup_package_context(&mut checker, file, expressions, config);
-    }
+    // Wire up package context for package-specific rules.
+    get_package_info(
+        &mut checker,
+        file,
+        expressions,
+        config,
+        pkg_contexts,
+        file_pkg_info,
+    );
 
     // Look up per-file data from PackageAnalysis
     let duplicate_assignments = pkg
@@ -182,7 +232,10 @@ pub fn get_checks(
     if config.check_roxygen
         && contents.contains("#'")
         && contents.contains("@examples")
-        && is_in_r_package(file) == Some(true)
+        && matches!(
+            file_pkg_info.get(file),
+            Some(FilePackageInfo::InPackage { scope: FileScope::R, .. })
+        )
     {
         let roxygen_diagnostics = get_checks_roxygen(syntax, file, config, contents)?;
         checker.diagnostics.extend(roxygen_diagnostics);
@@ -249,47 +302,35 @@ pub fn get_checks(
     Ok(diagnostics)
 }
 
-/// Set up package resolution on the checker for package-specific rules.
+/// Populate package context on the checker from pre-computed data.
 ///
-/// Inside an R package, uses DESCRIPTION `Depends`/`Imports` and NAMESPACE
-/// `importFrom()` directives. In scripts, scans for `library()`/`require()` calls.
-fn setup_package_context(
+/// For files inside an R package, copies the pre-computed `PackageContext`
+/// fields. For scripts, scans for `library()`/`require()` calls.
+fn get_package_info(
     checker: &mut Checker,
     file: &Path,
     expressions: &RExpressionList,
     config: &Config,
+    pkg_contexts: &HashMap<PathBuf, PackageContext>,
+    file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
 ) {
-    let mut packages = crate::checker::DEFAULT_PACKAGES
-        .iter()
-        .map(|s| s.to_string())
-        .collect::<Vec<_>>();
-
-    if is_in_r_package(file) == Some(true) {
-        if let Some(pkg_root) = file.parent().and_then(|p| p.parent()) {
-            let desc_path = pkg_root.join("DESCRIPTION");
-            if let Ok(desc_content) = fs::read_to_string(&desc_path) {
-                packages.extend(Description::get_package_deps(
-                    &desc_content,
-                    &["Depends", "Imports"],
-                ));
-            }
-
-            let ns_path = pkg_root.join("NAMESPACE");
-            if let Ok(ns_content) = fs::read_to_string(&ns_path) {
-                let imports = parse_namespace_imports(&ns_content);
-                checker.import_from = imports.import_from;
-                for pkg in imports.blanket_imports {
-                    if !packages.contains(&pkg) {
-                        packages.push(pkg);
-                    }
-                }
+    match file_pkg_info.get(file) {
+        Some(FilePackageInfo::InPackage { package_root, .. }) => {
+            if let Some(ctx) = pkg_contexts.get(package_root) {
+                checker.loaded_packages = ctx.loaded_packages.clone();
+                checker.import_from = ctx.import_from.clone();
+                checker.namespace_exports = ctx.namespace_exports.clone();
             }
         }
-    } else {
-        packages.extend(crate::library_calls::extract_library_calls(expressions));
+        _ => {
+            let mut packages: Vec<String> = crate::checker::DEFAULT_PACKAGES
+                .iter()
+                .map(|s| s.to_string())
+                .collect();
+            packages.extend(crate::library_calls::extract_library_calls(expressions));
+            checker.loaded_packages = packages;
+        }
     }
-
-    checker.loaded_packages = packages;
     checker.package_cache = config.package_cache.clone();
 }
 
