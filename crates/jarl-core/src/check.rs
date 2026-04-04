@@ -193,10 +193,7 @@ pub fn get_checks(
     // checks (blanket, unexplained, misplaced, misnamed, unused suppressions).
     // This must run after checking expressions because we filter out those that
     // are unused.
-    let start = std::time::Instant::now();
     let dfg = build_dfg(&parsed.syntax());
-    let duration = start.elapsed();
-    println!("Time to build DFG: {duration:?}\n");
     check_document(
         expressions,
         dfg,
