@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use jarl_dfg::*;
 use rustc_hash::FxHashSet;
 
@@ -45,7 +47,7 @@ use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 /// # `x` is defined in the global environment while used in the function, but
 /// # this is a completely valid usage, so nothing is reported.
 /// ```
-pub fn unused_object(dfg: DataflowGraph) -> Vec<Diagnostic> {
+pub fn unused_object(dfg: DataflowGraph, namespace_exports: &HashSet<String>) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
 
     // Collect variable names referenced via string interpolation
@@ -125,6 +127,11 @@ pub fn unused_object(dfg: DataflowGraph) -> Vec<Diagnostic> {
     for def in &definitions {
         // Skip function parameters — unused params are a separate lint.
         if param_ids.contains(&def.id) {
+            continue;
+        }
+
+        // Skip names exported by the package's NAMESPACE file.
+        if namespace_exports.contains(&def.name) {
             continue;
         }
 

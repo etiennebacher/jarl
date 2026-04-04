@@ -29,7 +29,7 @@ pub(crate) fn check_document(
     let expressions: Vec<RSyntaxNode> = expressions.iter().map(|e| e.syntax().clone()).collect();
 
     if checker.is_rule_enabled(Rule::UnusedObject) {
-        for diagnostic in unused_object(dfg) {
+        for diagnostic in unused_object(dfg, &checker.namespace_exports) {
             checker.report_diagnostic(Some(diagnostic));
         }
     }
