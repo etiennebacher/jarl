@@ -955,6 +955,34 @@ impl DfgBuilder {
         }
     }
 
+    /// Return the environment argument for `assign()`, `delayedAssign()`, or
+    /// `makeActiveBinding()` if one is supplied, meaning the assignment targets
+    /// a non-local environment.
+    fn env_arg<'a>(func_name: &str, args: &'a [CallArgument]) -> Option<&'a CallArgument> {
+        // (env_arg_name, positional_index) for each function.
+        let (env_name, env_pos) = match func_name {
+            "assign" => ("envir", 2),             // assign(x, value, envir, ...)
+            "delayedAssign" => ("assign.env", 3), // delayedAssign(x, value, eval.env, assign.env, ...)
+            "makeActiveBinding" => ("env", 2),    // makeActiveBinding(sym, fun, env, ...)
+            _ => return None,
+        };
+        // Named argument present?
+        if let Some(arg) = args.iter().find(|a| a.name.as_deref() == Some(env_name)) {
+            return Some(arg);
+        }
+        // Positional argument at the expected index?
+        let mut positional_idx = 0;
+        for arg in args {
+            if arg.name.is_none() {
+                if positional_idx == env_pos {
+                    return Some(arg);
+                }
+                positional_idx += 1;
+            }
+        }
+        None
+    }
+
     /// Handle built-in functions that have environment side-effects.
     fn handle_builtin_call(
         &mut self,
@@ -965,6 +993,49 @@ impl DfgBuilder {
     ) {
         match func_name {
             "assign" | "delayedAssign" | "makeActiveBinding" => {
+                // When an explicit target environment is supplied the
+                // variable is defined there, not the local scope.  Model
+                // this as a write-back to the environment variable itself
+                // (it is mutated by the call).
+                // For instance, in this case, we should report `env`:
+                // ```
+                // f <- function() {
+                //     env <- new.env()
+                //     assign("x", 1 + 1, envir = env)
+                // }
+                // f()
+                // ```
+
+                if let Some(env_arg) = Self::env_arg(func_name, args) {
+                    if let Some(env_name) = self
+                        .graph
+                        .vertex(env_arg.node_id)
+                        .filter(|v| v.kind == VertexKind::Use)
+                        .map(|v| v.name.clone())
+                    {
+                        let range = self
+                            .graph
+                            .vertex(env_arg.node_id)
+                            .map(|v| v.range)
+                            .unwrap_or_default();
+                        let def_id = self.graph.fresh_id();
+                        self.graph.add_vertex(DfVertex {
+                            id: def_id,
+                            kind: VertexKind::Definition,
+                            range,
+                            name: env_name.clone(),
+                            cds: self.active_cds.clone(),
+                            data: VertexData::None,
+                        });
+                        self.graph.add_edge(def_id, call_id, EdgeType::DefinedBy);
+                        self.env.define(
+                            &env_name,
+                            IdentifierDef { node_id: def_id, cds: self.active_cds.clone() },
+                        );
+                        writes.push((env_name, def_id));
+                    }
+                    return;
+                }
                 // assign("x", val) → treat as x <- val
                 // First arg should be a string literal with the variable name.
                 if let Some(first_arg) = args.first() {

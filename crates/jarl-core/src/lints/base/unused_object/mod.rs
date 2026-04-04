@@ -415,4 +415,51 @@ x + 1"
             @"All checks passed!"
         );
     }
+
+    #[test]
+    fn test_assign() {
+        // should lint: we assign x in env but never do anything with env
+        assert_snapshot!(
+            snapshot_lint("
+f <- function() {
+  env <- new.env()
+  assign('x', 1 + 1, envir = env)
+}
+f()"
+        ),
+            @"
+        warning: unused_object
+         --> <test>:3:3
+          |
+        3 |   env <- new.env()
+          |   --- Object `env` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+        // shouldn't lint: we export env, which contains x
+        expect_no_lint(
+            "
+f <- function() {
+  env <- new.env()
+  assign('x', 1 + 1, envir = env)
+  env
+}
+f()",
+            "unused_object",
+            None,
+        );
+        // shouldn't lint: we use env outside the function
+        assert_snapshot!(
+            snapshot_lint("
+env <- new.env()
+f <- function() {
+  assign('x', 1 + 1, envir = env)
+}
+f()
+env"
+        ),
+            @"All checks passed!"
+        );
+    }
 }
