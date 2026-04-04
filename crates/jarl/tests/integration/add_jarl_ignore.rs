@@ -221,7 +221,7 @@ fn test_add_jarl_ignore_multiple_files() -> anyhow::Result<()> {
 
 #[test]
 fn test_add_jarl_ignore_no_violations() -> anyhow::Result<()> {
-    let case = CliTest::with_file("test.R", "x <- 1\n")?;
+    let case = CliTest::with_file("test.R", "1 + 1\n")?;
 
     let output = case
         .command()
@@ -305,11 +305,7 @@ fn test_add_jarl_ignore_idempotent() -> anyhow::Result<()> {
 
 #[test]
 fn test_add_jarl_ignore_nested_violation() -> anyhow::Result<()> {
-    let case = CliTest::with_file(
-        "test.R",
-        "x <- foo(any(is.na(y)))
-",
-    )?;
+    let case = CliTest::with_file("test.R", "foo(any(is.na(y)))")?;
 
     let output = case
         .command()
@@ -340,7 +336,7 @@ fn test_add_jarl_ignore_nested_violation() -> anyhow::Result<()> {
     content,
         @"
     # jarl-ignore any_is_na: <reason>
-    x <- foo(any(is.na(y)))
+    foo(any(is.na(y)))
     "
     );
 
@@ -548,8 +544,7 @@ fn test_add_jarl_ignore_pipe_chain() -> anyhow::Result<()> {
 
 #[test]
 fn test_add_jarl_ignore_same_rule_same_line() -> anyhow::Result<()> {
-    // Two violations of the same rule in an if condition should produce one comment
-    let case = CliTest::with_file("test.R", "z <- x == TRUE && any(is.na(y))")?;
+    let case = CliTest::with_file("test.R", "x == TRUE && any(is.na(y))")?;
 
     let output = case
         .command()
@@ -581,7 +576,7 @@ fn test_add_jarl_ignore_same_rule_same_line() -> anyhow::Result<()> {
         @"
     # jarl-ignore redundant_equals: <reason>
     # jarl-ignore any_is_na: <reason>
-    z <- x == TRUE && any(is.na(y))
+    x == TRUE && any(is.na(y))
     "
     );
 

@@ -936,6 +936,7 @@ dependencies = [
  "fs",
  "ignore",
  "insta",
+ "jarl-dfg",
  "path-absolutize",
  "rayon",
  "regex",
@@ -946,6 +947,17 @@ dependencies = [
  "toml",
  "tracing",
  "workspace",
+]
+
+[[package]]
+name = "jarl-dfg"
+version = "0.5.0"
+dependencies = [
+ "air_r_parser",
+ "air_r_syntax",
+ "biome_rowan",
+ "insta",
+ "rustc-hash",
 ]
 
 [[package]]

@@ -11,6 +11,7 @@ use air_r_parser::RParserOptions;
 use air_r_syntax::{RExpressionList, RSyntaxNode};
 use anyhow::{Context, Result};
 use biome_rowan::TextSize;
+use jarl_dfg::build_dfg;
 use rayon::prelude::*;
 use std::fs;
 use std::path::Path;
@@ -192,8 +193,13 @@ pub fn get_checks(
     // checks (blanket, unexplained, misplaced, misnamed, unused suppressions).
     // This must run after checking expressions because we filter out those that
     // are unused.
+    let start = std::time::Instant::now();
+    let dfg = build_dfg(&parsed.syntax());
+    let duration = start.elapsed();
+    println!("Time to build DFG: {duration:?}\n");
     check_document(
         expressions,
+        dfg,
         &mut checker,
         &duplicate_assignments,
         &unused_functions,
@@ -314,7 +320,6 @@ fn get_checks_roxygen(
 
         let expressions = &parsed.tree().expressions();
         let suppression = SuppressionManager::from_node(&parsed.syntax(), &chunk.code);
-        let has_suppressions = suppression.has_any_suppressions;
         let mut checker = Checker::new(suppression, config.rule_options.clone());
         checker.rule_set = config.rules_to_apply.clone();
         checker.minimum_r_version = config.minimum_r_version;
@@ -327,9 +332,8 @@ fn get_checks_roxygen(
         // suppression comments. Most examples don't, and check_document is
         // otherwise unnecessary here (no package-level analysis, no
         // suppression-related diagnostics to report).
-        if has_suppressions {
-            check_document(expressions, &mut checker, &[], &[])?;
-        }
+        let dfg = build_dfg(&parsed.syntax());
+        check_document(expressions, dfg, &mut checker, &[], &[])?;
 
         for mut d in checker.diagnostics {
             d.range = remap_roxygen_range(d.range, chunk);
@@ -429,7 +433,8 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
         // check_document runs suppression filtering internally, so
         // checker.diagnostics is the post-suppression list after this call.
         // Rmd chunks don't participate in package-level analysis, so pass empty slices.
-        check_document(expressions, &mut checker, &[], &[])?;
+        let dfg = build_dfg(&parsed.syntax());
+        check_document(expressions, dfg, &mut checker, &[], &[])?;
 
         let offset = TextSize::from(start_byte as u32);
         let diagnostics = checker.diagnostics.into_iter().map(|mut d| {

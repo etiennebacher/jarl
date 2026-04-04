@@ -10,9 +10,11 @@ fn test_jarl_break_and_next_kw_as_call() -> anyhow::Result<()> {
         "test.R",
         "
 for (i in 1:3) {
+    print(i)
     break()
 }
 for (i in 1:3) {
+    print(i)
     next()
 }",
     )?;
