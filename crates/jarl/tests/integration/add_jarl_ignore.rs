@@ -247,7 +247,7 @@ fn test_add_jarl_ignore_no_violations() -> anyhow::Result<()> {
 
     // File should be unchanged
     let content = case.read_file("test.R")?;
-    assert_eq!(content, "x <- 1\n");
+    assert_eq!(content, "1 + 1\n");
 
     Ok(())
 }
