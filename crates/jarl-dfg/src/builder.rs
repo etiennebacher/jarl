@@ -713,11 +713,29 @@ impl DfgBuilder {
             return result;
         }
 
-        // --- on.exit(): grab the first argument and store it for evaluation
-        // at the end of the function processing since it might refer to objects
-        // defined later in the body.
-        let is_on_exit = func_name == "on.exit";
-        if is_on_exit {
+        // --- on.exit(): process normally (immediate pass) AND store the
+        // first argument for a deferred pass at the end of the enclosing
+        // function definition. The immediate pass catches references to
+        // variables already defined; the deferred pass catches forward
+        // references to variables defined later in the body.
+        //
+        // We can't just defer this to the end because of cases like this:
+        // ```
+        // f <- function() {
+        //     foo <- TRUE
+        //     on.exit(
+        //         if (foo) print("bye")
+        //     )
+        //     <some operation that might error here>
+        //     foo <- FALSE
+        // }
+        // ```
+        //
+        // If we were only deferring `on.exit()` to the end, we would report
+        // the first `foo` as being never used because we would just see that
+        // `foo` is defined twice but never explictly used, while `on.exit()`
+        // might use it if it thrown because of an error in between.
+        if func_name == "on.exit" {
             let mut on_exit_nodes = Vec::new();
             if let Ok(args) = call.as_fields().arguments {
                 if let Some(Ok(first_arg)) = args.items().iter().next() {
@@ -726,23 +744,8 @@ impl DfgBuilder {
                     }
                 }
             }
-            // Still create the call vertex, but don't process the expr argument
-            self.graph.add_vertex(DfVertex {
-                id: call_id,
-                kind: VertexKind::FunctionCall,
-                range: node.text_trimmed_range(),
-                name: func_name.to_string(),
-                cds: self.active_cds.clone(),
-                data: VertexData::Call { args: vec![] },
-            });
-            let result = DataflowInformation {
-                node_id: self.graph.fresh_id(),
-                unknown_refs: vec![],
-                reads: vec![],
-                writes: vec![],
-                exit_points: vec![],
-                on_exit_nodes,
-            };
+            let mut result = self.process_call_inner(node, call_id, &func_name);
+            result.on_exit_nodes = on_exit_nodes;
             return result;
         }
 

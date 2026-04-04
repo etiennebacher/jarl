@@ -173,6 +173,25 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_no_lint_when_on_exit_sees_object_defined_multiple_times() {
+        // See comment in `process_call()`
+        expect_no_lint(
+            "
+        f <- function() {
+            foo <- TRUE
+            on.exit(
+                if (foo) print('bye')
+            )
+            # <some operation that might error here>
+            foo <- FALSE
+        }
+        ",
+            "unused_object",
+            None,
+        );
+    }
+
     // ---------------------------------------------------------------
     // Lint cases
     // ---------------------------------------------------------------
