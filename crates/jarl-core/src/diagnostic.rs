@@ -167,12 +167,18 @@ pub fn render_diagnostic(
     let start_offset: usize = diagnostic.range.start().into();
     let end_offset: usize = diagnostic.range.end().into();
 
-    let snippet = Snippet::source(source)
+    // Replace tabs with spaces so the underline aligns with the displayed code.
+    // annotate-snippets expands tabs for display but positions annotations using
+    // byte offsets, which causes misalignment when tabs are present.
+    let (expanded_source, adj_start, adj_end) =
+        expand_tabs_and_adjust(source, start_offset, end_offset);
+
+    let snippet = Snippet::source(&expanded_source)
         .origin(origin)
         .fold(true)
         .annotation(
             Level::Warning
-                .span(start_offset..end_offset)
+                .span(adj_start..adj_end)
                 .label(&diagnostic.message.body),
         );
 
@@ -183,4 +189,38 @@ pub fn render_diagnostic(
     }
 
     format!("{}", renderer.render(message))
+}
+
+/// Replace tab characters with spaces (4 spaces per tab, aligned to tab stops)
+/// and return adjusted byte offsets for the annotation span.
+fn expand_tabs_and_adjust(source: &str, start: usize, end: usize) -> (String, usize, usize) {
+    const TAB_WIDTH: usize = 4;
+    let mut result = String::with_capacity(source.len());
+    let mut adj_start = start;
+    let mut adj_end = end;
+    let mut col = 0; // column position on current line (for tab-stop alignment)
+
+    for (byte_pos, ch) in source.char_indices() {
+        if ch == '\t' {
+            let spaces = TAB_WIDTH - (col % TAB_WIDTH);
+            let extra = spaces - 1; // tab is 1 byte, replaced with `spaces` bytes
+            result.extend(std::iter::repeat_n(' ', spaces));
+            if byte_pos < start {
+                adj_start += extra;
+                adj_end += extra;
+            } else if byte_pos < end {
+                adj_end += extra;
+            }
+            col += spaces;
+        } else {
+            result.push(ch);
+            if ch == '\n' {
+                col = 0;
+            } else {
+                col += 1;
+            }
+        }
+    }
+
+    (result, adj_start, adj_end)
 }
