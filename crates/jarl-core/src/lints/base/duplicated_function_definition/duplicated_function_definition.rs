@@ -60,9 +60,8 @@ pub fn is_in_r_package(file: &Path) -> Option<bool> {
 pub fn scan_top_level_assignments(content: &str) -> Vec<(String, TextRange, u32, u32)> {
     let mut results = Vec::new();
     let mut byte_offset: usize = 0;
-    let mut line_no: u32 = 1;
 
-    for line_with_ending in content.split_inclusive('\n') {
+    for (line_no, line_with_ending) in (1_u32..).zip(content.split_inclusive('\n')) {
         // Strip \r\n or \n to get the line without its terminator
         let line = line_with_ending
             .trim_end_matches('\n')
@@ -115,7 +114,6 @@ pub fn scan_top_level_assignments(content: &str) -> Vec<(String, TextRange, u32,
         }
 
         byte_offset += line_with_ending.len();
-        line_no += 1;
     }
 
     results

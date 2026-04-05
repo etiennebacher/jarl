@@ -148,7 +148,7 @@ impl TextDocument {
         }
 
         // Sort by start offset in reverse order (end to beginning) to avoid offset invalidation
-        changes_with_offsets.sort_by(|a, b| b.0.cmp(&a.0));
+        changes_with_offsets.sort_by_key(|b| std::cmp::Reverse(b.0));
 
         // Apply incremental changes in reverse order
         for (i, (start_offset, end_offset, change)) in changes_with_offsets.iter().enumerate() {
