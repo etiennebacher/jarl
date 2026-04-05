@@ -408,10 +408,15 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
         return Err(crate::error::ParseError { filename: file.to_path_buf() }.into());
     }
 
+    // Collect R variable names referenced in chunk options (e.g. `eval=cond`)
+    // so they are not flagged as unused.
+    let chunk_option_names = crate::rmd::extract_chunk_option_names(contents);
+
     let suppression = SuppressionManager::from_node(&parsed.syntax(), &virtual_source);
     let mut checker = Checker::new(suppression, config.rule_options.clone());
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
+    checker.namespace_exports.extend(chunk_option_names);
 
     let expressions = &parsed.tree().expressions();
     for expr in expressions {
