@@ -215,6 +215,25 @@ pub fn unused_object(dfg: DataflowGraph, namespace_exports: &HashSet<String>) ->
                     && !other.cds.is_empty()
             });
 
+        // If this definition is inside a loop and a Use of the same variable
+        // appears earlier in the loop body, this definition feeds the next
+        // iteration and shouldn't be flagged.
+        // E.g. `for (...) { f(x); x <- nrow(out) }` — the Use of `x` in
+        // `f(x)` on the next iteration reads from this definition.
+        let loop_cd = def.cds.iter().find(|cd| cd.by_iteration);
+        let feeds_next_iteration = !is_read
+            && !is_consumed
+            && !is_arg
+            && !is_returned
+            && loop_cd.is_some_and(|lcd| {
+                dfg.vertices().any(|v| {
+                    v.kind == VertexKind::Use
+                        && v.name == def.name
+                        && v.range.start() < def.range.start()
+                        && v.cds.iter().any(|cd| cd.by_iteration && cd.id == lcd.id)
+                })
+            });
+
         if is_read
             || is_consumed
             || is_arg
@@ -222,6 +241,7 @@ pub fn unused_object(dfg: DataflowGraph, namespace_exports: &HashSet<String>) ->
             || is_interpolated
             || suppressed_by_self_read
             || shadowed_by_conditional
+            || feeds_next_iteration
         {
             continue;
         }

@@ -574,4 +574,17 @@ x",
             None,
         );
     }
+
+    #[test]
+    fn test_object_used_in_next_iteration() {
+        expect_no_lint(
+            "
+for (i in 1:3) {
+  out <- f(i, x)
+  x <- nrow(out)
+}",
+            "unused_object",
+            None,
+        );
+    }
 }
