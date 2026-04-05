@@ -21,7 +21,7 @@ biome_rowan = { git = "https://github.com/lionel-/biome", rev = "41d799cfa4cedd2
 clap = { version = "4.6.0", features = ["derive"] }
 colored = "3.1.1"
 ignore = "0.4.23"
-insta = { version = "1.42.0", features = ["yaml"] }
+insta = { version = "1.47.2", features = ["yaml"] }
 etcetera = "0.11.0"
 jarl-core = { path = "crates/jarl-core" }
 jarl-lsp = { path = "crates/jarl-lsp" }
@@ -34,7 +34,7 @@ serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.143"
 tempfile = "3.27.0"
 # Same as in Air to reduce compile time
-toml = "0.8.23"
+toml = "1.1.2"
 tracing = "0.1.41"
 
 [profile.release]
