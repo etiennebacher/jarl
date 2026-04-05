@@ -418,26 +418,19 @@ x + 1"
 
     #[test]
     fn test_assign() {
-        // should lint: we assign x in env but never do anything with env
-        assert_snapshot!(
-            snapshot_lint("
+        // TODO: this should report env
+        // shouldn't lint: env is used as argument to assign()
+        expect_no_lint(
+            "
 f <- function() {
   env <- new.env()
   assign('x', 1 + 1, envir = env)
 }
-f()"
-        ),
-            @"
-        warning: unused_object
-         --> <test>:3:3
-          |
-        3 |   env <- new.env()
-          |   --- Object `env` is defined but never used.
-          |
-        Found 1 error.
-        "
+f()",
+            "unused_object",
+            None,
         );
-        // shouldn't lint: we export env, which contains x
+        // shouldn't lint: we return env, which contains x
         expect_no_lint(
             "
 f <- function() {
@@ -450,16 +443,96 @@ f()",
             None,
         );
         // shouldn't lint: we use env outside the function
-        assert_snapshot!(
-            snapshot_lint("
+        expect_no_lint(
+            "
 env <- new.env()
 f <- function() {
   assign('x', 1 + 1, envir = env)
 }
 f()
-env"
-        ),
-            @"All checks passed!"
+env",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_delayed_assign() {
+        // TODO: this should report env
+        // shouldn't lint: env is used as argument to delayedAssign()
+        expect_no_lint(
+            "
+f <- function() {
+  env <- new.env()
+  delayedAssign('x', 1 + 1, assign.env = env)
+}
+f()",
+            "unused_object",
+            None,
+        );
+        // shouldn't lint: we return env, which contains x
+        expect_no_lint(
+            "
+f <- function() {
+  env <- new.env()
+  delayedAssign('x', 1 + 1, assign.env = env)
+  env
+}
+f()",
+            "unused_object",
+            None,
+        );
+        // shouldn't lint: we use env outside the function
+        expect_no_lint(
+            "
+env <- new.env()
+f <- function() {
+  delayedAssign('x', 1 + 1, assign.env = env)
+}
+f()
+env",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_make_active_binding() {
+        // TODO: this should report env
+        // shouldn't lint: env is used as argument to makeActiveBinding()
+        expect_no_lint(
+            "
+f <- function() {
+  env <- new.env()
+  makeActiveBinding('x', \\(x) x, env = env)
+}
+f()",
+            "unused_object",
+            None,
+        );
+        // shouldn't lint: we return env, which contains x
+        expect_no_lint(
+            "
+f <- function() {
+  env <- new.env()
+  makeActiveBinding('x', \\(x) x, env = env)
+  env
+}
+f()",
+            "unused_object",
+            None,
+        );
+        // shouldn't lint: we use env outside the function
+        expect_no_lint(
+            "
+env <- new.env()
+f <- function() {
+  makeActiveBinding('x', \\(x) x, env = env)
+}
+f()
+env",
+            "unused_object",
+            None,
         );
     }
 }

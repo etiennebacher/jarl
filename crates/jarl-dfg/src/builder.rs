@@ -1006,34 +1006,10 @@ impl DfgBuilder {
                 // f()
                 // ```
 
-                if let Some(env_arg) = Self::env_arg(func_name, args) {
-                    if let Some(env_name) = self
-                        .graph
-                        .vertex(env_arg.node_id)
-                        .filter(|v| v.kind == VertexKind::Use)
-                        .map(|v| v.name.clone())
-                    {
-                        let range = self
-                            .graph
-                            .vertex(env_arg.node_id)
-                            .map(|v| v.range)
-                            .unwrap_or_default();
-                        let def_id = self.graph.fresh_id();
-                        self.graph.add_vertex(DfVertex {
-                            id: def_id,
-                            kind: VertexKind::Definition,
-                            range,
-                            name: env_name.clone(),
-                            cds: self.active_cds.clone(),
-                            data: VertexData::None,
-                        });
-                        self.graph.add_edge(def_id, call_id, EdgeType::DefinedBy);
-                        self.env.define(
-                            &env_name,
-                            IdentifierDef { node_id: def_id, cds: self.active_cds.clone() },
-                        );
-                        writes.push((env_name, def_id));
-                    }
+                // When an explicit target environment is supplied the
+                // variable goes there, not the local scope — just treat
+                // as a plain call (all args are reads, no local Definition).
+                if Self::env_arg(func_name, args).is_some() {
                     return;
                 }
                 // assign("x", val) → treat as x <- val
