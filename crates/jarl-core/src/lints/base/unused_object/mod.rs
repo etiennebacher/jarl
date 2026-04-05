@@ -547,4 +547,31 @@ dt[, ..cols]
             None,
         );
     }
+
+    #[test]
+    fn test_shadowing_after_condition() {
+        // `x <- 2` wouldn't run if the first condition is true, so `x <- 1`
+        // might be used.
+        expect_no_lint(
+            "
+x <- 1
+if (runif(1) < 0.5 || (x <- 2)) {
+  print(x)
+}",
+            "unused_object",
+            None,
+        );
+        // `x <- 2` wouldn't run if the first condition is false, so `x <- 1`
+        // might be used.
+        expect_no_lint(
+            "
+x <- 1
+if (runif(1) < 0.5 && (x <- 2)) {
+  1 + 1
+}
+x",
+            "unused_object",
+            None,
+        );
+    }
 }

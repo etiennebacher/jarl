@@ -200,12 +200,28 @@ pub fn unused_object(dfg: DataflowGraph, namespace_exports: &HashSet<String>) ->
             && !is_returned
             && self_read_names.contains(&def.name);
 
+        // If a later definition of the same variable is conditional (has
+        // control dependencies from short-circuit operators like `||` / `&&`),
+        // the earlier definition may still be needed because the later one
+        // might not execute.  E.g. `x <- 1; if (cond || (x <- 2)) print(x)`.
+        let shadowed_by_conditional = !is_read
+            && !is_consumed
+            && !is_arg
+            && !is_returned
+            && definitions.iter().any(|other| {
+                other.name == def.name
+                    && other.id != def.id
+                    && other.range.start() > def.range.start()
+                    && !other.cds.is_empty()
+            });
+
         if is_read
             || is_consumed
             || is_arg
             || is_returned
             || is_interpolated
             || suppressed_by_self_read
+            || shadowed_by_conditional
         {
             continue;
         }
