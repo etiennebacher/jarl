@@ -209,19 +209,20 @@ fn expand_span_line_tabs(source: &str, start: usize, end: usize) -> (String, usi
 
     // Count tabs in the three regions: before span lines, before span start
     // on the span line, and within the span.
-    let tabs_before_lines = source.as_bytes()[..line_start]
+    let source_bytes = source.as_bytes();
+    let tabs_before_lines = source_bytes[..line_start]
         .iter()
         .filter(|&&b| b == TAB)
         .count();
-    let tabs_line_to_start = source.as_bytes()[line_start..start]
+    let tabs_line_to_start = source_bytes[line_start..start]
         .iter()
         .filter(|&&b| b == TAB)
         .count();
-    let tabs_in_span = source.as_bytes()[start..end]
+    let tabs_in_span = source_bytes[start..end]
         .iter()
         .filter(|&&b| b == TAB)
         .count();
-    let tabs_after_span = source.as_bytes()[end..line_end]
+    let tabs_after_span = source_bytes[end..line_end]
         .iter()
         .filter(|&&b| b == TAB)
         .count();
