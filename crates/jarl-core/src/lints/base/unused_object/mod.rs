@@ -535,4 +535,16 @@ env",
             None,
         );
     }
+
+    #[test]
+    fn test_dot_dot_prefix_data_table() {
+        expect_no_lint(
+            "
+cols <- 'a'
+dt[, ..cols]
+",
+            "unused_object",
+            None,
+        );
+    }
 }

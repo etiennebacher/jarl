@@ -151,8 +151,9 @@ impl DfgBuilder {
             // Extract expression  x$y  x@y
             RSyntaxKind::R_EXTRACT_EXPRESSION => self.process_children_last(node),
 
-            // Subset  x[i]  x[[i]]
-            RSyntaxKind::R_SUBSET | RSyntaxKind::R_SUBSET2 => self.process_children_last(node),
+            // Subset  x[i]  x[[i]]  x[, ..cols]
+            RSyntaxKind::R_SUBSET => self.process_subset(node),
+            RSyntaxKind::R_SUBSET2 => self.process_children_last(node),
 
             // Fallback: walk children
             _ => self.process_children_last(node),
@@ -1493,6 +1494,38 @@ impl DfgBuilder {
             unknown_refs: remaining_unknown,
             reads: vec![],
             writes: all_writes,
+            exit_points,
+            on_exit_nodes,
+        })
+    }
+
+    fn process_subset(&mut self, node: &RSyntaxNode) -> Option<DataflowInformation> {
+        let mut last: Option<DataflowInformation> = None;
+        let mut unknown_refs = Vec::new();
+        let mut exit_points = Vec::new();
+        let mut on_exit_nodes = Vec::new();
+        for child in node.children() {
+            if let Some(info) = self.process_node(&child) {
+                unknown_refs.extend(info.unknown_refs.iter().cloned());
+                exit_points.extend(info.exit_points.iter().cloned());
+                on_exit_nodes.extend(info.on_exit_nodes.iter().cloned());
+                last = Some(info);
+            }
+        }
+
+        // In data.table, `..var` inside `[` refers to `var` from the parent
+        // scope. Strip the `..` prefix so the use resolves to the definition.
+        for (name, _id) in &mut unknown_refs {
+            if let Some(stripped) = name.strip_prefix("..") {
+                *name = stripped.to_string();
+            }
+        }
+
+        last.map(|l| DataflowInformation {
+            node_id: l.node_id,
+            unknown_refs,
+            reads: vec![],
+            writes: l.writes,
             exit_points,
             on_exit_nodes,
         })
