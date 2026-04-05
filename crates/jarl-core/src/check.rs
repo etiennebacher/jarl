@@ -8,7 +8,6 @@ use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
 use air_r_syntax::{RExpressionList, RSyntaxNode};
 use anyhow::{Context, Result};
-use biome_rowan::TextSize;
 use jarl_dfg::build_dfg;
 use rayon::prelude::*;
 
@@ -18,7 +17,6 @@ use crate::package::{
     summarize_package_info,
 };
 use crate::roxygen::{extract_roxygen_examples, remap_roxygen_fix, remap_roxygen_range};
-use crate::rule_set::Rule;
 use crate::suppression::SuppressionManager;
 use crate::vcs::check_version_control;
 
@@ -388,142 +386,55 @@ fn get_checks_roxygen(
     Ok(all_diagnostics)
 }
 
-/// Lint an Rmd/Qmd file by extracting R code chunks and checking each one.
+/// Lint an Rmd/Qmd file by concatenating R code chunks into a virtual R
+/// string and running the normal linting pipeline on it.
 ///
 /// Key differences from regular R file linting:
 /// - No autofix (Quarto code annotations make position-based edits unsafe)
-/// - Diagnostic ranges are remapped from chunk-local byte offsets to file offsets
-/// - `#| jarl-ignore-chunk` silently skips an entire chunk
-/// - `#| jarl-ignore-file` suppression is applied across all chunks
+/// - `#| jarl-ignore-chunk:` YAML blocks are translated to `# jarl-ignore-start`
+///   / `# jarl-ignore-end` pairs before linting
+/// - Chunks with parse errors are silently dropped
+/// - Diagnostic ranges are remapped from virtual-string offsets to original file offsets
 fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Diagnostic>> {
-    use std::collections::HashSet;
-
     let chunks = crate::rmd::extract_r_chunks(contents);
+    let (virtual_source, offset_map) = crate::rmd::build_virtual_r_source(&chunks);
 
-    struct ChunkState {
-        parsed: air_r_parser::Parse,
-        suppression: SuppressionManager,
-        start_byte: usize,
+    if virtual_source.trim().is_empty() {
+        return Ok(Vec::new());
     }
 
-    // ── Pass 1: parse each chunk, build suppression managers,
-    //    and collect file-level suppressed rules across all chunks ──
-    let mut file_suppressed: HashSet<Rule> = HashSet::new();
-    // Maps each file-level suppression comment to its rule, using file-level byte
-    // offsets (chunk-local offset + chunk start_byte). Used later to remove
-    // spurious outdated_suppression diagnostics for cross-chunk suppressions.
-    let mut file_suppression_ranges: Vec<(biome_rowan::TextRange, Rule)> = Vec::new();
-    let mut states: Vec<Option<ChunkState>> = Vec::with_capacity(chunks.len());
-
-    for (chunk_index, chunk) in chunks.iter().enumerate() {
-        let parsed = air_r_parser::parse(&chunk.code, RParserOptions::default());
-        if parsed.has_error() {
-            // Silently skip chunks with parse errors (e.g. documentation examples).
-            states.push(None);
-            continue;
-        }
-        let mut suppression = SuppressionManager::from_node(&parsed.syntax(), &chunk.code);
-
-        // `# jarl-ignore-file` is only valid in the first R chunk (before any code).
-        // In subsequent chunks it behaves like any other misplaced file suppression.
-        if chunk_index > 0 {
-            for fs in suppression.file_suppressions.drain(..) {
-                suppression
-                    .misplaced_file_suppressions
-                    .push(fs.comment_range);
-            }
-        }
-
-        let offset = TextSize::from(chunk.start_byte as u32);
-        for fs in &suppression.file_suppressions {
-            file_suppressed.insert(fs.rule);
-            file_suppression_ranges.push((
-                biome_rowan::TextRange::new(
-                    fs.comment_range.start() + offset,
-                    fs.comment_range.end() + offset,
-                ),
-                fs.rule,
-            ));
-        }
-        states.push(Some(ChunkState {
-            parsed,
-            suppression,
-            start_byte: chunk.start_byte,
-        }));
+    let parsed = air_r_parser::parse(&virtual_source, RParserOptions::default());
+    if parsed.has_error() {
+        return Err(crate::error::ParseError { filename: file.to_path_buf() }.into());
     }
 
-    // ── Pass 2: run lints on each chunk using its pre-built suppression manager ──
-    let mut all_diagnostics: Vec<Diagnostic> = Vec::new();
+    let suppression = SuppressionManager::from_node(&parsed.syntax(), &virtual_source);
+    let mut checker = Checker::new(suppression, config.rule_options.clone());
+    checker.rule_set = config.rules_to_apply.clone();
+    checker.minimum_r_version = config.minimum_r_version;
 
-    for state in states {
-        let Some(ChunkState { parsed, suppression, start_byte }) = state else {
-            continue;
-        };
+    let expressions = &parsed.tree().expressions();
+    for expr in expressions {
+        check_expression(&expr, &mut checker)?;
+    }
 
-        let expressions = &parsed.tree().expressions();
-        let mut checker = Checker::new(suppression, config.rule_options.clone());
-        checker.rule_set = config.rules_to_apply.clone();
-        checker.minimum_r_version = config.minimum_r_version;
+    let dfg = build_dfg(&parsed.syntax());
+    check_document(expressions, dfg, &mut checker, &[], &[])?;
 
-        for expr in expressions {
-            check_expression(&expr, &mut checker)?;
-        }
-        // check_document runs suppression filtering internally, so
-        // checker.diagnostics is the post-suppression list after this call.
-        // Rmd chunks don't participate in package-level analysis, so pass empty slices.
-        let dfg = build_dfg(&parsed.syntax());
-        check_document(expressions, dfg, &mut checker, &[], &[])?;
-
-        let offset = TextSize::from(start_byte as u32);
-        let diagnostics = checker.diagnostics.into_iter().map(|mut d| {
+    // Remap ranges from virtual-string offsets to original Rmd file offsets.
+    let diagnostics: Vec<Diagnostic> = checker
+        .diagnostics
+        .into_iter()
+        .map(|mut d| {
             d.filename = file.to_path_buf();
-            d.fix = Fix::empty(); // no autofix for Rmd/Qmd
-            // Remap range from chunk-local byte offsets to original file offsets.
-            d.range = biome_rowan::TextRange::new(d.range.start() + offset, d.range.end() + offset);
+            d.fix = Fix::empty();
+            d.range = offset_map.remap_range(d.range);
             d
-        });
-        all_diagnostics.extend(diagnostics);
-    }
-
-    // A `# jarl-ignore-file` comment in one chunk can suppress violations in
-    // other chunks. From the perspective of the chunk that contains the comment,
-    // there are no local violations to suppress, so `check_document` marks the
-    // suppression as unused and emits an `outdated_suppression` diagnostic.
-    // Before the cross-chunk filter below removes the actual violations, we
-    // identify which file-suppression comments are genuinely used cross-chunk
-    // and remove the spurious outdated_suppression diagnostics for them.
-    if !file_suppression_ranges.is_empty() {
-        // Rules that have at least one real violation somewhere in the document.
-        let rules_violated: HashSet<Rule> = all_diagnostics
-            .iter()
-            .filter(|d| d.message.name != "outdated_suppression")
-            .filter_map(|d| Rule::from_name(&d.message.name))
-            .filter(|r| file_suppressed.contains(r))
-            .collect();
-
-        if !rules_violated.is_empty() {
-            // File-level suppression comment ranges that are actively used cross-chunk.
-            let used_file_ranges: HashSet<biome_rowan::TextRange> = file_suppression_ranges
-                .iter()
-                .filter(|(_, rule)| rules_violated.contains(rule))
-                .map(|(range, _)| *range)
-                .collect();
-
-            all_diagnostics.retain(|d| {
-                !(d.message.name == "outdated_suppression" && used_file_ranges.contains(&d.range))
-            });
-        }
-    }
-
-    // Apply cross-chunk jarl-ignore-file suppressions.
-    all_diagnostics.retain(|d| {
-        Rule::from_name(&d.message.name)
-            .map(|r| !file_suppressed.contains(&r))
-            .unwrap_or(true)
-    });
+        })
+        .collect();
 
     let loc_new_lines = crate::utils::find_new_lines_from_content(contents);
-    Ok(compute_lints_location(all_diagnostics, &loc_new_lines))
+    Ok(compute_lints_location(diagnostics, &loc_new_lines))
 }
 
 #[cfg(test)]
