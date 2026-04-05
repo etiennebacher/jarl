@@ -587,4 +587,22 @@ for (i in 1:3) {
             None,
         );
     }
+
+    #[test]
+    fn test_function_def_default_arg_value() {
+        expect_no_lint(
+            "
+default <- 'a'
+f <- function(arg = default) {}",
+            "unused_object",
+            None,
+        );
+        expect_no_lint(
+            "
+f <- function(arg = default) {}
+default <- 'a'",
+            "unused_object",
+            None,
+        );
+    }
 }

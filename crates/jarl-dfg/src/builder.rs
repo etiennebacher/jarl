@@ -654,6 +654,8 @@ impl DfgBuilder {
 
         // Process parameters.
         let mut param_ids = Vec::new();
+        let mut unknown_refs = Vec::new();
+
         if let Ok(params) = fields.parameters {
             {
                 let param_list = params.items();
@@ -686,6 +688,10 @@ impl DfgBuilder {
                         {
                             self.graph
                                 .add_edge(pid, val_info.node_id, EdgeType::DefinedBy);
+
+                            for (name, ref_id) in &val_info.unknown_refs {
+                                unknown_refs.push((name.clone(), *ref_id));
+                            }
                         }
                     }
                 }
@@ -695,7 +701,6 @@ impl DfgBuilder {
         // Process the body.
         let mut body_ids = Vec::new();
         let mut exit_point_ids = Vec::new();
-        let mut closure_refs = Vec::new();
         if let Ok(body) = fields.body
             && let Some(info) = self.process_node(body.syntax())
         {
@@ -717,7 +722,7 @@ impl DfgBuilder {
                         self.graph.add_edge(*ref_id, def.node_id, EdgeType::Reads);
                     }
                 } else {
-                    closure_refs.push((name.clone(), *ref_id));
+                    unknown_refs.push((name.clone(), *ref_id));
                 }
             }
 
@@ -734,7 +739,7 @@ impl DfgBuilder {
                                 self.graph.add_edge(*ref_id, def.node_id, EdgeType::Reads);
                             }
                         } else {
-                            closure_refs.push((name.clone(), *ref_id));
+                            unknown_refs.push((name.clone(), *ref_id));
                         }
                     }
                 }
@@ -745,7 +750,7 @@ impl DfgBuilder {
         self.env = parent_env;
 
         // Resolve closure references against the parent environment.
-        for (name, ref_id) in &closure_refs {
+        for (name, ref_id) in &unknown_refs {
             if let Some(defs) = self.env.resolve(name) {
                 for def in defs {
                     self.graph.add_edge(*ref_id, def.node_id, EdgeType::Reads);
@@ -761,7 +766,7 @@ impl DfgBuilder {
             cds: self.active_cds.clone(),
             data: VertexData::FunctionDef {
                 params: param_ids,
-                unresolved: closure_refs.clone(),
+                unresolved: unknown_refs.clone(),
                 body_nodes: body_ids,
                 exit_points: exit_point_ids,
             },
@@ -770,7 +775,7 @@ impl DfgBuilder {
         DataflowInformation {
             node_id: fdef_id,
             // Remaining unresolved closure refs bubble up further
-            unknown_refs: closure_refs,
+            unknown_refs,
             reads: vec![],
             writes: vec![],
             exit_points: vec![ExitPoint {
