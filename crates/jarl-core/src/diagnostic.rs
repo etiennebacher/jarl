@@ -171,8 +171,7 @@ pub fn render_diagnostic(
     // validates span bounds against the original source length, so we must
     // expand tabs in the source we pass. We only expand tabs on the lines
     // that contain the annotation span to avoid scanning the entire file.
-    let (expanded, adj_start, adj_end) =
-        expand_span_line_tabs(source, start_offset, end_offset);
+    let (expanded, adj_start, adj_end) = expand_span_line_tabs(source, start_offset, end_offset);
 
     let snippet = Snippet::source(&expanded)
         .origin(origin)
@@ -200,12 +199,8 @@ fn expand_span_line_tabs(source: &str, start: usize, end: usize) -> (String, usi
 
     // Find the line range covering the span: from the newline before `start`
     // to the newline after `end`.
-    let line_start = source[..start]
-        .rfind('\n')
-        .map_or(0, |p| p + 1);
-    let line_end = source[end..]
-        .find('\n')
-        .map_or(source.len(), |p| end + p);
+    let line_start = source[..start].rfind('\n').map_or(0, |p| p + 1);
+    let line_end = source[end..].find('\n').map_or(source.len(), |p| end + p);
 
     // If no tabs on the span lines, return the source as-is.
     if !source[line_start..line_end].contains('\t') {
@@ -231,13 +226,11 @@ fn expand_span_line_tabs(source: &str, start: usize, end: usize) -> (String, usi
         .filter(|&&b| b == TAB)
         .count();
 
-    let extra_on_lines =
-        (tabs_line_to_start + tabs_in_span + tabs_after_span) * EXTRA_PER_TAB;
+    let extra_on_lines = (tabs_line_to_start + tabs_in_span + tabs_after_span) * EXTRA_PER_TAB;
 
     // Build the result: copy before + expanded span lines + copy after.
     let expanded_lines = source[line_start..line_end].replace('\t', "    ");
-    let mut result =
-        String::with_capacity(source.len() + extra_on_lines);
+    let mut result = String::with_capacity(source.len() + extra_on_lines);
     result.push_str(&source[..line_start]);
     result.push_str(&expanded_lines);
     result.push_str(&source[line_end..]);
