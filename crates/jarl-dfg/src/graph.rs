@@ -124,6 +124,8 @@ pub enum VertexKind {
     FunctionCall,
     /// A function definition (carries a nested sub-graph for its body).
     FunctionDef,
+    /// A parameter in the function definition.
+    FunctionParam,
 }
 
 /// A vertex in the dataflow graph.

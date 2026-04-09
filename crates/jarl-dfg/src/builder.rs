@@ -675,6 +675,14 @@ impl DfgBuilder {
                             cds: self.active_cds.clone(),
                             data: VertexData::None,
                         });
+                        self.graph.add_vertex(DfVertex {
+                            id: pid,
+                            kind: VertexKind::FunctionParam,
+                            range: ident.syntax().text_trimmed_range(),
+                            name: pname.clone(),
+                            cds: self.active_cds.clone(),
+                            data: VertexData::None,
+                        });
                         self.env.define(
                             &pname,
                             IdentifierDef { node_id: pid, cds: self.active_cds.clone() },

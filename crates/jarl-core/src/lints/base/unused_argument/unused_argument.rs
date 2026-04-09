@@ -47,7 +47,10 @@ use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 /// # `x` is defined in the global environment while used in the function, but
 /// # this is a completely valid usage, so nothing is reported.
 /// ```
-pub fn unused_object(dfg: &DataflowGraph, namespace_exports: &HashSet<String>) -> Vec<Diagnostic> {
+pub fn unused_argument(
+    dfg: &DataflowGraph,
+    namespace_exports: &HashSet<String>,
+) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
 
     // Collect variable names referenced via string interpolation
@@ -119,31 +122,41 @@ pub fn unused_object(dfg: &DataflowGraph, namespace_exports: &HashSet<String>) -
         .collect();
 
     // Collect all Definition vertices.
-    let definitions: Vec<_> = dfg
+    let params: Vec<_> = dfg
         .vertices()
-        .filter(|v| v.kind == VertexKind::Definition)
+        .filter(|v| v.kind == VertexKind::FunctionParam)
         .collect();
 
-    for def in &definitions {
-        // Skip function parameters — unused params are a separate lint.
-        if param_ids.contains(&def.id) {
+    // dbg!(&namespace_exports);
+    dbg!(&dfg);
+
+    for param in &params {
+        // Focus on function params only
+        if !param_ids.contains(&param.id) {
             continue;
         }
 
+        let parent_function_def = dfg.edges_from(param.id).any(|(target, bits)| {
+            bits.contains(EdgeType::DefinedBy)
+                && dfg
+                    .vertex(target)
+                    .is_some_and(|v| v.kind == VertexKind::FunctionDef)
+        });
+
         // Skip names exported by the package's NAMESPACE file.
-        if namespace_exports.contains(&def.name) {
+        if namespace_exports.contains(&param.name) {
             continue;
         }
 
         // Only flag simple identifier assignments (e.g. `x <- 1`).
         // Skip complex LHS like `attr(x, "foo") <- 1`, `x$y <- 1`,
         // `x[i] <- 1`, and function definitions like `f <- function() ...`.
-        if !is_simple_identifier(&def.name) {
+        if !is_simple_identifier(&param.name) {
             continue;
         }
 
         // Skip definitions whose value is a function definition.
-        let is_function_binding = dfg.edges_from(def.id).any(|(target, bits)| {
+        let is_function_binding = dfg.edges_from(param.id).any(|(target, bits)| {
             bits.contains(EdgeType::DefinedBy)
                 && dfg
                     .vertex(target)
@@ -156,39 +169,39 @@ pub fn unused_object(dfg: &DataflowGraph, namespace_exports: &HashSet<String>) -
         // Skip super-assignment definitions (`<<-` / `->>`).
         // These modify a variable in a parent scope as a side-effect
         // and are inherently cross-scope — don't flag them.
-        if dfg.is_super_assign(def.id) {
+        if dfg.is_super_assign(param.id) {
             continue;
         }
 
         // A definition is "used" if any vertex has a Reads edge pointing to it,
         // excluding reads from vertices inside NSE contexts (e.g. `quote(x)`).
         let is_read = dfg
-            .edges_to(def.id)
+            .edges_to(param.id)
             .any(|(from, bits)| bits.contains(EdgeType::Reads) && !nse_vertices.contains(&from));
 
         // Also check if this definition is the value in a DefinedBy edge
         // (i.e. this definition's value flows into another definition —
         // that counts as "used" because it was consumed as an expression).
         let is_consumed = dfg
-            .edges_to(def.id)
+            .edges_to(param.id)
             .any(|(_, bits)| bits.contains(EdgeType::DefinedBy));
 
         // Check if this definition is used as an argument to a call.
         let is_arg = dfg
-            .edges_to(def.id)
+            .edges_to(param.id)
             .any(|(_, bits)| bits.contains(EdgeType::Argument));
 
         // Check if this definition is returned by a function call or
         // control flow construct.  Exclude Returns edges from assignment
         // operators (`<-`, `<<-`, `->`, `->>`, `=`) since those always
         // exist and don't indicate actual use.
-        let is_returned = dfg.edges_to(def.id).any(|(from, bits)| {
+        let is_returned = dfg.edges_to(param.id).any(|(from, bits)| {
             bits.contains(EdgeType::Returns)
                 && !dfg.vertex(from).is_some_and(|v| is_assignment_op(&v.name))
         });
 
         // Check if this variable is referenced via string interpolation.
-        let is_interpolated = interpolated_names.contains(def.name.as_str());
+        let is_interpolated = interpolated_names.contains(param.name.as_str());
 
         // If a later definition of this same variable has a self-referencing
         // read (e.g. `x <- f(x)`), suppress the diagnostic.  The DFG
@@ -198,7 +211,7 @@ pub fn unused_object(dfg: &DataflowGraph, namespace_exports: &HashSet<String>) -
             && !is_consumed
             && !is_arg
             && !is_returned
-            && self_read_names.contains(&def.name);
+            && self_read_names.contains(&param.name);
 
         // If a later definition of the same variable is conditional (has
         // control dependencies from short-circuit operators like `||` / `&&`),
@@ -208,10 +221,10 @@ pub fn unused_object(dfg: &DataflowGraph, namespace_exports: &HashSet<String>) -
             && !is_consumed
             && !is_arg
             && !is_returned
-            && definitions.iter().any(|other| {
-                other.name == def.name
-                    && other.id != def.id
-                    && other.range.start() > def.range.start()
+            && params.iter().any(|other| {
+                other.name == param.name
+                    && other.id != param.id
+                    && other.range.start() > param.range.start()
                     && !other.cds.is_empty()
             });
 
@@ -220,7 +233,7 @@ pub fn unused_object(dfg: &DataflowGraph, namespace_exports: &HashSet<String>) -
         // iteration and shouldn't be flagged.
         // E.g. `for (...) { f(x); x <- nrow(out) }` — the Use of `x` in
         // `f(x)` on the next iteration reads from this definition.
-        let loop_cd = def.cds.iter().find(|cd| cd.by_iteration);
+        let loop_cd = param.cds.iter().find(|cd| cd.by_iteration);
         let feeds_next_iteration = !is_read
             && !is_consumed
             && !is_arg
@@ -228,8 +241,8 @@ pub fn unused_object(dfg: &DataflowGraph, namespace_exports: &HashSet<String>) -
             && loop_cd.is_some_and(|lcd| {
                 dfg.vertices().any(|v| {
                     v.kind == VertexKind::Use
-                        && v.name == def.name
-                        && v.range.start() < def.range.start()
+                        && v.name == param.name
+                        && v.range.start() < param.range.start()
                         && v.cds.iter().any(|cd| cd.by_iteration && cd.id == lcd.id)
                 })
             });
@@ -246,11 +259,14 @@ pub fn unused_object(dfg: &DataflowGraph, namespace_exports: &HashSet<String>) -
             continue;
         }
 
-        let range = def.range;
+        let range = param.range;
         let diagnostic = Diagnostic::new(
             ViolationData::new(
-                "unused_object".to_string(),
-                format!("Object `{}` is defined but never used.", def.name),
+                "unused_argument".to_string(),
+                format!(
+                    "Argument `{}` is defined in the function but never used.",
+                    param.name
+                ),
                 None,
             ),
             range,
