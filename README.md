@@ -88,6 +88,10 @@ if (all.equal(x, y)) {
 
 ## Installation
 
+This details how to install Jarl via the command line.
+
+Note that the [VS Code and Positron extensions](https://jarl.etiennebacher.com/howto/editors#vs-code-positron) contain a bundled version of Jarl, so you don't need to install it via the command line if you plan to use it via those extensions only. See the [Editor support](https://jarl.etiennebacher.com/howto/editor) page for more information.
+
 ### Released version
 
 Either get binaries from the [Releases page](https://github.com/etiennebacher/jarl/releases) or install Jarl from the existing installer scripts below.
