@@ -3,7 +3,7 @@ use crate::package_cache::PackageCache;
 use crate::rule_options::ResolvedRuleOptions;
 use crate::rule_set::{Rule, RuleSet};
 use crate::suppression::SuppressionManager;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 /// Packages that R attaches by default on startup (equivalent to
@@ -70,6 +70,10 @@ pub struct Checker {
     // Direct function→package mappings from `importFrom()` in the package's
     // own NAMESPACE. Takes priority over export-list scanning.
     pub import_from: HashMap<String, String>,
+    // Names exported by the package's NAMESPACE file (`export()`,
+    // `S3method()`, etc.).  Used to suppress false positives in rules
+    // like `unused_object` — exported names are "used" by definition.
+    pub namespace_exports: HashSet<String>,
 }
 
 impl Checker {
@@ -86,6 +90,7 @@ impl Checker {
             loaded_packages: Vec::new(),
             package_cache: None,
             import_from: HashMap::new(),
+            namespace_exports: HashSet::new(),
         }
     }
 
