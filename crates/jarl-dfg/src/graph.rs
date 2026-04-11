@@ -266,9 +266,10 @@ impl DataflowGraph {
 
     /// Iterate over all edges pointing *to* a given vertex.
     pub fn edges_to(&self, target: NodeId) -> impl Iterator<Item = (NodeId, EdgeTypeBits)> + '_ {
-        self.edges.iter().flat_map(move |(&from, targets)| {
-            targets.get(&target).map(|&bits| (from, bits)).into_iter()
-        })
+        self.reverse_edges
+            .get(&target)
+            .into_iter()
+            .flat_map(|m| m.iter().map(|(&from, &bits)| (from, bits)))
     }
 
     /// Mark a definition as created by super-assignment (`<<-` / `->>`).

@@ -1828,9 +1828,9 @@ f <- function(a, b) {
         );
         assert!(has_vertex_named(&g, "f", VertexKind::Definition));
         assert!(has_vertex_named(&g, "<function>", VertexKind::FunctionDef));
-        // Parameters should be definitions inside the function
-        assert!(has_vertex_named(&g, "a", VertexKind::Definition));
-        assert!(has_vertex_named(&g, "b", VertexKind::Definition));
+        // Parameters are FunctionParam vertices inside the function
+        assert!(has_vertex_named(&g, "a", VertexKind::FunctionParam));
+        assert!(has_vertex_named(&g, "b", VertexKind::FunctionParam));
     }
 
     #[test]

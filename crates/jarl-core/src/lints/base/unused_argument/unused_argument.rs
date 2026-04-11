@@ -65,23 +65,30 @@ pub fn unused_argument(
         }
     }
 
-    // Identify FunctionDef vertices whose body contains UseMethod() or
-    // match.call() calls. These functions should have all params skipped.
+    // Identify FunctionDef vertices whose body contains UseMethod(),
+    // NextMethod(), standardGeneric(), or match.call() calls.
+    //
+    // Collect dispatch calls once, then check each FunctionDef against
+    // them to avoid O(V²) nested iteration.
     let mut skip_all_params: FxHashSet<NodeId> = FxHashSet::default();
-    for v in dfg.vertices() {
-        if v.kind == VertexKind::FunctionDef {
-            let fdef_range = v.range;
-            // Check if any FunctionCall inside this function's range
-            // is UseMethod or match.call.
-            let has_use_method_or_match_call = dfg.vertices().any(|inner| {
-                inner.kind == VertexKind::FunctionCall
-                    && fdef_range.contains_range(inner.range)
-                    && matches!(
-                        inner.name.as_str(),
-                        "UseMethod" | "NextMethod" | "standardGeneric" | "match.call"
-                    )
-            });
-            if has_use_method_or_match_call {
+    let dispatch_call_ranges: Vec<_> = dfg
+        .vertices()
+        .filter(|v| {
+            v.kind == VertexKind::FunctionCall
+                && matches!(
+                    v.name.as_str(),
+                    "UseMethod" | "NextMethod" | "standardGeneric" | "match.call"
+                )
+        })
+        .map(|v| v.range)
+        .collect();
+    if !dispatch_call_ranges.is_empty() {
+        for v in dfg.vertices() {
+            if v.kind == VertexKind::FunctionDef
+                && dispatch_call_ranges
+                    .iter()
+                    .any(|r| v.range.contains_range(*r))
+            {
                 skip_all_params.insert(v.id);
             }
         }
@@ -100,7 +107,7 @@ pub fn unused_argument(
         }
         if let VertexData::Call { args } = &v.data {
             match v.name.as_str() {
-                "tryCatch" | "try_fetch" | "withCallingHandlers" => {
+                "tryCatch" | "try_fetch" | "rlang::try_fetch" | "withCallingHandlers" => {
                     for arg in args {
                         if arg.name.is_some()
                             && !matches!(arg.name.as_deref(), Some("expr") | Some("finally"))
@@ -119,11 +126,7 @@ pub fn unused_argument(
                     let fdef_id = args
                         .iter()
                         .find(|a| a.name.as_deref() == Some("def"))
-                        .or_else(|| {
-                            args.iter()
-                                .filter(|a| a.name.is_none())
-                                .nth(2)
-                        })
+                        .or_else(|| args.iter().filter(|a| a.name.is_none()).nth(2))
                         .map(|a| a.node_id);
                     if let Some(id) = fdef_id {
                         if dfg
