@@ -675,6 +675,14 @@ impl DfgBuilder {
                             cds: self.active_cds.clone(),
                             data: VertexData::None,
                         });
+                        self.graph.add_vertex(DfVertex {
+                            id: pid,
+                            kind: VertexKind::FunctionParam,
+                            range: ident.syntax().text_trimmed_range(),
+                            name: pname.clone(),
+                            cds: self.active_cds.clone(),
+                            data: VertexData::None,
+                        });
                         self.env.define(
                             &pname,
                             IdentifierDef { node_id: pid, cds: self.active_cds.clone() },
@@ -857,13 +865,13 @@ impl DfgBuilder {
             "quote" | "bquote" | "substitute" | "match.arg"
         );
         if is_nse {
-            let vertex_count_before = self.graph.vertex_count();
+            let id_before = self.graph.next_id();
             let result = self.process_call_inner(node, call_id, &func_name);
 
             // Add NonStandardEvaluation edges from the call to all
             // vertices created inside the NSE argument.
-            let vertex_count_after = self.graph.vertex_count();
-            for idx in (vertex_count_before as u32)..(vertex_count_after as u32) {
+            let id_after = self.graph.next_id();
+            for idx in id_before..id_after {
                 let inner_id = NodeId(idx);
                 if inner_id != call_id {
                     self.graph
@@ -1820,9 +1828,9 @@ f <- function(a, b) {
         );
         assert!(has_vertex_named(&g, "f", VertexKind::Definition));
         assert!(has_vertex_named(&g, "<function>", VertexKind::FunctionDef));
-        // Parameters should be definitions inside the function
-        assert!(has_vertex_named(&g, "a", VertexKind::Definition));
-        assert!(has_vertex_named(&g, "b", VertexKind::Definition));
+        // Parameters are FunctionParam vertices inside the function
+        assert!(has_vertex_named(&g, "a", VertexKind::FunctionParam));
+        assert!(has_vertex_named(&g, "b", VertexKind::FunctionParam));
     }
 
     #[test]

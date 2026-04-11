@@ -47,7 +47,7 @@ use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 /// # `x` is defined in the global environment while used in the function, but
 /// # this is a completely valid usage, so nothing is reported.
 /// ```
-pub fn unused_object(dfg: DataflowGraph, namespace_exports: &HashSet<String>) -> Vec<Diagnostic> {
+pub fn unused_object(dfg: &DataflowGraph, namespace_exports: &HashSet<String>) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
 
     // Collect variable names referenced via string interpolation

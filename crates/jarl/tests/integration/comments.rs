@@ -180,6 +180,13 @@ any(is.na(y))
     success: false
     exit_code: 1
     ----- stdout -----
+    warning: unused_argument
+     --> test.R:3:15
+      |
+    3 | x <- function(x) {
+      |               - Argument `x` is defined in the function but never used.
+      |
+
     warning: any_is_na
      --> test.R:6:1
       |
@@ -190,7 +197,7 @@ any(is.na(y))
 
 
     ── Summary ──────────────────────────────────────
-    Found 1 error.
+    Found 2 errors.
     1 fixable with the `--fix` option.
 
     ----- stderr -----

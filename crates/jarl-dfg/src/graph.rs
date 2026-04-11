@@ -124,6 +124,8 @@ pub enum VertexKind {
     FunctionCall,
     /// A function definition (carries a nested sub-graph for its body).
     FunctionDef,
+    /// A parameter in the function definition.
+    FunctionParam,
 }
 
 /// A vertex in the dataflow graph.
@@ -197,6 +199,9 @@ pub struct DataflowGraph {
     vertices: FxHashMap<NodeId, DfVertex>,
     /// Adjacency list: `edges[source][target] = edge_bits`.
     edges: FxHashMap<NodeId, FxHashMap<NodeId, EdgeTypeBits>>,
+    /// Reverse adjacency list: `reverse_edges[target][source] = edge_bits`.
+    /// Built lazily by [`DataflowGraph::build_reverse_edges`].
+    reverse_edges: FxHashMap<NodeId, FxHashMap<NodeId, EdgeTypeBits>>,
     /// Counter for generating fresh [`NodeId`]s.
     next_id: u32,
     /// Definition vertices created by super-assignment (`<<-` / `->>`).
@@ -208,6 +213,7 @@ impl DataflowGraph {
         Self {
             vertices: FxHashMap::default(),
             edges: FxHashMap::default(),
+            reverse_edges: FxHashMap::default(),
             next_id: 0,
             super_assign_defs: FxHashSet::default(),
         }
@@ -229,13 +235,18 @@ impl DataflowGraph {
 
     /// Add an edge (or merge bits into an existing edge).
     pub fn add_edge(&mut self, from: NodeId, to: NodeId, ty: EdgeType) {
-        let entry = self
-            .edges
+        self.edges
             .entry(from)
             .or_default()
             .entry(to)
-            .or_insert(EdgeTypeBits(0));
-        entry.insert(ty);
+            .or_insert(EdgeTypeBits(0))
+            .insert(ty);
+        self.reverse_edges
+            .entry(to)
+            .or_default()
+            .entry(from)
+            .or_insert(EdgeTypeBits(0))
+            .insert(ty);
     }
 
     pub fn vertex(&self, id: NodeId) -> Option<&DfVertex> {
@@ -255,9 +266,10 @@ impl DataflowGraph {
 
     /// Iterate over all edges pointing *to* a given vertex.
     pub fn edges_to(&self, target: NodeId) -> impl Iterator<Item = (NodeId, EdgeTypeBits)> + '_ {
-        self.edges.iter().flat_map(move |(&from, targets)| {
-            targets.get(&target).map(|&bits| (from, bits)).into_iter()
-        })
+        self.reverse_edges
+            .get(&target)
+            .into_iter()
+            .flat_map(|m| m.iter().map(|(&from, &bits)| (from, bits)))
     }
 
     /// Mark a definition as created by super-assignment (`<<-` / `->>`).
@@ -272,6 +284,14 @@ impl DataflowGraph {
 
     pub fn vertex_count(&self) -> usize {
         self.vertices.len()
+    }
+
+    /// The next [`NodeId`] that would be allocated by [`fresh_id`].
+    ///
+    /// Unlike `vertex_count()`, this reflects every ID ever allocated
+    /// (including overwrites from duplicate inserts).
+    pub fn next_id(&self) -> u32 {
+        self.next_id
     }
 
     pub fn edge_count(&self) -> usize {

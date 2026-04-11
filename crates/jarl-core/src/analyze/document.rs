@@ -5,6 +5,7 @@ use jarl_dfg::*;
 use crate::checker::Checker;
 use crate::diagnostic::*;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
+use crate::lints::base::unused_argument::unused_argument::unused_argument;
 use crate::lints::base::unused_object::unused_object::unused_object;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
 use crate::lints::comments::invalid_chunk_suppression::invalid_chunk_suppression::invalid_chunk_suppression;
@@ -28,8 +29,14 @@ pub(crate) fn check_document(
     // --- Document-level analysis ---
     let expressions: Vec<RSyntaxNode> = expressions.iter().map(|e| e.syntax().clone()).collect();
 
+    if checker.is_rule_enabled(Rule::UnusedArgument) {
+        for diagnostic in unused_argument(&dfg, &checker.namespace_exports, &checker.s3_info) {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    }
+
     if checker.is_rule_enabled(Rule::UnusedObject) {
-        for diagnostic in unused_object(dfg, &checker.namespace_exports) {
+        for diagnostic in unused_object(&dfg, &checker.namespace_exports) {
             checker.report_diagnostic(Some(diagnostic));
         }
     }

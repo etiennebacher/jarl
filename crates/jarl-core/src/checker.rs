@@ -1,4 +1,5 @@
 use crate::diagnostic::Diagnostic;
+use crate::namespace::S3Info;
 use crate::package_cache::PackageCache;
 use crate::rule_options::ResolvedRuleOptions;
 use crate::rule_set::{Rule, RuleSet};
@@ -74,6 +75,10 @@ pub struct Checker {
     // `S3method()`, etc.).  Used to suppress false positives in rules
     // like `unused_object` — exported names are "used" by definition.
     pub namespace_exports: HashSet<String>,
+    // S3 generic and method names from `S3method()` directives in
+    // the package's NAMESPACE. Used to skip unused-argument checks
+    // on S3 generics and methods.
+    pub s3_info: S3Info,
 }
 
 impl Checker {
@@ -91,6 +96,7 @@ impl Checker {
             package_cache: None,
             import_from: HashMap::new(),
             namespace_exports: HashSet::new(),
+            s3_info: S3Info::default(),
         }
     }
 

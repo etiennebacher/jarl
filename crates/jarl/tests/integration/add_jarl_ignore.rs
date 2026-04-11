@@ -419,9 +419,9 @@ fn test_add_jarl_ignore_function_parameter() -> anyhow::Result<()> {
     success: true
     exit_code: 0
     ----- stdout -----
-    Modified: Added 1 suppression comment(s) to test.R
+    Modified: Added 2 suppression comment(s) to test.R
 
-    Summary: Added 1 suppression comment(s) across 1 file(s).
+    Summary: Added 2 suppression comment(s) across 1 file(s).
 
     ----- stderr -----
     "
@@ -433,6 +433,7 @@ fn test_add_jarl_ignore_function_parameter() -> anyhow::Result<()> {
         @"
     f <- function(
         # jarl-ignore any_is_na: <reason>
+        # jarl-ignore unused_argument: <reason>
         a = any(is.na(x))
     ) {
       1
