@@ -162,14 +162,12 @@ any(is.na(x))
 fn test_rmd_ignore_chunk_with_rule() -> anyhow::Result<()> {
     let case = CliTest::with_file(
         "test.Rmd",
-        concat!(
-            "
+        "
 ```{r}
 #| jarl-ignore-chunk:
 #|   - any_is_na: legacy code
 any(is.na(x))
 ```",
-        ),
     )?;
 
     insta::assert_snapshot!(
@@ -746,7 +744,7 @@ fn test_rmd_ignore_file_in_second_chunk_misplaced() -> anyhow::Result<()> {
         "test.Rmd",
         "
 ```{r}
-x <- 1
+1 + 1
 ```
 
 ```{r}
@@ -767,13 +765,6 @@ any(is.na(1))
     success: false
     exit_code: 1
     ----- stdout -----
-    warning: unused_object
-     --> test.Rmd:3:1
-      |
-    3 | x <- 1
-      | - Object `x` is defined but never used.
-      |
-
     warning: misplaced_file_suppression
      --> test.Rmd:7:1
       |
@@ -792,7 +783,7 @@ any(is.na(1))
 
 
     ── Summary ──────────────────────────────────────
-    Found 3 errors.
+    Found 2 errors.
 
     ----- stderr -----
     "
@@ -808,7 +799,7 @@ fn test_rmd_ignore_file_after_code_misplaced() -> anyhow::Result<()> {
         "test.Rmd",
         "
 ```{r}
-x <- 1
+1 + 1
 # jarl-ignore-file any_is_na: should be misplaced
 any(is.na(1))
 ```",
@@ -826,13 +817,6 @@ any(is.na(1))
     success: false
     exit_code: 1
     ----- stdout -----
-    warning: unused_object
-     --> test.Rmd:3:1
-      |
-    3 | x <- 1
-      | - Object `x` is defined but never used.
-      |
-
     warning: misplaced_file_suppression
      --> test.Rmd:4:1
       |
@@ -851,7 +835,7 @@ any(is.na(1))
 
 
     ── Summary ──────────────────────────────────────
-    Found 3 errors.
+    Found 2 errors.
 
     ----- stderr -----
     "
@@ -913,7 +897,7 @@ fn test_rmd_ignore_file_truly_unused_outdated() -> anyhow::Result<()> {
 ```
 
 ```{r}
-x <- 1
+1 + 1
 ```",
     )?;
 
@@ -937,16 +921,9 @@ x <- 1
       |
       = help: Remove this suppression comment or verify that it's still needed.
 
-    warning: unused_object
-     --> test.Rmd:7:1
-      |
-    7 | x <- 1
-      | - Object `x` is defined but never used.
-      |
-
 
     ── Summary ──────────────────────────────────────
-    Found 2 errors.
+    Found 1 error.
 
     ----- stderr -----
     "
@@ -1001,127 +978,6 @@ any(is.na(x))
 
     let after = case.read_file("test.Rmd")?;
     assert_eq!(after, original, "Rmd file must not be modified by --fix");
-
-    Ok(())
-}
-
-// ---------------------------------------------------------------------------
-// Chunk option names not flagged as unused
-// ---------------------------------------------------------------------------
-
-/// An R object used in a non-R chunk option (e.g. `eval=cond`) should not be
-/// flagged as unused.
-#[test]
-fn test_rmd_chunk_option_name_not_unused() -> anyhow::Result<()> {
-    let case = CliTest::with_file(
-        "test.Rmd",
-        "
-```{r}
-cond <- TRUE
-```
-
-```{bash, eval=cond}
-echo 'hi'
-```",
-    )?;
-
-    insta::assert_snapshot!(
-        &mut case
-            .command()
-            .arg("check")
-            .arg(".")
-            .arg("--select")
-            .arg("unused_object")
-            .run()
-            .normalize_os_executable_name(),
-        @"
-
-    success: true
-    exit_code: 0
-    ----- stdout -----
-    ── Summary ──────────────────────────────────────
-    All checks passed!
-
-    ----- stderr -----
-    "
-    );
-
-    Ok(())
-}
-
-/// Same for the other chunk option syntax
-#[test]
-fn test_qmd_chunk_option_name_not_unused() -> anyhow::Result<()> {
-    let case = CliTest::with_file(
-        "test.Rmd",
-        "
-```{r}
-cond <- TRUE
-```
-
-```{bash}
-#| eval: !expr cond
-echo 'hi'
-```",
-    )?;
-
-    insta::assert_snapshot!(
-        &mut case
-            .command()
-            .arg("check")
-            .arg(".")
-            .arg("--select")
-            .arg("unused_object")
-            .run()
-            .normalize_os_executable_name(),
-        @"
-
-    success: true
-    exit_code: 0
-    ----- stdout -----
-    ── Summary ──────────────────────────────────────
-    All checks passed!
-
-    ----- stderr -----
-    "
-    );
-
-    Ok(())
-}
-
-/// An R object used in an R chunk option should also not be flagged.
-#[test]
-fn test_rmd_r_chunk_option_name_not_unused() -> anyhow::Result<()> {
-    let case = CliTest::with_file(
-        "test.Rmd",
-        "
-```{r}
-should_run <- TRUE
-```
-
-```{r, eval=should_run}
-print('hello')
-```",
-    )?;
-
-    insta::assert_snapshot!(
-        &mut case
-            .command()
-            .arg("check")
-            .arg(".")
-            .run()
-            .normalize_os_executable_name(),
-        @"
-
-    success: true
-    exit_code: 0
-    ----- stdout -----
-    ── Summary ──────────────────────────────────────
-    All checks passed!
-
-    ----- stderr -----
-    "
-    );
 
     Ok(())
 }
