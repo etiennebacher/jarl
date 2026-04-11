@@ -14,7 +14,7 @@ use crate::lints::base::duplicated_function_definition::duplicated_function_defi
 use crate::lints::base::unused_function::unused_function::{
     collect_files, compute_unused_from_shared, has_cpp_extension, scan_symbols,
 };
-use crate::namespace::{parse_namespace_exports, parse_namespace_imports};
+use crate::namespace::{S3Info, parse_namespace_exports, parse_namespace_imports, parse_namespace_s3};
 use crate::rule_set::Rule;
 
 /// Scope of a file within an R package, determining how its definitions
@@ -41,6 +41,8 @@ pub struct PackageContext {
     /// Raw NAMESPACE content, retained so `compute_unused_from_shared()` can
     /// call `parse_namespace_exports()` with the full `all_names` list.
     pub namespace_content: Option<String>,
+    /// S3 generic and method names extracted from `S3method()` directives.
+    pub s3_info: S3Info,
 }
 
 /// Per-file package classification, computed upfront by
@@ -178,6 +180,7 @@ pub fn summarize_package_info(
             ));
         }
 
+        let mut s3_info = S3Info::default();
         let ns_path = root.join("NAMESPACE");
         if let Ok(ns) = std::fs::read_to_string(&ns_path) {
             let imports = parse_namespace_imports(&ns);
@@ -188,6 +191,7 @@ pub fn summarize_package_info(
                 }
             }
             namespace_exports = parse_namespace_exports(&ns, &[]);
+            s3_info = parse_namespace_s3(&ns);
             namespace_content = Some(ns);
         }
 
@@ -198,6 +202,7 @@ pub fn summarize_package_info(
                 import_from,
                 loaded_packages: packages,
                 namespace_content,
+                s3_info,
             },
         );
     }

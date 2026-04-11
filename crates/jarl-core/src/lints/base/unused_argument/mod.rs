@@ -8,218 +8,115 @@ mod tests {
         format_diagnostics(code, "unused_argument", None)
     }
 
-    #[test]
-    fn test_no_lint_used_variable() {
-        expect_no_lint("x <- 1\nprint(x)", "unused_argument", None);
-    }
+    // ---------------------------------------------------------------
+    // No-lint cases
+    // ---------------------------------------------------------------
 
     #[test]
-    fn test_no_lint_variable_in_expression() {
-        expect_no_lint("x <- 1\ny <- x + 1\nprint(y)", "unused_argument", None);
-    }
-
-    #[test]
-    fn test_no_lint_function_definition() {
-        expect_no_lint("f <- function() 1", "unused_argument", None);
-    }
-
-    #[test]
-    fn test_no_lint_function_parameter() {
-        expect_no_lint("f <- function(x) 1", "unused_argument", None);
-    }
-
-    #[test]
-    fn test_no_lint_used_in_closure() {
+    fn test_no_lint_all_params_used() {
         expect_no_lint(
-            "x <- 1\nf <- function() {\n  y <- x + 1\n  y\n}",
+            "f <- function(x, y) {\n  x + y\n}",
             "unused_argument",
             None,
         );
     }
 
     #[test]
-    fn test_no_lint_loop_variable() {
-        expect_no_lint("for (i in 1:10) print(i)", "unused_argument", None);
+    fn test_no_lint_single_param_used() {
+        expect_no_lint("f <- function(x) {\n  x + 1\n}", "unused_argument", None);
     }
 
     #[test]
-    fn test_no_lint_if_else_usage() {
+    fn test_no_lint_param_used_in_nested_call() {
         expect_no_lint(
-            "x <- 1\nif (TRUE) print(x) else print(x)",
+            "f <- function(x) {\n  print(mean(x))\n}",
             "unused_argument",
             None,
         );
     }
 
     #[test]
-    fn test_no_lint_super_assignment() {
-        expect_no_lint("f <- function() { x <<- 1 }", "unused_argument", None);
-    }
-
-    #[test]
-    fn test_no_lint_replacement_function() {
+    fn test_no_lint_param_in_condition() {
         expect_no_lint(
-            "x <- list()\nnames(x) <- 'a'\nprint(x)",
+            "f <- function(x) {\n  if (x) 1 else 2\n}",
             "unused_argument",
             None,
         );
     }
 
     #[test]
-    fn test_no_lint_subset_replacement() {
-        expect_no_lint("x <- 1:3\nx[1] <- 10\nprint(x)", "unused_argument", None);
-    }
-
-    #[test]
-    fn test_no_lint_dollar_replacement() {
-        expect_no_lint("x <- list()\nx$a <- 1\nprint(x)", "unused_argument", None);
-    }
-
-    #[test]
-    fn test_no_lint_string_interpolation() {
-        expect_no_lint("x <- 1\nmessage(\"value is {x}\")", "unused_argument", None);
-    }
-
-    #[test]
-    fn test_no_lint_string_interpolation_expression() {
+    fn test_no_lint_dots() {
         expect_no_lint(
-            "n <- 10\nmessage(\"{n} items found\")",
+            "f <- function(x, ...) {\n  x + 1\n}",
             "unused_argument",
             None,
         );
     }
 
     #[test]
-    fn test_no_lint_returned_by_function() {
+    fn test_no_lint_param_returned_implicitly() {
+        expect_no_lint("f <- function(x) {\n  x\n}", "unused_argument", None);
+    }
+
+    #[test]
+    fn test_no_lint_use_method() {
+        // S3 generics call UseMethod() — params are dispatched, not used directly
         expect_no_lint(
-            "f <- function() {\n  x <- 1\n  x\n}",
+            "print.myclass <- function(x, ...) {\n  UseMethod(\"print\")\n}",
             "unused_argument",
             None,
         );
     }
 
     #[test]
-    fn test_no_lint_used_as_argument() {
-        expect_no_lint("x <- 1\nmean(x)", "unused_argument", None);
-    }
-
-    #[test]
-    fn test_no_lint_used_as_named_argument() {
-        expect_no_lint("x <- 1\nfoo(value = x)", "unused_argument", None);
-    }
-
-    #[test]
-    fn test_no_lint_self_read_suppression() {
-        expect_no_lint("x <- 1\nx <- x + 1\nprint(x)", "unused_argument", None);
-    }
-
-    #[test]
-    fn test_no_lint_pipe() {
-        expect_no_lint("x <- 1\nx |> print()", "unused_argument", None);
-    }
-
-    #[test]
-    fn test_no_lint_used_in_condition() {
-        expect_no_lint("x <- TRUE\nif (x) print('yes')", "unused_argument", None);
-    }
-
-    #[test]
-    fn test_no_lint_used_in_while() {
+    fn test_no_lint_match_call() {
+        // match.call() captures all args dynamically
         expect_no_lint(
-            "x <- TRUE\nwhile (x) { x <- FALSE }",
+            "f <- function(x, y, z) {\n  mc <- match.call()\n  mc\n}",
             "unused_argument",
             None,
         );
     }
 
     #[test]
-    fn test_no_lint_right_assignment_used() {
-        expect_no_lint("1 -> x\nprint(x)", "unused_argument", None);
+    fn test_no_lint_no_params() {
+        expect_no_lint("f <- function() {\n  1\n}", "unused_argument", None);
     }
 
     #[test]
-    fn test_no_lint_equals_assignment_used() {
-        expect_no_lint("x = 1\nprint(x)", "unused_argument", None);
+    fn test_no_lint_lambda() {
+        expect_no_lint("f <- \\(x) x + 1", "unused_argument", None);
     }
 
     #[test]
-    fn test_no_lint_multiple_all_used() {
+    fn test_no_lint_trycatch_handler() {
         expect_no_lint(
-            "x <- 1\ny <- 2\nz <- x + y\nprint(z)",
+            "tryCatch(expr, error = function(e) { 'oops' })",
+            "unused_argument",
+            None,
+        );
+        expect_no_lint(
+            "tryCatch(expr, warning = function(w) { 'warn' })",
             "unused_argument",
             None,
         );
     }
 
     #[test]
-    fn test_no_lint_used_in_nested_call() {
-        expect_no_lint("x <- 1\nprint(mean(x))", "unused_argument", None);
-    }
-
-    #[test]
-    fn test_no_lint_local_scope() {
-        expect_no_lint("local({\n  x <- 1\n  print(x)\n})", "unused_argument", None);
-    }
-
-    #[test]
-    fn test_no_lint_with_unresolved_refs_in_function_def_resolved_later() {
-        expect_no_lint("f <- function() x\nx <- 1", "unused_argument", None);
-    }
-
-    #[test]
-    fn test_with_on_exit() {
-        // no lint when on.exit() refers to objects defined after it's called
+    fn test_no_lint_try_fetch_handler() {
         expect_no_lint(
-            "
-        f <- function() {
-            on.exit(print(a))
-            a <- 1
-            'hi'
-        }
-        ",
+            "try_fetch(expr, error = function(e) { 'oops' })",
             "unused_argument",
             None,
         );
+    }
 
-        // See comment in `process_call()`
+    #[test]
+    fn test_no_lint_with_calling_handlers() {
         expect_no_lint(
-            "
-        f <- function() {
-            foo <- TRUE
-            on.exit(
-                if (foo) print('bye')
-            )
-            # <some operation that might error here>
-            foo <- FALSE
-        }
-        ",
+            "withCallingHandlers(expr, message = function(m) { 'msg' })",
             "unused_argument",
             None,
-        );
-        // report when on.exit() doesn't use objects
-        assert_snapshot!(
-            snapshot_lint("
-f <- function() {
-    foo <- TRUE
-    on.exit(print('bye'))
-    foo <- FALSE
-}
-        "),
-            @"
-        warning: unused_argument
-         --> <test>:3:5
-          |
-        3 |     foo <- TRUE
-          |     --- Object `foo` is defined but never used.
-          |
-        warning: unused_argument
-         --> <test>:5:5
-          |
-        5 |     foo <- FALSE
-          |     --- Object `foo` is defined but never used.
-          |
-        Found 2 errors.
-        "
         );
     }
 
@@ -228,27 +125,15 @@ f <- function() {
     // ---------------------------------------------------------------
 
     #[test]
-    fn test_lint_simple_unused() {
+    fn test_lint_simple_unused_param() {
         assert_snapshot!(
-            snapshot_lint("x <- 1\nprint(y)"),
+            snapshot_lint("f <- function(x, y) {\n  x + 1\n}"),
             @r"
         warning: unused_argument
-         --> <test>:1:1
+         --> <test>:1:18
           |
-        1 | x <- 1
-          | - Object `x` is defined but never used.
-          |
-        Found 1 error.
-        "
-        );
-        assert_snapshot!(
-            snapshot_lint(".x <- 1\nprint(y)"),
-            @"
-        warning: unused_argument
-         --> <test>:1:1
-          |
-        1 | .x <- 1
-          | -- Object `.x` is defined but never used.
+        1 | f <- function(x, y) {
+          |                  - Argument `y` is defined in the function but never used.
           |
         Found 1 error.
         "
@@ -256,37 +141,21 @@ f <- function() {
     }
 
     #[test]
-    fn test_lint_unused_after_reassignment() {
+    fn test_lint_all_params_unused() {
         assert_snapshot!(
-            snapshot_lint("x <- 1\nx <- 2\nprint(x)"),
+            snapshot_lint("f <- function(x, y) {\n  1 + 1\n}"),
             @r"
         warning: unused_argument
-         --> <test>:1:1
+         --> <test>:1:18
           |
-        1 | x <- 1
-          | - Object `x` is defined but never used.
-          |
-        Found 1 error.
-        "
-        );
-    }
-
-    #[test]
-    fn test_lint_multiple_unused() {
-        assert_snapshot!(
-            snapshot_lint("x <- 1\ny <- 2"),
-            @r"
-        warning: unused_argument
-         --> <test>:1:1
-          |
-        1 | x <- 1
-          | - Object `x` is defined but never used.
+        1 | f <- function(x, y) {
+          |                  - Argument `y` is defined in the function but never used.
           |
         warning: unused_argument
-         --> <test>:2:1
+         --> <test>:1:15
           |
-        2 | y <- 2
-          | - Object `y` is defined but never used.
+        1 | f <- function(x, y) {
+          |               - Argument `x` is defined in the function but never used.
           |
         Found 2 errors.
         "
@@ -294,15 +163,15 @@ f <- function() {
     }
 
     #[test]
-    fn test_lint_unused_right_assignment() {
+    fn test_lint_one_of_many_unused() {
         assert_snapshot!(
-            snapshot_lint("1 -> x"),
+            snapshot_lint("f <- function(a, b, c) {\n  a + c\n}"),
             @r"
         warning: unused_argument
-         --> <test>:1:6
+         --> <test>:1:18
           |
-        1 | 1 -> x
-          |      - Object `x` is defined but never used.
+        1 | f <- function(a, b, c) {
+          |                  - Argument `b` is defined in the function but never used.
           |
         Found 1 error.
         "
@@ -310,307 +179,28 @@ f <- function() {
     }
 
     #[test]
-    fn test_lint_unused_equals_assignment() {
+    fn test_no_lint_param_reassigned_using_itself() {
+        // .cols is used in enquo(.cols) before being reassigned
+        expect_no_lint(
+            "across <- function(.cols) {\n  .cols <- enquo(.cols)\n}",
+            "unused_argument",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_unused_in_lambda() {
         assert_snapshot!(
-            snapshot_lint("x = 1"),
+            snapshot_lint("f <- \\(x, y) x + 1"),
             @r"
         warning: unused_argument
-         --> <test>:1:1
+         --> <test>:1:11
           |
-        1 | x = 1
-          | - Object `x` is defined but never used.
+        1 | f <- \(x, y) x + 1
+          |           - Argument `y` is defined in the function but never used.
           |
         Found 1 error.
         "
-        );
-    }
-
-    #[test]
-    fn test_lint_only_one_of_two_used() {
-        assert_snapshot!(
-            snapshot_lint("x <- 1\ny <- 2\nprint(x)"),
-            @r"
-        warning: unused_argument
-         --> <test>:2:1
-          |
-        2 | y <- 2
-          | - Object `y` is defined but never used.
-          |
-        Found 1 error.
-        "
-        );
-    }
-
-    #[test]
-    fn test_lint_unused_in_function_body() {
-        assert_snapshot!(
-            snapshot_lint("f <- function() {\n  x <- 1\n  y <- 2\n  y\n}"),
-            @r"
-        warning: unused_argument
-         --> <test>:2:3
-          |
-        2 |   x <- 1
-          |   - Object `x` is defined but never used.
-          |
-        Found 1 error.
-        "
-        );
-    }
-
-    #[test]
-    fn test_lint_unused_with_used_neighbor() {
-        assert_snapshot!(
-            snapshot_lint("a <- 1\nb <- 2\nc <- a + b\nd <- 99"),
-            @r"
-        warning: unused_argument
-         --> <test>:3:1
-          |
-        3 | c <- a + b
-          | - Object `c` is defined but never used.
-          |
-        warning: unused_argument
-         --> <test>:4:1
-          |
-        4 | d <- 99
-          | - Object `d` is defined but never used.
-          |
-        Found 2 errors.
-        "
-        );
-    }
-
-    #[test]
-    fn test_lint_nse_read_does_not_count() {
-        assert_snapshot!(
-            snapshot_lint("x <- 1\nquote(x)"),
-            @r"
-        warning: unused_argument
-         --> <test>:1:1
-          |
-        1 | x <- 1
-          | - Object `x` is defined but never used.
-          |
-        Found 1 error.
-        "
-        );
-    }
-
-    #[test]
-    fn test_with_assignment_pipe() {
-        // should lint: re-assigned `x` isn't used
-        assert_snapshot!(
-            snapshot_lint("
-x <- 1:3
-x %<>% sum()"
-        ),
-            @"
-        warning: unused_argument
-         --> <test>:3:1
-          |
-        3 | x %<>% sum()
-          | - Object `x` is defined but never used.
-          |
-        Found 1 error.
-        "
-        );
-        // shouldn't lint
-        assert_snapshot!(
-            snapshot_lint("
-x <- 1:3
-x %<>% sum()
-x + 1"
-        ),
-            @"All checks passed!"
-        );
-    }
-
-    #[test]
-    fn test_assign() {
-        // TODO: this should report env
-        // shouldn't lint: env is used as argument to assign()
-        expect_no_lint(
-            "
-f <- function() {
-  env <- new.env()
-  assign('x', 1 + 1, envir = env)
-}
-f()",
-            "unused_argument",
-            None,
-        );
-        // shouldn't lint: we return env, which contains x
-        expect_no_lint(
-            "
-f <- function() {
-  env <- new.env()
-  assign('x', 1 + 1, envir = env)
-  env
-}
-f()",
-            "unused_argument",
-            None,
-        );
-        // shouldn't lint: we use env outside the function
-        expect_no_lint(
-            "
-env <- new.env()
-f <- function() {
-  assign('x', 1 + 1, envir = env)
-}
-f()
-env",
-            "unused_argument",
-            None,
-        );
-    }
-
-    #[test]
-    fn test_delayed_assign() {
-        // TODO: this should report env
-        // shouldn't lint: env is used as argument to delayedAssign()
-        expect_no_lint(
-            "
-f <- function() {
-  env <- new.env()
-  delayedAssign('x', 1 + 1, assign.env = env)
-}
-f()",
-            "unused_argument",
-            None,
-        );
-        // shouldn't lint: we return env, which contains x
-        expect_no_lint(
-            "
-f <- function() {
-  env <- new.env()
-  delayedAssign('x', 1 + 1, assign.env = env)
-  env
-}
-f()",
-            "unused_argument",
-            None,
-        );
-        // shouldn't lint: we use env outside the function
-        expect_no_lint(
-            "
-env <- new.env()
-f <- function() {
-  delayedAssign('x', 1 + 1, assign.env = env)
-}
-f()
-env",
-            "unused_argument",
-            None,
-        );
-    }
-
-    #[test]
-    fn test_make_active_binding() {
-        // TODO: this should report env
-        // shouldn't lint: env is used as argument to makeActiveBinding()
-        expect_no_lint(
-            "
-f <- function() {
-  env <- new.env()
-  makeActiveBinding('x', \\(x) x, env = env)
-}
-f()",
-            "unused_argument",
-            None,
-        );
-        // shouldn't lint: we return env, which contains x
-        expect_no_lint(
-            "
-f <- function() {
-  env <- new.env()
-  makeActiveBinding('x', \\(x) x, env = env)
-  env
-}
-f()",
-            "unused_argument",
-            None,
-        );
-        // shouldn't lint: we use env outside the function
-        expect_no_lint(
-            "
-env <- new.env()
-f <- function() {
-  makeActiveBinding('x', \\(x) x, env = env)
-}
-f()
-env",
-            "unused_argument",
-            None,
-        );
-    }
-
-    #[test]
-    fn test_dot_dot_prefix_data_table() {
-        expect_no_lint(
-            "
-cols <- 'a'
-dt[, ..cols]
-",
-            "unused_argument",
-            None,
-        );
-    }
-
-    #[test]
-    fn test_shadowing_after_condition() {
-        // `x <- 2` wouldn't run if the first condition is true, so `x <- 1`
-        // might be used.
-        expect_no_lint(
-            "
-x <- 1
-if (runif(1) < 0.5 || (x <- 2)) {
-  print(x)
-}",
-            "unused_argument",
-            None,
-        );
-        // `x <- 2` wouldn't run if the first condition is false, so `x <- 1`
-        // might be used.
-        expect_no_lint(
-            "
-x <- 1
-if (runif(1) < 0.5 && (x <- 2)) {
-  1 + 1
-}
-x",
-            "unused_argument",
-            None,
-        );
-    }
-
-    #[test]
-    fn test_object_used_in_next_iteration() {
-        expect_no_lint(
-            "
-for (i in 1:3) {
-  out <- f(i, x)
-  x <- nrow(out)
-}",
-            "unused_argument",
-            None,
-        );
-    }
-
-    #[test]
-    fn test_function_def_default_arg_value() {
-        expect_no_lint(
-            "
-default <- 'a'
-f <- function(arg = default) {}",
-            "unused_argument",
-            None,
-        );
-        expect_no_lint(
-            "
-f <- function(arg = default) {}
-default <- 'a'",
-            "unused_argument",
-            None,
         );
     }
 }

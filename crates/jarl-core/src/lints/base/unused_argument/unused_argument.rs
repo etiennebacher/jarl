@@ -1,66 +1,153 @@
 use std::collections::HashSet;
 
 use jarl_dfg::*;
-use rustc_hash::FxHashSet;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::diagnostic::{Diagnostic, Fix, ViolationData};
+use crate::namespace::S3Info;
 
-/// Check for unused variables
+/// Special functions whose parameters are required by R itself and should
+/// never be flagged as unused.
+const SPECIAL_FUNCTIONS: &[&str] = &[
+    ".onLoad",
+    ".onUnload",
+    ".onAttach",
+    ".onDetach",
+    ".Last.lib",
+];
+
+/// Check for unused function parameters.
 ///
-/// A variable is "unused" when it is assigned a value but never read
-/// afterwards. This covers both top-level scripts and function bodies.
+/// A function parameter is "unused" when it appears in the function
+/// signature but is never referenced in the function body.
 ///
-/// # Known limitations
-///
-/// - Variables consumed via meta-programming (`get("x")`, `eval(...)`,
-///   `environment()`, `mget(...)`) are not detected as reads and will be
-///   flagged as false positives. These should be suppressed via an
-///   allowlist or lint suppression comments.
-/// - Variables that are the last expression in a function body (implicit
-///   return) are considered "used".
+/// Parameters are skipped (not flagged) when:
+/// - The function is an S3 generic (body calls `UseMethod()`)
+/// - The function is a registered S3 method (from NAMESPACE)
+/// - The function body calls `match.call()` (captures all args)
+/// - The function is a special R hook (`.onLoad`, etc.)
+/// - The parameter is `...`
 ///
 /// # Examples
 ///
 /// ```r
-/// x <- 1
-/// y <- 2
-/// print(y)
-/// # `x` is never used
-///
-/// # ----------------------------
-///
-/// x <- 1
-/// f <- function(y) {
-///   x <- mean(y)
-///   x
+/// f <- function(x, y) {
+///   x + 1
 /// }
-/// # The `x` defined in the function is used, but the one defined outside the
-/// # function is never used
-///
-/// # ----------------------------
-///
-/// x <- 1
-/// f <- function() {
-///   y <- x + 1
-///   y
-/// }
-/// # `x` is defined in the global environment while used in the function, but
-/// # this is a completely valid usage, so nothing is reported.
+/// # `y` is never used
 /// ```
 pub fn unused_argument(
     dfg: &DataflowGraph,
     namespace_exports: &HashSet<String>,
+    s3_info: &S3Info,
 ) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
 
     // Collect variable names referenced via string interpolation
     // (e.g. `glue("{x}")`, `cli_alert("{n} items")`).
-    // We conservatively treat any `{name}` inside a string literal as a use,
-    // regardless of whether the string is passed to an interpolating function.
-    let interpolated_names = collect_interpolated_names(&dfg);
+    let interpolated_names = collect_interpolated_names(dfg);
+
+    // Build a mapping: FunctionDef NodeId → assigned function name.
+    // From `f <- function(x) { ... }`, the Definition vertex `f` has a
+    // DefinedBy edge to the FunctionDef vertex.
+    let mut fdef_to_name: FxHashMap<NodeId, String> = FxHashMap::default();
+    for v in dfg.vertices() {
+        if v.kind == VertexKind::Definition {
+            for (target, bits) in dfg.edges_from(v.id) {
+                if bits.contains(EdgeType::DefinedBy) {
+                    if let Some(tv) = dfg.vertex(target) {
+                        if tv.kind == VertexKind::FunctionDef {
+                            fdef_to_name.insert(target, v.name.clone());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Identify FunctionDef vertices whose body contains UseMethod() or
+    // match.call() calls. These functions should have all params skipped.
+    let mut skip_all_params: FxHashSet<NodeId> = FxHashSet::default();
+    for v in dfg.vertices() {
+        if v.kind == VertexKind::FunctionDef {
+            let fdef_range = v.range;
+            // Check if any FunctionCall inside this function's range
+            // is UseMethod or match.call.
+            let has_use_method_or_match_call = dfg.vertices().any(|inner| {
+                inner.kind == VertexKind::FunctionCall
+                    && fdef_range.contains_range(inner.range)
+                    && matches!(
+                        inner.name.as_str(),
+                        "UseMethod" | "NextMethod" | "match.call"
+                    )
+            });
+            if has_use_method_or_match_call {
+                skip_all_params.insert(v.id);
+            }
+        }
+    }
+
+    // Skip FunctionDefs passed as condition handler arguments to tryCatch(),
+    // try_fetch(), or withCallingHandlers(). These handlers must accept a
+    // condition object parameter even if they don't use it.
+    for v in dfg.vertices() {
+        if v.kind == VertexKind::FunctionCall
+            && matches!(
+                v.name.as_str(),
+                "tryCatch" | "try_fetch" | "withCallingHandlers"
+            )
+        {
+            if let VertexData::Call { args } = &v.data {
+                for arg in args {
+                    // Named arguments other than `expr` and `finally` are
+                    // condition handlers.
+                    if arg.name.is_some()
+                        && !matches!(arg.name.as_deref(), Some("expr") | Some("finally"))
+                    {
+                        if let Some(target) = dfg.vertex(arg.node_id) {
+                            if target.kind == VertexKind::FunctionDef {
+                                skip_all_params.insert(arg.node_id);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Also skip FunctionDefs whose assigned name is an S3 generic, S3 method,
+    // or a special function.
+    for (fdef_id, name) in &fdef_to_name {
+        if s3_info.generics.contains(name)
+            || s3_info.methods.contains(name)
+            || SPECIAL_FUNCTIONS.contains(&name.as_str())
+        {
+            skip_all_params.insert(*fdef_id);
+        }
+    }
+
+    // Collect all function parameter NodeIds, grouped by their parent
+    // FunctionDef.
+    let param_ids: FxHashSet<NodeId> = dfg
+        .vertices()
+        .filter_map(|v| match &v.data {
+            VertexData::FunctionDef { params, .. } => Some(params.iter().copied()),
+            _ => None,
+        })
+        .flatten()
+        .collect();
+
+    // Map each param NodeId to its parent FunctionDef NodeId.
+    let mut param_to_fdef: FxHashMap<NodeId, NodeId> = FxHashMap::default();
+    for v in dfg.vertices() {
+        if let VertexData::FunctionDef { params, .. } = &v.data {
+            for &pid in params {
+                param_to_fdef.insert(pid, v.id);
+            }
+        }
+    }
 
     // Collect vertices that are targets of NSE edges (e.g. inside `quote()`).
-    // Reads from these vertices should not count as real uses.
     let nse_vertices: FxHashSet<NodeId> = dfg
         .vertices()
         .flat_map(|v| {
@@ -70,21 +157,15 @@ pub fn unused_argument(
         })
         .collect();
 
-    // Detect "self-read" definitions: `x <- f(x)` where the DFG incorrectly
-    // resolves the Use of `x` on the RHS to the new Definition being created
-    // (instead of the previous one).  When this happens, the previous definition
-    // of `x` appears unused even though it was actually consumed.  We collect
-    // such variable names so we can suppress false positives on earlier
-    // definitions of the same name.
-    //
-    // Detection: a Use "x" reads Def "x" AND the Use is textually within the
-    // assignment expression that creates the Def (i.e. the FunctionCall vertex
-    // that Returns the Def).
+    // Detect "self-read" definitions: `.cols <- enquo(.cols)` where the DFG
+    // resolves the Use of `.cols` on the RHS to the new Definition (instead
+    // of the parameter). When this happens, the parameter appears unused
+    // even though it was consumed. We collect such variable names so we can
+    // suppress false positives on parameters with the same name.
     let self_read_names: FxHashSet<String> = dfg
         .vertices()
         .filter(|v| v.kind == VertexKind::Definition)
         .filter(|def| {
-            // Find the assignment FunctionCall that Returns this definition.
             let assign_range = dfg
                 .edges_to(def.id)
                 .filter(|(_, bits)| bits.contains(EdgeType::Returns))
@@ -93,8 +174,6 @@ pub fn unused_argument(
                 .map(|v| v.range)
                 .next();
             if let Some(range) = assign_range {
-                // Check if any Use with the same name reads this Def
-                // AND is textually within the assignment's range.
                 dfg.edges_to(def.id).any(|(from, bits)| {
                     bits.contains(EdgeType::Reads)
                         && dfg.vertex(from).is_some_and(|v| {
@@ -110,156 +189,78 @@ pub fn unused_argument(
         .map(|def| def.name.clone())
         .collect();
 
-    // Collect all function parameter NodeIds so we can skip them.
-    // Unused parameters are a separate lint concern.
-    let param_ids: FxHashSet<NodeId> = dfg
-        .vertices()
-        .filter_map(|v| match &v.data {
-            VertexData::FunctionDef { params, .. } => Some(params.iter().copied()),
-            _ => None,
-        })
-        .flatten()
-        .collect();
-
-    // Collect all Definition vertices.
     let params: Vec<_> = dfg
         .vertices()
         .filter(|v| v.kind == VertexKind::FunctionParam)
         .collect();
 
-    // dbg!(&namespace_exports);
-    dbg!(&dfg);
-
     for param in &params {
-        // Focus on function params only
+        // Only consider params that are in a function's param list.
         if !param_ids.contains(&param.id) {
             continue;
         }
 
-        let parent_function_def = dfg.edges_from(param.id).any(|(target, bits)| {
-            bits.contains(EdgeType::DefinedBy)
-                && dfg
-                    .vertex(target)
-                    .is_some_and(|v| v.kind == VertexKind::FunctionDef)
-        });
+        // Skip `...` params.
+        if param.name == "..." {
+            continue;
+        }
+
+        // Skip params of functions we decided to skip entirely.
+        if let Some(&fdef_id) = param_to_fdef.get(&param.id) {
+            if skip_all_params.contains(&fdef_id) {
+                continue;
+            }
+        }
 
         // Skip names exported by the package's NAMESPACE file.
         if namespace_exports.contains(&param.name) {
             continue;
         }
 
-        // Only flag simple identifier assignments (e.g. `x <- 1`).
-        // Skip complex LHS like `attr(x, "foo") <- 1`, `x$y <- 1`,
-        // `x[i] <- 1`, and function definitions like `f <- function() ...`.
-        if !is_simple_identifier(&param.name) {
-            continue;
-        }
-
-        // Skip definitions whose value is a function definition.
-        let is_function_binding = dfg.edges_from(param.id).any(|(target, bits)| {
-            bits.contains(EdgeType::DefinedBy)
-                && dfg
-                    .vertex(target)
-                    .is_some_and(|v| v.kind == VertexKind::FunctionDef)
-        });
-        if is_function_binding {
-            continue;
-        }
-
-        // Skip super-assignment definitions (`<<-` / `->>`).
-        // These modify a variable in a parent scope as a side-effect
-        // and are inherently cross-scope — don't flag them.
-        if dfg.is_super_assign(param.id) {
-            continue;
-        }
-
-        // A definition is "used" if any vertex has a Reads edge pointing to it,
-        // excluding reads from vertices inside NSE contexts (e.g. `quote(x)`).
+        // A param is "used" if any vertex has a Reads edge pointing to it,
+        // excluding reads from NSE contexts.
         let is_read = dfg
             .edges_to(param.id)
             .any(|(from, bits)| bits.contains(EdgeType::Reads) && !nse_vertices.contains(&from));
 
-        // Also check if this definition is the value in a DefinedBy edge
-        // (i.e. this definition's value flows into another definition —
-        // that counts as "used" because it was consumed as an expression).
-        let is_consumed = dfg
-            .edges_to(param.id)
-            .any(|(_, bits)| bits.contains(EdgeType::DefinedBy));
-
-        // Check if this definition is used as an argument to a call.
+        // Check if the param is used as an argument to a call.
         let is_arg = dfg
             .edges_to(param.id)
             .any(|(_, bits)| bits.contains(EdgeType::Argument));
 
-        // Check if this definition is returned by a function call or
-        // control flow construct.  Exclude Returns edges from assignment
-        // operators (`<-`, `<<-`, `->`, `->>`, `=`) since those always
-        // exist and don't indicate actual use.
+        // Check if the param is consumed by another definition.
+        let is_consumed = dfg
+            .edges_to(param.id)
+            .any(|(_, bits)| bits.contains(EdgeType::DefinedBy));
+
+        // Check if the param is returned (excluding assignment operators).
         let is_returned = dfg.edges_to(param.id).any(|(from, bits)| {
             bits.contains(EdgeType::Returns)
                 && !dfg.vertex(from).is_some_and(|v| is_assignment_op(&v.name))
         });
 
-        // Check if this variable is referenced via string interpolation.
+        // Check if this parameter is referenced via string interpolation.
         let is_interpolated = interpolated_names.contains(param.name.as_str());
 
-        // If a later definition of this same variable has a self-referencing
-        // read (e.g. `x <- f(x)`), suppress the diagnostic.  The DFG
-        // incorrectly resolves the RHS Use to the new Definition rather than
-        // the previous one, making this definition look unused when it is not.
+        // Suppress false positive from the self-read pattern: the param
+        // appears unused because the DFG resolved the RHS use to the new
+        // definition instead of the parameter.
         let suppressed_by_self_read = !is_read
             && !is_consumed
             && !is_arg
             && !is_returned
             && self_read_names.contains(&param.name);
 
-        // If a later definition of the same variable is conditional (has
-        // control dependencies from short-circuit operators like `||` / `&&`),
-        // the earlier definition may still be needed because the later one
-        // might not execute.  E.g. `x <- 1; if (cond || (x <- 2)) print(x)`.
-        let shadowed_by_conditional = !is_read
-            && !is_consumed
-            && !is_arg
-            && !is_returned
-            && params.iter().any(|other| {
-                other.name == param.name
-                    && other.id != param.id
-                    && other.range.start() > param.range.start()
-                    && !other.cds.is_empty()
-            });
-
-        // If this definition is inside a loop and a Use of the same variable
-        // appears earlier in the loop body, this definition feeds the next
-        // iteration and shouldn't be flagged.
-        // E.g. `for (...) { f(x); x <- nrow(out) }` — the Use of `x` in
-        // `f(x)` on the next iteration reads from this definition.
-        let loop_cd = param.cds.iter().find(|cd| cd.by_iteration);
-        let feeds_next_iteration = !is_read
-            && !is_consumed
-            && !is_arg
-            && !is_returned
-            && loop_cd.is_some_and(|lcd| {
-                dfg.vertices().any(|v| {
-                    v.kind == VertexKind::Use
-                        && v.name == param.name
-                        && v.range.start() < param.range.start()
-                        && v.cds.iter().any(|cd| cd.by_iteration && cd.id == lcd.id)
-                })
-            });
-
         if is_read
-            || is_consumed
             || is_arg
+            || is_consumed
             || is_returned
             || is_interpolated
             || suppressed_by_self_read
-            || shadowed_by_conditional
-            || feeds_next_iteration
         {
             continue;
         }
 
-        let range = param.range;
         let diagnostic = Diagnostic::new(
             ViolationData::new(
                 "unused_argument".to_string(),
@@ -269,7 +270,7 @@ pub fn unused_argument(
                 ),
                 None,
             ),
-            range,
+            param.range,
             Fix::empty(),
         );
 
@@ -277,6 +278,11 @@ pub fn unused_argument(
     }
 
     diagnostics
+}
+
+/// Check if a vertex name is an assignment operator.
+fn is_assignment_op(name: &str) -> bool {
+    matches!(name, "<-" | "<<-" | "->" | "->>" | "=" | "%<>%")
 }
 
 /// Scan all string-literal Value vertices in the DFG for `{...}`
@@ -294,14 +300,12 @@ fn collect_interpolated_names(dfg: &DataflowGraph) -> FxHashSet<String> {
         if !(s.starts_with('"') || s.starts_with('\'')) {
             continue;
         }
-        // Find each `{...}` block and extract identifiers from it.
         let bytes = s.as_bytes();
         let mut i = 0;
         while i < bytes.len() {
             if bytes[i] == b'{' {
                 i += 1;
                 let start = i;
-                // Find the matching `}`, handling nested braces.
                 let mut depth = 1u32;
                 while i < bytes.len() && depth > 0 {
                     if bytes[i] == b'{' {
@@ -316,7 +320,7 @@ fn collect_interpolated_names(dfg: &DataflowGraph) -> FxHashSet<String> {
                 let expr = &s[start..i];
                 extract_identifiers_from_expr(expr, &mut names);
                 if i < bytes.len() {
-                    i += 1; // skip closing '}'
+                    i += 1;
                 }
             } else {
                 i += 1;
@@ -327,9 +331,6 @@ fn collect_interpolated_names(dfg: &DataflowGraph) -> FxHashSet<String> {
 }
 
 /// Extract R identifier tokens from an interpolation expression.
-///
-/// Splits on non-identifier characters and keeps tokens that look like
-/// valid R names (start with a letter or `.`, not a keyword).
 fn extract_identifiers_from_expr(expr: &str, out: &mut FxHashSet<String>) {
     let r_keywords: &[&str] = &[
         "if",
@@ -369,7 +370,6 @@ fn extract_identifiers_from_expr(expr: &str, out: &mut FxHashSet<String>) {
             _ => {}
         }
     }
-    // Handle token at end of string.
     if let Some(s) = start {
         let token = &expr[s..];
         if is_r_identifier(token) && !r_keywords.contains(&token) {
@@ -382,21 +382,4 @@ fn extract_identifiers_from_expr(expr: &str, out: &mut FxHashSet<String>) {
 fn is_r_identifier(s: &str) -> bool {
     let first = s.chars().next().unwrap_or('0');
     (first.is_alphabetic() || first == '.') && !s.chars().all(|c| c.is_ascii_digit() || c == '.')
-}
-
-/// A simple identifier is a bare name like `x` or `my_var`.
-/// Complex LHS expressions like `attr(x, "foo")`, `x$y`, `x[i]`
-/// are not simple identifiers.
-fn is_simple_identifier(name: &str) -> bool {
-    !name.is_empty()
-        && !name.contains('(')
-        && !name.contains('[')
-        && !name.contains('$')
-        && !name.contains('@')
-        && !name.contains(' ')
-}
-
-/// Check if a vertex name is an assignment operator.
-fn is_assignment_op(name: &str) -> bool {
-    matches!(name, "<-" | "<<-" | "->" | "->>" | "=" | "%<>%")
 }

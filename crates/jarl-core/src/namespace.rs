@@ -179,6 +179,56 @@ pub fn parse_namespace_exports(content: &str, all_names: &[&str]) -> HashSet<Str
     exports
 }
 
+/// S3 registration info extracted from `S3method()` directives.
+#[derive(Clone, Debug, Default)]
+pub struct S3Info {
+    /// Generic names that appear in `S3method(generic, class)`.
+    /// A function whose name is in this set defines an S3 generic.
+    pub generics: HashSet<String>,
+    /// Method names (`generic.class`) from `S3method(generic, class)`.
+    /// A function whose name is in this set is an S3 method.
+    pub methods: HashSet<String>,
+}
+
+/// Parse `S3method()` directives from a NAMESPACE file to extract
+/// which function names are S3 generics and which are S3 methods.
+pub fn parse_namespace_s3(content: &str) -> S3Info {
+    let mut info = S3Info::default();
+    let statements = join_continuation_lines(content);
+
+    for statement in &statements {
+        let trimmed = statement.trim();
+        if trimmed.is_empty() || trimmed.starts_with('#') {
+            continue;
+        }
+        if let Some(inner) = extract_directive(trimmed, "S3method") {
+            let parts: Vec<&str> = inner.splitn(4, ',').collect();
+            if parts.len() >= 2 {
+                let raw_generic = parts[0].trim().trim_matches('"').trim_matches('\'');
+                let class = parts[1].trim().trim_matches('"').trim_matches('\'');
+
+                let generic = raw_generic
+                    .rsplit_once("::")
+                    .map(|(_, g)| g)
+                    .unwrap_or(raw_generic);
+
+                info.generics.insert(generic.to_string());
+
+                if parts.len() >= 3 {
+                    let method_fn = parts[2].trim().trim_matches('"').trim_matches('\'');
+                    if !method_fn.is_empty() {
+                        info.methods.insert(method_fn.to_string());
+                    }
+                } else {
+                    info.methods.insert(format!("{generic}.{class}"));
+                }
+            }
+        }
+    }
+
+    info
+}
+
 /// Result of parsing `import()` and `importFrom()` directives from a
 /// package's own NAMESPACE file.
 #[derive(Debug, Default)]

@@ -30,7 +30,7 @@ pub(crate) fn check_document(
     let expressions: Vec<RSyntaxNode> = expressions.iter().map(|e| e.syntax().clone()).collect();
 
     if checker.is_rule_enabled(Rule::UnusedArgument) {
-        for diagnostic in unused_argument(&dfg, &checker.namespace_exports) {
+        for diagnostic in unused_argument(&dfg, &checker.namespace_exports, &checker.s3_info) {
             checker.report_diagnostic(Some(diagnostic));
         }
     }

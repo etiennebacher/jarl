@@ -318,6 +318,7 @@ fn get_package_info(
                 checker.loaded_packages = ctx.loaded_packages.clone();
                 checker.import_from = ctx.import_from.clone();
                 checker.namespace_exports = ctx.namespace_exports.clone();
+                checker.s3_info = ctx.s3_info.clone();
             }
         }
         _ => {
