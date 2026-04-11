@@ -1,18 +1,3 @@
-use crate::error::ParseError;
-use crate::package::{
-    FilePackageInfo, FileScope, PackageAnalysis, PackageContext, make_package_analysis,
-    summarize_package_info,
-};
-use crate::roxygen::{extract_roxygen_examples, remap_roxygen_fix, remap_roxygen_range};
-use crate::rule_set::Rule;
-use crate::suppression::SuppressionManager;
-use crate::vcs::check_version_control;
-use air_fs::relativize_path;
-use air_r_parser::RParserOptions;
-use air_r_syntax::{RExpressionList, RSyntaxNode};
-use anyhow::{Context, Result};
-use biome_rowan::TextSize;
-use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
