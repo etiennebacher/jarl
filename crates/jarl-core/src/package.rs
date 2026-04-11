@@ -149,14 +149,21 @@ pub fn summarize_package_info(
             continue;
         }
 
-        // Not in R/ — try to find a package root above (tests/, inst/, etc.).
+        // Not in R/ — check if the file is under a recognized package
+        // subdirectory (tests/, inst/tinytest, inst/tests, src/).
+        // Files in other directories (data-raw/, vignettes/, etc.) are
+        // treated as scripts so that their `library()` calls are scanned.
         if let Some(pkg_root) = find_package_root(path) {
             let scope = file_scope_from_path(path);
-            package_roots.insert(pkg_root.clone());
-            insert_info(
-                path,
-                FilePackageInfo::InPackage { package_root: pkg_root, scope },
-            );
+            if is_known_package_scope(path, &pkg_root) {
+                package_roots.insert(pkg_root.clone());
+                insert_info(
+                    path,
+                    FilePackageInfo::InPackage { package_root: pkg_root, scope },
+                );
+            } else {
+                insert_info(path, FilePackageInfo::Script);
+            }
         } else {
             insert_info(path, FilePackageInfo::Script);
         }
@@ -405,6 +412,16 @@ pub(crate) fn file_scope_from_path(path: &Path) -> FileScope {
     }
     // Fallback: treat unknown extra files as Tests scope
     FileScope::Tests
+}
+
+/// Check whether a file is under a recognized package subdirectory
+/// (tests/, inst/tinytest, inst/tests, src/) relative to the package root.
+fn is_known_package_scope(path: &Path, package_root: &Path) -> bool {
+    let Ok(rel) = path.strip_prefix(package_root) else {
+        return false;
+    };
+    let first = rel.components().next().and_then(|c| c.as_os_str().to_str());
+    matches!(first, Some("R" | "tests" | "src" | "inst"))
 }
 
 /// Walk up from a file path to find the package root (directory containing DESCRIPTION).
