@@ -78,7 +78,7 @@ pub fn unused_argument(
                     && fdef_range.contains_range(inner.range)
                     && matches!(
                         inner.name.as_str(),
-                        "UseMethod" | "NextMethod" | "match.call"
+                        "UseMethod" | "NextMethod" | "standardGeneric" | "match.call"
                     )
             });
             if has_use_method_or_match_call {
@@ -90,27 +90,51 @@ pub fn unused_argument(
     // Skip FunctionDefs passed as condition handler arguments to tryCatch(),
     // try_fetch(), or withCallingHandlers(). These handlers must accept a
     // condition object parameter even if they don't use it.
+    //
+    // Also skip FunctionDefs passed as the `def` argument to setMethod() or
+    // setReplaceMethod(). S4 methods must match the generic's signature, so
+    // unused params are expected.
     for v in dfg.vertices() {
-        if v.kind == VertexKind::FunctionCall
-            && matches!(
-                v.name.as_str(),
-                "tryCatch" | "try_fetch" | "withCallingHandlers"
-            )
-        {
-            if let VertexData::Call { args } = &v.data {
-                for arg in args {
-                    // Named arguments other than `expr` and `finally` are
-                    // condition handlers.
-                    if arg.name.is_some()
-                        && !matches!(arg.name.as_deref(), Some("expr") | Some("finally"))
-                    {
-                        if let Some(target) = dfg.vertex(arg.node_id) {
-                            if target.kind == VertexKind::FunctionDef {
+        if v.kind != VertexKind::FunctionCall {
+            continue;
+        }
+        if let VertexData::Call { args } = &v.data {
+            match v.name.as_str() {
+                "tryCatch" | "try_fetch" | "withCallingHandlers" => {
+                    for arg in args {
+                        if arg.name.is_some()
+                            && !matches!(arg.name.as_deref(), Some("expr") | Some("finally"))
+                        {
+                            if dfg
+                                .vertex(arg.node_id)
+                                .is_some_and(|t| t.kind == VertexKind::FunctionDef)
+                            {
                                 skip_all_params.insert(arg.node_id);
                             }
                         }
                     }
                 }
+                "setMethod" | "setReplaceMethod" => {
+                    // def is the 3rd positional arg or `def = ...`
+                    let fdef_id = args
+                        .iter()
+                        .find(|a| a.name.as_deref() == Some("def"))
+                        .or_else(|| {
+                            args.iter()
+                                .filter(|a| a.name.is_none())
+                                .nth(2)
+                        })
+                        .map(|a| a.node_id);
+                    if let Some(id) = fdef_id {
+                        if dfg
+                            .vertex(id)
+                            .is_some_and(|t| t.kind == VertexKind::FunctionDef)
+                        {
+                            skip_all_params.insert(id);
+                        }
+                    }
+                }
+                _ => {}
             }
         }
     }

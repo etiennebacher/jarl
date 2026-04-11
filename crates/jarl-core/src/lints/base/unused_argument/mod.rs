@@ -120,6 +120,42 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_no_lint_s4_generic() {
+        expect_no_lint(
+            "setGeneric(\"greet\", function(object, ...) standardGeneric(\"greet\"))",
+            "unused_argument",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_s4_method() {
+        expect_no_lint(
+            "setMethod(\"greet\", \"Person\", function(object, ...) { 'hello' })",
+            "unused_argument",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_s4_method_named_def() {
+        expect_no_lint(
+            "setMethod(\"greet\", \"Person\", def = function(object) { 'hello' })",
+            "unused_argument",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_set_replace_method() {
+        expect_no_lint(
+            "setReplaceMethod(\"name<-\", \"Person\", function(x, value) { x })",
+            "unused_argument",
+            None,
+        );
+    }
+
     // ---------------------------------------------------------------
     // Lint cases
     // ---------------------------------------------------------------
