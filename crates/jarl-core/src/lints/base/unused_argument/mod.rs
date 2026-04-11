@@ -14,11 +14,7 @@ mod tests {
 
     #[test]
     fn test_no_lint_all_params_used() {
-        expect_no_lint(
-            "f <- function(x, y) {\n  x + y\n}",
-            "unused_argument",
-            None,
-        );
+        expect_no_lint("f <- function(x, y) {\n  x + y\n}", "unused_argument", None);
     }
 
     #[test]
@@ -151,6 +147,24 @@ mod tests {
     fn test_no_lint_set_replace_method() {
         expect_no_lint(
             "setReplaceMethod(\"name<-\", \"Person\", function(x, value) { x })",
+            "unused_argument",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_param_used_alongside_quote() {
+        expect_no_lint(
+            "f2 <- function(x) {\n  foo(x, quote(c))\n}",
+            "unused_argument",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_param_used_in_substitute() {
+        expect_no_lint(
+            "f <- function(x = NA) {\n  substitute(list(x))\n}",
             "unused_argument",
             None,
         );

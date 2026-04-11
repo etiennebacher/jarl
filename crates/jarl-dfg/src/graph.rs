@@ -286,6 +286,14 @@ impl DataflowGraph {
         self.vertices.len()
     }
 
+    /// The next [`NodeId`] that would be allocated by [`fresh_id`].
+    ///
+    /// Unlike `vertex_count()`, this reflects every ID ever allocated
+    /// (including overwrites from duplicate inserts).
+    pub fn next_id(&self) -> u32 {
+        self.next_id
+    }
+
     pub fn edge_count(&self) -> usize {
         self.edges.values().map(|m| m.len()).sum()
     }

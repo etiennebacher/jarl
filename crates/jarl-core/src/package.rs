@@ -14,7 +14,9 @@ use crate::lints::base::duplicated_function_definition::duplicated_function_defi
 use crate::lints::base::unused_function::unused_function::{
     collect_files, compute_unused_from_shared, has_cpp_extension, scan_symbols,
 };
-use crate::namespace::{S3Info, parse_namespace_exports, parse_namespace_imports, parse_namespace_s3};
+use crate::namespace::{
+    S3Info, parse_namespace_exports, parse_namespace_imports, parse_namespace_s3,
+};
 use crate::rule_set::Rule;
 
 /// Scope of a file within an R package, determining how its definitions

@@ -54,12 +54,11 @@ pub fn unused_argument(
     for v in dfg.vertices() {
         if v.kind == VertexKind::Definition {
             for (target, bits) in dfg.edges_from(v.id) {
-                if bits.contains(EdgeType::DefinedBy) {
-                    if let Some(tv) = dfg.vertex(target) {
-                        if tv.kind == VertexKind::FunctionDef {
-                            fdef_to_name.insert(target, v.name.clone());
-                        }
-                    }
+                if bits.contains(EdgeType::DefinedBy)
+                    && let Some(tv) = dfg.vertex(target)
+                    && tv.kind == VertexKind::FunctionDef
+                {
+                    fdef_to_name.insert(target, v.name.clone());
                 }
             }
         }
@@ -111,13 +110,11 @@ pub fn unused_argument(
                     for arg in args {
                         if arg.name.is_some()
                             && !matches!(arg.name.as_deref(), Some("expr") | Some("finally"))
-                        {
-                            if dfg
+                            && dfg
                                 .vertex(arg.node_id)
                                 .is_some_and(|t| t.kind == VertexKind::FunctionDef)
-                            {
-                                skip_all_params.insert(arg.node_id);
-                            }
+                        {
+                            skip_all_params.insert(arg.node_id);
                         }
                     }
                 }
@@ -128,13 +125,12 @@ pub fn unused_argument(
                         .find(|a| a.name.as_deref() == Some("def"))
                         .or_else(|| args.iter().filter(|a| a.name.is_none()).nth(2))
                         .map(|a| a.node_id);
-                    if let Some(id) = fdef_id {
-                        if dfg
+                    if let Some(id) = fdef_id
+                        && dfg
                             .vertex(id)
                             .is_some_and(|t| t.kind == VertexKind::FunctionDef)
-                        {
-                            skip_all_params.insert(id);
-                        }
+                    {
+                        skip_all_params.insert(id);
                     }
                 }
                 _ => {}
@@ -173,16 +169,6 @@ pub fn unused_argument(
             }
         }
     }
-
-    // Collect vertices that are targets of NSE edges (e.g. inside `quote()`).
-    let nse_vertices: FxHashSet<NodeId> = dfg
-        .vertices()
-        .flat_map(|v| {
-            dfg.edges_from(v.id)
-                .filter(|(_, bits)| bits.contains(EdgeType::NonStandardEvaluation))
-                .map(|(target, _)| target)
-        })
-        .collect();
 
     // Detect "self-read" definitions: `.cols <- enquo(.cols)` where the DFG
     // resolves the Use of `.cols` on the RHS to the new Definition (instead
@@ -233,10 +219,10 @@ pub fn unused_argument(
         }
 
         // Skip params of functions we decided to skip entirely.
-        if let Some(&fdef_id) = param_to_fdef.get(&param.id) {
-            if skip_all_params.contains(&fdef_id) {
-                continue;
-            }
+        if let Some(&fdef_id) = param_to_fdef.get(&param.id)
+            && skip_all_params.contains(&fdef_id)
+        {
+            continue;
         }
 
         // Skip names exported by the package's NAMESPACE file.
@@ -244,11 +230,12 @@ pub fn unused_argument(
             continue;
         }
 
-        // A param is "used" if any vertex has a Reads edge pointing to it,
-        // excluding reads from NSE contexts.
+        // A param is "used" if any vertex has a Reads edge pointing to it.
+        // Reads from NSE contexts (e.g. `substitute(x)`) still count —
+        // the variable is referenced even if not evaluated.
         let is_read = dfg
             .edges_to(param.id)
-            .any(|(from, bits)| bits.contains(EdgeType::Reads) && !nse_vertices.contains(&from));
+            .any(|(_, bits)| bits.contains(EdgeType::Reads));
 
         // Check if the param is used as an argument to a call.
         let is_arg = dfg

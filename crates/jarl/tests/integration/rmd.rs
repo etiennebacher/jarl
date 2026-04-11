@@ -162,14 +162,12 @@ any(is.na(x))
 fn test_rmd_ignore_chunk_with_rule() -> anyhow::Result<()> {
     let case = CliTest::with_file(
         "test.Rmd",
-        concat!(
-            "
+        "
 ```{r}
 #| jarl-ignore-chunk:
 #|   - any_is_na: legacy code
 any(is.na(x))
 ```",
-        ),
     )?;
 
     insta::assert_snapshot!(
