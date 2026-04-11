@@ -10,7 +10,15 @@ use crate::helpers::{CliTest, CommandExt};
 fn test_rmd_basic_lint() -> anyhow::Result<()> {
     let case = CliTest::with_file(
         "test.Rmd",
-        "---\ntitle: \"Test\"\n---\n\n```{r}\nany(is.na(x))\n```\n",
+        "
+---
+title: \"Test\"
+---
+
+```{r}
+any(is.na(x))
+```
+",
     )?;
 
     insta::assert_snapshot!(
@@ -26,9 +34,9 @@ fn test_rmd_basic_lint() -> anyhow::Result<()> {
     exit_code: 1
     ----- stdout -----
     warning: any_is_na
-     --> test.Rmd:6:1
+     --> test.Rmd:7:1
       |
-    6 | any(is.na(x))
+    7 | any(is.na(x))
       | ------------- `any(is.na(...))` is inefficient.
       |
       = help: Use `anyNA(...)` instead.
@@ -49,7 +57,15 @@ fn test_rmd_basic_lint() -> anyhow::Result<()> {
 fn test_qmd_basic_lint() -> anyhow::Result<()> {
     let case = CliTest::with_file(
         "test.qmd",
-        "---\ntitle: \"Test\"\n---\n\n```{r}\nany(is.na(x))\n```\n",
+        "
+---
+title: \"Test\"
+---
+
+```{r}
+any(is.na(x))
+```
+",
     )?;
 
     insta::assert_snapshot!(
@@ -65,9 +81,9 @@ fn test_qmd_basic_lint() -> anyhow::Result<()> {
     exit_code: 1
     ----- stdout -----
     warning: any_is_na
-     --> test.qmd:6:1
+     --> test.qmd:7:1
       |
-    6 | any(is.na(x))
+    7 | any(is.na(x))
       | ------------- `any(is.na(...))` is inefficient.
       |
       = help: Use `anyNA(...)` instead.
@@ -93,7 +109,12 @@ fn test_qmd_basic_lint() -> anyhow::Result<()> {
 fn test_rmd_ignore_chunk_suppresses() -> anyhow::Result<()> {
     let case = CliTest::with_file(
         "test.Rmd",
-        "```{r}\n#| jarl-ignore-chunk\nany(is.na(x))\n```\n",
+        "
+```{r}
+#| jarl-ignore-chunk
+any(is.na(x))
+```
+",
     )?;
 
     insta::assert_snapshot!(
@@ -109,17 +130,17 @@ fn test_rmd_ignore_chunk_suppresses() -> anyhow::Result<()> {
     exit_code: 1
     ----- stdout -----
     warning: blanket_suppression
-     --> test.Rmd:2:1
+     --> test.Rmd:3:1
       |
-    2 | #| jarl-ignore-chunk
+    3 | #| jarl-ignore-chunk
       | -------------------- This comment isn't used by Jarl because it is missing a rule to ignore.
       |
       = help: Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`.
 
     warning: any_is_na
-     --> test.Rmd:3:1
+     --> test.Rmd:4:1
       |
-    3 | any(is.na(x))
+    4 | any(is.na(x))
       | ------------- `any(is.na(...))` is inefficient.
       |
       = help: Use `anyNA(...)` instead.
@@ -141,13 +162,12 @@ fn test_rmd_ignore_chunk_suppresses() -> anyhow::Result<()> {
 fn test_rmd_ignore_chunk_with_rule() -> anyhow::Result<()> {
     let case = CliTest::with_file(
         "test.Rmd",
-        concat!(
-            "```{r}\n",
-            "#| jarl-ignore-chunk:\n",
-            "#|   - any_is_na: legacy code\n",
-            "any(is.na(x))\n",
-            "```\n",
-        ),
+        "
+```{r}
+#| jarl-ignore-chunk:
+#|   - any_is_na: legacy code
+any(is.na(x))
+```",
     )?;
 
     insta::assert_snapshot!(
@@ -176,15 +196,14 @@ fn test_rmd_ignore_chunk_with_rule() -> anyhow::Result<()> {
 fn test_rmd_ignore_chunk_yaml_multiple() -> anyhow::Result<()> {
     let case = CliTest::with_file(
         "test.Rmd",
-        concat!(
-            "```{r}\n",
-            "#| jarl-ignore-chunk:\n",
-            "#|   - any_is_na: legacy code\n",
-            "#|   - any_duplicated: legacy code\n",
-            "any(is.na(x))\n",
-            "any(duplicated(x))\n",
-            "```\n",
-        ),
+        "
+```{r}
+#| jarl-ignore-chunk:
+#|   - any_is_na: legacy code
+#|   - any_duplicated: legacy code
+any(is.na(x))
+any(duplicated(x))
+```",
     )?;
 
     insta::assert_snapshot!(
@@ -213,16 +232,15 @@ fn test_rmd_ignore_chunk_yaml_multiple() -> anyhow::Result<()> {
 fn test_rmd_ignore_chunk_yaml_misplaced() -> anyhow::Result<()> {
     let case = CliTest::with_file(
         "test.Rmd",
-        concat!(
-            "```{r}\n",
-            "1 + 1\n",
-            "#| jarl-ignore-chunk:\n",
-            "#|   - any_is_na: legacy code\n",
-            "#|   - any_duplicated: legacy code\n",
-            "any(is.na(x))\n",
-            "any(duplicated(x))\n",
-            "```\n",
-        ),
+        "
+```{r}
+1 + 1
+#| jarl-ignore-chunk:
+#|   - any_is_na: legacy code
+#|   - any_duplicated: legacy code
+any(is.na(x))
+any(duplicated(x))
+```",
     )?;
 
     insta::assert_snapshot!(
@@ -258,7 +276,12 @@ fn test_rmd_ignore_chunk_yaml_misplaced() -> anyhow::Result<()> {
 fn test_rmd_pipe_suppression() -> anyhow::Result<()> {
     let case = CliTest::with_file(
         "test.Rmd",
-        "```{r}\n#| jarl-ignore any_is_na: legacy code\nany(is.na(x))\n```\n",
+        "
+```{r}
+#| jarl-ignore any_is_na: legacy code
+any(is.na(x))
+```
+",
     )?;
 
     insta::assert_snapshot!(
@@ -274,12 +297,629 @@ fn test_rmd_pipe_suppression() -> anyhow::Result<()> {
     exit_code: 1
     ----- stdout -----
     warning: any_is_na
-     --> test.Rmd:3:1
+     --> test.Rmd:4:1
       |
-    3 | any(is.na(x))
+    4 | any(is.na(x))
       | ------------- `any(is.na(...))` is inefficient.
       |
       = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_standard_suppression() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```
+{r}
+# jarl-ignore any_is_na: legacy code
+any(is.na(x))
+```",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// invalid_chunk_suppression
+// ---------------------------------------------------------------------------
+
+/// `#| jarl-ignore-chunk rule: reason` (single-line form) is invalid.
+/// It fires `invalid_chunk_suppression` and does NOT suppress `any_is_na`.
+#[test]
+fn test_rmd_single_line_ignore_chunk_invalid() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+#| jarl-ignore-chunk any_is_na: legacy
+any(is.na(x))
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: invalid_chunk_suppression
+     --> test.Rmd:3:1
+      |
+    3 | #| jarl-ignore-chunk any_is_na: legacy
+      | -------------------------------------- This `jarl-ignore-chunk` comment is wrongly formatted.
+      |
+      = help: Use the YAML array form instead:
+              #| jarl-ignore-chunk:
+              #|   - <rule>: <reason>
+
+    warning: any_is_na
+     --> test.Rmd:4:1
+      |
+    4 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// `# jarl-ignore-chunk rule: reason` (hash form) is also invalid.
+#[test]
+fn test_rmd_hash_ignore_chunk_invalid() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+# jarl-ignore-chunk any_is_na: legacy
+any(is.na(x))
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: invalid_chunk_suppression
+     --> test.Rmd:3:1
+      |
+    3 | # jarl-ignore-chunk any_is_na: legacy
+      | ------------------------------------- This `jarl-ignore-chunk` comment is wrongly formatted.
+      |
+      = help: Use the YAML array form instead:
+              #| jarl-ignore-chunk:
+              #|   - <rule>: <reason>
+
+    warning: any_is_na
+     --> test.Rmd:4:1
+      |
+    4 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Chunk suppression scope
+// ---------------------------------------------------------------------------
+
+/// Chunk suppression in chunk 1 must NOT suppress violations in chunk 2.
+#[test]
+fn test_rmd_ignore_chunk_does_not_cross() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+#| jarl-ignore-chunk:
+#|   - any_is_na: only in this chunk
+any(is.na(x))
+```
+
+```{r}
+any(is.na(y))
+```",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.Rmd:9:1
+      |
+    9 | any(is.na(y))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// `#| jarl-ignore-chunk:` with no following items is a blanket suppression.
+#[test]
+fn test_rmd_ignore_chunk_yaml_no_items_is_blanket() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+#| jarl-ignore-chunk:
+any(is.na(x))
+```",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: blanket_suppression
+     --> test.Rmd:3:1
+      |
+    3 | #| jarl-ignore-chunk:
+      | --------------------- This comment isn't used by Jarl because it is missing a rule to ignore.
+      |
+      = help: Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`.
+
+    warning: any_is_na
+     --> test.Rmd:4:1
+      |
+    4 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Display-only blocks
+// ---------------------------------------------------------------------------
+
+/// ```` ```r ```` without braces is a display block and should not be linted.
+#[test]
+fn test_rmd_display_block_not_linted() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```r
+any(is.na(x))
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Parse errors
+// ---------------------------------------------------------------------------
+
+/// A chunk with a syntax error should be silently skipped.
+#[test]
+fn test_rmd_parse_error_chunk_skipped() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+1 +
+```
+
+```{r}
+any(is.na(x))
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.Rmd:7:1
+      |
+    7 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// File-level suppression across chunks
+// ---------------------------------------------------------------------------
+
+/// `jarl-ignore-file` in the first chunk should suppress the rule in all chunks.
+#[test]
+fn test_rmd_ignore_file_cross_chunk() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+# jarl-ignore-file any_is_na: whole document
+any(is.na(x))
+```
+
+```{r}
+any(is.na(y))
+```",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// `jarl-ignore-file` in first chunk (no code there) should suppress rules in
+/// other chunks and must NOT trigger `outdated_suppression`.
+#[test]
+fn test_rmd_ignore_file_in_first_chunk_no_outdated() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+# jarl-ignore-file any_is_na: whole document
+# jarl-ignore-file any_duplicated: whole document
+```
+
+```{r}
+any(is.na(1))
+any(duplicated(1))
+```",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// `jarl-ignore-file` in a non-first R chunk should trigger
+/// `misplaced_file_suppression` and must NOT suppress violations.
+#[test]
+fn test_rmd_ignore_file_in_second_chunk_misplaced() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+1 + 1
+```
+
+```{r}
+# jarl-ignore-file any_is_na: should be misplaced
+any(is.na(1))
+```",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: misplaced_file_suppression
+     --> test.Rmd:7:1
+      |
+    7 | # jarl-ignore-file any_is_na: should be misplaced
+      | ------------------------------------------------- This comment isn't used by Jarl because `# jarl-ignore-file` must be at the top of the file.
+      |
+      = help: Move this comment to the beginning of the file, before any code.
+
+    warning: any_is_na
+     --> test.Rmd:8:1
+      |
+    8 | any(is.na(1))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// `jarl-ignore-file` after code in the first chunk is misplaced.
+#[test]
+fn test_rmd_ignore_file_after_code_misplaced() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+1 + 1
+# jarl-ignore-file any_is_na: should be misplaced
+any(is.na(1))
+```",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: misplaced_file_suppression
+     --> test.Rmd:4:1
+      |
+    4 | # jarl-ignore-file any_is_na: should be misplaced
+      | ------------------------------------------------- This comment isn't used by Jarl because `# jarl-ignore-file` must be at the top of the file.
+      |
+      = help: Move this comment to the beginning of the file, before any code.
+
+    warning: any_is_na
+     --> test.Rmd:5:1
+      |
+    5 | any(is.na(1))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// A Python chunk before the first R chunk does not affect validity:
+/// `jarl-ignore-file` is still accepted in the first R chunk.
+#[test]
+fn test_rmd_ignore_file_after_python_chunk() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "`
+``{python}
+x = 1
+```
+
+```{r}
+# jarl-ignore-file any_is_na: whole document
+```
+
+```{r}
+any(is.na(1))
+```",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Truly unused `jarl-ignore-file` must still trigger `outdated_suppression`.
+#[test]
+fn test_rmd_ignore_file_truly_unused_outdated() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+# jarl-ignore-file any_is_na: whole document
+```
+
+```{r}
+1 + 1
+```",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: outdated_suppression
+     --> test.Rmd:3:1
+      |
+    3 | # jarl-ignore-file any_is_na: whole document
+      | -------------------------------------------- This suppression comment is unused, no violation would be reported without it.
+      |
+      = help: Remove this suppression comment or verify that it's still needed.
 
 
     ── Summary ──────────────────────────────────────
@@ -299,7 +939,10 @@ fn test_rmd_pipe_suppression() -> anyhow::Result<()> {
 /// Running `--fix --allow-no-vcs` on an Rmd file must not modify it.
 #[test]
 fn test_rmd_fix_not_applied() -> anyhow::Result<()> {
-    let original = "```{r}\nany(is.na(x))\n```\n";
+    let original = "```{r}
+any(is.na(x))
+```
+";
     let case = CliTest::with_file("test.Rmd", original)?;
 
     // Run with --fix; redirects to lint_only for Rmd, so file is unchanged.
