@@ -1259,7 +1259,7 @@ impl DfgBuilder {
             self.graph.add_edge(for_id, bi.node_id, EdgeType::Returns);
             unknown_refs.extend(bi.unknown_refs.iter().cloned());
             // Filter out Break/Next — they are consumed by the loop.
-            extend_non_loop_exit_points(&mut exit_points, &bi.exit_points);
+            exit_points.extend(filter_loop_exit_points(&bi.exit_points));
         }
 
         Some(DataflowInformation {
@@ -1323,7 +1323,7 @@ impl DfgBuilder {
         if let Some(bi) = &body_info {
             self.graph.add_edge(while_id, bi.node_id, EdgeType::Returns);
             unknown_refs.extend(bi.unknown_refs.iter().cloned());
-            extend_non_loop_exit_points(&mut exit_points, &bi.exit_points);
+            exit_points.extend(filter_loop_exit_points(&bi.exit_points));
         }
 
         Some(DataflowInformation {
@@ -1375,7 +1375,7 @@ impl DfgBuilder {
             self.graph
                 .add_edge(repeat_id, bi.node_id, EdgeType::Returns);
             unknown_refs = bi.unknown_refs.clone();
-            extend_non_loop_exit_points(&mut exit_points, &bi.exit_points);
+            exit_points.extend(filter_loop_exit_points(&bi.exit_points));
         }
 
         Some(DataflowInformation {
@@ -1663,12 +1663,12 @@ fn is_simple_ident_node(name: &str) -> bool {
 
 /// Filter out loop-level exit points (`Break`, `Next`) — they are consumed
 /// by the enclosing loop and should not propagate further.
-fn extend_non_loop_exit_points(acc: &mut Vec<ExitPoint>, exit_points: &[ExitPoint]) {
-    for ep in exit_points {
-        if !matches!(ep.type_, ExitPointType::Break | ExitPointType::Next) {
-            acc.push(ep.clone());
-        }
-    }
+fn filter_loop_exit_points(exit_points: &[ExitPoint]) -> Vec<ExitPoint> {
+    exit_points
+        .iter()
+        .filter(|ep| !matches!(ep.type_, ExitPointType::Break | ExitPointType::Next))
+        .cloned()
+        .collect()
 }
 
 /// Collect non-default exit points into an accumulator.
