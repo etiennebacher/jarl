@@ -180,6 +180,12 @@ pub fn unused_object(dfg: DataflowGraph, namespace_exports: &HashSet<String>) ->
             }
         }
 
+        // We don't want to report the index variable in for loops, even if it's
+        // unused because we can't do something like `for (_ in 1:10)`.
+        if is_for_loop_index(&dfg, def) {
+            continue;
+        };
+
         // Check if this variable is referenced via string interpolation.
         let is_interpolated = interpolated_names.contains(def.name.as_str());
 
@@ -363,4 +369,38 @@ fn is_simple_identifier(name: &str) -> bool {
 /// Check if a vertex name is an assignment operator.
 fn is_assignment_op(name: &str) -> bool {
     matches!(name, "<-" | "<<-" | "->" | "->>" | "=" | "%<>%")
+}
+
+// The index variable in a for loop is an object that has:
+//  - a VertexKind::Definition for i
+//  - an outgoing DefinedBy edge to the sequence expression (1:10, etc.)
+//  - no incoming Returns edge from an assignment operator like <- / =
+fn is_for_loop_index(dfg: &DataflowGraph, def: &DfVertex) -> bool {
+    if def.kind != VertexKind::Definition {
+        return false;
+    }
+
+    let is_assignment_def = dfg.edges_to(def.id).any(|(from, bits)| {
+        bits.contains(EdgeType::Returns)
+            && dfg
+                .vertex(from)
+                .is_some_and(|v| v.kind == VertexKind::FunctionCall && is_assignment_op(&v.name))
+    });
+
+    if is_assignment_def {
+        return false;
+    }
+
+    dfg.edges_from(def.id).any(|(target, bits)| {
+        bits.contains(EdgeType::DefinedBy)
+            && dfg.vertex(target).is_some_and(|rhs| {
+                dfg.vertices().any(|v| {
+                    v.kind == VertexKind::FunctionCall
+                        && v.name == "for"
+                        && v.range.contains_range(def.range)
+                        && v.range.contains_range(rhs.range)
+                        && def.range.start() < rhs.range.start()
+                })
+            })
+    })
 }

@@ -605,4 +605,16 @@ default <- 'a'",
             None,
         );
     }
+
+    #[test]
+    fn test_unused_for_loop_index_not_reported() {
+        expect_no_lint(
+            "
+for (i in 1:2) {
+    print('hello')
+}",
+            "unused_object",
+            None,
+        );
+    }
 }
