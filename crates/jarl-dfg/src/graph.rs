@@ -2,6 +2,7 @@ use air_r_syntax::TextRange;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::fmt;
 
+#[allow(clippy::empty_line_after_doc_comments)]
 /// This is a simplified explanation of how the DFG is built and can be used
 /// in various rules. For a more detailed explanation, see "Statically Analyzing
 /// the Dataflow of R Programs" by Sihler & Tichy, 2025

@@ -617,4 +617,19 @@ for (i in 1:2) {
             None,
         );
     }
+
+    #[test]
+    fn test_rm_in_on_exit() {
+        expect_no_lint(
+            "
+        f <- function() {
+            on.exit({
+                x <- 1
+                rm(x)
+            })
+        }",
+            "unused_object",
+            None,
+        );
+    }
 }

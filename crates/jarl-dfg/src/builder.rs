@@ -2,6 +2,7 @@ use super::graph::*;
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
+#[allow(clippy::empty_line_after_doc_comments)]
 /// This details the process to convert the AST into a DFG. See the docs in
 /// graph.rs for more info on the general concepts in the DFG.
 ///
@@ -100,7 +101,6 @@ use biome_rowan::{AstNode, AstSeparatedList};
 ///
 /// There are also `break` and `next` in loops. Expressions after an
 /// unconditional break, next, or return are dead code and are not processed.
-///
 
 /// Builds a [`DataflowGraph`] from an R syntax tree.
 ///
@@ -135,10 +135,10 @@ pub struct DataflowInformation {
     pub writes: Vec<(String, NodeId)>,
     /// Exit points from this sub-tree.
     pub exit_points: Vec<ExitPoint>,
-    /// Node of the first argument of `on.exit()`. We need to handle this node
-    /// after processing the rest of the function definition because it might
-    /// refer to objects defined after it is called in the body.
-    pub on_exit_nodes: Vec<RSyntaxNode>,
+    /// Unresolved references from `on.exit()` bodies. Resolved in a deferred
+    /// pass at the end of `process_function_def` because the body might refer
+    /// to objects defined after the `on.exit()` call.
+    pub on_exit_unresolved: Vec<(String, NodeId)>,
 }
 
 impl DfgBuilder {
@@ -285,7 +285,7 @@ impl DfgBuilder {
                 type_: ExitPointType::Default,
                 cds: self.active_cds.clone(),
             }],
-            on_exit_nodes: vec![],
+            on_exit_unresolved: vec![],
         }
     }
 
@@ -318,7 +318,7 @@ impl DfgBuilder {
                 type_: ExitPointType::Default,
                 cds: self.active_cds.clone(),
             }],
-            on_exit_nodes: vec![],
+            on_exit_unresolved: vec![],
         }
     }
 
@@ -362,7 +362,7 @@ impl DfgBuilder {
         let op_text = op.text_trimmed().to_string();
         let mut unknown_refs = Vec::new();
         let mut exit_points = Vec::new();
-        let mut on_exit_nodes = Vec::new();
+        let mut on_exit_unresolved = Vec::new();
 
         // Short-circuit: for && / ||, RHS gets a control dependency
         let is_short_circuit = op_text == "&&" || op_text == "||";
@@ -402,13 +402,13 @@ impl DfgBuilder {
             self.graph.add_edge(id, left_info.node_id, EdgeType::Reads);
             unknown_refs.extend(left_info.unknown_refs.iter().cloned());
             exit_points.extend(left_info.exit_points.iter().cloned());
-            on_exit_nodes.extend(left_info.on_exit_nodes.iter().cloned());
+            on_exit_unresolved.extend(left_info.on_exit_unresolved.iter().cloned());
         }
         if let Some(right_info) = &right {
             self.graph.add_edge(id, right_info.node_id, EdgeType::Reads);
             unknown_refs.extend(right_info.unknown_refs.iter().cloned());
             exit_points.extend(right_info.exit_points.iter().cloned());
-            on_exit_nodes.extend(right_info.on_exit_nodes.iter().cloned());
+            on_exit_unresolved.extend(right_info.on_exit_unresolved.iter().cloned());
         }
 
         Some(DataflowInformation {
@@ -417,7 +417,7 @@ impl DfgBuilder {
             reads: vec![],
             writes: vec![],
             exit_points,
-            on_exit_nodes,
+            on_exit_unresolved,
         })
     }
 
@@ -471,13 +471,13 @@ impl DfgBuilder {
         // Wire: definition ← rhs value
         let mut unknown_refs = Vec::new();
         let mut exit_points = Vec::new();
-        let mut on_exit_nodes = Vec::new();
+        let mut on_exit_unresolved = Vec::new();
         if let Some(rhs_info) = &rhs_info {
             self.graph
                 .add_edge(def_id, rhs_info.node_id, EdgeType::DefinedBy);
             unknown_refs.extend(rhs_info.unknown_refs.iter().cloned());
             exit_points.extend(rhs_info.exit_points.iter().cloned());
-            on_exit_nodes.extend(rhs_info.on_exit_nodes.iter().cloned());
+            on_exit_unresolved.extend(rhs_info.on_exit_unresolved.iter().cloned());
         }
         unknown_refs.extend(lhs_unknown);
 
@@ -515,7 +515,7 @@ impl DfgBuilder {
             reads: vec![],
             writes: vec![(def_name, def_id)],
             exit_points,
-            on_exit_nodes,
+            on_exit_unresolved,
         })
     }
 
@@ -559,13 +559,13 @@ impl DfgBuilder {
 
         let mut unknown_refs = Vec::new();
         let mut exit_points = Vec::new();
-        let mut on_exit_nodes = Vec::new();
+        let mut on_exit_unresolved = Vec::new();
         if let Some(val_info) = &val_info {
             self.graph
                 .add_edge(def_id, val_info.node_id, EdgeType::DefinedBy);
             unknown_refs.extend(val_info.unknown_refs.iter().cloned());
             exit_points.extend(val_info.exit_points.iter().cloned());
-            on_exit_nodes.extend(val_info.on_exit_nodes.iter().cloned());
+            on_exit_unresolved.extend(val_info.on_exit_unresolved.iter().cloned());
         }
         unknown_refs.extend(target_unknown);
 
@@ -600,7 +600,7 @@ impl DfgBuilder {
             reads: vec![],
             writes: vec![(target_name, def_id)],
             exit_points,
-            on_exit_nodes,
+            on_exit_unresolved,
         })
     }
 
@@ -623,16 +623,16 @@ impl DfgBuilder {
 
         let mut unknown_refs = Vec::new();
         let mut exit_points = Vec::new();
-        let mut on_exit_nodes = Vec::new();
+        let mut on_exit_unresolved = Vec::new();
         if let Some(li) = &lhs_info {
             unknown_refs.extend(li.unknown_refs.iter().cloned());
             exit_points.extend(li.exit_points.iter().cloned());
-            on_exit_nodes.extend(li.on_exit_nodes.iter().cloned());
+            on_exit_unresolved.extend(li.on_exit_unresolved.iter().cloned());
         }
         if let Some(ri) = &rhs_info {
             unknown_refs.extend(ri.unknown_refs.iter().cloned());
             exit_points.extend(ri.exit_points.iter().cloned());
-            on_exit_nodes.extend(ri.on_exit_nodes.iter().cloned());
+            on_exit_unresolved.extend(ri.on_exit_unresolved.iter().cloned());
         }
 
         Some(DataflowInformation {
@@ -641,7 +641,7 @@ impl DfgBuilder {
             reads: vec![],
             writes: vec![],
             exit_points,
-            on_exit_nodes,
+            on_exit_unresolved,
         })
     }
 
@@ -715,17 +715,17 @@ impl DfgBuilder {
         self.env.define(&def_name, id_def);
 
         // LHS unknown_refs were already resolved above; only collect
-        // exit_points/on_exit_nodes from LHS, plus everything from RHS.
+        // exit_points/on_exit_unresolved from LHS, plus everything from RHS.
         let mut exit_points = Vec::new();
-        let mut on_exit_nodes = Vec::new();
+        let mut on_exit_unresolved = Vec::new();
         if let Some(li) = &lhs_info {
             exit_points.extend(li.exit_points.iter().cloned());
-            on_exit_nodes.extend(li.on_exit_nodes.iter().cloned());
+            on_exit_unresolved.extend(li.on_exit_unresolved.iter().cloned());
         }
         if let Some(ri) = &rhs_info {
             unknown_refs.extend(ri.unknown_refs.iter().cloned());
             exit_points.extend(ri.exit_points.iter().cloned());
-            on_exit_nodes.extend(ri.on_exit_nodes.iter().cloned());
+            on_exit_unresolved.extend(ri.on_exit_unresolved.iter().cloned());
         }
 
         Some(DataflowInformation {
@@ -734,7 +734,7 @@ impl DfgBuilder {
             reads: vec![],
             writes: vec![(def_name, def_id)],
             exit_points,
-            on_exit_nodes,
+            on_exit_unresolved,
         })
     }
 
@@ -826,22 +826,16 @@ impl DfgBuilder {
                 }
             }
 
-            // Now that the function body is processed, we can handle the
-            // content of `on.exit()` since it could reference objects created
-            // after it is called.
-            for node in &info.on_exit_nodes {
-                if let Some(exit_info) = self.process_node(node) {
-                    // Resolve unknown refs from the on.exit expression
-                    // against the function's scope (same as body refs above)
-                    for (name, ref_id) in &exit_info.unknown_refs {
-                        if let Some(defs) = self.env.resolve(name) {
-                            for def in defs {
-                                self.graph.add_edge(*ref_id, def.node_id, EdgeType::Reads);
-                            }
-                        } else {
-                            unknown_refs.push((name.clone(), *ref_id));
-                        }
+            // Deferred pass: resolve on.exit() refs that were unresolved
+            // during the immediate pass (forward references to objects
+            // defined later in the body).
+            for (name, ref_id) in &info.on_exit_unresolved {
+                if let Some(defs) = self.env.resolve(name) {
+                    for def in defs {
+                        self.graph.add_edge(*ref_id, def.node_id, EdgeType::Reads);
                     }
+                } else {
+                    unknown_refs.push((name.clone(), *ref_id));
                 }
             }
         }
@@ -883,7 +877,7 @@ impl DfgBuilder {
                 type_: ExitPointType::Default,
                 cds: self.active_cds.clone(),
             }],
-            on_exit_nodes: vec![],
+            on_exit_unresolved: vec![],
         }
     }
 
@@ -939,15 +933,10 @@ impl DfgBuilder {
         // `foo` is defined twice but never explictly used, while `on.exit()`
         // might use it if it thrown because of an error in between.
         if func_name == "on.exit" {
-            let mut on_exit_nodes = Vec::new();
-            if let Ok(args) = call.as_fields().arguments
-                && let Some(Ok(first_arg)) = args.items().iter().next()
-                && let Some(value) = first_arg.value()
-            {
-                on_exit_nodes.push(value.syntax().clone());
-            }
             let mut result = self.process_call_inner(node, call_id, &func_name);
-            result.on_exit_nodes = on_exit_nodes;
+            // Capture unresolved refs from the on.exit body so the deferred
+            // pass in process_function_def can resolve forward references.
+            result.on_exit_unresolved = result.unknown_refs.clone();
             return result;
         }
 
@@ -996,7 +985,7 @@ impl DfgBuilder {
         let mut arg_data = Vec::new();
         let mut all_unknown = Vec::new();
         let mut all_exit_points = Vec::new();
-        let mut on_exit_nodes = Vec::new();
+        let mut on_exit_unresolved = Vec::new();
 
         if let Ok(args) = fields.arguments {
             let arg_list = args.items();
@@ -1014,7 +1003,7 @@ impl DfgBuilder {
                     arg_data.push(CallArgument { node_id: val_info.node_id, name: arg_name });
                     all_unknown.extend(val_info.unknown_refs.iter().cloned());
                     all_exit_points.extend(val_info.exit_points.iter().cloned());
-                    on_exit_nodes.extend(val_info.on_exit_nodes.iter().cloned());
+                    on_exit_unresolved.extend(val_info.on_exit_unresolved.iter().cloned());
                 }
             }
         }
@@ -1057,7 +1046,7 @@ impl DfgBuilder {
             reads: vec![],
             writes,
             exit_points: all_exit_points,
-            on_exit_nodes,
+            on_exit_unresolved,
         }
     }
 
@@ -1156,24 +1145,34 @@ impl DfgBuilder {
                 }
             }
             "rm" | "remove" => {
-                // rm(x) → remove x from environment.
-                // Extract names before mutating env.
-                let names_to_remove: Vec<String> = args
+                // rm(x) → resolve reads first, then remove from environment.
+                // We must add Reads edges before removing so that the Use
+                // vertex counts as a use of the definition.
+                let rm_info: Vec<(NodeId, String, Vec<NodeId>)> = args
                     .iter()
                     .filter_map(|arg| {
-                        self.graph.vertex(arg.node_id).and_then(|v| {
-                            if v.kind == VertexKind::Use {
-                                Some(v.name.clone())
-                            } else if v.kind == VertexKind::Value {
-                                Some(v.name.trim_matches('"').trim_matches('\'').to_string())
-                            } else {
-                                None
-                            }
-                        })
+                        let v = self.graph.vertex(arg.node_id)?;
+                        if v.kind == VertexKind::Use {
+                            let name = v.name.clone();
+                            let def_ids: Vec<NodeId> = self
+                                .env
+                                .resolve(&name)
+                                .map(|defs| defs.iter().map(|d| d.node_id).collect())
+                                .unwrap_or_default();
+                            Some((arg.node_id, name, def_ids))
+                        } else if v.kind == VertexKind::Value {
+                            let name = v.name.trim_matches('"').trim_matches('\'').to_string();
+                            Some((arg.node_id, name, vec![]))
+                        } else {
+                            None
+                        }
                     })
                     .collect();
-                for name in names_to_remove {
-                    self.env.remove(&name);
+                for (use_id, name, def_ids) in &rm_info {
+                    for def_id in def_ids {
+                        self.graph.add_edge(*use_id, *def_id, EdgeType::Reads);
+                    }
+                    self.env.remove(name);
                 }
             }
             _ => {}
@@ -1216,7 +1215,7 @@ impl DfgBuilder {
             .unwrap_or_default();
         let mut exit_points = Vec::new();
         let mut writes = Vec::new();
-        let mut on_exit_nodes = Vec::new();
+        let mut on_exit_unresolved = Vec::new();
 
         // Save env before branches.
         let env_before = self.env.clone();
@@ -1257,14 +1256,14 @@ impl DfgBuilder {
             unknown_refs.extend(ti.unknown_refs.iter().cloned());
             exit_points.extend(ti.exit_points.iter().cloned());
             writes.extend(ti.writes.iter().cloned());
-            on_exit_nodes.extend(ti.on_exit_nodes.iter().cloned());
+            on_exit_unresolved.extend(ti.on_exit_unresolved.iter().cloned());
         }
         if let Some(ei) = &else_info {
             self.graph.add_edge(if_id, ei.node_id, EdgeType::Returns);
             unknown_refs.extend(ei.unknown_refs.iter().cloned());
             exit_points.extend(ei.exit_points.iter().cloned());
             writes.extend(ei.writes.iter().cloned());
-            on_exit_nodes.extend(ei.on_exit_nodes.iter().cloned());
+            on_exit_unresolved.extend(ei.on_exit_unresolved.iter().cloned());
         }
 
         Some(DataflowInformation {
@@ -1273,7 +1272,7 @@ impl DfgBuilder {
             reads: vec![],
             writes,
             exit_points,
-            on_exit_nodes,
+            on_exit_unresolved,
         })
     }
 
@@ -1368,7 +1367,7 @@ impl DfgBuilder {
             reads: vec![],
             writes: vec![(var_name, var_id)],
             exit_points,
-            on_exit_nodes: vec![],
+            on_exit_unresolved: vec![],
         })
     }
 
@@ -1432,7 +1431,7 @@ impl DfgBuilder {
             reads: vec![],
             writes: vec![],
             exit_points,
-            on_exit_nodes: vec![],
+            on_exit_unresolved: vec![],
         })
     }
 
@@ -1484,7 +1483,7 @@ impl DfgBuilder {
             reads: vec![],
             writes: vec![],
             exit_points,
-            on_exit_nodes: vec![],
+            on_exit_unresolved: vec![],
         })
     }
 
@@ -1528,7 +1527,7 @@ impl DfgBuilder {
                 type_: ExitPointType::Default,
                 cds: self.active_cds.clone(),
             }],
-            on_exit_nodes: vec![],
+            on_exit_unresolved: vec![],
         })
     }
 
@@ -1540,7 +1539,7 @@ impl DfgBuilder {
         let mut remaining_unknown: Vec<(String, NodeId)> = Vec::new();
         let mut all_writes: Vec<(String, NodeId)> = Vec::new();
         let mut exit_points: Vec<ExitPoint> = Vec::new();
-        let mut on_exit_nodes: Vec<RSyntaxNode> = Vec::new();
+        let mut on_exit_unresolved: Vec<(String, NodeId)> = Vec::new();
         let mut last_info: Option<DataflowInformation> = None;
         let mut had_exit = false;
 
@@ -1564,7 +1563,7 @@ impl DfgBuilder {
                 all_writes.extend(info.writes.iter().cloned());
 
                 // Propagate on.exit nodes.
-                on_exit_nodes.extend(info.on_exit_nodes.iter().cloned());
+                on_exit_unresolved.extend(info.on_exit_unresolved.iter().cloned());
 
                 // Collect non-default exit points.
                 collect_non_default_exit_points(&mut exit_points, &info.exit_points);
@@ -1600,7 +1599,7 @@ impl DfgBuilder {
             reads: vec![],
             writes: all_writes,
             exit_points,
-            on_exit_nodes,
+            on_exit_unresolved,
         })
     }
 
@@ -1608,12 +1607,12 @@ impl DfgBuilder {
         let mut last: Option<DataflowInformation> = None;
         let mut unknown_refs = Vec::new();
         let mut exit_points = Vec::new();
-        let mut on_exit_nodes = Vec::new();
+        let mut on_exit_unresolved = Vec::new();
         for child in node.children() {
             if let Some(info) = self.process_node(&child) {
                 unknown_refs.extend(info.unknown_refs.iter().cloned());
                 exit_points.extend(info.exit_points.iter().cloned());
-                on_exit_nodes.extend(info.on_exit_nodes.iter().cloned());
+                on_exit_unresolved.extend(info.on_exit_unresolved.iter().cloned());
                 last = Some(info);
             }
         }
@@ -1632,7 +1631,7 @@ impl DfgBuilder {
             reads: vec![],
             writes: l.writes,
             exit_points,
-            on_exit_nodes,
+            on_exit_unresolved,
         })
     }
 
@@ -1644,12 +1643,12 @@ impl DfgBuilder {
         let mut last: Option<DataflowInformation> = None;
         let mut unknown_refs = Vec::new();
         let mut exit_points = Vec::new();
-        let mut on_exit_nodes = Vec::new();
+        let mut on_exit_unresolved = Vec::new();
         for child in node.children() {
             if let Some(info) = self.process_node(&child) {
                 unknown_refs.extend(info.unknown_refs.iter().cloned());
                 exit_points.extend(info.exit_points.iter().cloned());
-                on_exit_nodes.extend(info.on_exit_nodes.iter().cloned());
+                on_exit_unresolved.extend(info.on_exit_unresolved.iter().cloned());
                 last = Some(info);
             }
         }
@@ -1659,7 +1658,7 @@ impl DfgBuilder {
             reads: vec![],
             writes: l.writes,
             exit_points,
-            on_exit_nodes,
+            on_exit_unresolved,
         })
     }
 }
