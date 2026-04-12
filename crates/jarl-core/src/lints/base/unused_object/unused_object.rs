@@ -160,32 +160,25 @@ pub fn unused_object(dfg: DataflowGraph, namespace_exports: &HashSet<String>) ->
             continue;
         }
 
-        // A definition is "used" if any vertex has a Reads edge pointing to it,
-        // excluding reads from vertices inside NSE contexts (e.g. `quote(x)`).
-        let is_read = dfg
-            .edges_to(def.id)
-            .any(|(from, bits)| bits.contains(EdgeType::Reads) && !nse_vertices.contains(&from));
-
-        // Also check if this definition is the value in a DefinedBy edge
-        // (i.e. this definition's value flows into another definition —
-        // that counts as "used" because it was consumed as an expression).
-        let is_consumed = dfg
-            .edges_to(def.id)
-            .any(|(_, bits)| bits.contains(EdgeType::DefinedBy));
-
-        // Check if this definition is used as an argument to a call.
-        let is_arg = dfg
-            .edges_to(def.id)
-            .any(|(_, bits)| bits.contains(EdgeType::Argument));
-
-        // Check if this definition is returned by a function call or
-        // control flow construct.  Exclude Returns edges from assignment
-        // operators (`<-`, `<<-`, `->`, `->>`, `=`) since those always
-        // exist and don't indicate actual use.
-        let is_returned = dfg.edges_to(def.id).any(|(from, bits)| {
-            bits.contains(EdgeType::Returns)
+        // Walk incoming edges once and check all "used" conditions in a
+        // single pass instead of four separate `edges_to` iterations.
+        let mut is_used_by_edge = false;
+        for (from, bits) in dfg.edges_to(def.id) {
+            if bits.contains(EdgeType::DefinedBy) || bits.contains(EdgeType::Argument) {
+                is_used_by_edge = true;
+                break;
+            }
+            if bits.contains(EdgeType::Reads) && !nse_vertices.contains(&from) {
+                is_used_by_edge = true;
+                break;
+            }
+            if bits.contains(EdgeType::Returns)
                 && !dfg.vertex(from).is_some_and(|v| is_assignment_op(&v.name))
-        });
+            {
+                is_used_by_edge = true;
+                break;
+            }
+        }
 
         // Check if this variable is referenced via string interpolation.
         let is_interpolated = interpolated_names.contains(def.name.as_str());
@@ -194,20 +187,13 @@ pub fn unused_object(dfg: DataflowGraph, namespace_exports: &HashSet<String>) ->
         // read (e.g. `x <- f(x)`), suppress the diagnostic.  The DFG
         // incorrectly resolves the RHS Use to the new Definition rather than
         // the previous one, making this definition look unused when it is not.
-        let suppressed_by_self_read = !is_read
-            && !is_consumed
-            && !is_arg
-            && !is_returned
-            && self_read_names.contains(&def.name);
+        let suppressed_by_self_read = !is_used_by_edge && self_read_names.contains(&def.name);
 
         // If a later definition of the same variable is conditional (has
         // control dependencies from short-circuit operators like `||` / `&&`),
         // the earlier definition may still be needed because the later one
         // might not execute.  E.g. `x <- 1; if (cond || (x <- 2)) print(x)`.
-        let shadowed_by_conditional = !is_read
-            && !is_consumed
-            && !is_arg
-            && !is_returned
+        let shadowed_by_conditional = !is_used_by_edge
             && definitions.iter().any(|other| {
                 other.name == def.name
                     && other.id != def.id
@@ -221,10 +207,7 @@ pub fn unused_object(dfg: DataflowGraph, namespace_exports: &HashSet<String>) ->
         // E.g. `for (...) { f(x); x <- nrow(out) }` — the Use of `x` in
         // `f(x)` on the next iteration reads from this definition.
         let loop_cd = def.cds.iter().find(|cd| cd.by_iteration);
-        let feeds_next_iteration = !is_read
-            && !is_consumed
-            && !is_arg
-            && !is_returned
+        let feeds_next_iteration = !is_used_by_edge
             && loop_cd.is_some_and(|lcd| {
                 dfg.vertices().any(|v| {
                     v.kind == VertexKind::Use
@@ -234,10 +217,7 @@ pub fn unused_object(dfg: DataflowGraph, namespace_exports: &HashSet<String>) ->
                 })
             });
 
-        if is_read
-            || is_consumed
-            || is_arg
-            || is_returned
+        if is_used_by_edge
             || is_interpolated
             || suppressed_by_self_read
             || shadowed_by_conditional
