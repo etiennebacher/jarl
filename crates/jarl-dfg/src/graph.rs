@@ -2,6 +2,120 @@ use air_r_syntax::TextRange;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::fmt;
 
+/// This is a simplified explanation of how the DFG is built and can be used
+/// in various rules. For a more detailed explanation, see "Statically Analyzing
+/// the Dataflow of R Programs" by Sihler & Tichy, 2025
+/// https://dl.acm.org/doi/10.1145/3763087
+///
+///
+/// The main idea is to translate the AST into a *directed* graph where:
+///
+/// * vertices are symbols. They can be of 5 different types:
+///   - value (a constant number, `NA`, etc.)
+///   - use (object is read)
+///   - definition (object that is a target of an assignment)
+///   - function call
+///   - function definition (almost the same as a definition, but we'll explain
+///     the differences later).
+///
+/// * edges are the connections between two vertices and can also be of various
+///   types:
+///   - reads (the source reads the target). E.g. in `x <- 1; x`, the source
+///     (second `x`, a Use vertex) reads the target (first `x`, a Definition
+///     vertex).
+///   - defined_by (the source is defined by the target). E.g. in `x <- 1`, the
+///     source `x` is defined by the target `1`.
+///   - calls (the source calls the target). E.g. in `f <- function() 1; f(x)`,
+///     the source call vertex (second `f`) calls the target function definition
+///     vertex (first `f`).
+///   - returns (the source returns the target). E.g. in `f <- function() { 1 }`,
+///     the source function-definition vertex for `f` returns the target value
+///     vertex `1`.
+///   - defines_on_call (the source argument defines the target parameter at call
+///     site). E.g. in `f <- function(x = mean(y))`, the source `mean(y)` defines
+///     the target `x` only when `f` is called.
+///   - defined_by_on_call (the source parameter is defined by the target argument
+///     at call site). E.g. in `f <- function(x = mean(y))`, the source `x` is
+///     defined by the target `mean(y)` on call.
+///   - argument (the source has the target as an argument). E.g. in `f(x)`, the
+///     source call vertex `f` has the target use vertex `x` as an argument.
+///   - side_effect_on_call (the source call has a side effect on the target). E.g.
+///     in `f <- function(x) { x <<- 1 }`, the source call `f()` has a side effect
+///     that modifies the target `x` in the parent environment.
+///   - non_standard_evaluation (the source is inside a function that is known to
+///     do NSE, e.g. `quote()`).
+///
+/// This graph also keeps track of the *environment* and of the *control dependencies*.
+///
+///
+/// ## Environment
+///
+/// The entire graph is part of the global environment, but we can also divide
+/// this graph is subgraphs where each subgraph has its own additional environment.
+/// For example, with the following code:
+///
+/// ```r
+/// x <- 2
+/// add <- function(a, b) {
+///   a + b
+/// }
+/// y <- x + a
+/// ```
+///
+/// the body of the function definition has access to `x`, `a`, and `b`, but the
+/// line `y <- x + a` doesn't have access to `a` and `b`. Therefore, when we build
+/// the graph, we should keep the information that the vertex `a` in the function
+/// body cannot be connected to the vertex `y` because we popped the environment
+/// of the function body when exiting it.
+///
+///
+/// ## Control dependencies
+///
+/// Control dependencies (CDs) are a way to keep the information that a vertex *might*
+/// be connected depending on some condition. This is particularly useful to keep
+/// the information in `if` conditions, such as:
+///
+/// ```r
+/// x <- 0
+/// if (y > 2) {
+///   x <- 1
+/// } else if (z > 3) {
+///   x <- 2
+/// } else {
+///   x <- 3
+/// }
+/// ```
+///
+/// Here, we cannot know statically which condition is going to pass and therefore
+/// which `x` will be used. Therefore, we attach a vector of CDs to each of
+/// these `x` vertices. A CD contains the node ID of the condition and the value
+/// `true` or `false` that tells us what this condition must match. For example,
+/// we store `x <- 1` with `[CD(y > 2, true)]`. For `x <- 2`, we rewrite the
+/// `else if` branch as a nested `if` so we store `x <- 2` with
+/// `[CD(y > 2, false), CD(z > 3, true)]`. Finally, we store `x <- 3` with
+/// `[CD(y > 2, false), CD(z > 3, false)]`.
+///
+/// CDs are also used in for loops and while loops. An object might be redefined
+/// in a for loop but we still need to put it in a conditional case since it
+/// might happen that the loop goes through zero iteration and therefore the
+/// redefine never happens. For example:
+///
+/// ```r
+/// x <- 1
+/// for (i in foo(y)) {
+///   x <- 5
+/// }
+/// print(x)
+/// ```
+/// if `foo(y)` returns an empty vector, `print(x)` will print 1, while if the
+/// for loop has some iterations then it will print 5. We cannot guarantee
+/// which "Definition" vertex will be used, so we attach a CD with `by_iteration: true`
+/// to `x <- 5`.
+///
+///
+/// See the docs in build.rs to know more about how the AST is converted to a
+/// graph.
+
 // ---------------------------------------------------------------------------
 // NodeId – unique identifier for a vertex in the dataflow graph
 // ---------------------------------------------------------------------------
@@ -198,7 +312,11 @@ pub struct DataflowGraph {
     /// Adjacency list: `edges[source][target] = edge_bits`.
     edges: FxHashMap<NodeId, FxHashMap<NodeId, EdgeTypeBits>>,
     /// Reverse adjacency list: `reverse_edges[target][source] = edge_bits`.
-    /// Built lazily by [`DataflowGraph::build_reverse_edges`].
+    /// This allows faster access to information on whether a node is a target.
+    /// For instance, if we want to know whether a vertex is read (i.e. whether
+    /// it is the target of a Reads edge), we can simply do reverse_edges[vertex]
+    /// instead of going through all other vertices and see which ones point to
+    /// this vertex.
     reverse_edges: FxHashMap<NodeId, FxHashMap<NodeId, EdgeTypeBits>>,
     /// Counter for generating fresh [`NodeId`]s.
     next_id: u32,

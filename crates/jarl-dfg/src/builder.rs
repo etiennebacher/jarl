@@ -2,6 +2,106 @@ use super::graph::*;
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
+/// This details the process to convert the AST into a DFG. See the docs in
+/// graph.rs for more info on the general concepts in the DFG.
+///
+/// We have the full AST as input and process it recursively node by node using
+/// a lot of `process_*()` functions, such as `process_function_def()` or
+/// `process_binary()`. In each of these steps, we add vertices in the graph.
+/// These vertices contain a unique ID, a kind, a range, control dependencies,
+/// and sometimes extra data.
+///
+/// Each of those functions returns a `DataflowInformation`. This contains a node
+/// ID, identifiers that were defined, unknown references, and a few more information.
+/// To understand that, it is useful to think about it in terms of subtrees.
+///
+/// Suppose that we have this code:
+///
+/// ```r
+/// x <- 1
+/// x
+/// ```
+///
+/// Before we start processing this, we have an empty environment and an empty
+/// graph.
+///
+/// We process `x <- 1`, which is our first subtree. This adds two
+/// vertices in the graph (a Definition vertex and a Value vertex) and one edge
+/// (DefinedBy, going from `x` to `1`). This also returns a DataflowInformation
+/// that tells that we have a write "x" corresponding to a particular node ID.
+/// We update the environment with this information and move on to process the
+/// second expression, `x`.
+///
+/// On its own, processing the second expression adds a Use vertex with an
+/// unknown reference because we don't know where `x` comes from (based on
+/// this single subtree). It also returns a DataflowInformation saying that we
+/// have an unknown reference named "x". After this second subtree is processed,
+/// we can resolve unknown references against the environment. `x` is now present
+/// there thanks to the first step, so there's no unknown references anymore.
+/// Now that we know all references, we can add a "Reads" edge from the Use
+/// vertex `x` to the Definition vertex `x`.
+///
+///
+/// ## Environment
+///
+/// Most of these processing steps populate the same (global) environment.
+/// However, we need to use another environment when we process function arguments
+/// and function body.
+///
+/// We don't want references defined in those environments to be available in the
+/// global environment, so when we enter the argument and the body nodes, we
+/// create a child environment and we exit it when we leave those nodes.
+///
+///
+/// ## Forward references
+///
+/// There are some cases where references cannot be known after we process all
+/// the nodes, such as this case:
+///
+/// ```r
+/// f <- function() x
+/// x <- 1
+/// f()
+/// ```
+///
+/// In `process_function_def()`, we have an unknown reference `x` (because `x <- 1`
+/// hasn't been processed yet) and we leave the environment that we made to
+/// process the function body.
+///
+/// The solution is to do a final pass after the builder is complete to resolve
+/// all unknown references against the global environment. At this stage, we'll
+/// have our Definition vertex `x`, so the unknown reference `x` in the function
+/// body will link to it and we can add a Reads edge.
+///
+///
+/// ## Control dependencies
+///
+/// The builder (which contains the graph we're building) also contains information
+/// on CDs. When we process a new node, the current CDs are attached to all new
+/// vertices. The builder gets new CDs when we enter a branch and loses
+/// them when it exits this branch. Therefore, all nodes present in this branch
+/// get the same CDs.
+///
+/// Importantly, in an if/else, both branches use the environment that exists
+/// *before* entering the if condition and each branch gets its own environment.
+/// After all branches are analyzed, we merge both environments. This is important
+/// because it guarantees that the environment in a branch doesn't affect the
+/// processing of other branches, and it also guarantees that the environment
+/// after the if/else gets all the information and doesn't skip info from a
+/// specific branch.
+///
+///
+/// ## Exit points
+///
+/// Exit points contain information about which expression a function may return
+/// Usually, it's the last expression, but a function body can return early with
+/// a `return()` call. This is useful to add more Returns edges from a FunctionDef
+/// vertex to the exit point vertices.
+///
+/// There are also `break` and `next` in loops. Expressions after an
+/// unconditional break, next, or return are dead code and are not processed.
+///
+
 /// Builds a [`DataflowGraph`] from an R syntax tree.
 ///
 /// The builder walks the AST recursively (top-down), threading an
