@@ -654,4 +654,14 @@ for (i in 1:2) {
             None,
         );
     }
+
+    #[test]
+    fn test_equal_in_formula_is_not_definition() {
+        expect_no_lint(
+            "
+        a ~ b + (c = 1)",
+            "unused_object",
+            None,
+        );
+    }
 }

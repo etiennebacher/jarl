@@ -333,7 +333,10 @@ impl DfgBuilder {
         let op_kind = op.kind();
 
         // Left-assign: `x <- expr` or `x = expr`
-        if op_kind == RSyntaxKind::ASSIGN || op_kind == RSyntaxKind::EQUAL {
+        // `=` inside a formula (`~`) is not an assignment (e.g. `a ~ (b = 1)`).
+        if op_kind == RSyntaxKind::ASSIGN
+            || (op_kind == RSyntaxKind::EQUAL && !is_inside_formula(node))
+        {
             return self.process_left_assignment(node, false);
         }
         // Right-assign: `expr -> x`
@@ -1769,6 +1772,23 @@ fn find_replacement_name(node: &RSyntaxNode, is_super: bool) -> Option<String> {
         }
         _ => None,
     }
+}
+
+/// Check whether `node` is nested inside a formula (`~` binary expression).
+fn is_inside_formula(node: &RSyntaxNode) -> bool {
+    let mut cursor = node.parent();
+    while let Some(parent) = cursor {
+        if let Some(bin) = RBinaryExpression::cast_ref(&parent)
+            && bin
+                .as_fields()
+                .operator
+                .is_ok_and(|op| op.kind() == RSyntaxKind::TILDE)
+        {
+            return true;
+        }
+        cursor = parent.parent();
+    }
+    false
 }
 
 /// Check if a name looks like a bare identifier (no calls, subscripts, etc.).
