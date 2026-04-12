@@ -946,13 +946,13 @@ impl DfgBuilder {
             "quote" | "bquote" | "substitute" | "match.arg"
         );
         if is_nse {
-            let vertex_count_before = self.graph.vertex_count();
+            let id_before = self.graph.next_id();
             let result = self.process_call_inner(node, call_id, &func_name);
 
             // Add NonStandardEvaluation edges from the call to all
             // vertices created inside the NSE argument.
-            let vertex_count_after = self.graph.vertex_count();
-            for idx in (vertex_count_before as u32)..(vertex_count_after as u32) {
+            let id_after = self.graph.next_id();
+            for idx in id_before..id_after {
                 let inner_id = NodeId(idx);
                 if inner_id != call_id {
                     self.graph

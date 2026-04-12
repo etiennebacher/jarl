@@ -403,6 +403,10 @@ impl DataflowGraph {
         self.vertices.len()
     }
 
+    pub fn next_id(&self) -> u32 {
+        self.next_id
+    }
+
     pub fn edge_count(&self) -> usize {
         self.edges.values().map(|m| m.len()).sum()
     }

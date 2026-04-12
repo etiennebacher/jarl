@@ -632,4 +632,15 @@ for (i in 1:2) {
             None,
         );
     }
+
+    #[test]
+    fn test_nse_in_same_call() {
+        expect_no_lint(
+            "
+        x <- 1
+        f(x, substitute('a'))",
+            "unused_object",
+            None,
+        );
+    }
 }
