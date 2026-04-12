@@ -1,5 +1,5 @@
 use air_r_syntax::TextRange;
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::FxHashMap;
 use std::fmt;
 
 #[allow(clippy::empty_line_after_doc_comments)]
@@ -306,33 +306,36 @@ pub struct ControlDependency {
 ///
 /// Vertices represent values, variable uses, definitions, function calls and
 /// function definitions.  Edges encode how data flows between them.
+///
+/// Storage is Vec-based (indexed by [`NodeId`]) rather than HashMap-based,
+/// since node IDs are sequential integers starting from 0.
 #[derive(Clone)]
 pub struct DataflowGraph {
-    /// All vertices keyed by their [`NodeId`].
-    vertices: FxHashMap<NodeId, DfVertex>,
-    /// Adjacency list: `edges[source][target] = edge_bits`.
-    edges: FxHashMap<NodeId, FxHashMap<NodeId, EdgeTypeBits>>,
-    /// Reverse adjacency list: `reverse_edges[target][source] = edge_bits`.
+    /// All vertices indexed by their [`NodeId`].
+    vertices: Vec<Option<DfVertex>>,
+    /// Adjacency list indexed by source [`NodeId`]: `edges[source][target] = edge_bits`.
+    edges: Vec<FxHashMap<NodeId, EdgeTypeBits>>,
+    /// Reverse adjacency list indexed by target [`NodeId`]: `reverse_edges[target][source] = edge_bits`.
     /// This allows faster access to information on whether a node is a target.
     /// For instance, if we want to know whether a vertex is read (i.e. whether
     /// it is the target of a Reads edge), we can simply do reverse_edges[vertex]
     /// instead of going through all other vertices and see which ones point to
     /// this vertex.
-    reverse_edges: FxHashMap<NodeId, FxHashMap<NodeId, EdgeTypeBits>>,
+    reverse_edges: Vec<FxHashMap<NodeId, EdgeTypeBits>>,
     /// Counter for generating fresh [`NodeId`]s.
     next_id: u32,
-    /// Definition vertices created by super-assignment (`<<-` / `->>`).
-    super_assign_defs: FxHashSet<NodeId>,
+    /// Per-node flag: whether the definition was created by super-assignment (`<<-` / `->>`).
+    super_assign_defs: Vec<bool>,
 }
 
 impl DataflowGraph {
     pub fn new() -> Self {
         Self {
-            vertices: FxHashMap::default(),
-            edges: FxHashMap::default(),
-            reverse_edges: FxHashMap::default(),
+            vertices: Vec::new(),
+            edges: Vec::new(),
+            reverse_edges: Vec::new(),
             next_id: 0,
-            super_assign_defs: FxHashSet::default(),
+            super_assign_defs: Vec::new(),
         }
     }
 
@@ -340,43 +343,63 @@ impl DataflowGraph {
     pub fn fresh_id(&mut self) -> NodeId {
         let id = NodeId(self.next_id);
         self.next_id += 1;
+        // Pre-grow all vecs so the slot exists when add_vertex / add_edge
+        // is called later.
+        let idx = id.0 as usize + 1;
+        if self.vertices.len() < idx {
+            self.vertices.resize_with(idx, || None);
+            self.edges.resize_with(idx, FxHashMap::default);
+            self.reverse_edges.resize_with(idx, FxHashMap::default);
+            self.super_assign_defs.resize(idx, false);
+        }
         id
     }
 
     /// Insert a vertex into the graph, returning its id.
     pub fn add_vertex(&mut self, vertex: DfVertex) -> NodeId {
         let id = vertex.id;
-        self.vertices.insert(id, vertex);
+        let idx = id.0 as usize;
+        if idx >= self.vertices.len() {
+            let new_len = idx + 1;
+            self.vertices.resize_with(new_len, || None);
+            self.edges.resize_with(new_len, FxHashMap::default);
+            self.reverse_edges.resize_with(new_len, FxHashMap::default);
+            self.super_assign_defs.resize(new_len, false);
+        }
+        self.vertices[idx] = Some(vertex);
         id
     }
 
     /// Add an edge (or merge bits into an existing edge).
     pub fn add_edge(&mut self, from: NodeId, to: NodeId, ty: EdgeType) {
-        self.edges
-            .entry(from)
-            .or_default()
+        let fi = from.0 as usize;
+        let ti = to.0 as usize;
+        let needed = fi.max(ti) + 1;
+        if self.edges.len() < needed {
+            self.edges.resize_with(needed, FxHashMap::default);
+            self.reverse_edges.resize_with(needed, FxHashMap::default);
+        }
+        self.edges[fi]
             .entry(to)
             .or_insert(EdgeTypeBits(0))
             .insert(ty);
-        self.reverse_edges
-            .entry(to)
-            .or_default()
+        self.reverse_edges[ti]
             .entry(from)
             .or_insert(EdgeTypeBits(0))
             .insert(ty);
     }
 
     pub fn vertex(&self, id: NodeId) -> Option<&DfVertex> {
-        self.vertices.get(&id)
+        self.vertices.get(id.0 as usize).and_then(|v| v.as_ref())
     }
 
     pub fn vertices(&self) -> impl Iterator<Item = &DfVertex> {
-        self.vertices.values()
+        self.vertices.iter().filter_map(|v| v.as_ref())
     }
 
     pub fn edges_from(&self, id: NodeId) -> impl Iterator<Item = (NodeId, EdgeTypeBits)> + '_ {
         self.edges
-            .get(&id)
+            .get(id.0 as usize)
             .into_iter()
             .flat_map(|m| m.iter().map(|(&to, &bits)| (to, bits)))
     }
@@ -384,23 +407,30 @@ impl DataflowGraph {
     /// Iterate over all edges pointing *to* a given vertex.
     pub fn edges_to(&self, target: NodeId) -> impl Iterator<Item = (NodeId, EdgeTypeBits)> + '_ {
         self.reverse_edges
-            .get(&target)
+            .get(target.0 as usize)
             .into_iter()
             .flat_map(|m| m.iter().map(|(&from, &bits)| (from, bits)))
     }
 
     /// Mark a definition as created by super-assignment (`<<-` / `->>`).
     pub fn mark_super_assign(&mut self, id: NodeId) {
-        self.super_assign_defs.insert(id);
+        let idx = id.0 as usize;
+        if idx >= self.super_assign_defs.len() {
+            self.super_assign_defs.resize(idx + 1, false);
+        }
+        self.super_assign_defs[idx] = true;
     }
 
     /// Check if a definition was created by super-assignment.
     pub fn is_super_assign(&self, id: NodeId) -> bool {
-        self.super_assign_defs.contains(&id)
+        self.super_assign_defs
+            .get(id.0 as usize)
+            .copied()
+            .unwrap_or(false)
     }
 
     pub fn vertex_count(&self) -> usize {
-        self.vertices.len()
+        self.vertices.iter().filter(|v| v.is_some()).count()
     }
 
     pub fn next_id(&self) -> u32 {
@@ -408,7 +438,7 @@ impl DataflowGraph {
     }
 
     pub fn edge_count(&self) -> usize {
-        self.edges.values().map(|m| m.len()).sum()
+        self.edges.iter().map(|m| m.len()).sum()
     }
 }
 
@@ -420,18 +450,22 @@ impl Default for DataflowGraph {
 
 impl fmt::Debug for DataflowGraph {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut ids: Vec<_> = self.vertices.keys().copied().collect();
-        ids.sort();
         let mut vertices = f.debug_map();
-        for id in &ids {
-            vertices.entry(id, &self.vertices[id]);
+        for (i, slot) in self.vertices.iter().enumerate() {
+            if let Some(v) = slot {
+                vertices.entry(&NodeId(i as u32), v);
+            }
         }
         vertices.finish()?;
 
         let mut edges_list: Vec<_> = self
             .edges
             .iter()
-            .flat_map(|(&from, targets)| targets.iter().map(move |(&to, &bits)| (from, to, bits)))
+            .enumerate()
+            .flat_map(|(i, targets)| {
+                let from = NodeId(i as u32);
+                targets.iter().map(move |(&to, &bits)| (from, to, bits))
+            })
             .collect();
         edges_list.sort_by_key(|(from, to, _)| (*from, *to));
 
@@ -454,17 +488,16 @@ impl fmt::Display for DataflowGraph {
             self.vertex_count(),
             self.edge_count()
         )?;
-        let mut ids: Vec<_> = self.vertices.keys().copied().collect();
-        ids.sort();
-        for id in &ids {
-            let v = &self.vertices[id];
-            writeln!(f, "  {id} [{:?}] {:?} \"{}\"", v.kind, v.range, v.name)?;
+        for (i, slot) in self.vertices.iter().enumerate() {
+            if let Some(v) = slot {
+                let id = NodeId(i as u32);
+                writeln!(f, "  {id} [{:?}] {:?} \"{}\"", v.kind, v.range, v.name)?;
+            }
         }
-        for id in &ids {
-            if let Some(targets) = self.edges.get(id) {
-                for (to, bits) in targets {
-                    writeln!(f, "  {id} --{bits}--> {to}")?;
-                }
+        for (i, targets) in self.edges.iter().enumerate() {
+            let id = NodeId(i as u32);
+            for (to, bits) in targets {
+                writeln!(f, "  {id} --{bits}--> {to}")?;
             }
         }
         Ok(())
