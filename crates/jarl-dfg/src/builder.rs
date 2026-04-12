@@ -1175,6 +1175,27 @@ impl DfgBuilder {
                     self.env.remove(name);
                 }
             }
+            "do.call" => {
+                // do.call("f", args) → the string "f" is a read of variable f.
+                if let Some(first_arg) = args.first() {
+                    let read_info = self.graph.vertex(first_arg.node_id).and_then(|v| {
+                        if v.kind == VertexKind::Value {
+                            Some(v.name.trim_matches('"').trim_matches('\'').to_string())
+                        } else {
+                            None
+                        }
+                    });
+                    if let Some(var_name) = read_info
+                        && let Some(defs) = self.env.resolve(&var_name)
+                    {
+                        let def_ids: Vec<NodeId> = defs.iter().map(|d| d.node_id).collect();
+                        for def_id in def_ids {
+                            self.graph
+                                .add_edge(first_arg.node_id, def_id, EdgeType::Reads);
+                        }
+                    }
+                }
+            }
             _ => {}
         }
     }

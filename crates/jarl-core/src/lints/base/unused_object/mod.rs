@@ -643,4 +643,15 @@ for (i in 1:2) {
             None,
         );
     }
+
+    #[test]
+    fn test_special_functions_use_quoted_objects() {
+        expect_no_lint(
+            "
+        f <- mean
+        do.call('f', list(x = 1:3))",
+            "unused_object",
+            None,
+        );
+    }
 }
