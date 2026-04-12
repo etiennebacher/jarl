@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use jarl_dfg::*;
-use rustc_hash::FxHashSet;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 
@@ -124,6 +124,33 @@ pub fn unused_object(dfg: DataflowGraph, namespace_exports: &HashSet<String>) ->
         .filter(|v| v.kind == VertexKind::Definition)
         .collect();
 
+    // Group definitions by name for O(1) lookup in shadowed_by_conditional.
+    let defs_by_name: FxHashMap<&str, Vec<&DfVertex>> = {
+        let mut map: FxHashMap<&str, Vec<&DfVertex>> = FxHashMap::default();
+        for def in &definitions {
+            map.entry(&def.name).or_default().push(def);
+        }
+        map
+    };
+
+    // Index Use vertices by name for O(1) lookup in feeds_next_iteration.
+    let uses_by_name: FxHashMap<&str, Vec<&DfVertex>> = {
+        let mut map: FxHashMap<&str, Vec<&DfVertex>> = FxHashMap::default();
+        for v in dfg.vertices() {
+            if v.kind == VertexKind::Use {
+                map.entry(&v.name).or_default().push(v);
+            }
+        }
+        map
+    };
+
+    // Collect for-loop FunctionCall ranges once so is_for_loop_index
+    // doesn't scan all vertices per definition.
+    let for_loops: Vec<&DfVertex> = dfg
+        .vertices()
+        .filter(|v| v.kind == VertexKind::FunctionCall && v.name == "for")
+        .collect();
+
     for def in &definitions {
         // Skip function parameters — unused params are a separate lint.
         if param_ids.contains(&def.id) {
@@ -180,32 +207,41 @@ pub fn unused_object(dfg: DataflowGraph, namespace_exports: &HashSet<String>) ->
             }
         }
 
-        // We don't want to report the index variable in for loops, even if it's
-        // unused because we can't do something like `for (_ in 1:10)`.
-        if is_for_loop_index(&dfg, def) {
-            continue;
-        };
-
         // Check if this variable is referenced via string interpolation.
         let is_interpolated = interpolated_names.contains(def.name.as_str());
+
+        if is_used_by_edge || is_interpolated {
+            continue;
+        }
+
+        // We don't want to report the index variable in for loops, even if it's
+        // unused because we can't do something like `for (_ in 1:10)`.
+        if is_for_loop_index(&dfg, def, &for_loops) {
+            continue;
+        }
 
         // If a later definition of this same variable has a self-referencing
         // read (e.g. `x <- f(x)`), suppress the diagnostic.  The DFG
         // incorrectly resolves the RHS Use to the new Definition rather than
         // the previous one, making this definition look unused when it is not.
-        let suppressed_by_self_read = !is_used_by_edge && self_read_names.contains(&def.name);
+        if self_read_names.contains(&def.name) {
+            continue;
+        }
 
         // If a later definition of the same variable is conditional (has
         // control dependencies from short-circuit operators like `||` / `&&`),
         // the earlier definition may still be needed because the later one
         // might not execute.  E.g. `x <- 1; if (cond || (x <- 2)) print(x)`.
-        let shadowed_by_conditional = !is_used_by_edge
-            && definitions.iter().any(|other| {
-                other.name == def.name
-                    && other.id != def.id
+        let shadowed_by_conditional = defs_by_name.get(def.name.as_str()).is_some_and(|others| {
+            others.iter().any(|other| {
+                other.id != def.id
                     && other.range.start() > def.range.start()
                     && !other.cds.is_empty()
-            });
+            })
+        });
+        if shadowed_by_conditional {
+            continue;
+        }
 
         // If this definition is inside a loop and a Use of the same variable
         // appears earlier in the loop body, this definition feeds the next
@@ -213,22 +249,15 @@ pub fn unused_object(dfg: DataflowGraph, namespace_exports: &HashSet<String>) ->
         // E.g. `for (...) { f(x); x <- nrow(out) }` — the Use of `x` in
         // `f(x)` on the next iteration reads from this definition.
         let loop_cd = def.cds.iter().find(|cd| cd.by_iteration);
-        let feeds_next_iteration = !is_used_by_edge
-            && loop_cd.is_some_and(|lcd| {
-                dfg.vertices().any(|v| {
-                    v.kind == VertexKind::Use
-                        && v.name == def.name
-                        && v.range.start() < def.range.start()
+        let feeds_next_iteration = loop_cd.is_some_and(|lcd| {
+            uses_by_name.get(def.name.as_str()).is_some_and(|uses| {
+                uses.iter().any(|v| {
+                    v.range.start() < def.range.start()
                         && v.cds.iter().any(|cd| cd.by_iteration && cd.id == lcd.id)
                 })
-            });
-
-        if is_used_by_edge
-            || is_interpolated
-            || suppressed_by_self_read
-            || shadowed_by_conditional
-            || feeds_next_iteration
-        {
+            })
+        });
+        if feeds_next_iteration {
             continue;
         }
 
@@ -375,7 +404,7 @@ fn is_assignment_op(name: &str) -> bool {
 //  - a VertexKind::Definition for i
 //  - an outgoing DefinedBy edge to the sequence expression (1:10, etc.)
 //  - no incoming Returns edge from an assignment operator like <- / =
-fn is_for_loop_index(dfg: &DataflowGraph, def: &DfVertex) -> bool {
+fn is_for_loop_index(dfg: &DataflowGraph, def: &DfVertex, for_loops: &[&DfVertex]) -> bool {
     if def.kind != VertexKind::Definition {
         return false;
     }
@@ -394,10 +423,8 @@ fn is_for_loop_index(dfg: &DataflowGraph, def: &DfVertex) -> bool {
     dfg.edges_from(def.id).any(|(target, bits)| {
         bits.contains(EdgeType::DefinedBy)
             && dfg.vertex(target).is_some_and(|rhs| {
-                dfg.vertices().any(|v| {
-                    v.kind == VertexKind::FunctionCall
-                        && v.name == "for"
-                        && v.range.contains_range(def.range)
+                for_loops.iter().any(|v| {
+                    v.range.contains_range(def.range)
                         && v.range.contains_range(rhs.range)
                         && def.range.start() < rhs.range.start()
                 })
