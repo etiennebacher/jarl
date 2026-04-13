@@ -1,6 +1,7 @@
 use super::graph::*;
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
+use rustc_hash::FxHashSet;
 
 #[allow(clippy::empty_line_after_doc_comments)]
 /// This details the process to convert the AST into a DFG. See the docs in
@@ -113,6 +114,16 @@ pub struct DfgBuilder {
     env: Environment,
     /// Stack of active control-dependency guards.
     active_cds: Vec<ControlDependency>,
+    /// How many function scopes deep we are. When > 0, the expression-list
+    /// processor defers parent-chain resolutions (closure captures) instead
+    /// of creating edges eagerly, so that call-time resolution can wire
+    /// them to the correct definition.
+    scope_depth: usize,
+    /// Closure refs resolved at a call site. The deferred pass in
+    /// `build_from_root` skips these so it doesn't re-resolve them
+    /// against the final environment state (which may differ from
+    /// the environment at the call site).
+    call_resolved_refs: FxHashSet<NodeId>,
 }
 
 /// The information returned by processing a single AST sub-tree.
@@ -147,6 +158,8 @@ impl DfgBuilder {
             graph: DataflowGraph::new(),
             env: Environment::new_global(),
             active_cds: Vec::new(),
+            scope_depth: 0,
+            call_resolved_refs: FxHashSet::default(),
         }
     }
 
@@ -156,13 +169,10 @@ impl DfgBuilder {
         builder.process_node(root);
 
         // Collect unresolved closure references from all function definitions,
-        // then resolve them against the final top-level environment.
-        // This handles forward references like:
-        // ```
-        // f <- function() x
-        // x <- 1
-        // f()
-        // ```
+        // then resolve any that were NOT already resolved at a call site
+        // against the final top-level environment.  This handles:
+        // - Forward references: `f <- function() x; x <- 1`
+        // - Uncalled functions (e.g. package exports that capture globals)
         let unresolved: Vec<(String, NodeId)> = builder
             .graph
             .vertices()
@@ -175,6 +185,11 @@ impl DfgBuilder {
             .collect();
 
         for (name, ref_id) in &unresolved {
+            // Skip refs already resolved at a call site — their edges
+            // reflect the actual environment at call time.
+            if builder.call_resolved_refs.contains(ref_id) {
+                continue;
+            }
             if let Some(defs) = builder.env.resolve(name) {
                 for def in defs {
                     builder
@@ -802,6 +817,7 @@ impl DfgBuilder {
         }
 
         // Process the body.
+        self.scope_depth += 1;
         let mut body_ids = Vec::new();
         let mut exit_point_ids = Vec::new();
         if let Ok(body) = fields.body
@@ -816,15 +832,21 @@ impl DfgBuilder {
                     exit_point_ids.push(ep.node_id);
                 }
             }
-            // Closure tracking: resolve unknown refs against the
-            // function's own scope first, then bubble remaining
-            // up as closure references to the parent.
+            // Closure tracking: resolve refs defined in this function's
+            // own scope eagerly. Closure captures (refs from a parent
+            // scope) are deferred — they bubble up and are resolved at
+            // call sites or by the deferred pass, so that redefined
+            // variables get the correct edges.
             for (name, ref_id) in &info.unknown_refs {
-                if let Some(defs) = self.env.resolve(name) {
-                    for def in defs {
-                        self.graph.add_edge(*ref_id, def.node_id, EdgeType::Reads);
+                if self.env.bindings.contains_key(name) {
+                    // Defined in this function's own scope — resolve now.
+                    if let Some(defs) = self.env.resolve(name) {
+                        for def in defs {
+                            self.graph.add_edge(*ref_id, def.node_id, EdgeType::Reads);
+                        }
                     }
                 } else {
+                    // Closure capture — defer to call-time resolution.
                     unknown_refs.push((name.clone(), *ref_id));
                 }
             }
@@ -843,17 +865,10 @@ impl DfgBuilder {
             }
         }
 
+        self.scope_depth -= 1;
+
         // Restore parent environment.
         self.env = parent_env;
-
-        // Resolve closure references against the parent environment.
-        for (name, ref_id) in &unknown_refs {
-            if let Some(defs) = self.env.resolve(name) {
-                for def in defs {
-                    self.graph.add_edge(*ref_id, def.node_id, EdgeType::Reads);
-                }
-            }
-        }
 
         self.graph.add_vertex(DfVertex {
             id: fdef_id,
@@ -871,8 +886,12 @@ impl DfgBuilder {
 
         DataflowInformation {
             node_id: fdef_id,
-            // Remaining unresolved closure refs bubble up further
-            unknown_refs,
+            // Closure captures are tracked in FunctionDef.unresolved and
+            // resolved at call sites (including callbacks) or by the
+            // deferred pass.  Don't propagate them via unknown_refs —
+            // that would cause the enclosing expression-list processor
+            // to eagerly resolve them against the definition-time env.
+            unknown_refs: vec![],
             reads: vec![],
             writes: vec![],
             exit_points: vec![ExitPoint {
@@ -1021,6 +1040,13 @@ impl DfgBuilder {
         let mut writes = Vec::new();
         self.handle_builtin_call(func_name, &arg_data, call_id, &mut writes);
 
+        // Call-time closure resolution: resolve closure captures for the
+        // called function and any function arguments against the current
+        // environment. This gives precise edges that reflect which
+        // definition is active at this specific call site.
+        // Must happen before add_vertex which moves arg_data.
+        self.resolve_closure_refs_at_call(func_name, &arg_data);
+
         self.graph.add_vertex(DfVertex {
             id: call_id,
             kind: VertexKind::FunctionCall,
@@ -1050,6 +1076,73 @@ impl DfgBuilder {
             writes,
             exit_points: all_exit_points,
             on_exit_unresolved,
+        }
+    }
+
+    /// Resolve closure captures for the called function and any function
+    /// arguments against the current environment.  This handles direct
+    /// calls (`f()`), named callbacks (`lapply(list, f2)`), and anonymous
+    /// callbacks (`lapply(list, function(x) x + y)`).
+    fn resolve_closure_refs_at_call(&mut self, func_name: &str, args: &[CallArgument]) {
+        // Resolve the called function itself.
+        self.resolve_closure_refs_for_name(func_name);
+
+        // Resolve arguments that are function references or anonymous
+        // function definitions.
+        for arg in args {
+            if let Some(v) = self.graph.vertex(arg.node_id) {
+                match v.kind {
+                    VertexKind::Use => {
+                        self.resolve_closure_refs_for_name(&v.name.clone());
+                    }
+                    VertexKind::FunctionDef => {
+                        self.resolve_closure_refs_for_fdef(arg.node_id);
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    /// Resolve a named function's closure captures against the current
+    /// environment.
+    fn resolve_closure_refs_for_name(&mut self, name: &str) {
+        let def_id = match self.env.resolve(name) {
+            Some(defs) => defs[0].node_id,
+            None => return,
+        };
+
+        // Follow DefinedBy edges from the definition to find the FunctionDef.
+        let fdef_ids: Vec<NodeId> = self
+            .graph
+            .edges_from(def_id)
+            .filter(|(_, bits)| bits.contains(EdgeType::DefinedBy))
+            .map(|(target, _)| target)
+            .collect();
+
+        for fdef_id in fdef_ids {
+            self.resolve_closure_refs_for_fdef(fdef_id);
+        }
+    }
+
+    /// Resolve a FunctionDef's unresolved closure captures against the
+    /// current environment.
+    fn resolve_closure_refs_for_fdef(&mut self, fdef_id: NodeId) {
+        let unresolved = match self.graph.vertex(fdef_id) {
+            Some(v) if v.kind == VertexKind::FunctionDef => match &v.data {
+                VertexData::FunctionDef { unresolved, .. } => unresolved.clone(),
+                _ => return,
+            },
+            _ => return,
+        };
+
+        for (name, ref_id) in &unresolved {
+            if let Some(defs) = self.env.resolve(name) {
+                for def in defs {
+                    self.graph.add_edge(*ref_id, def.node_id, EdgeType::Reads);
+                }
+                self.call_resolved_refs.insert(*ref_id);
+            }
         }
     }
 
@@ -1574,8 +1667,16 @@ impl DfgBuilder {
                 // linkReadNameToWriteIfPossible).
                 for (name, ref_id) in &info.unknown_refs {
                     if let Some(defs) = self.env.resolve(name) {
-                        for def in defs {
-                            self.graph.add_edge(*ref_id, def.node_id, EdgeType::Reads);
+                        if self.scope_depth > 0 && !self.env.bindings.contains_key(name) {
+                            // Inside a function body, this resolved via the
+                            // parent chain (closure capture).  Don't create
+                            // an edge now — defer to call-time resolution so
+                            // the edge reflects the env at the call site.
+                            remaining_unknown.push((name.clone(), *ref_id));
+                        } else {
+                            for def in defs {
+                                self.graph.add_edge(*ref_id, def.node_id, EdgeType::Reads);
+                            }
                         }
                     } else {
                         // Unresolved — bubble up to caller.
@@ -2156,6 +2257,49 @@ for (i in 1:10) {
         assert!(
             has_closure_read,
             "Use(x) inside function should read outer Def(x)"
+        );
+    }
+
+    #[test]
+    fn closure_call_time_resolution() {
+        // x <- 1; f <- function() x; x <- 2; f()
+        // Use(x) inside f should read Def(x=2) only (via call-time),
+        // not Def(x=1) (which is overwritten before the call).
+        let g = parse_and_build("x <- 1\nf <- function() x\nx <- 2\nf()");
+
+        let defs_x: Vec<_> = g
+            .vertices()
+            .filter(|v| v.name == "x" && v.kind == VertexKind::Definition)
+            .collect();
+        let use_x: Vec<_> = g
+            .vertices()
+            .filter(|v| v.name == "x" && v.kind == VertexKind::Use)
+            .collect();
+        assert_eq!(defs_x.len(), 2, "should have two Def(x)");
+        assert!(!use_x.is_empty(), "should have Use(x) inside function");
+
+        // Sort defs by position: first is x=1, second is x=2
+        let mut defs_sorted = defs_x.clone();
+        defs_sorted.sort_by_key(|d| d.range.start());
+        let def_x1 = defs_sorted[0].id;
+        let def_x2 = defs_sorted[1].id;
+
+        let reads_x1 = use_x.iter().any(|u| {
+            g.edges_from(u.id)
+                .any(|(to, bits)| to == def_x1 && bits.contains(EdgeType::Reads))
+        });
+        let reads_x2 = use_x.iter().any(|u| {
+            g.edges_from(u.id)
+                .any(|(to, bits)| to == def_x2 && bits.contains(EdgeType::Reads))
+        });
+
+        assert!(
+            reads_x2,
+            "Use(x) should read Def(x=2) via call-time resolution"
+        );
+        assert!(
+            !reads_x1,
+            "Use(x) should NOT read Def(x=1) — it was overwritten before the call"
         );
     }
 

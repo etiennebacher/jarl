@@ -137,7 +137,10 @@ mod tests {
     #[test]
     fn test_no_lint_multiple_all_used() {
         expect_no_lint(
-            "x <- 1\ny <- 2\nz <- x + y\nprint(z)",
+            "x <- 1
+            y <- 2
+            z <- x + y
+            print(z)",
             "unused_object",
             None,
         );
@@ -145,17 +148,129 @@ mod tests {
 
     #[test]
     fn test_no_lint_used_in_nested_call() {
-        expect_no_lint("x <- 1\nprint(mean(x))", "unused_object", None);
+        expect_no_lint(
+            "
+        x <- 1
+        print(mean(x))",
+            "unused_object",
+            None,
+        );
     }
 
     #[test]
     fn test_no_lint_local_scope() {
-        expect_no_lint("local({\n  x <- 1\n  print(x)\n})", "unused_object", None);
+        expect_no_lint(
+            "
+        local({
+          x <- 1
+          print(x)
+        })",
+            "unused_object",
+            None,
+        );
     }
 
     #[test]
     fn test_no_lint_with_unresolved_refs_in_function_def_resolved_later() {
-        expect_no_lint("f <- function() x\nx <- 1", "unused_object", None);
+        expect_no_lint(
+            "
+        f <- function() x
+        x <- 1",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_closure_reads_redefined_variable() {
+        // Both definitions of `x` are read by `f()` at different call sites.
+        expect_no_lint(
+            "
+        x <- 1
+        f <- function() x
+        f()
+        x <- 2
+        f()",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_nested_closure_reads_redefined_variable() {
+        // Same as test_no_lint_closure_reads_redefined_variable but nested.
+        expect_no_lint(
+            "
+        foo <- function() {
+            x <- 1
+            f <- function() x
+            f()
+            x <- 2
+            f()
+        }",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_closure_only_called_after_redefinition() {
+        // `x <- 1` is unused because `f()` is only called after `x <- 2`.
+        assert_snapshot!(
+            snapshot_lint("
+x <- 1
+f <- function() x
+x <- 2
+f()"),
+            @"
+        warning: unused_object
+         --> <test>:2:1
+          |
+        2 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_no_lint_nested_closure_callback() {
+        // x is captured by f2 and used via lapply (not a direct call).
+        expect_no_lint(
+            "
+        f <- function() {
+            x <- 1
+            f2 <- function(i) {
+                i == x
+            }
+            lapply(1:2, f2)
+        }",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_anonymous_closure_callback() {
+        // x is captured by an anonymous function passed to lapply.
+        expect_no_lint(
+            "
+        x <- 1
+        lapply(1, function() x)",
+            "unused_object",
+            None,
+        );
+        // Same but nested inside a function.
+        expect_no_lint(
+            "
+        f <- function() {
+            x <- 1
+            lapply(1, function() x)
+        }",
+            "unused_object",
+            None,
+        );
     }
 
     #[test]
