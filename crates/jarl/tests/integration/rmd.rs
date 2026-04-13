@@ -462,7 +462,7 @@ any(is.na(x))
     Ok(())
 }
 
-/// One of the suppressions is misnamed
+/// One of the suppressions is invalid
 #[test]
 fn test_wrong_rule_name() -> anyhow::Result<()> {
     let case = CliTest::with_file(
@@ -472,12 +472,14 @@ fn test_wrong_rule_name() -> anyhow::Result<()> {
 #| jarl-ignore-chunk:
 #|   - any_is_na: foo
 #|   - wrong_rule: bar
+#|   - any_duplicated:
 any(is.na(x))
 ```
 
 ```{r}
 # jarl-ignore any_is_na: foo
 # jarl-ignore wrong_rule: bar
+# jarl-ignore any_duplicated:
 any(is.na(x))
 ```
 ",
@@ -503,17 +505,33 @@ any(is.na(x))
       |
       = help: Check the rule name for typos.
 
+    warning: unexplained_suppression
+     --> test.Rmd:6:1
+      |
+    6 | #|   - any_duplicated:
+      | ---------------------- This comment isn't used by Jarl because it is missing an explanation.
+      |
+      = help: Add an explanation after the colon, e.g., `# jarl-ignore rule: <reason>`.
+
     warning: misnamed_suppression
-      --> test.Rmd:11:1
+      --> test.Rmd:12:1
        |
-    11 | # jarl-ignore wrong_rule: bar
+    12 | # jarl-ignore wrong_rule: bar
        | ----------------------------- This comment isn't used by Jarl because it contains an unrecognized rule name.
        |
        = help: Check the rule name for typos.
 
+    warning: unexplained_suppression
+      --> test.Rmd:13:1
+       |
+    13 | # jarl-ignore any_duplicated:
+       | ----------------------------- This comment isn't used by Jarl because it is missing an explanation.
+       |
+       = help: Add an explanation after the colon, e.g., `# jarl-ignore rule: <reason>`.
+
 
     ── Summary ──────────────────────────────────────
-    Found 2 errors.
+    Found 4 errors.
 
     ----- stderr -----
     "
