@@ -462,6 +462,66 @@ any(is.na(x))
     Ok(())
 }
 
+/// One of the suppressions is misnamed
+#[test]
+fn test_wrong_rule_name() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+#| jarl-ignore-chunk:
+#|   - any_is_na: foo
+#|   - wrong_rule: bar
+any(is.na(x))
+```
+
+```{r}
+# jarl-ignore any_is_na: foo
+# jarl-ignore wrong_rule: bar
+any(is.na(x))
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: misnamed_suppression
+     --> test.Rmd:5:1
+      |
+    5 | #|   - wrong_rule: bar
+      | ---------------------- This comment isn't used by Jarl because it contains an unrecognized rule name.
+      |
+      = help: Check the rule name for typos.
+
+    warning: misnamed_suppression
+      --> test.Rmd:11:1
+       |
+    11 | # jarl-ignore wrong_rule: bar
+       | ----------------------------- This comment isn't used by Jarl because it contains an unrecognized rule name.
+       |
+       = help: Check the rule name for typos.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 // Chunk suppression scope
 // ---------------------------------------------------------------------------

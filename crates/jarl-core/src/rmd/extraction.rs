@@ -127,6 +127,17 @@ impl OffsetMap {
     }
 }
 
+/// An invalid YAML array item that should be translated into a comment
+/// recognizable by the suppression system.
+struct InvalidChunkItem {
+    /// The original `rule: reason` text extracted from the YAML item.
+    text: String,
+    /// The parse result (`InvalidRuleName`, `MissingExplanation`, etc.).
+    result: DirectiveParseResult,
+    /// Byte range within the chunk code.
+    range: (usize, usize),
+}
+
 /// Parsed chunk suppression info for translation.
 struct ChunkIgnoreBlock {
     /// Rules with their full `rule: reason` text for start comments.
@@ -136,6 +147,8 @@ struct ChunkIgnoreBlock {
     header_end: usize,
     /// Per-item byte ranges within the chunk code (for offset mapping).
     item_ranges: Vec<(usize, usize)>, // (start, end) within chunk code
+    /// Invalid items that should be emitted as detectable comments.
+    invalid_items: Vec<InvalidChunkItem>,
 }
 
 /// Scan a chunk's code for `#| jarl-ignore-chunk:` YAML blocks and collect
@@ -149,6 +162,7 @@ fn find_chunk_ignore_blocks(code: &str) -> Vec<ChunkIgnoreBlock> {
             let header_start = offset;
             let mut rules = Vec::new();
             let mut item_ranges = Vec::new();
+            let mut invalid_items = Vec::new();
             let mut scan_offset = offset + line.len();
 
             // Look ahead for YAML array items.
@@ -165,22 +179,32 @@ fn find_chunk_ignore_blocks(code: &str) -> Vec<ChunkIgnoreBlock> {
                         item_ranges.push((scan_offset, scan_offset + item_line.len()));
                         scan_offset += item_line.len();
                     }
-                    Some(_) => {
+                    Some(result) => {
                         // Invalid item (missing explanation, bad rule name) — still
-                        // part of the YAML block. Include it so we skip past it, but
-                        // don't add a rule. The suppression system will report it.
+                        // part of the YAML block. Track it so we can emit a
+                        // detectable comment in the virtual source.
+                        let trimmed = item_line.trim();
+                        let rest = trimmed.strip_prefix("#|").unwrap_or(trimmed);
+                        let rest = rest.trim_start().strip_prefix('-').unwrap_or(rest);
+                        let text = rest.trim().to_string();
+                        invalid_items.push(InvalidChunkItem {
+                            text,
+                            result,
+                            range: (scan_offset, scan_offset + item_line.len()),
+                        });
                         scan_offset += item_line.len();
                     }
                     None => break, // Not a YAML item — stop look-ahead.
                 }
             }
 
-            if !rules.is_empty() {
+            if !rules.is_empty() || !invalid_items.is_empty() {
                 blocks.push(ChunkIgnoreBlock {
                     rules,
                     header_start,
                     header_end: scan_offset,
                     item_ranges,
+                    invalid_items,
                 });
             }
         }
@@ -289,20 +313,39 @@ fn emit_translated_chunk(
             });
         }
 
-        // Replace each line in the YAML block (header + items) with `#\n`.
+        // Replace each line in the YAML block with either an inert `#\n`
+        // comment or a detectable `# jarl-ignore` comment for invalid items.
         let block_text = &code[block.header_start..block.header_end];
         let mut line_offset = block.header_start;
         for line in block_text.split_inclusive('\n') {
-            let replacement = "#\n";
+            let line_start = line_offset;
+            let line_end = line_offset + line.len();
+
+            // Check if this line corresponds to an invalid item.
+            let replacement =
+                if let Some(item) = block.invalid_items.iter().find(|i| i.range.0 == line_start) {
+                    match item.result {
+                        DirectiveParseResult::InvalidRuleName => {
+                            format!("# jarl-ignore {}\n", item.text)
+                        }
+                        DirectiveParseResult::MissingExplanation => {
+                            format!("# jarl-ignore {}\n", item.text)
+                        }
+                        _ => "#\n".to_string(),
+                    }
+                } else {
+                    "#\n".to_string()
+                };
+
             let v_start = virtual_src.len();
-            virtual_src.push_str(replacement);
+            virtual_src.push_str(&replacement);
             segments.push(Segment {
                 virtual_start: v_start,
                 virtual_len: replacement.len(),
-                original_start: start_byte + line_offset,
-                original_len: line.len(),
+                original_start: start_byte + line_start,
+                original_len: line_end - line_start,
             });
-            line_offset += line.len();
+            line_offset = line_end;
         }
 
         code_offset = block.header_end;
