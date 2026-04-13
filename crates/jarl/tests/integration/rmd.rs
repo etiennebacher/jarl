@@ -462,6 +462,84 @@ any(is.na(x))
     Ok(())
 }
 
+/// One of the suppressions is invalid
+#[test]
+fn test_wrong_rule_name() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+#| jarl-ignore-chunk:
+#|   - any_is_na: foo
+#|   - wrong_rule: bar
+#|   - any_duplicated:
+any(is.na(x))
+```
+
+```{r}
+# jarl-ignore any_is_na: foo
+# jarl-ignore wrong_rule: bar
+# jarl-ignore any_duplicated:
+any(is.na(x))
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: misnamed_suppression
+     --> test.Rmd:5:1
+      |
+    5 | #|   - wrong_rule: bar
+      | ---------------------- This comment isn't used by Jarl because it contains an unrecognized rule name.
+      |
+      = help: Check the rule name for typos.
+
+    warning: unexplained_suppression
+     --> test.Rmd:6:1
+      |
+    6 | #|   - any_duplicated:
+      | ---------------------- This comment isn't used by Jarl because it is missing an explanation.
+      |
+      = help: Add an explanation after the colon, e.g., `# jarl-ignore rule: <reason>`.
+
+    warning: misnamed_suppression
+      --> test.Rmd:12:1
+       |
+    12 | # jarl-ignore wrong_rule: bar
+       | ----------------------------- This comment isn't used by Jarl because it contains an unrecognized rule name.
+       |
+       = help: Check the rule name for typos.
+
+    warning: unexplained_suppression
+      --> test.Rmd:13:1
+       |
+    13 | # jarl-ignore any_duplicated:
+       | ----------------------------- This comment isn't used by Jarl because it is missing an explanation.
+       |
+       = help: Add an explanation after the colon, e.g., `# jarl-ignore rule: <reason>`.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 4 errors.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 // Chunk suppression scope
 // ---------------------------------------------------------------------------
