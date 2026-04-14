@@ -863,6 +863,65 @@ impl DfgBuilder {
                     unknown_refs.push((name.clone(), *ref_id));
                 }
             }
+
+            // Returned closures: if an exit point is (or resolves to) a
+            // FunctionDef, resolve its closure captures against this
+            // function's environment. The exit point can be the FunctionDef
+            // itself (anonymous return) or a Use that reads a Definition
+            // bound to a FunctionDef (e.g. `f2 <- function() x; f2`).
+            // Captures resolved to a local binding get a Reads edge; captures
+            // that reference a variable from an outer scope bubble up as
+            // this function's own closure captures.
+            let mut returned_fdef_ids: Vec<NodeId> = Vec::new();
+            for ep_id in &exit_point_ids {
+                match self.graph.vertex(*ep_id) {
+                    Some(v) if v.kind == VertexKind::FunctionDef => {
+                        returned_fdef_ids.push(*ep_id);
+                    }
+                    Some(v) if v.kind == VertexKind::Use => {
+                        let def_ids: Vec<NodeId> = self
+                            .graph
+                            .edges_from(*ep_id)
+                            .filter(|(_, bits)| bits.contains(EdgeType::Reads))
+                            .map(|(target, _)| target)
+                            .collect();
+                        for def_id in def_ids {
+                            for (target, bits) in self.graph.edges_from(def_id) {
+                                if bits.contains(EdgeType::DefinedBy)
+                                    && self
+                                        .graph
+                                        .vertex(target)
+                                        .is_some_and(|v2| v2.kind == VertexKind::FunctionDef)
+                                {
+                                    returned_fdef_ids.push(target);
+                                }
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            for fdef_id in returned_fdef_ids {
+                let captures = match self.graph.vertex(fdef_id) {
+                    Some(v) => match &v.data {
+                        VertexData::FunctionDef { unresolved, .. } => unresolved.clone(),
+                        _ => continue,
+                    },
+                    None => continue,
+                };
+                for (name, ref_id) in captures {
+                    if self.env.bindings.contains_key(&name) {
+                        if let Some(defs) = self.env.resolve(&name) {
+                            for def in defs {
+                                self.graph.add_edge(ref_id, def.node_id, EdgeType::Reads);
+                            }
+                            self.call_resolved_refs.insert(ref_id);
+                        }
+                    } else {
+                        unknown_refs.push((name, ref_id));
+                    }
+                }
+            }
         }
 
         self.scope_depth -= 1;

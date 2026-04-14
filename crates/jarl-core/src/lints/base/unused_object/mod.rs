@@ -274,6 +274,35 @@ f()"),
     }
 
     #[test]
+    fn test_no_lint_returned_closure() {
+        // x is captured by f2, which is returned from f. f2 could be called
+        // by f's caller, so x must be considered used.
+        //
+        // This happens in function factories, see for instance `string_magic_alias()`
+        // in stringmagic.
+        expect_no_lint(
+            "
+        f <- function() {
+            x <- 1
+            f2 <- function() x
+            f2
+        }",
+            "unused_object",
+            None,
+        );
+        // Same but with an anonymous function as the return value.
+        expect_no_lint(
+            "
+        f <- function() {
+            x <- 1
+            function() x
+        }",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
     fn test_with_on_exit() {
         // no lint when on.exit() refers to objects defined after it's called
         expect_no_lint(
