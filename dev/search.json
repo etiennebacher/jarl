@@ -2084,14 +2084,14 @@
     "href": "howto/ci.html",
     "title": "Continuous integration",
     "section": "",
-    "text": "Jarl can be used as a Github Action via setup-jarl. This action runs in a couple of seconds and will fail if there are any rule violations. It is possible to customize the arguments passed to Jarl in this action, such as the input paths.\nHere is an example YAML file:\non:\n  push:\n    branches: main\n  pull_request:\n\nname: jarl-check\n\npermissions: read-all\n\njobs:\n  jarl-check:\n    name: jarl-check\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: etiennebacher/setup-jarl@v0.1.0\nSee the setup-jarl repository for more examples."
+    "text": "Jarl can be used as a Github Action via setup-jarl. This action runs in a couple of seconds and will fail if there are any rule violations. It is possible to customize the arguments passed to Jarl in this action, such as the input paths.\nHere is an example YAML file:\non:\n  push:\n    branches:\n      - main\n  pull_request:\n\nname: jarl-check\n\npermissions: read-all\n\njobs:\n  jarl-check:\n    name: jarl-check\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: etiennebacher/setup-jarl@v0.1.0\nSee the setup-jarl repository for more examples."
   },
   {
     "objectID": "howto/ci.html#github-actions",
     "href": "howto/ci.html#github-actions",
     "title": "Continuous integration",
     "section": "",
-    "text": "Jarl can be used as a Github Action via setup-jarl. This action runs in a couple of seconds and will fail if there are any rule violations. It is possible to customize the arguments passed to Jarl in this action, such as the input paths.\nHere is an example YAML file:\non:\n  push:\n    branches: main\n  pull_request:\n\nname: jarl-check\n\npermissions: read-all\n\njobs:\n  jarl-check:\n    name: jarl-check\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: etiennebacher/setup-jarl@v0.1.0\nSee the setup-jarl repository for more examples."
+    "text": "Jarl can be used as a Github Action via setup-jarl. This action runs in a couple of seconds and will fail if there are any rule violations. It is possible to customize the arguments passed to Jarl in this action, such as the input paths.\nHere is an example YAML file:\non:\n  push:\n    branches:\n      - main\n  pull_request:\n\nname: jarl-check\n\npermissions: read-all\n\njobs:\n  jarl-check:\n    name: jarl-check\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: etiennebacher/setup-jarl@v0.1.0\nSee the setup-jarl repository for more examples."
   },
   {
     "objectID": "howto/ci.html#container-based-cicd-platforms",
