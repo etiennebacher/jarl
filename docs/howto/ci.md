@@ -13,7 +13,8 @@ Here is an example YAML file:
 ```yml
 on:
   push:
-    branches: main
+    branches:
+      - main
   pull_request:
 
 name: jarl-check

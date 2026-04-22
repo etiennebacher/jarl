@@ -24,6 +24,7 @@ env:
   CARGO_TERM_COLOR: always
   TEST_REPOS: |
     apache/arrow@ec56b377340feb8d46b289342b403aa489effaa1
+    cran/survey@4834b8bc91f6414ad4514552daaed8990a86d9c1
     easystats/datawizard@7466ff6f91040e25f826b224a4ef5e9aeb63b567
     klmr/box@46bec1bc4d8273c42b85c0d7b4323721c2ad45f5
     lrberge/stringmagic@87b187d40c745ea1d8496f071aee7229985da23c
