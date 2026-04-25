@@ -440,6 +440,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    Notin => {
+        name: "notin",
+        categories: [Read],
+        default: Enabled,
+        fix: Safe,
+        min_r_version: Some((4, 6, 0)),
+    },
     NumericLeadingZero => {
         name: "numeric_leading_zero",
         categories: [Read],
