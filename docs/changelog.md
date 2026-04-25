@@ -2,6 +2,11 @@
 
 ## Development version
 
+### Features
+
+* New rule `notin` recommends `%notin%` instead of `!(x %in% y)` for projects
+  using R >= 4.6.0 (#459).
+
 ### Bug fixes
 
 * Suppression comments in `@examples` and `@examplesIf` now work correctly (#443).
