@@ -175,6 +175,7 @@ mod tests {
                 vec![
                     "# leading comment\n!(x >= y)",
                     "!(x \n # hello there \n >= y)",
+                    "# leading comment\n!(x \n # hello there \n >= y)",
                     "!(x >= y) # trailing comment",
                 ],
                 "comparison_negation",

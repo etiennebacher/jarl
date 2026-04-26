@@ -5,8 +5,7 @@ use air_r_syntax::{
     RCallFields, RExtractExpressionFields, RSyntaxKind, RSyntaxNode,
 };
 use anyhow::{Result, anyhow};
-use biome_rowan::AstNode;
-use biome_rowan::AstSeparatedList;
+use biome_rowan::{AstNode, AstSeparatedList, Direction};
 
 /// Macro to unwrap an Option or return Ok(None) early.
 ///
@@ -375,7 +374,8 @@ pub fn get_nested_functions_content(
 /// This is used to not provide a fix when comments are present to avoid
 /// destroying them.
 ///
-/// This returns `false` if the comment is leading or trailing because we want
+/// This ignores leading comments on the first token and trailing comments on the
+/// last token because those comments are outside the replacement range. We want
 /// to catch cases like:
 /// ```r,ignore
 /// any(
@@ -393,8 +393,59 @@ pub fn get_nested_functions_content(
 ///
 /// any(is.na(x)) # comment 2
 /// ```
-pub fn node_contains_comments(node: &air_r_syntax::RSyntaxNode) -> bool {
-    (node.has_comments_direct() || node.has_comments_descendants())
-        && !node.has_trailing_comments()
-        && !node.has_leading_comments()
+pub fn node_contains_comments(node: &RSyntaxNode) -> bool {
+    let first_token = node.first_token();
+    let last_token = node.last_token();
+
+    node.descendants_tokens(Direction::Next).any(|token| {
+        let has_internal_leading =
+            token.has_leading_comments() && first_token.as_ref() != Some(&token);
+        let has_internal_trailing =
+            token.has_trailing_comments() && last_token.as_ref() != Some(&token);
+        has_internal_leading || has_internal_trailing
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use air_r_parser::RParserOptions;
+    use biome_rowan::AstNode;
+    use biome_rowan::AstNodeList;
+
+    fn assert_node_contains_comments(code: &str, expected: bool) {
+        let parsed = air_r_parser::parse(code, RParserOptions::default());
+        let node = parsed
+            .tree()
+            .expressions()
+            .iter()
+            .next()
+            .expect("Expected at least one expression")
+            .syntax()
+            .clone();
+
+        assert_eq!(
+            node_contains_comments(&node),
+            expected,
+            "Unexpected comment detection result for:\n{code}"
+        );
+    }
+
+    #[test]
+    fn test_node_contains_comments() {
+        let cases = [
+            ("foo(x)", false),
+            ("# leading\nfoo(x)", false),
+            ("foo(x) # trailing", false),
+            ("# leading\nfoo(x) # trailing", false),
+            ("foo(\n  # internal\n  x\n)", true),
+            ("# leading\nfoo(\n  # internal\n  x\n)", true),
+            ("foo(\n  # internal\n  x\n) # trailing", true),
+            ("# leading\nfoo(\n  # internal\n  x\n) # trailing", true),
+        ];
+
+        for (code, expected) in cases {
+            assert_node_contains_comments(code, expected);
+        }
+    }
 }
