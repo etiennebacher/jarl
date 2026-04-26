@@ -2,6 +2,12 @@
 
 ## Development version
 
+### Features
+
+* New rules:
+
+  - `notin` (#459, @Yousa-Mirage)
+
 ### Bug fixes
 
 * Automatic fixes now skip rewrites when comments are inside the rewritten

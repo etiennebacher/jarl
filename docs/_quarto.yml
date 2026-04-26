@@ -124,6 +124,7 @@ website:
       - rules/misnamed_suppression.md
       - rules/misplaced_file_suppression.md
       - rules/misplaced_suppression.md
+      - rules/notin.md
       - rules/numeric_leading_zero.md
       - rules/nzchar.md
       - rules/outdated_suppression.md

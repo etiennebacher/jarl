@@ -1,0 +1,25 @@
+---
+source: crates/jarl-core/src/lints/base/notin/mod.rs
+expression: "get_fixed_text(vec![\"!(x \\n # comment\\n %in% y)\", \"!x %in%\\n # comment\\n y\"],\n\"notin\", Some(\"4.6\"))"
+---
+OLD:
+====
+!(x 
+ # comment
+ %in% y)
+NEW:
+====
+!(x 
+ # comment
+ %in% y)
+
+OLD:
+====
+!x %in%
+ # comment
+ y
+NEW:
+====
+!x %in%
+ # comment
+ y
