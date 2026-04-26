@@ -1,5 +1,4 @@
 # notin
-
 ::: {.callout-note title="Added in 0.6.0" .low-opacity}
 :::
 
@@ -21,7 +20,6 @@ if (!(x %in% choices)) {
 ```
 
 Use instead:
-
 ```r
 if (x %notin% choices) {
   print("x is not in choices")
