@@ -3,7 +3,7 @@ use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
-pub struct Notin;
+pub struct NotIn;
 
 /// Version added: 0.6.0
 ///
@@ -34,7 +34,7 @@ pub struct Notin;
 /// ## References
 ///
 /// See `?match`
-impl Violation for Notin {
+impl Violation for NotIn {
     fn name(&self) -> String {
         "notin".to_string()
     }
@@ -77,7 +77,7 @@ pub fn notin(ast: &RUnaryExpression) -> anyhow::Result<Option<Diagnostic>> {
 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
-        Notin,
+        NotIn,
         range,
         Fix {
             content: format!(

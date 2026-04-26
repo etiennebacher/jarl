@@ -4,8 +4,9 @@
 
 ### Features
 
-* New rule `notin` recommends `%notin%` instead of `!(x %in% y)` for projects
-  using R >= 4.6.0 (#459).
+* New rules:
+
+  - `notin` (#459, @Yousa-Mirage)
 
 ### Bug fixes
 

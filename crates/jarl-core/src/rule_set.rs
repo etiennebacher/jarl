@@ -440,7 +440,7 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
-    Notin => {
+    NotIn => {
         name: "notin",
         categories: [Read],
         default: Enabled,

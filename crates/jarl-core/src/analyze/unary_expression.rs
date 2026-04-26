@@ -9,7 +9,7 @@ pub fn unary_expression(r_expr: &RUnaryExpression, checker: &mut Checker) -> any
     if checker.is_rule_enabled(Rule::ComparisonNegation) {
         checker.report_diagnostic(comparison_negation(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::Notin) {
+    if checker.is_rule_enabled(Rule::NotIn) {
         checker.report_diagnostic(notin(r_expr)?);
     }
     Ok(())
