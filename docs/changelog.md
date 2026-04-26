@@ -4,6 +4,9 @@
 
 ### Bug fixes
 
+* Automatic fixes now skip rewrites when comments are inside the rewritten
+  expression, while still allowing leading and trailing comments (#461).
+
 * Suppression comments in `@examples` and `@examplesIf` now work correctly (#443).
 
 * Fix alignment of diagnostic in console when source uses tabs (#445).
