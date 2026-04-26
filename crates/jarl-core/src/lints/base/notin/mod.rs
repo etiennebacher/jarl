@@ -59,7 +59,9 @@ mod tests {
     fn test_no_lint_notin() {
         expect_no_lint("x %in% y", "notin", Some("4.6"));
         expect_no_lint("!(x == y)", "notin", Some("4.6"));
+        expect_no_lint("-(x %in% y)", "notin", Some("4.6"));
         expect_no_lint("!x %in% y", "notin", Some("4.6"));
+        expect_no_lint("!((x %in% y))", "notin", Some("4.6"));
         expect_no_lint("!(NA %in% x)", "notin", Some("4.6"));
         expect_no_lint("!(x %in% NA)", "notin", Some("4.6"));
         expect_no_lint("!(x %in% NA_character_)", "notin", Some("4.6"));
