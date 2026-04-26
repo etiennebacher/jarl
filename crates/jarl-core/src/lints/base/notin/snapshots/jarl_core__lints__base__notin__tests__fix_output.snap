@@ -1,10 +1,17 @@
 ---
 source: crates/jarl-core/src/lints/base/notin/mod.rs
-expression: "get_fixed_text(vec![\"!(x %in% y)\",\n\"if (!(1 %in% c(1, 2, 3))) print('not in vector')\",\n\"!(foo(x + 1) %in% bar(y + 1))\",], \"notin\", Some(\"4.6\"))"
+expression: "get_fixed_text(vec![\"!(x %in% y)\", \"!x %in% y\",\n\"if (!(1 %in% c(1, 2, 3))) print('not in vector')\",\n\"if (!1 %in% c(1, 2, 3)) print('not in vector')\",\n\"!(foo(x + 1) %in% bar(y + 1))\", \"!foo(x + 1) %in% bar(y + 1)\",], \"notin\",\nSome(\"4.6\"))"
 ---
 OLD:
 ====
 !(x %in% y)
+NEW:
+====
+x %notin% y
+
+OLD:
+====
+!x %in% y
 NEW:
 ====
 x %notin% y
@@ -18,7 +25,21 @@ if (1 %notin% c(1, 2, 3)) print('not in vector')
 
 OLD:
 ====
+if (!1 %in% c(1, 2, 3)) print('not in vector')
+NEW:
+====
+if (1 %notin% c(1, 2, 3)) print('not in vector')
+
+OLD:
+====
 !(foo(x + 1) %in% bar(y + 1))
+NEW:
+====
+foo(x + 1) %notin% bar(y + 1)
+
+OLD:
+====
+!foo(x + 1) %in% bar(y + 1)
 NEW:
 ====
 foo(x + 1) %notin% bar(y + 1)

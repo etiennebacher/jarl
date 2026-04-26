@@ -3,13 +3,12 @@ use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
-pub struct NotIn;
-
 /// Version added: 0.6.0
 ///
 /// ## What it does
 ///
-/// Checks for usage of `!(x %in% y)` and recommends using `%notin%` instead.
+/// Checks for usage of `!x %in% y` or `!(x %in% y)` and recommends using
+/// `%notin%` instead.
 ///
 /// ## Why is this bad?
 ///
@@ -19,6 +18,8 @@ pub struct NotIn;
 /// ## Example
 ///
 /// ```r
+/// !x %in% choices
+///
 /// if (!(x %in% choices)) {
 ///   print("x is not in choices")
 /// }
@@ -26,6 +27,8 @@ pub struct NotIn;
 ///
 /// Use instead:
 /// ```r
+/// x %notin% choices
+///
 /// if (x %notin% choices) {
 ///   print("x is not in choices")
 /// }
@@ -34,18 +37,6 @@ pub struct NotIn;
 /// ## References
 ///
 /// See `?match`
-impl Violation for NotIn {
-    fn name(&self) -> String {
-        "notin".to_string()
-    }
-    fn body(&self) -> String {
-        "`!(x %in% y)` can be simplified.".to_string()
-    }
-    fn suggestion(&self) -> Option<String> {
-        Some("Use `x %notin% y` instead.".to_string())
-    }
-}
-
 pub fn notin(ast: &RUnaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let operator = ast.operator()?;
 
@@ -54,11 +45,21 @@ pub fn notin(ast: &RUnaryExpression) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    // Ensure the operand is a parenthesized expression
     let argument = ast.argument()?;
-    let paren_expr = unwrap_or_return_none!(argument.as_r_parenthesized_expression());
-    let body = paren_expr.body()?;
-    let binary_expression = unwrap_or_return_none!(body.as_r_binary_expression());
+
+    let (binary_expression, linted_expression) =
+        if let Some(paren_expr) = argument.as_r_parenthesized_expression() {
+            let body = paren_expr.body()?;
+            (
+                unwrap_or_return_none!(body.as_r_binary_expression()).clone(),
+                "!(x %in% y)",
+            )
+        } else {
+            (
+                unwrap_or_return_none!(argument.as_r_binary_expression()).clone(),
+                "!x %in% y",
+            )
+        };
 
     // Ensure the binary expression is of the form `x %in% y`
     let RBinaryExpressionFields { left, operator, right } = binary_expression.as_fields();
@@ -77,7 +78,11 @@ pub fn notin(ast: &RUnaryExpression) -> anyhow::Result<Option<Diagnostic>> {
 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
-        NotIn,
+        ViolationData::new(
+            "notin".to_string(),
+            format!("`{linted_expression}` can be simplified."),
+            Some("Use `x %notin% y` instead.".to_string()),
+        ),
         range,
         Fix {
             content: format!(

@@ -25,6 +25,19 @@ mod tests {
         "
         );
         assert_snapshot!(
+            snapshot_lint("!x %in% y"),
+            @"
+        warning: notin
+         --> <test>:1:1
+          |
+        1 | !x %in% y
+          | --------- `!x %in% y` can be simplified.
+          |
+          = help: Use `x %notin% y` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
             snapshot_lint(
                 r#"if (!(1 %in% c(1, 2, 3))) {
   print("1 is not in the vector")
@@ -46,8 +59,11 @@ mod tests {
             get_fixed_text(
                 vec![
                     "!(x %in% y)",
+                    "!x %in% y",
                     "if (!(1 %in% c(1, 2, 3))) print('not in vector')",
+                    "if (!1 %in% c(1, 2, 3)) print('not in vector')",
                     "!(foo(x + 1) %in% bar(y + 1))",
+                    "!foo(x + 1) %in% bar(y + 1)",
                 ],
                 "notin",
                 Some("4.6")
@@ -60,13 +76,16 @@ mod tests {
         expect_no_lint("x %in% y", "notin", Some("4.6"));
         expect_no_lint("!(x == y)", "notin", Some("4.6"));
         expect_no_lint("-(x %in% y)", "notin", Some("4.6"));
-        expect_no_lint("!x %in% y", "notin", Some("4.6"));
         expect_no_lint("!((x %in% y))", "notin", Some("4.6"));
         expect_no_lint("!(NA %in% x)", "notin", Some("4.6"));
+        expect_no_lint("!NA %in% x", "notin", Some("4.6"));
         expect_no_lint("!(x %in% NA)", "notin", Some("4.6"));
+        expect_no_lint("!x %in% NA", "notin", Some("4.6"));
         expect_no_lint("!(x %in% NA_character_)", "notin", Some("4.6"));
         expect_no_lint("!(x %in% y)", "notin", Some("4.5"));
+        expect_no_lint("!x %in% y", "notin", Some("4.5"));
         expect_no_lint("!(x %in% y)", "notin", None);
+        expect_no_lint("!x %in% y", "notin", None);
     }
 
     #[test]
@@ -101,7 +120,11 @@ mod tests {
         );
         assert_snapshot!(
             "no_fix_with_comments",
-            get_fixed_text(vec!["!(x \n # comment\n %in% y)",], "notin", Some("4.6"))
+            get_fixed_text(
+                vec!["!(x \n # comment\n %in% y)", "!x %in%\n # comment\n y"],
+                "notin",
+                Some("4.6")
+            )
         );
     }
 }

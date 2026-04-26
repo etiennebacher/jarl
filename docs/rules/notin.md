@@ -4,7 +4,8 @@
 
 ## What it does
 
-Checks for usage of `!(x %in% y)` and recommends using `%notin%` instead.
+Checks for usage of `!x %in% y` or `!(x %in% y)` and recommends using
+`%notin%` instead.
 
 ## Why is this bad?
 
@@ -14,6 +15,8 @@ Using `%notin%` makes the intent clearer than wrapping `%in%` in a negation.
 ## Example
 
 ```r
+!x %in% choices
+
 if (!(x %in% choices)) {
   print("x is not in choices")
 }
@@ -21,6 +24,8 @@ if (!(x %in% choices)) {
 
 Use instead:
 ```r
+x %notin% choices
+
 if (x %notin% choices) {
   print("x is not in choices")
 }
