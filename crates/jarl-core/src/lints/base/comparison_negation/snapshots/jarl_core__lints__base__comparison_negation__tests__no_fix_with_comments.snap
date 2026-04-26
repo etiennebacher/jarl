@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/base/comparison_negation/mod.rs
-expression: "get_fixed_text(vec![\"# leading comment\\n!(x >= y)\",\n\"!(x \\n # hello there \\n >= y)\",\n\"# leading comment\\n!(x \\n # hello there \\n >= y)\",\n\"!(x >= y) # trailing comment\",], \"comparison_negation\", None)"
+expression: "get_fixed_text(vec![\"# leading comment\\n!(x >= y)\",\n\"!(x \\n # hello there \\n >= y)\", \"!(x >= y) # trailing comment\",],\n\"comparison_negation\", None)"
 ---
 OLD:
 ====
@@ -18,19 +18,6 @@ OLD:
  >= y)
 NEW:
 ====
-!(x 
- # hello there 
- >= y)
-
-OLD:
-====
-# leading comment
-!(x 
- # hello there 
- >= y)
-NEW:
-====
-# leading comment
 !(x 
  # hello there 
  >= y)

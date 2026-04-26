@@ -5,7 +5,7 @@
 ### Bug fixes
 
 * Automatic fixes now skip rewrites when comments are inside the rewritten
-  expression, while still allowing leading and trailing comments (#461).
+  expression, while still allowing leading and trailing comments (#461, @Yousa-Mirage).
 
 * Suppression comments in `@examples` and `@examplesIf` now work correctly (#443).
 

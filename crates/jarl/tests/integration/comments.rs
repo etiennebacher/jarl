@@ -332,3 +332,46 @@ any(is.na(z))
 
     Ok(())
 }
+
+#[test]
+fn test_fix_skips_internal_comments_with_outer_comments() -> anyhow::Result<()> {
+    let original = "# leading comment\n!(x \n # hello there \n >= y)\n";
+    let case = CliTest::with_file("test.R", original)?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--fix")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: comparison_negation
+     --> test.R:2:1
+      |
+    2 | / !(x 
+    3 | |  # hello there 
+    4 | |  >= y)
+      | |______- `!(x >= y)` can be simplified.
+      |
+      = help: Use `x < y` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    let fixed = case.read_file("test.R")?;
+    assert_eq!(fixed, original);
+
+    Ok(())
+}
