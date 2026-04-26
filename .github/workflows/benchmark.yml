@@ -8,6 +8,8 @@ on:
       - main
     paths:
       - .github/workflows/benchmark.yml
+      - Cargo.toml
+      - Cargo.lock
       - crates/**/src/**
       - crates/**/Cargo.toml
       - "!crates/jarl-lsp/**"
