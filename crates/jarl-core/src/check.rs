@@ -1,3 +1,16 @@
+use std::collections::HashMap;
+use std::fs;
+use std::path::Path;
+use std::path::PathBuf;
+use std::sync::Arc;
+
+use air_fs::relativize_path;
+use air_r_parser::RParserOptions;
+use air_r_syntax::{RExpressionList, RSyntaxNode};
+use anyhow::{Context, Result};
+use jarl_dfg::build_dfg;
+use rayon::prelude::*;
+
 use crate::error::ParseError;
 use crate::package::{
     FilePackageInfo, FileScope, PackageAnalysis, PackageContext, make_package_analysis,
@@ -6,16 +19,6 @@ use crate::package::{
 use crate::roxygen::{extract_roxygen_examples, remap_roxygen_fix, remap_roxygen_range};
 use crate::suppression::SuppressionManager;
 use crate::vcs::check_version_control;
-use air_fs::relativize_path;
-use air_r_parser::RParserOptions;
-use air_r_syntax::{RExpressionList, RSyntaxNode};
-use anyhow::{Context, Result};
-use rayon::prelude::*;
-use std::collections::HashMap;
-use std::fs;
-use std::path::Path;
-use std::path::PathBuf;
-use std::sync::Arc;
 
 use crate::analyze::document::check_document;
 use crate::analyze::expression::check_expression;
@@ -240,8 +243,10 @@ pub fn get_checks(
     // checks (blanket, unexplained, misplaced, misnamed, unused suppressions).
     // This must run after checking expressions because we filter out those that
     // are unused.
+    let dfg = build_dfg(&parsed.syntax());
     check_document(
         expressions,
+        dfg,
         &mut checker,
         &duplicate_assignments,
         &unused_functions,
@@ -350,7 +355,6 @@ fn get_checks_roxygen(
 
         let expressions = &parsed.tree().expressions();
         let suppression = SuppressionManager::from_node(&parsed.syntax(), &chunk.code);
-        let has_suppressions = suppression.has_any_suppressions;
         let mut checker = Checker::new(suppression, config.rule_options.clone());
         checker.rule_set = config.rules_to_apply.clone();
         checker.minimum_r_version = config.minimum_r_version;
@@ -363,9 +367,8 @@ fn get_checks_roxygen(
         // suppression comments. Most examples don't, and check_document is
         // otherwise unnecessary here (no package-level analysis, no
         // suppression-related diagnostics to report).
-        if has_suppressions {
-            check_document(expressions, &mut checker, &[], &[])?;
-        }
+        let dfg = build_dfg(&parsed.syntax());
+        check_document(expressions, dfg, &mut checker, &[], &[])?;
 
         for mut d in checker.diagnostics {
             d.range = remap_roxygen_range(d.range, chunk);
@@ -404,19 +407,23 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
         return Err(crate::error::ParseError { filename: file.to_path_buf() }.into());
     }
 
+    // Collect R variable names referenced in chunk options (e.g. `eval=cond`)
+    // so they are not flagged as unused.
+    let chunk_option_names = crate::rmd::extract_chunk_option_names(contents);
+
     let suppression = SuppressionManager::from_node(&parsed.syntax(), &virtual_source);
     let mut checker = Checker::new(suppression, config.rule_options.clone());
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
+    checker.namespace_exports.extend(chunk_option_names);
 
     let expressions = &parsed.tree().expressions();
     for expr in expressions {
         check_expression(&expr, &mut checker)?;
     }
-    // check_document runs suppression filtering internally, so
-    // checker.diagnostics is the post-suppression list after this call.
-    // Rmd chunks don't participate in package-level analysis, so pass empty slices.
-    check_document(expressions, &mut checker, &[], &[])?;
+
+    let dfg = build_dfg(&parsed.syntax());
+    check_document(expressions, dfg, &mut checker, &[], &[])?;
 
     // Remap ranges from virtual-string offsets to original Rmd file offsets.
     let diagnostics: Vec<Diagnostic> = checker

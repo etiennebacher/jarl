@@ -20,6 +20,13 @@ use crate::directive::{
 static OPEN_FENCE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[ \t]*(`{3,})\{[rR][^}]*\}").unwrap());
 
+/// Matches the opening fence of ANY code chunk (any language).
+///
+/// Captures group 1: the options part inside the braces after the language tag.
+/// E.g. for `{bash, eval=cond, echo=FALSE}` captures `, eval=cond, echo=FALSE`.
+static ANY_CHUNK_FENCE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^[ \t]*`{3,}\{\w+((?:,\s*[^}]*)?)\}").unwrap());
+
 /// An R code chunk extracted from an Rmd/Qmd document.
 #[derive(Debug)]
 pub struct RCodeChunk {
@@ -383,6 +390,113 @@ fn emit_translated_chunk(
     }
 }
 
+/// Extract R variable names referenced in chunk options across all chunks
+/// (any language).
+///
+/// In Rmd/Qmd files, chunk options can reference R objects:
+/// - in the fence header: `{bash, eval=cond}`
+/// - or in chunk body: `#| eval: !expr cond`
+///
+/// This info is required for some rules, e.g. so that these names are not
+/// flagged as unused by the `unused_object` lint.
+pub fn extract_chunk_option_names(content: &str) -> std::collections::HashSet<String> {
+    let mut names = std::collections::HashSet::new();
+
+    for line in content.lines() {
+        // Rmd-style inline options: ```{lang, key=value, ...}
+        if let Some(caps) = ANY_CHUNK_FENCE.captures(line)
+            && let Some(opts) = caps.get(1)
+        {
+            extract_option_values(opts.as_str(), &mut names);
+        }
+    }
+
+    // Quarto-style YAML options in chunk bodies: #| key: !expr value
+    // These are R expressions, so extract identifiers from them.
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if let Some(rest) = trimmed.strip_prefix("#|") {
+            let rest = rest.trim();
+            // Look for `key: value` pattern
+            if let Some((_key, value)) = rest.split_once(':') {
+                let value = value.trim();
+                // `!expr` prefix is explicit R expression in Quarto YAML
+                if let Some(expr) = value.strip_prefix("!expr") {
+                    extract_r_identifiers(expr.trim(), &mut names);
+                } else {
+                    // Bare values that look like identifiers (not strings, not booleans)
+                    extract_r_identifiers(value, &mut names);
+                }
+            }
+        }
+    }
+
+    names
+}
+
+/// Extract bare R identifier values from Rmd-style chunk options.
+///
+/// Given `, eval=cond, echo=FALSE`, extracts `cond` but not `FALSE`.
+fn extract_option_values(opts: &str, names: &mut std::collections::HashSet<String>) {
+    for part in opts.split(',') {
+        let part = part.trim();
+        if let Some((_key, value)) = part.split_once('=') {
+            let value = value.trim();
+            extract_r_identifiers(value, names);
+        }
+    }
+}
+
+/// Extract R identifiers from an expression string, filtering out
+/// keywords, booleans, numbers, and string literals.
+fn extract_r_identifiers(expr: &str, names: &mut std::collections::HashSet<String>) {
+    static R_CONSTANTS: &[&str] = &[
+        "TRUE",
+        "FALSE",
+        "NULL",
+        "NA",
+        "Inf",
+        "NaN",
+        "NA_integer_",
+        "NA_real_",
+        "NA_complex_",
+        "NA_character_",
+    ];
+
+    // Tokenize on non-identifier characters
+    let mut start = None;
+    for (i, ch) in expr.char_indices() {
+        let is_ident = ch.is_alphanumeric() || ch == '_' || ch == '.';
+        match (is_ident, start) {
+            (true, None) => start = Some(i),
+            (false, Some(s)) => {
+                let token = &expr[s..i];
+                if is_valid_r_name(token) && !R_CONSTANTS.contains(&token) {
+                    names.insert(token.to_string());
+                }
+                start = None;
+            }
+            _ => {}
+        }
+    }
+    if let Some(s) = start {
+        let token = &expr[s..];
+        if is_valid_r_name(token) && !R_CONSTANTS.contains(&token) {
+            names.insert(token.to_string());
+        }
+    }
+}
+
+/// Check if a token is a valid R variable name (not a number, not a string).
+fn is_valid_r_name(s: &str) -> bool {
+    let first = match s.chars().next() {
+        Some(c) => c,
+        None => return false,
+    };
+    // Must start with letter or dot (not digit)
+    (first.is_alphabetic() || first == '.') && !s.chars().all(|c| c.is_ascii_digit() || c == '.')
+}
+
 /// Find the original byte range for a rule's item line in the YAML blocks.
 fn find_item_original(blocks: &[ChunkIgnoreBlock], rule_reason: &str) -> (usize, usize) {
     for block in blocks {
@@ -537,5 +651,30 @@ mod tests {
             &content[chunks[1].start_byte..chunks[1].start_byte + 6],
             "b <- 2"
         );
+    }
+
+    #[test]
+    fn test_extract_chunk_option_names_rmd_style() {
+        let content = "```{r}\ncond <- TRUE\n```\n\n```{bash, eval=cond}\necho 'hi'\n```\n";
+        let names = extract_chunk_option_names(content);
+        assert!(names.contains("cond"));
+        assert!(!names.contains("TRUE"));
+        assert!(!names.contains("bash"));
+    }
+
+    #[test]
+    fn test_extract_chunk_option_names_multiple_options() {
+        let content = "```{r, eval=should_run, echo=verbose}\nx <- 1\n```\n";
+        let names = extract_chunk_option_names(content);
+        assert!(names.contains("should_run"));
+        assert!(names.contains("verbose"));
+    }
+
+    #[test]
+    fn test_extract_chunk_option_names_constants_excluded() {
+        let content = "```{r, eval=FALSE, echo=TRUE}\nx <- 1\n```\n";
+        let names = extract_chunk_option_names(content);
+        assert!(!names.contains("FALSE"));
+        assert!(!names.contains("TRUE"));
     }
 }
