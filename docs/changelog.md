@@ -7,6 +7,7 @@
 * New rules:
 
   - `notin` (#459, @Yousa-Mirage)
+  - `any_is_na` now also reports `NA %notin% x` cases (#470, @Yousa-Mirage)
 
 ### Bug fixes
 

@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/base/any_is_na/mod.rs
-expression: "get_fixed_text(vec![\"# leading comment\\nany(is.na(x))\",\n\"any(\\n  # comment\\n  is.na(x)\\n)\", \"any(is.na(\\n    # comment\\n    x\\n  ))\",\n\"any(is.na(x)) # trailing comment\",], \"any_is_na\", None)"
+expression: "get_fixed_text(vec![\"# leading comment\\nany(is.na(x))\",\n\"any(\\n  # comment\\n  is.na(x)\\n)\", \"any(is.na(\\n    # comment\\n    x\\n  ))\",\n\"NA %notin%\\n  # comment\\n  x\", \"any(is.na(x)) # trailing comment\",],\n\"any_is_na\", None)"
 ---
 OLD:
 ====
@@ -36,6 +36,17 @@ any(is.na(
     # comment
     x
   ))
+
+OLD:
+====
+NA %notin%
+  # comment
+  x
+NEW:
+====
+NA %notin%
+  # comment
+  x
 
 OLD:
 ====
