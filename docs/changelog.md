@@ -7,7 +7,7 @@
 * New rules:
 
   - `notin` (#459, @Yousa-Mirage)
-  - `equals_na` now also reports `x %notin% NA` cases (@Yousa-Mirage)
+  - `equals_na` now also reports `x %notin% NA` cases (#469, @Yousa-Mirage)
 
 ### Bug fixes
 
