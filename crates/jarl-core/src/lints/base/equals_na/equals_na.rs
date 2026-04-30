@@ -9,8 +9,8 @@ pub struct EqualsNa;
 ///
 /// ## What it does
 ///
-/// Check for `x == NA`, `x != NA` and `x %in% NA`, and replaces those by
-/// `is.na()` calls.
+/// Check for `x == NA`, `x != NA`, `x %in% NA` and `x %notin% NA`, and
+/// replaces those by `is.na()` or `!is.na()` calls.
 ///
 /// ## Why is this bad?
 ///
@@ -39,10 +39,10 @@ impl Violation for EqualsNa {
         "equals_na".to_string()
     }
     fn body(&self) -> String {
-        "Comparing to NA with `==`, `!=` or `%in%` is problematic.".to_string()
+        "Comparing to NA with `==`, `!=`, `%in%` or `%notin%` is problematic.".to_string()
     }
     fn suggestion(&self) -> Option<String> {
-        Some("Use `is.na()` instead.".to_string())
+        Some("Use `is.na()` or `!is.na()` instead.".to_string())
     }
 }
 
@@ -55,10 +55,13 @@ pub fn equals_na(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> 
 
     let operator_is_in =
         operator.kind() == RSyntaxKind::SPECIAL && operator.text_trimmed() == "%in%";
+    let operator_is_notin =
+        operator.kind() == RSyntaxKind::SPECIAL && operator.text_trimmed() == "%notin%";
 
     if operator.kind() != RSyntaxKind::EQUAL2
         && operator.kind() != RSyntaxKind::NOT_EQUAL
         && !operator_is_in
+        && !operator_is_notin
     {
         return Ok(None);
     };
@@ -72,11 +75,12 @@ pub fn equals_na(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> 
         "NA_complex_",
     ];
 
-    let left_is_na = na_values.contains(&left.to_string().trim());
-    let right_is_na = na_values.contains(&right.to_string().trim());
+    let left_is_na = na_values.contains(&left.as_str());
+    let right_is_na = na_values.contains(&right.as_str());
 
     // `NA %in% x` is equivalent to `anyNA(x)`, not `is.na(x)`
-    if operator_is_in && left_is_na {
+    // `NA %notin% x` is equivalent to `!anyNA(x)`, not `!is.na(x)`
+    if (operator_is_in || operator_is_notin) && left_is_na {
         return Ok(None);
     }
 
@@ -87,11 +91,7 @@ pub fn equals_na(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> 
     }
     let range = ast.syntax().text_trimmed_range();
 
-    let replacement = if left_is_na {
-        right.trim().to_string()
-    } else {
-        left.trim().to_string()
-    };
+    let replacement = if left_is_na { right } else { left };
 
     let diagnostic = match operator.kind() {
         RSyntaxKind::EQUAL2 => Diagnostic::new(
@@ -119,6 +119,16 @@ pub fn equals_na(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> 
             range,
             Fix {
                 content: format!("is.na({replacement})"),
+                start: range.start().into(),
+                end: range.end().into(),
+                to_skip: node_contains_comments(ast.syntax()),
+            },
+        ),
+        RSyntaxKind::SPECIAL if operator.text_trimmed() == "%notin%" => Diagnostic::new(
+            EqualsNa,
+            range,
+            Fix {
+                content: format!("!is.na({replacement})"),
                 start: range.start().into(),
                 end: range.end().into(),
                 to_skip: node_contains_comments(ast.syntax()),
