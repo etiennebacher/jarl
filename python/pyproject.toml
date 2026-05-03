@@ -2,6 +2,7 @@
 name = "jarl-linter"
 description = "An R linter, written in Rust."
 readme = "README.md"
+version = "0.5.0"
 requires-python = ">=3.8"
 license = "MIT"
 authors = [
@@ -15,7 +16,6 @@ classifiers = [
   "Programming Language :: Rust",
   "Topic :: Software Development :: Quality Assurance",
 ]
-dynamic = ["version"]
 
 [project.urls]
 Changelog = "https://github.com/etiennebacher/jarl/blob/main/CHANGELOG.md"
@@ -25,6 +25,7 @@ Repository = "https://github.com/etiennebacher/jarl"
 [build-system]
 requires = ["uv_build>=0.10.6,<0.11"]
 build-backend = "uv_build"
+
 [tool.uv.build-backend]
 # Different than the package name of `jarl-linter`
 module-name = "jarl"

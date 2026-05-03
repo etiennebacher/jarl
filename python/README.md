@@ -1,49 +1,46 @@
-# air-formatter
+# jarl-linter
 
-An R formatter. Written in Rust.
+An R linter. Written in Rust.
 
-This package provides the `air` command-line tool as a Python package, making it easy to install via `pip` or `uv`.
+This package provides the `jarl` command-line tool as a Python package, making it easy to install via `pip` or `uv`.
 
 ## Installation
 
-Install a global installation of `air` with [uv](https://docs.astral.sh/uv/):
+Install a global installation of `jarl` with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv tool install air-formatter
+uv tool install jarl-linter
 ```
 
 or with pip
 
 ```bash
-pip install air-formatter
+pip install jarl-linter
 ```
 
-This puts `air` on the PATH, so you can run:
+This puts `jarl` on the PATH, so you can run:
 
 ```bash
 # Format R file
-air format path/to/file.R
-
-# Format all R files in a directory
-air format path/to/directory/
+jarl check .
 ```
 
-Alternatively, invoke air via `uvx` for one-off formatting without a global install:
+Alternatively, invoke jarl via `uvx` for one-off formatting without a global install:
 
 ```bash
-uvx --from air-formatter air format path/to/file.R
+uvx --from jarl-linter jarl check .
 ```
 
-To use a specific version of air:
+To use a specific version of jarl:
 
 ```bash
 # Global install
-uv tool install air-formatter@0.8.2
+uv tool install jarl-linter@0.4.0
 
 # One off runs
-uvx --from air-formatter@0.8.2 air format path/to/file.R
+uvx --from jarl-linter@0.4.0 jarl check .
 ```
 
 ## About
 
-Air is an opinionated R formatter built by [Posit](https://posit.co). For more information, see the [main repository](https://github.com/posit-dev/air).
+For more information, see the [main repository](https://github.com/etiennebacher/jarl).
