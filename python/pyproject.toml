@@ -1,0 +1,35 @@
+[project]
+name = "jarl-linter"
+description = "An R linter, written in Rust."
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+authors = [
+  { name = "Etienne Bacher", email = "etienne.bacher@protonmail.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Rust",
+  "Topic :: Software Development :: Quality Assurance",
+]
+dynamic = ["version"]
+
+[project.urls]
+Changelog = "https://github.com/etiennebacher/jarl/blob/main/CHANGELOG.md"
+Documentation = "https://jarl.etiennebacher.com"
+Repository = "https://github.com/etiennebacher/jarl"
+
+[build-system]
+requires = ["uv_build>=0.10.6,<0.11"]
+build-backend = "uv_build"
+[tool.uv.build-backend]
+# Different than the package name of `jarl-linter`
+module-name = "jarl"
+
+[tool.uv.build-backend.data]
+# Tells uv to copy `scripts/` into `.data/scripts/` in the wheel.
+# This is the directory where executables can live in a wheel.
+scripts = "scripts"
