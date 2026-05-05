@@ -360,7 +360,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#quick-start" id="toc-quick-start" class="nav-link active" data-scroll-target="#quick-start">Quick start</a></li>
   <li><a href="#installation" id="toc-installation" class="nav-link" data-scroll-target="#installation">Installation</a>
   <ul>
-  <li><a href="#released-version" id="toc-released-version" class="nav-link" data-scroll-target="#released-version">Released version</a></li>
+  <li><a href="#released-version" id="toc-released-version" class="nav-link" data-scroll-target="#released-version">Released version</a>
+  <ul class="collapse">
+  <li><a href="#macos-and-linux" id="toc-macos-and-linux" class="nav-link" data-scroll-target="#macos-and-linux">macOS and Linux</a></li>
+  <li><a href="#windows" id="toc-windows" class="nav-link" data-scroll-target="#windows">Windows</a></li>
+  <li><a href="#other" id="toc-other" class="nav-link" data-scroll-target="#other">Other</a></li>
+  </ul></li>
   <li><a href="#development-version" id="toc-development-version" class="nav-link" data-scroll-target="#development-version">Development version</a></li>
   </ul></li>
   <li><a href="#related-work" id="toc-related-work" class="nav-link" data-scroll-target="#related-work">Related work</a></li>
@@ -466,10 +471,13 @@ Found 2 errors.
 <section id="released-version" class="level3">
 <h3 class="anchored" data-anchor-id="released-version">Released version</h3>
 <p>Either get binaries from the <a href="https://github.com/etiennebacher/jarl/releases" target="_blank">Releases page</a> or install Jarl from the existing installer scripts below.</p>
-<p><strong>macOS and Linux:</strong></p>
+<section id="macos-and-linux" class="level4">
+<h4 class="anchored" data-anchor-id="macos-and-linux">macOS and Linux</h4>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">--proto</span> <span class="st">'=https'</span> <span class="at">--tlsv1.2</span> <span class="at">-LsSf</span> <span class="dt">\</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.sh <span class="kw">|</span> <span class="fu">sh</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><strong>Windows:</strong></p>
+</section>
+<section id="windows" class="level4">
+<h4 class="anchored" data-anchor-id="windows">Windows</h4>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">powershell</span> Set-ExecutionPolicy Bypass <span class="at">-Scope</span> Process <span class="at">-Force</span><span class="kw">;</span> <span class="kw">`</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>   <span class="ex">iwr</span> https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.ps1 <span class="kw">|</span> <span class="ex">iex</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>If you use Scoop, you can also install or update Jarl with <a href="https://github.com/cderv/r-bucket#jarl" target="_blank">these commands</a>:</p>
@@ -481,11 +489,23 @@ Found 2 errors.
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># update</span></span>
 <span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="ex">scoop</span> update jarl</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
+<section id="other" class="level4">
+<h4 class="anchored" data-anchor-id="other">Other</h4>
+<p>Jarl is published on PyPI under the name <code>jarl-linter</code>. Therefore, it can be installed via <a href="https://docs.astral.sh/uv/" target="_blank"><code>uv</code></a> and <a href="https://pipx.pypa.io/stable/" target="_blank"><code>pipx</code></a>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># One-time run, not a global install:</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">uvx</span> <span class="at">--from</span> jarl-linter jarl check .</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Global install:</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> tool install jarl-linter</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co"># or</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="ex">pipx</span> install jarl-linter</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
 <section id="development-version" class="level3">
 <h3 class="anchored" data-anchor-id="development-version">Development version</h3>
 <p>Some pre-releases may be available from the <a href="https://github.com/etiennebacher/jarl/releases" target="_blank">Releases page</a> (the version usually contains <code>alpha</code>, see the installation instructions there).</p>
 <p>Alternatively, if you have Rust installed, you should be able to get the development version with:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install <span class="at">--git</span> https://github.com/etiennebacher/jarl jarl <span class="at">--profile</span><span class="op">=</span>release</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install <span class="at">--git</span> https://github.com/etiennebacher/jarl jarl <span class="at">--profile</span><span class="op">=</span>release</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <details>
 <summary style="padding-bottom: 0.5rem;">
 Click if you installed the development version via <code>cargo</code>
