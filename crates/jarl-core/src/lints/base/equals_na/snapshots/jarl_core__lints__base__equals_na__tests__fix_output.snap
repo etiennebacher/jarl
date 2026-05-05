@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/base/equals_na/mod.rs
-expression: "get_fixed_text(vec![\"x == NA\", \"x == NA_integer_\", \"x == NA_real_\",\n\"x == NA_logical_\", \"x == NA_character_\", \"x == NA_complex_\", \"x != NA\",\n\"x %in% NA\", \"foo(x(y)) == NA\", \"NA == x\",], \"equals_na\", None,)"
+expression: "get_fixed_text(vec![\"x == NA\", \"x == NA_integer_\", \"x == NA_real_\",\n\"x == NA_logical_\", \"x == NA_character_\", \"x == NA_complex_\", \"x != NA\",\n\"x %in% NA\", \"x %notin% NA\", \"x %notin% NA_character_\", \"foo(x(y)) == NA\",\n\"NA == x\",], \"equals_na\", None,)"
 ---
 OLD:
 ====
@@ -57,6 +57,20 @@ x %in% NA
 NEW:
 ====
 is.na(x)
+
+OLD:
+====
+x %notin% NA
+NEW:
+====
+!is.na(x)
+
+OLD:
+====
+x %notin% NA_character_
+NEW:
+====
+!is.na(x)
 
 OLD:
 ====

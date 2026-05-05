@@ -4,8 +4,8 @@
 
 ## What it does
 
-Check for `x == NA`, `x != NA` and `x %in% NA`, and replaces those by
-`is.na()` calls.
+Check for `x == NA`, `x != NA`, `x %in% NA` and `x %notin% NA`, and
+replaces those by `is.na()` or `!is.na()` calls.
 
 ## Why is this bad?
 

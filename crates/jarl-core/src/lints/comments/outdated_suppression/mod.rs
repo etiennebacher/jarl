@@ -120,9 +120,9 @@ x == NA", "outdated_suppression,any_is_na,equals_na"), @"
          --> <test>:3:1
           |
         3 | x == NA
-          | ------- Comparing to NA with `==`, `!=` or `%in%` is problematic.
+          | ------- Comparing to NA with `==`, `!=`, `%in%` or `%notin%` is problematic.
           |
-          = help: Use `is.na()` instead.
+          = help: Use `is.na()` or `!is.na()` instead.
         warning: outdated_suppression
          --> <test>:2:1
           |
