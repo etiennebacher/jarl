@@ -104,14 +104,14 @@ Note that the [VS Code and Positron extensions](https://jarl.etiennebacher.com/h
 
 Either get binaries from the [Releases page](https://github.com/etiennebacher/jarl/releases) or install Jarl from the existing installer scripts below.
 
-**macOS and Linux:**
+#### macOS and Linux
 
 ```sh
 curl --proto '=https' --tlsv1.2 -LsSf \
   https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.sh | sh
 ```
 
-**Windows:**
+#### Windows
 
 ```sh
 powershell Set-ExecutionPolicy Bypass -Scope Process -Force; `
@@ -128,6 +128,21 @@ scoop install jarl
 
 # update
 scoop update jarl
+```
+
+#### Other
+
+Jarl is published on PyPI under the name `jarl-linter`.
+Therefore, it can be installed via [`uv`](https://docs.astral.sh/uv/) and [`pipx`](https://pipx.pypa.io/stable/):
+
+```sh
+# One-time run, not a global install:
+uvx --from jarl-linter jarl check .
+
+# Global install:
+uv tool install jarl-linter
+# or
+pipx install jarl-linter
 ```
 
 ### Development version

@@ -8,6 +8,9 @@
 
   - `notin` (#459, @Yousa-Mirage)
 
+* Jarl is now available on PyPI under the name `jarl-linter`, enabling its
+  installation via `uv`, `pipx`, and other tools (#466).
+
 ### Bug fixes
 
 * Automatic fixes now skip rewrites when comments are inside the rewritten
