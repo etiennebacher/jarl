@@ -17,6 +17,8 @@ mod tests {
         expect_no_lint("any(!is.na(foo(x)))", "any_is_na", None);
         expect_no_lint("any()", "any_is_na", None);
         expect_no_lint("any(na.rm = TRUE)", "any_is_na", None);
+        expect_no_lint("x %in% NA", "any_is_na", None);
+        expect_no_lint("x %notin% NA", "any_is_na", None);
         // Incomplete pipe chains should not trigger
         expect_no_lint("x |> any()", "any_is_na", None);
         expect_no_lint("x |> is.na()", "any_is_na", None);
@@ -89,6 +91,19 @@ mod tests {
         Found 1 error.
         "
         );
+        assert_snapshot!(
+            snapshot_lint("NA %notin% x"),
+            @"
+        warning: any_is_na
+         --> <test>:1:1
+          |
+        1 | NA %notin% x
+          | ------------ `NA %notin% x` is inefficient.
+          |
+          = help: Use `!anyNA(x)` instead.
+        Found 1 error.
+        "
+        );
 
         assert_snapshot!(
             snapshot_lint("is.na(x) |> \n any()"),
@@ -141,6 +156,7 @@ mod tests {
                 vec![
                     "any(is.na(x))",
                     "NA %in% x",
+                    "NA %notin% x",
                     "any(is.na(foo(x)))",
                     "any(is.na(x), na.rm = TRUE)",
                 ],
@@ -176,6 +192,7 @@ mod tests {
                     "# leading comment\nany(is.na(x))",
                     "any(\n  # comment\n  is.na(x)\n)",
                     "any(is.na(\n    # comment\n    x\n  ))",
+                    "NA %notin%\n  # comment\n  x",
                     "any(is.na(x)) # trailing comment",
                 ],
                 "any_is_na",

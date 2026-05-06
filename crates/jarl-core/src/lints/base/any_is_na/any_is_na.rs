@@ -7,7 +7,7 @@ use biome_rowan::AstNode;
 ///
 /// ## What it does
 ///
-/// Checks for usage of `any(is.na(...))` and `NA %in% x`.
+/// Checks for usage of `any(is.na(...))`, `NA %in% x`, and `NA %notin% x`.
 ///
 /// ## Why is this bad?
 ///
@@ -20,12 +20,14 @@ use biome_rowan::AstNode;
 /// x <- c(1:10000, NA)
 /// any(is.na(x))
 /// NA %in% x
+/// NA %notin% x
 /// ```
 ///
 /// Use instead:
 /// ```r
 /// x <- c(1:10000, NA)
 /// anyNA(x)
+/// !anyNA(x)
 /// ```
 ///
 /// ## References
@@ -61,8 +63,10 @@ pub fn any_is_na_2(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>
 
     let operator_is_in =
         operator.kind() == RSyntaxKind::SPECIAL && operator.text_trimmed() == "%in%";
+    let operator_is_notin =
+        operator.kind() == RSyntaxKind::SPECIAL && operator.text_trimmed() == "%notin%";
 
-    if !operator_is_in {
+    if !operator_is_in && !operator_is_notin {
         return Ok(None);
     };
 
@@ -70,7 +74,8 @@ pub fn any_is_na_2(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>
     let right_is_na = right.as_r_na_expression().is_some();
 
     // `x %in% NA` is not equivalent to anyNA(x)
-    if operator_is_in && right_is_na {
+    // `x %notin% NA` is not equivalent to !anyNA(x)
+    if (operator_is_in || operator_is_notin) && right_is_na {
         return Ok(None);
     }
 
@@ -81,15 +86,29 @@ pub fn any_is_na_2(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>
     }
     let range = ast.syntax().text_trimmed_range();
 
+    let (body, suggestion, content) = if operator_is_notin {
+        (
+            "`NA %notin% x` is inefficient.",
+            "Use `!anyNA(x)` instead.",
+            format!("!anyNA({})", right.to_trimmed_string()),
+        )
+    } else {
+        (
+            "`NA %in% x` is inefficient.",
+            "Use `anyNA(x)` instead.",
+            format!("anyNA({})", right.to_trimmed_string()),
+        )
+    };
+
     let diagnostic = Diagnostic::new(
         ViolationData::new(
             "any_is_na".to_string(),
-            "`NA %in% x` is inefficient.".to_string(),
-            Some("Use `anyNA(x)` instead.".to_string()),
+            body.to_string(),
+            Some(suggestion.to_string()),
         ),
         range,
         Fix {
-            content: format!("anyNA({})", right.to_trimmed_string()),
+            content,
             start: range.start().into(),
             end: range.end().into(),
             to_skip: node_contains_comments(ast.syntax()),
