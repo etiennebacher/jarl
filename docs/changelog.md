@@ -6,9 +6,9 @@
 
 * New rules:
 
-  - `any_is_na` now also reports `NA %notin% x` cases (#470, @Yousa-Mirage)
-  - `notin` (#459, @Yousa-Mirage)
-  - `equals_na` now also reports `x %notin% NA` cases (#469, @Yousa-Mirage)
+  * `any_is_na` now also reports `NA %notin% x` cases (#470, @Yousa-Mirage)
+  * `equals_na` now also reports `x %notin% NA` cases (#469, @Yousa-Mirage)
+  * `notin` (#459, @Yousa-Mirage)
 
 * Jarl is now available on PyPI under the name `jarl-linter`, enabling its
   installation via `uv`, `pipx`, and other tools (#466).
