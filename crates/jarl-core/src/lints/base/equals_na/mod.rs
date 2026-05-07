@@ -18,9 +18,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x == NA
-          | ------- Comparing to NA with `==`, `!=`, `%in%` or `%notin%` is problematic.
+          | ------- Comparing to NA with `==` is problematic.
           |
-          = help: Use `is.na()` or `!is.na()` instead.
+          = help: Use `is.na()` instead.
         Found 1 error.
         "
         );
@@ -31,9 +31,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x == NA_integer_
-          | ---------------- Comparing to NA with `==`, `!=`, `%in%` or `%notin%` is problematic.
+          | ---------------- Comparing to NA with `==` is problematic.
           |
-          = help: Use `is.na()` or `!is.na()` instead.
+          = help: Use `is.na()` instead.
         Found 1 error.
         "
         );
@@ -44,24 +44,24 @@ mod tests {
          --> <test>:1:1
           |
         1 | x == NA_real_
-          | ------------- Comparing to NA with `==`, `!=`, `%in%` or `%notin%` is problematic.
+          | ------------- Comparing to NA with `==` is problematic.
           |
-          = help: Use `is.na()` or `!is.na()` instead.
+          = help: Use `is.na()` instead.
         Found 1 error.
         "
         );
         assert_snapshot!(
             snapshot_lint("x == NA_logical_"),
             @"
-      warning: equals_na
-       --> <test>:1:1
-        |
-      1 | x == NA_logical_
-        | ---------------- Comparing to NA with `==`, `!=`, `%in%` or `%notin%` is problematic.
-        |
-        = help: Use `is.na()` or `!is.na()` instead.
-      Found 1 error.
-      "
+        warning: equals_na
+         --> <test>:1:1
+          |
+        1 | x == NA_logical_
+          | ---------------- Comparing to NA with `==` is problematic.
+          |
+          = help: Use `is.na()` instead.
+        Found 1 error.
+        "
         );
         assert_snapshot!(
             snapshot_lint("x == NA_character_"),
@@ -70,9 +70,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x == NA_character_
-          | ------------------ Comparing to NA with `==`, `!=`, `%in%` or `%notin%` is problematic.
+          | ------------------ Comparing to NA with `==` is problematic.
           |
-          = help: Use `is.na()` or `!is.na()` instead.
+          = help: Use `is.na()` instead.
         Found 1 error.
         "
         );
@@ -83,9 +83,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x == NA_complex_
-          | ---------------- Comparing to NA with `==`, `!=`, `%in%` or `%notin%` is problematic.
+          | ---------------- Comparing to NA with `==` is problematic.
           |
-          = help: Use `is.na()` or `!is.na()` instead.
+          = help: Use `is.na()` instead.
         Found 1 error.
         "
         );
@@ -96,9 +96,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x != NA
-          | ------- Comparing to NA with `==`, `!=`, `%in%` or `%notin%` is problematic.
+          | ------- Comparing to NA with `!=` is problematic.
           |
-          = help: Use `is.na()` or `!is.na()` instead.
+          = help: Use `!is.na()` instead.
         Found 1 error.
         "
         );
@@ -109,9 +109,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x %in% NA
-          | --------- Comparing to NA with `==`, `!=`, `%in%` or `%notin%` is problematic.
+          | --------- Comparing to NA with `%in%` is problematic.
           |
-          = help: Use `is.na()` or `!is.na()` instead.
+          = help: Use `is.na()` instead.
         Found 1 error.
         "
         );
@@ -122,9 +122,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | x %notin% NA
-          | ------------ Comparing to NA with `==`, `!=`, `%in%` or `%notin%` is problematic.
+          | ------------ Comparing to NA with `%notin%` is problematic.
           |
-          = help: Use `is.na()` or `!is.na()` instead.
+          = help: Use `!is.na()` instead.
         Found 1 error.
         "
         );
@@ -135,9 +135,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | foo(x(y)) == NA
-          | --------------- Comparing to NA with `==`, `!=`, `%in%` or `%notin%` is problematic.
+          | --------------- Comparing to NA with `==` is problematic.
           |
-          = help: Use `is.na()` or `!is.na()` instead.
+          = help: Use `is.na()` instead.
         Found 1 error.
         "
         );
@@ -148,9 +148,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | NA == x
-          | ------- Comparing to NA with `==`, `!=`, `%in%` or `%notin%` is problematic.
+          | ------- Comparing to NA with `==` is problematic.
           |
-          = help: Use `is.na()` or `!is.na()` instead.
+          = help: Use `is.na()` instead.
         Found 1 error.
         "
         );
