@@ -837,7 +837,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="what-it-does" class="level2">
 <h2 class="anchored" data-anchor-id="what-it-does">What it does</h2>
-<p>Check for <code>x == NA</code>, <code>x != NA</code> and <code>x %in% NA</code>, and replaces those by <code>is.na()</code> calls.</p>
+<p>Check for <code>x == NA</code>, <code>x != NA</code>, <code>x %in% NA</code> and <code>x %notin% NA</code>, and replaces those by <code>is.na()</code> or <code>!is.na()</code> calls.</p>
 </section>
 <section id="why-is-this-bad" class="level2">
 <h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
