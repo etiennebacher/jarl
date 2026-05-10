@@ -38,7 +38,7 @@ pub fn unused_object(
     semantic: &SemanticIndex,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
-    let mut ctx = Ctx::new(semantic);
+    let mut ctx = Ctx::new(semantic, &checker.namespace_exports);
     ctx.collect_ast_passes(expressions);
 
     let scopes = scope_ids(semantic);
@@ -66,6 +66,10 @@ fn scope_ids(index: &SemanticIndex) -> Vec<ScopeId> {
 
 struct Ctx<'a> {
     index: &'a SemanticIndex,
+    /// Names exported by the package's NAMESPACE. A top-level definition with
+    /// one of these names is "used" by external callers and must not be
+    /// flagged, even when nothing in the file reads it.
+    exports: &'a HashSet<String>,
     /// Names that have a synthetic use from AST passes (string interpolation,
     /// `do.call("f", …)`, `..cols`, etc.). These short-circuit reports.
     synthetic_used_names: HashSet<String>,
@@ -94,9 +98,10 @@ struct Ctx<'a> {
 }
 
 impl<'a> Ctx<'a> {
-    fn new(index: &'a SemanticIndex) -> Self {
+    fn new(index: &'a SemanticIndex, exports: &'a HashSet<String>) -> Self {
         Self {
             index,
+            exports,
             synthetic_used_names: HashSet::new(),
             nse_ranges: Vec::new(),
             local_body_ranges: Vec::new(),
@@ -326,6 +331,7 @@ impl<'a> Ctx<'a> {
 
     fn collect_diagnostics(&self, scopes: &[ScopeId]) -> Vec<Diagnostic> {
         let mut out = Vec::new();
+        let top_level = ScopeId::from(0);
         for &scope_id in scopes {
             for (def_id, def) in self.index.definitions(scope_id).iter() {
                 if !self.should_lint_definition(def) {
@@ -334,10 +340,21 @@ impl<'a> Ctx<'a> {
                 if self.is_definition_used(scope_id, def_id, def) {
                     continue;
                 }
+                if scope_id == top_level && self.is_exported(scope_id, def) {
+                    continue;
+                }
                 out.push(self.make_diagnostic(scope_id, def));
             }
         }
         out
+    }
+
+    fn is_exported(&self, scope_id: ScopeId, def: &Definition) -> bool {
+        if self.exports.is_empty() {
+            return false;
+        }
+        let name = self.index.symbols(scope_id).symbol_id(def.symbol()).name();
+        self.exports.contains(name)
     }
 
     /// Workaround for oak not recognising `%<>%` as an assignment. Walk the
@@ -384,8 +401,10 @@ impl<'a> Ctx<'a> {
                 // Also check escape via closures.
                 let closure_use = symbol
                     .is_some_and(|sym| self.closure_escaped_symbols.contains(&(scope_id, sym)));
+                // Top-level exported names are used by external callers.
+                let exported = scope_id == ScopeId::from(0) && self.exports.contains(&name);
 
-                if !later_use && !closure_use {
+                if !later_use && !closure_use && !exported {
                     out.push(Diagnostic::new(
                         ViolationData::new(
                             "unused_object".to_string(),
