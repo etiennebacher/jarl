@@ -328,6 +328,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    EmptyFile => {
+        name: "empty_file",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     EqualsNa => {
         name: "equals_na",
         categories: [Corr],
