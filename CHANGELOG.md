@@ -8,6 +8,7 @@
 
 * Fix alignment of diagnostic in console when source uses tabs (#445).
 
+
 ## 0.5.0
 
 ### Deprecations
