@@ -587,6 +587,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    UnusedArgument => {
+        name: "unused_argument",
+        categories: [Corr],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     VectorLogic => {
         name: "vector_logic",
         categories: [Perf],

@@ -26,6 +26,9 @@ use oak_index::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticInd
 /// passes over the syntax tree. Computed once per file; consumed by lints.
 pub struct SemanticInfo<'a> {
     index: &'a SemanticIndex,
+    /// Parent scope for every non-root scope. Oak only exposes
+    /// `child_scopes(parent)`; we build the inverse once.
+    parent_of: HashMap<ScopeId, ScopeId>,
     /// Names that have a synthetic use from AST passes (string interpolation,
     /// `do.call("f", …)`, `..cols`, `on.exit` bodies, loop assignment LHSes,
     /// short-circuit assignment LHSes). A definition whose symbol name is in
@@ -53,8 +56,16 @@ impl<'a> SemanticInfo<'a> {
     /// uses, NSE ranges, formula ranges, local body ranges, callee ranges)
     /// and the closure call-site analysis.
     pub fn build(expressions: &[RSyntaxNode], index: &'a SemanticIndex) -> Self {
+        let scopes = collect_scope_ids(index);
+        let mut parent_of: HashMap<ScopeId, ScopeId> = HashMap::new();
+        for &scope in &scopes {
+            for child in index.child_scopes(scope) {
+                parent_of.insert(child, scope);
+            }
+        }
         let mut this = Self {
             index,
+            parent_of,
             synthetic_used_names: HashSet::new(),
             nse_ranges: Vec::new(),
             local_body_ranges: Vec::new(),
@@ -64,7 +75,6 @@ impl<'a> SemanticInfo<'a> {
             callee_ranges: Vec::new(),
         };
         this.collect_ast_passes(expressions);
-        let scopes = this.scope_ids();
         this.precompute_closure_uses(&scopes);
         this
     }
@@ -75,13 +85,54 @@ impl<'a> SemanticInfo<'a> {
 
     /// Walk all scopes (root + descendants) in arbitrary order.
     pub fn scope_ids(&self) -> Vec<ScopeId> {
-        let mut ids = Vec::new();
-        let mut stack = vec![ScopeId::from(0)];
-        while let Some(s) = stack.pop() {
-            ids.push(s);
-            stack.extend(self.index.child_scopes(s));
+        collect_scope_ids(self.index)
+    }
+
+    /// Parent scope, or `None` for the root scope.
+    pub fn parent_scope(&self, scope_id: ScopeId) -> Option<ScopeId> {
+        self.parent_of.get(&scope_id).copied()
+    }
+
+    /// The name the parent scope binds this function scope to, if any.
+    /// Walks the parent's definitions for an `Assignment` whose syntax range
+    /// contains this scope and whose RHS is a function definition.
+    /// Returns `None` for anonymous functions and for the root scope.
+    pub fn function_binding_name(&self, scope_id: ScopeId) -> Option<String> {
+        let (name, _) = self.function_binding(scope_id)?;
+        Some(name)
+    }
+
+    /// The `R_FUNCTION_DEFINITION` AST node for this function scope, if it
+    /// was created by a named binding (`name <- function(...) ...`).
+    /// Returns `None` for anonymous functions and for the root scope.
+    pub fn function_definition(&self, scope_id: ScopeId) -> Option<RSyntaxNode> {
+        let (_, node) = self.function_binding(scope_id)?;
+        Some(node)
+    }
+
+    /// Shared walk used by `function_binding_name` and `function_definition`.
+    fn function_binding(&self, scope_id: ScopeId) -> Option<(String, RSyntaxNode)> {
+        let parent = self.parent_scope(scope_id)?;
+        let child_range = self.index.scope(scope_id).range();
+        for (_, def) in self.index.definitions(parent).iter() {
+            if let DefinitionKind::Assignment(node) = def.kind()
+                && node.text_trimmed_range().contains_range(child_range)
+                && assignment_rhs_is_function_def(node)
+            {
+                let name = self
+                    .index
+                    .symbols(parent)
+                    .symbol_id(def.symbol())
+                    .name()
+                    .to_string();
+                for child in node.children() {
+                    if child.kind() == RSyntaxKind::R_FUNCTION_DEFINITION {
+                        return Some((name, child));
+                    }
+                }
+            }
         }
-        ids
+        None
     }
 
     // ── High-level queries ────────────────────────────────────────────
@@ -375,14 +426,8 @@ impl<'a> SemanticInfo<'a> {
     }
 
     fn precompute_closure_uses(&mut self, scopes: &[ScopeId]) {
-        let mut parent_of: HashMap<ScopeId, ScopeId> = HashMap::new();
-        for &scope in scopes {
-            for child in self.index.child_scopes(scope) {
-                parent_of.insert(child, scope);
-            }
-        }
         for &child in scopes {
-            let Some(&parent) = parent_of.get(&child) else {
+            let Some(parent) = self.parent_scope(child) else {
                 continue;
             };
             self.classify_closure(parent, child);
@@ -524,6 +569,16 @@ impl<'a> SemanticInfo<'a> {
 }
 
 // ── Free helpers (also used by rule policy) ──────────────────────────────
+
+fn collect_scope_ids(index: &SemanticIndex) -> Vec<ScopeId> {
+    let mut ids = Vec::new();
+    let mut stack = vec![ScopeId::from(0)];
+    while let Some(s) = stack.pop() {
+        ids.push(s);
+        stack.extend(index.child_scopes(s));
+    }
+    ids
+}
 
 fn in_any_range(target: TextRange, ranges: &[TextRange]) -> bool {
     ranges.iter().any(|r| r.contains_range(target))
