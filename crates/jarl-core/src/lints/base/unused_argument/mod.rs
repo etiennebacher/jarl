@@ -109,6 +109,63 @@ mod tests {
     }
 
     #[test]
+    fn test_no_lint_body_uses_match_call() {
+        // `match.call()` reflectively reads all args; skip the whole function.
+        expect_no_lint(
+            "f <- function(x, y) {\n  call <- match.call()\n  call\n}",
+            "unused_argument",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_body_uses_sys_call() {
+        expect_no_lint(
+            "f <- function(x, y) {\n  sys.call()\n}",
+            "unused_argument",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_body_uses_environment() {
+        // `environment()` returns the current env (containing all params).
+        expect_no_lint(
+            "f <- function(x, y) {\n  as.list(environment())\n}",
+            "unused_argument",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_body_uses_rlang_current_call() {
+        expect_no_lint(
+            "f <- function(x, y) {\n  rlang::current_call()\n}",
+            "unused_argument",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_reflection_in_nested_function_does_not_apply() {
+        // `match.call()` is inside a nested function, so only THAT inner
+        // function gets the reflection pass; the outer `f`'s `y` should still
+        // be flagged.
+        assert_snapshot!(
+            snapshot_lint("f <- function(x, y) {\n  inner <- function() match.call()\n  x\n}"),
+            @r"
+        warning: unused_argument
+         --> <test>:1:18
+          |
+        1 | f <- function(x, y) {
+          |                  - Argument `y` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
     fn test_lint_function_in_lapply_still_flagged() {
         // Anonymous function passed to a non-handler call: params are checked.
         assert_snapshot!(

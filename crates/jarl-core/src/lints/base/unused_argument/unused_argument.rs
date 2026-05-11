@@ -44,6 +44,12 @@ use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 /// - Condition handlers passed as named arguments to `tryCatch()` or
 ///   `try_fetch()`. The handler's parameter receives the condition object
 ///   even if the body doesn't read it.
+/// - Functions whose body reflectively reads this function's call or
+///   environment via `match.call()`, `sys.call()`, `environment()`, or the
+///   rlang equivalents (`current_call`, `call_match`, `current_env`,
+///   `current_fn`). All parameters may be consumed by reflection that we
+///   can't see. Caller-targeting reflection (`caller_call`, `caller_env`,
+///   etc.) does not trigger this skip.
 /// - R lifecycle hooks (`.onLoad`, `.onAttach`, `.onDetach`, `.onUnload`,
 ///   `.Last.lib`, `.First.lib`, `on_load`). These have fixed signatures
 ///   imposed by the runtime.
@@ -104,10 +110,13 @@ fn should_skip_function(
         if is_condition_handler(&func_def) {
             return true;
         }
-        if let Some(func) = func_def.cast::<RFunctionDefinition>()
-            && is_dispatch_generic(&func)
-        {
-            return true;
+        if let Some(func) = func_def.cast::<RFunctionDefinition>() {
+            if is_dispatch_generic(&func) {
+                return true;
+            }
+            if body_uses_reflection(&func) {
+                return true;
+            }
         }
     }
     false
@@ -184,6 +193,54 @@ fn is_package_hook(name: &str) -> bool {
 /// trade-off for the simpler heuristic.
 fn is_s3_method(name: &str, exports: &HashSet<String>) -> bool {
     name.contains('.') && exports.contains(name)
+}
+
+/// Reflection functions that read **this** function's call/env at runtime, so
+/// any parameter might be consumed without textually appearing in the body.
+/// If any of these is called anywhere in the body (excluding nested function
+/// bodies), we skip the whole function.
+///
+/// Functions that target the *caller* (`caller_call`, `caller_env`,
+/// `parent.frame`, `formals` without args, `fn_fmls` without args) are
+/// deliberately not included — they don't expose this function's args.
+const REFLECTION_FUNCTIONS: &[&str] = &[
+    // base R
+    "match.call",
+    "sys.call",
+    "environment",
+    // rlang
+    "current_call",
+    "call_match",
+    "current_env",
+    "current_fn",
+    "fn_fmls",
+    "fn_fmls_names",
+];
+
+fn body_uses_reflection(func: &RFunctionDefinition) -> bool {
+    let Ok(body) = func.body() else {
+        return false;
+    };
+    let body_syntax = body.syntax().clone();
+    let mut stack = vec![body_syntax.clone()];
+    while let Some(node) = stack.pop() {
+        // Don't descend into nested function bodies — those have their own
+        // reflection scope, irrelevant to ours.
+        if node.kind() == RSyntaxKind::R_FUNCTION_DEFINITION && node != body_syntax {
+            continue;
+        }
+        if node.kind() == RSyntaxKind::R_CALL
+            && let Some(call) = node.clone().cast::<RCall>()
+            && let Some(name) = call_function_name(&call)
+            && REFLECTION_FUNCTIONS.contains(&name.as_str())
+        {
+            return true;
+        }
+        for child in node.children() {
+            stack.push(child);
+        }
+    }
+    false
 }
 
 /// True if the function body contains a top-level call to `UseMethod()` or
