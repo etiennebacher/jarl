@@ -1,13 +1,13 @@
-//! Per-file semantic facts for jarl lint rules.
+//! Per-file semantic info for jarl lint rules.
 //!
-//! `SemanticFacts` is computed once over a parsed file and exposes the
+//! `SemanticInfo` is computed once over a parsed file and exposes the
 //! information lint rules need to answer "is this definition used?", without
 //! every rule reimplementing the AST passes (NSE detection, string
 //! interpolation, closure escape analysis, ...) on top of oak's
 //! `SemanticIndex`.
 //!
 //! Mirrors ruff's `Binding::is_unused()` style: rules ask
-//! `facts.is_definition_used(scope, def_id, def)` rather than walking the
+//! `info.is_definition_used(scope, def_id, def)` rather than walking the
 //! semantic index themselves.
 
 use std::collections::{HashMap, HashSet};
@@ -22,9 +22,9 @@ use oak_core::syntax_ext::RIdentifierExt;
 use oak_index::DefinitionId;
 use oak_index::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex, SymbolId};
 
-/// Per-file semantic facts derived from oak's [`SemanticIndex`] plus AST
+/// Per-file semantic info derived from oak's [`SemanticIndex`] plus AST
 /// passes over the syntax tree. Computed once per file; consumed by lints.
-pub struct SemanticFacts<'a> {
+pub struct SemanticInfo<'a> {
     index: &'a SemanticIndex,
     /// Names that have a synthetic use from AST passes (string interpolation,
     /// `do.call("f", …)`, `..cols`, `on.exit` bodies, loop assignment LHSes,
@@ -48,8 +48,8 @@ pub struct SemanticFacts<'a> {
     callee_ranges: Vec<TextRange>,
 }
 
-impl<'a> SemanticFacts<'a> {
-    /// Build the facts table. Runs both the AST pass (collecting synthetic
+impl<'a> SemanticInfo<'a> {
+    /// Build the info table. Runs both the AST pass (collecting synthetic
     /// uses, NSE ranges, formula ranges, local body ranges, callee ranges)
     /// and the closure call-site analysis.
     pub fn build(expressions: &[RSyntaxNode], index: &'a SemanticIndex) -> Self {

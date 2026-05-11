@@ -29,7 +29,7 @@ oak_index.workspace = true
 oak_index_vec.workspace = true
 url.workspace = true
 
-# Per-file semantic facts (used by DFG-based lints)
+# Per-file semantic info (used by semantic-aware lints)
 jarl-semantic.workspace = true
 
 # Serialization and data structures

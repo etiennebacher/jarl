@@ -4,7 +4,7 @@ use oak_core::syntax_ext::RIdentifierExt;
 use oak_index::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex};
 
 use jarl_semantic::{
-    SemanticFacts, assignment_lhs_is_complex, assignment_rhs_is_function_def,
+    SemanticInfo, assignment_lhs_is_complex, assignment_rhs_is_function_def,
     lhs_range_for_definition,
 };
 
@@ -36,17 +36,17 @@ pub fn unused_object(
     semantic: &SemanticIndex,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
-    let facts = SemanticFacts::build(expressions, semantic);
+    let info = SemanticInfo::build(expressions, semantic);
     let exports = &checker.namespace_exports;
 
     let mut diagnostics = Vec::new();
     let top_level = ScopeId::from(0);
-    for &scope_id in &facts.scope_ids() {
+    for &scope_id in &info.scope_ids() {
         for (def_id, def) in semantic.definitions(scope_id).iter() {
-            if !should_lint_definition(&facts, def) {
+            if !should_lint_definition(&info, def) {
                 continue;
             }
-            if facts.is_definition_used(scope_id, def_id, def) {
+            if info.is_definition_used(scope_id, def_id, def) {
                 continue;
             }
             if scope_id == top_level && is_exported(semantic, exports, scope_id, def) {
@@ -58,7 +58,7 @@ pub fn unused_object(
     diagnostics.extend(collect_assignment_pipe_diagnostics(
         expressions,
         semantic,
-        &facts,
+        &info,
         exports,
     ));
 
@@ -69,7 +69,7 @@ pub fn unused_object(
     Ok(())
 }
 
-fn should_lint_definition(facts: &SemanticFacts<'_>, def: &Definition) -> bool {
+fn should_lint_definition(info: &SemanticInfo<'_>, def: &Definition) -> bool {
     match def.kind() {
         DefinitionKind::Parameter(_)
         | DefinitionKind::ForVariable(_)
@@ -89,7 +89,7 @@ fn should_lint_definition(facts: &SemanticFacts<'_>, def: &Definition) -> bool {
     }
 
     // `=` inside a formula RHS is named-arg syntax, not assignment.
-    if facts.is_in_formula(def.range()) {
+    if info.is_in_formula(def.range()) {
         return false;
     }
 
@@ -134,7 +134,7 @@ fn make_diagnostic(semantic: &SemanticIndex, scope_id: ScopeId, def: &Definition
 fn collect_assignment_pipe_diagnostics(
     expressions: &[RSyntaxNode],
     semantic: &SemanticIndex,
-    facts: &SemanticFacts<'_>,
+    info: &SemanticInfo<'_>,
     exports: &std::collections::HashSet<String>,
 ) -> Vec<Diagnostic> {
     let mut out = Vec::new();
@@ -170,7 +170,7 @@ fn collect_assignment_pipe_diagnostics(
                     .iter()
                     .any(|(_, u)| u.symbol() == sym && u.range().start() >= expr_end)
             });
-            let closure_use = symbol.is_some_and(|sym| facts.closure_escaped(scope_id, sym));
+            let closure_use = symbol.is_some_and(|sym| info.closure_escaped(scope_id, sym));
             let exported = scope_id == ScopeId::from(0) && exports.contains(&name);
 
             if !later_use && !closure_use && !exported {
