@@ -1160,6 +1160,7 @@ dependencies = [
  "fs",
  "ignore",
  "insta",
+ "jarl-semantic",
  "oak_core",
  "oak_index",
  "oak_index_vec",
@@ -1192,6 +1193,18 @@ dependencies = [
  "tempfile",
  "tracing",
  "workspace",
+]
+
+[[package]]
+name = "jarl-semantic"
+version = "0.5.0"
+dependencies = [
+ "air_r_parser",
+ "air_r_syntax",
+ "biome_rowan",
+ "oak_core",
+ "oak_index",
+ "oak_index_vec",
 ]
 
 [[package]]
