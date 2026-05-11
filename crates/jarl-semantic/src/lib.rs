@@ -102,12 +102,29 @@ impl<'a> SemanticInfo<'a> {
         Some(name)
     }
 
-    /// The `R_FUNCTION_DEFINITION` AST node for this function scope, if it
-    /// was created by a named binding (`name <- function(...) ...`).
-    /// Returns `None` for anonymous functions and for the root scope.
+    /// The `R_FUNCTION_DEFINITION` AST node for this function scope.
+    ///
+    /// First tries the named-binding case (`name <- function(...) ...`); falls
+    /// back to walking up from any parameter node in the scope, which catches
+    /// anonymous functions (e.g. those passed as call arguments). Returns
+    /// `None` for the root scope or for parameterless anonymous functions
+    /// (where there's nothing to walk up from).
     pub fn function_definition(&self, scope_id: ScopeId) -> Option<RSyntaxNode> {
-        let (_, node) = self.function_binding(scope_id)?;
-        Some(node)
+        if let Some((_, node)) = self.function_binding(scope_id) {
+            return Some(node);
+        }
+        for (_, def) in self.index.definitions(scope_id).iter() {
+            if let DefinitionKind::Parameter(param_node) = def.kind() {
+                let mut current = param_node.parent();
+                while let Some(node) = current {
+                    if node.kind() == RSyntaxKind::R_FUNCTION_DEFINITION {
+                        return Some(node);
+                    }
+                    current = node.parent();
+                }
+            }
+        }
+        None
     }
 
     /// Shared walk used by `function_binding_name` and `function_definition`.

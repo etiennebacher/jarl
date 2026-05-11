@@ -71,6 +71,60 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_no_lint_trycatch_error_handler() {
+        // `error = function(e) ...` — `e` is required by the handler interface.
+        expect_no_lint(
+            "tryCatch(\n  risky(),\n  error = function(e) NULL\n)",
+            "unused_argument",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_trycatch_warning_handler() {
+        expect_no_lint(
+            "tryCatch(\n  risky(),\n  warning = function(w) NULL\n)",
+            "unused_argument",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_try_fetch_handler() {
+        expect_no_lint(
+            "rlang::try_fetch(\n  risky(),\n  error = function(cnd) NULL\n)",
+            "unused_argument",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_namespaced_trycatch_handler() {
+        expect_no_lint(
+            "base::tryCatch(\n  risky(),\n  warning = function(w) NULL\n)",
+            "unused_argument",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_function_in_lapply_still_flagged() {
+        // Anonymous function passed to a non-handler call: params are checked.
+        assert_snapshot!(
+            snapshot_lint("lapply(1:3, function(x) 1)"),
+            @r"
+        warning: unused_argument
+         --> <test>:1:22
+          |
+        1 | lapply(1:3, function(x) 1)
+          |                      - Argument `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
     // ── Lint cases ───────────────────────────────────────────────────
 
     #[test]

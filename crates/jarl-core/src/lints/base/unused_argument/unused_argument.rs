@@ -1,7 +1,9 @@
 use std::collections::HashSet;
 
-use air_r_syntax::{AnyRExpression, RFunctionDefinition, RSyntaxKind, RSyntaxNode};
-use biome_rowan::{SyntaxNodeCast, TextRange};
+use air_r_syntax::{
+    AnyRExpression, RArgument, RCall, RFunctionDefinition, RSyntaxKind, RSyntaxNode,
+};
+use biome_rowan::{AstNode, SyntaxNodeCast, TextRange};
 use oak_core::syntax_ext::RIdentifierExt;
 use oak_index::semantic_index::{DefinitionKind, ScopeId, SemanticIndex};
 
@@ -39,6 +41,9 @@ use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 /// - S3/S4 generic functions — those whose body dispatches via `UseMethod()`
 ///   or `standardGeneric()`. Their parameters are forwarded to the dispatched
 ///   method, not read locally.
+/// - Condition handlers passed as named arguments to `tryCatch()` or
+///   `try_fetch()`. The handler's parameter receives the condition object
+///   even if the body doesn't read it.
 /// - R lifecycle hooks (`.onLoad`, `.onAttach`, `.onDetach`, `.onUnload`,
 ///   `.Last.lib`, `.First.lib`, `on_load`). These have fixed signatures
 ///   imposed by the runtime.
@@ -95,13 +100,66 @@ fn should_skip_function(
     {
         return true;
     }
-    if let Some(func_def) = info.function_definition(scope_id)
-        && let Some(func) = func_def.cast::<RFunctionDefinition>()
-        && is_dispatch_generic(&func)
-    {
-        return true;
+    if let Some(func_def) = info.function_definition(scope_id) {
+        if is_condition_handler(&func_def) {
+            return true;
+        }
+        if let Some(func) = func_def.cast::<RFunctionDefinition>()
+            && is_dispatch_generic(&func)
+        {
+            return true;
+        }
     }
     false
+}
+
+/// True if the function definition is the direct value of a named argument to
+/// `tryCatch()` or `try_fetch()` — i.e. it's a condition handler. The handler
+/// signature is fixed (a condition object is always passed), so unused params
+/// aren't a bug. Namespace-qualified calls (`base::tryCatch`, `rlang::try_fetch`)
+/// match too.
+fn is_condition_handler(func_def: &RSyntaxNode) -> bool {
+    let arg_node = func_def.parent();
+    let Some(arg_node) = arg_node else {
+        return false;
+    };
+    if arg_node.kind() != RSyntaxKind::R_ARGUMENT {
+        return false;
+    }
+    let Some(arg) = arg_node.clone().cast::<RArgument>() else {
+        return false;
+    };
+    if arg.name_clause().is_none() {
+        return false;
+    }
+
+    let mut current = arg_node.parent();
+    while let Some(node) = current {
+        if node.kind() == RSyntaxKind::R_CALL {
+            let Some(call) = node.cast::<RCall>() else {
+                return false;
+            };
+            return matches!(
+                call_function_name(&call).as_deref(),
+                Some("tryCatch") | Some("try_fetch")
+            );
+        }
+        current = node.parent();
+    }
+    false
+}
+
+fn call_function_name(call: &RCall) -> Option<String> {
+    let func = call.function().ok()?;
+    match func {
+        AnyRExpression::RIdentifier(id) => Some(id.name_text()),
+        AnyRExpression::RNamespaceExpression(ns) => ns
+            .right()
+            .ok()
+            .and_then(|r| r.syntax().first_token())
+            .map(|t| t.text_trimmed().to_string()),
+        _ => None,
+    }
 }
 
 /// Package hooks have signatures fixed by the R runtime. Names mirrored from
