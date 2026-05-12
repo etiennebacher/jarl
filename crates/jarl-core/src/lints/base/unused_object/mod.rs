@@ -8,6 +8,74 @@ mod tests {
         format_diagnostics(code, "unused_object", None)
     }
 
+    /// Renders the `unused_object` diagnostics produced by linting `main_path`
+    /// (already written to disk), formatted for snapshot comparison.
+    fn snapshot_unused_object_at(main_path: &std::path::Path, main: &str) -> String {
+        use crate::check::check;
+        use crate::config::ArgsConfig;
+        use crate::diagnostic::render_diagnostic;
+        use annotate_snippets::Renderer;
+
+        let args = ArgsConfig {
+            files: vec![main_path.to_path_buf()],
+            fix: false,
+            unsafe_fixes: false,
+            fix_only: false,
+            select: "unused_object".to_string(),
+            extend_select: String::new(),
+            ignore: String::new(),
+            min_r_version: None,
+            allow_dirty: false,
+            allow_no_vcs: true,
+            assignment: None,
+        };
+        let config = crate::config::build_config(&args, None, vec![main_path.to_path_buf()])
+            .expect("build config");
+
+        let diagnostics: Vec<_> = check(config)
+            .into_iter()
+            .find_map(|(_, result)| result.ok())
+            .unwrap_or_default();
+
+        if diagnostics.is_empty() {
+            return "All checks passed!".to_string();
+        }
+        let renderer = Renderer::plain();
+        let mut output = String::new();
+        for diagnostic in &diagnostics {
+            let rendered = render_diagnostic(
+                main,
+                "<test>",
+                &diagnostic.message.name,
+                diagnostic,
+                &renderer,
+            );
+            output.push_str(&format!("{}\n", rendered));
+        }
+        output.push_str(&format!(
+            "Found {} error{}.",
+            diagnostics.len(),
+            if diagnostics.len() == 1 { "" } else { "s" }
+        ));
+        output
+    }
+
+    /// Lints `main.R` inside a fresh tempdir after populating that directory
+    /// with the named (filename, content) pairs, and renders diagnostics as
+    /// a snapshot string. Used for `source()` resolution tests where the
+    /// sourced file lives next to the linted file.
+    fn snapshot_lint_with_sourced_files(main: &str, files: &[(&str, &str)]) -> String {
+        use std::fs;
+
+        let dir = tempfile::tempdir().expect("create tempdir");
+        let main_path = dir.path().join("main.R");
+        fs::write(&main_path, main).expect("write main.R");
+        for (name, content) in files {
+            fs::write(dir.path().join(name), content).expect("write sourced file");
+        }
+        snapshot_unused_object_at(&main_path, main)
+    }
+
     #[test]
     fn test_no_lint_used_variable() {
         expect_no_lint("x <- 1\nprint(x)", "unused_object", None);
@@ -822,5 +890,83 @@ for (i in 1:2) {
             "unused_object",
             None,
         );
+    }
+
+    // ---------------------------------------------------------------
+    // source() cross-file resolution
+    // ---------------------------------------------------------------
+
+    #[test]
+    fn test_no_lint_sourced_file_reads_var() {
+        // `x` looks unused in main.R, but the sourced helper reads it, so
+        // the binding is consumed at the source() call site.
+        assert_snapshot!(
+            snapshot_lint_with_sourced_files(
+                "x <- 1\nsource(\"helper.R\")\n",
+                &[("helper.R", "print(x + 1)")],
+            ),
+            @"All checks passed!"
+        );
+    }
+
+    #[test]
+    fn test_lint_sourced_file_does_not_read_var() {
+        // The sourced helper doesn't reference `y`, so it's still unused.
+        assert_snapshot!(
+            snapshot_lint_with_sourced_files(
+                "y <- 1\nsource(\"helper.R\")\n",
+                &[("helper.R", "print(1)")],
+            ),
+            @r"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | y <- 1
+          | - Object `y` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_lint_sourced_file_missing_does_not_suppress() {
+        // No helper.R on disk: resolution silently fails and we fall back
+        // to the regular unused-object check.
+        assert_snapshot!(
+            snapshot_lint_with_sourced_files("x <- 1\nsource(\"missing.R\")\n", &[]),
+            @r"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_no_lint_sourced_file_absolute_path_outside_project() {
+        // The sourced file lives in a separate tempdir, referenced by an
+        // absolute path. Resolution should follow the path verbatim rather
+        // than joining it under the linted file's directory.
+        use std::fs;
+
+        let project_dir = tempfile::tempdir().expect("create project tempdir");
+        let external_dir = tempfile::tempdir().expect("create external tempdir");
+
+        let helper_path = external_dir.path().join("helper.R");
+        fs::write(&helper_path, "print(x + 1)").expect("write helper.R");
+
+        let main = format!(
+            "x <- 1\nsource(\"{}\")\n",
+            helper_path.to_str().expect("utf-8 path")
+        );
+        let main_path = project_dir.path().join("main.R");
+        fs::write(&main_path, &main).expect("write main.R");
+
+        assert_snapshot!(snapshot_unused_object_at(&main_path, &main), @"All checks passed!");
     }
 }
