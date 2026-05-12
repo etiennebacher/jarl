@@ -26,6 +26,9 @@ use oak_index::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticInd
 /// passes over the syntax tree. Computed once per file; consumed by lints.
 pub struct SemanticInfo<'a> {
     index: &'a SemanticIndex,
+    /// Path of the file being analyzed. Used to resolve `source("path")`
+    /// arguments against the current file's directory.
+    file: &'a std::path::Path,
     /// Names that have a synthetic use from AST passes (string interpolation,
     /// `do.call("f", …)`, `..cols`, `on.exit` bodies, loop assignment LHSes,
     /// short-circuit assignment LHSes). A definition whose symbol name is in
@@ -52,9 +55,14 @@ impl<'a> SemanticInfo<'a> {
     /// Build the info table. Runs both the AST pass (collecting synthetic
     /// uses, NSE ranges, formula ranges, local body ranges, callee ranges)
     /// and the closure call-site analysis.
-    pub fn build(expressions: &[RSyntaxNode], index: &'a SemanticIndex) -> Self {
+    pub fn build(
+        expressions: &[RSyntaxNode],
+        index: &'a SemanticIndex,
+        file: &'a std::path::Path,
+    ) -> Self {
         let mut this = Self {
             index,
+            file,
             synthetic_used_names: HashSet::new(),
             nse_ranges: Vec::new(),
             local_body_ranges: Vec::new(),
@@ -95,7 +103,7 @@ impl<'a> SemanticInfo<'a> {
         def_id: DefinitionId,
         def: &Definition,
     ) -> bool {
-        let symbol_name = self.index.symbols(scope_id).symbol_id(def.symbol()).name();
+        let symbol_name = self.index.symbols(scope_id).symbol(def.symbol()).name();
         if self.synthetic_used_names.contains(symbol_name) {
             return true;
         }
@@ -322,7 +330,40 @@ impl<'a> SemanticInfo<'a> {
                     self.collect_on_exit_uses(body);
                 }
             }
+            "source" => {
+                if let Some((_, first)) = arg_values.first()
+                    && let Some(path) = string_literal_value(first)
+                {
+                    self.import_uses_from_sourced_file(&path);
+                }
+            }
             _ => {}
+        }
+    }
+
+    /// Resolves a `source("path")` argument against the current file, parses
+    /// the target, and harvests every identifier appearing in it as a
+    /// synthetic use. R's `source()` runs its argument in the caller's
+    /// environment, so any name read by the sourced script consumes a
+    /// binding in this file.
+    fn import_uses_from_sourced_file(&mut self, path: &str) {
+        let Some(target) = resolve_sourced_path(self.file, path) else {
+            return;
+        };
+        let Ok(contents) = std::fs::read_to_string(&target) else {
+            return;
+        };
+        let parsed = air_r_parser::parse(&contents, RParserOptions::default());
+        if parsed.has_error() {
+            return;
+        }
+        for node in parsed.syntax().descendants() {
+            if node.kind() == RSyntaxKind::R_IDENTIFIER
+                && let Some(token) = node.first_token()
+            {
+                self.synthetic_used_names
+                    .insert(token.text_trimmed().to_string());
+            }
         }
     }
 
@@ -401,7 +442,7 @@ impl<'a> SemanticInfo<'a> {
                 let name = self
                     .index
                     .symbols(parent)
-                    .symbol_id(def.symbol())
+                    .symbol(def.symbol())
                     .name()
                     .to_string();
                 binding_name = Some(name);
@@ -473,7 +514,7 @@ impl<'a> SemanticInfo<'a> {
                 let name = self
                     .index
                     .symbols(descendant)
-                    .symbol_id(u.symbol())
+                    .symbol(u.symbol())
                     .name()
                     .to_string();
                 if !seen.insert(name.clone()) {
@@ -680,5 +721,21 @@ fn string_literal_value(node: &RSyntaxNode) -> Option<String> {
         Some(text[1..text.len() - 1].to_string())
     } else {
         None
+    }
+}
+
+/// Resolve a `source("path")` argument against the currently-analyzed file.
+/// Absolute paths are taken as-is; relative paths are joined to the
+/// directory containing the analyzed file. When the analyzed file has no
+/// parent directory (e.g. just a bare filename), the relative path is
+/// returned as-is — `std::fs` will resolve it against the process CWD.
+fn resolve_sourced_path(current_file: &std::path::Path, path: &str) -> Option<std::path::PathBuf> {
+    let candidate = std::path::Path::new(path);
+    if candidate.is_absolute() {
+        return Some(candidate.to_path_buf());
+    }
+    match current_file.parent() {
+        Some(dir) if !dir.as_os_str().is_empty() => Some(dir.join(candidate)),
+        _ => Some(candidate.to_path_buf()),
     }
 }

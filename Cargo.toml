@@ -11,17 +11,17 @@ repository = "https://github.com/etiennebacher/jarl/"
 readme = "README.md"
 
 [workspace.dependencies]
-air_fs = { package = "fs", git = "https://github.com/posit-dev/air", rev = "4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1" }
-air_r_parser = { git = "https://github.com/posit-dev/air", rev = "4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1" }
-air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1" }
-air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air", rev = "4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1" }
-oak_core = { git = "https://github.com/posit-dev/ark", rev = "61f541f7ad201cc14a556ca54d3d933a7284f286" }
-oak_index = { git = "https://github.com/posit-dev/ark", rev = "61f541f7ad201cc14a556ca54d3d933a7284f286" }
-oak_index_vec = { git = "https://github.com/posit-dev/ark", rev = "61f541f7ad201cc14a556ca54d3d933a7284f286" }
+air_fs = { package = "fs", git = "https://github.com/posit-dev/air", rev = "d2659d5b158374bf486b594625ca50abbd0ac879" }
+air_r_parser = { git = "https://github.com/posit-dev/air", rev = "d2659d5b158374bf486b594625ca50abbd0ac879" }
+air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "d2659d5b158374bf486b594625ca50abbd0ac879" }
+air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air", rev = "d2659d5b158374bf486b594625ca50abbd0ac879" }
+oak_core = { git = "https://github.com/posit-dev/ark", rev = "b3dd6facdadd901df25c3d53450771bb8ecbb2ed" }
+oak_index = { git = "https://github.com/posit-dev/ark", rev = "b3dd6facdadd901df25c3d53450771bb8ecbb2ed" }
+oak_index_vec = { git = "https://github.com/posit-dev/ark", rev = "b3dd6facdadd901df25c3d53450771bb8ecbb2ed" }
 url = "2.5"
 anyhow = "1.0.94"
-biome_formatter = { git = "https://github.com/lionel-/biome", rev = "41d799cfa4cedd25625fc3f6bd7898532873f051" }
-biome_rowan = { git = "https://github.com/lionel-/biome", rev = "41d799cfa4cedd25625fc3f6bd7898532873f051" }
+biome_formatter = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
+biome_rowan = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
 clap = { version = "4.6.0", features = ["derive"] }
 colored = "3.1.1"
 ignore = "0.4.23"

@@ -201,6 +201,7 @@ pub fn get_checks(
         url::Url::parse(&format!("file:///{}", file.display())).expect("synthetic URL parses")
     });
     let semantic = oak_index::semantic_index(&parsed.tree(), &file_url);
+    checker.file_path = file.to_path_buf();
 
     // Wire up package context for package-specific rules.
     get_package_info(

@@ -20,3 +20,4 @@ biome_rowan.workspace = true
 oak_core.workspace = true
 oak_index.workspace = true
 oak_index_vec.workspace = true
+url.workspace = true

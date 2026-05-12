@@ -36,7 +36,7 @@ pub fn unused_object(
     semantic: &SemanticIndex,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
-    let info = SemanticInfo::build(expressions, semantic);
+    let info = SemanticInfo::build(expressions, semantic, &checker.file_path);
     let exports = &checker.namespace_exports;
 
     let mut diagnostics = Vec::new();
@@ -105,14 +105,14 @@ fn is_exported(
     if exports.is_empty() {
         return false;
     }
-    let name = semantic.symbols(scope_id).symbol_id(def.symbol()).name();
+    let name = semantic.symbols(scope_id).symbol(def.symbol()).name();
     exports.contains(name)
 }
 
 fn make_diagnostic(semantic: &SemanticIndex, scope_id: ScopeId, def: &Definition) -> Diagnostic {
     let name = semantic
         .symbols(scope_id)
-        .symbol_id(def.symbol())
+        .symbol(def.symbol())
         .name()
         .to_string();
     let range = lhs_range_for_definition(def).unwrap_or_else(|| def.range());

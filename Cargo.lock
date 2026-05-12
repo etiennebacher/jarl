@@ -29,7 +29,7 @@ dependencies = [
 [[package]]
 name = "air_r_factory"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1#4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1"
+source = "git+https://github.com/posit-dev/air?rev=d2659d5b158374bf486b594625ca50abbd0ac879#d2659d5b158374bf486b594625ca50abbd0ac879"
 dependencies = [
  "air_r_syntax",
  "biome_rowan",
@@ -38,7 +38,7 @@ dependencies = [
 [[package]]
 name = "air_r_formatter"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1#4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1"
+source = "git+https://github.com/posit-dev/air?rev=d2659d5b158374bf486b594625ca50abbd0ac879#d2659d5b158374bf486b594625ca50abbd0ac879"
 dependencies = [
  "air_r_syntax",
  "biome_formatter",
@@ -52,7 +52,7 @@ dependencies = [
 [[package]]
 name = "air_r_parser"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1#4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1"
+source = "git+https://github.com/posit-dev/air?rev=d2659d5b158374bf486b594625ca50abbd0ac879#d2659d5b158374bf486b594625ca50abbd0ac879"
 dependencies = [
  "air_r_factory",
  "air_r_syntax",
@@ -68,7 +68,7 @@ dependencies = [
 [[package]]
 name = "air_r_syntax"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1#4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1"
+source = "git+https://github.com/posit-dev/air?rev=d2659d5b158374bf486b594625ca50abbd0ac879#d2659d5b158374bf486b594625ca50abbd0ac879"
 dependencies = [
  "biome_rowan",
  "serde",
@@ -179,7 +179,7 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 [[package]]
 name = "biome_console"
 version = "0.5.7"
-source = "git+https://github.com/lionel-/biome?rev=41d799cfa4cedd25625fc3f6bd7898532873f051#41d799cfa4cedd25625fc3f6bd7898532873f051"
+source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
 dependencies = [
  "biome_markup",
  "biome_text_size",
@@ -192,7 +192,7 @@ dependencies = [
 [[package]]
 name = "biome_deserialize"
 version = "0.6.0"
-source = "git+https://github.com/lionel-/biome?rev=41d799cfa4cedd25625fc3f6bd7898532873f051#41d799cfa4cedd25625fc3f6bd7898532873f051"
+source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
 dependencies = [
  "biome_console",
  "biome_diagnostics",
@@ -207,7 +207,7 @@ dependencies = [
 [[package]]
 name = "biome_deserialize_macros"
 version = "0.6.0"
-source = "git+https://github.com/lionel-/biome?rev=41d799cfa4cedd25625fc3f6bd7898532873f051#41d799cfa4cedd25625fc3f6bd7898532873f051"
+source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
 dependencies = [
  "biome_string_case",
  "proc-macro-error2",
@@ -219,7 +219,7 @@ dependencies = [
 [[package]]
 name = "biome_diagnostics"
 version = "0.5.7"
-source = "git+https://github.com/lionel-/biome?rev=41d799cfa4cedd25625fc3f6bd7898532873f051#41d799cfa4cedd25625fc3f6bd7898532873f051"
+source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
 dependencies = [
  "backtrace",
  "biome_console",
@@ -239,7 +239,7 @@ dependencies = [
 [[package]]
 name = "biome_diagnostics_categories"
 version = "0.5.7"
-source = "git+https://github.com/lionel-/biome?rev=41d799cfa4cedd25625fc3f6bd7898532873f051#41d799cfa4cedd25625fc3f6bd7898532873f051"
+source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
 dependencies = [
  "quote",
  "serde",
@@ -248,7 +248,7 @@ dependencies = [
 [[package]]
 name = "biome_diagnostics_macros"
 version = "0.5.7"
-source = "git+https://github.com/lionel-/biome?rev=41d799cfa4cedd25625fc3f6bd7898532873f051#41d799cfa4cedd25625fc3f6bd7898532873f051"
+source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
 dependencies = [
  "proc-macro-error2",
  "proc-macro2",
@@ -259,7 +259,7 @@ dependencies = [
 [[package]]
 name = "biome_formatter"
 version = "0.5.7"
-source = "git+https://github.com/lionel-/biome?rev=41d799cfa4cedd25625fc3f6bd7898532873f051#41d799cfa4cedd25625fc3f6bd7898532873f051"
+source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
 dependencies = [
  "biome_console",
  "biome_deserialize",
@@ -280,7 +280,7 @@ dependencies = [
 [[package]]
 name = "biome_json_factory"
 version = "0.5.7"
-source = "git+https://github.com/lionel-/biome?rev=41d799cfa4cedd25625fc3f6bd7898532873f051#41d799cfa4cedd25625fc3f6bd7898532873f051"
+source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
 dependencies = [
  "biome_json_syntax",
  "biome_rowan",
@@ -289,7 +289,7 @@ dependencies = [
 [[package]]
 name = "biome_json_parser"
 version = "0.5.7"
-source = "git+https://github.com/lionel-/biome?rev=41d799cfa4cedd25625fc3f6bd7898532873f051#41d799cfa4cedd25625fc3f6bd7898532873f051"
+source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
 dependencies = [
  "biome_console",
  "biome_diagnostics",
@@ -305,7 +305,7 @@ dependencies = [
 [[package]]
 name = "biome_json_syntax"
 version = "0.5.7"
-source = "git+https://github.com/lionel-/biome?rev=41d799cfa4cedd25625fc3f6bd7898532873f051#41d799cfa4cedd25625fc3f6bd7898532873f051"
+source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
 dependencies = [
  "biome_rowan",
  "biome_string_case",
@@ -316,7 +316,7 @@ dependencies = [
 [[package]]
 name = "biome_markup"
 version = "0.5.7"
-source = "git+https://github.com/lionel-/biome?rev=41d799cfa4cedd25625fc3f6bd7898532873f051#41d799cfa4cedd25625fc3f6bd7898532873f051"
+source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
 dependencies = [
  "proc-macro-error2",
  "proc-macro2",
@@ -326,7 +326,7 @@ dependencies = [
 [[package]]
 name = "biome_parser"
 version = "0.5.7"
-source = "git+https://github.com/lionel-/biome?rev=41d799cfa4cedd25625fc3f6bd7898532873f051#41d799cfa4cedd25625fc3f6bd7898532873f051"
+source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
 dependencies = [
  "biome_console",
  "biome_diagnostics",
@@ -340,7 +340,7 @@ dependencies = [
 [[package]]
 name = "biome_rowan"
 version = "0.5.7"
-source = "git+https://github.com/lionel-/biome?rev=41d799cfa4cedd25625fc3f6bd7898532873f051#41d799cfa4cedd25625fc3f6bd7898532873f051"
+source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
 dependencies = [
  "biome_text_edit",
  "biome_text_size",
@@ -352,7 +352,7 @@ dependencies = [
 [[package]]
 name = "biome_string_case"
 version = "0.5.7"
-source = "git+https://github.com/lionel-/biome?rev=41d799cfa4cedd25625fc3f6bd7898532873f051#41d799cfa4cedd25625fc3f6bd7898532873f051"
+source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
 dependencies = [
  "biome_rowan",
 ]
@@ -360,7 +360,7 @@ dependencies = [
 [[package]]
 name = "biome_text_edit"
 version = "0.5.7"
-source = "git+https://github.com/lionel-/biome?rev=41d799cfa4cedd25625fc3f6bd7898532873f051#41d799cfa4cedd25625fc3f6bd7898532873f051"
+source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
 dependencies = [
  "biome_text_size",
  "serde",
@@ -370,7 +370,7 @@ dependencies = [
 [[package]]
 name = "biome_text_size"
 version = "0.5.7"
-source = "git+https://github.com/lionel-/biome?rev=41d799cfa4cedd25625fc3f6bd7898532873f051#41d799cfa4cedd25625fc3f6bd7898532873f051"
+source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
 dependencies = [
  "serde",
 ]
@@ -378,7 +378,7 @@ dependencies = [
 [[package]]
 name = "biome_unicode_table"
 version = "0.5.7"
-source = "git+https://github.com/lionel-/biome?rev=41d799cfa4cedd25625fc3f6bd7898532873f051#41d799cfa4cedd25625fc3f6bd7898532873f051"
+source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
 
 [[package]]
 name = "bitflags"
@@ -538,7 +538,7 @@ dependencies = [
 [[package]]
 name = "comments"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1#4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1"
+source = "git+https://github.com/posit-dev/air?rev=d2659d5b158374bf486b594625ca50abbd0ac879#d2659d5b158374bf486b594625ca50abbd0ac879"
 
 [[package]]
 name = "console"
@@ -789,7 +789,7 @@ dependencies = [
 [[package]]
 name = "fs"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1#4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1"
+source = "git+https://github.com/posit-dev/air?rev=d2659d5b158374bf486b594625ca50abbd0ac879#d2659d5b158374bf486b594625ca50abbd0ac879"
 dependencies = [
  "path-absolutize",
 ]
@@ -1205,6 +1205,7 @@ dependencies = [
  "oak_core",
  "oak_index",
  "oak_index_vec",
+ "url",
 ]
 
 [[package]]
@@ -1246,7 +1247,7 @@ checksum = "68ab91017fe16c622486840e4c83c9a37afeff978bd239b5293d61ece587de66"
 [[package]]
 name = "line_ending"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1#4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1"
+source = "git+https://github.com/posit-dev/air?rev=d2659d5b158374bf486b594625ca50abbd0ac879#d2659d5b158374bf486b594625ca50abbd0ac879"
 dependencies = [
  "memchr",
  "settings",
@@ -1333,7 +1334,7 @@ dependencies = [
 [[package]]
 name = "oak_core"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=61f541f7ad201cc14a556ca54d3d933a7284f286#61f541f7ad201cc14a556ca54d3d933a7284f286"
+source = "git+https://github.com/posit-dev/ark?rev=b3dd6facdadd901df25c3d53450771bb8ecbb2ed#b3dd6facdadd901df25c3d53450771bb8ecbb2ed"
 dependencies = [
  "air_r_syntax",
  "biome_rowan",
@@ -1342,7 +1343,7 @@ dependencies = [
 [[package]]
 name = "oak_fs"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=61f541f7ad201cc14a556ca54d3d933a7284f286#61f541f7ad201cc14a556ca54d3d933a7284f286"
+source = "git+https://github.com/posit-dev/ark?rev=b3dd6facdadd901df25c3d53450771bb8ecbb2ed#b3dd6facdadd901df25c3d53450771bb8ecbb2ed"
 dependencies = [
  "anyhow",
  "libc",
@@ -1353,7 +1354,7 @@ dependencies = [
 [[package]]
 name = "oak_index"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=61f541f7ad201cc14a556ca54d3d933a7284f286#61f541f7ad201cc14a556ca54d3d933a7284f286"
+source = "git+https://github.com/posit-dev/ark?rev=b3dd6facdadd901df25c3d53450771bb8ecbb2ed#b3dd6facdadd901df25c3d53450771bb8ecbb2ed"
 dependencies = [
  "air_r_parser",
  "air_r_syntax",
@@ -1375,7 +1376,7 @@ dependencies = [
 [[package]]
 name = "oak_index_vec"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=61f541f7ad201cc14a556ca54d3d933a7284f286#61f541f7ad201cc14a556ca54d3d933a7284f286"
+source = "git+https://github.com/posit-dev/ark?rev=b3dd6facdadd901df25c3d53450771bb8ecbb2ed#b3dd6facdadd901df25c3d53450771bb8ecbb2ed"
 dependencies = [
  "biome_text_size",
  "oak_core",
@@ -1384,7 +1385,7 @@ dependencies = [
 [[package]]
 name = "oak_package_metadata"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=61f541f7ad201cc14a556ca54d3d933a7284f286#61f541f7ad201cc14a556ca54d3d933a7284f286"
+source = "git+https://github.com/posit-dev/ark?rev=b3dd6facdadd901df25c3d53450771bb8ecbb2ed#b3dd6facdadd901df25c3d53450771bb8ecbb2ed"
 dependencies = [
  "air_r_parser",
  "air_r_syntax",
@@ -1398,7 +1399,7 @@ dependencies = [
 [[package]]
 name = "oak_r_process"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=61f541f7ad201cc14a556ca54d3d933a7284f286#61f541f7ad201cc14a556ca54d3d933a7284f286"
+source = "git+https://github.com/posit-dev/ark?rev=b3dd6facdadd901df25c3d53450771bb8ecbb2ed#b3dd6facdadd901df25c3d53450771bb8ecbb2ed"
 dependencies = [
  "anyhow",
  "log",
@@ -1408,7 +1409,7 @@ dependencies = [
 [[package]]
 name = "oak_sources"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=61f541f7ad201cc14a556ca54d3d933a7284f286#61f541f7ad201cc14a556ca54d3d933a7284f286"
+source = "git+https://github.com/posit-dev/ark?rev=b3dd6facdadd901df25c3d53450771bb8ecbb2ed#b3dd6facdadd901df25c3d53450771bb8ecbb2ed"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1808,7 +1809,7 @@ dependencies = [
 [[package]]
 name = "settings"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1#4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1"
+source = "git+https://github.com/posit-dev/air?rev=d2659d5b158374bf486b594625ca50abbd0ac879#d2659d5b158374bf486b594625ca50abbd0ac879"
 dependencies = [
  "biome_formatter",
  "serde",
@@ -1886,7 +1887,7 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 [[package]]
 name = "stdext"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=61f541f7ad201cc14a556ca54d3d933a7284f286#61f541f7ad201cc14a556ca54d3d933a7284f286"
+source = "git+https://github.com/posit-dev/ark?rev=b3dd6facdadd901df25c3d53450771bb8ecbb2ed#b3dd6facdadd901df25c3d53450771bb8ecbb2ed"
 dependencies = [
  "anyhow",
  "log",
@@ -2839,7 +2840,7 @@ dependencies = [
 [[package]]
 name = "workspace"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/air?rev=4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1#4cbd36d552e27d8930cff1602d56bfd9ce4c1ed1"
+source = "git+https://github.com/posit-dev/air?rev=d2659d5b158374bf486b594625ca50abbd0ac879#d2659d5b158374bf486b594625ca50abbd0ac879"
 dependencies = [
  "air_r_formatter",
  "air_r_parser",
