@@ -233,6 +233,12 @@ impl<'a> SemanticInfo<'a> {
             | RSyntaxKind::R_REPEAT_STATEMENT => {
                 self.collect_loop_assignment_names(node);
             }
+            // `return` is parsed as a special RETURN expression, not an identifier.
+            // Mark the keyword name as a synthetic use so the param isn't
+            // flagged as unused.
+            RSyntaxKind::R_RETURN_EXPRESSION => {
+                self.synthetic_used_names.insert("return".to_string());
+            }
             _ => {}
         }
     }

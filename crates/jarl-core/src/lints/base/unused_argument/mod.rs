@@ -262,6 +262,18 @@ mod tests {
     }
 
     #[test]
+    fn test_no_lint_param_named_return() {
+        // `return` in the body is parsed as `R_RETURN_EXPRESSION`, not an
+        // identifier, but at runtime it still reads the parameter named
+        // `return` via lexical lookup.
+        expect_no_lint(
+            "f <- function(return = 1) {\n  return\n}",
+            "unused_argument",
+            None,
+        );
+    }
+
+    #[test]
     fn test_no_lint_anonymous_function() {
         // Anonymous functions get the same treatment — params are reported.
         // This documents current behaviour: the lambda below has both x and y
