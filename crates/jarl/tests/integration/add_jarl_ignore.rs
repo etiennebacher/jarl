@@ -402,7 +402,7 @@ fn test_add_jarl_ignore_function_parameter() -> anyhow::Result<()> {
         "f <- function(
     a = any(is.na(x))
 ) {
-  1
+  a
 }
 ",
     )?;
@@ -439,7 +439,7 @@ fn test_add_jarl_ignore_function_parameter() -> anyhow::Result<()> {
         # jarl-ignore any_is_na: <reason>
         a = any(is.na(x))
     ) {
-      1
+      a
     }
     "
     );
