@@ -15,10 +15,7 @@ use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 ///
 /// ## What it does
 ///
-/// Detects local variables assigned a value that is never read. Operates on
-/// oak's per-file `SemanticIndex`: walks every scope, looks at each
-/// definition, and emits a warning when no `Use` reaches it (directly or
-/// through a closure).
+/// Detects objects that are defined (i.e. assigned a value) but never used.
 ///
 /// ## Why is this bad?
 ///
