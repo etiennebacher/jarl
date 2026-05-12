@@ -163,6 +163,7 @@ fn test_jarl_ignore_cascading_suppression() -> anyhow::Result<()> {
 # jarl-ignore any_is_na: cascades to children
 x <- function(x) {
     any(is.na(y))
+    x
 }
 any(is.na(y))
 ",
@@ -181,9 +182,9 @@ any(is.na(y))
     exit_code: 1
     ----- stdout -----
     warning: any_is_na
-     --> test.R:6:1
+     --> test.R:7:1
       |
-    6 | any(is.na(y))
+    7 | any(is.na(y))
       | ------------- `any(is.na(...))` is inefficient.
       |
       = help: Use `anyNA(...)` instead.
@@ -208,6 +209,7 @@ fn test_jarl_ignore_multiple_rules_with_extend_select() -> anyhow::Result<()> {
 # jarl-ignore any_is_na: first rule
 # jarl-ignore assignment: second rule
 x = any(is.na(y))
+x
 ",
     )?;
 
@@ -245,6 +247,7 @@ foo(
   # jarl-ignore implicit_assignment: suppressing second arg
   x <- 1
 )
+x
 ",
     )?;
 

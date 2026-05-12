@@ -194,6 +194,14 @@ pub fn get_checks(
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
 
+    // Build the semantic index for use-def-based rules. `Url::from_file_path`
+    // requires an absolute path; for relative paths (e.g. test inputs) fall
+    // back to a synthetic file URL so indexing always succeeds.
+    let file_url = url::Url::from_file_path(file).unwrap_or_else(|_| {
+        url::Url::parse(&format!("file:///{}", file.display())).expect("synthetic URL parses")
+    });
+    let semantic = oak_index::semantic_index(&parsed.tree(), &file_url);
+
     // Wire up package context for package-specific rules.
     get_package_info(
         &mut checker,
@@ -245,6 +253,7 @@ pub fn get_checks(
         &mut checker,
         &duplicate_assignments,
         &unused_functions,
+        Some(&semantic),
     )?;
 
     // Some rules have a fix available in their implementation but do not have
@@ -364,7 +373,7 @@ fn get_checks_roxygen(
         // otherwise unnecessary here (no package-level analysis, no
         // suppression-related diagnostics to report).
         if has_suppressions {
-            check_document(expressions, &mut checker, &[], &[])?;
+            check_document(expressions, &mut checker, &[], &[], None)?;
         }
 
         for mut d in checker.diagnostics {
@@ -416,7 +425,7 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     // check_document runs suppression filtering internally, so
     // checker.diagnostics is the post-suppression list after this call.
     // Rmd chunks don't participate in package-level analysis, so pass empty slices.
-    check_document(expressions, &mut checker, &[], &[])?;
+    check_document(expressions, &mut checker, &[], &[], None)?;
 
     // Remap ranges from virtual-string offsets to original Rmd file offsets.
     let diagnostics: Vec<Diagnostic> = checker

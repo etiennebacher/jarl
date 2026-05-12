@@ -1,0 +1,22 @@
+[package]
+name = "jarl-semantic"
+description = "Per-file semantic info for jarl R linter rules"
+version = "0.5.0"
+authors.workspace = true
+edition.workspace = true
+license-file.workspace = true
+repository.workspace = true
+readme.workspace = true
+
+[lib]
+name = "jarl_semantic"
+path = "src/lib.rs"
+
+[dependencies]
+air_r_parser.workspace = true
+air_r_syntax.workspace = true
+biome_rowan.workspace = true
+
+oak_core.workspace = true
+oak_index.workspace = true
+oak_index_vec.workspace = true
