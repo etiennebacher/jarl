@@ -302,8 +302,8 @@ skipped-functions = ["list"]
 ### `pipe_consistency`
 
 This takes a single value (`"|>"` or `"%>%"`) indicating the preferred
-pipe operator in the files to check. If `quote = "|>"` and if the `"pipe_consistency"`
-rule is enabled, then any use of `%>%'` will be reported, and vice-versa.
+pipe operator in the files to check. If `pipe = "|>"` and if the `"pipe_consistency"`
+rule is enabled, then any use of `%>%` will be reported, and vice-versa.
 
 Default: `"|>"`
 
@@ -312,7 +312,7 @@ Default: `"|>"`
 ...
 
 [lint.pipe_consistency]
-quote = "|>" # or "%>%"
+pipe = "|>" # or "%>%"
 ```
 
 ### `quotes`
