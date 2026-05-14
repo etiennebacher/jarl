@@ -299,6 +299,22 @@ Default: `skipped-functions = ["expect_error", "expect_warning", "expect_message
 skipped-functions = ["list"]
 ```
 
+### `pipe_consistency`
+
+This takes a single value (`"|>"` or `"%>%"`) indicating the preferred
+pipe operator in the files to check. If `quote = "|>"` and if the `"pipe_consistency"`
+rule is enabled, then any use of `%>%'` will be reported, and vice-versa.
+
+Default: `"|>"`
+
+```toml
+[lint]
+...
+
+[lint.pipe_consistency]
+quote = "|>" # or "%>%"
+```
+
 ### `quotes`
 
 This takes a single value (`"single"` or `"double"`) indicating the preferred

@@ -461,6 +461,13 @@ declare_rules! {
         fix: Unsafe,
         min_r_version: None,
     },
+    PipeConsistency => {
+        name: "pipe_consistency",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: Some((4, 2, 0)),
+    },
     OuterNegation => {
         name: "outer_negation",
         categories: [Perf, Read],
