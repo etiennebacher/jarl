@@ -66,12 +66,12 @@ pub fn pipe_consistency(
     }
 
     let preferred_is_base = matches!(preferred, PreferredPipe::Base);
-    if is_base_pipe == preferred_is_base {
+    if is_base_pipe && preferred_is_base {
         return Ok(None);
     }
 
     let preferred_is_magrittr = matches!(preferred, PreferredPipe::Magrittr);
-    if is_magrittr_pipe == preferred_is_magrittr {
+    if is_magrittr_pipe && preferred_is_magrittr {
         return Ok(None);
     }
 
