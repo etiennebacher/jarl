@@ -6,15 +6,6 @@ pub enum PreferredPipe {
     Magrittr,
 }
 
-impl PreferredPipe {
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Base => "|>",
-            Self::Magrittr => "%>%",
-        }
-    }
-}
-
 /// TOML options for `[lint.pipe_consistency]`.
 ///
 /// Use `pipe` to specify which pipe operator to enforce. Valid values
