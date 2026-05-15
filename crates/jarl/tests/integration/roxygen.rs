@@ -119,7 +119,7 @@ fn test_roxygen_clean_examples() -> anyhow::Result<()> {
             "\
 #' Title
 #' @examples
-#' x <- 1
+#' 1 + 1
 foo <- function(x) x
 ",
         ),

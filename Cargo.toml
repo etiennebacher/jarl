@@ -24,6 +24,7 @@ ignore = "0.4.23"
 insta = { version = "1.47.2", features = ["yaml"] }
 etcetera = "0.11.0"
 jarl-core = { path = "crates/jarl-core" }
+jarl-dfg = { path = "crates/jarl-dfg" }
 jarl-lsp = { path = "crates/jarl-lsp" }
 path-absolutize = "3.1.1"
 rayon = "1.12.0"

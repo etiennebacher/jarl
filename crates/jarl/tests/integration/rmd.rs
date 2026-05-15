@@ -1059,3 +1059,124 @@ any(is.na(x))
 
     Ok(())
 }
+
+// ---------------------------------------------------------------------------
+// Chunk option names not flagged as unused
+// ---------------------------------------------------------------------------
+
+/// An R object used in a non-R chunk option (e.g. `eval=cond`) should not be
+/// flagged as unused.
+#[test]
+fn test_rmd_chunk_option_name_not_unused() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+cond <- TRUE
+```
+
+```{bash, eval=cond}
+echo 'hi'
+```",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Same for the other chunk option syntax
+#[test]
+fn test_qmd_chunk_option_name_not_unused() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+cond <- TRUE
+```
+
+```{bash}
+#| eval: !expr cond
+echo 'hi'
+```",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// An R object used in an R chunk option should also not be flagged.
+#[test]
+fn test_rmd_r_chunk_option_name_not_unused() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+should_run <- TRUE
+```
+
+```{r, eval=should_run}
+print('hello')
+```",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}

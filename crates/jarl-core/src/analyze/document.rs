@@ -1,9 +1,11 @@
 use air_r_syntax::{RExpressionList, RSyntaxNode};
 use biome_rowan::{AstNode, AstNodeList};
+use jarl_dfg::*;
 
 use crate::checker::Checker;
 use crate::diagnostic::*;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
+use crate::lints::base::unused_object::unused_object::unused_object;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
 use crate::lints::comments::invalid_chunk_suppression::invalid_chunk_suppression::invalid_chunk_suppression;
 use crate::lints::comments::misnamed_suppression::misnamed_suppression::misnamed_suppression;
@@ -18,13 +20,19 @@ use crate::rule_set::Rule;
 
 pub(crate) fn check_document(
     expressions: &RExpressionList,
+    dfg: DataflowGraph,
     checker: &mut Checker,
     duplicate_assignments: &[(String, biome_rowan::TextRange, String)],
     unused_functions: &[(String, biome_rowan::TextRange, String)],
 ) -> anyhow::Result<()> {
     // --- Document-level analysis ---
-
     let expressions: Vec<RSyntaxNode> = expressions.iter().map(|e| e.syntax().clone()).collect();
+
+    if checker.is_rule_enabled(Rule::UnusedObject) {
+        for diagnostic in unused_object(dfg, &checker.namespace_exports) {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    }
 
     // Check for unreachable code at top level
     if checker.is_rule_enabled(Rule::UnreachableCode) {

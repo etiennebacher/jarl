@@ -48,3 +48,8 @@ install-positron-extension:
 # Note that a `~/.local/bin/jarl` installed another way may shadow this.
 install-binary:
   cargo install --path crates/jarl --force --profile=release
+
+# Generate a diff of flowr changes since the reference commit used for the DFG implementation
+flowr-diff:
+  cd flowr && git fetch origin && git diff $(cat .jarl-flowr-ref)..origin/main -- src/ > ../flowr-diff.patch
+  @echo "Written to flowr-diff.patch ($(wc -l < flowr-diff.patch) lines)"
