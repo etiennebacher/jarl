@@ -10,6 +10,7 @@
   * `equals_na` now also reports `x %notin% NA` cases (#469, @Yousa-Mirage)
   * `notin` (#459, @Yousa-Mirage)
   * `pipe_consistency` (#482)
+  * `empty_file` (#477, @JosephBARBIERDARNAL)
 
 
 * Jarl is now available on PyPI under the name `jarl-linter`, enabling its
