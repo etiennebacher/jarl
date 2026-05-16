@@ -413,7 +413,11 @@ mod tests {
     fn test_empty_document() {
         let snapshot = create_test_snapshot("");
         let output = lint_document(&snapshot).unwrap();
-        assert!(output.diagnostics.is_empty());
+        assert_eq!(output.diagnostics.len(), 1);
+        assert_eq!(
+            output.diagnostics[0].message,
+            "This file is empty or only contains comments. Consider deleting the file"
+        );
     }
 
     #[test]
