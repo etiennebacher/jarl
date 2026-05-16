@@ -119,10 +119,10 @@ for (i in seq_along(all_repos)) {
   )
 
   msg_new_violations <- if (nrow(new_lints) > 0) {
-    new_lints <- head(new_lints, 100)
+    new_lints <- head(new_lints, 50)
     paste(
       c(
-        "<br>\nNew violations (first 100):<pre>",
+        "<br>\nNew violations (first 50):<pre>",
         paste0(
           "<a href=\"https://github.com/",
           repos,
@@ -152,10 +152,10 @@ for (i in seq_along(all_repos)) {
     ""
   }
   msg_old_violations <- if (nrow(deleted_lints) > 0) {
-    deleted_lints <- head(deleted_lints, 100)
+    deleted_lints <- head(deleted_lints, 50)
     paste(
       c(
-        "<br>\nViolations removed (first 100):<pre>",
+        "<br>\nViolations removed (first 50):<pre>",
         paste0(
           "<a href=\"https://github.com/",
           repos,

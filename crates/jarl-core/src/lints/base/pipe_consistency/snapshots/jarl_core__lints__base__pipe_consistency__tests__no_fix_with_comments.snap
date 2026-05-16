@@ -1,0 +1,23 @@
+---
+source: crates/jarl-core/src/lints/base/pipe_consistency/mod.rs
+expression: "get_unsafe_fixed_text_with_settings(vec![\"x %>% # trailing comment\\n  f()\",\n\"x %>%\\n  # leading on rhs\\n  f()\",], \"pipe_consistency\", Some(\"4.1\"), None,)"
+---
+OLD:
+====
+x %>% # trailing comment
+  f()
+NEW:
+====
+x %>% # trailing comment
+  f()
+
+OLD:
+====
+x %>%
+  # leading on rhs
+  f()
+NEW:
+====
+x %>%
+  # leading on rhs
+  f()

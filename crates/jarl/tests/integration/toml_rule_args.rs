@@ -213,6 +213,91 @@ unknown-option = ["list"]
     Ok(())
 }
 
+// pipe_consistency ----------------------------------------
+
+#[test]
+fn test_pipe_consistency_unknown_field_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+
+[lint.pipe_consistency]
+unknown-option = "x"
+"#,
+        ),
+        ("test.R", "1 + 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 5, column 1
+      |
+    5 | unknown-option = "x"
+      | ^^^^^^^^^^^^^^
+    unknown field `unknown-option`, expected `pipe`
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_pipe_consistency_invalid_quote_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+extend-select = ["pipe_consistency"]
+
+[lint.pipe_consistency]
+pipe = "foo"
+"#,
+        ),
+        ("test.R", "1 + 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Invalid value for `pipe` in `[lint.pipe_consistency]`: "foo". Expected "|>" or "%>%".
+    "#
+    );
+
+    Ok(())
+}
+
 // quotes ----------------------------------------
 
 #[test]
