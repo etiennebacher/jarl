@@ -48,10 +48,7 @@ pub fn empty_file(expressions: &[RSyntaxNode], syntax: &RSyntaxNode) -> Option<D
     // Files that contain at least one roxygen comment (`#'`) are allowed:
     // they're commonly used as documentation templates (e.g. man-roxygen/).
     let text = syntax.text_with_trivia().to_string();
-    if text
-        .lines()
-        .any(|line| line.trim_start().starts_with("#'"))
-    {
+    if text.lines().any(|line| line.trim_start().starts_with("#'")) {
         return None;
     }
 
