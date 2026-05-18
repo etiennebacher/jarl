@@ -14,8 +14,8 @@ pub struct EmptyFile;
 /// ## Why is this bad?
 ///
 /// An empty or comment-only file is almost always a mistake: a placeholder that
-/// was forgotten, an accidental `touch`, or a leftover from a refactor. It adds
-/// noise to the package and can confuse readers.
+/// was forgotten, or a leftover from a refactor. It adds noise to the package and
+/// can confuse readers.
 ///
 /// ## Example
 ///
@@ -23,7 +23,7 @@ pub struct EmptyFile;
 /// # TODO: implement the data loader
 /// ```
 ///
-/// Use instead: delete the file, or add the intended code.
+/// Instead, delete the file or add the intended code.
 impl Violation for EmptyFile {
     fn name(&self) -> String {
         "empty_file".to_string()

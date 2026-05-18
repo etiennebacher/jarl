@@ -81,5 +81,15 @@ mod tests {
 
         // Whitespace around a single expression is fine
         expect_no_lint("\n\n  x <- 1  \n\n", "empty_file", None);
+
+        // A single jarl-ignore comment suppresses the lint
+        expect_no_lint("# jarl-ignore empty_file: this is on purpose", "empty_file", None);
+
+        // jarl-ignore alongside other comments still suppresses the lint
+        expect_no_lint(
+            "# jarl-ignore empty_file: this is on purpose\n\n# hello\n# there",
+            "empty_file",
+            None,
+        );
     }
 }
