@@ -19,6 +19,7 @@ use crate::rule_set::Rule;
 
 pub(crate) fn check_document(
     expressions: &RExpressionList,
+    syntax: &RSyntaxNode,
     checker: &mut Checker,
     duplicate_assignments: &[(String, biome_rowan::TextRange, String)],
     unused_functions: &[(String, biome_rowan::TextRange, String)],
@@ -131,7 +132,7 @@ pub(crate) fn check_document(
     }
 
     if checker.is_rule_enabled(Rule::EmptyFile) {
-        checker.report_diagnostic(empty_file(&expressions));
+        checker.report_diagnostic(empty_file(&expressions, syntax));
     }
 
     // Filter diagnostics by suppressions. This removes suppressed violations

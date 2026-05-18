@@ -45,19 +45,7 @@ mod tests {
         Found 1 error.
         ");
 
-        // Case 4: roxygen-style comments only
-        assert_snapshot!(snapshot_lint("#' @keywords internal"), @"
-        warning: empty_file
-         --> <test>:1:1
-          |
-        1 | #' @keywords internal
-          | - This file is empty or only contains comments.
-          |
-          = help: Consider deleting the file
-        Found 1 error.
-        ");
-
-        // Case 5: mixed whitespace + comments
+        // Case 4: mixed whitespace + plain comments
         assert_snapshot!(snapshot_lint("\n  # a note\n\n"), @"
         warning: empty_file
         --> <test>:1:1
@@ -83,7 +71,11 @@ mod tests {
         expect_no_lint("\n\n  x <- 1  \n\n", "empty_file", None);
 
         // A single jarl-ignore comment suppresses the lint
-        expect_no_lint("# jarl-ignore empty_file: this is on purpose", "empty_file", None);
+        expect_no_lint(
+            "# jarl-ignore empty_file: this is on purpose",
+            "empty_file",
+            None,
+        );
 
         // jarl-ignore alongside other comments still suppresses the lint
         expect_no_lint(
@@ -91,5 +83,17 @@ mod tests {
             "empty_file",
             None,
         );
+
+        // Roxygen-only file (e.g. man-roxygen/ template) is allowed
+        expect_no_lint("#' @keywords internal", "empty_file", None);
+
+        // Multi-line roxygen-only file is allowed
+        expect_no_lint("#' some doc\n#' more docs", "empty_file", None);
+
+        // Mixed roxygen + plain comments is allowed (any `#'` exempts the file)
+        expect_no_lint("#' some doc\n# plain comment", "empty_file", None);
+
+        // Indented roxygen comments are still recognised
+        expect_no_lint("  #' indented roxygen", "empty_file", None);
     }
 }

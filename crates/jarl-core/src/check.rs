@@ -242,6 +242,7 @@ pub fn get_checks(
     // are unused.
     check_document(
         expressions,
+        syntax,
         &mut checker,
         &duplicate_assignments,
         &unused_functions,
@@ -349,7 +350,8 @@ fn get_checks_roxygen(
         }
 
         let expressions = &parsed.tree().expressions();
-        let suppression = SuppressionManager::from_node(&parsed.syntax(), &chunk.code);
+        let syntax = parsed.syntax();
+        let suppression = SuppressionManager::from_node(&syntax, &chunk.code);
         let has_suppressions = suppression.has_any_suppressions;
         let mut checker = Checker::new(suppression, config.rule_options.clone());
         checker.rule_set = config.rules_to_apply.clone();
@@ -364,7 +366,7 @@ fn get_checks_roxygen(
         // otherwise unnecessary here (no package-level analysis, no
         // suppression-related diagnostics to report).
         if has_suppressions {
-            check_document(expressions, &mut checker, &[], &[])?;
+            check_document(expressions, &syntax, &mut checker, &[], &[])?;
         }
 
         for mut d in checker.diagnostics {
@@ -404,7 +406,8 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
         return Err(crate::error::ParseError { filename: file.to_path_buf() }.into());
     }
 
-    let suppression = SuppressionManager::from_node(&parsed.syntax(), &virtual_source);
+    let syntax = parsed.syntax();
+    let suppression = SuppressionManager::from_node(&syntax, &virtual_source);
     let mut checker = Checker::new(suppression, config.rule_options.clone());
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
@@ -416,7 +419,7 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     // check_document runs suppression filtering internally, so
     // checker.diagnostics is the post-suppression list after this call.
     // Rmd chunks don't participate in package-level analysis, so pass empty slices.
-    check_document(expressions, &mut checker, &[], &[])?;
+    check_document(expressions, &syntax, &mut checker, &[], &[])?;
 
     // Remap ranges from virtual-string offsets to original Rmd file offsets.
     let diagnostics: Vec<Diagnostic> = checker

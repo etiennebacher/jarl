@@ -5,7 +5,11 @@
 ## What it does
 
 Reports R files that contain no code: either truly empty, only whitespace,
-or only comments.
+or only plain comments.
+
+Files that contain at least one roxygen comment (a line starting with `#'`)
+are intentionally allowed, since packages commonly use comment-only files
+as documentation templates (e.g. files in `man-roxygen/`).
 
 ## Why is this bad?
 

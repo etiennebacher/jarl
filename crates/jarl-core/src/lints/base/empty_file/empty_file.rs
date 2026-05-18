@@ -9,7 +9,11 @@ pub struct EmptyFile;
 /// ## What it does
 ///
 /// Reports R files that contain no code: either truly empty, only whitespace,
-/// or only comments.
+/// or only plain comments.
+///
+/// Files that contain at least one roxygen comment (a line starting with `#'`)
+/// are intentionally allowed, since packages commonly use comment-only files
+/// as documentation templates (e.g. files in `man-roxygen/`).
 ///
 /// ## Why is this bad?
 ///
@@ -36,8 +40,18 @@ impl Violation for EmptyFile {
     }
 }
 
-pub fn empty_file(expressions: &[RSyntaxNode]) -> Option<Diagnostic> {
+pub fn empty_file(expressions: &[RSyntaxNode], syntax: &RSyntaxNode) -> Option<Diagnostic> {
     if !expressions.is_empty() {
+        return None;
+    }
+
+    // Files that contain at least one roxygen comment (`#'`) are allowed:
+    // they're commonly used as documentation templates (e.g. man-roxygen/).
+    let text = syntax.text_with_trivia().to_string();
+    if text
+        .lines()
+        .any(|line| line.trim_start().starts_with("#'"))
+    {
         return None;
     }
 
