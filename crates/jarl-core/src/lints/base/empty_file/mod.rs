@@ -17,7 +17,7 @@ mod tests {
         --> <test>:1:1
          |
          |
-         = help: Consider deleting the file
+         = help: Consider deleting the file.
         Found 1 error.
         ");
 
@@ -29,7 +29,7 @@ mod tests {
         1 | ...
          -| This file is empty or only contains comments.
           |
-          = help: Consider deleting the file
+          = help: Consider deleting the file.
         Found 1 error.
         ");
 
@@ -41,7 +41,7 @@ mod tests {
         1 | # just a comment
           | - This file is empty or only contains comments.
           |
-          = help: Consider deleting the file
+          = help: Consider deleting the file.
         Found 1 error.
         ");
 
@@ -51,7 +51,7 @@ mod tests {
         --> <test>:1:1
          |
          |
-         = help: Consider deleting the file
+         = help: Consider deleting the file.
         Found 1 error.
         ");
     }
