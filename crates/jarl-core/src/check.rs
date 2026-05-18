@@ -97,6 +97,14 @@ pub fn lint_only(
     let contents = fs::read_to_string(Path::new(&path))
         .with_context(|| format!("Failed to read file: {path}"))?;
 
+    // Auto-generated files (roxygen2, Rcpp::compileAttributes, cpp11, …) are
+    // not human-edited; emitting diagnostics on them is noise. They still
+    // contribute use sites to cross-file analysis since the scan in
+    // `make_package_analysis` runs independently.
+    if crate::fs::looks_generated(&contents) {
+        return Ok(Vec::new());
+    }
+
     let checks = get_checks(
         &contents,
         &PathBuf::from(&path),
@@ -129,6 +137,11 @@ pub fn lint_fix(
     loop {
         let contents = fs::read_to_string(Path::new(&path))
             .with_context(|| format!("Failed to read file: {path}",))?;
+
+        // Skip auto-generated files: no diagnostics, no fixes.
+        if crate::fs::looks_generated(&contents) {
+            return Ok(Vec::new());
+        }
 
         checks = get_checks(
             &contents,
