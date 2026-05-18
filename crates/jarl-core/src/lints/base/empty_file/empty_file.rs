@@ -36,7 +36,7 @@ impl Violation for EmptyFile {
         "This file is empty or only contains comments.".to_string()
     }
     fn suggestion(&self) -> Option<String> {
-        Some("Consider deleting the file".to_string())
+        Some("Consider deleting the file.".to_string())
     }
 }
 
