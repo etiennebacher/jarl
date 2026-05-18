@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use xtask::{project_root, pushd, Result};
 
 use xtask_codegen::{generate_json_schema, task_command, TaskCommand};

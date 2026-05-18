@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::args::Args;
 use crate::args::Command;
 use crate::status::ExitStatus;

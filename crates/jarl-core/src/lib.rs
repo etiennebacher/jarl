@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 //! Core functionality for the jarl R linter
 //!
 //! This crate provides the core linting functionality including:

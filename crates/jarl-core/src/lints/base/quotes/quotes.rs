@@ -110,8 +110,8 @@ impl ParsedString<'_> {
 /// - [Tidyverse style guide](https://style.tidyverse.org/syntax.html#character-vectors)
 /// - [R documentation](https://stat.ethz.ch/R-manual/R-patched/library/base/html/Quotes.html)
 pub fn quotes(
-    ast: &AnyRValue,
-    preferred_quote: PreferredQuote,
+    _ast: &AnyRValue,
+    _preferred_quote: PreferredQuote,
 ) -> anyhow::Result<Option<Diagnostic>> {
     Ok(None)
 }

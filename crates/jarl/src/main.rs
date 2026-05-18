@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use clap::Parser;
 use jarl::args::Args;
 use jarl::logging;

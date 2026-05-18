@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 //! Codegen tools for generating Syntax and AST definitions. Derived from Rust analyzer's codegen
 //!
 mod r_json_schema;

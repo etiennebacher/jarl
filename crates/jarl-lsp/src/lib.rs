@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 //! # Jarl Language Server Protocol Implementation
 //!
 //! A minimal LSP server focused on providing real-time lint diagnostics and code actions.

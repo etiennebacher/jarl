@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 //! Codegen tools mostly used to generate ast and syntax definitions. Adapted from rust analyzer's codegen
 
 pub mod glue;
