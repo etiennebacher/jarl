@@ -93,6 +93,9 @@ mod tests {
         // Mixed roxygen + plain comments is allowed (any `#'` exempts the file)
         expect_no_lint("#' some doc\n# plain comment", "empty_file", None);
 
+        // Mixed plain comments + roxygen
+        expect_no_lint("# some\n#' comment", "empty_file", None);
+
         // Indented roxygen comments are still recognised
         expect_no_lint("  #' indented roxygen", "empty_file", None);
     }
