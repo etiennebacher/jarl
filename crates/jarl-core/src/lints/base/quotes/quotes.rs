@@ -113,58 +113,7 @@ pub fn quotes(
     ast: &AnyRValue,
     preferred_quote: PreferredQuote,
 ) -> anyhow::Result<Option<Diagnostic>> {
-    let string = unwrap_or_return_none!(ast.as_r_string_value());
-
-    let token = string.value_token()?;
-    let text = token.text_trimmed();
-
-    // Malformed raw strings like `r'(hello]'` are parsed as identifier (`r`)
-    // followed by a regular string literal. Skip these invalid forms.
-    if is_malformed_raw_string(ast, text) {
-        return Ok(None);
-    }
-
-    let parsed = unwrap_or_return_none!(parse_string(text));
-
-    let quote_char = preferred_quote.as_char();
-
-    if parsed.quote() == quote_char {
-        return Ok(None);
-    }
-
-    // Allow the non-preferred quote when escaping would be needed
-    // Skip cases in raw strings where using preferred quote reduces readability
-    // Skip cases where switching to the preferred quote results in invalid syntax
-    if parsed.content().contains(quote_char) {
-        return Ok(None);
-    }
-
-    let replacement = match &parsed {
-        ParsedString::Standard { content, .. } => {
-            format!("{quote_char}{content}{quote_char}")
-        }
-        ParsedString::Raw { raw_prefix, content, open, close, dashes, .. } => {
-            format!("{raw_prefix}{quote_char}{dashes}{open}{content}{close}{dashes}{quote_char}")
-        }
-    };
-
-    let range = ast.syntax().text_trimmed_range();
-    let diagnostic = Diagnostic::new(
-        ViolationData::new(
-            "quotes".to_string(),
-            quote_message(preferred_quote).to_string(),
-            None,
-        ),
-        range,
-        Fix {
-            content: replacement,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: false,
-        },
-    );
-
-    Ok(Some(diagnostic))
+    Ok(None)
 }
 
 fn is_malformed_raw_string(ast: &AnyRValue, text: &str) -> bool {
