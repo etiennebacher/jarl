@@ -57,6 +57,44 @@ pub fn implicit_assignment(
         return Ok(None);
     };
 
+    // Skip chained assignments like `a <- b <- 1` or `x <- y <<- z`
+
+    // Helper to check if an operator is an assignment operator
+    let is_assignment_op = |op: &RSyntaxToken| {
+        op.kind() == RSyntaxKind::ASSIGN
+            || op.kind() == RSyntaxKind::SUPER_ASSIGN
+            || op.kind() == RSyntaxKind::ASSIGN_RIGHT
+            || op.kind() == RSyntaxKind::SUPER_ASSIGN_RIGHT
+    };
+
+    // Early return: if this assignment's RHS is also an assignment
+    // (i.e., we're the left part of a chain like `a <- b <- 1`)
+    if let Ok(right) = ast.right() {
+        if let Some(right_binary) = right.as_r_binary_expression() {
+            if let Ok(right_op) = right_binary.operator() {
+                if is_assignment_op(&right_op) {
+                    return Ok(None);
+                }
+            }
+        }
+    }
+
+    // Early return: if this assignment is the RHS of a parent assignment
+    // (i.e., we're the right part of a chain like `a <- b <- 1`)
+    if let Some(parent) = ast.syntax().parent() {
+        if let Some(parent_binary) = RBinaryExpression::cast(parent) {
+            if let Ok(parent_op) = parent_binary.operator() {
+                if is_assignment_op(&parent_op) {
+                    if let Ok(parent_rhs) = parent_binary.right() {
+                        if parent_rhs.syntax() == ast.syntax() {
+                            return Ok(None);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // We want to report the use of assignment in function arguments, but not
     // when they're part of the body of some functions, e.g.
     // ```
