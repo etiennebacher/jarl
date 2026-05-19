@@ -31,7 +31,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | glue('{a}', .open = '<', .close = '>')
-          | -------------------------------------- Using glue() with .open and .close when the string does not contain the specified delimiters is useless.
+          | -------------------------------------- Using glue() with .open and .close when the string does not contain the specified delimiters performs no interpolation.
           |
         Found 1 error.
         "
