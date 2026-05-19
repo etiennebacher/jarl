@@ -98,6 +98,7 @@ dat <- as.data.frame(
     c("numeric_leading_zero", "readability", "✅", ""),
     c("nzchar", "performance", "❗", "Disabled by default"),
     c("outer_negation", "performance, readability", "✅", ""),
+    c("pipe_consistency", "readability", "✅", "Disabled by default. R >= 4.2"),
     c("quotes", "readability", "✅", "Disabled by default"),
     c("redundant_equals", "readability", "✅", ""),
     c("redundant_ifelse", "correctness, performance, readability", "✅", ""),
