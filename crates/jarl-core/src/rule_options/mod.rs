@@ -1,6 +1,7 @@
 pub mod assignment;
 pub mod duplicated_arguments;
 pub mod implicit_assignment;
+pub mod pipe_consistency;
 pub mod quotes;
 pub mod undesirable_function;
 pub mod unreachable_code;
@@ -20,6 +21,8 @@ use unused_function::UnusedFunctionOptions;
 
 use crate::rule_options::implicit_assignment::ImplicitAssignmentOptions;
 use crate::rule_options::implicit_assignment::ResolvedImplicitAssignmentOptions;
+use crate::rule_options::pipe_consistency::PipeConsistencyOptions;
+use crate::rule_options::pipe_consistency::ResolvedPipeConsistencyOptions;
 use crate::rule_options::quotes::QuotesOptions;
 use crate::rule_options::quotes::ResolvedQuotesOptions;
 
@@ -71,6 +74,7 @@ pub struct ResolvedRuleOptions {
     pub assignment: ResolvedAssignmentOptions,
     pub duplicated_arguments: ResolvedDuplicatedArgumentsOptions,
     pub implicit_assignment: ResolvedImplicitAssignmentOptions,
+    pub pipe_consistency: ResolvedPipeConsistencyOptions,
     pub quotes: ResolvedQuotesOptions,
     pub undesirable_function: ResolvedUndesirableFunctionOptions,
     pub unreachable_code: ResolvedUnreachableCodeOptions,
@@ -78,10 +82,12 @@ pub struct ResolvedRuleOptions {
 }
 
 impl ResolvedRuleOptions {
+    #[allow(clippy::too_many_arguments)]
     pub fn resolve(
         assignment: Option<&AssignmentOptions>,
         duplicated_arguments: Option<&DuplicatedArgumentsOptions>,
         implicit_assignment: Option<&ImplicitAssignmentOptions>,
+        pipe_consistency: Option<&PipeConsistencyOptions>,
         quotes: Option<&QuotesOptions>,
         undesirable_function: Option<&UndesirableFunctionOptions>,
         unreachable_code: Option<&UnreachableCodeOptions>,
@@ -93,6 +99,7 @@ impl ResolvedRuleOptions {
                 duplicated_arguments,
             )?,
             implicit_assignment: ResolvedImplicitAssignmentOptions::resolve(implicit_assignment)?,
+            pipe_consistency: ResolvedPipeConsistencyOptions::resolve(pipe_consistency)?,
             quotes: ResolvedQuotesOptions::resolve(quotes)?,
             undesirable_function: ResolvedUndesirableFunctionOptions::resolve(
                 undesirable_function,
@@ -105,7 +112,7 @@ impl ResolvedRuleOptions {
 
 impl Default for ResolvedRuleOptions {
     fn default() -> Self {
-        Self::resolve(None, None, None, None, None, None, None)
+        Self::resolve(None, None, None, None, None, None, None, None)
             .expect("default rule options should always resolve")
     }
 }

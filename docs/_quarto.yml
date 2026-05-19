@@ -129,6 +129,7 @@ website:
       - rules/nzchar.md
       - rules/outdated_suppression.md
       - rules/outer_negation.md
+      - rules/pipe_consistency.md
       - rules/quotes.md
       - rules/redundant_equals.md
       - rules/redundant_ifelse.md
