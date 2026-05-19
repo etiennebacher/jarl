@@ -83,7 +83,7 @@ pub fn glue(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         &dot_r_value.to_trimmed_string(),
     ));
 
-    let diagnostic = if named.is_empty() {
+    let diagnostic = if named.is_empty() && !dot_text.contains("{") && !dot_text.contains("}") {
         Some(Diagnostic::new(
             ViolationData::new(
                 "glue".to_string(),
