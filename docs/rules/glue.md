@@ -8,7 +8,7 @@ Multiple checks for `glue()`:
 
 1. checks whether `glue()` evaluates some R code between delimiters;
 2. checks whether `glue()` would error when evaluated because of incomplete
-delimiters.
+   delimiters.
 
 ## Why is this bad?
 
