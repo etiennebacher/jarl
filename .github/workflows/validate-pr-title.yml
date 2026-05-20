@@ -1,3 +1,10 @@
+# `pull_request_target` is safe and appropriate here: this workflow never
+# checks out PR code (no `actions/checkout` step) and only reads
+# `context.payload.pull_request.title` (metadata, not code). `pull_request_target`
+# is needed so that PRs opened from forks can still be validated
+# and labelled (which requires `pull-requests: write` and a token with
+# repo access).
+
 name: Pull request labeler
 
 on:

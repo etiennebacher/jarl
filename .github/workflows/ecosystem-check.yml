@@ -1,13 +1,15 @@
+# Produces ecosystem results then published by "ecosystem-check-comment.yml".
+# See comment in "ecosystem-check-comment.yml".
+
 name: Ecosystem check
 
 on:
-  # Need pull_request_target so that forks can also run this workflow
-  # https://github.com/thollander/actions-comment-pull-request/issues/237
-  pull_request_target:
+  pull_request:
     branches:
       - main
     paths:
-      - .github/workflows/compare-results.yml
+      - .github/workflows/ecosystem-check.yml
+      - .github/scripts/process_lint_ci.R
       - crates/**/src/**
       - crates/**/Cargo.toml
       - "!crates/jarl-lsp/**"
@@ -18,7 +20,6 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: write
 
 env:
   CARGO_TERM_COLOR: always
@@ -47,10 +48,8 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - name: Checkout current PR branch
+      - name: Checkout PR head
         uses: actions/checkout@v6
-        # Need to specify this otherwise using on: pull_request_target checks out
-        # the main branch.
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
@@ -130,15 +129,17 @@ jobs:
           source(".github/scripts/process_lint_ci.R", echo = TRUE)
         shell: Rscript {0}
 
-      - name: Upload results
-        id: artifact-upload-step
+      - name: Save PR number for downstream comment workflow
+        run: echo "${{ github.event.pull_request.number }}" > pr-number.txt
+
+      - name: Upload PR number
+        uses: actions/upload-artifact@v7
+        with:
+          name: pr-number
+          path: pr-number.txt
+
+      - name: Upload lint comparison for downstream comment workflow
         uses: actions/upload-artifact@v7
         with:
           name: lint-results
-          path: .github/scripts/
-
-      - name: Post comment on PR
-        uses: thollander/actions-comment-pull-request@v3
-        with:
-          file-path: lint_comparison.md
-          comment-tag: ecosystem-comment
+          path: lint_comparison.md
