@@ -13,11 +13,9 @@ use biome_rowan::AstNode;
 ///
 /// Multiple checks for `glue()`:
 ///
-/// 1. checks whether `glue()` has exactly one unnamed argument and no other named
-///    arguments (in which case `glue()` is not needed);
-/// 2. checks whether `glue()` has exactly one unnamed argument with only `.open`
-///    and `.close` named arguments, and the string does not contain both specified
-///    delimiters (in which case using `.open` and `.close` is not needed).
+/// 1. checks whether `glue()` evaluates some R code between delimiters;
+/// 2. checks whether `glue()` would error when evaluated because of incomplete
+///     delimiters.
 ///
 /// ## Why is this bad?
 ///
