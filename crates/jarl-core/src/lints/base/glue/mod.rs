@@ -36,6 +36,30 @@ mod tests {
         Found 1 error.
         "
         );
+        assert_snapshot!(
+            snapshot_lint("glue('a', .sep = ' ')"),
+            @r"
+        warning: glue
+         --> <test>:1:1
+          |
+        1 | glue('a', .sep = ' ')
+          | --------------------- glue() with a one constant string and .sep argument does not perform interpolation.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("glue(\"{abc\")"),
+            @r#"
+        warning: glue
+         --> <test>:1:1
+          |
+        1 | glue("{abc")
+          | ------------ glue() contains incomplete delimiters and would error when evaluated.
+          |
+        Found 1 error.
+        "#
+        );
     }
 
     #[test]

@@ -33,12 +33,14 @@ use biome_rowan::AstNode;
 /// ```r
 /// glue("abc")
 /// glue('{a}', .open = '<', .close = '>')
+/// glue("{abc")
 /// ```
 ///
 /// Use instead:
 /// ```r
 /// "abc"
 /// # For the second case, either use default delimiters {}, or ensure the string contains the specified delimiters
+/// # For the third case, fix the string to have complete delimiters, e.g. glue("{abc}")
 /// ```
 ///
 /// ## References
@@ -58,7 +60,7 @@ pub fn glue(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    // Don't know how to handle pipes for now.
+    // TODO figure out how to handle pipes.
     if ast.has_previous_pipe() {
         return Ok(None);
     }
@@ -67,9 +69,11 @@ pub fn glue(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let named = get_named_args(&args);
     let dots = get_unnamed_args(&args);
 
-    // If there is not exactly one unnamed argument, then we can't determine whether
-    // `glue()` is being used just to wrap a constant string or to concatenate
-    // multiple values, so skip linting.
+    // If there is not exactly one unnamed argument, then we can't determine
+    // whether `glue()` is being used just to wrap a constant string or to
+    // concatenate multiple values, so skip linting. This also avoids guessing
+    // the intent of the user when they use glue() for concatenation of multiple
+    // constant strings, e.g. `glue("a", "b")`.
     if dots.len() != 1 {
         return Ok(None);
     }
@@ -81,7 +85,32 @@ pub fn glue(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         &dot_r_value.to_trimmed_string(),
     ));
 
-    let diagnostic = if named.is_empty() && !dot_text.contains("{") && !dot_text.contains("}") {
+    let open_arg = get_arg_by_name(&args, ".open");
+    let close_arg = get_arg_by_name(&args, ".close");
+    let sep_arg = get_arg_by_name(&args, ".sep");
+    let open_text = get_named_string_arg_text(&args, ".open")?;
+    let close_text = get_named_string_arg_text(&args, ".close")?;
+    let sep_only = sep_arg.is_some();
+
+    if (open_arg.is_some() && open_text.is_none()) || (close_arg.is_some() && close_text.is_none())
+    {
+        return Ok(None);
+    }
+
+    let open = open_text.as_deref().unwrap_or("{");
+    let close = close_text.as_deref().unwrap_or("}");
+
+    let diagnostic = if has_incomplete_delimiters(&dot_text, open, close) {
+        Some(Diagnostic::new(
+            ViolationData::new(
+                "glue".to_string(),
+                "glue() contains incomplete delimiters and would error when evaluated.".to_string(),
+                None,
+            ),
+            ast.syntax().text_trimmed_range(),
+            Fix::empty(),
+        ))
+    } else if !dot_text.contains("{") && !dot_text.contains("}") && (named.is_empty()) {
         Some(Diagnostic::new(
             ViolationData::new(
                 "glue".to_string(),
@@ -91,43 +120,35 @@ pub fn glue(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             ast.syntax().text_trimmed_range(),
             Fix::empty(),
         ))
-    } else {
-        let is_only_open_close = named.iter().all(|arg| {
-            arg.name_clause()
-                .and_then(|nc| nc.name().ok())
-                .map(|name| matches!(name.to_trimmed_string().as_str(), ".open" | ".close"))
-                .unwrap_or(false)
-        });
-
-        if !is_only_open_close {
-            None
+    } else if sep_only {
+        Some(Diagnostic::new(
+            ViolationData::new(
+                "glue".to_string(),
+                "glue() with a one constant string and .sep argument does not perform interpolation.".to_string(),
+                None,
+            ),
+            ast.syntax().text_trimmed_range(),
+            Fix::empty(),
+        ))
+    } else if let (Some(open), Some(close)) = (open_text, close_text) {
+        if !open.is_empty()
+            && !close.is_empty()
+            && (!dot_text.contains(&open) || !dot_text.contains(&close))
+        {
+            Some(Diagnostic::new(
+                ViolationData::new(
+                    "glue".to_string(),
+                    "Using glue() with .open and .close when the string does not contain the specified delimiters performs no interpolation.".to_string(),
+                    None,
+                ),
+                ast.syntax().text_trimmed_range(),
+                Fix::empty(),
+            ))
         } else {
-            let open_text = get_named_string_arg_text(&args, ".open")?;
-            let close_text = get_named_string_arg_text(&args, ".close")?;
-
-            // If only one of `.open` or `.close` is provided, `glue()` may still be
-            // valid because the other delimiter uses its default value.
-            if let (Some(open), Some(close)) = (open_text, close_text) {
-                if !open.is_empty()
-                    && !close.is_empty()
-                    && (!dot_text.contains(&open) || !dot_text.contains(&close))
-                {
-                    Some(Diagnostic::new(
-                        ViolationData::new(
-                            "glue".to_string(),
-                            "Using glue() with .open and .close when the string does not contain the specified delimiters performs no interpolation.".to_string(),
-                            None,
-                        ),
-                        ast.syntax().text_trimmed_range(),
-                        Fix::empty(),
-                    ))
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
+            None
         }
+    } else {
+        None
     };
 
     Ok(diagnostic)
@@ -202,4 +223,36 @@ fn parse_raw_string(text: &str) -> Option<&str> {
     let body_and_suffix = after_dashes.strip_prefix(open_brace)?;
     let expected_closing_fence = format!("{}{}{}", close_brace, leading_dashes, quote);
     body_and_suffix.strip_suffix(&expected_closing_fence)
+}
+
+fn has_incomplete_delimiters(text: &str, open: &str, close: &str) -> bool {
+    if open.is_empty() || close.is_empty() {
+        return false;
+    }
+
+    let mut balance = 0;
+    let mut index = 0;
+
+    while index < text.len() {
+        let slice = &text[index..];
+
+        if slice.starts_with(open) {
+            balance += 1;
+            index += open.len();
+            continue;
+        }
+
+        if slice.starts_with(close) {
+            if balance == 0 {
+                return true;
+            }
+            balance -= 1;
+            index += close.len();
+            continue;
+        }
+
+        index += 1;
+    }
+
+    balance != 0
 }
