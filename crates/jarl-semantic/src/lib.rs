@@ -19,13 +19,16 @@ use air_r_syntax::{
 };
 use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange, TextSize};
 use oak_core::syntax_ext::RIdentifierExt;
-use oak_index::DefinitionId;
-use oak_index::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex, SymbolId};
+use oak_semantic::DefinitionId;
+use oak_semantic::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex, SymbolId};
 
 /// Per-file semantic info derived from oak's [`SemanticIndex`] plus AST
 /// passes over the syntax tree. Computed once per file; consumed by lints.
 pub struct SemanticInfo<'a> {
     index: &'a SemanticIndex,
+    /// Root syntax node of the analyzed file. Needed to resolve
+    /// `AstPtr` references stored in [`DefinitionKind`] back to nodes.
+    root: RSyntaxNode,
     /// Path of the file being analyzed. Used to resolve `source("path")`
     /// arguments against the current file's directory.
     file: &'a std::path::Path,
@@ -56,12 +59,14 @@ impl<'a> SemanticInfo<'a> {
     /// uses, NSE ranges, formula ranges, local body ranges, callee ranges)
     /// and the closure call-site analysis.
     pub fn build(
+        root: &RSyntaxNode,
         expressions: &[RSyntaxNode],
         index: &'a SemanticIndex,
         file: &'a std::path::Path,
     ) -> Self {
         let mut this = Self {
             index,
+            root: root.clone(),
             file,
             synthetic_used_names: HashSet::new(),
             nse_ranges: Vec::new(),
@@ -79,6 +84,10 @@ impl<'a> SemanticInfo<'a> {
 
     pub fn index(&self) -> &SemanticIndex {
         self.index
+    }
+
+    pub fn root(&self) -> &RSyntaxNode {
+        &self.root
     }
 
     /// Walk all scopes (root + descendants) in arbitrary order.
@@ -435,9 +444,12 @@ impl<'a> SemanticInfo<'a> {
 
         let mut binding_name: Option<String> = None;
         for (_, def) in self.index.definitions(parent).iter() {
-            if let DefinitionKind::Assignment(node) = def.kind()
-                && node.text_trimmed_range().contains_range(child_range)
-                && assignment_rhs_is_function_def(node)
+            if let DefinitionKind::Assignment(ptr) = def.kind()
+                && ptr
+                    .syntax_node_ptr()
+                    .text_range()
+                    .contains_range(child_range)
+                && assignment_rhs_is_function_def(&ptr.to_node(&self.root))
             {
                 let name = self
                     .index
@@ -588,8 +600,8 @@ fn is_member_name(node: &RSyntaxNode) -> bool {
 }
 
 /// True if the RHS of a binary assignment is a function definition.
-pub fn assignment_rhs_is_function_def(node: &RSyntaxNode) -> bool {
-    for child in node.children() {
+pub fn assignment_rhs_is_function_def(bin: &RBinaryExpression) -> bool {
+    for child in bin.syntax().children() {
         if child.kind() == RSyntaxKind::R_FUNCTION_DEFINITION {
             return true;
         }
@@ -599,10 +611,7 @@ pub fn assignment_rhs_is_function_def(node: &RSyntaxNode) -> bool {
 
 /// True if the LHS of a binary assignment is anything other than a bare
 /// identifier (e.g. `names(x)`, `x[1]`, `x$a`).
-pub fn assignment_lhs_is_complex(node: &RSyntaxNode) -> bool {
-    let Some(bin) = node.clone().cast::<RBinaryExpression>() else {
-        return false;
-    };
+pub fn assignment_lhs_is_complex(bin: &RBinaryExpression) -> bool {
     let Ok(op) = bin.operator() else {
         return false;
     };
@@ -618,15 +627,14 @@ pub fn assignment_lhs_is_complex(node: &RSyntaxNode) -> bool {
 }
 
 /// The text range of the bare-identifier LHS of an assignment, if any.
-pub fn lhs_range_for_definition(def: &Definition) -> Option<TextRange> {
-    let node = match def.kind() {
-        DefinitionKind::Assignment(n) | DefinitionKind::SuperAssignment(n) => n,
-        DefinitionKind::Parameter(n) | DefinitionKind::ForVariable(n) => {
-            return Some(n.text_trimmed_range());
+pub fn lhs_range_for_definition(def: &Definition, root: &RSyntaxNode) -> Option<TextRange> {
+    let bin = match def.kind() {
+        DefinitionKind::Assignment(ptr) | DefinitionKind::SuperAssignment(ptr) => ptr.to_node(root),
+        DefinitionKind::Parameter(_) | DefinitionKind::ForVariable(_) => {
+            return Some(def.range());
         }
         DefinitionKind::Import { .. } => return None,
     };
-    let bin = node.clone().cast::<RBinaryExpression>()?;
     let op = bin.operator().ok()?;
     let lhs = if op.text_trimmed() == "->" || op.text_trimmed() == "->>" {
         bin.right().ok()?

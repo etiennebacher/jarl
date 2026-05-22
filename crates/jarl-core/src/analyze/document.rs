@@ -1,6 +1,6 @@
 use air_r_syntax::{RExpressionList, RSyntaxNode};
 use biome_rowan::{AstNode, AstNodeList};
-use oak_index::semantic_index::SemanticIndex;
+use oak_semantic::semantic_index::SemanticIndex;
 
 use crate::checker::Checker;
 use crate::diagnostic::*;

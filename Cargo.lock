@@ -1162,8 +1162,8 @@ dependencies = [
  "insta",
  "jarl-semantic",
  "oak_core",
- "oak_index",
  "oak_index_vec",
+ "oak_semantic",
  "path-absolutize",
  "rayon",
  "regex",
@@ -1203,8 +1203,8 @@ dependencies = [
  "air_r_syntax",
  "biome_rowan",
  "oak_core",
- "oak_index",
  "oak_index_vec",
+ "oak_semantic",
  "url",
 ]
 
@@ -1334,7 +1334,7 @@ dependencies = [
 [[package]]
 name = "oak_core"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=b3dd6facdadd901df25c3d53450771bb8ecbb2ed#b3dd6facdadd901df25c3d53450771bb8ecbb2ed"
+source = "git+https://github.com/posit-dev/ark?rev=fcb9a40f3e84074298b57b05b4de68e5515c9413#fcb9a40f3e84074298b57b05b4de68e5515c9413"
 dependencies = [
  "air_r_syntax",
  "biome_rowan",
@@ -1343,7 +1343,7 @@ dependencies = [
 [[package]]
 name = "oak_fs"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=b3dd6facdadd901df25c3d53450771bb8ecbb2ed#b3dd6facdadd901df25c3d53450771bb8ecbb2ed"
+source = "git+https://github.com/posit-dev/ark?rev=fcb9a40f3e84074298b57b05b4de68e5515c9413#fcb9a40f3e84074298b57b05b4de68e5515c9413"
 dependencies = [
  "anyhow",
  "libc",
@@ -1352,9 +1352,42 @@ dependencies = [
 ]
 
 [[package]]
-name = "oak_index"
+name = "oak_index_vec"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=b3dd6facdadd901df25c3d53450771bb8ecbb2ed#b3dd6facdadd901df25c3d53450771bb8ecbb2ed"
+source = "git+https://github.com/posit-dev/ark?rev=fcb9a40f3e84074298b57b05b4de68e5515c9413#fcb9a40f3e84074298b57b05b4de68e5515c9413"
+dependencies = [
+ "biome_text_size",
+ "oak_core",
+]
+
+[[package]]
+name = "oak_package_metadata"
+version = "0.1.0"
+source = "git+https://github.com/posit-dev/ark?rev=fcb9a40f3e84074298b57b05b4de68e5515c9413#fcb9a40f3e84074298b57b05b4de68e5515c9413"
+dependencies = [
+ "air_r_parser",
+ "air_r_syntax",
+ "anyhow",
+ "biome_rowan",
+ "oak_core",
+ "regex",
+ "stdext",
+]
+
+[[package]]
+name = "oak_r_process"
+version = "0.1.0"
+source = "git+https://github.com/posit-dev/ark?rev=fcb9a40f3e84074298b57b05b4de68e5515c9413#fcb9a40f3e84074298b57b05b4de68e5515c9413"
+dependencies = [
+ "anyhow",
+ "log",
+ "tempfile",
+]
+
+[[package]]
+name = "oak_semantic"
+version = "0.1.0"
+source = "git+https://github.com/posit-dev/ark?rev=fcb9a40f3e84074298b57b05b4de68e5515c9413#fcb9a40f3e84074298b57b05b4de68e5515c9413"
 dependencies = [
  "air_r_parser",
  "air_r_syntax",
@@ -1374,42 +1407,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "oak_index_vec"
-version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=b3dd6facdadd901df25c3d53450771bb8ecbb2ed#b3dd6facdadd901df25c3d53450771bb8ecbb2ed"
-dependencies = [
- "biome_text_size",
- "oak_core",
-]
-
-[[package]]
-name = "oak_package_metadata"
-version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=b3dd6facdadd901df25c3d53450771bb8ecbb2ed#b3dd6facdadd901df25c3d53450771bb8ecbb2ed"
-dependencies = [
- "air_r_parser",
- "air_r_syntax",
- "anyhow",
- "biome_rowan",
- "oak_core",
- "regex",
- "stdext",
-]
-
-[[package]]
-name = "oak_r_process"
-version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=b3dd6facdadd901df25c3d53450771bb8ecbb2ed#b3dd6facdadd901df25c3d53450771bb8ecbb2ed"
-dependencies = [
- "anyhow",
- "log",
- "tempfile",
-]
-
-[[package]]
 name = "oak_sources"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=b3dd6facdadd901df25c3d53450771bb8ecbb2ed#b3dd6facdadd901df25c3d53450771bb8ecbb2ed"
+source = "git+https://github.com/posit-dev/ark?rev=fcb9a40f3e84074298b57b05b4de68e5515c9413#fcb9a40f3e84074298b57b05b4de68e5515c9413"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1887,7 +1887,7 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 [[package]]
 name = "stdext"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=b3dd6facdadd901df25c3d53450771bb8ecbb2ed#b3dd6facdadd901df25c3d53450771bb8ecbb2ed"
+source = "git+https://github.com/posit-dev/ark?rev=fcb9a40f3e84074298b57b05b4de68e5515c9413#fcb9a40f3e84074298b57b05b4de68e5515c9413"
 dependencies = [
  "anyhow",
  "log",

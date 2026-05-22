@@ -1,7 +1,7 @@
 use air_r_syntax::{RBinaryExpression, RSyntaxKind, RSyntaxNode};
 use biome_rowan::{AstNode, SyntaxNodeCast};
 use oak_core::syntax_ext::RIdentifierExt;
-use oak_index::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex};
+use oak_semantic::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex};
 
 use jarl_semantic::{
     SemanticInfo, assignment_lhs_is_complex, assignment_rhs_is_function_def,
@@ -33,7 +33,11 @@ pub fn unused_object(
     semantic: &SemanticIndex,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
-    let info = SemanticInfo::build(expressions, semantic, &checker.file_path);
+    let Some(first) = expressions.first() else {
+        return Ok(());
+    };
+    let root = first.ancestors().last().unwrap_or_else(|| first.clone());
+    let info = SemanticInfo::build(&root, expressions, semantic, &checker.file_path);
     let exports = &checker.namespace_exports;
 
     let mut diagnostics = Vec::new();
@@ -49,7 +53,7 @@ pub fn unused_object(
             if scope_id == top_level && is_exported(semantic, exports, scope_id, def) {
                 continue;
             }
-            diagnostics.push(make_diagnostic(semantic, scope_id, def));
+            diagnostics.push(make_diagnostic(semantic, scope_id, def, info.root()));
         }
     }
     diagnostics.extend(collect_assignment_pipe_diagnostics(
@@ -72,14 +76,15 @@ fn should_lint_definition(info: &SemanticInfo<'_>, def: &Definition) -> bool {
         | DefinitionKind::ForVariable(_)
         | DefinitionKind::SuperAssignment(_)
         | DefinitionKind::Import { .. } => return false,
-        DefinitionKind::Assignment(node) => {
-            if assignment_rhs_is_function_def(node) {
+        DefinitionKind::Assignment(ptr) => {
+            let bin = ptr.to_node(info.root());
+            if assignment_rhs_is_function_def(&bin) {
                 return false;
             }
             // Replacement-function or subset assignment LHS (`names(x) <-`,
             // `x[1] <-`, `x$a <-`): the LHS construct reads `x` so the
             // surrounding binding is still considered used.
-            if assignment_lhs_is_complex(node) {
+            if assignment_lhs_is_complex(&bin) {
                 return false;
             }
         }
@@ -106,13 +111,18 @@ fn is_exported(
     exports.contains(name)
 }
 
-fn make_diagnostic(semantic: &SemanticIndex, scope_id: ScopeId, def: &Definition) -> Diagnostic {
+fn make_diagnostic(
+    semantic: &SemanticIndex,
+    scope_id: ScopeId,
+    def: &Definition,
+    root: &RSyntaxNode,
+) -> Diagnostic {
     let name = semantic
         .symbols(scope_id)
         .symbol(def.symbol())
         .name()
         .to_string();
-    let range = lhs_range_for_definition(def).unwrap_or_else(|| def.range());
+    let range = lhs_range_for_definition(def, root).unwrap_or_else(|| def.range());
     Diagnostic::new(
         ViolationData::new(
             "unused_object".to_string(),

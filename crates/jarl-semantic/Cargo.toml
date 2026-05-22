@@ -18,6 +18,6 @@ air_r_syntax.workspace = true
 biome_rowan.workspace = true
 
 oak_core.workspace = true
-oak_index.workspace = true
 oak_index_vec.workspace = true
+oak_semantic.workspace = true
 url.workspace = true

@@ -15,9 +15,9 @@ air_fs = { package = "fs", git = "https://github.com/posit-dev/air", rev = "d265
 air_r_parser = { git = "https://github.com/posit-dev/air", rev = "d2659d5b158374bf486b594625ca50abbd0ac879" }
 air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "d2659d5b158374bf486b594625ca50abbd0ac879" }
 air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air", rev = "d2659d5b158374bf486b594625ca50abbd0ac879" }
-oak_core = { git = "https://github.com/posit-dev/ark", rev = "b3dd6facdadd901df25c3d53450771bb8ecbb2ed" }
-oak_index = { git = "https://github.com/posit-dev/ark", rev = "b3dd6facdadd901df25c3d53450771bb8ecbb2ed" }
-oak_index_vec = { git = "https://github.com/posit-dev/ark", rev = "b3dd6facdadd901df25c3d53450771bb8ecbb2ed" }
+oak_core = { git = "https://github.com/posit-dev/ark", rev = "fcb9a40f3e84074298b57b05b4de68e5515c9413" }
+oak_index_vec = { git = "https://github.com/posit-dev/ark", rev = "fcb9a40f3e84074298b57b05b4de68e5515c9413" }
+oak_semantic = { git = "https://github.com/posit-dev/ark", rev = "fcb9a40f3e84074298b57b05b4de68e5515c9413" }
 url = "2.5"
 anyhow = "1.0.94"
 biome_formatter = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
