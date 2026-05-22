@@ -38,8 +38,10 @@ use biome_rowan::AstNode;
 /// Use instead:
 /// ```r
 /// "abc"
-/// # For the second case, either use default delimiters {}, or ensure the string contains the specified delimiters
-/// # For the third case, fix the string to have complete delimiters, e.g. glue("{abc}")
+/// # For the second case, either use default delimiters {},
+/// # or ensure the string contains the specified delimiters
+/// # For the third case, fix the string to have complete delimiters, 
+/// # e.g. glue("{abc}")
 /// ```
 ///
 /// ## References
