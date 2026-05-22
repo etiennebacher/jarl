@@ -22,9 +22,8 @@ use biome_rowan::AstNode;
 /// For 1, using `glue()` with only a constant string, e.g. `glue("abc")`, is
 /// useless and less readable. You can just use the string directly.
 ///
-/// For 2, specifying `.open` and `.close` delimiters when the string does not
-/// contain those delimiters means `glue()` will not perform any interpolation,
-/// making the function call unnecessary.
+/// For 2, having incomplete delimiters would error when evaluated,
+/// so this indicates a bug.
 ///
 /// Both cases do not have an automatic fix.
 ///
