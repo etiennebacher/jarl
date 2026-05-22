@@ -328,6 +328,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    EmptyFile => {
+        name: "empty_file",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     EqualsNa => {
         name: "equals_na",
         categories: [Corr],
@@ -460,6 +467,13 @@ declare_rules! {
         default: Disabled,
         fix: Unsafe,
         min_r_version: None,
+    },
+    PipeConsistency => {
+        name: "pipe_consistency",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: Some((4, 2, 0)),
     },
     OuterNegation => {
         name: "outer_negation",

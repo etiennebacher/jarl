@@ -95,6 +95,7 @@ website:
       - rules/duplicated_arguments.md
       - rules/duplicated_function_definition.md
       - rules/empty_assignment.md
+      - rules/empty_file.md
       - rules/equals_na.md
       - rules/equals_nan.md
       - rules/equals_null.md
@@ -129,6 +130,7 @@ website:
       - rules/nzchar.md
       - rules/outdated_suppression.md
       - rules/outer_negation.md
+      - rules/pipe_consistency.md
       - rules/quotes.md
       - rules/redundant_equals.md
       - rules/redundant_ifelse.md

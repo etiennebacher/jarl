@@ -283,7 +283,7 @@ pub fn get_diagnostic_highlight(text: &str, rule: &str, min_r_version: Option<&s
 
 /// Get fixed text with unsafe fixes for a series of code snippets
 pub fn get_unsafe_fixed_text(text: Vec<&str>, rule: &str) -> String {
-    get_unsafe_fixed_text_with_settings(text, rule, None)
+    get_unsafe_fixed_text_with_settings(text, rule, None, None)
 }
 
 /// Get fixed text with unsafe fixes, using a pre-built package cache.
@@ -310,13 +310,14 @@ pub fn get_unsafe_fixed_text_with_cache(
 pub fn get_unsafe_fixed_text_with_settings(
     text: Vec<&str>,
     rule: &str,
+    min_r_version: Option<&str>,
     settings: Option<Settings>,
 ) -> String {
     let mut output: String = String::new();
 
     for txt in text.iter() {
         let original_content = txt;
-        let modified_content = apply_fixes(txt, rule, true, None, settings.clone(), None);
+        let modified_content = apply_fixes(txt, rule, true, min_r_version, settings.clone(), None);
 
         output.push_str(
             format!("OLD:\n====\n{original_content}\nNEW:\n====\n{modified_content}\n\n").as_str(),

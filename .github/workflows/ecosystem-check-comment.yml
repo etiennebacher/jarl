@@ -1,0 +1,61 @@
+# Companion to `ecosystem-check.yml`. Triggered when that workflow completes,
+# downloads the artifacts it produced (ecosystem results + PR number) and
+# posts the comment on the PR. Having one workflow to produce the results
+# and one to publish them allows to not use pull_request_target, as advised
+# by Github:
+# https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
+
+name: Ecosystem check comment
+
+on:
+  workflow_run:
+    workflows: ["Ecosystem check"]
+    types: [completed]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Download PR number artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: pr-number
+          path: pr-number
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download lint results artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: lint-results
+          path: lint-results
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read PR number
+        id: pr
+        run: |
+          number=$(cat pr-number/pr-number.txt | tr -d '[:space:]')
+          if ! [[ "$number" =~ ^[0-9]+$ ]]; then
+            echo "Invalid PR number: $number" >&2
+            exit 1
+          fi
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+
+      - name: Post comment on PR
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          file-path: lint-results/lint_comparison.md
+          comment-tag: ecosystem-comment
+          pr-number: ${{ steps.pr.outputs.number }}
