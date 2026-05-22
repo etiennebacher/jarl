@@ -747,3 +747,49 @@ fn resolve_sourced_path(current_file: &std::path::Path, path: &str) -> Option<st
         _ => Some(candidate.to_path_buf()),
     }
 }
+
+/// `ImportsResolver` impl that plugs `source("path")` injection into oak's
+/// builder.
+///
+/// The resolver parses the target file, builds a noop-resolved
+/// `SemanticIndex` for it, and reports its top-level definitions as
+/// `SourceResolution.names`. Oak then materialises `DefinitionKind::Import`
+/// entries at the `source()` call site in the calling file's index.
+///
+/// This handles the *defined-by-source* side of `source()` semantics.
+/// The complementary *used-by-source* side — names *read* by the sourced
+/// file consume bindings in the calling file — is still handled
+/// separately by [`SemanticInfo::import_uses_from_sourced_file`] because
+/// oak's [`oak_semantic::SourceResolution`] only carries defined names.
+pub struct JarlImportsResolver {
+    current_file: std::path::PathBuf,
+}
+
+impl JarlImportsResolver {
+    pub fn new(current_file: impl Into<std::path::PathBuf>) -> Self {
+        Self { current_file: current_file.into() }
+    }
+}
+
+impl oak_semantic::ImportsResolver for JarlImportsResolver {
+    fn resolve_source(&mut self, path: &str) -> Option<oak_semantic::SourceResolution> {
+        let target = resolve_sourced_path(&self.current_file, path)?;
+        let contents = std::fs::read_to_string(&target).ok()?;
+        let parsed = air_r_parser::parse(&contents, RParserOptions::default());
+        if parsed.has_error() {
+            return None;
+        }
+        // `Url::from_file_path` rejects relative paths; fall back to a
+        // synthetic `file:///` URL so test fixtures (which often use
+        // relative paths) still index.
+        let url = url::Url::from_file_path(&target)
+            .ok()
+            .or_else(|| url::Url::parse(&format!("file:///{}", target.display())).ok())?;
+        let sub_index =
+            oak_semantic::build_index(&parsed.tree(), oak_semantic::NoopImportsResolver);
+        // TODO: extend to transitive `source()` resolution by recursing
+        // through nested `SemanticCallKind::Source` entries here.
+        let names: Vec<String> = sub_index.exports().keys().map(|s| s.to_string()).collect();
+        Some(oak_semantic::SourceResolution { url, names, packages: Vec::new() })
+    }
+}
