@@ -18,7 +18,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | glue("abc")
-          | ----------- `glue()` with a constant string performs no interpolation.
+          | ----------- This `glue()` call isn't necessary because it performs no interpolation.
           |
         Found 1 error.
         "#
@@ -43,7 +43,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | glue('a', .sep = ' ')
-          | --------------------- `glue()` with a constant string performs no interpolation.
+          | --------------------- This `glue()` call isn't necessary because it performs no interpolation.
           |
         Found 1 error.
         "
@@ -55,7 +55,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | glue("{abc")
-          | ------------ `glue()` contains incomplete delimiters and would error when evaluated.
+          | ------------ This `glue()` call contains incomplete delimiters and would error when evaluated.
           |
         Found 1 error.
         "#
