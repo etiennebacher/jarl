@@ -31,7 +31,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | glue('{a}', .open = '<', .close = '>')
-          | -------------------------------------- This `glue()` call isn't necessary because it performs no interpolation.
+          | -------------------------------------- This `glue()` call isn't necessary because using `.open` and `.close when the string does not contain the specified delimiters performs no interpolation.
           |
         Found 1 error.
         "
@@ -43,7 +43,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | glue('a', .sep = ' ')
-          | --------------------- This `glue()` call isn't necessary because it performs no interpolation.
+          | --------------------- This `glue()` call isn't necessary because it contains only one constant string and `.sep` argument.
           |
         Found 1 error.
         "
