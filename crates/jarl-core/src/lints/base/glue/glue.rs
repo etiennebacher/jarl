@@ -114,6 +114,7 @@ pub fn glue(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         && !dot_text.contains("}")
         && open_arg.is_none()
         && close_arg.is_none()
+        && !sep_only
     {
         Some(Diagnostic::new(
             ViolationData::new(
@@ -129,7 +130,7 @@ pub fn glue(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         Some(Diagnostic::new(
             ViolationData::new(
                 "glue".to_string(),
-                "This `glue()` call isn't necessary because it performs no interpolation."
+                "This `glue()` call isn't necessary because it contains only one constant string and `.sep` argument."
                     .to_string(),
                 None,
             ),
@@ -144,7 +145,7 @@ pub fn glue(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             Some(Diagnostic::new(
                 ViolationData::new(
                     "glue".to_string(),
-                    "This `glue()` call isn't necessary because it performs no interpolation."
+                    "This `glue()` call isn't necessary because using `.open` and `.close when the string does not contain the specified delimiters performs no interpolation."
                         .to_string(),
                     None,
                 ),
