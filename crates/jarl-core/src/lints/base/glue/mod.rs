@@ -18,7 +18,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | glue("abc")
-          | ----------- glue() with a constant string performs no interpolation.
+          | ----------- `glue()` with a constant string performs no interpolation.
           |
         Found 1 error.
         "#
@@ -31,7 +31,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | glue('{a}', .open = '<', .close = '>')
-          | -------------------------------------- Using glue() with .open and .close when the string does not contain the specified delimiters performs no interpolation.
+          | -------------------------------------- This `glue()` call isn't necessary because it performs no interpolation.
           |
         Found 1 error.
         "
@@ -43,7 +43,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | glue('a', .sep = ' ')
-          | --------------------- glue() with a one constant string and .sep argument does not perform interpolation.
+          | --------------------- `glue()` with a constant string performs no interpolation.
           |
         Found 1 error.
         "
@@ -55,7 +55,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | glue("{abc")
-          | ------------ glue() contains incomplete delimiters and would error when evaluated.
+          | ------------ `glue()` contains incomplete delimiters and would error when evaluated.
           |
         Found 1 error.
         "#
@@ -67,5 +67,24 @@ mod tests {
         expect_no_lint("glue('<a}', .open = '<')", "glue", None);
         expect_no_lint("glue('{a}', .close = '}')", "glue", None);
         expect_no_lint("glue('{a}', '{b}')", "glue", None);
+    }
+
+    #[test]
+    fn test_no_lint_glue_escaped_delimiters() {
+        // Doubled delimiters are glue escape sequences and should not trigger the incomplete delimiters lint.
+        expect_no_lint(r#"glue("{{x}}")"#, "glue", None);
+        expect_no_lint(r#"glue("{x}\n}}")"#, "glue", None);
+        expect_no_lint(r#"glue("{x}\n\t\t{{NULL, NULL, 0}}\n}};\n")"#, "glue", None);
+    }
+
+    #[test]
+    fn test_no_lint_glue_from_another_package() {
+        expect_no_lint("foo::glue('abc')", "glue", None);
+    }
+
+    #[test]
+    fn test_no_lint_glue_missing_delimiter() {
+        expect_no_lint("glue('x', .close = )", "glue", None);
+        expect_no_lint("glue('x', .open = )", "glue", None);
     }
 }
