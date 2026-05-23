@@ -1,7 +1,6 @@
 use crate::diagnostic::*;
 use crate::utils::{
-    get_arg_by_name, get_function_name, get_function_namespace_prefix, get_named_args,
-    get_unnamed_args,
+    get_arg_by_name, get_function_name, get_function_namespace_prefix, get_unnamed_args,
 };
 use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
@@ -40,7 +39,7 @@ use biome_rowan::AstNode;
 /// "abc"
 /// # For the second case, either use default delimiters {},
 /// # or ensure the string contains the specified delimiters
-/// # For the third case, fix the string to have complete delimiters, 
+/// # For the third case, fix the string to have complete delimiters,
 /// # e.g. glue("{abc}")
 /// ```
 ///
@@ -67,7 +66,6 @@ pub fn glue(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     }
 
     let args = ast.arguments()?.items();
-    let named = get_named_args(&args);
     let dots = get_unnamed_args(&args);
 
     // If there is not exactly one unnamed argument, then we can't determine
@@ -105,17 +103,23 @@ pub fn glue(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         Some(Diagnostic::new(
             ViolationData::new(
                 "glue".to_string(),
-                "glue() contains incomplete delimiters and would error when evaluated.".to_string(),
+                "This `glue()` call contains incomplete delimiters and would error when evaluated."
+                    .to_string(),
                 None,
             ),
             ast.syntax().text_trimmed_range(),
             Fix::empty(),
         ))
-    } else if !dot_text.contains("{") && !dot_text.contains("}") && (named.is_empty()) {
+    } else if !dot_text.contains("{")
+        && !dot_text.contains("}")
+        && open_arg.is_none()
+        && close_arg.is_none()
+    {
         Some(Diagnostic::new(
             ViolationData::new(
                 "glue".to_string(),
-                "glue() with a constant string performs no interpolation.".to_string(),
+                "This `glue()` call isn't necessary because it performs no interpolation."
+                    .to_string(),
                 None,
             ),
             ast.syntax().text_trimmed_range(),
@@ -125,7 +129,8 @@ pub fn glue(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         Some(Diagnostic::new(
             ViolationData::new(
                 "glue".to_string(),
-                "glue() with a one constant string and .sep argument does not perform interpolation.".to_string(),
+                "This `glue()` call isn't necessary because it performs no interpolation."
+                    .to_string(),
                 None,
             ),
             ast.syntax().text_trimmed_range(),
@@ -139,7 +144,8 @@ pub fn glue(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             Some(Diagnostic::new(
                 ViolationData::new(
                     "glue".to_string(),
-                    "Using glue() with .open and .close when the string does not contain the specified delimiters performs no interpolation.".to_string(),
+                    "This `glue()` call isn't necessary because it performs no interpolation."
+                        .to_string(),
                     None,
                 ),
                 ast.syntax().text_trimmed_range(),
@@ -231,11 +237,26 @@ fn has_incomplete_delimiters(text: &str, open: &str, close: &str) -> bool {
         return false;
     }
 
+    // In glue, doubled delimiters are escape sequences for literal characters
+    // and they must be skipped before checking for single delimiters.
+    let escaped_open = format!("{open}{open}");
+    let escaped_close = format!("{close}{close}");
+
     let mut balance = 0;
     let mut index = 0;
 
     while index < text.len() {
         let slice = &text[index..];
+
+        if slice.starts_with(&escaped_open) {
+            index += escaped_open.len();
+            continue;
+        }
+
+        if slice.starts_with(&escaped_close) {
+            index += escaped_close.len();
+            continue;
+        }
 
         if slice.starts_with(open) {
             balance += 1;
