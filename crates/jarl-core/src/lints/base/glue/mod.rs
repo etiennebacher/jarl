@@ -87,4 +87,21 @@ mod tests {
         expect_no_lint("glue('x', .close = )", "glue", None);
         expect_no_lint("glue('x', .open = )", "glue", None);
     }
+
+    #[test]
+    fn test_glue_raw_string() {
+        assert_snapshot!(
+            snapshot_lint(r#"glue(r"(abc)")"#),
+            @r#"
+        warning: glue
+         --> <test>:1:1
+          |
+        1 | glue(r"(abc)")
+          | -------------- This `glue()` call isn't necessary because it performs no interpolation.
+          |
+        Found 1 error.
+        "#
+        );
+        expect_no_lint(r#"glue(r"({name})")"#, "glue", None);
+    }
 }
