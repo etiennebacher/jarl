@@ -137,17 +137,17 @@ dat <- as.data.frame(
 names(dat) <- c("Rule name", "Group", "Has fix", "Conditions")
 
 reactable(
-    dat,
-    columns = list(
-        `Rule name` = colDef(cell = function(value) {
-            htmltools::tags$a(
-                href = paste0("rules/", value, ".html"),
-                target = "_blank",
-                value
-            )
-        })
-    ),
-    defaultPageSize = 1000,
-    filterable = TRUE
+  dat,
+  columns = list(
+    `Rule name` = colDef(cell = function(value) {
+      htmltools::tags$a(
+        href = paste0("rules/", value, ".html"),
+        target = "_blank",
+        value
+      )
+    })
+  ),
+  defaultPageSize = 1000,
+  filterable = TRUE
 )
 ```
