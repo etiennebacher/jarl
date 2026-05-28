@@ -18,6 +18,9 @@
 
 ### Bug fixes
 
+* `implicit_assignment` no longer flags chained assignments like
+  `if (TRUE) a <- b <- 1`, aligning with `lintr` behavior (#480, @atsyplenkov).
+
 * Automatic fixes now skip rewrites when comments are inside the rewritten
   expression, while still allowing leading and trailing comments (#461, @Yousa-Mirage).
 

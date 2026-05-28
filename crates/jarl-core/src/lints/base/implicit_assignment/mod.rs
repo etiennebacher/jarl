@@ -191,6 +191,33 @@ mod tests {
         expect_no_lint("suppressMessages(x <- 1)", "implicit_assignment", None);
         expect_no_lint("suppressWarnings(x <- 1)", "implicit_assignment", None);
         expect_no_lint("suppressWarnings({x <- 1})", "implicit_assignment", None);
+
+        // Chained assignments should NOT be flagged (issue #480)
+        expect_no_lint("if (TRUE) a <- b <- 1", "implicit_assignment", None);
+        expect_no_lint("if (TRUE) { a <- b <- 1 }", "implicit_assignment", None);
+        expect_no_lint("if (TRUE) x <<- y <- z", "implicit_assignment", None);
+        expect_no_lint("if (TRUE) { x <<- y <- z }", "implicit_assignment", None);
+        expect_no_lint("while (TRUE) a <- b <- 1", "implicit_assignment", None);
+        expect_no_lint("while (TRUE) { a <- b <- 1 }", "implicit_assignment", None);
+        expect_no_lint("for (i in 1:2) a <- b <- 1", "implicit_assignment", None);
+        expect_no_lint(
+            "for (i in 1:2) { a <- b <- 1 }",
+            "implicit_assignment",
+            None,
+        );
+        // Triple chained assignments
+        expect_no_lint("if (TRUE) a <- b <- c <- 1", "implicit_assignment", None);
+        expect_no_lint(
+            "if (TRUE) { a <- b <- c <- 1 }",
+            "implicit_assignment",
+            None,
+        );
+        // Nested braced blocks with chained assignment
+        expect_no_lint(
+            "if (TRUE) { if (TRUE) { obj$x <- y <- foo() } }",
+            "implicit_assignment",
+            None,
+        );
     }
 
     // ---- Rule-specific config tests ----
