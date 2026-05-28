@@ -108,7 +108,7 @@ pub fn glue(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             ast.syntax().text_trimmed_range(),
             Fix::empty(),
         ))
-    } else if !dot_text.contains(&open) && !dot_text.contains(&close) {
+    } else if !dot_text.contains(open) && !dot_text.contains(close) {
         Some(Diagnostic::new(
             ViolationData::new(
                 "glue".to_string(),
