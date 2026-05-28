@@ -26,24 +26,24 @@ mod tests {
 
         assert_snapshot!(
             snapshot_lint("glue('{a}', .open = '<', .close = '>')"),
-            @r"
+            @"
         warning: glue
          --> <test>:1:1
           |
         1 | glue('{a}', .open = '<', .close = '>')
-          | -------------------------------------- This `glue()` call isn't necessary because using `.open` and `.close when the string does not contain the specified delimiters performs no interpolation.
+          | -------------------------------------- This `glue()` call isn't necessary because it performs no interpolation.
           |
         Found 1 error.
         "
         );
         assert_snapshot!(
             snapshot_lint("glue('a', .sep = ' ')"),
-            @r"
+            @"
         warning: glue
          --> <test>:1:1
           |
         1 | glue('a', .sep = ' ')
-          | --------------------- This `glue()` call isn't necessary because it contains only one constant string and `.sep` argument.
+          | --------------------- This `glue()` call isn't necessary because it performs no interpolation.
           |
         Found 1 error.
         "

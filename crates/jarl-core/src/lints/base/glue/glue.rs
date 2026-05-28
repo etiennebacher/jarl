@@ -86,10 +86,8 @@ pub fn glue(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 
     let open_arg = get_arg_by_name(&args, ".open");
     let close_arg = get_arg_by_name(&args, ".close");
-    let sep_arg = get_arg_by_name(&args, ".sep");
     let open_text = get_named_string_arg_text(&args, ".open")?;
     let close_text = get_named_string_arg_text(&args, ".close")?;
-    let sep_only = sep_arg.is_some();
 
     if (open_arg.is_some() && open_text.is_none()) || (close_arg.is_some() && close_text.is_none())
     {
@@ -110,12 +108,7 @@ pub fn glue(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             ast.syntax().text_trimmed_range(),
             Fix::empty(),
         ))
-    } else if !dot_text.contains("{")
-        && !dot_text.contains("}")
-        && open_arg.is_none()
-        && close_arg.is_none()
-        && !sep_only
-    {
+    } else if !dot_text.contains(&open) && !dot_text.contains(&close) {
         Some(Diagnostic::new(
             ViolationData::new(
                 "glue".to_string(),
@@ -126,35 +119,6 @@ pub fn glue(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             ast.syntax().text_trimmed_range(),
             Fix::empty(),
         ))
-    } else if sep_only {
-        Some(Diagnostic::new(
-            ViolationData::new(
-                "glue".to_string(),
-                "This `glue()` call isn't necessary because it contains only one constant string and `.sep` argument."
-                    .to_string(),
-                None,
-            ),
-            ast.syntax().text_trimmed_range(),
-            Fix::empty(),
-        ))
-    } else if let (Some(open), Some(close)) = (open_text, close_text) {
-        if !open.is_empty()
-            && !close.is_empty()
-            && (!dot_text.contains(&open) || !dot_text.contains(&close))
-        {
-            Some(Diagnostic::new(
-                ViolationData::new(
-                    "glue".to_string(),
-                    "This `glue()` call isn't necessary because using `.open` and `.close when the string does not contain the specified delimiters performs no interpolation."
-                        .to_string(),
-                    None,
-                ),
-                ast.syntax().text_trimmed_range(),
-                Fix::empty(),
-            ))
-        } else {
-            None
-        }
     } else {
         None
     };
