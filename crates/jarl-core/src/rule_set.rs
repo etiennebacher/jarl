@@ -381,7 +381,7 @@ declare_rules! {
         name: "glue",
         categories: [Corr, Susp],
         default: Enabled,
-        fix: Safe,
+        fix: None,
         min_r_version: None,
     },
     Grepv => {
