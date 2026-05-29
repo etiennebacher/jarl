@@ -20,7 +20,6 @@ pub mod discovery;
 pub mod error;
 pub mod fix;
 pub mod fs;
-pub mod library_calls;
 pub mod library_paths;
 pub mod lints;
 pub mod location;

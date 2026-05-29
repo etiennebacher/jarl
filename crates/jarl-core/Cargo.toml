@@ -23,6 +23,15 @@ air_fs.workspace = true
 biome_rowan.workspace = true
 biome_formatter.workspace = true
 
+# Semantic analysis (per-file scopes, definitions, uses, use-def map)
+oak_core.workspace = true
+oak_index_vec.workspace = true
+oak_semantic.workspace = true
+url.workspace = true
+
+# Per-file semantic info (used by semantic-aware lints)
+jarl-semantic.workspace = true
+
 # Serialization and data structures
 serde.workspace = true
 toml.workspace = true

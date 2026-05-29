@@ -8,7 +8,7 @@ use crate::suppression::SuppressionManager;
 use crate::vcs::check_version_control;
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
-use air_r_syntax::{RExpressionList, RSyntaxNode};
+use air_r_syntax::RSyntaxNode;
 use anyhow::{Context, Result};
 use rayon::prelude::*;
 use std::collections::HashMap;
@@ -206,11 +206,21 @@ pub fn get_checks(
     checker.rule_set = config.rules_to_apply.clone();
     checker.minimum_r_version = config.minimum_r_version;
 
+    // Build the semantic index for use-def-based rules. `source("path")`
+    // calls inject `DefinitionKind::Import` entries via JarlImportsResolver;
+    // the complementary "names read by sourced files" path is still handled
+    // inside `SemanticInfo`.
+    let semantic = oak_semantic::build_index(
+        &parsed.tree(),
+        jarl_semantic::JarlImportsResolver::new(file),
+    );
+    checker.file_path = file.to_path_buf();
+
     // Wire up package context for package-specific rules.
     get_package_info(
         &mut checker,
         file,
-        expressions,
+        &semantic,
         config,
         pkg_contexts,
         file_pkg_info,
@@ -258,6 +268,7 @@ pub fn get_checks(
         &mut checker,
         &duplicate_assignments,
         &unused_functions,
+        Some(&semantic),
     )?;
 
     // Some rules have a fix available in their implementation but do not have
@@ -310,11 +321,12 @@ pub fn get_checks(
 /// Populate package context on the checker from pre-computed data.
 ///
 /// For files inside an R package, copies the pre-computed `PackageContext`
-/// fields. For scripts, scans for `library()`/`require()` calls.
+/// fields. For scripts, harvests `library()`/`require()` calls from the
+/// semantic index.
 fn get_package_info(
     checker: &mut Checker,
     file: &Path,
-    expressions: &RExpressionList,
+    semantic: &oak_semantic::semantic_index::SemanticIndex,
     config: &Config,
     pkg_contexts: &HashMap<PathBuf, PackageContext>,
     file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
@@ -332,11 +344,36 @@ fn get_package_info(
                 .iter()
                 .map(|s| s.to_string())
                 .collect();
-            packages.extend(crate::library_calls::extract_library_calls(expressions));
+            packages.extend(top_level_attached_packages(semantic));
             checker.loaded_packages = packages;
         }
     }
     checker.package_cache = config.package_cache.clone();
+}
+
+/// Collect package names from top-level `library()`/`require()` calls in
+/// load order, deduplicated. Calls inside nested function bodies are
+/// excluded because their attachment isn't statically guaranteed; calls
+/// inside top-level `if`/loops are included because oak scopes them to the
+/// file (R sequential execution makes their effect visible to subsequent
+/// top-level code if the branch runs).
+fn top_level_attached_packages(
+    semantic: &oak_semantic::semantic_index::SemanticIndex,
+) -> Vec<String> {
+    use oak_semantic::semantic_index::SemanticCallKind;
+    let top_level = oak_semantic::ScopeId::from(0);
+    let mut out: Vec<String> = Vec::new();
+    for call in semantic.semantic_calls() {
+        if call.scope() != top_level {
+            continue;
+        }
+        if let SemanticCallKind::Attach { package } = call.kind()
+            && !out.iter().any(|p| p == package)
+        {
+            out.push(package.clone());
+        }
+    }
+    out
 }
 
 /// Lint R code inside roxygen `@examples` and `@examplesIf` sections.
@@ -378,7 +415,7 @@ fn get_checks_roxygen(
         // otherwise unnecessary here (no package-level analysis, no
         // suppression-related diagnostics to report).
         if has_suppressions {
-            check_document(expressions, &syntax, &mut checker, &[], &[])?;
+            check_document(expressions, &syntax, &mut checker, &[], &[], None)?;
         }
 
         for mut d in checker.diagnostics {
@@ -431,7 +468,7 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     // check_document runs suppression filtering internally, so
     // checker.diagnostics is the post-suppression list after this call.
     // Rmd chunks don't participate in package-level analysis, so pass empty slices.
-    check_document(expressions, &syntax, &mut checker, &[], &[])?;
+    check_document(expressions, &syntax, &mut checker, &[], &[], None)?;
 
     // Remap ranges from virtual-string offsets to original Rmd file offsets.
     let diagnostics: Vec<Diagnostic> = checker
