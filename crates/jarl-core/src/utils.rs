@@ -243,11 +243,6 @@ pub fn get_function_name(function: AnyRExpression) -> String {
         }
     }
 
-    // Try return expression
-    if function.as_r_return_expression().is_some() {
-        return "return".to_string();
-    }
-
     // Try simple identifier
     if let Some(id) = function.as_r_identifier()
         && let Ok(token) = id.name_token()

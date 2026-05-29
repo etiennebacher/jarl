@@ -47,10 +47,24 @@ mod tests {
         Found 1 error.
         "
         );
-        // TODO: uncomment when tree-sitter bug is fixed
-        // https://github.com/r-lib/tree-sitter-r/issues/190
-        // assert_snapshot!(snapshot_lint("d <- 6.7 + .8i"), @"");
-        // assert_snapshot!(snapshot_lint("d <- 6.7+.8i"), @"");
+        assert_snapshot!(snapshot_lint("d <- 6.7 + .8i"), @"
+        warning: numeric_leading_zero
+         --> <test>:1:12
+          |
+        1 | d <- 6.7 + .8i
+          |            --- Include the leading zero for fractional numeric constants.
+          |
+        Found 1 error.
+        ");
+        assert_snapshot!(snapshot_lint("d <- 6.7+.8i"), @"
+        warning: numeric_leading_zero
+         --> <test>:1:10
+          |
+        1 | d <- 6.7+.8i
+          |          --- Include the leading zero for fractional numeric constants.
+          |
+        Found 1 error.
+        ");
         assert_snapshot!(
             snapshot_lint("e <- .9e10"),
             @"

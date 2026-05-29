@@ -51,7 +51,6 @@ pub fn duplicated_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Op
         AnyRExpression::RParenthesizedExpression(x) => {
             x.body()?.into_syntax().text_trimmed().to_string()
         }
-        AnyRExpression::RReturnExpression(x) => x.into_syntax().text_trimmed().to_string(),
         AnyRExpression::RSubset(x) => x.arguments()?.into_syntax().text_trimmed().to_string(),
         AnyRExpression::RSubset2(x) => x.arguments()?.into_syntax().text_trimmed().to_string(),
         _ => {
