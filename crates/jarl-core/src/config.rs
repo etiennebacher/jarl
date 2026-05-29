@@ -2,6 +2,7 @@ use crate::{
     description::Description,
     lints::all_rules_enabled_by_default,
     package_cache::PackageCache,
+    per_file_ignores::PerFileIgnores,
     rule_options::ResolvedRuleOptions,
     rule_set::{Category, Rule, RuleSet},
     settings::Settings,
@@ -88,6 +89,8 @@ pub struct Config {
     /// Shared cache of installed R package metadata for package-specific rules.
     /// `None` if library path discovery was not performed (e.g., no package rules enabled).
     pub package_cache: Option<Arc<PackageCache>>,
+    /// Per-file rule ignores resolved from `[lint.per-file-ignores]`.
+    pub per_file_ignores: PerFileIgnores,
 }
 
 pub fn build_config(
@@ -159,6 +162,10 @@ pub fn build_config(
         .and_then(|s| s.linter.fix_roxygen)
         .unwrap_or(false);
 
+    let per_file_ignores = toml_settings
+        .map(|s| s.linter.per_file_ignores.clone())
+        .unwrap_or_default();
+
     Ok(Config {
         paths,
         rules,
@@ -174,6 +181,7 @@ pub fn build_config(
         fix_roxygen,
         rule_options: Arc::new(rule_options),
         package_cache: None,
+        per_file_ignores,
     })
 }
 
@@ -411,7 +419,10 @@ pub fn parse_fixable_toml(
 // with the rule names.
 // Returns a vector with the original rule names left unmodified and the expanded
 // group names.
-fn replace_group_rules(rules_passed_by_user: &Vec<&str>, all_rules: &[Rule]) -> Vec<String> {
+pub(crate) fn replace_group_rules(
+    rules_passed_by_user: &Vec<&str>,
+    all_rules: &[Rule],
+) -> Vec<String> {
     let rule_groups_set: HashSet<&str> = Category::ALL.iter().map(|c| c.as_str()).collect();
     let mut expanded_rules = Vec::new();
 
@@ -445,7 +456,7 @@ fn replace_group_rules(rules_passed_by_user: &Vec<&str>, all_rules: &[Rule]) -> 
 //
 // It is important this comes after expanding group names (e.g. "PERF") to
 // individual rule names.
-fn get_invalid_rules(
+pub(crate) fn get_invalid_rules(
     all_rule_names: &[Rule],
     rules_passed_by_user: &[String],
 ) -> Option<Vec<String>> {

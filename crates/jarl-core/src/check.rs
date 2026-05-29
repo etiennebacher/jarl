@@ -23,6 +23,7 @@ pub use crate::checker::Checker;
 use crate::config::Config;
 use crate::diagnostic::*;
 use crate::fix::*;
+use crate::rule_set::RuleSet;
 use crate::utils::*;
 
 pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
@@ -79,11 +80,48 @@ pub fn check_path(
     pkg_contexts: Arc<HashMap<PathBuf, PackageContext>>,
     file_pkg_info: Arc<HashMap<PathBuf, FilePackageInfo>>,
 ) -> Result<Vec<Diagnostic>, anyhow::Error> {
+    // Compute the rules that actually apply to this file by removing any rules
+    // ignored for it via `[lint.per-file-ignores]`. Done here (rather than in
+    // `get_checks`) because `path` is still absolute, which is what the
+    // per-file ignore patterns are matched against.
+    let effective_rules = effective_rules_for_file(&config, path);
+
     if config.apply_fixes || config.apply_unsafe_fixes {
-        lint_fix(path, config, pkg, pkg_contexts, file_pkg_info)
+        lint_fix(
+            path,
+            config,
+            pkg,
+            pkg_contexts,
+            file_pkg_info,
+            &effective_rules,
+        )
     } else {
-        lint_only(path, config, pkg, pkg_contexts, file_pkg_info)
+        lint_only(
+            path,
+            config,
+            pkg,
+            pkg_contexts,
+            file_pkg_info,
+            &effective_rules,
+        )
     }
+}
+
+/// Filter `config.rules_to_apply` down to the rules that apply to `path` after
+/// accounting for `[lint.per-file-ignores]`.
+///
+/// `path` should be the file's absolute (normalized) path, since the per-file
+/// ignore patterns are matched relative to the configuration directory.
+pub fn effective_rules_for_file(config: &Config, path: &Path) -> RuleSet {
+    if config.per_file_ignores.is_empty() {
+        return config.rules_to_apply.clone();
+    }
+    let ignored = config.per_file_ignores.ignored_rules(path);
+    config
+        .rules_to_apply
+        .iter()
+        .filter(|rule| !ignored.contains(rule))
+        .collect()
 }
 
 pub fn lint_only(
@@ -92,6 +130,7 @@ pub fn lint_only(
     pkg: Arc<PackageAnalysis>,
     pkg_contexts: Arc<HashMap<PathBuf, PackageContext>>,
     file_pkg_info: Arc<HashMap<PathBuf, FilePackageInfo>>,
+    effective_rules: &RuleSet,
 ) -> Result<Vec<Diagnostic>, anyhow::Error> {
     let path = relativize_path(path);
     let contents = fs::read_to_string(Path::new(&path))
@@ -111,6 +150,7 @@ pub fn lint_only(
         &pkg,
         &pkg_contexts,
         &file_pkg_info,
+        effective_rules,
     )
     .with_context(|| format!("Failed to get checks for file: {path}"))?;
 
@@ -123,10 +163,18 @@ pub fn lint_fix(
     pkg: Arc<PackageAnalysis>,
     pkg_contexts: Arc<HashMap<PathBuf, PackageContext>>,
     file_pkg_info: Arc<HashMap<PathBuf, FilePackageInfo>>,
+    effective_rules: &RuleSet,
 ) -> Result<Vec<Diagnostic>, anyhow::Error> {
     // Rmd/Qmd files never get autofixes applied.
     if crate::fs::has_rmd_extension(path) {
-        return lint_only(path, config, pkg, pkg_contexts, file_pkg_info);
+        return lint_only(
+            path,
+            config,
+            pkg,
+            pkg_contexts,
+            file_pkg_info,
+            effective_rules,
+        );
     }
 
     let path = relativize_path(path);
@@ -149,6 +197,7 @@ pub fn lint_fix(
             &pkg,
             &pkg_contexts,
             &file_pkg_info,
+            effective_rules,
         )
         .with_context(|| format!("Failed to get checks for file: {path}",))?;
 
@@ -185,9 +234,10 @@ pub fn get_checks(
     pkg: &PackageAnalysis,
     pkg_contexts: &HashMap<PathBuf, PackageContext>,
     file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
+    effective_rules: &RuleSet,
 ) -> Result<Vec<Diagnostic>> {
     if crate::fs::has_rmd_extension(file) {
-        return get_checks_rmd(contents, file, config);
+        return get_checks_rmd(contents, file, config, effective_rules);
     }
 
     let parser_options = RParserOptions::default();
@@ -203,7 +253,7 @@ pub fn get_checks(
     let suppression = SuppressionManager::from_node(syntax, contents);
 
     let mut checker = Checker::new(suppression, config.rule_options.clone());
-    checker.rule_set = config.rules_to_apply.clone();
+    checker.rule_set = effective_rules.clone();
     checker.minimum_r_version = config.minimum_r_version;
 
     // Wire up package context for package-specific rules.
@@ -243,7 +293,8 @@ pub fn get_checks(
             Some(FilePackageInfo::InPackage { scope: FileScope::R, .. })
         )
     {
-        let roxygen_diagnostics = get_checks_roxygen(syntax, file, config, contents)?;
+        let roxygen_diagnostics =
+            get_checks_roxygen(syntax, file, config, contents, effective_rules)?;
         checker.diagnostics.extend(roxygen_diagnostics);
     }
 
@@ -350,6 +401,7 @@ fn get_checks_roxygen(
     file: &Path,
     config: &Config,
     contents: &str,
+    effective_rules: &RuleSet,
 ) -> Result<Vec<Diagnostic>> {
     let chunks = extract_roxygen_examples(syntax, contents);
     let mut all_diagnostics: Vec<Diagnostic> = Vec::new();
@@ -366,7 +418,7 @@ fn get_checks_roxygen(
         let suppression = SuppressionManager::from_node(&syntax, &chunk.code);
         let has_suppressions = suppression.has_any_suppressions;
         let mut checker = Checker::new(suppression, config.rule_options.clone());
-        checker.rule_set = config.rules_to_apply.clone();
+        checker.rule_set = effective_rules.clone();
         checker.minimum_r_version = config.minimum_r_version;
 
         for expr in expressions {
@@ -405,7 +457,12 @@ fn get_checks_roxygen(
 ///   / `# jarl-ignore-end` pairs before linting
 /// - Chunks with parse errors are silently dropped
 /// - Diagnostic ranges are remapped from virtual-string offsets to original file offsets
-fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Diagnostic>> {
+fn get_checks_rmd(
+    contents: &str,
+    file: &Path,
+    config: &Config,
+    effective_rules: &RuleSet,
+) -> Result<Vec<Diagnostic>> {
     let chunks = crate::rmd::extract_r_chunks(contents);
     let (virtual_source, offset_map) = crate::rmd::build_virtual_r_source(&chunks);
 
@@ -421,7 +478,7 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     let syntax = parsed.syntax();
     let suppression = SuppressionManager::from_node(&syntax, &virtual_source);
     let mut checker = Checker::new(suppression, config.rule_options.clone());
-    checker.rule_set = config.rules_to_apply.clone();
+    checker.rule_set = effective_rules.clone();
     checker.minimum_r_version = config.minimum_r_version;
 
     let expressions = &parsed.tree().expressions();

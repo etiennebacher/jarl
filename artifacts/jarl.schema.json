@@ -228,6 +228,44 @@
             "type": "string"
           }
         },
+        "per-file-ignores": {
+          "title": "Per-file rule ignores",
+          "description": "A mapping of glob patterns to lists of rules that should be ignored in\nthe files matching each pattern. Patterns are gitignore-style and\nresolved relative to the directory containing `jarl.toml` (the same\nformat used by `include` and `exclude`). Rule names and rule groups\n(e.g. `PERF`) are both accepted.\n\nA pattern can be negated with a leading `!`, in which case its rules are\nignored in every file that does *not* match the pattern. When several\npatterns match a file, the rules from all of them are ignored.\n\nFor example:\n\n```toml\n[lint.per-file-ignores]\n\"foo.R\" = [\"true_false_symbol\"]\n# ignore everywhere but in the R folder\n\"!R/**.R\" = [\"any_is_na\"]\n```",
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "pipe_consistency": {
+          "title": "Options for the `pipe_consistency` rule",
+          "description": "Use `preferred` to choose the preferred pipe operator. Valid values\nare `\"|>\"` (default) and `\"%>%\"`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PipeConsistencyOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "quotes": {
+          "title": "Options for the `quotes` rule",
+          "description": "Use `quote` to choose the preferred quote delimiter for string\nliterals. Valid values are `\"double\"` (default) and `\"single\"`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/QuotesOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "select": {
           "title": "Rules to select",
           "description": "If this is empty, then all rules that are provided by `jarl` are used,\nwith one limitation related to the minimum R version used in the project.\nBy default, if this minimum R version is unknown, then all rules that\nhave a version restriction are deactivated. This is for example the case\nof `grepv` since the eponymous function was introduced in R 4.5.0.\n\nThere are three ways to inform `jarl` about the minimum version used in\nthe project:\n1. pass the argument `--min-r-version` in the CLI, e.g.,\n   `jarl --min-r-version 4.3`;\n2. if the project is an R package, then `jarl` looks for mentions of a\n   minimum R version in the `Depends` field sometimes present in the\n   `DESCRIPTION` file.\n3. specify `min-r-version` in `jarl.toml`.",
@@ -287,6 +325,32 @@
           ]
         }
       }
+    },
+    "PipeConsistencyOptions": {
+      "description": "TOML options for `[lint.pipe_consistency]`.\n\nUse `pipe` to specify which pipe operator to enforce. Valid values\nare `\"|>\"` (the default) and `\"%>%\"`.",
+      "type": "object",
+      "properties": {
+        "pipe": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "QuotesOptions": {
+      "description": "TOML options for `[lint.quotes]`.\n\nUse `quote` to specify which quote delimiter to enforce for string\nliterals. Valid values are `\"double\"` (the default) and `\"single\"`.",
+      "type": "object",
+      "properties": {
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
     },
     "UndesirableFunctionOptions": {
       "description": "TOML options for `[lint.undesirable_function]`.\n\nUse `functions` to fully replace the default list of undesirable functions.\nUse `extend-functions` to add to the default list.\nSpecifying both is an error.",

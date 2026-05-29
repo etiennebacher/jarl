@@ -4,6 +4,7 @@
 //
 // MIT License - Posit PBC
 
+use crate::per_file_ignores::PerFileIgnores;
 use crate::rule_options::ResolvedRuleOptions;
 
 /// Resolved configuration settings used within jarl
@@ -28,6 +29,8 @@ pub struct LinterSettings {
     /// used in `[lint]`. When `true`, a deprecation warning should be emitted.
     pub deprecated_assignment_syntax: bool,
     pub rule_options: ResolvedRuleOptions,
+    /// Per-file rule ignores resolved from `[lint.per-file-ignores]`.
+    pub per_file_ignores: PerFileIgnores,
 }
 
 impl Default for LinterSettings {
@@ -48,6 +51,7 @@ impl Default for LinterSettings {
             unfixable: None,
             deprecated_assignment_syntax: false,
             rule_options: ResolvedRuleOptions::default(),
+            per_file_ignores: PerFileIgnores::default(),
         }
     }
 }

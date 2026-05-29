@@ -14,6 +14,8 @@ use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 
+use crate::config::{get_invalid_rules, replace_group_rules};
+use crate::per_file_ignores::PerFileIgnores;
 use crate::rule_options::ResolvedRuleOptions;
 use crate::rule_options::assignment::AssignmentConfig;
 use crate::rule_options::assignment::AssignmentOptions;
@@ -24,6 +26,7 @@ use crate::rule_options::quotes::QuotesOptions;
 use crate::rule_options::undesirable_function::UndesirableFunctionOptions;
 use crate::rule_options::unreachable_code::UnreachableCodeOptions;
 use crate::rule_options::unused_function::UnusedFunctionOptions;
+use crate::rule_set::Rule;
 use crate::settings::LinterSettings;
 use crate::settings::Settings;
 
@@ -199,6 +202,28 @@ pub struct LinterTomlOptions {
     /// - `import-standalone-*.R`
     pub default_exclude: Option<bool>,
 
+    /// # Per-file rule ignores
+    ///
+    /// A mapping of glob patterns to lists of rules that should be ignored in
+    /// the files matching each pattern. Patterns are gitignore-style and
+    /// resolved relative to the directory containing `jarl.toml` (the same
+    /// format used by `include` and `exclude`). Rule names and rule groups
+    /// (e.g. `PERF`) are both accepted.
+    ///
+    /// A pattern can be negated with a leading `!`, in which case its rules are
+    /// ignored in every file that does *not* match the pattern. When several
+    /// patterns match a file, the rules from all of them are ignored.
+    ///
+    /// For example:
+    ///
+    /// ```toml
+    /// [lint.per-file-ignores]
+    /// "foo.R" = ["true_false_symbol"]
+    /// # ignore everywhere but in the R folder
+    /// "!R/**.R" = ["any_is_na"]
+    /// ```
+    pub per_file_ignores: Option<HashMap<String, Vec<String>>>,
+
     /// # Whether to lint R code in roxygen `@examples` and `@examplesIf` sections
     ///
     /// When enabled, Jarl parses and checks R code found in roxygen2
@@ -319,7 +344,7 @@ pub fn find_jarl_toml<P: AsRef<Path>>(path: P) -> Option<PathBuf> {
 }
 
 impl TomlOptions {
-    pub fn into_settings(self, _root: &Path) -> anyhow::Result<Settings> {
+    pub fn into_settings(self, root: &Path) -> anyhow::Result<Settings> {
         let linter = self.lint.unwrap_or_default();
 
         // Reject unknown fields in `[lint]` with a clean error message that
@@ -328,9 +353,12 @@ impl TomlOptions {
             return Err(anyhow::anyhow!(
                 "Unknown field `{field}` in `[lint]`. Expected one of: \
                  `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, \
-                 `exclude`, `default-exclude`, `include`, `check-roxygen`, `fix-roxygen`."
+                 `exclude`, `default-exclude`, `include`, `per-file-ignores`, \
+                 `check-roxygen`, `fix-roxygen`."
             ));
         }
+
+        let per_file_ignores = resolve_per_file_ignores(linter.per_file_ignores.as_ref(), root)?;
 
         // Resolve the assignment config: extract the AssignmentOptions and
         // track whether the deprecated top-level string form was used.
@@ -365,8 +393,43 @@ impl TomlOptions {
                 linter.unreachable_code.as_ref(),
                 linter.unused_function.as_ref(),
             )?,
+            per_file_ignores,
         };
 
         Ok(Settings { linter })
     }
+}
+
+/// Validate and compile the `[lint.per-file-ignores]` map into a
+/// [PerFileIgnores], expanding rule groups and checking rule names just like
+/// `select`/`ignore`.
+fn resolve_per_file_ignores(
+    per_file_ignores: Option<&HashMap<String, Vec<String>>>,
+    root: &Path,
+) -> anyhow::Result<PerFileIgnores> {
+    let Some(per_file_ignores) = per_file_ignores else {
+        return Ok(PerFileIgnores::default());
+    };
+
+    let all_rules = Rule::all();
+    let mut entries = Vec::with_capacity(per_file_ignores.len());
+
+    for (pattern, rule_names) in per_file_ignores {
+        let passed_by_user = rule_names.iter().map(|s| s.as_str()).collect();
+        let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
+        if let Some(invalid_rules) = get_invalid_rules(all_rules, &expanded_rules) {
+            return Err(anyhow::anyhow!(
+                "Unknown rules in `per-file-ignores` for pattern '{}': {}",
+                pattern,
+                invalid_rules.join(", ")
+            ));
+        }
+        let rules: Vec<Rule> = expanded_rules
+            .iter()
+            .filter_map(|name| Rule::from_name(name))
+            .collect();
+        entries.push((pattern.clone(), rules));
+    }
+
+    PerFileIgnores::new(root, entries)
 }
