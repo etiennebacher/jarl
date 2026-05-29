@@ -144,16 +144,15 @@ mod tests {
         );
 
         // With code between loops
-        expect_diagnostic_highlight(
-            "for (i in 1:3) {
-                x <- i * 2
-                for (i in 1:4) {
-                    i
-                }
-            }",
-            "for_loop_dup_index",
-            "i in 1:4",
-        );
+        assert_snapshot!(snapshot_lint(
+            "
+for (i in 1:3) {
+    x <- i * 2
+    for (i in 1:4) {
+        i
+    }
+}"
+        ));
 
         // No fixes
         assert_snapshot!(
@@ -174,17 +173,13 @@ mod tests {
 
     #[test]
     fn test_for_loop_dup_index_diagnostic_ranges() {
-        use crate::utils_test::expect_diagnostic_highlight;
-
-        // Diagnostic highlights the inner loop's `index in sequence`
-        expect_diagnostic_highlight(
-            "for (x in 1:3) {
-                for (x in 1:4) {
-                    x
-                }
-            }",
-            "for_loop_dup_index",
-            "x in 1:4",
-        );
+        assert_snapshot!(snapshot_lint(
+            "
+for (x in 1:3) {
+    for (x in 1:4) {
+        x
+    }
+}"
+        ));
     }
 }
