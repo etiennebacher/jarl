@@ -239,7 +239,7 @@ impl<'a> CfgBuilder<'a> {
                 self.build_next(current, stmt.clone());
                 current
             }
-            RSyntaxKind::R_RETURN_EXPRESSION => {
+            RSyntaxKind::R_CALL if stmt.text_trimmed() == "return" => {
                 self.build_return(current, stmt.clone());
                 current
             }
