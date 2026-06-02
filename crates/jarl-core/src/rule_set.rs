@@ -377,6 +377,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    Glue => {
+        name: "glue",
+        categories: [Corr, Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     Grepv => {
         name: "grepv",
         categories: [Read],

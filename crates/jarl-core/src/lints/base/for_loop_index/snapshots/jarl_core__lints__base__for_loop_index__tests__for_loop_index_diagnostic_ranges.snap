@@ -1,0 +1,11 @@
+---
+source: crates/jarl-core/src/lints/base/for_loop_index/mod.rs
+expression: "snapshot_lint(\"for (x in foo(x)) { TRUE }\")"
+---
+warning: for_loop_index
+ --> <test>:1:6
+  |
+1 | for (x in foo(x)) { TRUE }
+  |      ----------- Don't re-use any sequence symbols as the index symbol in a for loop.
+  |
+Found 1 error.
