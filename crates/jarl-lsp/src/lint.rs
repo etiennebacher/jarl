@@ -15,7 +15,7 @@ use crate::session::DocumentSnapshot;
 use crate::utils::should_exclude_file_based_on_settings;
 
 use air_workspace::resolve::PathResolver;
-use jarl_core::check::{effective_rules_for_file, get_checks};
+use jarl_core::check::get_checks;
 use jarl_core::config::{ArgsConfig, build_config};
 use jarl_core::diagnostic::Diagnostic as JarlDiagnostic;
 use jarl_core::discovery::{DiscoveredSettings, discover_settings};
@@ -174,11 +174,9 @@ fn run_jarl_linting(
         .collect();
     let pkg = make_package_analysis(&analysis_paths, &config, &namespace_contents);
 
-    // Resolve per-file ignores against the absolute path before relativizing.
-    let effective_rules = effective_rules_for_file(&config, file_path);
-
     // Call get_checks directly with the in-memory content and the real
     // (relativized) file path, avoiding the old tempfile round-trip.
+    // `get_checks` resolves `[lint.per-file-ignores]` for the file itself.
     let rel_path = PathBuf::from(relativize_path(file_path));
     let mut diagnostics = get_checks(
         content,
@@ -187,7 +185,6 @@ fn run_jarl_linting(
         &pkg,
         &pkg_contexts,
         &file_pkg_info,
-        &effective_rules,
     )?;
 
     // Hide unused_function diagnostics when the package-wide count exceeds
