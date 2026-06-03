@@ -16,6 +16,9 @@
 * Jarl is now available on PyPI under the name `jarl-linter`, enabling its
   installation via `uv`, `pipx`, and other tools (#466).
 
+* New argument `[lint.per-file-ignores]` in `jarl.toml` to deactivate rules on
+  specific files (#500).
+
 ### Bug fixes
 
 * `implicit_assignment` no longer flags chained assignments like
