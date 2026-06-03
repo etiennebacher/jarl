@@ -51,6 +51,55 @@ select = ["any_is_na"]
     Ok(())
 }
 
+#[test]
+fn test_plain_pattern_ignores_in_matching_folder() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        ("R/foo.R", "any(is.na(x))\n"),
+        ("bar.R", "any(is.na(x))\n"),
+        (
+            "jarl.toml",
+            r#"
+[lint]
+select = ["any_is_na"]
+
+[lint.per-file-ignores]
+"R/" = ["any_is_na"]
+"#,
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> bar.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
 /// A negated pattern (`!`) ignores the listed rules in files that do NOT match
 /// the pattern, i.e. everywhere but the matched location.
 #[test]
