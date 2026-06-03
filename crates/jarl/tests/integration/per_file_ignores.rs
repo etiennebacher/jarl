@@ -290,3 +290,40 @@ fn test_unknown_rule_name_errors() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_invalid_glob_pattern() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        ("foo.R", "any(is.na(x))\n"),
+        (
+            "jarl.toml",
+            r#"
+[lint.per-file-ignores]
+"[z-a]" = ["any_is_na"]
+"#,
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Invalid `per-file-ignores` pattern '[z-a]': error parsing glob '[z-a]': invalid range; 'z' > 'a'
+    "
+    );
+
+    Ok(())
+}
