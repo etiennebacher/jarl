@@ -152,6 +152,59 @@ select = ["any_is_na"]
     Ok(())
 }
 
+/// When several patterns match a file, the rules from all of them are ignored.
+#[test]
+fn test_file_matches_several_patterns() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        ("R/foo.R", "any(is.na(x))\nany(duplicated(x))\n"),
+        ("src/bar.R", "any(is.na(x))\nany(duplicated(x))\n"),
+        (
+            "jarl.toml",
+            r#"
+[lint]
+select = ["any_is_na", "any_duplicated"]
+
+[lint.per-file-ignores]
+"R/" = ["any_is_na"]
+"*/*.R" = ["any_duplicated"]
+"#,
+        ),
+    ])?;
+
+    // "R/foo.R" matches the two patterns so no diagnostics are reported there.
+    // "src/bar.R" only matches the second pattern
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> src/bar.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
 /// `[lint.per-file-ignores]` is a TOML sub-table, so any bare `[lint]` key
 /// written *after* it is absorbed into the table as a glob pattern. When that
 /// key's value is not an array of rule names (e.g. `default-exclude = false`),
