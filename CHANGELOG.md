@@ -12,6 +12,7 @@
   * `glue` (#484, @novica)
   * `notin` (#459, @Yousa-Mirage)
   * `pipe_consistency` (#482)
+  * `pipe_return` (#502)
 
 * Jarl is now available on PyPI under the name `jarl-linter`, enabling its
   installation via `uv`, `pipx`, and other tools (#466).
