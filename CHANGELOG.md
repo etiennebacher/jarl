@@ -19,6 +19,8 @@
 * New argument `[lint.per-file-ignores]` in `jarl.toml` to deactivate rules on
   specific files (#500).
 
+* The CLI now suggests close rule names when some rule names don't exist (#501).
+
 ### Bug fixes
 
 * `implicit_assignment` no longer flags chained assignments like
