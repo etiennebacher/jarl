@@ -475,6 +475,13 @@ declare_rules! {
         fix: Unsafe,
         min_r_version: None,
     },
+    OuterNegation => {
+        name: "outer_negation",
+        categories: [Perf, Read],
+        default: Enabled,
+        fix: Safe,
+        min_r_version: None,
+    },
     PipeConsistency => {
         name: "pipe_consistency",
         categories: [Read],
@@ -482,11 +489,11 @@ declare_rules! {
         fix: Unsafe,
         min_r_version: Some((4, 2, 0)),
     },
-    OuterNegation => {
-        name: "outer_negation",
-        categories: [Perf, Read],
+    PipeReturn => {
+        name: "pipe_return",
+        categories: [Corr],
         default: Enabled,
-        fix: Safe,
+        fix: None,
         min_r_version: None,
     },
     Quotes => {

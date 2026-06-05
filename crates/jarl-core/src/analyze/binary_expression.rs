@@ -13,6 +13,7 @@ use crate::lints::base::implicit_assignment::implicit_assignment::implicit_assig
 use crate::lints::base::is_numeric::is_numeric::is_numeric;
 use crate::lints::base::nzchar::nzchar::nzchar;
 use crate::lints::base::pipe_consistency::pipe_consistency::pipe_consistency;
+use crate::lints::base::pipe_return::pipe_return::pipe_return;
 use crate::lints::base::redundant_equals::redundant_equals::redundant_equals;
 use crate::lints::base::seq::seq::seq;
 use crate::lints::base::string_boundary::string_boundary::string_boundary;
@@ -60,6 +61,9 @@ pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> a
             r_expr,
             checker.rule_options.pipe_consistency.pipe,
         )?);
+    }
+    if checker.is_rule_enabled(Rule::PipeReturn) {
+        checker.report_diagnostic(pipe_return(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::RedundantEquals) {
         checker.report_diagnostic(redundant_equals(r_expr)?);
