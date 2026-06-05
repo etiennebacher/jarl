@@ -941,6 +941,7 @@ dependencies = [
  "rustc-hash",
  "schemars",
  "serde",
+ "strsim",
  "tempfile",
  "toml",
  "tracing",

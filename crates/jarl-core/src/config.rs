@@ -1,5 +1,6 @@
 use crate::{
     description::Description,
+    error::UnknownRulesError,
     lints::all_rules_enabled_by_default,
     package_cache::PackageCache,
     per_file_ignores::PerFileIgnores,
@@ -198,10 +199,10 @@ pub fn parse_rules_cli(select: &str, extend_select: &str, ignore: &str) -> Resul
         let passed_by_user = select.split(",").collect::<Vec<&str>>();
         let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
         let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
-        if let Some(invalid_rules) = invalid_rules {
-            return Err(anyhow::anyhow!(
-                "Unknown rules in `--select`: {}",
-                invalid_rules.join(", ")
+        if let Some(invalid) = invalid_rules {
+            return Err(unknown_rules_error(
+                format!("Unknown rules in `--select`: {}", invalid.names.join(", ")),
+                invalid.help,
             ));
         }
 
@@ -219,10 +220,13 @@ pub fn parse_rules_cli(select: &str, extend_select: &str, ignore: &str) -> Resul
         let passed_by_user = extend_select.split(",").collect::<Vec<&str>>();
         let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
         let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
-        if let Some(invalid_rules) = invalid_rules {
-            return Err(anyhow::anyhow!(
-                "Unknown rules in `--extend-select`: {}",
-                invalid_rules.join(", ")
+        if let Some(invalid) = invalid_rules {
+            return Err(unknown_rules_error(
+                format!(
+                    "Unknown rules in `--extend-select`: {}",
+                    invalid.names.join(", ")
+                ),
+                invalid.help,
             ));
         }
 
@@ -240,10 +244,10 @@ pub fn parse_rules_cli(select: &str, extend_select: &str, ignore: &str) -> Resul
         let passed_by_user = ignore.split(",").collect::<Vec<&str>>();
         let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
         let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
-        if let Some(invalid_rules) = invalid_rules {
-            return Err(anyhow::anyhow!(
-                "Unknown rules in `--ignore`: {}",
-                invalid_rules.join(", ")
+        if let Some(invalid) = invalid_rules {
+            return Err(unknown_rules_error(
+                format!("Unknown rules in `--ignore`: {}", invalid.names.join(", ")),
+                invalid.help,
             ));
         }
 
@@ -285,10 +289,13 @@ pub fn parse_rules_toml(toml_settings: Option<&Settings>) -> Result<RuleSelectio
         let passed_by_user = select.iter().map(|s| s.as_str()).collect();
         let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
         let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
-        if let Some(invalid_rules) = invalid_rules {
-            return Err(anyhow::anyhow!(
-                "Unknown rules in field `select` in 'jarl.toml': {}",
-                invalid_rules.join(", ")
+        if let Some(invalid) = invalid_rules {
+            return Err(unknown_rules_error(
+                format!(
+                    "Unknown rules in field `select` in 'jarl.toml': {}",
+                    invalid.names.join(", ")
+                ),
+                invalid.help,
             ));
         }
         Some(HashSet::from_iter(
@@ -307,10 +314,13 @@ pub fn parse_rules_toml(toml_settings: Option<&Settings>) -> Result<RuleSelectio
             let passed_by_user = extend_select.iter().map(|s| s.as_str()).collect();
             let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
             let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
-            if let Some(invalid_rules) = invalid_rules {
-                return Err(anyhow::anyhow!(
-                    "Unknown rules in field `extend-select` in 'jarl.toml': {}",
-                    invalid_rules.join(", ")
+            if let Some(invalid) = invalid_rules {
+                return Err(unknown_rules_error(
+                    format!(
+                        "Unknown rules in field `extend-select` in 'jarl.toml': {}",
+                        invalid.names.join(", ")
+                    ),
+                    invalid.help,
                 ));
             }
             Some(HashSet::from_iter(
@@ -328,10 +338,13 @@ pub fn parse_rules_toml(toml_settings: Option<&Settings>) -> Result<RuleSelectio
         let passed_by_user = ignore.iter().map(|s| s.as_str()).collect();
         let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
         let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
-        if let Some(invalid_rules) = invalid_rules {
-            return Err(anyhow::anyhow!(
-                "Unknown rules in field `ignore` in 'jarl.toml': {}",
-                invalid_rules.join(", ")
+        if let Some(invalid) = invalid_rules {
+            return Err(unknown_rules_error(
+                format!(
+                    "Unknown rules in field `ignore` in 'jarl.toml': {}",
+                    invalid.names.join(", ")
+                ),
+                invalid.help,
             ));
         }
         HashSet::from_iter(
@@ -374,10 +387,13 @@ pub fn parse_fixable_toml(
             let passed_by_user = fixable_rules.iter().map(|s| s.as_str()).collect();
             let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
             let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
-            if let Some(invalid_rules) = invalid_rules {
-                return Err(anyhow::anyhow!(
-                    "Unknown rules in field `fixable` in 'jarl.toml': {}",
-                    invalid_rules.join(", ")
+            if let Some(invalid) = invalid_rules {
+                return Err(unknown_rules_error(
+                    format!(
+                        "Unknown rules in field `fixable` in 'jarl.toml': {}",
+                        invalid.names.join(", ")
+                    ),
+                    invalid.help,
                 ));
             }
             Some(HashSet::from_iter(
@@ -396,10 +412,13 @@ pub fn parse_fixable_toml(
         let passed_by_user = unfixable_rules.iter().map(|s| s.as_str()).collect();
         let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
         let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
-        if let Some(invalid_rules) = invalid_rules {
-            return Err(anyhow::anyhow!(
-                "Unknown rules in field `unfixable` in 'jarl.toml': {}",
-                invalid_rules.join(", ")
+        if let Some(invalid) = invalid_rules {
+            return Err(unknown_rules_error(
+                format!(
+                    "Unknown rules in field `unfixable` in 'jarl.toml': {}",
+                    invalid.names.join(", ")
+                ),
+                invalid.help,
             ));
         }
         HashSet::from_iter(
@@ -456,34 +475,103 @@ pub(crate) fn replace_group_rules(
 //
 // It is important this comes after expanding group names (e.g. "PERF") to
 // individual rule names.
+/// Invalid rule names found in a configuration field, plus "did you mean"
+/// help lines for the ones close to a real rule name.
+pub(crate) struct InvalidRules {
+    /// Invalid names as they should appear in the "Unknown rules: ..." message.
+    pub names: Vec<String>,
+    /// One help line per invalid name that has a suggestion, e.g.
+    /// `Did you mean "glue"?`.
+    pub help: Vec<String>,
+}
+
 pub(crate) fn get_invalid_rules(
     all_rule_names: &[Rule],
     rules_passed_by_user: &[String],
-) -> Option<Vec<String>> {
+) -> Option<InvalidRules> {
     let all_rules_set: HashSet<_> = all_rule_names.iter().map(|x| x.name()).collect();
 
-    let invalid_rules: Vec<String> = rules_passed_by_user
+    // Candidates for "did you mean" suggestions: rule names, category group
+    // names (e.g. "PERF"), and the special "ALL" keyword.
+    let suggestion_candidates: Vec<&str> = all_rule_names
         .iter()
-        .filter(|rule| {
-            let trimmed = rule.trim();
-            // Rule is invalid if it's empty/whitespace-only or doesn't exist in valid rules
-            trimmed.is_empty() || !all_rules_set.contains(trimmed)
-        })
-        .map(|x| {
-            let trimmed = x.trim();
-            if trimmed.is_empty() {
-                format!("\"{x}\" (empty or whitespace-only not allowed)")
-            } else {
-                x.clone()
-            }
-        })
+        .map(|x| x.name())
+        .chain(Category::ALL.iter().map(|c| c.as_str()))
+        .chain(std::iter::once("ALL"))
         .collect();
 
-    if invalid_rules.is_empty() {
+    let mut names = Vec::new();
+    let mut help = Vec::new();
+
+    for rule in rules_passed_by_user {
+        let trimmed = rule.trim();
+
+        // Rule is invalid if it's empty/whitespace-only or doesn't exist.
+        if trimmed.is_empty() {
+            names.push(format!("\"{rule}\" (empty or whitespace-only not allowed)"));
+            continue;
+        }
+        if all_rules_set.contains(trimmed) {
+            continue;
+        }
+
+        names.push(rule.clone());
+
+        let suggestions = suggest_rule_names(trimmed, &suggestion_candidates);
+        match suggestions.as_slice() {
+            [] => {}
+            [only] => help.push(format!("Did you mean \"{only}\"?")),
+            many => {
+                let quoted = many
+                    .iter()
+                    .map(|s| format!("\"{s}\""))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                help.push(format!("Did you mean one of {quoted}?"));
+            }
+        }
+    }
+
+    if names.is_empty() {
         None
     } else {
-        Some(invalid_rules)
+        Some(InvalidRules { names, help })
     }
+}
+
+/// Build an `Unknown rules` error carrying optional "did you mean" help lines.
+pub(crate) fn unknown_rules_error(message: String, help: Vec<String>) -> anyhow::Error {
+    anyhow::Error::new(UnknownRulesError { message, help })
+}
+
+/// Find valid rule names closest to `input` for a "did you mean" suggestion.
+///
+/// Returns up to 3 candidates that all share the minimum edit distance, and
+/// only when that distance is within an acceptance threshold (so unrelated
+/// input like "foo" yields no suggestion). Uses Damerau-Levenshtein distance,
+/// which also accounts for adjacent transpositions (e.g. "treu" -> "true").
+fn suggest_rule_names(input: &str, candidates: &[&str]) -> Vec<String> {
+    // Allow roughly one edit per three characters, with a floor of 1 so short
+    // typos are still caught.
+    let threshold = (input.chars().count() / 3).max(1);
+
+    let mut scored: Vec<(usize, &str)> = candidates
+        .iter()
+        .map(|&name| (strsim::damerau_levenshtein(input, name), name))
+        .filter(|(distance, _)| *distance <= threshold)
+        .collect();
+
+    let Some(&(best_distance, _)) = scored.iter().min_by_key(|(distance, _)| *distance) else {
+        return Vec::new();
+    };
+
+    scored.retain(|(distance, _)| *distance == best_distance);
+    scored.sort_by(|a, b| a.1.cmp(b.1));
+    scored
+        .into_iter()
+        .take(3)
+        .map(|(_, name)| name.to_string())
+        .collect()
 }
 
 /// Reconcile rules from CLI and TOML configuration.

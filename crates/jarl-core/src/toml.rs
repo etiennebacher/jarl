@@ -14,7 +14,7 @@ use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 
-use crate::config::{get_invalid_rules, replace_group_rules};
+use crate::config::{get_invalid_rules, replace_group_rules, unknown_rules_error};
 use crate::per_file_ignores::PerFileIgnores;
 use crate::rule_options::ResolvedRuleOptions;
 use crate::rule_options::assignment::AssignmentConfig;
@@ -417,11 +417,14 @@ fn resolve_per_file_ignores(
     for (pattern, rule_names) in per_file_ignores {
         let passed_by_user = rule_names.iter().map(|s| s.as_str()).collect();
         let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
-        if let Some(invalid_rules) = get_invalid_rules(all_rules, &expanded_rules) {
-            return Err(anyhow::anyhow!(
-                "Unknown rules in `per-file-ignores` for pattern '{}': {}",
-                pattern,
-                invalid_rules.join(", ")
+        if let Some(invalid) = get_invalid_rules(all_rules, &expanded_rules) {
+            return Err(unknown_rules_error(
+                format!(
+                    "Unknown rules in `per-file-ignores` for pattern '{}': {}",
+                    pattern,
+                    invalid.names.join(", ")
+                ),
+                invalid.help,
             ));
         }
         let rules: Vec<Rule> = expanded_rules

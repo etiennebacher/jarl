@@ -849,6 +849,43 @@ select = ["any_is_na", "   ", "any_duplicated"]
 }
 
 #[test]
+fn test_unknown_toml_select_suggests_close_name() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+select = ["any_is_naa"]
+"#,
+        ),
+        ("test.R", "any(is.na(x))"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in field `select` in 'jarl.toml': any_is_naa
+      Help: Did you mean "any_is_na"?
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
 fn test_no_toml_file_uses_all_rules() -> anyhow::Result<()> {
     let case = CliTest::with_file("test.R", "any(is.na(x))\nany(duplicated(x))")?;
 

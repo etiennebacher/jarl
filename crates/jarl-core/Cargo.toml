@@ -27,6 +27,7 @@ biome_formatter.workspace = true
 serde.workspace = true
 toml.workspace = true
 rustc-hash.workspace = true
+strsim.workspace = true
 
 # Error handling and utilities
 anyhow.workspace = true
