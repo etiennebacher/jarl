@@ -7,8 +7,9 @@ use biome_rowan::AstNode;
 ///
 /// ## What it does
 ///
-/// Reports `return()` calls used on the right-hand side of the `magrittr` pipe
-/// `%>%`.
+/// Reports `return()` used on the right-hand side of the `magrittr` pipe
+/// `%>%`, whether written with parentheses (`x %>% return()`) or as a bare
+/// identifier (`x %>% return`).
 ///
 /// The native pipe `|>` is not considered because `x |> return()` is a syntax
 /// error and would be caught by the parser anyway.
@@ -64,12 +65,15 @@ pub fn pipe_return(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>
         return Ok(None);
     }
 
-    // The right-hand side must be a call to `return()`.
-    let Some(call) = right.as_r_call() else {
-        return Ok(None);
+    // The right-hand side must reference `return`. With `%>%`, the call can be
+    // written with parentheses (`x %>% return()`) or without them as a bare
+    // identifier (`x %>% return`); magrittr treats both the same way.
+    let is_return = match &right {
+        AnyRExpression::RCall(call) => get_function_name(call.function()?) == "return",
+        AnyRExpression::RIdentifier(id) => id.name_token()?.text_trimmed() == "return",
+        _ => false,
     };
-    let function = call.function()?;
-    if get_function_name(function) != "return" {
+    if !is_return {
         return Ok(None);
     }
 

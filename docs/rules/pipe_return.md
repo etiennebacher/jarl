@@ -4,8 +4,9 @@
 
 ## What it does
 
-Reports `return()` calls used on the right-hand side of the `magrittr` pipe
-`%>%`.
+Reports `return()` used on the right-hand side of the `magrittr` pipe
+`%>%`, whether written with parentheses (`x %>% return()`) or as a bare
+identifier (`x %>% return`).
 
 The native pipe `|>` is not considered because `x |> return()` is a syntax
 error and would be caught by the parser anyway.
