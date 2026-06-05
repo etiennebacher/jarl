@@ -132,6 +132,33 @@ fn test_unknown_selected_rule_suggests_close_name() -> anyhow::Result<()> {
 }
 
 #[test]
+fn test_unknown_selected_rule_suggests_several_close_names() -> anyhow::Result<()> {
+    let case = CliTest::with_file("test.R", "any(is.na(x))")?;
+    insta::assert_snapshot!(
+        &mut case.command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("seql")
+            .run()
+            .normalize_os_executable_name(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in `--select`: seql
+      Help: Did you mean one of "seq", "seq2"?
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
 fn test_unknown_selected_group_suggests_close_name() -> anyhow::Result<()> {
     let case = CliTest::with_file("test.R", "any(is.na(x))")?;
     insta::assert_snapshot!(
