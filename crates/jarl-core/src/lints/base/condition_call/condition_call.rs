@@ -13,7 +13,7 @@ use biome_rowan::AstNode;
 ///
 /// ## Why is this bad?
 ///
-/// By default, `stop()` appends the call that triggered the error to the
+/// By default, `stop()` shows the call that triggered the error to the
 /// message. This can be noisy and lead to confusion if the user didn't directly
 /// call the function that threw the error.
 ///
