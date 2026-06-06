@@ -454,6 +454,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: Some((4, 0, 0)),
     },
+    LiteralCoercion => {
+        name: "literal_coercion",
+        categories: [Read],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
     MatrixApply => {
         name: "matrix_apply",
         categories: [Perf],

@@ -28,6 +28,7 @@ pub(crate) mod length_levels;
 pub(crate) mod length_test;
 pub(crate) mod lengths;
 pub(crate) mod list2df;
+pub(crate) mod literal_coercion;
 pub(crate) mod matrix_apply;
 pub(crate) mod notin;
 pub(crate) mod numeric_leading_zero;

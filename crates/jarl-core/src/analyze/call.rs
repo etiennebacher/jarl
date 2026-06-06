@@ -17,6 +17,7 @@ use crate::lints::base::length_levels::length_levels::length_levels;
 use crate::lints::base::length_test::length_test::length_test;
 use crate::lints::base::lengths::lengths::lengths;
 use crate::lints::base::list2df::list2df::list2df;
+use crate::lints::base::literal_coercion::literal_coercion::literal_coercion;
 use crate::lints::base::matrix_apply::matrix_apply::matrix_apply;
 use crate::lints::base::outer_negation::outer_negation::outer_negation;
 use crate::lints::base::redundant_ifelse::redundant_ifelse::redundant_ifelse;
@@ -85,6 +86,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled(Rule::List2df) {
         checker.report_diagnostic(list2df(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::LiteralCoercion) {
+        checker.report_diagnostic(literal_coercion(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::MatrixApply) {
         checker.report_diagnostic(matrix_apply(r_expr)?);

@@ -1,0 +1,14 @@
+---
+source: crates/jarl-core/src/lints/base/literal_coercion/mod.rs
+expression: "get_fixed_text(vec![\"as.integer( # comment\\n1 # comment\\n)\"],\n\"literal_coercion\", None)"
+---
+OLD:
+====
+as.integer( # comment
+1 # comment
+)
+NEW:
+====
+as.integer( # comment
+1 # comment
+)
