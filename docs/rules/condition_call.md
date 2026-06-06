@@ -14,6 +14,9 @@ By default, `stop()` shows the call that triggered the error in the
 message. This can be noisy and lead to confusion if the user didn't directly
 call the function that threw the error.
 
+This rule has an unsafe automatic fix (unsafe because it may break tests
+that rely on the exact error message).
+
 ## Example
 
 ```r
