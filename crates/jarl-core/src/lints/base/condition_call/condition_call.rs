@@ -1,0 +1,128 @@
+use crate::diagnostic::*;
+use crate::utils::{get_arg_by_name, get_function_name, node_contains_comments};
+use air_r_syntax::*;
+use biome_rowan::AstNode;
+
+/// Version added: 0.6.0
+///
+/// ## What it does
+///
+/// Checks for calls to `stop()` that display the call in the error message,
+/// either because `call.` is not set (it defaults to `TRUE`) or because it is
+/// explicitly set to `TRUE`.
+///
+/// ## Why is this bad?
+///
+/// By default, `stop()` appends the call that triggered the error to the
+/// message. This can be noisy and lead to confusion if the user didn't directly
+/// call the function that threw the error.
+///
+/// ## Example
+///
+/// ```r
+/// internal_function <- function(x) {
+///   if (x < 5) {
+///     stop("x lower than 5")
+///   }
+/// }
+///
+/// external_function<- function(x) {
+///   out <- internal_function(x)
+///   # do something with `out`...
+/// }
+///
+/// external_function(1)
+/// #> Error in `internal_function()`:
+/// #> x lower than 5
+/// ```
+///
+/// In this case, the error message is slightly confusing because the user never
+/// called `internal_function()` directly. With `call. = FALSE` instead:
+///
+/// ```r
+/// internal_function <- function(x) {
+///   if (x < 5) {
+///     stop("x lower than 5", call. = FALSE)
+///   }
+/// }
+///
+/// external_function<- function(x) {
+///   out <- internal_function(x)
+///   # do something with `out`...
+/// }
+///
+/// external_function(1)
+/// #> Error:
+/// #> x lower than 5
+/// ```
+///
+/// ## References
+///
+/// * https://design.tidyverse.org/err-call.html
+pub fn condition_call(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
+    let function = ast.function()?;
+    let fn_name = get_function_name(function);
+
+    if fn_name != "stop" {
+        return Ok(None);
+    }
+
+    let arguments = ast.arguments()?;
+    let args = arguments.items();
+    let call_arg = get_arg_by_name(&args, "call.");
+
+    let to_skip = node_contains_comments(ast.syntax());
+
+    let (body, suggestion, fix) = match call_arg {
+        // `call.` is set explicitly: only lint when it is literally `TRUE`.
+        Some(arg) => {
+            let Some(value) = arg.value() else {
+                return Ok(None);
+            };
+            if value.as_r_true_expression().is_none() {
+                // `call. = FALSE` (the desired state) or a non-literal value
+                // we can't reason about.
+                return Ok(None);
+            }
+            let value_range = value.syntax().text_trimmed_range();
+            (
+                "Including the call in the error message may lead to confusion.".to_string(),
+                "Use `call. = FALSE` instead.".to_string(),
+                Fix {
+                    content: "FALSE".to_string(),
+                    start: value_range.start().into(),
+                    end: value_range.end().into(),
+                    to_skip,
+                },
+            )
+        }
+        // `call.` is absent: it defaults to `TRUE`, so insert `call. = FALSE`.
+        None => {
+            let last_arg = args.into_iter().filter_map(|x| x.ok()).last();
+            let (start, content) = match last_arg {
+                Some(arg) => (
+                    usize::from(arg.syntax().text_trimmed_range().end()),
+                    ", call. = FALSE".to_string(),
+                ),
+                None => (
+                    usize::from(arguments.l_paren_token()?.text_trimmed_range().end()),
+                    "call. = FALSE".to_string(),
+                ),
+            };
+            (
+                "`stop()` includes the call in the error message by default, which may lead to confusion.".to_string(),
+                "Add `call. = FALSE` to hide it.".to_string(),
+                Fix { content, start, end: start, to_skip },
+            )
+        }
+    };
+
+    let range = ast.syntax().text_trimmed_range();
+    let diagnostic = Diagnostic::new(
+        ViolationData::new("condition_call".to_string(), body, Some(suggestion)),
+        range,
+        fix,
+    );
+
+    Ok(Some(diagnostic))
+}

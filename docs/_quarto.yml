@@ -89,6 +89,7 @@ website:
       - rules/class_equals.md
       - rules/coalesce.md
       - rules/comparison_negation.md
+      - rules/condition_call.md
       - rules/download_file.md
       - rules/dplyr_filter_out.md
       - rules/dplyr_group_by_ungroup.md

@@ -7,6 +7,7 @@ use crate::lints::base::any_duplicated::any_duplicated::any_duplicated;
 use crate::lints::base::any_is_na::any_is_na::any_is_na;
 use crate::lints::base::browser::browser::browser;
 use crate::lints::base::class_equals::class_equals::class_identical;
+use crate::lints::base::condition_call::condition_call::condition_call;
 use crate::lints::base::download_file::download_file::download_file;
 use crate::lints::base::duplicated_arguments::duplicated_arguments::duplicated_arguments;
 use crate::lints::base::fixed_regex::fixed_regex::fixed_regex;
@@ -54,6 +55,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled(Rule::ClassEquals) {
         checker.report_diagnostic(class_identical(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::ConditionCall) {
+        checker.report_diagnostic(condition_call(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::DownloadFile) {
         checker.report_diagnostic(download_file(r_expr)?);

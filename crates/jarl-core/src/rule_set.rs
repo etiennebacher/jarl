@@ -286,6 +286,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    Coalesce => {
+        name: "coalesce",
+        categories: [Read],
+        default: Enabled,
+        fix: Safe,
+        min_r_version: Some((4, 4, 0)),
+    },
     ComparisonNegation => {
         name: "comparison_negation",
         categories: [Read],
@@ -293,12 +300,12 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
-    Coalesce => {
-        name: "coalesce",
+    ConditionCall => {
+        name: "condition_call",
         categories: [Read],
-        default: Enabled,
-        fix: Safe,
-        min_r_version: Some((4, 4, 0)),
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: None,
     },
     DownloadFile => {
         name: "download_file",

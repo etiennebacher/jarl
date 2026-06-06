@@ -6,6 +6,7 @@ pub(crate) mod browser;
 pub(crate) mod class_equals;
 pub(crate) mod coalesce;
 pub(crate) mod comparison_negation;
+pub(crate) mod condition_call;
 pub(crate) mod download_file;
 pub(crate) mod duplicated_arguments;
 pub(crate) mod duplicated_function_definition;
