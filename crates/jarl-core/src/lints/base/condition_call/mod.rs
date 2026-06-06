@@ -54,6 +54,23 @@ mod tests {
     }
 
     #[test]
+    fn test_lint_condition_call_missing_value() {
+        assert_snapshot!(
+            snapshot_lint("stop('boom', call. =)"),
+            @"
+        warning: condition_call
+         --> <test>:1:1
+          |
+        1 | stop('boom', call. =)
+          | --------------------- Including the call in the error message may lead to confusion.
+          |
+          = help: Use `call. = FALSE` instead.
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
     fn test_lint_condition_call_true() {
         assert_snapshot!(
             snapshot_lint("stop('boom', call. = TRUE)"),
@@ -95,6 +112,7 @@ mod tests {
                     "stop('boom', call. = TRUE, domain = x)",
                     "stop('boom', domain = x, call. = TRUE)",
                     "stop(call. = TRUE)",
+                    "stop('boom', call. =)",
                 ],
                 "condition_call",
             )

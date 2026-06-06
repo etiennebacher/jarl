@@ -77,24 +77,41 @@ pub fn condition_call(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let to_skip = node_contains_comments(ast.syntax());
 
     let (body, suggestion, fix) = match call_arg {
-        // `call.` is set explicitly: only lint when it is literally `TRUE`.
+        // Either we have `call. =`, which defaults to TRUE, or we have `call.`
+        // with an explicit value, in which case we report only when this value
+        // is a literal TRUE
         Some(arg) => {
-            let Some(value) = arg.value() else {
-                return Ok(None);
-            };
-            if value.as_r_true_expression().is_none() {
+            let value = arg.value();
+            if let Some(ref value) = value
+                && value.as_r_true_expression().is_none()
+            {
                 // `call. = FALSE` (the desired state) or a non-literal value
                 // we can't reason about.
                 return Ok(None);
-            }
-            let value_range = value.syntax().text_trimmed_range();
+            };
+
+            let (value_range_start, value_range_end) = if let Some(ref value) = value {
+                let range = value.syntax().text_trimmed_range();
+                (range.start(), range.end())
+            } else {
+                let range = arg
+                    .name_clause()
+                    .unwrap()
+                    .eq_token()
+                    .unwrap()
+                    .text_trimmed_range();
+                (
+                    range.start().checked_add(1.into()).unwrap(),
+                    range.end().checked_add(1.into()).unwrap(),
+                )
+            };
             (
                 "Including the call in the error message may lead to confusion.".to_string(),
                 "Use `call. = FALSE` instead.".to_string(),
                 Fix {
                     content: "FALSE".to_string(),
-                    start: value_range.start().into(),
-                    end: value_range.end().into(),
+                    start: value_range_start.into(),
+                    end: value_range_end.into(),
                     to_skip,
                 },
             )

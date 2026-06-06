@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/base/condition_call/mod.rs
-expression: "get_unsafe_fixed_text(vec![\"stop('boom')\", \"stop('a', 'b')\", \"stop()\",\n\"stop('boom', call. = TRUE, domain = x)\",\n\"stop('boom', domain = x, call. = TRUE)\", \"stop(call. = TRUE)\",],\n\"condition_call\",)"
+expression: "get_unsafe_fixed_text(vec![\"stop('boom')\", \"stop('a', 'b')\", \"stop()\",\n\"stop('boom', call. = TRUE, domain = x)\",\n\"stop('boom', domain = x, call. = TRUE)\", \"stop(call. = TRUE)\",\n\"stop('boom', call. =)\",], \"condition_call\",)"
 ---
 OLD:
 ====
@@ -43,3 +43,10 @@ stop(call. = TRUE)
 NEW:
 ====
 stop(call. = FALSE)
+
+OLD:
+====
+stop('boom', call. =)
+NEW:
+====
+stop('boom', call. =FALSE
