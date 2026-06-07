@@ -213,6 +213,48 @@ unknown-option = ["list"]
     Ok(())
 }
 
+// missing_argument ----------------------------------------
+
+#[test]
+fn test_missing_argument_both_skipped_and_extend_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+
+[lint.missing_argument]
+skipped-functions = ["list"]
+extend-skipped-functions = ["my_fun"]
+"#,
+        ),
+        ("test.R", "list(a = 1, a = 2)"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Cannot specify both `skipped-functions` and `extend-skipped-functions` in `[lint.missing_argument]`.
+    "
+    );
+
+    Ok(())
+}
+
 // pipe_consistency ----------------------------------------
 
 #[test]
