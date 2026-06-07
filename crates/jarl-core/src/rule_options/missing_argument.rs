@@ -3,7 +3,14 @@ use std::collections::HashSet;
 use super::resolve_with_extend;
 
 /// Default functions whose empty arguments are not reported.
-const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &["tibble", "list2", "mutate", "summarize", "transmute"];
+const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
+    "switch",
+    "tibble",
+    "list2",
+    "mutate",
+    "summarize",
+    "transmute",
+];
 
 /// TOML options for `[lint.missing_argument]`.
 ///

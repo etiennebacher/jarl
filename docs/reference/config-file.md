@@ -360,7 +360,14 @@ Function names in `skipped-functions` or `extend-skipped-functions` also match
 namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
 `rlang::list2()`.
 
-Default: `skipped-functions = ["tibble", "list2", "mutate", "summarize", "transmute"]`
+Default: `skipped-functions = [
+    "switch",
+    "tibble",
+    "list2",
+    "mutate",
+    "summarize",
+    "transmute",
+]`
 
 ```toml
 [lint]
