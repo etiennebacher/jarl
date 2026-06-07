@@ -11,6 +11,7 @@
   * `equals_na` now also reports `x %notin% NA` cases (#469, @Yousa-Mirage)
   * `empty_file` (#477, @JosephBARBIERDARNAL)
   * `glue` (#484, @novica)
+  * `literal_coercion` (#504)
   * `notin` (#459, @Yousa-Mirage)
   * `pipe_consistency` (#482)
   * `pipe_return` (#502)

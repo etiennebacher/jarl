@@ -11,10 +11,8 @@ use biome_rowan::{AstNode, Direction};
 /// ## What it does
 ///
 /// Checks for coercing a literal to a specific type, e.g. `as.integer(1)` or
-/// `as.character(1)`. This also covers the rlang helpers `lgl()`, `int()`,
+/// `as.character(1)`. This also covers the `rlang` functions `lgl()`, `int()`,
 /// `dbl()` and `chr()`.
-///
-/// This rule is disabled by default.
 ///
 /// ## Why is this bad?
 ///
@@ -22,16 +20,15 @@ use biome_rowan::{AstNode, Direction};
 /// statically. Writing the literal value directly (e.g. `1L` instead of
 /// `as.integer(1)`) is clearer and avoids the unnecessary computation.
 ///
-/// Only scalar literals are flagged. Vectors such as `as.integer(c(1, 2, 3))`
-/// are left alone, since whether to prefer the literal vector is a matter of
-/// taste. Numbers written in scientific notation (e.g. `as.integer(1e6)`) are
-/// also skipped, as the literal form (`1000000L`) is not obviously better.
+/// This rule also recommends using the `NA` typed versions directly, e.g.
+/// `NA_character_` instead of `as.character(NA)`.
 ///
 /// ## Example
 ///
 /// ```r
 /// as.integer(1)
 /// as.character(1)
+/// as.double("foo")
 /// as.logical("true")
 /// rlang::int(1)
 /// ```
@@ -40,6 +37,7 @@ use biome_rowan::{AstNode, Direction};
 /// ```r
 /// 1L
 /// "1"
+/// NA_real_
 /// TRUE
 /// 1L
 /// ```
