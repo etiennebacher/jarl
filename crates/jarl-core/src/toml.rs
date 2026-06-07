@@ -21,6 +21,7 @@ use crate::rule_options::assignment::AssignmentConfig;
 use crate::rule_options::assignment::AssignmentOptions;
 use crate::rule_options::duplicated_arguments::DuplicatedArgumentsOptions;
 use crate::rule_options::implicit_assignment::ImplicitAssignmentOptions;
+use crate::rule_options::missing_argument::MissingArgumentOptions;
 use crate::rule_options::pipe_consistency::PipeConsistencyOptions;
 use crate::rule_options::quotes::QuotesOptions;
 use crate::rule_options::undesirable_function::UndesirableFunctionOptions;
@@ -266,6 +267,15 @@ pub struct LinterTomlOptions {
     #[serde(rename = "implicit_assignment")]
     pub implicit_assignment: Option<ImplicitAssignmentOptions>,
 
+    /// # Options for the `missing_argument` rule
+    ///
+    /// Use `skipped-functions` to fully replace the default list of functions
+    /// whose empty arguments are allowed. Use `extend-skipped-functions` to
+    /// add to the default list.
+    /// Specifying both is an error.
+    #[serde(rename = "missing_argument")]
+    pub missing_argument: Option<MissingArgumentOptions>,
+
     /// # Options for the `pipe_consistency` rule
     ///
     /// Use `preferred` to choose the preferred pipe operator. Valid values
@@ -387,6 +397,7 @@ impl TomlOptions {
                 assignment_options.as_ref(),
                 linter.duplicated_arguments.as_ref(),
                 linter.implicit_assignment.as_ref(),
+                linter.missing_argument.as_ref(),
                 linter.pipe_consistency.as_ref(),
                 linter.quotes.as_ref(),
                 linter.undesirable_function.as_ref(),

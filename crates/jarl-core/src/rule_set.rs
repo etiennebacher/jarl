@@ -468,6 +468,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    MissingArgument => {
+        name: "missing_argument",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     NotIn => {
         name: "notin",
         categories: [Read],

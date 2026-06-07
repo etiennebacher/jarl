@@ -30,6 +30,7 @@ pub(crate) mod lengths;
 pub(crate) mod list2df;
 pub(crate) mod literal_coercion;
 pub(crate) mod matrix_apply;
+pub(crate) mod missing_argument;
 pub(crate) mod notin;
 pub(crate) mod numeric_leading_zero;
 pub(crate) mod nzchar;

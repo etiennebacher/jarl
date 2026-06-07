@@ -12,6 +12,7 @@
   * `empty_file` (#477, @JosephBARBIERDARNAL)
   * `glue` (#484, @novica)
   * `literal_coercion` (#504)
+  * `missing_argument` (#506)
   * `notin` (#459, @Yousa-Mirage)
   * `pipe_consistency` (#482)
   * `pipe_return` (#502)

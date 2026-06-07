@@ -350,6 +350,27 @@ Default: `skipped-functions = ["expect_error", "expect_warning", "expect_message
 skipped-functions = ["list"]
 ```
 
+### `missing_argument`
+
+Use `skipped-functions` to fully replace the default list of functions that are
+allowed to contain missing arguments. Use `extend-skipped-functions` to add to
+the default list. Specifying both is an error.
+
+Function names in `skipped-functions` or `extend-skipped-functions` also match
+namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
+`rlang::list2()`.
+
+Default: `skipped-functions = ["tibble", "list2", "mutate", "summarize", "transmute"]`
+
+```toml
+[lint]
+...
+
+[lint.missing_argument]
+# Ignore missing arguments in `my_function()` only.
+skipped-functions = ["my_function"]
+```
+
 ### `pipe_consistency`
 
 This takes a single value (`"|>"` or `"%>%"`) indicating the preferred
