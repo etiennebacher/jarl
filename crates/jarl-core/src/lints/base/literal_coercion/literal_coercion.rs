@@ -109,7 +109,7 @@ pub fn literal_coercion(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let diagnostic = Diagnostic::new(
         ViolationData::new(
             "literal_coercion".to_string(),
-            format!("This coercion can be simplified."),
+            "This coercion can be simplified.".to_string(),
             Some(format!("Use `{}` instead of `{}`.", result, call_text)),
         ),
         range,
