@@ -33,6 +33,8 @@ mod tests {
         expect_no_lint("as.raw(c(1, 2, 3))", "literal_coercion", None);
         // Not taking a stand on as.complex(0) vs. 0 + 0i.
         expect_no_lint("as.complex(0)", "literal_coercion", None);
+        // Ignore complex values
+        expect_no_lint("as.integer(1i)", "literal_coercion", None);
         // Scientific notation is left alone.
         expect_no_lint("as.integer(1e6)", "literal_coercion", None);
         // A range is not a scalar literal.
@@ -216,12 +218,17 @@ mod tests {
         let snippets = vec![
             "as.logical(1L)",
             "as.logical(1)",
+            "as.logical(TRUE)",
             "as.logical(\"true\")",
             "as.logical(\"false\")",
             "as.integer(1)",
+            "as.integer('1')",
+            "as.integer(1L)",
+            "as.integer(TRUE)",
             "as.numeric(1)",
             "as.double(1)",
             "as.double(TRUE)",
+            "as.double('1')",
             "as.double('hi')",
             "as.character(1)",
             "as.character(1L)",

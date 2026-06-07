@@ -6,17 +6,27 @@ as.logical(1L)
   => This coercion can be simplified.
 as.logical(1)
   => This coercion can be simplified.
+as.logical(TRUE)
+  => This coercion can be simplified.
 as.logical("true")
   => This coercion can be simplified.
 as.logical("false")
   => This coercion can be simplified.
 as.integer(1)
   => This coercion can be simplified.
+as.integer('1')
+  => This coercion can be simplified.
+as.integer(1L)
+  => This coercion can be simplified.
+as.integer(TRUE)
+  => This coercion can be simplified.
 as.numeric(1)
   => This coercion can be simplified.
 as.double(1)
   => This coercion can be simplified.
 as.double(TRUE)
+  => This coercion can be simplified.
+as.double('1')
   => This coercion can be simplified.
 as.double('hi')
   => This coercion can be simplified.
