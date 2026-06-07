@@ -134,6 +134,19 @@ mod tests {
         "
         );
         assert_snapshot!(
+            snapshot_lint("as.logical('a')"),
+            @"
+        warning: literal_coercion
+         --> <test>:1:1
+          |
+        1 | as.logical('a')
+          | --------------- This coercion can be simplified.
+          |
+          = help: Use `NA` instead of `as.logical('a')`.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
             snapshot_lint("as.integer(2147483648)"),
             @"
         warning: literal_coercion
@@ -199,14 +212,19 @@ mod tests {
             "as.logical(1L)",
             "as.logical(1)",
             "as.logical(\"true\")",
+            "as.logical(\"false\")",
             "as.integer(1)",
             "as.numeric(1)",
             "as.double(1)",
+            "as.double(TRUE)",
+            "as.double('hi')",
             "as.character(1)",
+            "as.character(1L)",
             "as.character(\"e\")",
-            "as.character(\"E\")",
+            "as.character(TRUE)",
             "as.integer(NA)",
             "as.numeric(NA)",
+            "as.logical(NA)",
             "as.double(NA)",
             "as.character(NA)",
             // rlang helpers.
