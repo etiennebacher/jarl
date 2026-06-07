@@ -28,6 +28,8 @@ as.character("e")
   => This coercion can be simplified.
 as.character(TRUE)
   => This coercion can be simplified.
+as.character(FALSE)
+  => This coercion can be simplified.
 as.integer(NA)
   => This coercion can be simplified.
 as.numeric(NA)

@@ -21,6 +21,11 @@ mod tests {
             None,
         );
 
+        // Empty calls are not flagged because they could lead to perf decrease
+        // https://stackoverflow.com/questions/79952588/why-is-as-logical-much-faster-than-logical0
+        expect_no_lint("as.integer()", "literal_coercion", None);
+        expect_no_lint("as.integer(x = )", "literal_coercion", None);
+
         // We are agnostic about preferring literals over coerced vectors.
         expect_no_lint("as.integer(c(1, 2, 3))", "literal_coercion", None);
         expect_no_lint("as.character(c(1, 2, 3))", "literal_coercion", None);
@@ -222,6 +227,7 @@ mod tests {
             "as.character(1L)",
             "as.character(\"e\")",
             "as.character(TRUE)",
+            "as.character(FALSE)",
             "as.integer(NA)",
             "as.numeric(NA)",
             "as.logical(NA)",
