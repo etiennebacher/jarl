@@ -3,6 +3,7 @@ use annotate_snippets::Renderer;
 use clap::ValueEnum;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::fs;
 use std::io::{BufWriter, Write};
 
@@ -130,6 +131,8 @@ pub enum OutputFormat {
     Github,
     /// Print diagnostics as JSON
     Json,
+    /// Print diagnostics as SARIF 2.1.0 JSON
+    Sarif,
 }
 
 /// Takes the diagnostics and parsing errors in each file and then displays
@@ -282,6 +285,255 @@ impl Emitter for GithubEmitter {
             writeln!(writer, "[{}] {}", diagnostic.message.name, message)?;
         }
 
+        writer.flush()?;
+        Ok(())
+    }
+}
+
+/// An emitter producing SARIF 2.1.0-compliant JSON output.
+///
+/// Static Analysis Results Interchange Format (SARIF) is a standard format for
+/// static analysis results, consumed by tools such as GitHub Code Scanning. See
+/// [SARIF 2.1.0](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html).
+pub struct SarifEmitter;
+
+const SARIF_HELP_URI_BASE: &str = "https://jarl.etiennebacher.com/rules/";
+
+#[derive(Debug, Serialize)]
+struct SarifOutput<'a> {
+    #[serde(rename = "$schema")]
+    schema: &'static str,
+    version: &'static str,
+    runs: [SarifRun<'a>; 1],
+}
+
+#[derive(Debug, Serialize)]
+struct SarifRun<'a> {
+    tool: SarifTool<'a>,
+    results: Vec<SarifResult<'a>>,
+}
+
+#[derive(Debug, Serialize)]
+struct SarifTool<'a> {
+    driver: SarifDriver<'a>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SarifDriver<'a> {
+    name: &'static str,
+    information_uri: &'static str,
+    version: &'static str,
+    rules: Vec<SarifRule<'a>>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SarifRule<'a> {
+    id: &'a str,
+    short_description: SarifMessage<'a>,
+    help: SarifMessage<'a>,
+    help_uri: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SarifResult<'a> {
+    rule_id: &'a str,
+    level: &'static str,
+    message: SarifMessage<'a>,
+    locations: [SarifLocation; 1],
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    fixes: Vec<SarifFix>,
+}
+
+#[derive(Debug, Serialize)]
+struct SarifMessage<'a> {
+    text: Cow<'a, str>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SarifLocation {
+    physical_location: SarifPhysicalLocation,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SarifPhysicalLocation {
+    artifact_location: SarifArtifactLocation,
+    region: SarifRegion,
+}
+
+#[derive(Debug, Serialize)]
+struct SarifArtifactLocation {
+    uri: String,
+}
+
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SarifRegion {
+    start_line: usize,
+    start_column: usize,
+    end_line: usize,
+    end_column: usize,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SarifFix {
+    description: SarifMessage<'static>,
+    artifact_changes: [SarifArtifactChange; 1],
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SarifArtifactChange {
+    artifact_location: SarifArtifactLocation,
+    replacements: [SarifReplacement; 1],
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SarifReplacement {
+    deleted_region: SarifRegion,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    inserted_content: Option<SarifMessage<'static>>,
+}
+
+/// Compute the 1-indexed (row, column) of a byte offset from the file's newline
+/// positions. Unlike `jarl_core::utils::find_row_col`, this treats a newline at
+/// `offset` as belonging to the line it terminates, which keeps range *end*
+/// offsets (which can land exactly on a newline) from underflowing.
+fn offset_to_line_column(offset: usize, new_lines: &[usize]) -> (usize, usize) {
+    let new_lines_before = new_lines.iter().filter(|&&n| n < offset).count();
+    let last_new_line = new_lines.iter().rfind(|&&n| n < offset).copied();
+    let column = match last_new_line {
+        Some(n) => offset - n - 1,
+        None => offset,
+    };
+    (new_lines_before + 1, column + 1)
+}
+
+/// Convert a byte range into a 1-indexed SARIF region using the file's newline
+/// positions.
+fn range_to_region(start: usize, end: usize, new_lines: &[usize]) -> SarifRegion {
+    let (start_line, start_column) = offset_to_line_column(start, new_lines);
+    let (end_line, end_column) = offset_to_line_column(end, new_lines);
+    SarifRegion { start_line, start_column, end_line, end_column }
+}
+
+impl Emitter for SarifEmitter {
+    fn emit<W: Write>(
+        &self,
+        writer: &mut W,
+        diagnostics: &[&Diagnostic],
+        _errors: &[(String, anyhow::Error)],
+    ) -> anyhow::Result<()> {
+        let mut writer = BufWriter::new(writer);
+
+        // Cache each file's newline positions so ranges can be converted to
+        // line/column regions without re-reading the source.
+        let mut new_lines_cache: std::collections::HashMap<std::path::PathBuf, Vec<usize>> =
+            std::collections::HashMap::new();
+        let mut new_lines_for = |path: &std::path::Path| -> Option<Vec<usize>> {
+            if let Some(cached) = new_lines_cache.get(path) {
+                return Some(cached.clone());
+            }
+            let content = fs::read_to_string(path).ok()?;
+            let new_lines = jarl_core::utils::find_new_lines_from_content(&content);
+            new_lines_cache.insert(path.to_path_buf(), new_lines.clone());
+            Some(new_lines)
+        };
+
+        // Collect unique rules (sorted by name) using the first diagnostic body
+        // we see as the rule's short description, since Jarl has no static
+        // per-rule description text.
+        let mut rule_bodies: std::collections::BTreeMap<&str, &str> =
+            std::collections::BTreeMap::new();
+        for diagnostic in diagnostics {
+            rule_bodies
+                .entry(&diagnostic.message.name)
+                .or_insert(&diagnostic.message.body);
+        }
+        let rules: Vec<SarifRule> = rule_bodies
+            .into_iter()
+            .map(|(name, body)| SarifRule {
+                id: name,
+                short_description: SarifMessage { text: Cow::Borrowed(body) },
+                help: SarifMessage { text: Cow::Borrowed(body) },
+                help_uri: format!("{SARIF_HELP_URI_BASE}{name}"),
+            })
+            .collect();
+
+        let mut results = Vec::with_capacity(diagnostics.len());
+        for diagnostic in diagnostics {
+            let Some(new_lines) = new_lines_for(&diagnostic.filename) else {
+                continue;
+            };
+
+            let uri = relativize_path(diagnostic.filename.clone());
+            let region = range_to_region(
+                diagnostic.range.start().into(),
+                diagnostic.range.end().into(),
+                &new_lines,
+            );
+
+            let message = if let Some(suggestion) = &diagnostic.message.suggestion {
+                format!("{} {}", diagnostic.message.body, suggestion)
+            } else {
+                diagnostic.message.body.clone()
+            };
+
+            // A fix is only emitted when it edits the source (not skipped, and
+            // it either inserts content or deletes a non-empty range).
+            let fix = &diagnostic.fix;
+            let fixes = if !fix.to_skip && (fix.start != fix.end || !fix.content.is_empty()) {
+                let deleted_region = range_to_region(fix.start, fix.end, &new_lines);
+                let inserted_content = (!fix.content.is_empty())
+                    .then(|| SarifMessage { text: Cow::Owned(fix.content.clone()) });
+                vec![SarifFix {
+                    description: SarifMessage { text: Cow::Owned(message.clone()) },
+                    artifact_changes: [SarifArtifactChange {
+                        artifact_location: SarifArtifactLocation { uri: uri.clone() },
+                        replacements: [SarifReplacement { deleted_region, inserted_content }],
+                    }],
+                }]
+            } else {
+                Vec::new()
+            };
+
+            results.push(SarifResult {
+                rule_id: &diagnostic.message.name,
+                level: "warning",
+                message: SarifMessage { text: Cow::Owned(message) },
+                locations: [SarifLocation {
+                    physical_location: SarifPhysicalLocation {
+                        artifact_location: SarifArtifactLocation { uri },
+                        region,
+                    },
+                }],
+                fixes,
+            });
+        }
+
+        let output = SarifOutput {
+            schema: "https://json.schemastore.org/sarif-2.1.0.json",
+            version: "2.1.0",
+            runs: [SarifRun {
+                tool: SarifTool {
+                    driver: SarifDriver {
+                        name: "jarl",
+                        information_uri: "https://github.com/etiennebacher/jarl",
+                        version: env!("CARGO_PKG_VERSION"),
+                        rules,
+                    },
+                },
+                results,
+            }],
+        };
+
+        serde_json::to_writer_pretty(&mut writer, &output)?;
         writer.flush()?;
         Ok(())
     }
