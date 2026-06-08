@@ -353,7 +353,8 @@ fn test_output_sarif() -> anyhow::Result<()> {
                 .arg("--output-format")
                 .arg("sarif")
                 .run()
-                .normalize_os_executable_name(),
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
             @r#"
 
         success: false
@@ -378,7 +379,10 @@ fn test_output_sarif() -> anyhow::Result<()> {
                       "help": {
                         "text": "`any(duplicated(...))` is inefficient."
                       },
-                      "helpUri": "https://jarl.etiennebacher.com/rules/any_duplicated"
+                      "helpUri": "https://jarl.etiennebacher.com/rules/any_duplicated",
+                      "defaultConfiguration": {
+                        "level": "warning"
+                      }
                     },
                     {
                       "id": "any_is_na",
@@ -388,14 +392,24 @@ fn test_output_sarif() -> anyhow::Result<()> {
                       "help": {
                         "text": "`any(is.na(...))` is inefficient."
                       },
-                      "helpUri": "https://jarl.etiennebacher.com/rules/any_is_na"
+                      "helpUri": "https://jarl.etiennebacher.com/rules/any_is_na",
+                      "defaultConfiguration": {
+                        "level": "warning"
+                      }
                     }
                   ]
+                }
+              },
+              "columnKind": "utf16CodeUnits",
+              "originalUriBaseIds": {
+                "ROOTPATH": {
+                  "uri": "file://[TEMP_DIR]/"
                 }
               },
               "results": [
                 {
                   "ruleId": "any_is_na",
+                  "ruleIndex": 1,
                   "level": "warning",
                   "message": {
                     "text": "`any(is.na(...))` is inefficient. Use `anyNA(...)` instead."
@@ -404,7 +418,8 @@ fn test_output_sarif() -> anyhow::Result<()> {
                     {
                       "physicalLocation": {
                         "artifactLocation": {
-                          "uri": "test.R"
+                          "uri": "test.R",
+                          "uriBaseId": "ROOTPATH"
                         },
                         "region": {
                           "startLine": 1,
@@ -423,7 +438,8 @@ fn test_output_sarif() -> anyhow::Result<()> {
                       "artifactChanges": [
                         {
                           "artifactLocation": {
-                            "uri": "test.R"
+                            "uri": "test.R",
+                            "uriBaseId": "ROOTPATH"
                           },
                           "replacements": [
                             {
@@ -445,6 +461,7 @@ fn test_output_sarif() -> anyhow::Result<()> {
                 },
                 {
                   "ruleId": "any_duplicated",
+                  "ruleIndex": 0,
                   "level": "warning",
                   "message": {
                     "text": "`any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead."
@@ -453,7 +470,8 @@ fn test_output_sarif() -> anyhow::Result<()> {
                     {
                       "physicalLocation": {
                         "artifactLocation": {
-                          "uri": "test2.R"
+                          "uri": "test2.R",
+                          "uriBaseId": "ROOTPATH"
                         },
                         "region": {
                           "startLine": 1,
@@ -472,7 +490,8 @@ fn test_output_sarif() -> anyhow::Result<()> {
                       "artifactChanges": [
                         {
                           "artifactLocation": {
-                            "uri": "test2.R"
+                            "uri": "test2.R",
+                            "uriBaseId": "ROOTPATH"
                           },
                           "replacements": [
                             {

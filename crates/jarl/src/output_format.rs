@@ -308,9 +308,28 @@ struct SarifOutput<'a> {
 }
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct SarifRun<'a> {
     tool: SarifTool<'a>,
+    /// Columns are reported in UTF-16 code units, matching the SARIF default
+    /// and the convention used by other R linters (e.g. lintr).
+    column_kind: &'static str,
+    original_uri_base_ids: OriginalUriBaseIds,
     results: Vec<SarifResult<'a>>,
+}
+
+/// Base URIs that result locations are resolved against. Jarl uses a single
+/// `ROOTPATH` pointing at the current working directory, so each result's `uri`
+/// is stored relative to it.
+#[derive(Debug, Serialize)]
+struct OriginalUriBaseIds {
+    #[serde(rename = "ROOTPATH")]
+    root_path: SarifUriBase,
+}
+
+#[derive(Debug, Serialize)]
+struct SarifUriBase {
+    uri: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -334,12 +353,19 @@ struct SarifRule<'a> {
     short_description: SarifMessage<'a>,
     help: SarifMessage<'a>,
     help_uri: String,
+    default_configuration: SarifDefaultConfiguration,
+}
+
+#[derive(Debug, Serialize)]
+struct SarifDefaultConfiguration {
+    level: &'static str,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct SarifResult<'a> {
     rule_id: &'a str,
+    rule_index: usize,
     level: &'static str,
     message: SarifMessage<'a>,
     locations: [SarifLocation; 1],
@@ -366,8 +392,10 @@ struct SarifPhysicalLocation {
 }
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct SarifArtifactLocation {
     uri: String,
+    uri_base_id: &'static str,
 }
 
 #[derive(Debug, Clone, Copy, Serialize)]
@@ -401,25 +429,28 @@ struct SarifReplacement {
     inserted_content: Option<SarifMessage<'static>>,
 }
 
-/// Compute the 1-indexed (row, column) of a byte offset from the file's newline
-/// positions. Unlike `jarl_core::utils::find_row_col`, this treats a newline at
-/// `offset` as belonging to the line it terminates, which keeps range *end*
-/// offsets (which can land exactly on a newline) from underflowing.
-fn offset_to_line_column(offset: usize, new_lines: &[usize]) -> (usize, usize) {
-    let new_lines_before = new_lines.iter().filter(|&&n| n < offset).count();
-    let last_new_line = new_lines.iter().rfind(|&&n| n < offset).copied();
-    let column = match last_new_line {
-        Some(n) => offset - n - 1,
-        None => offset,
-    };
-    (new_lines_before + 1, column + 1)
+/// Compute the 1-indexed line and column of a byte `offset` within `content`.
+///
+/// The column is measured in UTF-16 code units (the SARIF default declared via
+/// `columnKind`), so it is correct even when the line contains non-ASCII
+/// characters. `offset` must fall on a UTF-8 char boundary, which holds for the
+/// byte offsets produced by the parser.
+fn offset_to_line_column(content: &str, offset: usize) -> (usize, usize) {
+    let before = &content[..offset];
+    let line = before.bytes().filter(|&b| b == b'\n').count() + 1;
+    let line_start = before.rfind('\n').map_or(0, |p| p + 1);
+    let column = content[line_start..offset]
+        .chars()
+        .map(char::len_utf16)
+        .sum::<usize>()
+        + 1;
+    (line, column)
 }
 
-/// Convert a byte range into a 1-indexed SARIF region using the file's newline
-/// positions.
-fn range_to_region(start: usize, end: usize, new_lines: &[usize]) -> SarifRegion {
-    let (start_line, start_column) = offset_to_line_column(start, new_lines);
-    let (end_line, end_column) = offset_to_line_column(end, new_lines);
+/// Convert a byte range into a 1-indexed SARIF region (UTF-16 columns).
+fn range_to_region(content: &str, start: usize, end: usize) -> SarifRegion {
+    let (start_line, start_column) = offset_to_line_column(content, start);
+    let (end_line, end_column) = offset_to_line_column(content, end);
     SarifRegion { start_line, start_column, end_line, end_column }
 }
 
@@ -432,19 +463,10 @@ impl Emitter for SarifEmitter {
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
 
-        // Cache each file's newline positions so ranges can be converted to
-        // line/column regions without re-reading the source.
-        let mut new_lines_cache: std::collections::HashMap<std::path::PathBuf, Vec<usize>> =
+        // Cache each file's contents so ranges can be converted to line/column
+        // regions without re-reading the source.
+        let mut content_cache: std::collections::HashMap<std::path::PathBuf, String> =
             std::collections::HashMap::new();
-        let mut new_lines_for = |path: &std::path::Path| -> Option<Vec<usize>> {
-            if let Some(cached) = new_lines_cache.get(path) {
-                return Some(cached.clone());
-            }
-            let content = fs::read_to_string(path).ok()?;
-            let new_lines = jarl_core::utils::find_new_lines_from_content(&content);
-            new_lines_cache.insert(path.to_path_buf(), new_lines.clone());
-            Some(new_lines)
-        };
 
         // Collect unique rules (sorted by name) using the first diagnostic body
         // we see as the rule's short description, since Jarl has no static
@@ -463,20 +485,35 @@ impl Emitter for SarifEmitter {
                 short_description: SarifMessage { text: Cow::Borrowed(body) },
                 help: SarifMessage { text: Cow::Borrowed(body) },
                 help_uri: format!("{SARIF_HELP_URI_BASE}{name}"),
+                default_configuration: SarifDefaultConfiguration { level: "warning" },
             })
+            .collect();
+
+        // Map each rule name to its index in `rules` so results can reference it
+        // via `ruleIndex`.
+        let rule_indices: std::collections::HashMap<&str, usize> = rules
+            .iter()
+            .enumerate()
+            .map(|(index, rule)| (rule.id, index))
             .collect();
 
         let mut results = Vec::with_capacity(diagnostics.len());
         for diagnostic in diagnostics {
-            let Some(new_lines) = new_lines_for(&diagnostic.filename) else {
-                continue;
+            let content = match content_cache.entry(diagnostic.filename.clone()) {
+                std::collections::hash_map::Entry::Occupied(entry) => entry.into_mut(),
+                std::collections::hash_map::Entry::Vacant(entry) => {
+                    let Ok(content) = fs::read_to_string(&diagnostic.filename) else {
+                        continue;
+                    };
+                    entry.insert(content)
+                }
             };
 
             let uri = relativize_path(diagnostic.filename.clone());
             let region = range_to_region(
+                content,
                 diagnostic.range.start().into(),
                 diagnostic.range.end().into(),
-                &new_lines,
             );
 
             let message = if let Some(suggestion) = &diagnostic.message.suggestion {
@@ -489,13 +526,16 @@ impl Emitter for SarifEmitter {
             // it either inserts content or deletes a non-empty range).
             let fix = &diagnostic.fix;
             let fixes = if !fix.to_skip && (fix.start != fix.end || !fix.content.is_empty()) {
-                let deleted_region = range_to_region(fix.start, fix.end, &new_lines);
+                let deleted_region = range_to_region(content, fix.start, fix.end);
                 let inserted_content = (!fix.content.is_empty())
                     .then(|| SarifMessage { text: Cow::Owned(fix.content.clone()) });
                 vec![SarifFix {
                     description: SarifMessage { text: Cow::Owned(message.clone()) },
                     artifact_changes: [SarifArtifactChange {
-                        artifact_location: SarifArtifactLocation { uri: uri.clone() },
+                        artifact_location: SarifArtifactLocation {
+                            uri: uri.clone(),
+                            uri_base_id: "ROOTPATH",
+                        },
                         replacements: [SarifReplacement { deleted_region, inserted_content }],
                     }],
                 }]
@@ -505,17 +545,24 @@ impl Emitter for SarifEmitter {
 
             results.push(SarifResult {
                 rule_id: &diagnostic.message.name,
+                rule_index: rule_indices[diagnostic.message.name.as_str()],
                 level: "warning",
                 message: SarifMessage { text: Cow::Owned(message) },
                 locations: [SarifLocation {
                     physical_location: SarifPhysicalLocation {
-                        artifact_location: SarifArtifactLocation { uri },
+                        artifact_location: SarifArtifactLocation { uri, uri_base_id: "ROOTPATH" },
                         region,
                     },
                 }],
                 fixes,
             });
         }
+
+        // Base URI that result paths are resolved against. Paths are stored
+        // relative to the current working directory.
+        let root_uri = std::env::current_dir()
+            .map(|dir| format!("file://{}/", dir.display().to_string().replace('\\', "/")))
+            .unwrap_or_else(|_| "file://./".to_string());
 
         let output = SarifOutput {
             schema: "https://json.schemastore.org/sarif-2.1.0.json",
@@ -528,6 +575,10 @@ impl Emitter for SarifEmitter {
                         version: env!("CARGO_PKG_VERSION"),
                         rules,
                     },
+                },
+                column_kind: "utf16CodeUnits",
+                original_uri_base_ids: OriginalUriBaseIds {
+                    root_path: SarifUriBase { uri: root_uri },
                 },
                 results,
             }],
