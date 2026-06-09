@@ -509,9 +509,7 @@ impl Emitter for SarifEmitter {
                 }
             };
 
-            let uri = relativize_path(diagnostic.filename.clone())
-                .replace('\\', "/");
-
+            let uri = relativize_path(diagnostic.filename.clone()).replace('\\', "/");
             let region = range_to_region(
                 content,
                 diagnostic.range.start().into(),
