@@ -509,7 +509,7 @@ impl Emitter for SarifEmitter {
                 }
             };
 
-            let uri = relativize_path(diagnostic.filename.clone());
+            let uri = relativize_path(diagnostic.filename.clone()).replace('\\', "/");
             let region = range_to_region(
                 content,
                 diagnostic.range.start().into(),
@@ -520,7 +520,8 @@ impl Emitter for SarifEmitter {
                 format!("{} {}", diagnostic.message.body, suggestion)
             } else {
                 diagnostic.message.body.clone()
-            };
+            }
+            .replace('\\', "/");
 
             // A fix is only emitted when it edits the source (not skipped, and
             // it either inserts content or deletes a non-empty range).
