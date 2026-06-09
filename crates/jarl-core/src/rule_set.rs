@@ -615,6 +615,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    UnnecessaryParenthesis => {
+        name: "unnecessary_parenthesis",
+        categories: [Read],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     UnreachableCode => {
         name: "unreachable_code",
         categories: [Read, Susp],

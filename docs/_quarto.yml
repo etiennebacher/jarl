@@ -2,13 +2,13 @@ project:
   type: website
   pre-render: copy_readme.R
 filters:
-- newpagelink.lua
+  - newpagelink.lua
 format:
   html:
     theme: morph
     css:
-    - styles.css
-    - dark-mode.css
+      - styles.css
+      - dark-mode.css
     include-in-header:
       file: dark-mode-header.html
     toc: true
@@ -23,136 +23,137 @@ website:
   repo-url: https://github.com/etiennebacher/jarl
   repo-subdir: docs
   repo-actions:
-  - source
-  - issue
+    - source
+    - issue
   search:
     location: navbar
     type: textbox
     keyboard-shortcut: s
   navbar:
     right:
-    - icon: github
-      href: https://github.com/etiennebacher/jarl
-      aria-label: GitHub
+      - icon: github
+        href: https://github.com/etiennebacher/jarl
+        aria-label: GitHub
     left:
-    - text: Getting started
-      href: getting-started.md
-    - text: By Example
-      href: by-example.qmd
-    - text: How-to
-      menu:
-      - text: Suppression comments
-        href: howto/suppression-comments.md
-      - text: R Markdown & Quarto
-        href: howto/rmarkdown-quarto.md
-      - text: R versions
-        href: howto/r-versions.md
-      - text: Package-specific rules
-        href: howto/package-specific.md
-      - text: Editor setup
-        href: howto/editors.md
-      - text: Continuous integration
-        href: howto/ci.md
-      - text: Pre-commit tools
-        href: howto/precommit.md
-    - text: Reference
-      menu:
-      - text: Rules
-        href: rules.qmd
-      - text: CLI options
-        href: reference/cli.md
-      - text: Configuration file
-        href: reference/config-file.md
-      - text: Environment variables
-        href: reference/envvars.md
-    - text: Contributing
-      menu:
-      - text: General information
-        href: contributing.md
-      - text: 'Tutorial: add a new rule'
-        href: contributing-rule-example.md
-    - text: Changelog
-      href: changelog.md
+      - text: Getting started
+        href: getting-started.md
+      - text: By Example
+        href: by-example.qmd
+      - text: How-to
+        menu:
+          - text: Suppression comments
+            href: howto/suppression-comments.md
+          - text: R Markdown & Quarto
+            href: howto/rmarkdown-quarto.md
+          - text: R versions
+            href: howto/r-versions.md
+          - text: Package-specific rules
+            href: howto/package-specific.md
+          - text: Editor setup
+            href: howto/editors.md
+          - text: Continuous integration
+            href: howto/ci.md
+          - text: Pre-commit tools
+            href: howto/precommit.md
+      - text: Reference
+        menu:
+          - text: Rules
+            href: rules.qmd
+          - text: CLI options
+            href: reference/cli.md
+          - text: Configuration file
+            href: reference/config-file.md
+          - text: Environment variables
+            href: reference/envvars.md
+      - text: Contributing
+        menu:
+          - text: General information
+            href: contributing.md
+          - text: "Tutorial: add a new rule"
+            href: contributing-rule-example.md
+      - text: Changelog
+        href: changelog.md
   sidebar:
-  - title: Rules
-    style: floating
-    contents:
-    - rules.qmd
-    - section: List of rules
+    - title: Rules
+      style: floating
       contents:
-      - rules/all_equal.md
-      - rules/any_duplicated.md
-      - rules/any_is_na.md
-      - rules/assignment.md
-      - rules/blanket_suppression.md
-      - rules/browser.md
-      - rules/class_equals.md
-      - rules/coalesce.md
-      - rules/comparison_negation.md
-      - rules/condition_call.md
-      - rules/download_file.md
-      - rules/dplyr_filter_out.md
-      - rules/dplyr_group_by_ungroup.md
-      - rules/duplicated_arguments.md
-      - rules/duplicated_function_definition.md
-      - rules/empty_assignment.md
-      - rules/empty_file.md
-      - rules/equals_na.md
-      - rules/equals_nan.md
-      - rules/equals_null.md
-      - rules/expect_length.md
-      - rules/expect_match.md
-      - rules/expect_named.md
-      - rules/expect_no_match.md
-      - rules/expect_not.md
-      - rules/expect_null.md
-      - rules/expect_s3_class.md
-      - rules/expect_true_false.md
-      - rules/expect_type.md
-      - rules/fixed_regex.md
-      - rules/for_loop_dup_index.md
-      - rules/for_loop_index.md
-      - rules/glue.md
-      - rules/grepv.md
-      - rules/if_always_true.md
-      - rules/implicit_assignment.md
-      - rules/internal_function.md
-      - rules/invalid_chunk_suppression.md
-      - rules/is_numeric.md
-      - rules/length_levels.md
-      - rules/length_test.md
-      - rules/lengths.md
-      - rules/list2df.md
-      - rules/literal_coercion.md
-      - rules/matrix_apply.md
-      - rules/misnamed_suppression.md
-      - rules/misplaced_file_suppression.md
-      - rules/misplaced_suppression.md
-      - rules/missing_argument.md
-      - rules/notin.md
-      - rules/numeric_leading_zero.md
-      - rules/nzchar.md
-      - rules/outdated_suppression.md
-      - rules/outer_negation.md
-      - rules/pipe_consistency.md
-      - rules/pipe_return.md
-      - rules/quotes.md
-      - rules/redundant_equals.md
-      - rules/redundant_ifelse.md
-      - rules/repeat.md
-      - rules/sample_int.md
-      - rules/seq.md
-      - rules/seq2.md
-      - rules/sort.md
-      - rules/sprintf.md
-      - rules/string_boundary.md
-      - rules/system_file.md
-      - rules/true_false_symbol.md
-      - rules/undesirable_function.md
-      - rules/unexplained_suppression.md
-      - rules/unmatched_range_suppression.md
-      - rules/unnecessary_nesting.md
-      - rules/unreachable_code.md
-      - rules/unused_function.md
-      - rules/vector_logic.md
-      - rules/which_grepl.md
+        - rules.qmd
+        - section: List of rules
+          contents:
+            - rules/all_equal.md
+            - rules/any_duplicated.md
+            - rules/any_is_na.md
+            - rules/assignment.md
+            - rules/blanket_suppression.md
+            - rules/browser.md
+            - rules/class_equals.md
+            - rules/coalesce.md
+            - rules/comparison_negation.md
+            - rules/condition_call.md
+            - rules/download_file.md
+            - rules/dplyr_filter_out.md
+            - rules/dplyr_group_by_ungroup.md
+            - rules/duplicated_arguments.md
+            - rules/duplicated_function_definition.md
+            - rules/empty_assignment.md
+            - rules/empty_file.md
+            - rules/equals_na.md
+            - rules/equals_nan.md
+            - rules/equals_null.md
+            - rules/expect_length.md
+            - rules/expect_match.md
+            - rules/expect_named.md
+            - rules/expect_no_match.md
+            - rules/expect_not.md
+            - rules/expect_null.md
+            - rules/expect_s3_class.md
+            - rules/expect_true_false.md
+            - rules/expect_type.md
+            - rules/fixed_regex.md
+            - rules/for_loop_dup_index.md
+            - rules/for_loop_index.md
+            - rules/glue.md
+            - rules/grepv.md
+            - rules/if_always_true.md
+            - rules/implicit_assignment.md
+            - rules/internal_function.md
+            - rules/invalid_chunk_suppression.md
+            - rules/is_numeric.md
+            - rules/length_levels.md
+            - rules/length_test.md
+            - rules/lengths.md
+            - rules/list2df.md
+            - rules/literal_coercion.md
+            - rules/matrix_apply.md
+            - rules/misnamed_suppression.md
+            - rules/misplaced_file_suppression.md
+            - rules/misplaced_suppression.md
+            - rules/missing_argument.md
+            - rules/notin.md
+            - rules/numeric_leading_zero.md
+            - rules/nzchar.md
+            - rules/outdated_suppression.md
+            - rules/outer_negation.md
+            - rules/pipe_consistency.md
+            - rules/pipe_return.md
+            - rules/quotes.md
+            - rules/redundant_equals.md
+            - rules/redundant_ifelse.md
+            - rules/repeat.md
+            - rules/sample_int.md
+            - rules/seq.md
+            - rules/seq2.md
+            - rules/sort.md
+            - rules/sprintf.md
+            - rules/string_boundary.md
+            - rules/system_file.md
+            - rules/true_false_symbol.md
+            - rules/undesirable_function.md
+            - rules/unexplained_suppression.md
+            - rules/unmatched_range_suppression.md
+            - rules/unnecessary_nesting.md
+            - rules/unnecessary_parenthesis.md
+            - rules/unreachable_code.md
+            - rules/unused_function.md
+            - rules/vector_logic.md
+            - rules/which_grepl.md

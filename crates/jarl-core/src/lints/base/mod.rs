@@ -51,6 +51,7 @@ pub(crate) mod system_file;
 pub(crate) mod true_false_symbol;
 pub(crate) mod undesirable_function;
 pub(crate) mod unnecessary_nesting;
+pub(crate) mod unnecessary_parenthesis;
 pub(crate) mod unreachable_code;
 pub(crate) mod unused_function;
 pub(crate) mod vector_logic;
