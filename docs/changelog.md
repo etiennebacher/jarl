@@ -25,6 +25,8 @@
 
 * The CLI now suggests close rule names when some rule names don't exist (#501).
 
+* New `--output-format sarif` to export to [SARIF](https://sarifweb.azurewebsites.net/) (#508, @dieghernan).
+
 ### Bug fixes
 
 * `implicit_assignment` no longer flags chained assignments like
