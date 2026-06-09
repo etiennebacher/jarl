@@ -522,7 +522,8 @@ impl Emitter for SarifEmitter {
                 format!("{} {}", diagnostic.message.body, suggestion)
             } else {
                 diagnostic.message.body.clone()
-            };
+            }
+            .replace('\\', "/");
 
             // A fix is only emitted when it edits the source (not skipped, and
             // it either inserts content or deletes a non-empty range).
