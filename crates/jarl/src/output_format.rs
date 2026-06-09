@@ -510,8 +510,8 @@ impl Emitter for SarifEmitter {
             };
 
             let uri = relativize_path(diagnostic.filename.clone())
-                .to_string_lossy()
                 .replace('\\', "/");
+
             let region = range_to_region(
                 content,
                 diagnostic.range.start().into(),
