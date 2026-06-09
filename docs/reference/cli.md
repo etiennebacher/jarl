@@ -87,6 +87,7 @@ Output serialization format for violations. Possible values:
 * `concise`: Print diagnostics in a concise format, one per line
 * `github`: Print diagnostics as GitHub format
 * `json`: Print diagnostics as JSON
+* `sarif`: Print diagnostics in the [SARIF](https://sarifweb.azurewebsites.net/) format.
 
 ---
 

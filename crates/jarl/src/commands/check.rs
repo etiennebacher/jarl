@@ -29,7 +29,9 @@ use crate::output_format::{self, GithubEmitter, print_notes, print_summary, prin
 use crate::statistics::print_statistics;
 use crate::status::ExitStatus;
 
-use output_format::{ConciseEmitter, Emitter, FullEmitter, JsonEmitter, OutputFormat};
+use output_format::{
+    ConciseEmitter, Emitter, FullEmitter, JsonEmitter, OutputFormat, SarifEmitter,
+};
 
 pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     let start = if args.with_timing {
@@ -233,6 +235,9 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         }
         OutputFormat::Github => {
             GithubEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+        }
+        OutputFormat::Sarif => {
+            SarifEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
         }
         OutputFormat::Full => {
             FullEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
