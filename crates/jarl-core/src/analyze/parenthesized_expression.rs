@@ -7,7 +7,7 @@ pub fn parenthesized_expression(
     r_expr: &RParenthesizedExpression,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
-    if checker.is_rule_enabled(Rule::UnnecessaryParenthesis) {
+    if checker.is_rule_enabled(Rule::UnnecessaryParentheses) {
         checker.report_diagnostic(unnecessary_parentheses(r_expr)?);
     }
 

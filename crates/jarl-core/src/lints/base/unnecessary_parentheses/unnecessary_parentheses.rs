@@ -2,7 +2,7 @@ use crate::diagnostic::{Diagnostic, Fix, Violation};
 use air_r_syntax::RParenthesizedExpression;
 use biome_rowan::AstNode;
 
-pub struct UnnecessaryParenthesis;
+pub struct UnnecessaryParentheses;
 
 /// Version added: 0.6.0
 ///
@@ -26,7 +26,7 @@ pub struct UnnecessaryParenthesis;
 /// ```r
 /// (x + 1)
 /// ```
-impl Violation for UnnecessaryParenthesis {
+impl Violation for UnnecessaryParentheses {
     fn name(&self) -> String {
         "unnecessary_parentheses".to_string()
     }
@@ -48,7 +48,7 @@ pub fn unnecessary_parentheses(
     }
 
     Ok(Some(Diagnostic::new(
-        UnnecessaryParenthesis,
+        UnnecessaryParentheses,
         ast.syntax().text_trimmed_range(),
         Fix::empty(),
     )))

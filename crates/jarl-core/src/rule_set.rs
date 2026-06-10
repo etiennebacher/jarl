@@ -615,7 +615,7 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
-    UnnecessaryParenthesis => {
+    UnnecessaryParentheses => {
         name: "unnecessary_parentheses",
         categories: [Read],
         default: Enabled,
