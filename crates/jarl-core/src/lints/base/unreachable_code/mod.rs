@@ -59,6 +59,20 @@ foo <- function(x) {
     }
 
     #[test]
+    fn test_no_unreachable_in_braced_block() {
+        let code = r#"
+{
+  if (x > 0) {
+    1
+  } else {
+    x <- 1
+  }
+}
+"#;
+        expect_no_lint(code, "unreachable_code", None);
+    }
+
+    #[test]
     fn test_unreachable_after_return() {
         let code = r#"
 foo <- function() {
