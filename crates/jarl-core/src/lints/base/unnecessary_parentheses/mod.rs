@@ -16,9 +16,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | ((x))
-          | ----- This expression contains unnecessary parentheses.
+          | ----- This expression contains 1 unnecessary pair of parentheses.
           |
-          = help: Remove one pair of parentheses.
+          = help: Remove 1 pair of parentheses.
         Found 1 error.
         ");
 
@@ -27,9 +27,9 @@ mod tests {
          --> <test>:1:5
           |
         1 | foo(((x)))
-          |     ----- This expression contains unnecessary parentheses.
+          |     ----- This expression contains 1 unnecessary pair of parentheses.
           |
-          = help: Remove one pair of parentheses.
+          = help: Remove 1 pair of parentheses.
         Found 1 error.
         ");
 
@@ -38,9 +38,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | ((x)) + y
-          | ----- This expression contains unnecessary parentheses.
+          | ----- This expression contains 1 unnecessary pair of parentheses.
           |
-          = help: Remove one pair of parentheses.
+          = help: Remove 1 pair of parentheses.
         Found 1 error.
         ");
 
@@ -49,9 +49,9 @@ mod tests {
          --> <test>:1:5
           |
         1 | if (((x))) y
-          |     ----- This expression contains unnecessary parentheses.
+          |     ----- This expression contains 1 unnecessary pair of parentheses.
           |
-          = help: Remove one pair of parentheses.
+          = help: Remove 1 pair of parentheses.
         Found 1 error.
         ");
 
@@ -66,9 +66,9 @@ mod tests {
         1 | / (
         2 | |   (x)
         3 | | )
-          | |_- This expression contains unnecessary parentheses.
+          | |_- This expression contains 1 unnecessary pair of parentheses.
           |
-          = help: Remove one pair of parentheses.
+          = help: Remove 1 pair of parentheses.
         Found 1 error.
         ");
 
@@ -85,10 +85,42 @@ mod tests {
         2 | |   # explain x
         3 | |   (x)
         4 | | )
-          | |_- This expression contains unnecessary parentheses.
+          | |_- This expression contains 1 unnecessary pair of parentheses.
           |
-          = help: Remove one pair of parentheses.
+          = help: Remove 1 pair of parentheses.
         Found 1 error.
+        ");
+    }
+
+    #[test]
+    fn test_reports_once_per_expression() {
+        assert_snapshot!(snapshot_lint(
+            "((x))
+(((x)))
+((((x))))",
+        ), @"
+        warning: unnecessary_parentheses
+         --> <test>:1:1
+          |
+        1 | ((x))
+          | ----- This expression contains 1 unnecessary pair of parentheses.
+          |
+          = help: Remove 1 pair of parentheses.
+        warning: unnecessary_parentheses
+         --> <test>:2:1
+          |
+        2 | (((x)))
+          | ------- This expression contains 2 unnecessary pairs of parentheses.
+          |
+          = help: Remove 2 pairs of parentheses.
+        warning: unnecessary_parentheses
+         --> <test>:3:1
+          |
+        3 | ((((x))))
+          | --------- This expression contains 3 unnecessary pairs of parentheses.
+          |
+          = help: Remove 3 pairs of parentheses.
+        Found 3 errors.
         ");
     }
 
