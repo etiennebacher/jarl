@@ -22,18 +22,74 @@ mod tests {
         Found 1 error.
         ");
 
-        for code in [
-            "foo(((x)))",
-            "((x)) + y",
-            "if (((x))) y",
-            "(\n  (x)\n)",
-            "(\n  # explain x\n  (x)\n)",
-        ] {
-            assert!(
-                !check_code(code, "unnecessary_parentheses", None).is_empty(),
-                "Expected a lint for: {code}",
-            );
-        }
+        assert_snapshot!(snapshot_lint("foo(((x)))"), @"
+        warning: unnecessary_parentheses
+         --> <test>:1:5
+          |
+        1 | foo(((x)))
+          |     ----- This expression contains unnecessary parentheses.
+          |
+          = help: Remove one pair of parentheses.
+        Found 1 error.
+        ");
+
+        assert_snapshot!(snapshot_lint("((x)) + y"), @"
+        warning: unnecessary_parentheses
+         --> <test>:1:1
+          |
+        1 | ((x)) + y
+          | ----- This expression contains unnecessary parentheses.
+          |
+          = help: Remove one pair of parentheses.
+        Found 1 error.
+        ");
+
+        assert_snapshot!(snapshot_lint("if (((x))) y"), @"
+        warning: unnecessary_parentheses
+         --> <test>:1:5
+          |
+        1 | if (((x))) y
+          |     ----- This expression contains unnecessary parentheses.
+          |
+          = help: Remove one pair of parentheses.
+        Found 1 error.
+        ");
+
+        assert_snapshot!(snapshot_lint(
+            "(
+  (x)
+)",
+        ), @"
+        warning: unnecessary_parentheses
+         --> <test>:1:1
+          |
+        1 | / (
+        2 | |   (x)
+        3 | | )
+          | |_- This expression contains unnecessary parentheses.
+          |
+          = help: Remove one pair of parentheses.
+        Found 1 error.
+        ");
+
+        assert_snapshot!(snapshot_lint(
+            "(
+  # explain x
+  (x)
+)",
+        ), @"
+        warning: unnecessary_parentheses
+         --> <test>:1:1
+          |
+        1 | / (
+        2 | |   # explain x
+        3 | |   (x)
+        4 | | )
+          | |_- This expression contains unnecessary parentheses.
+          |
+          = help: Remove one pair of parentheses.
+        Found 1 error.
+        ");
     }
 
     #[test]
