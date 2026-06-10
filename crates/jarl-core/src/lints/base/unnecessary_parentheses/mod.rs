@@ -38,16 +38,12 @@ mod tests {
 
     #[test]
     fn test_no_lint_unnecessary_parentheses() {
-        for code in [
-            "x",
-            "(x)",
-            "(x + y) * z",
-            "foo(x)",
-            "if (x) y",
-            "while (x) y",
-            "function(x) x",
-        ] {
-            expect_no_lint(code, "unnecessary_parentheses", None);
-        }
+        expect_no_lint("x", "unnecessary_parentheses", None);
+        expect_no_lint("(x)", "unnecessary_parentheses", None);
+        expect_no_lint("(x + y) * z", "unnecessary_parentheses", None);
+        expect_no_lint("foo(x)", "unnecessary_parentheses", None);
+        expect_no_lint("if (x) y", "unnecessary_parentheses", None);
+        expect_no_lint("while (x) y", "unnecessary_parentheses", None);
+        expect_no_lint("function(x) x", "unnecessary_parentheses", None);
     }
 }
