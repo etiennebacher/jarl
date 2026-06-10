@@ -266,6 +266,34 @@ foo <- function() {
     }
 
     #[test]
+    fn test_dead_branch_inside_braced_block() {
+        let code = r#"
+{
+  if (TRUE) {
+    1
+  } else {
+    x <- 1
+  }
+}
+"#;
+        insta::assert_snapshot!(
+            snapshot_lint(code),
+            @r#"
+        warning: unreachable_code
+         --> <test>:5:10
+          |
+        5 |     } else {
+          |  __________-
+        6 | |     x <- 1
+        7 | |   }
+          | |___- This code is in a branch that can never be executed.
+          |
+        Found 1 error.
+        "#
+        );
+    }
+
+    #[test]
     fn test_dead_branch_if_false() {
         let code = r#"
 foo <- function() {

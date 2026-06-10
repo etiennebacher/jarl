@@ -231,6 +231,14 @@ impl<'a> CfgBuilder<'a> {
         }
 
         match stmt.kind() {
+            RSyntaxKind::R_BRACED_EXPRESSIONS => {
+                if let Some(braced) = RBracedExpressions::cast_ref(stmt) {
+                    self.build_braced_expressions(&braced, current, exit)
+                } else {
+                    self.add_statement(current, stmt.clone());
+                    current
+                }
+            }
             RSyntaxKind::R_BREAK_EXPRESSION => {
                 self.build_break(current, stmt.clone());
                 current
