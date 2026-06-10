@@ -152,7 +152,7 @@ website:
       - rules/unexplained_suppression.md
       - rules/unmatched_range_suppression.md
       - rules/unnecessary_nesting.md
-      - rules/unnecessary_parenthesis.md
+      - rules/unnecessary_parentheses.md
       - rules/unreachable_code.md
       - rules/unused_function.md
       - rules/vector_logic.md

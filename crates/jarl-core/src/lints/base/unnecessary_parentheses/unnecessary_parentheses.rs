@@ -12,7 +12,7 @@ pub struct UnnecessaryParenthesis;
 ///
 /// ## Why is this bad?
 ///
-/// Repeated parentheses do not change the meaning of the expression and make
+/// Repeated parentheses do not change the meaning of the expression and can make
 /// the code harder to read.
 ///
 /// ## Example
@@ -28,7 +28,7 @@ pub struct UnnecessaryParenthesis;
 /// ```
 impl Violation for UnnecessaryParenthesis {
     fn name(&self) -> String {
-        "unnecessary_parenthesis".to_string()
+        "unnecessary_parentheses".to_string()
     }
 
     fn body(&self) -> String {
@@ -40,7 +40,7 @@ impl Violation for UnnecessaryParenthesis {
     }
 }
 
-pub fn unnecessary_parenthesis(
+pub fn unnecessary_parentheses(
     ast: &RParenthesizedExpression,
 ) -> anyhow::Result<Option<Diagnostic>> {
     if ast.body()?.as_r_parenthesized_expression().is_none() {
