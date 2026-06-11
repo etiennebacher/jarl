@@ -43,6 +43,9 @@
 
 * Fixed `unreachable_code` that was not running on braced expressions (#512).
 
+* Fixed false positives in `assignment` rule. Jarl could recommend replacing `<-`
+  by `=` in places where this would change the meaning of the code (#515).
+
 ## 0.5.0
 
 ### Deprecations

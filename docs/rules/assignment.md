@@ -21,13 +21,25 @@ operator = "=" # or "<-"
 
 ## Example
 
+If the `operator` parameter is `"="` then replace:
+```r
+x <- "a"
+```
+by:
 ```r
 x = "a"
 ```
 
-Use instead:
+Note that Jarl will not report some cases where `<-` is used because it
+would change the meaning of code, e.g. this:
+
 ```r
-x <- "a"
+f(x <- 1)
+```
+cannot be replaced by:
+
+```r
+f(x = 1)
 ```
 
 ## References
