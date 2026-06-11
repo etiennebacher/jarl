@@ -196,6 +196,42 @@ mod tests {
         Found 1 error.
         "
         );
+        assert_snapshot!(
+            snapshot_lint_with_settings("if (cond) x else y <- 1", settings.clone()),
+            @"
+        warning: assignment
+         --> <test>:1:18
+          |
+        1 | if (cond) x else y <- 1
+          |                  ---- Use `=` for assignment.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint_with_settings("for(i in 1:5) x <- 1", settings.clone()),
+            @"
+        warning: assignment
+         --> <test>:1:15
+          |
+        1 | for(i in 1:5) x <- 1
+          |               ---- Use `=` for assignment.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint_with_settings("repeat x <- 1", settings.clone()),
+            @"
+        warning: assignment
+         --> <test>:1:8
+          |
+        1 | repeat x <- 1
+          |        ---- Use `=` for assignment.
+          |
+        Found 1 error.
+        "
+        );
 
         // `1 -> z` should lint when operator = "="
         assert_snapshot!(
@@ -224,6 +260,18 @@ mod tests {
         expect_no_lint_with_settings("while (y <- 1) {}", "assignment", None, settings.clone());
         expect_no_lint_with_settings("for (x in y <- 1) {}", "assignment", None, settings.clone());
 
+        assert_snapshot!(
+            snapshot_lint_with_settings("? y <- 1", settings.clone()),
+            @"
+        warning: assignment
+         --> <test>:1:3
+          |
+        1 | ? y <- 1
+          |   ---- Use `=` for assignment.
+          |
+        Found 1 error.
+        "
+        );
         assert_snapshot!(
             snapshot_lint_with_settings("if ((x <- f())) y", settings.clone()),
             @"
