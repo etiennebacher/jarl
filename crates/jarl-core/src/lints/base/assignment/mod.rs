@@ -197,6 +197,18 @@ mod tests {
         "
         );
         assert_snapshot!(
+            snapshot_lint_with_settings("if (cond) y <- 1", settings.clone()),
+            @"
+        warning: assignment
+         --> <test>:1:11
+          |
+        1 | if (cond) y <- 1
+          |           ---- Use `=` for assignment.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
             snapshot_lint_with_settings("if (cond) x else y <- 1", settings.clone()),
             @"
         warning: assignment
