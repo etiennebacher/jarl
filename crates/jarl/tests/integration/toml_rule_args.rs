@@ -255,6 +255,91 @@ extend-skipped-functions = ["my_fun"]
     Ok(())
 }
 
+// nested_pipe ----------------------------------------
+
+#[test]
+fn test_nested_pipe_both_skipped_and_extend_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+
+[lint.nested_pipe]
+skipped-functions = ["try"]
+extend-skipped-functions = ["my_fun"]
+"#,
+        ),
+        ("test.R", "print(a %>% b())"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Cannot specify both `skipped-functions` and `extend-skipped-functions` in `[lint.nested_pipe]`.
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_nested_pipe_unknown_field_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+
+[lint.nested_pipe]
+unknown-option = ["try"]
+"#,
+        ),
+        ("test.R", "print(a %>% b())"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 5, column 1
+      |
+    5 | unknown-option = ["try"]
+      | ^^^^^^^^^^^^^^
+    unknown field `unknown-option`, expected `skipped-functions` or `extend-skipped-functions`
+    "#
+    );
+
+    Ok(())
+}
+
 // pipe_consistency ----------------------------------------
 
 #[test]

@@ -99,6 +99,7 @@ dat <- as.data.frame(
     c("misplaced_file_suppression", "comments", "❌", ""),
     c("misplaced_suppression", "comments", "❌", ""),
     c("missing_argument", "suspicious", "❌", ""),
+    c("nested_pipe", "readability", "❌", "Disabled by default"),
     c("notin", "readability", "✅", "R >= 4.6"),
     c("numeric_leading_zero", "readability", "✅", ""),
     c("nzchar", "performance", "❗", "Disabled by default"),
