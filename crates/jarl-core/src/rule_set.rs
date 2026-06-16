@@ -626,7 +626,7 @@ declare_rules! {
         name: "unnecessary_parentheses",
         categories: [Read],
         default: Enabled,
-        fix: None,
+        fix: Safe,
         min_r_version: None,
     },
     UnreachableCode => {

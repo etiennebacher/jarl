@@ -1,4 +1,5 @@
 use crate::diagnostic::{Diagnostic, Fix, ViolationData};
+use crate::utils::node_contains_comments;
 use air_r_syntax::RParenthesizedExpression;
 use biome_rowan::AstNode;
 
@@ -60,13 +61,20 @@ pub fn unnecessary_parentheses(
         )
     };
 
+    let range = ast.syntax().text_trimmed_range();
+
     Ok(Some(Diagnostic::new(
         ViolationData::new(
             "unnecessary_parentheses".to_string(),
             body,
             Some(suggestion),
         ),
-        ast.syntax().text_trimmed_range(),
-        Fix::empty(),
+        range,
+        Fix {
+            content: format!("({})", current.to_trimmed_string()),
+            start: range.start().into(),
+            end: range.end().into(),
+            to_skip: node_contains_comments(ast.syntax()),
+        },
     )))
 }

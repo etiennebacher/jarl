@@ -125,6 +125,50 @@ mod tests {
     }
 
     #[test]
+    fn test_fix_unnecessary_parentheses() {
+        assert_snapshot!(
+            "fix_output",
+            get_fixed_text(
+                vec![
+                    "((x))",
+                    "(((x)))",
+                    "((((x))))",
+                    "((x + 1))",
+                    "foo(((x)))",
+                    "((x)) + y",
+                    "if (((x))) y",
+                    "(
+  (x)
+)",
+                ],
+                "unnecessary_parentheses",
+                None,
+            )
+        );
+    }
+
+    #[test]
+    fn test_unnecessary_parentheses_with_comments_no_fix() {
+        // Should detect lint but skip fix when comments are present to avoid destroying them
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_fixed_text(
+                vec![
+                    "(
+  # explain x
+  (x)
+)",
+                    "# leading comment
+((x))",
+                    "((x)) # trailing comment",
+                ],
+                "unnecessary_parentheses",
+                None
+            )
+        );
+    }
+
+    #[test]
     fn test_no_lint_unnecessary_parentheses() {
         expect_no_lint("x", "unnecessary_parentheses", None);
         expect_no_lint("(x)", "unnecessary_parentheses", None);

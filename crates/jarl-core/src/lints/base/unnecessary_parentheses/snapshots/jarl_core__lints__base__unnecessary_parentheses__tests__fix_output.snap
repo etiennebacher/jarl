@@ -1,0 +1,61 @@
+---
+source: crates/jarl-core/src/lints/base/unnecessary_parentheses/mod.rs
+expression: "get_fixed_text(vec![\"((x))\", \"(((x)))\", \"((((x))))\", \"((x + 1))\",\n\"foo(((x)))\", \"((x)) + y\", \"if (((x))) y\", \"(\\n  (x)\\n)\",],\n\"unnecessary_parentheses\", None,)"
+---
+OLD:
+====
+((x))
+NEW:
+====
+(x)
+
+OLD:
+====
+(((x)))
+NEW:
+====
+(x)
+
+OLD:
+====
+((((x))))
+NEW:
+====
+(x)
+
+OLD:
+====
+((x + 1))
+NEW:
+====
+(x + 1)
+
+OLD:
+====
+foo(((x)))
+NEW:
+====
+foo((x))
+
+OLD:
+====
+((x)) + y
+NEW:
+====
+(x) + y
+
+OLD:
+====
+if (((x))) y
+NEW:
+====
+if ((x)) y
+
+OLD:
+====
+(
+  (x)
+)
+NEW:
+====
+(x)
