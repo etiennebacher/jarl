@@ -1,10 +1,6 @@
-use crate::diagnostic::{Diagnostic, Fix, Violation};
+use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 use air_r_syntax::RParenthesizedExpression;
 use biome_rowan::AstNode;
-
-pub struct UnnecessaryParentheses {
-    count: usize,
-}
 
 /// Version added: 0.6.0
 ///
@@ -28,31 +24,6 @@ pub struct UnnecessaryParentheses {
 /// ```r
 /// (x + 1)
 /// ```
-impl Violation for UnnecessaryParentheses {
-    fn name(&self) -> String {
-        "unnecessary_parentheses".to_string()
-    }
-
-    fn body(&self) -> String {
-        if self.count == 1 {
-            "This expression contains an unnecessary pair of parentheses.".to_string()
-        } else {
-            format!(
-                "This expression contains {} unnecessary pairs of parentheses.",
-                self.count,
-            )
-        }
-    }
-
-    fn suggestion(&self) -> Option<String> {
-        if self.count == 1 {
-            Some("Remove the unnecessary pair of parentheses.".to_string())
-        } else {
-            Some(format!("Remove {} pairs of parentheses.", self.count))
-        }
-    }
-}
-
 pub fn unnecessary_parentheses(
     ast: &RParenthesizedExpression,
 ) -> anyhow::Result<Option<Diagnostic>> {
@@ -77,8 +48,24 @@ pub fn unnecessary_parentheses(
         return Ok(None);
     }
 
+    let (body, suggestion) = if count == 1 {
+        (
+            "This expression contains an unnecessary pair of parentheses.".to_string(),
+            "Remove the unnecessary pair of parentheses.".to_string(),
+        )
+    } else {
+        (
+            format!("This expression contains {count} unnecessary pairs of parentheses."),
+            format!("Remove {count} pairs of parentheses."),
+        )
+    };
+
     Ok(Some(Diagnostic::new(
-        UnnecessaryParentheses { count },
+        ViolationData::new(
+            "unnecessary_parentheses".to_string(),
+            body,
+            Some(suggestion),
+        ),
         ast.syntax().text_trimmed_range(),
         Fix::empty(),
     )))
