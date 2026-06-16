@@ -34,19 +34,22 @@ impl Violation for UnnecessaryParentheses {
     }
 
     fn body(&self) -> String {
-        format!(
-            "This expression contains {} unnecessary {} of parentheses.",
-            self.count,
-            if self.count == 1 { "pair" } else { "pairs" },
-        )
+        if self.count == 1 {
+            "This expression contains an unnecessary pair of parentheses.".to_string()
+        } else {
+            format!(
+                "This expression contains {} unnecessary pairs of parentheses.",
+                self.count,
+            )
+        }
     }
 
     fn suggestion(&self) -> Option<String> {
-        Some(format!(
-            "Remove {} {} of parentheses.",
-            self.count,
-            if self.count == 1 { "pair" } else { "pairs" },
-        ))
+        if self.count == 1 {
+            Some("Remove the unnecessary pair of parentheses.".to_string())
+        } else {
+            Some(format!("Remove {} pairs of parentheses.", self.count))
+        }
     }
 }
 

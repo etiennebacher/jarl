@@ -16,9 +16,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | ((x))
-          | ----- This expression contains 1 unnecessary pair of parentheses.
+          | ----- This expression contains an unnecessary pair of parentheses.
           |
-          = help: Remove 1 pair of parentheses.
+          = help: Remove the unnecessary pair of parentheses.
         Found 1 error.
         ");
 
@@ -27,9 +27,9 @@ mod tests {
          --> <test>:1:5
           |
         1 | foo(((x)))
-          |     ----- This expression contains 1 unnecessary pair of parentheses.
+          |     ----- This expression contains an unnecessary pair of parentheses.
           |
-          = help: Remove 1 pair of parentheses.
+          = help: Remove the unnecessary pair of parentheses.
         Found 1 error.
         ");
 
@@ -38,9 +38,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | ((x)) + y
-          | ----- This expression contains 1 unnecessary pair of parentheses.
+          | ----- This expression contains an unnecessary pair of parentheses.
           |
-          = help: Remove 1 pair of parentheses.
+          = help: Remove the unnecessary pair of parentheses.
         Found 1 error.
         ");
 
@@ -49,9 +49,9 @@ mod tests {
          --> <test>:1:5
           |
         1 | if (((x))) y
-          |     ----- This expression contains 1 unnecessary pair of parentheses.
+          |     ----- This expression contains an unnecessary pair of parentheses.
           |
-          = help: Remove 1 pair of parentheses.
+          = help: Remove the unnecessary pair of parentheses.
         Found 1 error.
         ");
 
@@ -66,9 +66,9 @@ mod tests {
         1 | / (
         2 | |   (x)
         3 | | )
-          | |_- This expression contains 1 unnecessary pair of parentheses.
+          | |_- This expression contains an unnecessary pair of parentheses.
           |
-          = help: Remove 1 pair of parentheses.
+          = help: Remove the unnecessary pair of parentheses.
         Found 1 error.
         ");
 
@@ -85,9 +85,9 @@ mod tests {
         2 | |   # explain x
         3 | |   (x)
         4 | | )
-          | |_- This expression contains 1 unnecessary pair of parentheses.
+          | |_- This expression contains an unnecessary pair of parentheses.
           |
-          = help: Remove 1 pair of parentheses.
+          = help: Remove the unnecessary pair of parentheses.
         Found 1 error.
         ");
     }
@@ -103,9 +103,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | ((x))
-          | ----- This expression contains 1 unnecessary pair of parentheses.
+          | ----- This expression contains an unnecessary pair of parentheses.
           |
-          = help: Remove 1 pair of parentheses.
+          = help: Remove the unnecessary pair of parentheses.
         warning: unnecessary_parentheses
          --> <test>:2:1
           |
