@@ -22,6 +22,7 @@ use crate::rule_options::assignment::AssignmentOptions;
 use crate::rule_options::duplicated_arguments::DuplicatedArgumentsOptions;
 use crate::rule_options::implicit_assignment::ImplicitAssignmentOptions;
 use crate::rule_options::missing_argument::MissingArgumentOptions;
+use crate::rule_options::nested_pipe::NestedPipeOptions;
 use crate::rule_options::pipe_consistency::PipeConsistencyOptions;
 use crate::rule_options::quotes::QuotesOptions;
 use crate::rule_options::undesirable_function::UndesirableFunctionOptions;
@@ -276,6 +277,15 @@ pub struct LinterTomlOptions {
     #[serde(rename = "missing_argument")]
     pub missing_argument: Option<MissingArgumentOptions>,
 
+    /// # Options for the `nested_pipe` rule
+    ///
+    /// Use `skipped-functions` to fully replace the default list of outer calls
+    /// whose nested pipes are allowed. Use `extend-skipped-functions` to add to
+    /// the default list.
+    /// Specifying both is an error.
+    #[serde(rename = "nested_pipe")]
+    pub nested_pipe: Option<NestedPipeOptions>,
+
     /// # Options for the `pipe_consistency` rule
     ///
     /// Use `preferred` to choose the preferred pipe operator. Valid values
@@ -398,6 +408,7 @@ impl TomlOptions {
                 linter.duplicated_arguments.as_ref(),
                 linter.implicit_assignment.as_ref(),
                 linter.missing_argument.as_ref(),
+                linter.nested_pipe.as_ref(),
                 linter.pipe_consistency.as_ref(),
                 linter.quotes.as_ref(),
                 linter.undesirable_function.as_ref(),

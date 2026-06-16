@@ -196,6 +196,54 @@ mod tests {
         Found 1 error.
         "
         );
+        assert_snapshot!(
+            snapshot_lint_with_settings("if (cond) y <- 1", settings.clone()),
+            @"
+        warning: assignment
+         --> <test>:1:11
+          |
+        1 | if (cond) y <- 1
+          |           ---- Use `=` for assignment.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint_with_settings("if (cond) x else y <- 1", settings.clone()),
+            @"
+        warning: assignment
+         --> <test>:1:18
+          |
+        1 | if (cond) x else y <- 1
+          |                  ---- Use `=` for assignment.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint_with_settings("for(i in 1:5) x <- 1", settings.clone()),
+            @"
+        warning: assignment
+         --> <test>:1:15
+          |
+        1 | for(i in 1:5) x <- 1
+          |               ---- Use `=` for assignment.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint_with_settings("repeat x <- 1", settings.clone()),
+            @"
+        warning: assignment
+         --> <test>:1:8
+          |
+        1 | repeat x <- 1
+          |        ---- Use `=` for assignment.
+          |
+        Found 1 error.
+        "
+        );
 
         // `1 -> z` should lint when operator = "="
         assert_snapshot!(
@@ -206,6 +254,68 @@ mod tests {
           |
         1 | 1 -> z
           |   ---- Use `=` for assignment.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_lint_assignment_not_replaced_in_some_context() {
+        let settings = settings_with_options(RSyntaxKind::EQUAL);
+        expect_no_lint_with_settings("f(y <- 1)", "assignment", None, settings.clone());
+        expect_no_lint_with_settings("x[y <- 1]", "assignment", None, settings.clone());
+        expect_no_lint_with_settings("x[[y <- 1]]", "assignment", None, settings.clone());
+        expect_no_lint_with_settings("f(a ? b <- 1)", "assignment", None, settings.clone());
+        expect_no_lint_with_settings("f(a <- b <- 1)", "assignment", None, settings.clone());
+        expect_no_lint_with_settings("if (y <- 1) {}", "assignment", None, settings.clone());
+        expect_no_lint_with_settings("while (y <- 1) {}", "assignment", None, settings.clone());
+        expect_no_lint_with_settings("for (x in y <- 1) {}", "assignment", None, settings.clone());
+
+        assert_snapshot!(
+            snapshot_lint_with_settings("? y <- 1", settings.clone()),
+            @"
+        warning: assignment
+         --> <test>:1:3
+          |
+        1 | ? y <- 1
+          |   ---- Use `=` for assignment.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint_with_settings("if ((x <- f())) y", settings.clone()),
+            @"
+        warning: assignment
+         --> <test>:1:6
+          |
+        1 | if ((x <- f())) y
+          |      ---- Use `=` for assignment.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint_with_settings("while ((x <- f())) y", settings.clone()),
+            @"
+        warning: assignment
+         --> <test>:1:9
+          |
+        1 | while ((x <- f())) y
+          |         ---- Use `=` for assignment.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint_with_settings("for (i in (x <- xs)) y", settings.clone()),
+            @"
+        warning: assignment
+         --> <test>:1:12
+          |
+        1 | for (i in (x <- xs)) y
+          |            ---- Use `=` for assignment.
           |
         Found 1 error.
         "

@@ -166,6 +166,7 @@ fn test_help_check() -> anyhow::Result<()> {
               - concise: Print diagnostics in a concise format, one per line
               - github:  Print diagnostics as GitHub format
               - json:    Print diagnostics as JSON
+              - sarif:   Print diagnostics as SARIF 2.1.0 JSON
               
               [default: full]
 
@@ -221,7 +222,7 @@ fn test_help_check() -> anyhow::Result<()> {
       -i, --ignore <IGNORE>                Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ""]
       -w, --with-timing                    Show the time taken by the function.
       -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
-          --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: full] [possible values: full, concise, github, json]
+          --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: full] [possible values: full, concise, github, json, sarif]
           --assignment <ASSIGNMENT>        [DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`.
           --no-default-exclude             Do not apply the default set of file patterns that should be excluded.
           --statistics                     Show counts for every rule with at least one violation.

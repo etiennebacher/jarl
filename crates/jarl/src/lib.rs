@@ -10,7 +10,7 @@ pub mod statistics;
 pub mod status;
 
 pub use args::CheckCommand;
-pub use output_format::{ConciseEmitter, JsonEmitter, OutputFormat};
+pub use output_format::{ConciseEmitter, JsonEmitter, OutputFormat, SarifEmitter};
 
 pub fn run(args: Args) -> anyhow::Result<ExitStatus> {
     if !matches!(args.command, Command::Server(_)) {

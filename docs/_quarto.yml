@@ -129,6 +129,7 @@ website:
       - rules/misplaced_file_suppression.md
       - rules/misplaced_suppression.md
       - rules/missing_argument.md
+      - rules/nested_pipe.md
       - rules/notin.md
       - rules/numeric_leading_zero.md
       - rules/nzchar.md

@@ -475,6 +475,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    NestedPipe => {
+        name: "nested_pipe",
+        categories: [Read],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
     NotIn => {
         name: "notin",
         categories: [Read],
