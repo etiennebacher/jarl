@@ -157,6 +157,9 @@ pub fn lint_fix(
             return Ok(Vec::new());
         }
 
+        // Fix mode rewrites the file between iterations, so the on-disk
+        // contents drift from the database snapshot. Pass `None` to rebuild
+        // the index from the in-memory `contents` rather than the stale cache.
         checks = get_checks(
             &contents,
             &PathBuf::from(&path),
@@ -226,6 +229,12 @@ pub fn get_checks(
     // calls inject `DefinitionKind::Import` entries via JarlImportsResolver;
     // the complementary "names read by sourced files" path is still handled
     // inside `SemanticInfo`.
+    //
+    // The index is built here, in the parallel per-file pass, rather than
+    // pulled from the shared `AnalysisDb`: oak's salsa database is `Send` but
+    // not `Sync`, so it can't be borrowed across rayon worker threads. Cross-
+    // file analysis that needs the database runs in the sequential pre-passes
+    // (`summarize_package_info`, `make_package_analysis`) instead.
     let semantic = oak_semantic::build_index(
         &parsed.tree(),
         jarl_semantic::JarlImportsResolver::new(file),

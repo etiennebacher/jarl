@@ -24,10 +24,15 @@ biome_rowan.workspace = true
 biome_formatter.workspace = true
 
 # Semantic analysis (per-file scopes, definitions, uses, use-def map)
+aether_path.workspace = true
 oak_core.workspace = true
+oak_db.workspace = true
+oak_ide.workspace = true
 oak_index_vec.workspace = true
 oak_package_metadata.workspace = true
+oak_scan.workspace = true
 oak_semantic.workspace = true
+salsa.workspace = true
 url.workspace = true
 
 # Per-file semantic info (used by semantic-aware lints)

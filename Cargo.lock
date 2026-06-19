@@ -18,6 +18,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
 
 [[package]]
+name = "aether_path"
+version = "0.1.0"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#4f667d4cc8eb762468038144dc58f9e37a0484f9"
+dependencies = [
+ "anyhow",
+ "camino",
+ "log",
+ "percent-encoding",
+ "stdext",
+ "url",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -73,6 +86,12 @@ dependencies = [
  "biome_rowan",
  "serde",
 ]
+
+[[package]]
+name = "allocator-api2"
+version = "0.2.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 
 [[package]]
 name = "annotate-snippets"
@@ -139,6 +158,12 @@ name = "anyhow"
 version = "1.0.102"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
+
+[[package]]
+name = "autocfg"
+version = "1.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
 name = "backtrace"
@@ -293,6 +318,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "biome_line_index"
+version = "0.1.0"
+source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
+dependencies = [
+ "biome_text_size",
+ "rustc-hash",
+]
+
+[[package]]
 name = "biome_markup"
 version = "0.5.7"
 source = "git+https://github.com/lionel-/biome?rev=a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9#a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9"
@@ -372,6 +406,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4388bee8683e3d04af747c73422af53102d2bd24d9eadb6cbc100baef4b43f8"
 
 [[package]]
+name = "boxcar"
+version = "0.2.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "36f64beae40a84da1b4b26ff2761a5b895c12adc41dc25aaee1c4f2bbfe97a6e"
+
+[[package]]
 name = "bpaf"
 version = "0.9.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -407,6 +447,15 @@ name = "camino"
 version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4ce8d3bd5823c7504d3f579f13e7b2f3da252fcb938c594d5680ee508bf846f"
+
+[[package]]
+name = "castaway"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dec551ab6e7578819132c713a93c022a05d60159dc86e7a7050223577484c55a"
+dependencies = [
+ "rustversion",
+]
 
 [[package]]
 name = "cc"
@@ -483,6 +532,20 @@ dependencies = [
 name = "comments"
 version = "0.0.0"
 source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+
+[[package]]
+name = "compact_str"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9dfdd1c2274d9aa354115b09dc9a901d6c5576818cdf70d14cae2bdb47df00ab"
+dependencies = [
+ "castaway",
+ "cfg-if",
+ "itoa",
+ "rustversion",
+ "ryu",
+ "static_assertions",
+]
 
 [[package]]
 name = "console"
@@ -640,10 +703,32 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f1f227452a390804cdb637b74a86990f2a7d7ba4b7d5693aac9b4dd6defd8d6"
 
 [[package]]
+name = "filetime"
+version = "0.2.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c287a33c7f0a620c38e641e7f60827713987b3c0f26e8ddc9462cc69cf75759"
+dependencies = [
+ "cfg-if",
+ "libc",
+]
+
+[[package]]
 name = "find-msvc-tools"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5baebc0774151f905a1a2cc41989300b1e6fbb29aff0ceffa1064fdd3088d582"
+
+[[package]]
+name = "foldhash"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
+
+[[package]]
+name = "foldhash"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
 
 [[package]]
 name = "form_urlencoded"
@@ -697,12 +782,29 @@ name = "hashbrown"
 version = "0.15.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1"
+dependencies = [
+ "foldhash 0.1.5",
+]
 
 [[package]]
 name = "hashbrown"
 version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
+dependencies = [
+ "allocator-api2",
+ "equivalent",
+ "foldhash 0.2.0",
+]
+
+[[package]]
+name = "hashlink"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7382cf6263419f2d8df38c55d7da83da5c18aef87fc7a7fc1fb1e344edfe14c1"
+dependencies = [
+ "hashbrown 0.15.5",
+]
 
 [[package]]
 name = "heck"
@@ -872,6 +974,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "intrusive-collections"
+version = "0.9.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "189d0897e4cbe8c75efedf3502c18c887b05046e59d28404d4d8e46cbc4d1e86"
+dependencies = [
+ "memoffset",
+]
+
+[[package]]
+name = "inventory"
+version = "0.3.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4f0c30c76f2f4ccee3fe55a2435f691ca00c0e4bd87abe4f4a851b1d4dac39b"
+dependencies = [
+ "rustversion",
+]
+
+[[package]]
 name = "is_terminal_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -926,6 +1046,7 @@ dependencies = [
 name = "jarl-core"
 version = "0.6.0-alpha.2"
 dependencies = [
+ "aether_path",
  "air_r_parser",
  "air_r_syntax",
  "annotate-snippets",
@@ -938,13 +1059,17 @@ dependencies = [
  "insta",
  "jarl-semantic",
  "oak_core",
+ "oak_db",
+ "oak_ide",
  "oak_index_vec",
  "oak_package_metadata",
+ "oak_scan",
  "oak_semantic",
  "path-absolutize",
  "rayon",
  "regex",
  "rustc-hash",
+ "salsa",
  "schemars",
  "serde",
  "strsim",
@@ -1026,6 +1151,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "92daf443525c4cce67b150400bc2316076100ce0b3686209eb8cf3c31612e6f0"
 
 [[package]]
+name = "lock_api"
+version = "0.4.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "224399e74b87b5f3557511d98dff8b14089b3dadafcab6bb93eab67d3aace965"
+dependencies = [
+ "scopeguard",
+]
+
+[[package]]
 name = "log"
 version = "0.4.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1064,6 +1198,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "88904434abc2901f197fe8cc55f0445e7ded921dba5911dad2e2b39b48e663c4"
 
 [[package]]
+name = "memoffset"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a"
+dependencies = [
+ "autocfg",
+]
+
+[[package]]
 name = "miniz_oxide"
 version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1084,7 +1227,7 @@ dependencies = [
 [[package]]
 name = "oak_core"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#f8fb4d37b48f77a6a8199efc4c0cdfd027ed686c"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#4f667d4cc8eb762468038144dc58f9e37a0484f9"
 dependencies = [
  "air_r_syntax",
  "anyhow",
@@ -1092,9 +1235,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "oak_db"
+version = "0.1.0"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#4f667d4cc8eb762468038144dc58f9e37a0484f9"
+dependencies = [
+ "aether_path",
+ "air_r_parser",
+ "air_r_syntax",
+ "biome_line_index",
+ "biome_rowan",
+ "camino",
+ "compact_str",
+ "filetime",
+ "log",
+ "oak_core",
+ "oak_package_metadata",
+ "oak_semantic",
+ "rustc-hash",
+ "salsa",
+ "salsa-macros",
+ "stdext",
+ "url",
+]
+
+[[package]]
+name = "oak_ide"
+version = "0.1.0"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#4f667d4cc8eb762468038144dc58f9e37a0484f9"
+dependencies = [
+ "air_r_syntax",
+ "anyhow",
+ "biome_rowan",
+ "oak_core",
+ "oak_db",
+ "oak_semantic",
+ "url",
+]
+
+[[package]]
 name = "oak_index_vec"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#f8fb4d37b48f77a6a8199efc4c0cdfd027ed686c"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#4f667d4cc8eb762468038144dc58f9e37a0484f9"
 dependencies = [
  "biome_text_size",
  "oak_core",
@@ -1103,7 +1284,7 @@ dependencies = [
 [[package]]
 name = "oak_package_metadata"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#f8fb4d37b48f77a6a8199efc4c0cdfd027ed686c"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#4f667d4cc8eb762468038144dc58f9e37a0484f9"
 dependencies = [
  "air_r_parser",
  "air_r_syntax",
@@ -1115,9 +1296,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "oak_scan"
+version = "0.1.0"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#4f667d4cc8eb762468038144dc58f9e37a0484f9"
+dependencies = [
+ "aether_path",
+ "camino",
+ "filetime",
+ "ignore",
+ "log",
+ "oak_core",
+ "oak_db",
+ "oak_package_metadata",
+ "rustc-hash",
+ "salsa",
+ "stdext",
+ "url",
+ "walkdir",
+]
+
+[[package]]
 name = "oak_semantic"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#f8fb4d37b48f77a6a8199efc4c0cdfd027ed686c"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#4f667d4cc8eb762468038144dc58f9e37a0484f9"
 dependencies = [
  "air_r_parser",
  "air_r_syntax",
@@ -1130,6 +1331,7 @@ dependencies = [
  "oak_index_vec",
  "oak_package_metadata",
  "rustc-hash",
+ "salsa",
  "smallvec",
  "stdext",
  "url",
@@ -1155,6 +1357,29 @@ name = "once_cell_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
+
+[[package]]
+name = "parking_lot"
+version = "0.12.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93857453250e3077bd71ff98b6a65ea6621a19bb0f559a85248955ac12c45a1a"
+dependencies = [
+ "lock_api",
+ "parking_lot_core",
+]
+
+[[package]]
+name = "parking_lot_core"
+version = "0.9.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2621685985a2ebf1c516881c026032ac7deafcda1a2c9b7850dc81e3dfcb64c1"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "redox_syscall",
+ "smallvec",
+ "windows-link",
+]
 
 [[package]]
 name = "path-absolutize"
@@ -1185,6 +1410,12 @@ name = "pin-project-lite"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
+
+[[package]]
+name = "portable-atomic"
+version = "1.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c33a9471896f1c69cecef8d20cbe2f7accd12527ce60845ff44c153bb2a21b49"
 
 [[package]]
 name = "potential_utf"
@@ -1258,6 +1489,15 @@ checksum = "22e18b0f0062d30d4230b2e85ff77fdfe4326feb054b9783a3460d8435c8ab91"
 dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
+]
+
+[[package]]
+name = "redox_syscall"
+version = "0.5.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed2bf2547551a7053d6fdfafda3f938979645c44812fbfcda098faae3f1a362d"
+dependencies = [
+ "bitflags 2.13.0",
 ]
 
 [[package]]
@@ -1335,6 +1575,63 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustversion"
+version = "1.0.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
+
+[[package]]
+name = "ryu"
+version = "1.0.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
+
+[[package]]
+name = "salsa"
+version = "0.26.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4612ff789805e65c87e9b38cb749a293212a615af065bed8a2001086801498c3"
+dependencies = [
+ "boxcar",
+ "compact_str",
+ "crossbeam-queue",
+ "crossbeam-utils",
+ "hashbrown 0.17.1",
+ "hashlink",
+ "indexmap",
+ "intrusive-collections",
+ "inventory",
+ "parking_lot",
+ "portable-atomic",
+ "rayon",
+ "rustc-hash",
+ "salsa-macro-rules",
+ "salsa-macros",
+ "smallvec",
+ "thin-vec",
+ "tracing",
+ "typeid",
+]
+
+[[package]]
+name = "salsa-macro-rules"
+version = "0.26.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58e354cbac6939b9b09cd9c11fb419a53e64b4a0f755d929f56a09f4cc752e41"
+
+[[package]]
+name = "salsa-macros"
+version = "0.26.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3067861075c2b80608f84ad49fb88f2c7610b94cdf8b4201e79ddee87f8980c8"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.118",
+ "synstructure",
+]
+
+[[package]]
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1367,6 +1664,12 @@ dependencies = [
  "serde_derive_internals",
  "syn 2.0.118",
 ]
+
+[[package]]
+name = "scopeguard"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "semver"
@@ -1504,9 +1807,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 
 [[package]]
+name = "static_assertions"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
 name = "stdext"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#f8fb4d37b48f77a6a8199efc4c0cdfd027ed686c"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#4f667d4cc8eb762468038144dc58f9e37a0484f9"
 dependencies = [
  "anyhow",
  "log",
@@ -1597,6 +1906,12 @@ dependencies = [
  "rustix",
  "windows-sys",
 ]
+
+[[package]]
+name = "thin-vec"
+version = "0.2.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0f7e269b48f0a7dd0146680fa24b50cc67fc0373f086a5b2f99bd084639b482"
 
 [[package]]
 name = "thiserror"
@@ -1762,6 +2077,12 @@ dependencies = [
  "cc",
  "tree-sitter-language",
 ]
+
+[[package]]
+name = "typeid"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc7d623258602320d5c55d1bc22793b57daff0ec7efc270ea7d55ce1d5f5471c"
 
 [[package]]
 name = "unicode-bom"
