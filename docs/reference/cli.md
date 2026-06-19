@@ -3,15 +3,15 @@ title: CLI options
 ---
 
 Jarl comes with various options available directly from the command line.
-These can be listed with `jarl check --help`.
+These can be listed with `jarl check --help` or `jarl check -h`.
 
 ```
-Usage: jarl check [OPTIONS] <FILES>...
+Usage: jarl check <FILES> [OPTIONS]
 ```
 
 ## Arguments
 
-**`<FILES>...`**
+**`<FILES>`**
 
 List of files or directories to check or fix lints, for example `jarl check .` or `jarl check doc1.R doc2.R`.
 
