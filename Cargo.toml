@@ -11,13 +11,13 @@ repository = "https://github.com/etiennebacher/jarl/"
 readme = "README.md"
 
 [workspace.dependencies]
-air_fs = { package = "fs", git = "https://github.com/posit-dev/air", rev = "d2659d5b158374bf486b594625ca50abbd0ac879" }
-air_r_parser = { git = "https://github.com/posit-dev/air", rev = "d2659d5b158374bf486b594625ca50abbd0ac879" }
-air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "d2659d5b158374bf486b594625ca50abbd0ac879" }
-air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air", rev = "d2659d5b158374bf486b594625ca50abbd0ac879" }
-oak_core = { git = "https://github.com/posit-dev/ark", rev = "b4cb2e3122e590fa40d99661c2726defb3d42b1d" }
-oak_index_vec = { git = "https://github.com/posit-dev/ark", rev = "b4cb2e3122e590fa40d99661c2726defb3d42b1d" }
-oak_semantic = { git = "https://github.com/posit-dev/ark", rev = "b4cb2e3122e590fa40d99661c2726defb3d42b1d" }
+air_fs = { package = "fs", git = "https://github.com/posit-dev/air", rev = "0eadd6938d0316b1fc885c91e7af55d7c8de8530" }
+air_r_parser = { git = "https://github.com/posit-dev/air", rev = "0eadd6938d0316b1fc885c91e7af55d7c8de8530" }
+air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "0eadd6938d0316b1fc885c91e7af55d7c8de8530" }
+air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air", rev = "0eadd6938d0316b1fc885c91e7af55d7c8de8530" }
+oak_core = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_index_vec = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_semantic = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
 url = "2.5"
 anyhow = "1.0.94"
 biome_formatter = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }

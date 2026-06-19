@@ -29,7 +29,7 @@ dependencies = [
 [[package]]
 name = "air_r_factory"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=d2659d5b158374bf486b594625ca50abbd0ac879#d2659d5b158374bf486b594625ca50abbd0ac879"
+source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
 dependencies = [
  "air_r_syntax",
  "biome_rowan",
@@ -38,7 +38,7 @@ dependencies = [
 [[package]]
 name = "air_r_formatter"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=d2659d5b158374bf486b594625ca50abbd0ac879#d2659d5b158374bf486b594625ca50abbd0ac879"
+source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
 dependencies = [
  "air_r_syntax",
  "biome_formatter",
@@ -52,7 +52,7 @@ dependencies = [
 [[package]]
 name = "air_r_parser"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=d2659d5b158374bf486b594625ca50abbd0ac879#d2659d5b158374bf486b594625ca50abbd0ac879"
+source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
 dependencies = [
  "air_r_factory",
  "air_r_syntax",
@@ -68,7 +68,7 @@ dependencies = [
 [[package]]
 name = "air_r_syntax"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=d2659d5b158374bf486b594625ca50abbd0ac879#d2659d5b158374bf486b594625ca50abbd0ac879"
+source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
 dependencies = [
  "biome_rowan",
  "serde",
@@ -482,7 +482,7 @@ dependencies = [
 [[package]]
 name = "comments"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=d2659d5b158374bf486b594625ca50abbd0ac879#d2659d5b158374bf486b594625ca50abbd0ac879"
+source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
 
 [[package]]
 name = "console"
@@ -657,7 +657,7 @@ dependencies = [
 [[package]]
 name = "fs"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=d2659d5b158374bf486b594625ca50abbd0ac879#d2659d5b158374bf486b594625ca50abbd0ac879"
+source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
 dependencies = [
  "path-absolutize",
 ]
@@ -1006,7 +1006,7 @@ checksum = "68ab91017fe16c622486840e4c83c9a37afeff978bd239b5293d61ece587de66"
 [[package]]
 name = "line_ending"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=d2659d5b158374bf486b594625ca50abbd0ac879#d2659d5b158374bf486b594625ca50abbd0ac879"
+source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
 dependencies = [
  "memchr",
  "settings",
@@ -1083,7 +1083,7 @@ dependencies = [
 [[package]]
 name = "oak_core"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=b4cb2e3122e590fa40d99661c2726defb3d42b1d#b4cb2e3122e590fa40d99661c2726defb3d42b1d"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#f8fb4d37b48f77a6a8199efc4c0cdfd027ed686c"
 dependencies = [
  "air_r_syntax",
  "anyhow",
@@ -1093,7 +1093,7 @@ dependencies = [
 [[package]]
 name = "oak_index_vec"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=b4cb2e3122e590fa40d99661c2726defb3d42b1d#b4cb2e3122e590fa40d99661c2726defb3d42b1d"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#f8fb4d37b48f77a6a8199efc4c0cdfd027ed686c"
 dependencies = [
  "biome_text_size",
  "oak_core",
@@ -1102,7 +1102,7 @@ dependencies = [
 [[package]]
 name = "oak_package_metadata"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=b4cb2e3122e590fa40d99661c2726defb3d42b1d#b4cb2e3122e590fa40d99661c2726defb3d42b1d"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#f8fb4d37b48f77a6a8199efc4c0cdfd027ed686c"
 dependencies = [
  "air_r_parser",
  "air_r_syntax",
@@ -1116,7 +1116,7 @@ dependencies = [
 [[package]]
 name = "oak_semantic"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=b4cb2e3122e590fa40d99661c2726defb3d42b1d#b4cb2e3122e590fa40d99661c2726defb3d42b1d"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#f8fb4d37b48f77a6a8199efc4c0cdfd027ed686c"
 dependencies = [
  "air_r_parser",
  "air_r_syntax",
@@ -1450,7 +1450,7 @@ dependencies = [
 [[package]]
 name = "settings"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=d2659d5b158374bf486b594625ca50abbd0ac879#d2659d5b158374bf486b594625ca50abbd0ac879"
+source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
 dependencies = [
  "biome_formatter",
  "serde",
@@ -1505,7 +1505,7 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 [[package]]
 name = "stdext"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/ark?rev=b4cb2e3122e590fa40d99661c2726defb3d42b1d#b4cb2e3122e590fa40d99661c2726defb3d42b1d"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#f8fb4d37b48f77a6a8199efc4c0cdfd027ed686c"
 dependencies = [
  "anyhow",
  "log",
@@ -1755,8 +1755,8 @@ checksum = "009994f150cc0cd50ff54917d5bc8bffe8cad10ca10d81c34da2ec421ae61782"
 
 [[package]]
 name = "tree-sitter-r"
-version = "1.1.0"
-source = "git+https://github.com/r-lib/tree-sitter-r?rev=daa26a2ff0d9546e9125c7d8bcec046027f02070#daa26a2ff0d9546e9125c7d8bcec046027f02070"
+version = "1.2.0"
+source = "git+https://github.com/r-lib/tree-sitter-r?rev=37a6b1b5c8cc2426fd6ec16ca818cc98597d755b#37a6b1b5c8cc2426fd6ec16ca818cc98597d755b"
 dependencies = [
  "cc",
  "tree-sitter-language",
@@ -2012,7 +2012,7 @@ dependencies = [
 [[package]]
 name = "workspace"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/air?rev=d2659d5b158374bf486b594625ca50abbd0ac879#d2659d5b158374bf486b594625ca50abbd0ac879"
+source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
 dependencies = [
  "air_r_formatter",
  "air_r_parser",
