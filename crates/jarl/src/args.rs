@@ -30,7 +30,7 @@ pub struct Args {
 #[derive(Subcommand)]
 pub(crate) enum Command {
     /// Check a set of files or directories
-    Check(CheckCommand),
+    Check(Box<CheckCommand>),
 
     /// Start a language server
     Server(ServerCommand),
