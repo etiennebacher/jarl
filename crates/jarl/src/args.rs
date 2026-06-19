@@ -37,7 +37,7 @@ pub(crate) enum Command {
 }
 
 #[derive(Clone, Debug, Parser)]
-#[command(arg_required_else_help(true))]
+#[command(arg_required_else_help(true), disable_help_flag = true)]
 pub struct CheckCommand {
     #[arg(
         required = true,
@@ -45,55 +45,44 @@ pub struct CheckCommand {
     )]
     pub files: Vec<String>,
     #[arg(
-        short,
+        long,
+        value_name = "FILES",
+        value_delimiter = ',',
+        help_heading = "File selection",
+        help = "List of file patterns to exclude from linting, separated by a comma (no spaces)."
+    )]
+    pub exclude: Vec<String>,
+    #[arg(
         long,
         default_value = "false",
-        help = "Automatically fix issues detected by the linter."
+        help_heading = "File selection",
+        help = "Do not apply the default set of file patterns that should be excluded."
     )]
-    pub fix: bool,
+    pub no_default_exclude: bool,
     #[arg(
         short,
         long,
-        default_value = "false",
-        help = "Include fixes that may not retain the original intent of the  code."
-    )]
-    pub unsafe_fixes: bool,
-    #[arg(
-        long,
-        default_value = "false",
-        help = "Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`."
-    )]
-    pub fix_only: bool,
-    #[arg(
-        long,
-        default_value = "false",
-        help = "Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files."
-    )]
-    pub allow_dirty: bool,
-    #[arg(
-        long,
-        default_value = "false",
-        help = "Apply fixes even if there is no version control system."
-    )]
-    pub allow_no_vcs: bool,
-    #[arg(
-        short,
-        long,
+        value_name = "RULES",
         default_value = "",
+        help_heading = "Rule selection",
         help = "Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as \"PERF\"."
     )]
     pub select: String,
     #[arg(
         short,
         long,
+        value_name = "RULES",
         default_value = "",
+        help_heading = "Rule selection",
         help = "Like `--select` but adds additional rules in addition to those already specified."
     )]
     pub extend_select: String,
     #[arg(
         short,
         long,
+        value_name = "RULES",
         default_value = "",
+        help_heading = "Rule selection",
         help = "Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as \"PERF\"."
     )]
     pub ignore: String,
@@ -101,12 +90,51 @@ pub struct CheckCommand {
         short,
         long,
         default_value = "false",
+        help_heading = "Other options",
+        help = "Automatically fix issues detected by the linter."
+    )]
+    pub fix: bool,
+    #[arg(
+        short,
+        long,
+        default_value = "false",
+        help_heading = "Other options",
+        help = "Include fixes that may not retain the original intent of the  code."
+    )]
+    pub unsafe_fixes: bool,
+    #[arg(
+        long,
+        default_value = "false",
+        help_heading = "Other options",
+        help = "Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`."
+    )]
+    pub fix_only: bool,
+    #[arg(
+        long,
+        default_value = "false",
+        help_heading = "Other options",
+        help = "Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files."
+    )]
+    pub allow_dirty: bool,
+    #[arg(
+        long,
+        default_value = "false",
+        help_heading = "Other options",
+        help = "Apply fixes even if there is no version control system."
+    )]
+    pub allow_no_vcs: bool,
+    #[arg(
+        short,
+        long,
+        default_value = "false",
+        help_heading = "Other options",
         help = "Show the time taken by the function."
     )]
     pub with_timing: bool,
     #[arg(
         short,
         long,
+        help_heading = "Other options",
         help = "The mimimum R version to be used by the linter. Some rules only work starting from a specific version."
     )]
     pub min_r_version: Option<String>,
@@ -114,34 +142,24 @@ pub struct CheckCommand {
         long,
         value_enum,
         default_value_t = OutputFormat::default(),
+        help_heading = "Other options",
         help="Output serialization format for violations."
     )]
     pub output_format: OutputFormat,
     #[arg(
         long,
         value_enum,
+        help_heading = "Other options",
         help = "[DEPRECATED: use `[lint.assignment]` in jarl.toml] Assignment operator to use, can be either `<-` or `=`."
     )]
     pub assignment: Option<String>,
-    #[arg(
-        long,
-        value_name = "FILES",
-        value_delimiter = ',',
-        help = "List of file patterns to exclude from linting, separated by a comma (no spaces)."
-    )]
-    pub exclude: Vec<String>,
-    #[arg(
-        long,
-        default_value = "false",
-        help = "Do not apply the default set of file patterns that should be excluded."
-    )]
-    pub no_default_exclude: bool,
     #[arg(
         long,
         default_value = "false",
         conflicts_with = "fix",
         conflicts_with = "unsafe_fixes",
         conflicts_with = "fix_only",
+        help_heading = "Other options",
         help = "Show counts for every rule with at least one violation."
     )]
     pub statistics: bool,
@@ -155,9 +173,21 @@ pub struct CheckCommand {
         conflicts_with = "fix",
         conflicts_with = "unsafe_fixes",
         conflicts_with = "fix_only",
+        help_heading = "Other options",
         help = "Automatically insert a `# jarl-ignore` comment to suppress all violations.\nThe default reason can be customized with `--add-jarl-ignore=\"my_reason\"`."
     )]
     pub add_jarl_ignore: Option<String>,
+    // Help flag declared manually (auto flag disabled above) so it lands in the
+    // "Other options" group instead of clap's default "Options" heading, which
+    // would otherwise be forced to the top of the help output.
+    #[arg(
+        short,
+        long,
+        action = clap::ArgAction::Help,
+        help_heading = "Other options",
+        help = "Print help (see a summary with '-h')"
+    )]
+    pub help: Option<bool>,
 }
 #[derive(Clone, Debug, Parser)]
 pub(crate) struct ServerCommand {}

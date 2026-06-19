@@ -31,6 +31,8 @@
 * New CLI argument `--exclude` to exclude files or directories from the checks,
   mirroring the `exclude` argument in `jarl.toml` (#520).
 
+* Clearer output of `jarl check --help` (#521).
+
 ### Bug fixes
 
 * `implicit_assignment` no longer flags chained assignments like
