@@ -15,9 +15,9 @@ air_fs = { package = "fs", git = "https://github.com/posit-dev/air", rev = "d265
 air_r_parser = { git = "https://github.com/posit-dev/air", rev = "d2659d5b158374bf486b594625ca50abbd0ac879" }
 air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "d2659d5b158374bf486b594625ca50abbd0ac879" }
 air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air", rev = "d2659d5b158374bf486b594625ca50abbd0ac879" }
-oak_core = { git = "https://github.com/posit-dev/ark", rev = "fcb9a40f3e84074298b57b05b4de68e5515c9413" }
-oak_index_vec = { git = "https://github.com/posit-dev/ark", rev = "fcb9a40f3e84074298b57b05b4de68e5515c9413" }
-oak_semantic = { git = "https://github.com/posit-dev/ark", rev = "fcb9a40f3e84074298b57b05b4de68e5515c9413" }
+oak_core = { git = "https://github.com/posit-dev/ark", rev = "b4cb2e3122e590fa40d99661c2726defb3d42b1d" }
+oak_index_vec = { git = "https://github.com/posit-dev/ark", rev = "b4cb2e3122e590fa40d99661c2726defb3d42b1d" }
+oak_semantic = { git = "https://github.com/posit-dev/ark", rev = "b4cb2e3122e590fa40d99661c2726defb3d42b1d" }
 url = "2.5"
 anyhow = "1.0.94"
 biome_formatter = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
@@ -25,7 +25,7 @@ biome_rowan = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8
 clap = { version = "4.6.0", features = ["derive"] }
 colored = "3.1.1"
 ignore = "0.4.23"
-insta = { version = "1.47.2", features = ["yaml"] }
+insta = { version = "1.47.2", features = ["yaml", "filters"] }
 etcetera = "0.11.0"
 jarl-core = { path = "crates/jarl-core" }
 jarl-lsp = { path = "crates/jarl-lsp" }

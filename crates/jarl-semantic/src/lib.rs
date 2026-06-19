@@ -96,7 +96,7 @@ impl<'a> SemanticInfo<'a> {
         let mut stack = vec![ScopeId::from(0)];
         while let Some(s) = stack.pop() {
             ids.push(s);
-            stack.extend(self.index.child_scopes(s));
+            stack.extend(self.index.child_scope_ids(s));
         }
         ids
     }
@@ -427,7 +427,7 @@ impl<'a> SemanticInfo<'a> {
     fn precompute_closure_uses(&mut self, scopes: &[ScopeId]) {
         let mut parent_of: HashMap<ScopeId, ScopeId> = HashMap::new();
         for &scope in scopes {
-            for child in self.index.child_scopes(scope) {
+            for child in self.index.child_scope_ids(scope) {
                 parent_of.insert(child, scope);
             }
         }
@@ -567,7 +567,7 @@ impl<'a> SemanticInfo<'a> {
         let mut out = vec![scope_id];
         let mut stack = vec![scope_id];
         while let Some(s) = stack.pop() {
-            for child in self.index.child_scopes(s) {
+            for child in self.index.child_scope_ids(s) {
                 out.push(child);
                 stack.push(child);
             }
