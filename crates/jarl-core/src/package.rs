@@ -231,96 +231,33 @@ pub fn make_package_analysis(
         return PackageAnalysis::default();
     }
 
-    // Cache is_in_r_package per unique parent directory so we do at most K
-    // stat calls (typically 1) instead of N (one per file).
-    let r_dirs: HashSet<PathBuf> = paths
-        .iter()
-        .filter(|p| has_r_extension(p))
-        .filter_map(|p| p.parent().map(|d| d.to_path_buf()))
-        .collect();
-
-    let dir_is_package: HashMap<PathBuf, bool> = r_dirs
-        .into_iter()
-        .map(|dir| {
-            let in_pkg = dir
-                .file_name()
-                .and_then(|n| n.to_str())
-                .is_some_and(|n| n == "R")
-                && dir.parent().is_some_and(|p| p.join("DESCRIPTION").exists());
-            (dir, in_pkg)
-        })
-        .collect();
-
-    // Collect R/ files that belong to packages.
-    let r_dir_files: Vec<&PathBuf> = paths
-        .iter()
-        .filter(|p| has_r_extension(p))
-        .filter(|p| {
-            p.parent()
-                .and_then(|d| dir_is_package.get(d))
-                .copied()
-                .unwrap_or(false)
-        })
-        .collect();
-
-    // Discover package roots and collect excluded R/ files so they still
-    // contribute to cross-file analysis (both duplicate and unused checks).
-    // Also collect extra files (tests/, inst/tinytest/, inst/tests/, src/).
-    let mut extra_files: Vec<PathBuf> = Vec::new();
-    let mut excluded_r_files: Vec<PathBuf> = Vec::new();
-
-    let package_roots: HashSet<PathBuf> = r_dir_files
-        .iter()
-        .filter_map(|p| p.parent().and_then(|r| r.parent()).map(|r| r.to_path_buf()))
-        .collect();
-
-    // Collect the set of R/ files already in paths (canonicalized for comparison).
-    let r_dir_file_set: HashSet<PathBuf> = r_dir_files
-        .iter()
-        .filter_map(|p| std::fs::canonicalize(p).ok())
-        .collect();
-
-    for root in &package_roots {
-        // Discover ALL R/ files on disk, including excluded ones, so they
-        // contribute to the cross-file analysis. Diagnostics are only emitted
-        // for files in config.paths, so excluded files won't produce warnings.
-        let r_dir = root.join("R");
-        if r_dir.is_dir() {
-            for file in collect_files(&r_dir, has_r_extension) {
-                if let Ok(canon) = std::fs::canonicalize(&file)
-                    && !r_dir_file_set.contains(&canon)
-                {
-                    excluded_r_files.push(file);
-                }
-            }
+    // File discovery comes from oak's scan of each package root rather than a
+    // second filesystem walk here. The scan already enumerated every `R/` file
+    // (gitignore-aware, applying R's flat-`R/` load rule) and the package's
+    // other R sources. Diagnostics are only emitted for files in `config.paths`,
+    // so `R/` files outside the lint set still feed cross-file analysis without
+    // producing warnings. `src/` C/C++ files aren't R, so oak doesn't see them;
+    // we walk those directly for the unused-function check.
+    let db = crate::db::AnalysisDb::build(paths);
+    let mut all_files: Vec<(PathBuf, FileScope)> = Vec::new();
+    for package in db.packages() {
+        for r_file in package.r_files {
+            all_files.push((r_file, FileScope::R));
         }
-
         if check_unused {
-            // Collect test/tinytest R files
-            for dir_name in &["inst/tinytest", "inst/tests", "tests"] {
-                let dir = root.join(dir_name);
-                if dir.is_dir() {
-                    extra_files.extend(collect_files(&dir, has_r_extension));
+            for script in package.scripts {
+                if let Some(scope) = package_test_scope(&package.root, &script) {
+                    all_files.push((script, scope));
                 }
             }
-            // Collect C/C++ files in src/
-            let src_dir = root.join("src");
+            let src_dir = package.root.join("src");
             if src_dir.is_dir() {
-                extra_files.extend(collect_files(&src_dir, has_cpp_extension));
+                for file in collect_files(&src_dir, has_cpp_extension) {
+                    all_files.push((file, FileScope::Src));
+                }
             }
         }
     }
-
-    // Build the list of all files to scan in parallel, each tagged with its scope.
-    let all_files: Vec<(&Path, FileScope)> = r_dir_files
-        .iter()
-        .map(|p| (p.as_path(), FileScope::R))
-        .chain(excluded_r_files.iter().map(|p| (p.as_path(), FileScope::R)))
-        .chain(extra_files.iter().map(|p| {
-            let scope = file_scope_from_path(p);
-            (p.as_path(), scope)
-        }))
-        .collect();
 
     // Single parallel scan: read each file once. All R files get
     // scan_top_level_assignments; Src files only get scan_symbols.
@@ -412,6 +349,26 @@ pub(crate) fn file_scope_from_path(path: &Path) -> FileScope {
     }
     // Fallback: treat unknown extra files as Tests scope
     FileScope::Tests
+}
+
+/// Classify an oak-discovered package script as a test-scope file, or `None`
+/// when it isn't one the unused-function check considers. Mirrors exactly the
+/// directories the previous filesystem walk collected — `tests/`,
+/// `inst/tinytest/`, `inst/tests/` — so `data-raw/`, `vignettes/`, and other
+/// `inst/` subdirectories are excluded rather than swept in.
+fn package_test_scope(root: &Path, path: &Path) -> Option<FileScope> {
+    let rel = path.strip_prefix(root).ok()?;
+    let mut components = rel
+        .components()
+        .map(|c| c.as_os_str().to_string_lossy().into_owned());
+    match components.next()?.as_str() {
+        "tests" => Some(FileScope::Tests),
+        "inst" => match components.next()?.as_str() {
+            "tinytest" | "tests" => Some(FileScope::Inst),
+            _ => None,
+        },
+        _ => None,
+    }
 }
 
 /// Check whether a file is under a recognized package subdirectory
