@@ -20,6 +20,7 @@ mod jarl;
 mod min_r_version;
 mod no_default_exclude;
 mod output_format;
+mod per_file_ignores;
 mod rmd;
 mod roxygen;
 mod rules;

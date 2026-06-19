@@ -89,6 +89,7 @@ website:
       - rules/class_equals.md
       - rules/coalesce.md
       - rules/comparison_negation.md
+      - rules/condition_call.md
       - rules/download_file.md
       - rules/dplyr_filter_out.md
       - rules/dplyr_group_by_ungroup.md
@@ -111,6 +112,7 @@ website:
       - rules/fixed_regex.md
       - rules/for_loop_dup_index.md
       - rules/for_loop_index.md
+      - rules/glue.md
       - rules/grepv.md
       - rules/if_always_true.md
       - rules/implicit_assignment.md
@@ -121,16 +123,20 @@ website:
       - rules/length_test.md
       - rules/lengths.md
       - rules/list2df.md
+      - rules/literal_coercion.md
       - rules/matrix_apply.md
       - rules/misnamed_suppression.md
       - rules/misplaced_file_suppression.md
       - rules/misplaced_suppression.md
+      - rules/missing_argument.md
+      - rules/nested_pipe.md
       - rules/notin.md
       - rules/numeric_leading_zero.md
       - rules/nzchar.md
       - rules/outdated_suppression.md
       - rules/outer_negation.md
       - rules/pipe_consistency.md
+      - rules/pipe_return.md
       - rules/quotes.md
       - rules/redundant_equals.md
       - rules/redundant_ifelse.md

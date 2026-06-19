@@ -162,6 +162,56 @@ The complete list of default exclude patterns is:
 default-exclude = true
 ```
 
+### `per-file-ignores`
+
+This lets you ignore specific rules in specific files. It is a table mapping
+glob patterns to lists of rule names (or groups of rules, e.g. `PERF`).
+
+Patterns are resolved relative to the directory containing `jarl.toml`, just
+like `include` and `exclude`.
+
+```toml
+[lint.per-file-ignores]
+# Ignore `true_false_symbol` in `foo.R`.
+"foo.R" = ["true_false_symbol"]
+# Ignore all "PERF" rules under the `tests/` directory.
+"tests/" = ["PERF"]
+```
+
+A pattern can be negated with a leading `!`, in which case its rules are ignored
+in every file that does *not* match the pattern:
+
+```toml
+[lint.per-file-ignores]
+# Ignore `any_is_na` everywhere except in the `R/` directory.
+"!R/**" = ["any_is_na"]
+```
+
+When several patterns match a file, the rules from all of them are ignored.
+
+Because `[lint.per-file-ignores]` is a TOML table, every key written *after* its
+header belongs to that table. Any other `[lint]` option (such as
+`default-exclude` or `select`) must therefore appear *before* the
+`[lint.per-file-ignores]` header, otherwise it is read as a glob pattern instead
+of an option:
+
+```toml
+[lint]
+# Correct: scalar options come first.
+default-exclude = false
+
+[lint.per-file-ignores]
+"tests/" = ["PERF"]
+```
+
+```toml
+[lint.per-file-ignores]
+"tests/" = ["PERF"]
+# Wrong: this is parsed as a pattern, not as the `default-exclude` option, and
+# Jarl will report a configuration error.
+default-exclude = false
+```
+
 ### `assignment`
 
 **This argument is deprecated. Use the rule-specific argument `[lint.assignment]`
@@ -298,6 +348,34 @@ Default: `skipped-functions = ["expect_error", "expect_warning", "expect_message
 [lint.implicit_assignment]
 # Ignore implicit assignment in `list()` only.
 skipped-functions = ["list"]
+```
+
+### `missing_argument`
+
+Use `skipped-functions` to fully replace the default list of functions that are
+allowed to contain missing arguments. Use `extend-skipped-functions` to add to
+the default list. Specifying both is an error.
+
+Function names in `skipped-functions` or `extend-skipped-functions` also match
+namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
+`rlang::list2()`.
+
+Default: `skipped-functions = [
+    "switch",
+    "tibble",
+    "list2",
+    "mutate",
+    "summarize",
+    "transmute",
+]`
+
+```toml
+[lint]
+...
+
+[lint.missing_argument]
+# Ignore missing arguments in `my_function()` only.
+skipped-functions = ["my_function"]
 ```
 
 ### `pipe_consistency`

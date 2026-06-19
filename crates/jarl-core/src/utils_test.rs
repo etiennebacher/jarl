@@ -220,31 +220,6 @@ pub fn get_fixed_text_with_settings(
     output.trim_end().to_string()
 }
 
-/// Extract the highlighted text based on the diagnostic range for a given rule
-///
-/// This function runs the linter on the provided code and returns the exact text
-/// that would be highlighted in the LSP, based on the diagnostic range. This is
-/// needed when the range reported by the diagnostic is different from the range
-/// reported in the fix, e.g. for `assignment` linter.
-///
-/// # Arguments
-/// - `text` - The R code to analyze
-/// - `rule` - The rule name to check
-/// - `expected_highlight` - The expected text that should be highlighted
-///
-/// # Example
-/// ```
-/// expect_diagnostic_highlight("x = 1", "assignment", "x =");
-/// expect_diagnostic_highlight("1 -> x", "assignment", "-> x");
-/// ```
-pub fn expect_diagnostic_highlight(text: &str, rule: &str, expected_highlight: &str) {
-    let highlighted = get_diagnostic_highlight(text, rule, None);
-    assert_eq!(
-        highlighted, expected_highlight,
-        "Expected highlight '{expected_highlight}' but got '{highlighted}' for rule '{rule}' on code: {text}"
-    );
-}
-
 /// Get the highlighted text based on the diagnostic range for a given rule
 ///
 /// Returns the exact text that would be highlighted in the LSP.

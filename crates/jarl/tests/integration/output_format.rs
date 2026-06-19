@@ -332,6 +332,198 @@ fn test_output_github() -> anyhow::Result<()> {
 }
 
 #[test]
+fn test_output_sarif() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        ("test.R", "any(is.na(x))"),
+        ("test2.R", "any(duplicated(x))"),
+    ])?;
+
+    // The driver version changes between releases, so redact it for a stable
+    // snapshot.
+    insta::with_settings!({filters => vec![
+        // Only the driver version (the one immediately followed by `rules`),
+        // not the SARIF schema version `2.1.0`.
+        (r#""version": "[^"]+",(\s*)"rules""#, r#""version": "[VERSION]",$1"rules""#),
+    ]}, {
+        insta::assert_snapshot!(
+            &mut case
+                .command()
+                .arg("check")
+                .arg(".")
+                .arg("--output-format")
+                .arg("sarif")
+                .run()
+                .normalize_os_executable_name()
+                .normalize_temp_paths(),
+            @r#"
+
+        success: false
+        exit_code: 1
+        ----- stdout -----
+        {
+          "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+          "version": "2.1.0",
+          "runs": [
+            {
+              "tool": {
+                "driver": {
+                  "name": "jarl",
+                  "informationUri": "https://github.com/etiennebacher/jarl",
+                  "version": "[VERSION]",
+                  "rules": [
+                    {
+                      "id": "any_duplicated",
+                      "shortDescription": {
+                        "text": "`any(duplicated(...))` is inefficient."
+                      },
+                      "help": {
+                        "text": "`any(duplicated(...))` is inefficient."
+                      },
+                      "helpUri": "https://jarl.etiennebacher.com/rules/any_duplicated",
+                      "defaultConfiguration": {
+                        "level": "warning"
+                      }
+                    },
+                    {
+                      "id": "any_is_na",
+                      "shortDescription": {
+                        "text": "`any(is.na(...))` is inefficient."
+                      },
+                      "help": {
+                        "text": "`any(is.na(...))` is inefficient."
+                      },
+                      "helpUri": "https://jarl.etiennebacher.com/rules/any_is_na",
+                      "defaultConfiguration": {
+                        "level": "warning"
+                      }
+                    }
+                  ]
+                }
+              },
+              "columnKind": "utf16CodeUnits",
+              "originalUriBaseIds": {
+                "ROOTPATH": {
+                  "uri": "file://[TEMP_DIR]/"
+                }
+              },
+              "results": [
+                {
+                  "ruleId": "any_is_na",
+                  "ruleIndex": 1,
+                  "level": "warning",
+                  "message": {
+                    "text": "`any(is.na(...))` is inefficient. Use `anyNA(...)` instead."
+                  },
+                  "locations": [
+                    {
+                      "physicalLocation": {
+                        "artifactLocation": {
+                          "uri": "test.R",
+                          "uriBaseId": "ROOTPATH"
+                        },
+                        "region": {
+                          "startLine": 1,
+                          "startColumn": 1,
+                          "endLine": 1,
+                          "endColumn": 14
+                        }
+                      }
+                    }
+                  ],
+                  "fixes": [
+                    {
+                      "description": {
+                        "text": "`any(is.na(...))` is inefficient. Use `anyNA(...)` instead."
+                      },
+                      "artifactChanges": [
+                        {
+                          "artifactLocation": {
+                            "uri": "test.R",
+                            "uriBaseId": "ROOTPATH"
+                          },
+                          "replacements": [
+                            {
+                              "deletedRegion": {
+                                "startLine": 1,
+                                "startColumn": 1,
+                                "endLine": 1,
+                                "endColumn": 14
+                              },
+                              "insertedContent": {
+                                "text": "anyNA(x)"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "ruleId": "any_duplicated",
+                  "ruleIndex": 0,
+                  "level": "warning",
+                  "message": {
+                    "text": "`any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead."
+                  },
+                  "locations": [
+                    {
+                      "physicalLocation": {
+                        "artifactLocation": {
+                          "uri": "test2.R",
+                          "uriBaseId": "ROOTPATH"
+                        },
+                        "region": {
+                          "startLine": 1,
+                          "startColumn": 1,
+                          "endLine": 1,
+                          "endColumn": 19
+                        }
+                      }
+                    }
+                  ],
+                  "fixes": [
+                    {
+                      "description": {
+                        "text": "`any(duplicated(...))` is inefficient. Use `anyDuplicated(...) > 0` instead."
+                      },
+                      "artifactChanges": [
+                        {
+                          "artifactLocation": {
+                            "uri": "test2.R",
+                            "uriBaseId": "ROOTPATH"
+                          },
+                          "replacements": [
+                            {
+                              "deletedRegion": {
+                                "startLine": 1,
+                                "startColumn": 1,
+                                "endLine": 1,
+                                "endColumn": 19
+                              },
+                              "insertedContent": {
+                                "text": "anyDuplicated(x) > 0"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+        ----- stderr -----
+        "#
+        );
+    });
+
+    Ok(())
+}
+
+#[test]
 fn test_with_parsing_error() -> anyhow::Result<()> {
     let case = CliTest::with_files([("test.R", "any(is.na(x))"), ("test2.R", "any(")])?;
 

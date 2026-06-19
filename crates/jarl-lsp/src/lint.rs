@@ -176,6 +176,7 @@ fn run_jarl_linting(
 
     // Call get_checks directly with the in-memory content and the real
     // (relativized) file path, avoiding the old tempfile round-trip.
+    // `get_checks` resolves `[lint.per-file-ignores]` for the file itself.
     let rel_path = PathBuf::from(relativize_path(file_path));
     let mut diagnostics = get_checks(
         content,

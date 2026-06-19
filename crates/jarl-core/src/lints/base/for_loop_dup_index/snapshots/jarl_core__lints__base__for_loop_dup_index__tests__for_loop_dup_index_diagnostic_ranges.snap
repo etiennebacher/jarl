@@ -1,0 +1,12 @@
+---
+source: crates/jarl-core/src/lints/base/for_loop_dup_index/mod.rs
+expression: "snapshot_lint(\"\nfor (x in 1:3) {\n    for (x in 1:4) {\n        x\n    }\n}\")"
+---
+warning: for_loop_dup_index
+ --> <test>:3:10
+  |
+3 |     for (x in 1:4) {
+  |          -------- This index variable is already used in a parent `for` loop.
+  |
+  = help: Rename this index variable to avoid unexpected results.
+Found 1 error.

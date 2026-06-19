@@ -31,6 +31,17 @@ fn main() -> ExitCode {
                 writeln!(stderr, "  Cause: {cause}").ok();
             }
 
+            // Unknown rule names carry "did you mean" suggestions, rendered on
+            // separate `Help:` lines.
+            if let Some(unknown_rules) = err
+                .chain()
+                .find_map(|cause| cause.downcast_ref::<jarl_core::error::UnknownRulesError>())
+            {
+                for help in &unknown_rules.help {
+                    writeln!(stderr, "  Help: {help}").ok();
+                }
+            }
+
             ExitStatus::Error.into()
         }
     }

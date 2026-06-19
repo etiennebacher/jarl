@@ -1,8 +1,8 @@
 ---
-name: 'Bug: wrong lint'
+name: 'Bug: false positive'
 about: Some code is marked as "lint" but shouldn't be.
 title: ''
-labels: wrong-lint
+labels: false-positive
 assignees: ''
 
 ---

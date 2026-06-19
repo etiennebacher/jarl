@@ -23,6 +23,7 @@ pub use crate::checker::Checker;
 use crate::config::Config;
 use crate::diagnostic::*;
 use crate::fix::*;
+use crate::rule_set::RuleSet;
 use crate::utils::*;
 
 pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
@@ -84,6 +85,20 @@ pub fn check_path(
     } else {
         lint_only(path, config, pkg, pkg_contexts, file_pkg_info)
     }
+}
+
+/// Filter `config.rules_to_apply` down to the rules that apply to `path` after
+/// accounting for `[lint.per-file-ignores]`.
+fn effective_rules_for_file(config: &Config, path: &Path) -> RuleSet {
+    if config.per_file_ignores.is_empty() {
+        return config.rules_to_apply.clone();
+    }
+    let ignored = config.per_file_ignores.ignored_rules(path);
+    config
+        .rules_to_apply
+        .iter()
+        .filter(|rule| !ignored.contains(rule))
+        .collect()
 }
 
 pub fn lint_only(
@@ -203,7 +218,8 @@ pub fn get_checks(
     let suppression = SuppressionManager::from_node(syntax, contents);
 
     let mut checker = Checker::new(suppression, config.rule_options.clone());
-    checker.rule_set = config.rules_to_apply.clone();
+    // Drop any rules ignored for this file via `[lint.per-file-ignores]`.
+    checker.rule_set = effective_rules_for_file(config, file);
     checker.minimum_r_version = config.minimum_r_version;
 
     // Build the semantic index for use-def-based rules. `source("path")`
@@ -403,7 +419,7 @@ fn get_checks_roxygen(
         let suppression = SuppressionManager::from_node(&syntax, &chunk.code);
         let has_suppressions = suppression.has_any_suppressions;
         let mut checker = Checker::new(suppression, config.rule_options.clone());
-        checker.rule_set = config.rules_to_apply.clone();
+        checker.rule_set = effective_rules_for_file(config, file);
         checker.minimum_r_version = config.minimum_r_version;
 
         for expr in expressions {
@@ -458,7 +474,7 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     let syntax = parsed.syntax();
     let suppression = SuppressionManager::from_node(&syntax, &virtual_source);
     let mut checker = Checker::new(suppression, config.rule_options.clone());
-    checker.rule_set = config.rules_to_apply.clone();
+    checker.rule_set = effective_rules_for_file(config, file);
     checker.minimum_r_version = config.minimum_r_version;
 
     let expressions = &parsed.tree().expressions();

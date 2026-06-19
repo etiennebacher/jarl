@@ -7,15 +7,19 @@ use crate::lints::base::any_duplicated::any_duplicated::any_duplicated;
 use crate::lints::base::any_is_na::any_is_na::any_is_na;
 use crate::lints::base::browser::browser::browser;
 use crate::lints::base::class_equals::class_equals::class_identical;
+use crate::lints::base::condition_call::condition_call::condition_call;
 use crate::lints::base::download_file::download_file::download_file;
 use crate::lints::base::duplicated_arguments::duplicated_arguments::duplicated_arguments;
 use crate::lints::base::fixed_regex::fixed_regex::fixed_regex;
+use crate::lints::base::glue::glue::glue;
 use crate::lints::base::grepv::grepv::grepv;
 use crate::lints::base::length_levels::length_levels::length_levels;
 use crate::lints::base::length_test::length_test::length_test;
 use crate::lints::base::lengths::lengths::lengths;
 use crate::lints::base::list2df::list2df::list2df;
+use crate::lints::base::literal_coercion::literal_coercion::literal_coercion;
 use crate::lints::base::matrix_apply::matrix_apply::matrix_apply;
+use crate::lints::base::missing_argument::missing_argument::missing_argument;
 use crate::lints::base::outer_negation::outer_negation::outer_negation;
 use crate::lints::base::redundant_ifelse::redundant_ifelse::redundant_ifelse;
 use crate::lints::base::sample_int::sample_int::sample_int;
@@ -54,6 +58,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::ClassEquals) {
         checker.report_diagnostic(class_identical(r_expr)?);
     }
+    if checker.is_rule_enabled(Rule::ConditionCall) {
+        checker.report_diagnostic(condition_call(r_expr)?);
+    }
     if checker.is_rule_enabled(Rule::DownloadFile) {
         checker.report_diagnostic(download_file(r_expr)?);
     }
@@ -62,6 +69,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled(Rule::FixedRegex) {
         checker.report_diagnostic(fixed_regex(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::Glue) {
+        checker.report_diagnostic(glue(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::Grepv) {
         checker.report_diagnostic(grepv(r_expr)?);
@@ -78,8 +88,14 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::List2df) {
         checker.report_diagnostic(list2df(r_expr)?);
     }
+    if checker.is_rule_enabled(Rule::LiteralCoercion) {
+        checker.report_diagnostic(literal_coercion(r_expr)?);
+    }
     if checker.is_rule_enabled(Rule::MatrixApply) {
         checker.report_diagnostic(matrix_apply(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::MissingArgument) {
+        checker.report_diagnostic(missing_argument(r_expr, checker)?);
     }
     if checker.is_rule_enabled(Rule::OuterNegation) {
         checker.report_diagnostic(outer_negation(r_expr)?);

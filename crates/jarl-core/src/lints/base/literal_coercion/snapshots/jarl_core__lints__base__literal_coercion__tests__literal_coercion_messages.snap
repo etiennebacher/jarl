@@ -1,0 +1,64 @@
+---
+source: crates/jarl-core/src/lints/base/literal_coercion/mod.rs
+expression: get_diagnostic_messages(snippets)
+---
+as.logical(1L)
+  => This coercion can be simplified.
+as.logical(1)
+  => This coercion can be simplified.
+as.logical(TRUE)
+  => This coercion can be simplified.
+as.logical("true")
+  => This coercion can be simplified.
+as.logical("false")
+  => This coercion can be simplified.
+as.integer(1)
+  => This coercion can be simplified.
+as.integer('1')
+  => This coercion can be simplified.
+as.integer(1L)
+  => This coercion can be simplified.
+as.integer(TRUE)
+  => This coercion can be simplified.
+as.numeric(1)
+  => This coercion can be simplified.
+as.double(1)
+  => This coercion can be simplified.
+as.double(TRUE)
+  => This coercion can be simplified.
+as.double('1')
+  => This coercion can be simplified.
+as.double('hi')
+  => This coercion can be simplified.
+as.character(1)
+  => This coercion can be simplified.
+as.character(1L)
+  => This coercion can be simplified.
+as.character("e")
+  => This coercion can be simplified.
+as.character(TRUE)
+  => This coercion can be simplified.
+as.character(FALSE)
+  => This coercion can be simplified.
+as.integer(NA)
+  => This coercion can be simplified.
+as.numeric(NA)
+  => This coercion can be simplified.
+as.logical(NA)
+  => This coercion can be simplified.
+as.double(NA)
+  => This coercion can be simplified.
+as.character(NA)
+  => This coercion can be simplified.
+lgl(1L)
+  => This coercion can be simplified.
+rlang::lgl(1L)
+  => This coercion can be simplified.
+int(1.0)
+  => This coercion can be simplified.
+dbl(1L)
+  => This coercion can be simplified.
+chr("e")
+  => This coercion can be simplified.
+chr("E")
+  => This coercion can be simplified.

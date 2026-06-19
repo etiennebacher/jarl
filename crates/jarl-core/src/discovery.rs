@@ -189,6 +189,19 @@ fn parse_settings(toml: &Path, root_directory: &Path) -> anyhow::Result<Settings
 
 type DiscoveredFiles = Vec<Result<PathBuf, ignore::Error>>;
 
+/// Validate user-supplied `--exclude` glob patterns, returning an error on the
+/// first invalid one so a bad pattern is a hard failure rather than a
+/// silently-ignored warning during discovery.
+pub fn validate_exclude_patterns(patterns: &[String]) -> anyhow::Result<()> {
+    let mut builder = ignore::overrides::OverrideBuilder::new(".");
+    for pattern in patterns {
+        builder
+            .add(pattern)
+            .map_err(|err| anyhow::anyhow!("invalid `--exclude` pattern: {err}"))?;
+    }
+    Ok(())
+}
+
 /// For each provided `path`, recursively search for any R files within that `path`
 /// that match our inclusion criteria
 ///
@@ -196,6 +209,7 @@ type DiscoveredFiles = Vec<Result<PathBuf, ignore::Error>>;
 /// consistently applied to [discover_settings()].
 pub fn discover_r_file_paths<P: AsRef<Path>>(
     paths: &[P],
+    cli_exclude: &[String],
     resolver: &PathResolver<Settings>,
     use_linter_settings: bool,
     no_default_exclude: bool,
@@ -231,8 +245,11 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
         // Build custom ignore patterns
         let mut patterns = Vec::new();
 
-        // Default root directory if no settings found
-        let mut root = Path::new(".");
+        // Anchor patterns at the checked base by default. `paths` are normalized
+        // to absolute paths, so a relative root like "." would never prefix-match
+        // the walk entries and path-anchored patterns (e.g. `R/foo.R`) wouldn't
+        // apply. A discovered config overrides this with its own directory.
+        let mut root = first_path.as_path();
 
         if let Some(settings_item) = resolver.items().first() {
             let settings = settings_item.value();
@@ -251,6 +268,12 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
         } else if !no_default_exclude {
             // Add default exclude patterns
             patterns.extend_from_slice(DEFAULT_EXCLUDE_PATTERNS);
+        }
+
+        // Patterns passed via `--exclude` apply on top of any config-derived
+        // patterns, including when no config was discovered.
+        for pattern in cli_exclude {
+            patterns.push(pattern.as_str());
         }
 
         // If we have patterns, create an override and add it to the builder

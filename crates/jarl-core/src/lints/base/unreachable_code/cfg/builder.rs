@@ -231,6 +231,11 @@ impl<'a> CfgBuilder<'a> {
         }
 
         match stmt.kind() {
+            RSyntaxKind::R_BRACED_EXPRESSIONS => {
+                let braced =
+                    RBracedExpressions::cast_ref(stmt).expect("kind is R_BRACED_EXPRESSIONS");
+                self.build_braced_expressions(&braced, current, exit)
+            }
             RSyntaxKind::R_BREAK_EXPRESSION => {
                 self.build_break(current, stmt.clone());
                 current
@@ -239,41 +244,27 @@ impl<'a> CfgBuilder<'a> {
                 self.build_next(current, stmt.clone());
                 current
             }
-            RSyntaxKind::R_RETURN_EXPRESSION => {
+            RSyntaxKind::R_CALL if stmt.text_trimmed() == "return" => {
                 self.build_return(current, stmt.clone());
                 current
             }
             RSyntaxKind::R_IF_STATEMENT => {
-                if let Some(if_stmt) = RIfStatement::cast_ref(stmt) {
-                    self.build_if_statement(&if_stmt, current, exit)
-                } else {
-                    self.add_statement(current, stmt.clone());
-                    current
-                }
+                let if_stmt = RIfStatement::cast_ref(stmt).expect("kind is R_IF_STATEMENT");
+                self.build_if_statement(&if_stmt, current, exit)
             }
             RSyntaxKind::R_FOR_STATEMENT => {
-                if let Some(for_stmt) = RForStatement::cast_ref(stmt) {
-                    self.build_for_statement(&for_stmt, current, exit)
-                } else {
-                    self.add_statement(current, stmt.clone());
-                    current
-                }
+                let for_stmt = RForStatement::cast_ref(stmt).expect("kind is R_FOR_STATEMENT");
+                self.build_for_statement(&for_stmt, current, exit)
             }
             RSyntaxKind::R_WHILE_STATEMENT => {
-                if let Some(while_stmt) = RWhileStatement::cast_ref(stmt) {
-                    self.build_while_statement(&while_stmt, current, exit)
-                } else {
-                    self.add_statement(current, stmt.clone());
-                    current
-                }
+                let while_stmt =
+                    RWhileStatement::cast_ref(stmt).expect("kind is R_WHILE_STATEMENT");
+                self.build_while_statement(&while_stmt, current, exit)
             }
             RSyntaxKind::R_REPEAT_STATEMENT => {
-                if let Some(repeat_stmt) = RRepeatStatement::cast_ref(stmt) {
-                    self.build_repeat_statement(&repeat_stmt, current, exit)
-                } else {
-                    self.add_statement(current, stmt.clone());
-                    current
-                }
+                let repeat_stmt =
+                    RRepeatStatement::cast_ref(stmt).expect("kind is R_REPEAT_STATEMENT");
+                self.build_repeat_statement(&repeat_stmt, current, exit)
             }
             RSyntaxKind::R_CALL => {
                 // Check if this is a return, break, or next call

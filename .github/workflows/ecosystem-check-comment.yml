@@ -28,7 +28,7 @@ jobs:
 
     steps:
       - name: Download PR number artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: pr-number
           path: pr-number
@@ -36,7 +36,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download lint results artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: lint-results
           path: lint-results

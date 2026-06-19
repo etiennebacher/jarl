@@ -1,0 +1,11 @@
+---
+source: crates/jarl-core/src/lints/base/assignment/mod.rs
+expression: "snapshot_lint(\"x = 1\")"
+---
+warning: assignment
+ --> <test>:1:1
+  |
+1 | x = 1
+  | --- Use `<-` for assignment.
+  |
+Found 1 error.

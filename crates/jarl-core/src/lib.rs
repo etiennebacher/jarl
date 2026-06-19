@@ -26,6 +26,7 @@ pub mod location;
 pub mod namespace;
 pub mod package;
 pub mod package_cache;
+pub mod per_file_ignores;
 pub mod rmd;
 pub mod roxygen;
 pub mod rule_options;
