@@ -347,6 +347,45 @@ fn test_cli_exclude_glob_patterns() -> anyhow::Result<()> {
 }
 
 #[test]
+fn test_cli_exclude_overrides_hardcoded_path_passed_in_files() -> anyhow::Result<()> {
+    let case = CliTest::with_files([("R/gen.R", "b = 2\n"), ("R/keep.R", "c = 3\n")])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("R")
+            .arg("--exclude")
+            .arg("R/g*.R")
+            .arg("--select")
+            .arg("assignment")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: assignment
+     --> R/keep.R:1:1
+      |
+    1 | c = 3
+      | --- Use `<-` for assignment.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
 fn test_cli_exclude_wrong_glob_patterns() -> anyhow::Result<()> {
     let case = CliTest::with_files([
         ("keep.R", "a = 1\n"),
