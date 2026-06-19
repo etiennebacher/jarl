@@ -17,6 +17,7 @@ air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "0eadd6938d0316
 air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air", rev = "0eadd6938d0316b1fc885c91e7af55d7c8de8530" }
 oak_core = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
 oak_index_vec = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_package_metadata = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
 oak_semantic = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
 url = "2.5"
 anyhow = "1.0.94"

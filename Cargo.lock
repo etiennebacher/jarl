@@ -939,6 +939,7 @@ dependencies = [
  "jarl-semantic",
  "oak_core",
  "oak_index_vec",
+ "oak_package_metadata",
  "oak_semantic",
  "path-absolutize",
  "rayon",

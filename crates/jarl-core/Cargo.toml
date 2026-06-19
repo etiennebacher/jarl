@@ -26,6 +26,7 @@ biome_formatter.workspace = true
 # Semantic analysis (per-file scopes, definitions, uses, use-def map)
 oak_core.workspace = true
 oak_index_vec.workspace = true
+oak_package_metadata.workspace = true
 oak_semantic.workspace = true
 url.workspace = true
 
