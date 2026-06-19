@@ -396,6 +396,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="options" class="level2">
 <h2 class="anchored" data-anchor-id="options">Options</h2>
+<p><strong><code>--exclude</code></strong></p>
+<p>Comma-separated list of files or directories to ignore. Glob patterns are accepted, e.g.:</p>
+<pre><code>jarl check . --exclude folder_1,folder_2/*.R</code></pre>
 <p><strong><code>-f, --fix</code></strong></p>
 <p>Automatically fix issues detected by the linter.</p>
 <hr>
@@ -461,7 +464,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="examples" class="level2">
 <h2 class="anchored" data-anchor-id="examples">Examples</h2>
 <p>You can pass multiple options at once, for instance:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--fix</span> <span class="at">--select</span> any_is_na,class_equals</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jarl</span> check . <span class="at">--fix</span> <span class="at">--select</span> any_is_na,class_equals</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>
