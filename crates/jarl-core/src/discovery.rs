@@ -232,8 +232,11 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
         // Build custom ignore patterns
         let mut patterns = Vec::new();
 
-        // Default root directory if no settings found
-        let mut root = Path::new(".");
+        // Anchor patterns at the checked base by default. `paths` are normalized
+        // to absolute paths, so a relative root like "." would never prefix-match
+        // the walk entries and path-anchored patterns (e.g. `R/foo.R`) wouldn't
+        // apply. A discovered config overrides this with its own directory.
+        let mut root = first_path.as_path();
 
         if let Some(settings_item) = resolver.items().first() {
             let settings = settings_item.value();
@@ -291,28 +294,6 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
 
     let mut files = state.finish();
 
-    // Build an override for the CLI `--exclude` patterns, anchored at the
-    // current directory. The walk-stage override above only anchors path-based
-    // patterns (e.g. `R/foo.R`) correctly when its root matches the walk roots,
-    // which isn't the case without a config. Enforcing them here — the same way
-    // config `exclude` patterns are enforced below — makes path-anchored globs
-    // work regardless of whether a `jarl.toml` was discovered.
-    let cli_exclude_overrides = (!cli_exclude.is_empty())
-        .then(|| {
-            let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-            let mut override_builder = ignore::overrides::OverrideBuilder::new(&cwd);
-            for pattern in cli_exclude {
-                if let Err(e) = override_builder.add(&format!("!{pattern}")) {
-                    tracing::warn!("Failed to add exclude pattern '{}': {}", pattern, e);
-                }
-            }
-            override_builder
-                .build()
-                .ok()
-                .map(|overrides| (cwd, overrides))
-        })
-        .flatten();
-
     // Post-filter: apply per-config exclude and include patterns.
     //
     // The WalkBuilder above only applies the first config's exclude patterns.
@@ -324,15 +305,6 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
             let Ok(path) = result else {
                 return true;
             };
-
-            // CLI `--exclude` patterns apply to every file, regardless of
-            // whether it resolves to a config.
-            if let Some((cwd, overrides)) = &cli_exclude_overrides {
-                let relative = path.strip_prefix(cwd).unwrap_or(path.as_path());
-                if matches!(overrides.matched(relative, false), ignore::Match::Ignore(_)) {
-                    return false;
-                }
-            }
 
             let Some(item) = resolver.resolve(path) else {
                 return true;
