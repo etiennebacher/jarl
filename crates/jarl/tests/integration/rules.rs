@@ -105,6 +105,114 @@ fn test_several_non_existing_ignored_rules() -> anyhow::Result<()> {
 }
 
 #[test]
+fn test_unknown_selected_rule_suggests_close_name() -> anyhow::Result<()> {
+    let case = CliTest::with_file("test.R", "any(is.na(x))")?;
+    insta::assert_snapshot!(
+        &mut case.command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("any_is_naa")
+            .run()
+            .normalize_os_executable_name(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in `--select`: any_is_naa
+      Help: Did you mean "any_is_na"?
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_unknown_selected_rule_suggests_several_close_names() -> anyhow::Result<()> {
+    let case = CliTest::with_file("test.R", "any(is.na(x))")?;
+    insta::assert_snapshot!(
+        &mut case.command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("seql")
+            .run()
+            .normalize_os_executable_name(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in `--select`: seql
+      Help: Did you mean one of "seq", "seq2"?
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_unknown_selected_group_suggests_close_name() -> anyhow::Result<()> {
+    let case = CliTest::with_file("test.R", "any(is.na(x))")?;
+    insta::assert_snapshot!(
+        &mut case.command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("REED")
+            .run()
+            .normalize_os_executable_name(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in `--select`: REED
+      Help: Did you mean "READ"?
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_unknown_rules_suggests_only_for_close_names() -> anyhow::Result<()> {
+    let case = CliTest::with_file("test.R", "any(is.na(x))")?;
+    insta::assert_snapshot!(
+        &mut case.command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("any_is_naa,foo")
+            .run()
+            .normalize_os_executable_name(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in `--select`: any_is_naa, foo
+      Help: Did you mean "any_is_na"?
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
 fn test_selected_and_ignored() -> anyhow::Result<()> {
     let case = CliTest::with_file("test.R", "any(is.na(x))")?;
 

@@ -1,0 +1,17 @@
+---
+source: crates/jarl-core/src/lints/base/pipe_consistency/mod.rs
+expression: "get_unsafe_fixed_text_with_settings(vec![\"x |> f()\", \"x |> f(y = _)\"],\n\"pipe_consistency\", Some(\"4.1\"), Some(settings),)"
+---
+OLD:
+====
+x |> f()
+NEW:
+====
+x %>% f()
+
+OLD:
+====
+x |> f(y = _)
+NEW:
+====
+x %>% f(y = .)

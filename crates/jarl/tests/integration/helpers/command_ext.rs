@@ -37,9 +37,10 @@ impl Output {
         // Match temporary directory paths with trailing separator:
         // - Linux: /tmp/.tmpXXXXXX/
         // - macOS: /var/folders/.../T/.tmpXXXXXX/ or /private/var/folders/.../
-        // - Windows: C:\Users\...\AppData\Local\Temp\...\
+        // - Windows: C:\Users\...\AppData\Local\Temp\...\ (either separator,
+        //   since SARIF URIs use forward slashes)
         let temp_path_regex =
-            Regex::new(r"(?:/private)?/(?:tmp|var/folders/[^/]+/[^/]+/T)/\.tmp[A-Za-z0-9]+/|C:\\Users\\[^\\]+\\AppData\\Local\\Temp\\[^\\]+\\")
+            Regex::new(r"(?:/private)?/(?:tmp|var/folders/[^/]+/[^/]+/T)/\.tmp[A-Za-z0-9]+/|C:[\\/]Users[\\/][^\\/]+[\\/]AppData[\\/]Local[\\/]Temp[\\/][^\\/]+[\\/]")
                 .unwrap();
 
         Self {

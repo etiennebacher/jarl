@@ -11,13 +11,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check-link-rot:
+  check-links:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
       - name: Link Checker
         id: lychee
-        uses: lycheeverse/lychee-action@v2
+        uses: lycheeverse/lychee-action@6da1d14f3a43098a294b7696d93d938aa8d20fc0 # v2
         with:
+          args: |
+            .
+            --max-concurrency 4
+            --max-retries 5
+            --retry-wait-time 5
+            --timeout 30
+            --accept 200,429
           fail: true

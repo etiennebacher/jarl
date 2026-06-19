@@ -1,5 +1,5 @@
 use air_workspace::resolve::PathResolver;
-use jarl_core::discovery::{discover_r_file_paths, discover_settings};
+use jarl_core::discovery::{discover_r_file_paths, discover_settings, validate_exclude_patterns};
 use jarl_core::library_paths::is_r_available;
 use jarl_core::package_cache::{PackageCache, any_file_references_packages, find_r_project_root};
 use jarl_core::rule_set::Rule;
@@ -29,7 +29,9 @@ use crate::output_format::{self, GithubEmitter, print_notes, print_summary, prin
 use crate::statistics::print_statistics;
 use crate::status::ExitStatus;
 
-use output_format::{ConciseEmitter, Emitter, FullEmitter, JsonEmitter, OutputFormat};
+use output_format::{
+    ConciseEmitter, Emitter, FullEmitter, JsonEmitter, OutputFormat, SarifEmitter,
+};
 
 pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     let start = if args.with_timing {
@@ -37,6 +39,10 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     } else {
         None
     };
+
+    // Fail fast on invalid `--exclude` glob patterns instead of silently
+    // ignoring them during discovery.
+    validate_exclude_patterns(&args.exclude)?;
 
     let mut resolver = PathResolver::new(Settings::default());
 
@@ -68,10 +74,16 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         resolver.add(&ds.directory, ds.settings);
     }
 
-    let paths = discover_r_file_paths(&args.files, &resolver, true, args.no_default_exclude)
-        .into_iter()
-        .filter_map(Result::ok)
-        .collect::<Vec<_>>();
+    let paths = discover_r_file_paths(
+        &args.files,
+        &args.exclude,
+        &resolver,
+        true,
+        args.no_default_exclude,
+    )
+    .into_iter()
+    .filter_map(Result::ok)
+    .collect::<Vec<_>>();
 
     if paths.is_empty() {
         println!(
@@ -233,6 +245,9 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         }
         OutputFormat::Github => {
             GithubEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
+        }
+        OutputFormat::Sarif => {
+            SarifEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;
         }
         OutputFormat::Full => {
             FullEmitter.emit(&mut stdout, &all_diagnostics_flat, &all_errors)?;

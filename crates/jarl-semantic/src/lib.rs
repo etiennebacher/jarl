@@ -10,25 +10,28 @@
 //! `info.is_definition_used(scope, def_id, def)` rather than walking the
 //! semantic index themselves.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use air_r_parser::RParserOptions;
 use air_r_syntax::{
     AnyRArgumentName, AnyRExpression, RArgument, RArgumentList, RBinaryExpression, RCall,
-    RExtractExpression, RNamespaceExpression, RSyntaxKind, RSyntaxNode,
+    RExtractExpression, RNamespaceExpression, RStringValue, RSyntaxKind, RSyntaxNode,
 };
-use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange, TextSize};
-use oak_core::syntax_ext::RIdentifierExt;
-use oak_index::DefinitionId;
-use oak_index::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex, SymbolId};
+use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange};
+use oak_core::syntax_ext::{RIdentifierExt, RStringValueExt};
+use oak_semantic::DefinitionId;
+use oak_semantic::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex};
 
 /// Per-file semantic info derived from oak's [`SemanticIndex`] plus AST
 /// passes over the syntax tree. Computed once per file; consumed by lints.
 pub struct SemanticInfo<'a> {
     index: &'a SemanticIndex,
-    /// Parent scope for every non-root scope. Oak only exposes
-    /// `child_scopes(parent)`; we build the inverse once.
-    parent_of: HashMap<ScopeId, ScopeId>,
+    /// Root syntax node of the analyzed file. Needed to resolve
+    /// `AstPtr` references stored in [`DefinitionKind`] back to nodes.
+    root: RSyntaxNode,
+    /// Path of the file being analyzed. Used to resolve `source("path")`
+    /// arguments against the current file's directory.
+    file: &'a std::path::Path,
     /// Names that have a synthetic use from AST passes (string interpolation,
     /// `do.call("f", …)`, `..cols`, `on.exit` bodies, loop assignment LHSes,
     /// short-circuit assignment LHSes). A definition whose symbol name is in
@@ -41,41 +44,35 @@ pub struct SemanticInfo<'a> {
     local_body_ranges: Vec<TextRange>,
     /// Ranges of formula RHSes (`~ rhs`).
     formula_ranges: Vec<TextRange>,
-    /// Definitions reachable through call-site analysis of nested closures.
-    closure_used_defs: HashSet<(ScopeId, DefinitionId)>,
-    /// Symbols whose nested closure escapes (returned/anonymous/passed as
-    /// argument); all enclosing-scope defs of that symbol are conservatively
-    /// considered used.
-    closure_escaped_symbols: HashSet<(ScopeId, SymbolId)>,
-    /// Identifier ranges that appear as the callee of an `R_CALL`.
-    callee_ranges: Vec<TextRange>,
+    /// Definitions reached by some non-NSE use anywhere in the file. Computed
+    /// from oak's `reaching_definitions`, which resolves both local uses and
+    /// free-variable uses in nested closures (via enclosing snapshots).
+    reaching_used: HashSet<(ScopeId, DefinitionId)>,
 }
 
 impl<'a> SemanticInfo<'a> {
-    /// Build the info table. Runs both the AST pass (collecting synthetic
-    /// uses, NSE ranges, formula ranges, local body ranges, callee ranges)
-    /// and the closure call-site analysis.
-    pub fn build(expressions: &[RSyntaxNode], index: &'a SemanticIndex) -> Self {
-        let scopes = collect_scope_ids(index);
-        let mut parent_of: HashMap<ScopeId, ScopeId> = HashMap::new();
-        for &scope in &scopes {
-            for child in index.child_scopes(scope) {
-                parent_of.insert(child, scope);
-            }
-        }
+    /// Build the info table. Runs the AST pass (collecting synthetic uses,
+    /// NSE ranges, formula ranges, local body ranges) and then the
+    /// reaching-use precomputation over oak's use-def maps.
+    pub fn build(
+        root: &RSyntaxNode,
+        expressions: &[RSyntaxNode],
+        index: &'a SemanticIndex,
+        file: &'a std::path::Path,
+    ) -> Self {
         let mut this = Self {
             index,
-            parent_of,
+            root: root.clone(),
+            file,
             synthetic_used_names: HashSet::new(),
             nse_ranges: Vec::new(),
             local_body_ranges: Vec::new(),
             formula_ranges: Vec::new(),
-            closure_used_defs: HashSet::new(),
-            closure_escaped_symbols: HashSet::new(),
-            callee_ranges: Vec::new(),
+            reaching_used: HashSet::new(),
         };
         this.collect_ast_passes(expressions);
-        this.precompute_closure_uses(&scopes);
+        let scopes = this.scope_ids();
+        this.precompute_reaching_uses(&scopes);
         this
     }
 
@@ -83,94 +80,31 @@ impl<'a> SemanticInfo<'a> {
         self.index
     }
 
+    pub fn root(&self) -> &RSyntaxNode {
+        &self.root
+    }
+
     /// Walk all scopes (root + descendants) in arbitrary order.
     pub fn scope_ids(&self) -> Vec<ScopeId> {
-        collect_scope_ids(self.index)
-    }
-
-    /// Parent scope, or `None` for the root scope.
-    pub fn parent_scope(&self, scope_id: ScopeId) -> Option<ScopeId> {
-        self.parent_of.get(&scope_id).copied()
-    }
-
-    /// The name the parent scope binds this function scope to, if any.
-    /// Walks the parent's definitions for an `Assignment` whose syntax range
-    /// contains this scope and whose RHS is a function definition.
-    /// Returns `None` for anonymous functions and for the root scope.
-    pub fn function_binding_name(&self, scope_id: ScopeId) -> Option<String> {
-        let (name, _) = self.function_binding(scope_id)?;
-        Some(name)
-    }
-
-    /// The `R_FUNCTION_DEFINITION` AST node for this function scope.
-    ///
-    /// First tries the named-binding case (`name <- function(...) ...`); falls
-    /// back to walking up from any parameter node in the scope, which catches
-    /// anonymous functions (e.g. those passed as call arguments). Returns
-    /// `None` for the root scope or for parameterless anonymous functions
-    /// (where there's nothing to walk up from).
-    pub fn function_definition(&self, scope_id: ScopeId) -> Option<RSyntaxNode> {
-        if let Some((_, node)) = self.function_binding(scope_id) {
-            return Some(node);
-        }
-        for (_, def) in self.index.definitions(scope_id).iter() {
-            if let DefinitionKind::Parameter(param_node) = def.kind() {
-                let mut current = param_node.parent();
-                while let Some(node) = current {
-                    if node.kind() == RSyntaxKind::R_FUNCTION_DEFINITION {
-                        return Some(node);
-                    }
-                    current = node.parent();
-                }
-            }
-        }
-        None
-    }
-
-    /// Shared walk used by `function_binding_name` and `function_definition`.
-    fn function_binding(&self, scope_id: ScopeId) -> Option<(String, RSyntaxNode)> {
-        let parent = self.parent_scope(scope_id)?;
-        let child_range = self.index.scope(scope_id).range();
-        for (_, def) in self.index.definitions(parent).iter() {
-            if let DefinitionKind::Assignment(node) = def.kind()
-                && node.text_trimmed_range().contains_range(child_range)
-                && assignment_rhs_is_function_def(node)
-            {
-                let name = self
-                    .index
-                    .symbols(parent)
-                    .symbol_id(def.symbol())
-                    .name()
-                    .to_string();
-                for child in node.children() {
-                    if child.kind() == RSyntaxKind::R_FUNCTION_DEFINITION {
-                        return Some((name, child));
-                    }
-                }
-            }
-        }
-        None
+        self.index.scope_ids().collect()
     }
 
     // ── High-level queries ────────────────────────────────────────────
 
     /// True if any of the supported "is used" conditions hold for this
-    /// definition: synthetic AST-derived use, in-scope reaching use,
-    /// closure-escape, or `local({…})` body shortcut.
+    /// definition: synthetic AST-derived use, a reaching use (local or via a
+    /// nested closure), or the `local({…})` body shortcut.
     pub fn is_definition_used(
         &self,
         scope_id: ScopeId,
         def_id: DefinitionId,
         def: &Definition,
     ) -> bool {
-        let symbol_name = self.index.symbols(scope_id).symbol_id(def.symbol()).name();
+        let symbol_name = self.index.symbols(scope_id).symbol(def.symbol()).name();
         if self.synthetic_used_names.contains(symbol_name) {
             return true;
         }
-        if self.is_reached_by_use_in_scope(scope_id, def_id, def.symbol()) {
-            return true;
-        }
-        if self.is_used_via_closure(scope_id, def_id, def.symbol()) {
+        if self.reaching_used.contains(&(scope_id, def_id)) {
             return true;
         }
         if self.is_used_inside_local_body(scope_id, def) {
@@ -193,14 +127,28 @@ impl<'a> SemanticInfo<'a> {
         self.synthetic_used_names.contains(name)
     }
 
-    pub fn closure_escaped(&self, scope: ScopeId, symbol: SymbolId) -> bool {
-        self.closure_escaped_symbols.contains(&(scope, symbol))
-    }
-
-    pub fn is_callee(&self, range: TextRange) -> bool {
-        self.callee_ranges
-            .iter()
-            .any(|r| r.contains_range(range) || *r == range)
+    /// True if `name` is referenced as a use in any scope nested under
+    /// `scope_id`. Keeps a binding alive when a nested closure captures it.
+    /// Needed for `%<>%`, which oak doesn't model as a definition, so its
+    /// reaching-use set can't answer the closure-capture question directly.
+    pub fn is_used_in_nested_scope(&self, scope_id: ScopeId, name: &str) -> bool {
+        for descendant in self.scope_descendants(scope_id) {
+            if descendant == scope_id {
+                continue;
+            }
+            let Some(symbol) = self.index.symbols(descendant).id(name) else {
+                continue;
+            };
+            if self
+                .index
+                .uses(descendant)
+                .iter()
+                .any(|(_, u)| u.symbol() == symbol)
+            {
+                return true;
+            }
+        }
+        false
     }
 
     // ── Internal: AST pass ────────────────────────────────────────────
@@ -363,10 +311,6 @@ impl<'a> SemanticInfo<'a> {
     }
 
     fn visit_call(&mut self, call: &RCall) {
-        if let Ok(func) = call.function() {
-            self.callee_ranges.push(func.syntax().text_trimmed_range());
-        }
-
         let Some(name) = call_name(call) else {
             return;
         };
@@ -396,7 +340,40 @@ impl<'a> SemanticInfo<'a> {
                     self.collect_on_exit_uses(body);
                 }
             }
+            "source" => {
+                if let Some((_, first)) = arg_values.first()
+                    && let Some(path) = string_literal_value(first)
+                {
+                    self.import_uses_from_sourced_file(&path);
+                }
+            }
             _ => {}
+        }
+    }
+
+    /// Resolves a `source("path")` argument against the current file, parses
+    /// the target, and harvests every identifier appearing in it as a
+    /// synthetic use. R's `source()` runs its argument in the caller's
+    /// environment, so any name read by the sourced script consumes a
+    /// binding in this file.
+    fn import_uses_from_sourced_file(&mut self, path: &str) {
+        let Some(target) = resolve_sourced_path(self.file, path) else {
+            return;
+        };
+        let Ok(contents) = std::fs::read_to_string(&target) else {
+            return;
+        };
+        let parsed = air_r_parser::parse(&contents, RParserOptions::default());
+        if parsed.has_error() {
+            return;
+        }
+        for node in parsed.syntax().descendants() {
+            if node.kind() == RSyntaxKind::R_IDENTIFIER
+                && let Some(token) = node.first_token()
+            {
+                self.synthetic_used_names
+                    .insert(token.text_trimmed().to_string());
+            }
         }
     }
 
@@ -413,146 +390,25 @@ impl<'a> SemanticInfo<'a> {
 
     // ── Internal: reach / closure analysis ────────────────────────────
 
-    fn is_reached_by_use_in_scope(
-        &self,
-        scope_id: ScopeId,
-        def_id: DefinitionId,
-        symbol: SymbolId,
-    ) -> bool {
-        let use_def = self.index.use_def_map(scope_id);
-        let uses = self.index.uses(scope_id);
-        for (use_id, u) in uses.iter() {
-            if u.symbol() != symbol {
-                continue;
-            }
-            if in_any_range(u.range(), &self.nse_ranges) {
-                continue;
-            }
-            let bindings = use_def.bindings_at_use(use_id);
-            if bindings.contains_definition(def_id) {
-                return true;
-            }
-        }
-        false
-    }
-
-    fn is_used_via_closure(
-        &self,
-        scope_id: ScopeId,
-        def_id: DefinitionId,
-        symbol: SymbolId,
-    ) -> bool {
-        if self.closure_escaped_symbols.contains(&(scope_id, symbol)) {
-            return true;
-        }
-        self.closure_used_defs.contains(&(scope_id, def_id))
-    }
-
-    fn precompute_closure_uses(&mut self, scopes: &[ScopeId]) {
-        for &child in scopes {
-            let Some(parent) = self.parent_scope(child) else {
-                continue;
-            };
-            self.classify_closure(parent, child);
-        }
-    }
-
-    fn classify_closure(&mut self, parent: ScopeId, child: ScopeId) {
-        let child_range = self.index.scope(child).range();
-
-        let mut binding_name: Option<String> = None;
-        for (_, def) in self.index.definitions(parent).iter() {
-            if let DefinitionKind::Assignment(node) = def.kind()
-                && node.text_trimmed_range().contains_range(child_range)
-                && assignment_rhs_is_function_def(node)
-            {
-                let name = self
-                    .index
-                    .symbols(parent)
-                    .symbol_id(def.symbol())
-                    .name()
-                    .to_string();
-                binding_name = Some(name);
-                break;
-            }
-        }
-
-        let Some(name) = binding_name else {
-            self.escape_free_vars(parent, child);
-            return;
-        };
-
-        let Some(parent_symbol) = self.index.symbols(parent).id(&name) else {
-            self.escape_free_vars(parent, child);
-            return;
-        };
-
-        let mut call_offsets: Vec<TextSize> = Vec::new();
-        let mut escaped = false;
-        for (_, u) in self.index.uses(parent).iter() {
-            if u.symbol() != parent_symbol {
-                continue;
-            }
-            if self.is_callee(u.range()) {
-                call_offsets.push(u.range().end());
-            } else {
-                escaped = true;
-                break;
-            }
-        }
-
-        if escaped || call_offsets.is_empty() {
-            self.escape_free_vars(parent, child);
-            return;
-        }
-
-        let free_vars = self.free_variables(child, parent);
-        for parent_sym in free_vars {
-            let parent_defs: Vec<(DefinitionId, TextSize)> = self
-                .index
-                .definitions(parent)
-                .iter()
-                .filter(|(_, d)| d.symbol() == parent_sym)
-                .map(|(id, d)| (id, d.range().end()))
-                .collect();
-            for &offset in &call_offsets {
-                if let Some((def_id, _)) = parent_defs
-                    .iter()
-                    .filter(|(_, def_end)| *def_end <= offset)
-                    .max_by_key(|(_, def_end)| *def_end)
-                {
-                    self.closure_used_defs.insert((parent, *def_id));
-                }
-            }
-        }
-    }
-
-    fn escape_free_vars(&mut self, parent: ScopeId, child: ScopeId) {
-        for parent_sym in self.free_variables(child, parent) {
-            self.closure_escaped_symbols.insert((parent, parent_sym));
-        }
-    }
-
-    fn free_variables(&self, child: ScopeId, parent: ScopeId) -> Vec<SymbolId> {
-        let mut out = Vec::new();
-        let mut seen: HashSet<String> = HashSet::new();
-        for descendant in self.scope_descendants(child) {
-            for (_, u) in self.index.uses(descendant).iter() {
-                let name = self
-                    .index
-                    .symbols(descendant)
-                    .symbol_id(u.symbol())
-                    .name()
-                    .to_string();
-                if !seen.insert(name.clone()) {
+    /// Collect every definition reached by a non-NSE use, in every scope.
+    ///
+    /// `reaching_definitions` returns both local reaching definitions and, for
+    /// a free variable in a nested closure, the enclosing-scope definitions
+    /// captured by oak's enclosing snapshots. So a single pass over all uses
+    /// covers in-scope reads and closure captures alike. Uses sitting inside an
+    /// NSE argument (`quote(x)`, …) are skipped: they don't consume a binding.
+    fn precompute_reaching_uses(&mut self, scopes: &[ScopeId]) {
+        let index = self.index;
+        for &scope_id in scopes {
+            for (use_id, u) in index.uses(scope_id).iter() {
+                if in_any_range(u.range(), &self.nse_ranges) {
                     continue;
                 }
-                if let Some(parent_sym) = self.index.symbols(parent).id(&name) {
-                    out.push(parent_sym);
+                for (def_scope, def_id) in index.reaching_definitions(scope_id, use_id) {
+                    self.reaching_used.insert((def_scope, def_id));
                 }
             }
         }
-        out
     }
 
     fn is_used_inside_local_body(&self, scope_id: ScopeId, def: &Definition) -> bool {
@@ -582,7 +438,7 @@ impl<'a> SemanticInfo<'a> {
         let mut out = vec![scope_id];
         let mut stack = vec![scope_id];
         while let Some(s) = stack.pop() {
-            for child in self.index.child_scopes(s) {
+            for child in self.index.child_scope_ids(s) {
                 out.push(child);
                 stack.push(child);
             }
@@ -625,8 +481,8 @@ fn is_member_name(node: &RSyntaxNode) -> bool {
 }
 
 /// True if the RHS of a binary assignment is a function definition.
-pub fn assignment_rhs_is_function_def(node: &RSyntaxNode) -> bool {
-    for child in node.children() {
+pub fn assignment_rhs_is_function_def(bin: &RBinaryExpression) -> bool {
+    for child in bin.syntax().children() {
         if child.kind() == RSyntaxKind::R_FUNCTION_DEFINITION {
             return true;
         }
@@ -636,10 +492,7 @@ pub fn assignment_rhs_is_function_def(node: &RSyntaxNode) -> bool {
 
 /// True if the LHS of a binary assignment is anything other than a bare
 /// identifier (e.g. `names(x)`, `x[1]`, `x$a`).
-pub fn assignment_lhs_is_complex(node: &RSyntaxNode) -> bool {
-    let Some(bin) = node.clone().cast::<RBinaryExpression>() else {
-        return false;
-    };
+pub fn assignment_lhs_is_complex(bin: &RBinaryExpression) -> bool {
     let Ok(op) = bin.operator() else {
         return false;
     };
@@ -655,15 +508,14 @@ pub fn assignment_lhs_is_complex(node: &RSyntaxNode) -> bool {
 }
 
 /// The text range of the bare-identifier LHS of an assignment, if any.
-pub fn lhs_range_for_definition(def: &Definition) -> Option<TextRange> {
-    let node = match def.kind() {
-        DefinitionKind::Assignment(n) | DefinitionKind::SuperAssignment(n) => n,
-        DefinitionKind::Parameter(n) | DefinitionKind::ForVariable(n) => {
-            return Some(n.text_trimmed_range());
+pub fn lhs_range_for_definition(def: &Definition, root: &RSyntaxNode) -> Option<TextRange> {
+    let bin = match def.kind() {
+        DefinitionKind::Assignment(ptr) | DefinitionKind::SuperAssignment(ptr) => ptr.to_node(root),
+        DefinitionKind::Parameter(_) | DefinitionKind::ForVariable(_) => {
+            return Some(def.range());
         }
         DefinitionKind::Import { .. } => return None,
     };
-    let bin = node.clone().cast::<RBinaryExpression>()?;
     let op = bin.operator().ok()?;
     let lhs = if op.text_trimmed() == "->" || op.text_trimmed() == "->>" {
         bin.right().ok()?
@@ -743,20 +595,67 @@ fn argument_name(arg: &RArgument) -> Option<String> {
 }
 
 fn string_literal_value(node: &RSyntaxNode) -> Option<String> {
-    if node.kind() != RSyntaxKind::R_STRING_VALUE {
-        return None;
+    node.clone().cast::<RStringValue>()?.string_text()
+}
+
+/// Resolve a `source("path")` argument against the currently-analyzed file.
+/// Absolute paths are taken as-is; relative paths are joined to the
+/// directory containing the analyzed file. When the analyzed file has no
+/// parent directory (e.g. just a bare filename), the relative path is
+/// returned as-is — `std::fs` will resolve it against the process CWD.
+fn resolve_sourced_path(current_file: &std::path::Path, path: &str) -> Option<std::path::PathBuf> {
+    let candidate = std::path::Path::new(path);
+    if candidate.is_absolute() {
+        return Some(candidate.to_path_buf());
     }
-    let token = node.first_token()?;
-    let text = token.text_trimmed();
-    let bytes = text.as_bytes();
-    if bytes.len() < 2 {
-        return None;
+    match current_file.parent() {
+        Some(dir) if !dir.as_os_str().is_empty() => Some(dir.join(candidate)),
+        _ => Some(candidate.to_path_buf()),
     }
-    let first = bytes[0];
-    let last = *bytes.last().unwrap();
-    if (first == b'"' || first == b'\'') && first == last {
-        Some(text[1..text.len() - 1].to_string())
-    } else {
-        None
+}
+
+/// `ImportsResolver` impl that plugs `source("path")` injection into oak's
+/// builder.
+///
+/// The resolver parses the target file, builds a noop-resolved
+/// `SemanticIndex` for it, and reports its top-level definitions as
+/// `SourceResolution.names`. Oak then materialises `DefinitionKind::Import`
+/// entries at the `source()` call site in the calling file's index.
+///
+/// This handles the *defined-by-source* side of `source()` semantics.
+/// The complementary *used-by-source* side — names *read* by the sourced
+/// file consume bindings in the calling file — is still handled
+/// separately by [`SemanticInfo::import_uses_from_sourced_file`] because
+/// oak's [`oak_semantic::SourceResolution`] only carries defined names.
+pub struct JarlImportsResolver {
+    current_file: std::path::PathBuf,
+}
+
+impl JarlImportsResolver {
+    pub fn new(current_file: impl Into<std::path::PathBuf>) -> Self {
+        Self { current_file: current_file.into() }
+    }
+}
+
+impl oak_semantic::ImportsResolver for JarlImportsResolver {
+    fn resolve_source(&mut self, path: &str) -> Option<oak_semantic::SourceResolution> {
+        let target = resolve_sourced_path(&self.current_file, path)?;
+        let contents = std::fs::read_to_string(&target).ok()?;
+        let parsed = air_r_parser::parse(&contents, RParserOptions::default());
+        if parsed.has_error() {
+            return None;
+        }
+        // `Url::from_file_path` rejects relative paths; fall back to a
+        // synthetic `file:///` URL so test fixtures (which often use
+        // relative paths) still index.
+        let url = url::Url::from_file_path(&target)
+            .ok()
+            .or_else(|| url::Url::parse(&format!("file:///{}", target.display())).ok())?;
+        let sub_index =
+            oak_semantic::build_index(&parsed.tree(), oak_semantic::NoopImportsResolver);
+        // TODO: extend to transitive `source()` resolution by recursing
+        // through nested `SemanticCallKind::Source` entries here.
+        let names: Vec<String> = sub_index.exports().keys().map(|s| s.to_string()).collect();
+        Some(oak_semantic::SourceResolution { url, names, packages: Vec::new() })
     }
 }

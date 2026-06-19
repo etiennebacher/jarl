@@ -286,6 +286,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    Coalesce => {
+        name: "coalesce",
+        categories: [Read],
+        default: Enabled,
+        fix: Safe,
+        min_r_version: Some((4, 4, 0)),
+    },
     ComparisonNegation => {
         name: "comparison_negation",
         categories: [Read],
@@ -293,12 +300,12 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
-    Coalesce => {
-        name: "coalesce",
+    ConditionCall => {
+        name: "condition_call",
         categories: [Read],
-        default: Enabled,
-        fix: Safe,
-        min_r_version: Some((4, 4, 0)),
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: None,
     },
     DownloadFile => {
         name: "download_file",
@@ -326,6 +333,13 @@ declare_rules! {
         categories: [Read],
         default: Enabled,
         fix: Safe,
+        min_r_version: None,
+    },
+    EmptyFile => {
+        name: "empty_file",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
         min_r_version: None,
     },
     EqualsNa => {
@@ -366,6 +380,13 @@ declare_rules! {
     ForLoopIndex => {
         name: "for_loop_index",
         categories: [Read],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    Glue => {
+        name: "glue",
+        categories: [Corr, Susp],
         default: Enabled,
         fix: None,
         min_r_version: None,
@@ -433,11 +454,32 @@ declare_rules! {
         fix: Safe,
         min_r_version: Some((4, 0, 0)),
     },
+    LiteralCoercion => {
+        name: "literal_coercion",
+        categories: [Read],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
     MatrixApply => {
         name: "matrix_apply",
         categories: [Perf],
         default: Enabled,
         fix: Safe,
+        min_r_version: None,
+    },
+    MissingArgument => {
+        name: "missing_argument",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    NestedPipe => {
+        name: "nested_pipe",
+        categories: [Read],
+        default: Disabled,
+        fix: None,
         min_r_version: None,
     },
     NotIn => {
@@ -466,6 +508,20 @@ declare_rules! {
         categories: [Perf, Read],
         default: Enabled,
         fix: Safe,
+        min_r_version: None,
+    },
+    PipeConsistency => {
+        name: "pipe_consistency",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: Some((4, 2, 0)),
+    },
+    PipeReturn => {
+        name: "pipe_return",
+        categories: [Corr],
+        default: Enabled,
+        fix: None,
         min_r_version: None,
     },
     Quotes => {

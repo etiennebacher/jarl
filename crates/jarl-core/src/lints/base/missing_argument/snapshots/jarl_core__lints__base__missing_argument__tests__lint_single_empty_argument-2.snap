@@ -1,0 +1,12 @@
+---
+source: crates/jarl-core/src/lints/base/missing_argument/mod.rs
+expression: "snapshot_lint(\"f('a', , 'b', )\")"
+---
+warning: missing_argument
+ --> <test>:1:1
+  |
+1 | f('a', , 'b', )
+  | --------------- Arguments 2 and 4 are empty.
+  |
+  = help: Consider removing or filling them.
+Found 1 error.

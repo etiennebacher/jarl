@@ -48,14 +48,29 @@ pub fn implicit_assignment(
     ast: &RBinaryExpression,
     checker: &Checker,
 ) -> anyhow::Result<Option<Diagnostic>> {
+    let is_assignment_op = |op: &RSyntaxToken| {
+        op.kind() == RSyntaxKind::ASSIGN
+            || op.kind() == RSyntaxKind::SUPER_ASSIGN
+            || op.kind() == RSyntaxKind::ASSIGN_RIGHT
+            || op.kind() == RSyntaxKind::SUPER_ASSIGN_RIGHT
+    };
+
     let operator = ast.operator()?;
-    if operator.kind() != RSyntaxKind::ASSIGN
-        && operator.kind() != RSyntaxKind::SUPER_ASSIGN
-        && operator.kind() != RSyntaxKind::ASSIGN_RIGHT
-        && operator.kind() != RSyntaxKind::SUPER_ASSIGN_RIGHT
-    {
+    if !is_assignment_op(&operator) {
         return Ok(None);
     };
+
+    // Skip chained assignments like `a <- b <- 1` or `x <- y <<- z`
+    // by returning early if this assignment is the RHS of a parent assignment.
+    if let Some(parent) = ast.syntax().parent()
+        && let Some(parent_binary) = RBinaryExpression::cast(parent)
+        && let Ok(parent_op) = parent_binary.operator()
+        && is_assignment_op(&parent_op)
+        && let Ok(parent_rhs) = parent_binary.right()
+        && parent_rhs.syntax() == ast.syntax()
+    {
+        return Ok(None);
+    }
 
     // We want to report the use of assignment in function arguments, but not
     // when they're part of the body of some functions, e.g.

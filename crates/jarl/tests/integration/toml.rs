@@ -717,7 +717,7 @@ unknown_field = ["value"]
     ----- stderr -----
     jarl failed
       Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
-    Unknown field `unknown_field` in `[lint]`. Expected one of: `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, `exclude`, `default-exclude`, `include`, `check-roxygen`, `fix-roxygen`.
+    Unknown field `unknown_field` in `[lint]`. Expected one of: `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, `exclude`, `default-exclude`, `include`, `per-file-ignores`, `check-roxygen`, `fix-roxygen`.
     "
     );
 
@@ -842,6 +842,43 @@ select = ["any_is_na", "   ", "any_duplicated"]
     ----- stderr -----
     jarl failed
       Cause: Unknown rules in field `select` in 'jarl.toml': "" (empty or whitespace-only not allowed)
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_unknown_toml_select_suggests_close_name() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+select = ["any_is_naa"]
+"#,
+        ),
+        ("test.R", "any(is.na(x))"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Unknown rules in field `select` in 'jarl.toml': any_is_naa
+      Help: Did you mean "any_is_na"?
     "#
     );
 

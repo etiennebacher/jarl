@@ -1,0 +1,29 @@
+---
+source: crates/jarl-core/src/lints/base/pipe_consistency/mod.rs
+assertion_line: 59
+expression: "get_unsafe_fixed_text_with_settings(vec![\"x %>% f()\", \"x %>% f(y = .)\",\n\"data %>%\\n  transform(a = x / 2) |>\\n  plot()\",], \"pipe_consistency\",\nSome(\"4.1\"), None,)"
+---
+OLD:
+====
+x %>% f()
+NEW:
+====
+x |> f()
+
+OLD:
+====
+x %>% f(y = .)
+NEW:
+====
+x |> f(y = _)
+
+OLD:
+====
+data %>%
+  transform(a = x / 2) |>
+  plot()
+NEW:
+====
+data |>
+  transform(a = x / 2) |>
+  plot()

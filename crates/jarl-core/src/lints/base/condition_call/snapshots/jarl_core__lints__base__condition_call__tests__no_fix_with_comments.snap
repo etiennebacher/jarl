@@ -1,0 +1,21 @@
+---
+source: crates/jarl-core/src/lints/base/condition_call/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"stop( # a comment\\n  'boom'\\n)\",\n\"stop('boom', call. = TRUE) # trailing comment\",], \"condition_call\",)"
+---
+OLD:
+====
+stop( # a comment
+  'boom'
+)
+NEW:
+====
+stop( # a comment
+  'boom'
+)
+
+OLD:
+====
+stop('boom', call. = TRUE) # trailing comment
+NEW:
+====
+stop('boom', call. = FALSE) # trailing comment

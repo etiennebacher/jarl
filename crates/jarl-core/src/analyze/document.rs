@@ -1,9 +1,10 @@
 use air_r_syntax::{RExpressionList, RSyntaxNode};
 use biome_rowan::{AstNode, AstNodeList};
-use oak_index::semantic_index::SemanticIndex;
+use oak_semantic::semantic_index::SemanticIndex;
 
 use crate::checker::Checker;
 use crate::diagnostic::*;
+use crate::lints::base::empty_file::empty_file::empty_file;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
 use crate::lints::base::unused_argument::unused_argument::unused_argument;
 use crate::lints::base::unused_object::unused_object::unused_object;
@@ -21,6 +22,7 @@ use crate::rule_set::Rule;
 
 pub(crate) fn check_document(
     expressions: &RExpressionList,
+    syntax: &RSyntaxNode,
     checker: &mut Checker,
     duplicate_assignments: &[(String, biome_rowan::TextRange, String)],
     unused_functions: &[(String, biome_rowan::TextRange, String)],
@@ -150,6 +152,10 @@ pub(crate) fn check_document(
                 Fix::empty(),
             )));
         }
+    }
+
+    if checker.is_rule_enabled(Rule::EmptyFile) {
+        checker.report_diagnostic(empty_file(&expressions, syntax));
     }
 
     // Filter diagnostics by suppressions. This removes suppressed violations

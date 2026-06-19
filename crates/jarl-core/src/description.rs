@@ -1,12 +1,10 @@
 //
-// Adapted from Ark
-// https://github.com/posit-dev/ark/blob/main/crates/ark/src/lsp/inputs/package_description.rs
-// 7f9ea95d367712eb40b1669cf317c7a8a71e779b
-//
-// MIT License - Posit PBC
+// DCF field access delegates to `oak_package_metadata::dcf::Dcf`; the
+// R-specific extraction (package dependency lists, R version constraints
+// from `Depends`) lives here.
 
 use anyhow;
-use std::collections::HashMap;
+use oak_package_metadata::dcf::Dcf;
 
 /// Simple parser for R version requirements from DESCRIPTION files
 pub struct Description;
@@ -19,7 +17,7 @@ impl Description {
     ///
     /// Returns package names (excluding `R` itself) in the order they appear.
     pub fn get_package_deps(contents: &str, what: &[&str]) -> Vec<String> {
-        let parsed = parse_dcf(contents);
+        let parsed = Dcf::parse(contents);
         let mut packages = Vec::new();
 
         for field_name in what {
@@ -45,7 +43,7 @@ impl Description {
     /// - "Depends: R" -> []
     /// - No Depends field -> []
     pub fn get_depend_r_version(contents: &str) -> anyhow::Result<Vec<String>> {
-        let fields = parse_dcf(contents);
+        let fields = Dcf::parse(contents);
 
         let r_versions = fields
             .get("Depends")
@@ -79,50 +77,6 @@ fn extract_version_from_dependency(dep: &str) -> Option<String> {
 
     // R dependency exists but no version specified
     unreachable!("DESCRIPTION cannot have 'R' without version in Depends field.")
-}
-
-/// Parse a DCF (Debian Control File) format string into a key-value map
-/// Minimal implementation focused on extracting the Depends field
-fn parse_dcf(input: &str) -> HashMap<String, String> {
-    let mut fields = HashMap::new();
-    let mut current_key: Option<String> = None;
-    let mut current_value = String::new();
-
-    for line in input.lines() {
-        // Indented line: continuation of previous field
-        if line.starts_with(char::is_whitespace) {
-            current_value.push_str(line.trim());
-            current_value.push(' ');
-            continue;
-        }
-
-        // New field: contains a colon and doesn't start with whitespace
-        if !line.is_empty() && line.contains(':') {
-            // Save previous field if exists
-            if let Some(key) = current_key.take() {
-                fields.insert(key, current_value.trim().to_string());
-            }
-
-            // Parse new field
-            let colon_pos = line.find(':').unwrap();
-            let key = line[..colon_pos].trim().to_string();
-            let value = line[colon_pos + 1..].trim();
-
-            current_key = Some(key);
-            current_value = String::from(value);
-
-            if !current_value.is_empty() {
-                current_value.push(' ');
-            }
-        }
-    }
-
-    // Save the last field
-    if let Some(key) = current_key {
-        fields.insert(key, current_value.trim().to_string());
-    }
-
-    fields
 }
 
 #[cfg(test)]
