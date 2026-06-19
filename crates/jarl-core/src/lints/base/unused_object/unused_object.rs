@@ -177,7 +177,7 @@ fn collect_assignment_pipe_diagnostics(
                     .iter()
                     .any(|(_, u)| u.symbol() == sym && u.range().start() >= expr_end)
             });
-            let closure_use = symbol.is_some_and(|sym| info.closure_escaped(scope_id, sym));
+            let closure_use = info.is_used_in_nested_scope(scope_id, &name);
             let exported = scope_id == ScopeId::from(0) && exports.contains(&name);
 
             if !later_use && !closure_use && !exported {
