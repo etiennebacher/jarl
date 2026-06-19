@@ -125,6 +125,13 @@ pub struct CheckCommand {
     pub assignment: Option<String>,
     #[arg(
         long,
+        value_name = "FILES",
+        value_delimiter = ',',
+        help = "List of file patterns to exclude from linting, separated by a comma (no spaces)."
+    )]
+    pub exclude: Vec<String>,
+    #[arg(
+        long,
         default_value = "false",
         help = "Do not apply the default set of file patterns that should be excluded."
     )]

@@ -28,6 +28,9 @@
 
 * New `--output-format sarif` to export to [SARIF](https://sarifweb.azurewebsites.net/) (#508, @dieghernan).
 
+* New CLI argument `--exclude` to exclude files or directories from the checks,
+  mirroring the `exclude` argument in `jarl.toml` (#520).
+
 ### Bug fixes
 
 * `implicit_assignment` no longer flags chained assignments like
