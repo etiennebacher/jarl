@@ -1,5 +1,5 @@
 use air_workspace::resolve::PathResolver;
-use jarl_core::discovery::{discover_r_file_paths, discover_settings};
+use jarl_core::discovery::{discover_r_file_paths, discover_settings, validate_exclude_patterns};
 use jarl_core::library_paths::is_r_available;
 use jarl_core::package_cache::{PackageCache, any_file_references_packages, find_r_project_root};
 use jarl_core::rule_set::Rule;
@@ -39,6 +39,10 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     } else {
         None
     };
+
+    // Fail fast on invalid `--exclude` glob patterns instead of silently
+    // ignoring them during discovery.
+    validate_exclude_patterns(&args.exclude)?;
 
     let mut resolver = PathResolver::new(Settings::default());
 

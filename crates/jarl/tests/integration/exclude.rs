@@ -346,6 +346,38 @@ fn test_cli_exclude_glob_patterns() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[test]
+fn test_cli_exclude_wrong_glob_patterns() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        ("keep.R", "a = 1\n"),
+        ("R/gen.R", "b = 2\n"),
+        ("R/keep.R", "c <- 3\n"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--exclude")
+            .arg("[*.R")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: invalid `--exclude` pattern: error parsing glob '[*.R': unclosed character class; missing ']'
+    "
+    );
+
+    Ok(())
+}
+
 /// A file excluded via `--exclude` should still contribute symbol usages for
 /// cross-file analysis, mirroring the behavior of `exclude` in `jarl.toml`.
 #[test]
