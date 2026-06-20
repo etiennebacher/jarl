@@ -31,6 +31,7 @@ use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 pub fn unused_object(
     expressions: &[RSyntaxNode],
     semantic: &SemanticIndex,
+    cross_file_used: &std::collections::HashSet<String>,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
     let Some(first) = expressions.first() else {
@@ -50,7 +51,12 @@ pub fn unused_object(
             if info.is_definition_used(scope_id, def_id, def) {
                 continue;
             }
-            if scope_id == top_level && is_exported(semantic, exports, scope_id, def) {
+            // Top-level bindings are shared across a package's files, so an
+            // object read from a sibling file (or exported) is still used.
+            if scope_id == top_level
+                && (is_exported(semantic, exports, scope_id, def)
+                    || is_used_cross_file(semantic, cross_file_used, scope_id, def))
+            {
                 continue;
             }
             diagnostics.push(make_diagnostic(semantic, scope_id, def, info.root()));
@@ -61,6 +67,7 @@ pub fn unused_object(
         semantic,
         &info,
         exports,
+        cross_file_used,
     ));
 
     for d in diagnostics {
@@ -111,6 +118,22 @@ fn is_exported(
     exports.contains(name)
 }
 
+/// True when this top-level binding is read from another file in the same
+/// package. `cross_file_used` is precomputed from oak's cross-file resolution
+/// (see [`crate::db::AnalysisDb::cross_file_used_objects`]).
+fn is_used_cross_file(
+    semantic: &SemanticIndex,
+    cross_file_used: &std::collections::HashSet<String>,
+    scope_id: ScopeId,
+    def: &Definition,
+) -> bool {
+    if cross_file_used.is_empty() {
+        return false;
+    }
+    let name = semantic.symbols(scope_id).symbol(def.symbol()).name();
+    cross_file_used.contains(name)
+}
+
 fn make_diagnostic(
     semantic: &SemanticIndex,
     scope_id: ScopeId,
@@ -143,6 +166,7 @@ fn collect_assignment_pipe_diagnostics(
     semantic: &SemanticIndex,
     info: &SemanticInfo<'_>,
     exports: &std::collections::HashSet<String>,
+    cross_file_used: &std::collections::HashSet<String>,
 ) -> Vec<Diagnostic> {
     let mut out = Vec::new();
     for expr in expressions {
@@ -178,9 +202,11 @@ fn collect_assignment_pipe_diagnostics(
                     .any(|(_, u)| u.symbol() == sym && u.range().start() >= expr_end)
             });
             let closure_use = info.is_used_in_nested_scope(scope_id, &name);
-            let exported = scope_id == ScopeId::from(0) && exports.contains(&name);
+            let top_level = scope_id == ScopeId::from(0);
+            let exported = top_level && exports.contains(&name);
+            let cross_file = top_level && cross_file_used.contains(&name);
 
-            if !later_use && !closure_use && !exported {
+            if !later_use && !closure_use && !exported && !cross_file {
                 out.push(Diagnostic::new(
                     ViolationData::new(
                         "unused_object".to_string(),

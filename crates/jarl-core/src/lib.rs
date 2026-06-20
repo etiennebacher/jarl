@@ -13,6 +13,7 @@ pub mod analyze;
 pub mod check;
 pub mod checker;
 pub mod config;
+pub mod db;
 pub mod description;
 pub mod diagnostic;
 pub mod directive;

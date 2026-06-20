@@ -1,7 +1,7 @@
 use crate::error::ParseError;
 use crate::package::{
-    FilePackageInfo, FileScope, PackageAnalysis, PackageContext, make_package_analysis,
-    summarize_package_info,
+    FilePackageInfo, FileScope, PackageAnalysis, PackageContext, PackageFileAnalysis,
+    make_package_analysis, summarize_package_info,
 };
 use crate::roxygen::{extract_roxygen_examples, remap_roxygen_fix, remap_roxygen_range};
 use crate::suppression::SuppressionManager;
@@ -157,6 +157,9 @@ pub fn lint_fix(
             return Ok(Vec::new());
         }
 
+        // Fix mode rewrites the file between iterations, so the on-disk
+        // contents drift from the database snapshot. Pass `None` to rebuild
+        // the index from the in-memory `contents` rather than the stale cache.
         checks = get_checks(
             &contents,
             &PathBuf::from(&path),
@@ -226,6 +229,12 @@ pub fn get_checks(
     // calls inject `DefinitionKind::Import` entries via JarlImportsResolver;
     // the complementary "names read by sourced files" path is still handled
     // inside `SemanticInfo`.
+    //
+    // The index is built here, in the parallel per-file pass, rather than
+    // pulled from the shared `AnalysisDb`: oak's salsa database is `Send` but
+    // not `Sync`, so it can't be borrowed across rayon worker threads. Cross-
+    // file analysis that needs the database runs in the sequential pre-passes
+    // (`summarize_package_info`, `make_package_analysis`) instead.
     let semantic = oak_semantic::build_index(
         &parsed.tree(),
         jarl_semantic::JarlImportsResolver::new(file),
@@ -243,12 +252,7 @@ pub fn get_checks(
     );
 
     // Look up per-file data from PackageAnalysis
-    let duplicate_assignments = pkg
-        .duplicate_assignments
-        .get(file)
-        .cloned()
-        .unwrap_or_default();
-    let unused_functions = pkg.unused_functions.get(file).cloned().unwrap_or_default();
+    let package_file = PackageFileAnalysis::for_file(pkg, file);
 
     // We run checks at expression-level. This gathers all violations, no matter
     // whether they are suppressed or not. They are filtered out in the next
@@ -282,8 +286,7 @@ pub fn get_checks(
         expressions,
         syntax,
         &mut checker,
-        &duplicate_assignments,
-        &unused_functions,
+        &package_file,
         Some(&semantic),
     )?;
 
@@ -431,7 +434,13 @@ fn get_checks_roxygen(
         // otherwise unnecessary here (no package-level analysis, no
         // suppression-related diagnostics to report).
         if has_suppressions {
-            check_document(expressions, &syntax, &mut checker, &[], &[], None)?;
+            check_document(
+                expressions,
+                &syntax,
+                &mut checker,
+                &PackageFileAnalysis::default(),
+                None,
+            )?;
         }
 
         for mut d in checker.diagnostics {
@@ -483,8 +492,14 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     }
     // check_document runs suppression filtering internally, so
     // checker.diagnostics is the post-suppression list after this call.
-    // Rmd chunks don't participate in package-level analysis, so pass empty slices.
-    check_document(expressions, &syntax, &mut checker, &[], &[], None)?;
+    // Rmd chunks don't participate in package-level analysis.
+    check_document(
+        expressions,
+        &syntax,
+        &mut checker,
+        &PackageFileAnalysis::default(),
+        None,
+    )?;
 
     // Remap ranges from virtual-string offsets to original Rmd file offsets.
     let diagnostics: Vec<Diagnostic> = checker
