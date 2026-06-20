@@ -80,6 +80,37 @@ pub struct PackageAnalysis {
     /// help)` triples for functions that are defined but never called and not
     /// exported.
     pub unused_functions: HashMap<PathBuf, Vec<(String, TextRange, String)>>,
+    /// Per-file set of top-level object names that are read from *another*
+    /// file in the same package. Keyed by relativized file path. All of a
+    /// package's R files share one namespace, so a top-level binding defined
+    /// in one file and used in another is not unused; `unused_object`
+    /// consults this to avoid flagging such cross-file-used objects. Computed
+    /// from oak's cross-file name resolution (`File::resolve_at`).
+    pub cross_file_used: HashMap<PathBuf, HashSet<String>>,
+}
+
+/// The entries of [`PackageAnalysis`] for a single file. Bundled so the
+/// document-level checks take one argument instead of one per cross-file map.
+#[derive(Clone, Debug, Default)]
+pub struct PackageFileAnalysis {
+    pub duplicate_assignments: Vec<(String, TextRange, String)>,
+    pub unused_functions: Vec<(String, TextRange, String)>,
+    pub cross_file_used: HashSet<String>,
+}
+
+impl PackageFileAnalysis {
+    /// Pull the entries for `file` out of the package-wide analysis.
+    pub fn for_file(pkg: &PackageAnalysis, file: &Path) -> Self {
+        Self {
+            duplicate_assignments: pkg
+                .duplicate_assignments
+                .get(file)
+                .cloned()
+                .unwrap_or_default(),
+            unused_functions: pkg.unused_functions.get(file).cloned().unwrap_or_default(),
+            cross_file_used: pkg.cross_file_used.get(file).cloned().unwrap_or_default(),
+        }
+    }
 }
 
 /// Classify every file and pre-compute per-package metadata in one pass.
@@ -226,8 +257,9 @@ pub fn make_package_analysis(
     let rules = &config.rules_to_apply;
     let check_duplicates = rules.contains(&Rule::DuplicatedFunctionDefinition);
     let check_unused = rules.contains(&Rule::UnusedFunction);
+    let check_unused_object = rules.contains(&Rule::UnusedObject);
 
-    if !check_duplicates && !check_unused {
+    if !check_duplicates && !check_unused && !check_unused_object {
         return PackageAnalysis::default();
     }
 
@@ -324,7 +356,19 @@ pub fn make_package_analysis(
         HashMap::new()
     };
 
-    PackageAnalysis { duplicate_assignments, unused_functions }
+    // Reuse the database scanned above: resolve every use across the package's
+    // files to find top-level objects read from another file.
+    let cross_file_used = if check_unused_object {
+        db.cross_file_used_objects()
+    } else {
+        HashMap::new()
+    };
+
+    PackageAnalysis {
+        duplicate_assignments,
+        unused_functions,
+        cross_file_used,
+    }
 }
 
 /// Determine the `FileScope` for a non-R/ file based on its path.

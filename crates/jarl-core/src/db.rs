@@ -14,12 +14,15 @@
 //! uses it to enumerate each package's R files — replacing jarl's hand-rolled
 //! filesystem walks — and feeds plain `Send` data to the parallel pass.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use aether_path::FilePath;
+use air_r_parser::RParserOptions;
 use oak_db::{Db, File, OakDatabase, Package, workspace_files};
 use oak_scan::ScanScheduler;
+use oak_semantic::ScopeId;
+use oak_semantic::semantic_index::SemanticIndex;
 
 use crate::package::find_package_root;
 
@@ -110,6 +113,74 @@ impl AnalysisDb {
             });
         }
         packages
+    }
+
+    /// For each scanned file, the set of its top-level object names that are
+    /// read from *another* file in the same package.
+    ///
+    /// A package's R files share one namespace, so a top-level binding defined
+    /// in one file and read in another is used even when its own file never
+    /// reads it. We enumerate every use in every scanned file and resolve it
+    /// with oak's cross-file [`File::resolve_at`]: a use that binds to a
+    /// file-scope definition in a *different* file is a cross-file read of that
+    /// package-level object. The defining file's name is recorded against the
+    /// read so the lint can suppress it.
+    ///
+    /// Keyed by relativized file path to match the lint's per-file lookup.
+    pub fn cross_file_used_objects(&self) -> HashMap<PathBuf, HashSet<String>> {
+        let db = self.db();
+
+        // Build a throwaway index per file to enumerate use sites, and collect
+        // the package's top-level binding names. Only those names can be the
+        // target of a cross-file read, so probing just their uses skips the
+        // locals, package functions, and library symbols that dominate a file.
+        let mut indices: Vec<(File, SemanticIndex)> = Vec::new();
+        let mut candidates: HashSet<String> = HashSet::new();
+        for &file in workspace_files(db) {
+            let parsed =
+                air_r_parser::parse(file.source_text(db).as_str(), RParserOptions::default());
+            if parsed.has_error() {
+                continue;
+            }
+            let index =
+                oak_semantic::build_index(&parsed.tree(), oak_semantic::NoopImportsResolver);
+            candidates.extend(index.exports().keys().map(|name| name.to_string()));
+            indices.push((file, index));
+        }
+
+        let file_scope = ScopeId::from(0);
+        let mut used: HashMap<PathBuf, HashSet<String>> = HashMap::new();
+        for (file, index) in &indices {
+            for scope in index.scope_ids() {
+                let symbols = index.symbols(scope);
+                for (_use_id, use_site) in index.uses(scope).iter() {
+                    let name = symbols.symbol(use_site.symbol()).name();
+                    if !candidates.contains(name) {
+                        continue;
+                    }
+                    for def in file.resolve_at(db, use_site.range().start()) {
+                        // Only top-level bindings are shared across the package,
+                        // and a read in the binding's own file is already
+                        // handled by the per-file analysis.
+                        if def.scope(db) != file_scope || def.file(db) == *file {
+                            continue;
+                        }
+                        let Some(path) = def
+                            .file(db)
+                            .path(db)
+                            .as_path()
+                            .map(|p| p.as_std_path().to_path_buf())
+                        else {
+                            continue;
+                        };
+                        used.entry(PathBuf::from(crate::fs::relativize_path(&path)))
+                            .or_default()
+                            .insert(def.name(db).text(db).as_str().to_string());
+                    }
+                }
+            }
+        }
+        used
     }
 }
 
