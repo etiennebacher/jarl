@@ -612,6 +612,39 @@ f <- function() {
     }
 
     #[test]
+    fn test_bquote_unquote_counts_as_use() {
+        // `bquote(x)` quotes `x`, so its value is unused -> report.
+        assert_snapshot!(
+            snapshot_lint("x <- 1\nbquote(x)"),
+            @r"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+        // `bquote(.(x))` unquotes (evaluates) `x`, so it is used -> no report.
+        expect_no_lint("x <- 1\nbquote(.(x))", "unused_object", None);
+        // The unquoted use resolves to the latest definition, so the shadowed
+        // `x <- 1` is still dead and reported.
+        assert_snapshot!(
+            snapshot_lint("x <- 1\nx <- 2\nbquote(.(x))"),
+            @r"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
     fn test_with_assignment_pipe() {
         // should lint: re-assigned `x` isn't used
         assert_snapshot!(
@@ -642,7 +675,6 @@ x + 1"
 
     #[test]
     fn test_assign() {
-        // TODO: this should report env
         // shouldn't lint: env is used as argument to assign()
         expect_no_lint(
             "
@@ -682,7 +714,6 @@ env",
 
     #[test]
     fn test_delayed_assign() {
-        // TODO: this should report env
         // shouldn't lint: env is used as argument to delayedAssign()
         expect_no_lint(
             "
@@ -722,7 +753,6 @@ env",
 
     #[test]
     fn test_make_active_binding() {
-        // TODO: this should report env
         // shouldn't lint: env is used as argument to makeActiveBinding()
         expect_no_lint(
             "

@@ -38,8 +38,12 @@ pub struct SemanticInfo<'a> {
     /// this set is treated as used.
     synthetic_used_names: HashSet<String>,
     /// Identifier `Use` ranges that should be ignored because they sit inside
-    /// an NSE call argument (`quote(x)`, `substitute(…)`, `bquote(…)`, …).
+    /// an NSE call argument (`quote(x)`, `substitute(…)`, …).
     nse_ranges: Vec<TextRange>,
+    /// Ranges inside an NSE argument that are nonetheless evaluated and so
+    /// carve a hole back out of [`Self::nse_ranges`]: the `.()` operands of
+    /// `bquote(...)`. A use inside one of these counts as a real use.
+    unquote_ranges: Vec<TextRange>,
     /// Bodies of `local({...})` calls.
     local_body_ranges: Vec<TextRange>,
     /// Ranges of formula RHSes (`~ rhs`).
@@ -66,6 +70,7 @@ impl<'a> SemanticInfo<'a> {
             file,
             synthetic_used_names: HashSet::new(),
             nse_ranges: Vec::new(),
+            unquote_ranges: Vec::new(),
             local_body_ranges: Vec::new(),
             formula_ranges: Vec::new(),
             reaching_used: HashSet::new(),
@@ -312,9 +317,19 @@ impl<'a> SemanticInfo<'a> {
         let arg_values: Vec<(Option<String>, RSyntaxNode)> = call_args(call);
 
         match name.as_str() {
-            "quote" | "substitute" | "bquote" | "enquote" | "expression" | "Quote" => {
+            "quote" | "substitute" | "enquote" | "expression" | "Quote" => {
                 for (_, value) in &arg_values {
                     self.nse_ranges.push(value.text_trimmed_range());
+                }
+            }
+            // `bquote` quotes its argument, but `.()` unquotes (evaluates) the
+            // wrapped expression. So the argument is NSE — `bquote(x)` does not
+            // use `x` — except for identifiers inside `.()`, which are real
+            // uses: `bquote(.(x))` does use `x`.
+            "bquote" => {
+                for (_, value) in &arg_values {
+                    self.nse_ranges.push(value.text_trimmed_range());
+                    self.collect_bquote_unquoted_uses(value);
                 }
             }
             "do.call" | "match.fun" | "Recall" | "getFunction" => {
@@ -382,6 +397,26 @@ impl<'a> SemanticInfo<'a> {
         }
     }
 
+    /// Within a `bquote()` argument, operands wrapped in `.()` are unquoted
+    /// (evaluated), so uses inside them are real. Record each `.()` operand
+    /// range as a hole in the surrounding NSE range pushed for the argument.
+    fn collect_bquote_unquoted_uses(&mut self, arg: &RSyntaxNode) {
+        for node in arg.descendants() {
+            if node.kind() != RSyntaxKind::R_CALL {
+                continue;
+            }
+            let Some(call) = node.clone().cast::<RCall>() else {
+                continue;
+            };
+            if call_name(&call).as_deref() != Some(".") {
+                continue;
+            }
+            for (_, value) in call_args(&call) {
+                self.unquote_ranges.push(value.text_trimmed_range());
+            }
+        }
+    }
+
     // ── Internal: reach / closure analysis ────────────────────────────
 
     /// Collect every definition reached by a non-NSE use, in every scope.
@@ -395,7 +430,9 @@ impl<'a> SemanticInfo<'a> {
         let index = self.index;
         for &scope_id in scopes {
             for (use_id, u) in index.uses(scope_id).iter() {
-                if in_any_range(u.range(), &self.nse_ranges) {
+                if in_any_range(u.range(), &self.nse_ranges)
+                    && !in_any_range(u.range(), &self.unquote_ranges)
+                {
                     continue;
                 }
                 for (def_scope, def_id) in index.reaching_definitions(scope_id, use_id) {
