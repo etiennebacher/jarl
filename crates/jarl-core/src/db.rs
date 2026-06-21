@@ -22,6 +22,7 @@ use air_r_parser::RParserOptions;
 use oak_db::{Db, File, OakDatabase, Package, workspace_files};
 use oak_scan::ScanScheduler;
 use oak_semantic::ScopeId;
+use rayon::prelude::*;
 use oak_semantic::semantic_index::SemanticIndex;
 
 use crate::package::find_package_root;
@@ -130,32 +131,54 @@ impl AnalysisDb {
     pub fn cross_file_used_objects(&self) -> HashMap<PathBuf, HashSet<String>> {
         let db = self.db();
 
-        // Build a throwaway index per file to enumerate use sites, and collect
-        // the package's top-level binding names. Only those names can be the
-        // target of a cross-file read, so probing just their uses skips the
-        // locals, package functions, and library symbols that dominate a file.
-        let mut indices: Vec<(File, SemanticIndex)> = Vec::new();
+        // Pull each file's source text up front. `source_text` is a salsa
+        // query, so it needs the (`!Sync`) db; doing it here lets the parse +
+        // index build below run on the rayon pool, which the resolve_at pass
+        // can't.
+        let sources: Vec<(File, String)> = workspace_files(db)
+            .iter()
+            .map(|&file| (file, file.source_text(db).clone()))
+            .collect();
+
+        // Build a throwaway index per file to enumerate use sites. Parsing and
+        // index building touch no db state, so they run in parallel, unlike the
+        // resolve_at pass below.
+        let indices: Vec<(File, SemanticIndex)> = sources
+            .par_iter()
+            .filter_map(|(file, source)| {
+                let parsed = air_r_parser::parse(source, RParserOptions::default());
+                if parsed.has_error() {
+                    return None;
+                }
+                let index =
+                    oak_semantic::build_index(&parsed.tree(), oak_semantic::NoopImportsResolver);
+                Some((*file, index))
+            })
+            .collect();
+
+        // The package's top-level binding names. Only those can be the target
+        // of a cross-file read, so probing just their uses skips the locals,
+        // package functions, and library symbols that dominate a file.
         let mut candidates: HashSet<String> = HashSet::new();
-        for &file in workspace_files(db) {
-            let parsed =
-                air_r_parser::parse(file.source_text(db).as_str(), RParserOptions::default());
-            if parsed.has_error() {
-                continue;
-            }
-            let index =
-                oak_semantic::build_index(&parsed.tree(), oak_semantic::NoopImportsResolver);
+        for (_, index) in &indices {
             candidates.extend(index.exports().keys().map(|name| name.to_string()));
-            indices.push((file, index));
         }
 
         let file_scope = ScopeId::from(0);
         let mut used: HashMap<PathBuf, HashSet<String>> = HashMap::new();
         for (file, index) in &indices {
+            // A name that already resolved to a sibling file is settled: a
+            // package symbol is read the same way throughout a file, so the
+            // first hit records the cross-file use and later reads can skip the
+            // (expensive) cross-file walk in `resolve_at`. Most candidate reads
+            // are repeated references to the same handful of package helpers,
+            // so this collapses the dominant cost.
+            let mut resolved_cross_file: HashSet<String> = HashSet::new();
             for scope in index.scope_ids() {
                 let symbols = index.symbols(scope);
                 for (_use_id, use_site) in index.uses(scope).iter() {
                     let name = symbols.symbol(use_site.symbol()).name();
-                    if !candidates.contains(name) {
+                    if !candidates.contains(name) || resolved_cross_file.contains(name) {
                         continue;
                     }
                     for def in file.resolve_at(db, use_site.range().start()) {
@@ -173,6 +196,7 @@ impl AnalysisDb {
                         else {
                             continue;
                         };
+                        resolved_cross_file.insert(name.to_string());
                         used.entry(PathBuf::from(crate::fs::relativize_path(&path)))
                             .or_default()
                             .insert(def.name(db).text(db).as_str().to_string());
