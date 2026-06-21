@@ -124,8 +124,13 @@ impl<'a> SemanticInfo<'a> {
         in_any_range(range, &self.formula_ranges)
     }
 
+    /// True when `range` sits in a quoted NSE context (`quote(...)`,
+    /// `substitute(...)`, `bquote(...)`, …) where code is captured rather than
+    /// evaluated, so neither an assignment nor a read there touches the live
+    /// binding. The `.()` unquote holes inside `bquote` are evaluated, so
+    /// ranges within them are excluded.
     pub fn is_in_nse(&self, range: TextRange) -> bool {
-        in_any_range(range, &self.nse_ranges)
+        in_any_range(range, &self.nse_ranges) && !in_any_range(range, &self.unquote_ranges)
     }
 
     pub fn has_synthetic_use(&self, name: &str) -> bool {
@@ -434,9 +439,7 @@ impl<'a> SemanticInfo<'a> {
         let index = self.index;
         for &scope_id in scopes {
             for (use_id, u) in index.uses(scope_id).iter() {
-                if in_any_range(u.range(), &self.nse_ranges)
-                    && !in_any_range(u.range(), &self.unquote_ranges)
-                {
+                if self.is_in_nse(u.range()) {
                     continue;
                 }
                 for (def_scope, def_id) in index.reaching_definitions(scope_id, use_id) {

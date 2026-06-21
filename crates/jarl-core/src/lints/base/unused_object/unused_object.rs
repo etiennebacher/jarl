@@ -102,6 +102,12 @@ fn should_lint_definition(info: &SemanticInfo<'_>, def: &Definition) -> bool {
         return false;
     }
 
+    // An assignment inside an NSE context (`quote(x <- 2)`, …) is quoted code,
+    // not a real definition.
+    if info.is_in_nse(def.range()) {
+        return false;
+    }
+
     true
 }
 

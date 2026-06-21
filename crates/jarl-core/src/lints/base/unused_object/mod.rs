@@ -888,6 +888,13 @@ for (i in 1:2) {
     }
 
     #[test]
+    fn test_assignment_inside_nse_is_not_definition() {
+        // `x <- 2` inside `quote()` is quoted code, not a real assignment.
+        expect_no_lint("as.call(quote(x <- 2))", "unused_object", None);
+        expect_no_lint("substitute(y <- 1)", "unused_object", None);
+    }
+
+    #[test]
     fn test_nse_in_same_call() {
         expect_no_lint(
             "
