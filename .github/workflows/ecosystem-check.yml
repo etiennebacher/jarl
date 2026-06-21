@@ -102,6 +102,12 @@ jobs:
           mkdir -p test-repos
           cd test-repos
           for repo in $TEST_REPOS; do
+            # Skip category markers / comment words (only real entries have "@")
+            case "$repo" in
+              *@*) ;;
+              *) continue ;;
+            esac
+
             repo_name=$(echo "$repo" | cut -d'@' -f1)
             commit_sha=$(echo "$repo" | cut -d'@' -f2)
             repo_dir=$(echo "$repo_name" | tr '/' '_')
@@ -114,6 +120,12 @@ jobs:
           mkdir -p results
           cd test-repos
           for repo in $TEST_REPOS; do
+            # Skip category markers / comment words (only real entries have "@")
+            case "$repo" in
+              *@*) ;;
+              *) continue ;;
+            esac
+
             repo_name=$(echo "$repo" | cut -d'@' -f1)
             repo_dir=$(echo "$repo_name" | tr '/' '_')
 
