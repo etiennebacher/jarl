@@ -326,19 +326,29 @@ impl<'a> SemanticInfo<'a> {
         let arg_values: Vec<(Option<String>, RSyntaxNode)> = call_args(call);
 
         match name.as_str() {
-            "quote" | "substitute" | "enquote" | "expression" | "Quote" => {
+            // Only the quoted `expr` argument is NSE. Other arguments are
+            // evaluated normally — e.g. `substitute(x, env = env)` reads
+            // `env` — so their identifiers stay real uses.
+            "quote" | "substitute" | "Quote" => {
+                if let Some(expr) = nse_expr_arg(&arg_values) {
+                    self.nse_ranges.push(expr.text_trimmed_range());
+                }
+            }
+            // `expression(...)` quotes every argument.
+            "expression" => {
                 for (_, value) in &arg_values {
                     self.nse_ranges.push(value.text_trimmed_range());
                 }
             }
-            // `bquote` quotes its argument, but `.()` unquotes (evaluates) the
-            // wrapped expression. So the argument is NSE — `bquote(x)` does not
-            // use `x` — except for identifiers inside `.()`, which are real
-            // uses: `bquote(.(x))` does use `x`.
+            // `bquote` quotes its `expr` argument, but `.()` unquotes
+            // (evaluates) the wrapped expression. So `expr` is NSE —
+            // `bquote(x)` does not use `x` — except for identifiers inside
+            // `.()`, which are real uses: `bquote(.(x))` does use `x`. The
+            // `where`/`splice` arguments are evaluated normally.
             "bquote" => {
-                for (_, value) in &arg_values {
-                    self.nse_ranges.push(value.text_trimmed_range());
-                    self.collect_bquote_unquoted_uses(value);
+                if let Some(expr) = nse_expr_arg(&arg_values) {
+                    self.nse_ranges.push(expr.text_trimmed_range());
+                    self.collect_bquote_unquoted_uses(expr);
                 }
             }
             "do.call" | "match.fun" | "Recall" | "getFunction" => {
@@ -599,6 +609,23 @@ pub fn lhs_range_for_definition(def: &Definition, root: &RSyntaxNode) -> Option<
     } else {
         None
     }
+}
+
+/// The value node of the quoted-expression argument (`expr`) of a quote-like
+/// call: the argument named `expr =` if present, otherwise the first
+/// positional (unnamed) argument. Other arguments — `substitute`'s `env`,
+/// `bquote`'s `where`/`splice` — are evaluated normally, so their reads must
+/// not be swallowed as NSE.
+fn nse_expr_arg(args: &[(Option<String>, RSyntaxNode)]) -> Option<&RSyntaxNode> {
+    if let Some((_, value)) = args
+        .iter()
+        .find(|(name, _)| name.as_deref() == Some("expr"))
+    {
+        return Some(value);
+    }
+    args.iter()
+        .find(|(name, _)| name.is_none())
+        .map(|(_, value)| value)
 }
 
 fn call_name(call: &RCall) -> Option<String> {

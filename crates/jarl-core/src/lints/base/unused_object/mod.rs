@@ -895,6 +895,17 @@ for (i in 1:2) {
     }
 
     #[test]
+    fn test_nse_evaluated_argument_counts_as_use() {
+        // `substitute`'s `env` argument is evaluated, not quoted, so the read
+        // of `env` keeps the binding alive.
+        expect_no_lint(
+            "env <- as.environment(list(x = 1))\nsubstitute(x, env = env)",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
     fn test_nse_assignment_does_not_shadow_real_definition() {
         // The quoted `x <- 2` must not kill the real `x <- 1`; `print(x)`
         // reads the live binding (which is still `1`).
