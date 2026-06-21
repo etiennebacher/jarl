@@ -443,10 +443,53 @@ impl<'a> SemanticInfo<'a> {
                     continue;
                 }
                 for (def_scope, def_id) in index.reaching_definitions(scope_id, use_id) {
-                    self.reaching_used.insert((def_scope, def_id));
+                    self.mark_reaching_definition_used(def_scope, def_id);
                 }
             }
         }
+    }
+
+    /// Record a definition reached by a real read as used.
+    ///
+    /// An NSE assignment (`substitute(x <- 2)`) is quoted code, not an
+    /// executed assignment, but oak — which doesn't model NSE — still lets it
+    /// shadow a prior real definition in its dataflow. So a real read after
+    /// such an assignment resolves to the NSE definition instead of the live
+    /// binding it actually reads. When that happens, walk back to the nearest
+    /// preceding real definition of the same symbol and mark it used instead.
+    fn mark_reaching_definition_used(&mut self, def_scope: ScopeId, def_id: DefinitionId) {
+        let def = &self.index.definitions(def_scope)[def_id];
+        if !self.is_in_nse(def.range()) {
+            self.reaching_used.insert((def_scope, def_id));
+            return;
+        }
+        if let Some(real_id) = self.preceding_real_definition(def_scope, def) {
+            self.reaching_used.insert((def_scope, real_id));
+        }
+    }
+
+    /// The nearest definition of `target`'s symbol in `scope` that starts
+    /// before `target` and is not itself an NSE (quoted) assignment.
+    fn preceding_real_definition(
+        &self,
+        scope: ScopeId,
+        target: &Definition,
+    ) -> Option<DefinitionId> {
+        let symbol = target.symbol();
+        let cutoff = target.range().start();
+        let mut best: Option<(DefinitionId, TextRange)> = None;
+        for (id, def) in self.index.definitions(scope).iter() {
+            if def.symbol() != symbol || def.range().start() >= cutoff {
+                continue;
+            }
+            if self.is_in_nse(def.range()) {
+                continue;
+            }
+            if best.is_none_or(|(_, best_range)| def.range().start() > best_range.start()) {
+                best = Some((id, def.range()));
+            }
+        }
+        best.map(|(id, _)| id)
     }
 
     fn is_used_inside_local_body(&self, scope_id: ScopeId, def: &Definition) -> bool {

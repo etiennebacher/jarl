@@ -895,6 +895,17 @@ for (i in 1:2) {
     }
 
     #[test]
+    fn test_nse_assignment_does_not_shadow_real_definition() {
+        // The quoted `x <- 2` must not kill the real `x <- 1`; `print(x)`
+        // reads the live binding (which is still `1`).
+        expect_no_lint(
+            "x <- 1\nsubstitute(x <- 2)\nprint(x)",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
     fn test_nse_in_same_call() {
         expect_no_lint(
             "
