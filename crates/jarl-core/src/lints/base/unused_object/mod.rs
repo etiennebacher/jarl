@@ -919,6 +919,17 @@ for (i in 1:2) {
         );
     }
 
+    #[test]
+    fn test_object_used_in_formula_is_used() {
+        expect_no_lint(
+            "
+        X <- 2
+        lm(1 ~ X)",
+            "unused_object",
+            None,
+        );
+    }
+
     // ---------------------------------------------------------------
     // source() cross-file resolution
     // ---------------------------------------------------------------

@@ -287,10 +287,14 @@ impl<'a> SemanticInfo<'a> {
             return;
         };
         let op_text = op.text_trimmed();
-        // Formulas are `R_BINARY_EXPRESSION` with a `~` operator.
+        // Formulas are `R_BINARY_EXPRESSION` with a `~` operator. Only an `=`
+        // inside a formula is non-standard (it's named-arg syntax, not an
+        // assignment), so the formula range is recorded to suppress those
+        // definitions. Identifier *reads* in a formula still consume bindings:
+        // `X <- 2; lm(1 ~ X)` looks `X` up at evaluation time, so the formula
+        // is deliberately not added to `nse_ranges`.
         if op_text == "~" {
             self.formula_ranges.push(bin.syntax().text_trimmed_range());
-            self.nse_ranges.push(bin.syntax().text_trimmed_range());
             return;
         }
 
