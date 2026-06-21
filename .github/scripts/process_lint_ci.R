@@ -38,9 +38,9 @@ for (line in repo_lines) {
   repo_categories <- c(repo_categories, current_category)
 }
 
-cat("### Ecosystem checks\n\n", file = "lint_comparison.md")
-
-n_without_changes <- 0
+total_new <- 0
+total_deleted <- 0
+body <- character(0)
 last_printed_category <- NULL
 
 for (i in seq_along(repo_names)) {
@@ -109,40 +109,18 @@ for (i in seq_along(repo_names)) {
   ]
 
   if (nrow(new_lints) == 0 && nrow(deleted_lints) == 0) {
-    n_without_changes <- n_without_changes + 1
-
-    # If we are at the last repo and there were no changes anywhere, return
-    # early. Otherwise keep going.
-    if (n_without_changes == length(repo_names)) {
-      cat(
-        "✅ No new or removed violations",
-        file = "lint_comparison.md",
-        append = TRUE
-      )
-      break
-    } else {
-      next
-    }
+    next
   }
 
-  # Print a category subheader the first time a repo with changes shows up in
+  total_new <- total_new + nrow(new_lints)
+  total_deleted <- total_deleted + nrow(deleted_lints)
+
+  # Add a category subheader the first time a repo with changes shows up in
   # that category.
   if (!is.na(category) && !identical(last_printed_category, category)) {
-    cat(
-      paste0("#### ", category, "\n\n"),
-      file = "lint_comparison.md",
-      append = TRUE
-    )
+    body <- c(body, paste0("## ", category, "\n\n"))
     last_printed_category <- category
   }
-
-  msg_total <- paste0(
-    "**",
-    nrow(new_lints),
-    " new violations, ",
-    nrow(deleted_lints),
-    " removed violations**\n\n"
-  )
 
   msg_header <- paste0(
     "<details><summary><a href=\"https://github.com/",
@@ -227,13 +205,36 @@ for (i in seq_along(repo_names)) {
 
   msg_bottom <- "</pre></details>\n\n"
 
-  paste(
-    msg_total,
-    msg_header,
-    msg_new_violations,
-    msg_old_violations,
-    msg_bottom,
-    collapse = ""
-  ) |>
-    cat(file = "lint_comparison.md", append = TRUE)
+  body <- c(
+    body,
+    paste(
+      msg_header,
+      msg_new_violations,
+      msg_old_violations,
+      msg_bottom,
+      collapse = ""
+    )
+  )
+}
+
+cat("# Ecosystem results\n\n", file = "lint_comparison.md")
+
+if (length(body) == 0) {
+  cat(
+    "✅ No new or removed violations\n",
+    file = "lint_comparison.md",
+    append = TRUE
+  )
+} else {
+  cat(
+    paste0(
+      total_new,
+      " violations added, ",
+      total_deleted,
+      " violations removed\n\n"
+    ),
+    file = "lint_comparison.md",
+    append = TRUE
+  )
+  cat(paste(body, collapse = ""), file = "lint_comparison.md", append = TRUE)
 }
