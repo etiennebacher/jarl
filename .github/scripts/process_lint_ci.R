@@ -8,24 +8,45 @@ all_files <- list.files(
   pattern = "\\.json$",
   full.names = TRUE
 )
-all_files_name <- basename(all_files)
 
 repos_raw <- Sys.getenv("TEST_REPOS")
 repo_lines <- strsplit(repos_raw, "\n")[[1]]
+repo_lines <- trimws(repo_lines)
 repo_lines <- repo_lines[repo_lines != ""]
-repo_parts <- strsplit(repo_lines, "@")
-all_repos <- setNames(
-  lapply(repo_parts, function(x) trimws(x[2])), # the commit SHAs
-  sapply(repo_parts, function(x) trimws(x[1])) # the repo names
-)
+
+# Parse the repo list. Comment lines (e.g. "# packages", "# other") act as
+# category markers: every repo listed below such a line belongs to that
+# category, which is later used to group results under a subheader.
+repo_names <- character(0)
+repo_shas <- character(0)
+repo_categories <- character(0)
+current_category <- NA_character_
+
+for (line in repo_lines) {
+  if (startsWith(line, "#")) {
+    marker <- trimws(sub("^#+", "", line))
+    current_category <- if (grepl("package", marker, ignore.case = TRUE)) {
+      "Packages"
+    } else {
+      "Other repos"
+    }
+    next
+  }
+  parts <- strsplit(line, "@")[[1]]
+  repo_names <- c(repo_names, trimws(parts[1]))
+  repo_shas <- c(repo_shas, trimws(parts[2]))
+  repo_categories <- c(repo_categories, current_category)
+}
 
 cat("### Ecosystem checks\n\n", file = "lint_comparison.md")
 
 n_without_changes <- 0
+last_printed_category <- NULL
 
-for (i in seq_along(all_repos)) {
-  repos <- names(all_repos)[i]
-  repos_sha <- all_repos[[i]]
+for (i in seq_along(repo_names)) {
+  repos <- repo_names[i]
+  repos_sha <- repo_shas[i]
+  category <- repo_categories[i]
 
   message("Processing results of ", repos)
   main_results_json <- jsonlite::read_json(paste0(
@@ -92,7 +113,7 @@ for (i in seq_along(all_repos)) {
 
     # If we are at the last repo and there were no changes anywhere, return
     # early. Otherwise keep going.
-    if (n_without_changes == length(all_repos)) {
+    if (n_without_changes == length(repo_names)) {
       cat(
         "✅ No new or removed violations",
         file = "lint_comparison.md",
@@ -103,6 +124,25 @@ for (i in seq_along(all_repos)) {
       next
     }
   }
+
+  # Print a category subheader the first time a repo with changes shows up in
+  # that category.
+  if (!is.na(category) && !identical(last_printed_category, category)) {
+    cat(
+      paste0("#### ", category, "\n\n"),
+      file = "lint_comparison.md",
+      append = TRUE
+    )
+    last_printed_category <- category
+  }
+
+  msg_total <- paste0(
+    "**",
+    nrow(new_lints),
+    " new violations, ",
+    nrow(deleted_lints),
+    " removed violations**\n\n"
+  )
 
   msg_header <- paste0(
     "<details><summary><a href=\"https://github.com/",
@@ -188,6 +228,7 @@ for (i in seq_along(all_repos)) {
   msg_bottom <- "</pre></details>\n\n"
 
   paste(
+    msg_total,
     msg_header,
     msg_new_violations,
     msg_old_violations,
