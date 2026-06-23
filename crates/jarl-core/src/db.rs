@@ -21,9 +21,8 @@ use aether_path::FilePath;
 use air_r_parser::RParserOptions;
 use oak_db::{Db, File, OakDatabase, Package, workspace_files};
 use oak_scan::ScanScheduler;
-use oak_semantic::ScopeId;
-use rayon::prelude::*;
 use oak_semantic::semantic_index::SemanticIndex;
+use rayon::prelude::*;
 
 use crate::package::find_package_root;
 
@@ -43,6 +42,15 @@ pub struct ScannedPackage {
 /// cover the linted paths.
 pub struct AnalysisDb {
     db: OakDatabase,
+}
+
+/// One file's contribution to cross-file resolution: the names it binds at
+/// top level, and the names it reads *freely* — without binding them anywhere
+/// in the file, so they reference the package namespace.
+struct FileUses {
+    path: PathBuf,
+    top_defs: Vec<String>,
+    free_uses: HashSet<String>,
 }
 
 impl AnalysisDb {
@@ -121,91 +129,111 @@ impl AnalysisDb {
     ///
     /// A package's R files share one namespace, so a top-level binding defined
     /// in one file and read in another is used even when its own file never
-    /// reads it. We enumerate every use in every scanned file and resolve it
-    /// with oak's cross-file [`File::resolve_at`]: a use that binds to a
-    /// file-scope definition in a *different* file is a cross-file read of that
-    /// package-level object. The defining file's name is recorded against the
-    /// read so the lint can suppress it.
+    /// reads it. For every file we collect, from its per-file index, the names
+    /// it defines at top level and the names it reads *freely* — uses with no
+    /// binding anywhere in the file, which therefore reference the package
+    /// namespace (this is the same `reaching_definitions().is_empty()` test
+    /// oak's `resolve_at` uses to decide local-vs-cross-file). A top-level
+    /// definition is cross-file-used when another file reads its name freely.
+    ///
+    /// This avoids per-use `File::resolve_at`, which has to run on a single
+    /// thread because the salsa db is `!Sync`. The index work here is db-free
+    /// and runs on the rayon pool; only the cheap final merge is sequential.
     ///
     /// Keyed by relativized file path to match the lint's per-file lookup.
     pub fn cross_file_used_objects(&self) -> HashMap<PathBuf, HashSet<String>> {
         let db = self.db();
 
-        // Pull each file's source text up front. `source_text` is a salsa
-        // query, so it needs the (`!Sync`) db; doing it here lets the parse +
-        // index build below run on the rayon pool, which the resolve_at pass
-        // can't.
-        let sources: Vec<(File, String)> = workspace_files(db)
+        // Pull each file's path + source up front: both are salsa queries that
+        // need the (`!Sync`) db, so doing it here lets the parse + index pass
+        // below run in parallel.
+        let sources: Vec<(PathBuf, String)> = workspace_files(db)
             .iter()
-            .map(|&file| (file, file.source_text(db).clone()))
+            .filter_map(|&file| {
+                let path = file.path(db).as_path().map(|p| p.as_std_path().to_path_buf())?;
+                let rel = PathBuf::from(crate::fs::relativize_path(&path));
+                Some((rel, file.source_text(db).clone()))
+            })
             .collect();
 
-        // Build a throwaway index per file to enumerate use sites. Parsing and
-        // index building touch no db state, so they run in parallel, unlike the
-        // resolve_at pass below.
-        let indices: Vec<(File, SemanticIndex)> = sources
+        // Per file, in parallel: parse, build a throwaway index, and read off
+        // the file's top-level definitions and its free uses. No db access, so
+        // this is the rayon-friendly bulk of the work.
+        let per_file: Vec<FileUses> = sources
             .par_iter()
-            .filter_map(|(file, source)| {
+            .filter_map(|(path, source)| {
                 let parsed = air_r_parser::parse(source, RParserOptions::default());
                 if parsed.has_error() {
                     return None;
                 }
                 let index =
                     oak_semantic::build_index(&parsed.tree(), oak_semantic::NoopImportsResolver);
-                Some((*file, index))
+                Some(collect_file_uses(path.clone(), &index))
             })
             .collect();
 
-        // The package's top-level binding names. Only those can be the target
-        // of a cross-file read, so probing just their uses skips the locals,
-        // package functions, and library symbols that dominate a file.
-        let mut candidates: HashSet<String> = HashSet::new();
-        for (_, index) in &indices {
-            candidates.extend(index.exports().keys().map(|name| name.to_string()));
+        // Only a name defined at top level somewhere in the package can be the
+        // target of a cross-file read, so we ignore free uses of locals,
+        // library symbols, and base functions.
+        let candidates: HashSet<&str> = per_file
+            .iter()
+            .flat_map(|file| file.top_defs.iter().map(String::as_str))
+            .collect();
+
+        // For each candidate name, the files that read it freely.
+        let mut readers_of: HashMap<&str, Vec<&PathBuf>> = HashMap::new();
+        for file in &per_file {
+            for name in &file.free_uses {
+                if candidates.contains(name.as_str()) {
+                    readers_of.entry(name).or_default().push(&file.path);
+                }
+            }
         }
 
-        let file_scope = ScopeId::from(0);
+        // A top-level definition is used when some *other* file reads its name.
         let mut used: HashMap<PathBuf, HashSet<String>> = HashMap::new();
-        for (file, index) in &indices {
-            // A name that already resolved to a sibling file is settled: a
-            // package symbol is read the same way throughout a file, so the
-            // first hit records the cross-file use and later reads can skip the
-            // (expensive) cross-file walk in `resolve_at`. Most candidate reads
-            // are repeated references to the same handful of package helpers,
-            // so this collapses the dominant cost.
-            let mut resolved_cross_file: HashSet<String> = HashSet::new();
-            for scope in index.scope_ids() {
-                let symbols = index.symbols(scope);
-                for (_use_id, use_site) in index.uses(scope).iter() {
-                    let name = symbols.symbol(use_site.symbol()).name();
-                    if !candidates.contains(name) || resolved_cross_file.contains(name) {
-                        continue;
-                    }
-                    for def in file.resolve_at(db, use_site.range().start()) {
-                        // Only top-level bindings are shared across the package,
-                        // and a read in the binding's own file is already
-                        // handled by the per-file analysis.
-                        if def.scope(db) != file_scope || def.file(db) == *file {
-                            continue;
-                        }
-                        let Some(path) = def
-                            .file(db)
-                            .path(db)
-                            .as_path()
-                            .map(|p| p.as_std_path().to_path_buf())
-                        else {
-                            continue;
-                        };
-                        resolved_cross_file.insert(name.to_string());
-                        used.entry(PathBuf::from(crate::fs::relativize_path(&path)))
-                            .or_default()
-                            .insert(def.name(db).text(db).as_str().to_string());
-                    }
+        for file in &per_file {
+            for name in &file.top_defs {
+                let Some(readers) = readers_of.get(name.as_str()) else {
+                    continue;
+                };
+                if readers.iter().any(|reader| **reader != file.path) {
+                    used.entry(file.path.clone())
+                        .or_default()
+                        .insert(name.clone());
                 }
             }
         }
         used
     }
+}
+
+/// Collect a file's top-level definitions and its free uses from its index.
+///
+/// A use is *free* when no definition reaches it within the file — the same
+/// `reaching_definitions().is_empty()` test oak's `resolve_at` uses before
+/// falling back to cross-file resolution. Reaching definitions already fold in
+/// enclosing-scope captures, so a closure reading an outer local counts as
+/// bound, not free.
+fn collect_file_uses(path: PathBuf, index: &SemanticIndex) -> FileUses {
+    let top_defs: Vec<String> = index
+        .exports()
+        .keys()
+        .map(|name| name.to_string())
+        .collect();
+
+    let mut free_uses: HashSet<String> = HashSet::new();
+    for scope in index.scope_ids() {
+        let symbols = index.symbols(scope);
+        for (use_id, use_site) in index.uses(scope).iter() {
+            if index.reaching_definitions(scope, use_id).next().is_some() {
+                continue;
+            }
+            free_uses.insert(symbols.symbol(use_site.symbol()).name().to_string());
+        }
+    }
+
+    FileUses { path, top_defs, free_uses }
 }
 
 /// Resolve a list of database [`File`]s to their filesystem paths, dropping
