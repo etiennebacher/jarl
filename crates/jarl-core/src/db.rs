@@ -16,6 +16,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use aether_path::FilePath;
 use air_r_parser::RParserOptions;
@@ -51,6 +52,17 @@ struct FileUses {
     path: PathBuf,
     top_defs: Vec<String>,
     free_uses: HashSet<String>,
+}
+
+/// Result of the package-wide cross-file pass.
+#[derive(Default)]
+pub struct CrossFileAnalysis {
+    /// Per defining-file (relativized path): top-level object names read from
+    /// another file in the same package.
+    pub used: HashMap<PathBuf, HashSet<String>>,
+    /// Per-file (relativized path) semantic index, built once here and shared
+    /// with the parallel lint pass so it isn't rebuilt.
+    pub indices: HashMap<PathBuf, Arc<SemanticIndex>>,
 }
 
 impl AnalysisDb {
@@ -140,8 +152,14 @@ impl AnalysisDb {
     /// thread because the salsa db is `!Sync`. The index work here is db-free
     /// and runs on the rayon pool; only the cheap final merge is sequential.
     ///
+    /// The per-file indices built here are returned alongside the use map: the
+    /// parallel lint pass reuses them via [`PackageAnalysis::file_indices`]
+    /// instead of rebuilding each file's index a second time. They're built
+    /// with the real [`jarl_semantic::JarlImportsResolver`] (not the no-op one)
+    /// so they're identical to what the lint pass would build.
+    ///
     /// Keyed by relativized file path to match the lint's per-file lookup.
-    pub fn cross_file_used_objects(&self) -> HashMap<PathBuf, HashSet<String>> {
+    pub fn cross_file_used_objects(&self) -> CrossFileAnalysis {
         let db = self.db();
 
         // Pull each file's path + source up front: both are salsa queries that
@@ -150,39 +168,46 @@ impl AnalysisDb {
         let sources: Vec<(PathBuf, String)> = workspace_files(db)
             .iter()
             .filter_map(|&file| {
-                let path = file.path(db).as_path().map(|p| p.as_std_path().to_path_buf())?;
+                let path = file
+                    .path(db)
+                    .as_path()
+                    .map(|p| p.as_std_path().to_path_buf())?;
                 let rel = PathBuf::from(crate::fs::relativize_path(&path));
                 Some((rel, file.source_text(db).clone()))
             })
             .collect();
 
-        // Per file, in parallel: parse, build a throwaway index, and read off
-        // the file's top-level definitions and its free uses. No db access, so
-        // this is the rayon-friendly bulk of the work.
-        let per_file: Vec<FileUses> = sources
+        // Per file, in parallel: parse, build the index, and read off the
+        // file's top-level definitions and its free uses. No db access, so this
+        // is the rayon-friendly bulk of the work. The index is kept (shared
+        // with the lint pass), so building it here is not throwaway work.
+        let built: Vec<(Arc<SemanticIndex>, FileUses)> = sources
             .par_iter()
             .filter_map(|(path, source)| {
                 let parsed = air_r_parser::parse(source, RParserOptions::default());
                 if parsed.has_error() {
                     return None;
                 }
-                let index =
-                    oak_semantic::build_index(&parsed.tree(), oak_semantic::NoopImportsResolver);
-                Some(collect_file_uses(path.clone(), &index))
+                let index = oak_semantic::build_index(
+                    &parsed.tree(),
+                    jarl_semantic::JarlImportsResolver::new(path.clone()),
+                );
+                let uses = collect_file_uses(path.clone(), &index);
+                Some((Arc::new(index), uses))
             })
             .collect();
 
         // Only a name defined at top level somewhere in the package can be the
         // target of a cross-file read, so we ignore free uses of locals,
         // library symbols, and base functions.
-        let candidates: HashSet<&str> = per_file
+        let candidates: HashSet<&str> = built
             .iter()
-            .flat_map(|file| file.top_defs.iter().map(String::as_str))
+            .flat_map(|(_, file)| file.top_defs.iter().map(String::as_str))
             .collect();
 
         // For each candidate name, the files that read it freely.
         let mut readers_of: HashMap<&str, Vec<&PathBuf>> = HashMap::new();
-        for file in &per_file {
+        for (_, file) in &built {
             for name in &file.free_uses {
                 if candidates.contains(name.as_str()) {
                     readers_of.entry(name).or_default().push(&file.path);
@@ -192,7 +217,7 @@ impl AnalysisDb {
 
         // A top-level definition is used when some *other* file reads its name.
         let mut used: HashMap<PathBuf, HashSet<String>> = HashMap::new();
-        for file in &per_file {
+        for (_, file) in &built {
             for name in &file.top_defs {
                 let Some(readers) = readers_of.get(name.as_str()) else {
                     continue;
@@ -204,7 +229,12 @@ impl AnalysisDb {
                 }
             }
         }
-        used
+
+        let indices = built
+            .iter()
+            .map(|(index, file)| (file.path.clone(), Arc::clone(index)))
+            .collect();
+        CrossFileAnalysis { used, indices }
     }
 }
 

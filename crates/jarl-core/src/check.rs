@@ -126,6 +126,8 @@ pub fn lint_only(
         &pkg,
         &pkg_contexts,
         &file_pkg_info,
+        // lint-only: on-disk contents match the cached index, so reuse it.
+        true,
     )
     .with_context(|| format!("Failed to get checks for file: {path}"))?;
 
@@ -167,6 +169,9 @@ pub fn lint_fix(
             &pkg,
             &pkg_contexts,
             &file_pkg_info,
+            // fix mode rewrites the file between iterations, so the cached
+            // index is stale; rebuild from the in-memory contents.
+            false,
         )
         .with_context(|| format!("Failed to get checks for file: {path}",))?;
 
@@ -203,6 +208,7 @@ pub fn get_checks(
     pkg: &PackageAnalysis,
     pkg_contexts: &HashMap<PathBuf, PackageContext>,
     file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
+    use_cached_index: bool,
 ) -> Result<Vec<Diagnostic>> {
     if crate::fs::has_rmd_extension(file) {
         return get_checks_rmd(contents, file, config);
@@ -230,22 +236,34 @@ pub fn get_checks(
     // the complementary "names read by sourced files" path is still handled
     // inside `SemanticInfo`.
     //
-    // The index is built here, in the parallel per-file pass, rather than
-    // pulled from the shared `AnalysisDb`: oak's salsa database is `Send` but
-    // not `Sync`, so it can't be borrowed across rayon worker threads. Cross-
-    // file analysis that needs the database runs in the sequential pre-passes
-    // (`summarize_package_info`, `make_package_analysis`) instead.
-    let semantic = oak_semantic::build_index(
-        &parsed.tree(),
-        jarl_semantic::JarlImportsResolver::new(file),
-    );
+    // When `unused_object` runs, the cross-file pre-pass already built this
+    // file's index (with the same resolver) and stored it in `pkg.file_indices`;
+    // reuse it rather than rebuilding. The pre-pass reads from disk, so the
+    // cache is only valid in lint-only mode — fix mode rewrites the file
+    // between passes, so it always rebuilds from the in-memory contents.
+    //
+    // Building (when not cached) happens here, in the parallel per-file pass,
+    // rather than via the shared `AnalysisDb`: oak's salsa database is `Send`
+    // but not `Sync`, so it can't be borrowed across rayon worker threads.
+    let owned_semantic;
+    let semantic: &oak_semantic::semantic_index::SemanticIndex =
+        match use_cached_index.then(|| pkg.file_indices.get(file)).flatten() {
+            Some(cached) => cached,
+            None => {
+                owned_semantic = oak_semantic::build_index(
+                    &parsed.tree(),
+                    jarl_semantic::JarlImportsResolver::new(file),
+                );
+                &owned_semantic
+            }
+        };
     checker.file_path = file.to_path_buf();
 
     // Wire up package context for package-specific rules.
     get_package_info(
         &mut checker,
         file,
-        &semantic,
+        semantic,
         config,
         pkg_contexts,
         file_pkg_info,
@@ -287,7 +305,7 @@ pub fn get_checks(
         syntax,
         &mut checker,
         &package_file,
-        Some(&semantic),
+        Some(semantic),
     )?;
 
     // Some rules have a fix available in their implementation but do not have

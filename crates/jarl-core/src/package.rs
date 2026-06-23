@@ -1,7 +1,9 @@
 use biome_rowan::TextRange;
+use oak_semantic::semantic_index::SemanticIndex;
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use crate::checker::DEFAULT_PACKAGES;
 use crate::config::Config;
@@ -87,6 +89,10 @@ pub struct PackageAnalysis {
     /// consults this to avoid flagging such cross-file-used objects. Computed
     /// from oak's cross-file name resolution (`File::resolve_at`).
     pub cross_file_used: HashMap<PathBuf, HashSet<String>>,
+    /// Per-file semantic index built during the cross-file pass, keyed by
+    /// relativized path. The parallel lint pass reuses these instead of
+    /// rebuilding each file's index. Empty unless `unused_object` runs.
+    pub file_indices: HashMap<PathBuf, Arc<SemanticIndex>>,
 }
 
 /// The entries of [`PackageAnalysis`] for a single file. Bundled so the
@@ -356,18 +362,19 @@ pub fn make_package_analysis(
         HashMap::new()
     };
 
-    // Reuse the database scanned above: resolve every use across the package's
-    // files to find top-level objects read from another file.
-    let cross_file_used = if check_unused_object {
+    // Reuse the database scanned above: find top-level objects read from
+    // another file, and keep the per-file indices for the lint pass to reuse.
+    let cross_file = if check_unused_object {
         db.cross_file_used_objects()
     } else {
-        HashMap::new()
+        crate::db::CrossFileAnalysis::default()
     };
 
     PackageAnalysis {
         duplicate_assignments,
         unused_functions,
-        cross_file_used,
+        cross_file_used: cross_file.used,
+        file_indices: cross_file.indices,
     }
 }
 
