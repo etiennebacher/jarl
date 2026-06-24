@@ -162,29 +162,33 @@ impl AnalysisDb {
     pub fn cross_file_used_objects(&self) -> CrossFileAnalysis {
         let db = self.db();
 
-        // Pull each file's path + source up front: both are salsa queries that
-        // need the (`!Sync`) db, so doing it here lets the parse + index pass
-        // below run in parallel.
-        let sources: Vec<(PathBuf, String)> = workspace_files(db)
+        // Collect just the paths up front. `path()` is a salsa query that needs
+        // the (`!Sync`) db, but it touches no disk, so this sequential loop is
+        // cheap. Reading the file contents — the part that scales with file
+        // count — is deferred to the parallel pass below.
+        let paths: Vec<PathBuf> = workspace_files(db)
             .iter()
             .filter_map(|&file| {
                 let path = file
                     .path(db)
                     .as_path()
                     .map(|p| p.as_std_path().to_path_buf())?;
-                let rel = PathBuf::from(crate::fs::relativize_path(&path));
-                Some((rel, file.source_text(db).clone()))
+                Some(PathBuf::from(crate::fs::relativize_path(&path)))
             })
             .collect();
 
-        // Per file, in parallel: parse, build the index, and read off the
-        // file's top-level definitions and its free uses. No db access, so this
-        // is the rayon-friendly bulk of the work. The index is kept (shared
-        // with the lint pass), so building it here is not throwaway work.
-        let built: Vec<(Arc<SemanticIndex>, FileUses)> = sources
+        // Per file, in parallel: read the source, parse, build the index, and
+        // read off the file's top-level definitions and its free uses. None of
+        // this needs the db, so it's the rayon-friendly bulk of the work. The
+        // index is kept (shared with the lint pass), so building it here is not
+        // throwaway work. Reading from disk here (rather than via the db's
+        // `source_text`) is what lets the read run in parallel; in the one-shot
+        // CLI the disk is the source of truth, so the two are equivalent.
+        let built: Vec<(Arc<SemanticIndex>, FileUses)> = paths
             .par_iter()
-            .filter_map(|(path, source)| {
-                let parsed = air_r_parser::parse(source, RParserOptions::default());
+            .filter_map(|path| {
+                let source = std::fs::read_to_string(path).ok()?;
+                let parsed = air_r_parser::parse(&source, RParserOptions::default());
                 if parsed.has_error() {
                     return None;
                 }

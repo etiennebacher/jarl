@@ -159,9 +159,6 @@ pub fn lint_fix(
             return Ok(Vec::new());
         }
 
-        // Fix mode rewrites the file between iterations, so the on-disk
-        // contents drift from the database snapshot. Pass `None` to rebuild
-        // the index from the in-memory `contents` rather than the stale cache.
         checks = get_checks(
             &contents,
             &PathBuf::from(&path),
@@ -169,8 +166,9 @@ pub fn lint_fix(
             &pkg,
             &pkg_contexts,
             &file_pkg_info,
-            // fix mode rewrites the file between iterations, so the cached
-            // index is stale; rebuild from the in-memory contents.
+            // Fix mode rewrites the file between iterations, so the on-disk
+            // contents (and the index the pre-pass cached from them) drift from
+            // the in-memory `contents`; rebuild the index rather than reuse it.
             false,
         )
         .with_context(|| format!("Failed to get checks for file: {path}",))?;
@@ -246,17 +244,19 @@ pub fn get_checks(
     // rather than via the shared `AnalysisDb`: oak's salsa database is `Send`
     // but not `Sync`, so it can't be borrowed across rayon worker threads.
     let owned_semantic;
-    let semantic: &oak_semantic::semantic_index::SemanticIndex =
-        match use_cached_index.then(|| pkg.file_indices.get(file)).flatten() {
-            Some(cached) => cached,
-            None => {
-                owned_semantic = oak_semantic::build_index(
-                    &parsed.tree(),
-                    jarl_semantic::JarlImportsResolver::new(file),
-                );
-                &owned_semantic
-            }
-        };
+    let semantic: &oak_semantic::semantic_index::SemanticIndex = match use_cached_index
+        .then(|| pkg.file_indices.get(file))
+        .flatten()
+    {
+        Some(cached) => cached,
+        None => {
+            owned_semantic = oak_semantic::build_index(
+                &parsed.tree(),
+                jarl_semantic::JarlImportsResolver::new(file),
+            );
+            &owned_semantic
+        }
+    };
     checker.file_path = file.to_path_buf();
 
     // Wire up package context for package-specific rules.
