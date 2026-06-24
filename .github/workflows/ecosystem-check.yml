@@ -47,6 +47,7 @@ env:
     # other
     grantmcdermott/skeptic-priors@45de00d7593e462c6d6ac9d5185733ff9665ea90
     lrberge/linking_winst@5256288ff88cdd9f32241bf3a85ccf7627691a08
+    rmcelreath/stat_rethinking_2026@e543cef90588cae06fadc3532142964d9cba4fd9
     TheAlgorithms/R@f65344fabeea0ae33c1ca321af709447c1a8a4c2
 
 jobs:
