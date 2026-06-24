@@ -334,8 +334,10 @@ impl<'a> SemanticInfo<'a> {
                     self.nse_ranges.push(expr.text_trimmed_range());
                 }
             }
-            // `expression(...)` quotes every argument.
-            "expression" => {
+            // `expression(...)` and `alist(...)` quote every argument: their
+            // values are stored unevaluated, so an assignment like
+            // `alist(x <- 1)` is captured code, not a real definition of `x`.
+            "expression" | "alist" => {
                 for (_, value) in &arg_values {
                     self.nse_ranges.push(value.text_trimmed_range());
                 }

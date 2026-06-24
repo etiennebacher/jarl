@@ -895,6 +895,14 @@ for (i in 1:2) {
     }
 
     #[test]
+    fn test_assignment_inside_alist_is_not_definition() {
+        // `alist()` stores its arguments unevaluated (as if describing
+        // function arguments), so `x <- 1` is captured code, not a real
+        // assignment of `x`.
+        expect_no_lint("alist(x <- 1)", "unused_object", None);
+    }
+
+    #[test]
     fn test_nse_evaluated_argument_counts_as_use() {
         // `substitute`'s `env` argument is evaluated, not quoted, so the read
         // of `env` keeps the binding alive.
