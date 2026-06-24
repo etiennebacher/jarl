@@ -903,6 +903,19 @@ for (i in 1:2) {
     }
 
     #[test]
+    fn test_mention_inside_alist_is_not_used() {
+        assert_snapshot!(snapshot_lint("x <- 1\nalist(x)"), @"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        ");
+    }
+
+    #[test]
     fn test_nse_evaluated_argument_counts_as_use() {
         // `substitute`'s `env` argument is evaluated, not quoted, so the read
         // of `env` keeps the binding alive.
