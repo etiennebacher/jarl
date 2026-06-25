@@ -189,6 +189,32 @@ fn parse_settings(toml: &Path, root_directory: &Path) -> anyhow::Result<Settings
 
 type DiscoveredFiles = Vec<Result<PathBuf, ignore::Error>>;
 
+/// Whether `relative` is excluded by `overrides`, considering the path itself
+/// and all of its parent directories.
+///
+/// `Override::matched` only reports a match for the exact entry tested: a bare
+/// directory pattern like `foo` matches the entry `foo` but not `foo/bar.R`.
+/// During the walk this is enough because the walker prunes `foo/` entirely,
+/// but the exclude post-filters run over already-collected files where no
+/// pruning happens, so each ancestor directory must be tested too. This mirrors
+/// `Gitignore::matched_path_or_any_parents`, which `Override` does not expose.
+fn excluded_with_parents(overrides: &ignore::overrides::Override, relative: &Path) -> bool {
+    if matches!(overrides.matched(relative, false), ignore::Match::Ignore(_)) {
+        return true;
+    }
+    let mut ancestor = relative.parent();
+    while let Some(dir) = ancestor {
+        if dir.as_os_str().is_empty() {
+            break;
+        }
+        if matches!(overrides.matched(dir, true), ignore::Match::Ignore(_)) {
+            return true;
+        }
+        ancestor = dir.parent();
+    }
+    false
+}
+
 /// Validate user-supplied `--exclude` glob patterns, returning an error on the
 /// first invalid one so a bad pattern is a hard failure rather than a
 /// silently-ignored warning during discovery.
@@ -320,7 +346,7 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
                     return true;
                 };
                 let relative = path.strip_prefix(&cwd).unwrap_or(path.as_path());
-                !matches!(overrides.matched(relative, false), ignore::Match::Ignore(_))
+                !excluded_with_parents(&overrides, relative)
             });
         }
     }
@@ -356,7 +382,7 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
                 }
                 if let Ok(overrides) = override_builder.build() {
                     let relative = path.strip_prefix(root).unwrap_or(path.as_path());
-                    if matches!(overrides.matched(relative, false), ignore::Match::Ignore(_)) {
+                    if excluded_with_parents(&overrides, relative) {
                         return false;
                     }
                 }
