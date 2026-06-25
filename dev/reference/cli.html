@@ -404,8 +404,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="file-selection" class="level3">
 <h3 class="anchored" data-anchor-id="file-selection">File selection</h3>
 <p><strong><code>--exclude</code></strong></p>
-<p>Comma-separated list of files or directories to ignore. Glob patterns are accepted, e.g.:</p>
-<pre><code>jarl check . --exclude folder_1,folder_2/*.R</code></pre>
+<p>Comma-separated list of files or directories to ignore. Glob patterns are accepted.</p>
+<p>This argument <strong>must</strong> be passed with an equals sign (<code>--exclude=...</code>). The equals sign keeps glob patterns intact: without it, an unquoted glob like <code>R/*.R</code> is expanded by the shell before Jarl runs, so Jarl never sees the pattern. For example:</p>
+<pre><code>jarl check . --exclude=folder_1,folder_2/*.R</code></pre>
 <hr>
 <p><strong><code>--no-default-exclude</code></strong></p>
 <p>Do not apply the default set of file patterns that should be excluded.</p>
