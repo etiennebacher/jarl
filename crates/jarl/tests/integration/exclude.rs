@@ -401,7 +401,9 @@ fn test_cli_exclude_glob_function_def_524() -> anyhow::Result<()> {
     );
 
     // Files that contain one of the duplicated definitions are explicitly excluded
-    // so shouldn't contribute to the analysis of function definitions
+    // but still devtools::load_all() would load several function definitions with
+    // the same name and we want to flag that.
+    // Might give less control to the user so can be reconsidered in the future.
     insta::assert_snapshot!(
         &mut case
             .command()
