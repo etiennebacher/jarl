@@ -521,6 +521,49 @@ fn test_cli_exclude_overrides_hardcoded_path_passed_in_files() -> anyhow::Result
     Ok(())
 }
 
+/// A bare directory name passed to `--exclude` excludes the directory's
+/// contents, not just an entry literally named that. The post-filter must
+/// test each ancestor directory, since the walk-time pruning that gitignore
+/// directory semantics rely on doesn't apply to already-collected files.
+#[test]
+fn test_cli_exclude_bare_directory_name() -> anyhow::Result<()> {
+    let case = CliTest::with_files([("keep.R", "x = 1\n"), ("sub/skip.R", "y = 2\n")])?;
+
+    // Only keep.R is reported; everything under `sub/` is excluded.
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("assignment")
+            .arg("--exclude=sub")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: assignment
+     --> keep.R:1:1
+      |
+    1 | x = 1
+      | --- Use `<-` for assignment.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
 #[test]
 fn test_cli_exclude_wrong_glob_patterns() -> anyhow::Result<()> {
     let case = CliTest::with_files([
