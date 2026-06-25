@@ -400,8 +400,8 @@ fn test_cli_exclude_glob_function_def_524() -> anyhow::Result<()> {
     "
     );
 
-    // File that contains one of the duplicated definitions is explicitly excluded
-    // so shouldn't contribute to the analysisfunction definitions
+    // Files that contain one of the duplicated definitions are explicitly excluded
+    // so shouldn't contribute to the analysis of function definitions
     insta::assert_snapshot!(
         &mut case
             .command()
