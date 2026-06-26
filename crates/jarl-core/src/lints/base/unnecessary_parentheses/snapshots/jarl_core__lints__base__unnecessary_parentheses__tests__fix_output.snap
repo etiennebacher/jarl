@@ -7,49 +7,49 @@ OLD:
 ((x))
 NEW:
 ====
-(x)
+x
 
 OLD:
 ====
 (((x)))
 NEW:
 ====
-(x)
+x
 
 OLD:
 ====
 ((((x))))
 NEW:
 ====
-(x)
+x
 
 OLD:
 ====
 ((x + 1))
 NEW:
 ====
-(x + 1)
+x + 1
 
 OLD:
 ====
 foo(((x)))
 NEW:
 ====
-foo((x))
+foo(x)
 
 OLD:
 ====
 ((x)) + y
 NEW:
 ====
-(x) + y
+x + y
 
 OLD:
 ====
 if (((x))) y
 NEW:
 ====
-if ((x)) y
+if (x) y
 
 OLD:
 ====
@@ -58,4 +58,32 @@ OLD:
 )
 NEW:
 ====
-(x)
+x
+
+OLD:
+====
+((x + y)) * z
+NEW:
+====
+(x + y) * z
+
+OLD:
+====
+z * ((x + y))
+NEW:
+====
+z * (x + y)
+
+OLD:
+====
+((x * y)) + z
+NEW:
+====
+x * y + z
+
+OLD:
+====
+-((x + y))
+NEW:
+====
+-(x + y)

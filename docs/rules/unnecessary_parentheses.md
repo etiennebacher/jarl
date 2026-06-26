@@ -20,5 +20,5 @@ the code harder to read.
 Use instead:
 
 ```r
-(x + 1)
+x + 1
 ```

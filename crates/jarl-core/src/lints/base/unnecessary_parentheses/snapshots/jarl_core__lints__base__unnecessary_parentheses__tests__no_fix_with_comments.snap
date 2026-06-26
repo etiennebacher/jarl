@@ -22,11 +22,11 @@ OLD:
 NEW:
 ====
 # leading comment
-(x)
+x
 
 OLD:
 ====
 ((x)) # trailing comment
 NEW:
 ====
-(x) # trailing comment
+x # trailing comment
