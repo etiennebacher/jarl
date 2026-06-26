@@ -214,12 +214,39 @@ impl<'a> SemanticInfo<'a> {
         let Some(token) = node.first_token() else {
             return;
         };
+        // cli's inline markup (`{.field {x}}`) interleaves styling with
+        // interpolation, so strings inside a cli call need a markup-aware scan
+        // rather than the plain glue scan.
+        if node_in_cli_markup_call(node) {
+            if let Some(content) = strings::get_string_literal_contents(token.text_trimmed()) {
+                self.collect_cli_interpolation(&content);
+            }
+            return;
+        }
         // Scanned with the default glue delimiters regardless of the wrapping
         // call: any `{x}` in any string keeps `x` alive. Calls that override
         // the delimiters via `.open`/`.close` are handled separately in
         // `collect_custom_glue_interpolation`.
         for segment in scan_interpolation_segments(token.text_trimmed(), "{", "}") {
             self.collect_identifiers_in_interpolation(segment);
+        }
+    }
+
+    /// Collect identifier uses from a cli-formatted string.
+    ///
+    /// cli reuses glue's `{...}` interpolation but adds inline markup spans of
+    /// the form `{.class content}`, where `.class` and the literal `content`
+    /// are styling — not R code — yet any nested `{...}` inside the content is
+    /// still interpolated. So `{.field {x}}` uses `x`, but `{.field x}` does
+    /// not. Markup spans recurse into their content; plain segments are parsed
+    /// as R code.
+    fn collect_cli_interpolation(&mut self, content: &str) {
+        for segment in scan_interpolation_segments(content, "{", "}") {
+            if let Some(inner) = cli_markup_content(segment) {
+                self.collect_cli_interpolation(inner);
+            } else {
+                self.collect_identifiers_in_interpolation(segment);
+            }
         }
     }
 
@@ -628,6 +655,70 @@ fn named_string_arg(args: &[(Option<String>, RSyntaxNode)], name: &str) -> Optio
         return None;
     }
     strings::get_string_literal_contents(value.first_token()?.text_trimmed())
+}
+
+/// True if `node` sits inside a cli call that glue-interpolates its arguments
+/// with inline markup support. Walks all ancestors (not just the immediate
+/// call) so message strings nested in a `c(...)` bullets vector still count.
+fn node_in_cli_markup_call(node: &RSyntaxNode) -> bool {
+    node.ancestors().any(|ancestor| {
+        ancestor.kind() == RSyntaxKind::R_CALL
+            && ancestor
+                .cast::<RCall>()
+                .and_then(|call| call_name(&call))
+                .is_some_and(|name| is_cli_markup_function(&name))
+    })
+}
+
+/// cli functions that glue-interpolate their text arguments with inline markup.
+/// Excludes non-interpolating ones (`cli_verbatim`, `cli_code`,
+/// `cli_bullets_raw`). Namespaced calls (`cli::cli_abort`) resolve to the bare
+/// name via [`call_name`].
+fn is_cli_markup_function(name: &str) -> bool {
+    matches!(
+        name,
+        "cli_abort"
+            | "cli_warn"
+            | "cli_inform"
+            | "cli_alert"
+            | "cli_alert_success"
+            | "cli_alert_info"
+            | "cli_alert_warning"
+            | "cli_alert_danger"
+            | "cli_text"
+            | "cli_h1"
+            | "cli_h2"
+            | "cli_h3"
+            | "cli_li"
+            | "cli_ul"
+            | "cli_ol"
+            | "cli_dl"
+            | "cli_bullets"
+            | "cli_par"
+            | "cli_progress_message"
+            | "cli_progress_step"
+            | "format_inline"
+            | "format_error"
+            | "format_warning"
+            | "format_message"
+    )
+}
+
+/// If `segment` is a cli inline-markup span (`.class content`), return the
+/// `content` part, which is itself glue-interpolated. The leading `.class` and
+/// any literal text are styling, not R code. Returns `None` for plain
+/// interpolation segments (`x`, `mean(x)`, `.x` with no following space).
+fn cli_markup_content(segment: &str) -> Option<&str> {
+    let rest = segment.strip_prefix('.')?;
+    let class_len = rest
+        .find(|c: char| !(c.is_alphanumeric() || c == '_'))
+        .unwrap_or(rest.len());
+    if class_len == 0 {
+        return None;
+    }
+    // A markup span separates the class from its content with whitespace.
+    let after_class = rest[class_len..].strip_prefix(|c: char| c.is_whitespace())?;
+    Some(after_class.trim_start())
 }
 
 fn is_member_name(node: &RSyntaxNode) -> bool {

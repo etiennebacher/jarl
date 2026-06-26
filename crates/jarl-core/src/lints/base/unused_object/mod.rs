@@ -235,6 +235,72 @@ mod tests {
     }
 
     #[test]
+    fn test_no_lint_cli_interpolation() {
+        expect_no_lint("x <- 1\ncli_abort(\"{x}\")", "unused_object", None);
+        expect_no_lint("x <- 1\ncli_warn(\"{x}\")", "unused_object", None);
+    }
+
+    #[test]
+    fn test_no_lint_cli_markup_with_interpolation() {
+        expect_no_lint("x <- 1\ncli_abort(\"{.field {x}}\")", "unused_object", None);
+    }
+
+    #[test]
+    fn test_no_lint_cli_nested_markup_with_interpolation() {
+        expect_no_lint(
+            "x <- 1\ncli_abort(\"{.strong {.emph {x}}}\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_cli_namespaced() {
+        expect_no_lint(
+            "x <- 1\ncli::cli_abort(\"{.val {x}}\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_cli_bullets_vector() {
+        expect_no_lint(
+            "path <- \"f\"\ncli_abort(c(\"Can't find {.file {path}}\", \"i\" = \"check it\"))",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_cli_other_families() {
+        expect_no_lint("x <- 1\ncli_text(\"{.emph {x}}\")", "unused_object", None);
+        expect_no_lint("x <- 1\ncli_alert_info(\"{x}\")", "unused_object", None);
+        expect_no_lint(
+            "x <- 1\nformat_inline(\"{.field {x}}\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_cli_markup_literal_text() {
+        // In `{.field x}`, `x` is literal styled text, not an interpolation.
+        assert_snapshot!(
+            snapshot_lint("x <- 1\ncli_abort(\"{.field x}\")"),
+            @r#"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "#
+        );
+    }
+
+    #[test]
     fn test_no_lint_returned_by_function() {
         expect_no_lint("f <- function() {\n  x <- 1\n  x\n}", "unused_object", None);
     }
