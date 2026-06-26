@@ -19,7 +19,7 @@ pub fn run(args: Args) -> anyhow::Result<ExitStatus> {
     }
 
     match args.command {
-        Command::Check(command) => commands::check::check(command),
+        Command::Check(command) => commands::check::check(*command),
         Command::Server(command) => commands::server::server(command),
     }
 }

@@ -29,6 +29,11 @@
 
 * New `--output-format sarif` to export to [SARIF](https://sarifweb.azurewebsites.net/) (#508, @dieghernan).
 
+* New CLI argument `--exclude` to exclude files or directories from the checks,
+  mirroring the `exclude` argument in `jarl.toml` (#520).
+
+* Clearer output of `jarl check --help` (#521).
+
 ### Bug fixes
 
 * `implicit_assignment` no longer flags chained assignments like
@@ -47,6 +52,9 @@
 
 * Fixed false positives in `assignment` rule. Jarl could recommend replacing `<-`
   by `=` in places where this would change the meaning of the code (#515).
+
+* `implicit_assignment` now includes `alist()` in the list of functions skipped
+  by default (#527).
 
 ## 0.5.0
 

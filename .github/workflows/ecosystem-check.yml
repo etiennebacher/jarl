@@ -24,9 +24,11 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   TEST_REPOS: |
+    # packages
     apache/arrow@ec56b377340feb8d46b289342b403aa489effaa1
     cran/survey@4834b8bc91f6414ad4514552daaed8990a86d9c1
     easystats/datawizard@7466ff6f91040e25f826b224a4ef5e9aeb63b567
+    igraph/rigraph@ea3c69f64c7d888a37eaa5e3d82291e04975b5da
     klmr/box@46bec1bc4d8273c42b85c0d7b4323721c2ad45f5
     lrberge/stringmagic@87b187d40c745ea1d8496f071aee7229985da23c
     mlr-org/mlr3@127da9a11073142226b76235ce4391ea0029477d
@@ -43,13 +45,19 @@ env:
     vincentarelbundock/marginaleffects@ffe5a4f5962a9ba51c3e68e1c55eea62887c25da
     wch/r-source@b5cf23a805f4305852f55c4148f2a302b06844b5
 
+    # other
+    grantmcdermott/skeptic-priors@45de00d7593e462c6d6ac9d5185733ff9665ea90
+    lrberge/linking_winst@5256288ff88cdd9f32241bf3a85ccf7627691a08
+    rmcelreath/stat_rethinking_2026@e543cef90588cae06fadc3532142964d9cba4fd9
+    TheAlgorithms/R@f65344fabeea0ae33c1ca321af709447c1a8a4c2
+
 jobs:
   ecosystem-check:
     runs-on: macos-latest
 
     steps:
       - name: Checkout PR head
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
@@ -96,6 +104,12 @@ jobs:
           mkdir -p test-repos
           cd test-repos
           for repo in $TEST_REPOS; do
+            # Skip category markers / comment words (only real entries have "@")
+            case "$repo" in
+              *@*) ;;
+              *) continue ;;
+            esac
+
             repo_name=$(echo "$repo" | cut -d'@' -f1)
             commit_sha=$(echo "$repo" | cut -d'@' -f2)
             repo_dir=$(echo "$repo_name" | tr '/' '_')
@@ -108,6 +122,12 @@ jobs:
           mkdir -p results
           cd test-repos
           for repo in $TEST_REPOS; do
+            # Skip category markers / comment words (only real entries have "@")
+            case "$repo" in
+              *@*) ;;
+              *) continue ;;
+            esac
+
             repo_name=$(echo "$repo" | cut -d'@' -f1)
             repo_dir=$(echo "$repo_name" | tr '/' '_')
 
