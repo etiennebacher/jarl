@@ -617,7 +617,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="implicit_assignment"><code>implicit_assignment</code></h3>
 <p>Use <code>skipped-functions</code> to fully replace the default list of functions that are allowed to contain implicit assignment. Use <code>extend-skipped-functions</code> to add to the default list. Specifying both is an error.</p>
 <p>Function names in <code>skipped-functions</code> or <code>extend-skipped-functions</code> also match namespaced calls, e.g.&nbsp;<code>skipped-functions = ["list2"]</code> will ignore <code>list2()</code> and <code>rlang::list2()</code>.</p>
-<p>Default: <code>skipped-functions = ["expect_error", "expect_warning", "expect_message", "expect_snapshot", "quote", "suppressMessages", "suppressWarnings"]</code></p>
+<p>Default: <code>skipped-functions = ["alist", "expect_error", "expect_warning", "expect_message", "expect_snapshot", "quote", "suppressMessages", "suppressWarnings"]</code></p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
 <span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a></span>
