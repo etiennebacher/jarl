@@ -146,9 +146,16 @@ fn needs_parentheses_in_binary_parent(
     let side = child_side(ast, parent)?;
 
     Ok(match side {
-        Some(ChildSide::Left) => !can_remove_equal_precedence_left(parent_operator),
+        Some(ChildSide::Left) => !matches!(
+            parent_operator,
+            RSyntaxKind::PLUS | RSyntaxKind::MINUS | RSyntaxKind::MULTIPLY | RSyntaxKind::DIVIDE
+        ),
         Some(ChildSide::Right) => {
-            !can_remove_equal_precedence_right(parent_operator, current_operator)
+            !(parent_operator == current_operator
+                && matches!(
+                    parent_operator,
+                    RSyntaxKind::EXPONENTIATE | RSyntaxKind::EXPONENTIATE2
+                ))
         }
         None => true,
     })
@@ -203,25 +210,4 @@ fn binary_precedence(operator: RSyntaxKind) -> Option<u8> {
         RSyntaxKind::EXPONENTIATE | RSyntaxKind::EXPONENTIATE2 => 11,
         _ => return None,
     })
-}
-
-// Returns true if a left-hand child with the same precedence as its parent can lose its parentheses.
-fn can_remove_equal_precedence_left(parent_operator: RSyntaxKind) -> bool {
-    matches!(
-        parent_operator,
-        RSyntaxKind::PLUS | RSyntaxKind::MINUS | RSyntaxKind::MULTIPLY | RSyntaxKind::DIVIDE
-    )
-}
-
-// Returns true if a right-hand child with the same precedence as its parent can lose its parentheses.
-// Only exponentiation is right-associative in R, so only matching `^`/`**` pairs qualify.
-fn can_remove_equal_precedence_right(
-    parent_operator: RSyntaxKind,
-    current_operator: RSyntaxKind,
-) -> bool {
-    parent_operator == current_operator
-        && matches!(
-            parent_operator,
-            RSyntaxKind::EXPONENTIATE | RSyntaxKind::EXPONENTIATE2
-        )
 }
