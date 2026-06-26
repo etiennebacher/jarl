@@ -355,7 +355,7 @@ fn test_cli_exclude_comma_separated() -> anyhow::Result<()> {
 #[test]
 fn test_cli_exclude_glob_function_def_524() -> anyhow::Result<()> {
     let case = CliTest::with_files([
-        ("DESCRIPTION", ""),
+        ("DESCRIPTION", "Package: testpkg\nVersion: 1.0.0\n"),
         ("R/foo.R", "f <- function() {}\n"),
         ("R/bar.R", "f <- function() {}\n"),
         ("R/baz.R", "f <- function() {}\n"),
