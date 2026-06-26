@@ -183,6 +183,7 @@ mod tests {
         );
 
         // Whitelist: https://github.com/etiennebacher/jarl/issues/133
+        expect_no_lint("alist(x <- 1)", "implicit_assignment", None);
         expect_no_lint("expect_message(x <- 1)", "implicit_assignment", None);
         expect_no_lint("expect_warning(x <- 1)", "implicit_assignment", None);
         expect_no_lint("expect_error(x <- 1)", "implicit_assignment", None);

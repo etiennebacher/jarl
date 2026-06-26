@@ -4,6 +4,7 @@ use super::resolve_with_extend;
 
 /// Default functions where implicit assignments are allowed.
 const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
+    "alist",
     "expect_error",
     "expect_warning",
     "expect_message",

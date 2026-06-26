@@ -24,7 +24,7 @@ fn test_must_pass_path() -> anyhow::Result<()> {
       <FILES>...  List of files or directories to check or fix lints, for example `jarl check .`.
 
     File selection:
-          --exclude <FILES>     List of file patterns to exclude from linting, separated by a comma (no spaces).
+          --exclude=<FILES>     List of file patterns to exclude from linting, separated by a comma (no spaces). Must be passed with an equals sign, e.g. `--exclude=R/*.R`, so the shell does not expand glob patterns.
           --no-default-exclude  Do not apply the default set of file patterns that should be excluded.
 
     Rule selection:

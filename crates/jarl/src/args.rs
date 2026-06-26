@@ -48,8 +48,9 @@ pub struct CheckCommand {
         long,
         value_name = "FILES",
         value_delimiter = ',',
+        require_equals = true,
         help_heading = "File selection",
-        help = "List of file patterns to exclude from linting, separated by a comma (no spaces)."
+        help = "List of file patterns to exclude from linting, separated by a comma (no spaces). Must be passed with an equals sign, e.g. `--exclude=R/*.R`, so the shell does not expand glob patterns."
     )]
     pub exclude: Vec<String>,
     #[arg(
