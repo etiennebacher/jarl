@@ -44,7 +44,8 @@ pub struct SemanticInfo<'a> {
     nse_ranges: Vec<TextRange>,
     /// Ranges inside an NSE argument that are nonetheless evaluated and so
     /// carve a hole back out of [`Self::nse_ranges`]: the `.()` operands of
-    /// `bquote(...)`. A use inside one of these counts as a real use.
+    /// `bquote(...)`, plus `bquote`'s `where`/`splice` arguments (which are
+    /// evaluated normally). A use inside one of these counts as a real use.
     unquote_ranges: Vec<TextRange>,
     /// Bodies of `local({...})` calls.
     local_body_ranges: Vec<TextRange>,
@@ -387,11 +388,21 @@ impl<'a> SemanticInfo<'a> {
             // (evaluates) the wrapped expression. So `expr` is NSE —
             // `bquote(x)` does not use `x` — except for identifiers inside
             // `.()`, which are real uses: `bquote(.(x))` does use `x`. The
-            // `where`/`splice` arguments are evaluated normally.
+            // `where`/`splice` arguments are evaluated normally, so they are
+            // carved out of any enclosing NSE range — e.g. in
+            // `substitute(bquote(.(x), env))`, `env` is a real use even though
+            // the whole `bquote(...)` sits inside `substitute`'s NSE range.
             "bquote" => {
-                if let Some(expr) = nse_expr_arg(&arg_values) {
+                let expr = nse_expr_arg(&arg_values);
+                if let Some(expr) = expr {
                     self.nse_ranges.push(expr.text_trimmed_range());
                     self.collect_bquote_unquoted_uses(expr);
+                }
+                let expr_range = expr.map(|e| e.text_trimmed_range());
+                for (_, value) in &arg_values {
+                    if Some(value.text_trimmed_range()) != expr_range {
+                        self.unquote_ranges.push(value.text_trimmed_range());
+                    }
                 }
             }
             "do.call" | "match.fun" | "Recall" | "getFunction" => {

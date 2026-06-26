@@ -773,6 +773,20 @@ f <- function() {
     }
 
     #[test]
+    fn test_bquote_where_arg_counts_as_use() {
+        expect_no_lint(
+            "env <- as.environment(list(x = 1))\nbquote(.(x), env)",
+            "unused_object",
+            None,
+        );
+        expect_no_lint(
+            "env <- as.environment(list(x = 1))\nbquote(where = env, .(x))",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
     fn test_with_assignment_pipe() {
         // should lint: re-assigned `x` isn't used
         assert_snapshot!(
