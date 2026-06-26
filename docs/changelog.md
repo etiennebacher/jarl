@@ -52,7 +52,7 @@
 * Fixed false positives in `assignment` rule. Jarl could recommend replacing `<-`
   by `=` in places where this would change the meaning of the code (#515).
 
-* `implicit_assignment` now includes `alist()` in the list of skipped functions
+* `implicit_assignment` now includes `alist()` in the list of functions skipped
   by default (#527).
 
 ## 0.5.0
