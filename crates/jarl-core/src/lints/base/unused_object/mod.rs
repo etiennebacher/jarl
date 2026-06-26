@@ -173,6 +173,68 @@ mod tests {
     }
 
     #[test]
+    fn test_no_lint_glue_basic() {
+        expect_no_lint("x <- 1\nglue(\"this is {x}\")", "unused_object", None);
+    }
+
+    #[test]
+    fn test_no_lint_glue_custom_delimiters() {
+        expect_no_lint(
+            "x <- 1\nglue(\"<x>\", .open = \"<\", .close = \">\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_glue_custom_multichar_delimiters() {
+        expect_no_lint(
+            "x <- 1\nglue(\"<<x>>\", .open = \"<<\", .close = \">>\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_glue_custom_delimiters_raw_string() {
+        expect_no_lint(
+            "x <- 1\nglue(r\"([x])\", .open = \"[\", .close = \"]\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_str_glue_default_delimiters() {
+        expect_no_lint("x <- 1\nstr_glue(\"{x}\")", "unused_object", None);
+    }
+
+    #[test]
+    fn test_no_lint_glue_sql_default_delimiters() {
+        expect_no_lint(
+            "col <- 1\nglue_sql(\"SELECT {col}\", .con = con)",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_glue_custom_delimiters_unrelated_object() {
+        assert_snapshot!(
+            snapshot_lint("x <- 1\nglue(\"[a]\", .open = \"[\", .close = \"]\")"),
+            @r#"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "#
+        );
+    }
+
+    #[test]
     fn test_no_lint_returned_by_function() {
         expect_no_lint("f <- function() {\n  x <- 1\n  x\n}", "unused_object", None);
     }

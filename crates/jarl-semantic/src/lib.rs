@@ -10,6 +10,8 @@
 //! `info.is_definition_used(scope, def_id, def)` rather than walking the
 //! semantic index themselves.
 
+pub mod strings;
+
 use std::collections::HashSet;
 
 use air_r_parser::RParserOptions;
@@ -212,39 +214,49 @@ impl<'a> SemanticInfo<'a> {
         let Some(token) = node.first_token() else {
             return;
         };
-        let text = token.text_trimmed();
-        let bytes = text.as_bytes();
-        let mut i = 0;
-        while i < bytes.len() {
-            // glue's `{{` / `}}` are escaped literals, not interpolations.
-            if bytes[i] == b'{' && bytes.get(i + 1) == Some(&b'{') {
-                i += 2;
+        // Scanned with the default glue delimiters regardless of the wrapping
+        // call: any `{x}` in any string keeps `x` alive. Calls that override
+        // the delimiters via `.open`/`.close` are handled separately in
+        // `collect_custom_glue_interpolation`.
+        for segment in scan_interpolation_segments(token.text_trimmed(), "{", "}") {
+            self.collect_identifiers_in_interpolation(segment);
+        }
+    }
+
+    /// glue-family calls can override the interpolation delimiters with
+    /// `.open` / `.close` (e.g. `glue("<x>", .open = "<", .close = ">")`). The
+    /// default-`{}` scan in [`Self::collect_string_interpolation`] can't see
+    /// those, so when a call sets custom delimiters, rescan its unnamed string
+    /// arguments with them and record the identifiers as synthetic uses.
+    ///
+    /// Operates on the *unquoted* string contents, not the raw token text: a
+    /// custom delimiter like `(`/`)` would otherwise collide with the
+    /// `r"(...)"` raw-string wrapper.
+    fn collect_custom_glue_interpolation(&mut self, args: &[(Option<String>, RSyntaxNode)]) {
+        let open = named_string_arg(args, ".open");
+        let close = named_string_arg(args, ".close");
+        // Nothing to do unless a delimiter is actually customised; the default
+        // case is already covered by `collect_string_interpolation`.
+        if open.is_none() && close.is_none() {
+            return;
+        }
+        let open = open.unwrap_or_else(|| "{".to_string());
+        let close = close.unwrap_or_else(|| "}".to_string());
+        if open == "{" && close == "}" {
+            return;
+        }
+        for (name, value) in args {
+            if name.is_some() || value.kind() != RSyntaxKind::R_STRING_VALUE {
                 continue;
             }
-            if bytes[i] == b'}' && bytes.get(i + 1) == Some(&b'}') {
-                i += 2;
+            let Some(token) = value.first_token() else {
                 continue;
-            }
-            if bytes[i] == b'{' {
-                let start = i + 1;
-                let mut depth = 1usize;
-                let mut end = start;
-                while end < bytes.len() && depth > 0 {
-                    match bytes[end] {
-                        b'{' => depth += 1,
-                        b'}' => depth -= 1,
-                        _ => {}
-                    }
-                    if depth > 0 {
-                        end += 1;
-                    }
-                }
-                if depth == 0 && end > start {
-                    self.collect_identifiers_in_interpolation(&text[start..end]);
-                }
-                i = end + 1;
-            } else {
-                i += 1;
+            };
+            let Some(content) = strings::get_string_literal_contents(token.text_trimmed()) else {
+                continue;
+            };
+            for segment in scan_interpolation_segments(&content, &open, &close) {
+                self.collect_identifiers_in_interpolation(segment);
             }
         }
     }
@@ -324,6 +336,8 @@ impl<'a> SemanticInfo<'a> {
         };
 
         let arg_values: Vec<(Option<String>, RSyntaxNode)> = call_args(call);
+
+        self.collect_custom_glue_interpolation(&arg_values);
 
         match name.as_str() {
             // Only the quoted `expr` argument is NSE. Other arguments are
@@ -544,6 +558,76 @@ impl<'a> SemanticInfo<'a> {
 
 fn in_any_range(target: TextRange, ranges: &[TextRange]) -> bool {
     ranges.iter().any(|r| r.contains_range(target))
+}
+
+/// Extract glue-style interpolation segments delimited by `open`/`close`.
+/// Doubled delimiters (`{{`/`}}` for the default case) are glue escapes and
+/// are skipped. Nested delimiters are tracked so `{f({x})}` yields the whole
+/// inner expression. Returns the source slices between the outermost
+/// delimiter pairs.
+fn scan_interpolation_segments<'t>(text: &'t str, open: &str, close: &str) -> Vec<&'t str> {
+    let mut segments = Vec::new();
+    if open.is_empty() || close.is_empty() {
+        return segments;
+    }
+    let escaped_open = format!("{open}{open}");
+    let escaped_close = format!("{close}{close}");
+    let mut i = 0;
+    while i < text.len() {
+        let slice = &text[i..];
+        // Doubled delimiters are glue escape sequences for literal characters.
+        if slice.starts_with(&escaped_open) {
+            i += escaped_open.len();
+            continue;
+        }
+        if slice.starts_with(&escaped_close) {
+            i += escaped_close.len();
+            continue;
+        }
+        if slice.starts_with(open) {
+            let start = i + open.len();
+            let mut depth = 1usize;
+            let mut end = start;
+            while end < text.len() && depth > 0 {
+                let rest = &text[end..];
+                if rest.starts_with(open) {
+                    depth += 1;
+                    end += open.len();
+                } else if rest.starts_with(close) {
+                    depth -= 1;
+                    if depth > 0 {
+                        end += close.len();
+                    }
+                } else {
+                    end += next_char_len(text, end);
+                }
+            }
+            if depth == 0 && end > start {
+                segments.push(&text[start..end]);
+            }
+            // Skip past the closing delimiter (`end` points at its start).
+            i = end + close.len();
+        } else {
+            i += next_char_len(text, i);
+        }
+    }
+    segments
+}
+
+/// Byte length of the UTF-8 character starting at `i` (which must be a char
+/// boundary). Used to advance scanning without splitting multi-byte chars.
+fn next_char_len(text: &str, i: usize) -> usize {
+    text[i..].chars().next().map_or(1, |c| c.len_utf8())
+}
+
+/// Unquoted contents of a named string-literal argument (e.g. `.open = "<"`),
+/// or `None` if absent or not a string literal.
+fn named_string_arg(args: &[(Option<String>, RSyntaxNode)], name: &str) -> Option<String> {
+    let (_, value) = args.iter().find(|(n, _)| n.as_deref() == Some(name))?;
+    if value.kind() != RSyntaxKind::R_STRING_VALUE {
+        return None;
+    }
+    strings::get_string_literal_contents(value.first_token()?.text_trimmed())
 }
 
 fn is_member_name(node: &RSyntaxNode) -> bool {
