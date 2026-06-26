@@ -29,7 +29,7 @@ dependencies = [
 [[package]]
 name = "air_r_factory"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+source = "git+https://github.com/etiennebacher/air?branch=potential-speedup#70189ef9cf0ba14b0cb7e2cd642be69b56ef7a5e"
 dependencies = [
  "air_r_syntax",
  "biome_rowan",
@@ -38,13 +38,14 @@ dependencies = [
 [[package]]
 name = "air_r_formatter"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+source = "git+https://github.com/etiennebacher/air?branch=potential-speedup#70189ef9cf0ba14b0cb7e2cd642be69b56ef7a5e"
 dependencies = [
  "air_r_syntax",
  "biome_formatter",
  "biome_rowan",
  "comments",
  "itertools",
+ "line_ending",
  "settings",
  "tracing",
 ]
@@ -52,7 +53,7 @@ dependencies = [
 [[package]]
 name = "air_r_parser"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+source = "git+https://github.com/etiennebacher/air?branch=potential-speedup#70189ef9cf0ba14b0cb7e2cd642be69b56ef7a5e"
 dependencies = [
  "air_r_factory",
  "air_r_syntax",
@@ -68,7 +69,7 @@ dependencies = [
 [[package]]
 name = "air_r_syntax"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+source = "git+https://github.com/etiennebacher/air?branch=potential-speedup#70189ef9cf0ba14b0cb7e2cd642be69b56ef7a5e"
 dependencies = [
  "biome_rowan",
  "serde",
@@ -482,7 +483,7 @@ dependencies = [
 [[package]]
 name = "comments"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+source = "git+https://github.com/etiennebacher/air?branch=potential-speedup#70189ef9cf0ba14b0cb7e2cd642be69b56ef7a5e"
 
 [[package]]
 name = "console"
@@ -663,7 +664,7 @@ dependencies = [
 [[package]]
 name = "fs"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+source = "git+https://github.com/etiennebacher/air?branch=potential-speedup#70189ef9cf0ba14b0cb7e2cd642be69b56ef7a5e"
 dependencies = [
  "path-absolutize",
 ]
@@ -995,7 +996,7 @@ checksum = "6800badb6cb2082ffd7b6a67e6125bb39f18782f793520caee8cb8846be06112"
 [[package]]
 name = "line_ending"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+source = "git+https://github.com/etiennebacher/air?branch=potential-speedup#70189ef9cf0ba14b0cb7e2cd642be69b56ef7a5e"
 dependencies = [
  "memchr",
  "settings",
@@ -1395,7 +1396,7 @@ dependencies = [
 [[package]]
 name = "settings"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+source = "git+https://github.com/etiennebacher/air?branch=potential-speedup#70189ef9cf0ba14b0cb7e2cd642be69b56ef7a5e"
 dependencies = [
  "biome_formatter",
  "serde",
@@ -1692,7 +1693,7 @@ checksum = "009994f150cc0cd50ff54917d5bc8bffe8cad10ca10d81c34da2ec421ae61782"
 [[package]]
 name = "tree-sitter-r"
 version = "1.2.0"
-source = "git+https://github.com/r-lib/tree-sitter-r?rev=37a6b1b5c8cc2426fd6ec16ca818cc98597d755b#37a6b1b5c8cc2426fd6ec16ca818cc98597d755b"
+source = "git+https://github.com/r-lib/tree-sitter-r?rev=d459b97a9a11dd81643ab674938bede2874663b0#d459b97a9a11dd81643ab674938bede2874663b0"
 dependencies = [
  "cc",
  "tree-sitter-language",
@@ -2162,7 +2163,7 @@ dependencies = [
 [[package]]
 name = "workspace"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+source = "git+https://github.com/etiennebacher/air?branch=potential-speedup#70189ef9cf0ba14b0cb7e2cd642be69b56ef7a5e"
 dependencies = [
  "air_r_formatter",
  "air_r_parser",
