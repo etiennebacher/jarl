@@ -338,7 +338,7 @@ Function names in `skipped-functions` or `extend-skipped-functions` also match
 namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
 `rlang::list2()`.
 
-Default: `skipped-functions = ["expect_error", "expect_warning", "expect_message",
+Default: `skipped-functions = ["alist", "expect_error", "expect_warning", "expect_message",
 "expect_snapshot", "quote", "suppressMessages", "suppressWarnings"]`
 
 ```toml
