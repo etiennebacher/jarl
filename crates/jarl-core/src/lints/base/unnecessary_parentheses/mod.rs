@@ -155,6 +155,14 @@ mod tests {
                     "z * ((x + y))",
                     "((x * y)) + z",
                     "-((x + y))",
+                    "((-x)) ^ y",
+                    "((-x)) + y",
+                    "((x + y)) + z",
+                    "z + ((x + y))",
+                    "((x ^ y)) ^ z",
+                    "z ^ ((x ^ y))",
+                    "((x %foo% y)) + z",
+                    "((x:y)) + z",
                 ],
                 "unnecessary_parentheses",
                 None,
@@ -164,7 +172,7 @@ mod tests {
 
     #[test]
     fn test_unnecessary_parentheses_with_comments_no_fix() {
-        // Should detect lint but skip fix when comments are present to avoid destroying them
+        // Internal comments should keep the diagnostic but skip the fix to avoid deleting them.
         assert_snapshot!(
             "no_fix_with_comments",
             get_fixed_text(
