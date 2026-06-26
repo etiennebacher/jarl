@@ -779,6 +779,7 @@ f <- function() {
             "unused_object",
             None,
         );
+
         expect_no_lint(
             "env <- as.environment(list(x = 1))\nbquote(where = env, .(x))",
             "unused_object",
