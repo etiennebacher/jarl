@@ -1,4 +1,4 @@
-use annotate_snippets::{Level, Renderer, Snippet};
+use annotate_snippets::{AnnotationKind, Level, Padding, Renderer, Snippet};
 use biome_rowan::TextRange;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -173,22 +173,30 @@ pub fn render_diagnostic(
     // that contain the annotation span to avoid scanning the entire file.
     let (expanded, adj_start, adj_end) = expand_span_line_tabs(source, start_offset, end_offset);
 
+    // The choices below reproduce the exact output produced before the
+    // annotate-snippets 0.12 upgrade:
+    // - a `Context` annotation renders the span underline with `-` (not `^`);
+    // - a trailing `Padding` (when there is no suggestion) emits the closing
+    //   `|` connector line that 0.11 always appended;
+    // - an in-group `help` footer message renders as `= help: ...`.
     let snippet = Snippet::source(&expanded)
-        .origin(origin)
+        .path(origin)
         .fold(true)
         .annotation(
-            Level::Warning
+            AnnotationKind::Context
                 .span(adj_start..adj_end)
-                .label(&diagnostic.message.body),
+                .label(diagnostic.message.body.as_str()),
         );
 
-    let mut message = Level::Warning.title(title).snippet(snippet);
+    let mut group = Level::WARNING.primary_title(title).element(snippet);
 
     if let Some(suggestion_text) = &diagnostic.message.suggestion {
-        message = message.footer(Level::Help.title(suggestion_text));
+        group = group.element(Level::HELP.message(suggestion_text.as_str()));
+    } else {
+        group = group.element(Padding);
     }
 
-    format!("{}", renderer.render(message))
+    renderer.render(&[group])
 }
 
 /// Expand tabs only on the lines that overlap with `start..end` and adjust

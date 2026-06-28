@@ -123,7 +123,7 @@ impl Client {
     /// Convenience method to publish diagnostics
     pub fn publish_diagnostics(
         &self,
-        uri: types::Url,
+        uri: types::Uri,
         diagnostics: Vec<types::Diagnostic>,
         version: Option<i32>,
     ) -> Result<()> {

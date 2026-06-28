@@ -2,8 +2,9 @@
 //!
 //! This module handles document lifecycle, content tracking, and position encoding.
 
+use crate::uri_ext::uri_to_file_path;
 use anyhow::{Result, anyhow};
-use lsp_types::{Position, Range, TextDocumentContentChangeEvent, Url};
+use lsp_types::{Position, Range, TextDocumentContentChangeEvent, Uri};
 use std::path::PathBuf;
 
 /// Position encoding supported by the LSP server
@@ -48,30 +49,30 @@ impl TryFrom<&lsp_types::PositionEncodingKind> for PositionEncoding {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DocumentKey {
     /// The URI of the document
-    uri: Url,
+    uri: Uri,
 }
 
 impl DocumentKey {
-    pub fn new(uri: Url) -> Self {
+    pub fn new(uri: Uri) -> Self {
         Self { uri }
     }
 
-    pub fn uri(&self) -> &Url {
+    pub fn uri(&self) -> &Uri {
         &self.uri
     }
 
-    pub fn into_url(self) -> Url {
+    pub fn into_url(self) -> Uri {
         self.uri
     }
 
     /// Try to get the file path if this is a file:// URI
     pub fn file_path(&self) -> Option<PathBuf> {
-        self.uri.to_file_path().ok()
+        uri_to_file_path(&self.uri)
     }
 }
 
-impl From<Url> for DocumentKey {
-    fn from(uri: Url) -> Self {
+impl From<Uri> for DocumentKey {
+    fn from(uri: Uri) -> Self {
         Self::new(uri)
     }
 }
@@ -335,6 +336,18 @@ impl TextDocument {
 mod tests {
     use super::*;
     use lsp_types::Position;
+
+    #[test]
+    fn test_document_key_uri_and_path_round_trip() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("test.R");
+        let uri = crate::uri_ext::file_path_to_uri(&path).unwrap();
+
+        let key = DocumentKey::from(uri.clone());
+        assert_eq!(key.uri(), &uri);
+        assert_eq!(key.file_path(), Some(path));
+        assert_eq!(key.into_url(), uri);
+    }
 
     #[test]
     fn test_document_creation() {

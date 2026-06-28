@@ -11,32 +11,32 @@ repository = "https://github.com/etiennebacher/jarl/"
 readme = "README.md"
 
 [workspace.dependencies]
-air_fs = { package = "fs", git = "https://github.com/posit-dev/air", rev = "0eadd6938d0316b1fc885c91e7af55d7c8de8530" }
-air_r_parser = { git = "https://github.com/posit-dev/air", rev = "0eadd6938d0316b1fc885c91e7af55d7c8de8530" }
-air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "0eadd6938d0316b1fc885c91e7af55d7c8de8530" }
-air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air", rev = "0eadd6938d0316b1fc885c91e7af55d7c8de8530" }
-anyhow = "1.0.94"
+air_fs = { package = "fs", git = "https://github.com/Goldziher/r-air-fork", rev = "c916545f14f76e1d6bd6ff918870f86dfa704b63" }
+air_r_parser = { git = "https://github.com/Goldziher/r-air-fork", rev = "c916545f14f76e1d6bd6ff918870f86dfa704b63" }
+air_r_syntax = { git = "https://github.com/Goldziher/r-air-fork", rev = "c916545f14f76e1d6bd6ff918870f86dfa704b63" }
+air_workspace = { package = "workspace", git = "https://github.com/Goldziher/r-air-fork", rev = "c916545f14f76e1d6bd6ff918870f86dfa704b63" }
+anyhow = "1.0.103"
 biome_formatter = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
 biome_rowan = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
-clap = { version = "4.6.0", features = ["derive"] }
+clap = { version = "4.6.1", features = ["derive"] }
 colored = "3.1.1"
-ignore = "0.4.23"
-insta = { version = "1.47.2", features = ["yaml", "filters"] }
+ignore = "0.4.26"
+insta = { version = "1.48.0", features = ["yaml", "filters"] }
 etcetera = "0.11.0"
 jarl-core = { path = "crates/jarl-core" }
 jarl-lsp = { path = "crates/jarl-lsp" }
 path-absolutize = "3.1.1"
 rayon = "1.12.0"
-regex = { version = "1.11.1", default-features = false, features = ["std"] }
-rustc-hash = "2.1.1"
-schemars = "1.1.0"
-serde = { version = "1.0.215", features = ["derive"] }
-serde_json = "1.0.143"
+regex = { version = "1.12.4", default-features = false, features = ["std"] }
+rustc-hash = "2.1.2"
+schemars = "1.2.1"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
 strsim = "0.11"
 tempfile = "3.27.0"
 # Same as in Air to reduce compile time
-toml = "0.8.23"
-tracing = "0.1.41"
+toml = "1.1.2"
+tracing = "0.1.44"
 
 [profile.release]
 lto = true

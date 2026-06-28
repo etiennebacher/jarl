@@ -164,7 +164,7 @@ fn parse_literal(expr: &AnyRExpression) -> Option<Literal> {
             return digits.parse::<i64>().ok().map(Literal::Integer);
         }
         if let Some(string) = value.as_r_string_value() {
-            let text = string.value_token().ok()?.token_text_trimmed();
+            let text = string.to_trimmed_text();
             return strip_string_quotes(text.text()).map(Literal::String);
         }
         // Complex and other values are not coerced.
