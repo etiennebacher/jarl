@@ -39,9 +39,13 @@ pub fn unused_object(
     };
     let root = first.ancestors().last().unwrap_or_else(|| first.clone());
     let info = SemanticInfo::build(&root, expressions, semantic, &checker.file_path);
+    let defer = checker.defer_finalization;
     let exports = &checker.namespace_exports;
 
     let mut diagnostics = Vec::new();
+    // Top-level bindings whose only remaining question is cross-file use. When
+    // deferring, these are handed to the fused pass instead of resolved here.
+    let mut provisional = Vec::new();
     let top_level = ScopeId::from(0);
     for &scope_id in &info.scope_ids() {
         for (def_id, def) in semantic.definitions(scope_id).iter() {
@@ -53,28 +57,49 @@ pub fn unused_object(
             }
             // Top-level bindings are shared across a package's files, so an
             // object read from a sibling file (or exported) is still used.
-            if scope_id == top_level
-                && (is_exported(semantic, exports, scope_id, def)
-                    || is_used_cross_file(semantic, cross_file_used, scope_id, def))
-            {
+            if scope_id == top_level {
+                if is_exported(semantic, exports, scope_id, def) {
+                    continue;
+                }
+                let diagnostic = make_diagnostic(semantic, scope_id, def, info.root());
+                if defer {
+                    provisional.push((symbol_name(semantic, scope_id, def), diagnostic));
+                    continue;
+                }
+                if is_used_cross_file(semantic, cross_file_used, scope_id, def) {
+                    continue;
+                }
+                diagnostics.push(diagnostic);
                 continue;
             }
             diagnostics.push(make_diagnostic(semantic, scope_id, def, info.root()));
         }
     }
-    diagnostics.extend(collect_assignment_pipe_diagnostics(
+    let (pipe_diagnostics, pipe_provisional) = collect_assignment_pipe_diagnostics(
         expressions,
         semantic,
         &info,
         exports,
         cross_file_used,
-    ));
+        defer,
+    );
+    diagnostics.extend(pipe_diagnostics);
+    provisional.extend(pipe_provisional);
 
     for d in diagnostics {
         checker.report_diagnostic(Some(d));
     }
+    checker.deferred_unused_object.extend(provisional);
 
     Ok(())
+}
+
+fn symbol_name(semantic: &SemanticIndex, scope_id: ScopeId, def: &Definition) -> String {
+    semantic
+        .symbols(scope_id)
+        .symbol(def.symbol())
+        .name()
+        .to_string()
 }
 
 fn should_lint_definition(info: &SemanticInfo<'_>, def: &Definition) -> bool {
@@ -173,8 +198,10 @@ fn collect_assignment_pipe_diagnostics(
     info: &SemanticInfo<'_>,
     exports: &std::collections::HashSet<String>,
     cross_file_used: &std::collections::HashSet<String>,
-) -> Vec<Diagnostic> {
+    defer: bool,
+) -> (Vec<Diagnostic>, Vec<(String, Diagnostic)>) {
     let mut out = Vec::new();
+    let mut provisional = Vec::new();
     for expr in expressions {
         for node in expr.descendants() {
             if node.kind() != RSyntaxKind::R_BINARY_EXPRESSION {
@@ -209,21 +236,33 @@ fn collect_assignment_pipe_diagnostics(
             });
             let closure_use = info.is_used_in_nested_scope(scope_id, &name);
             let top_level = scope_id == ScopeId::from(0);
-            let exported = top_level && exports.contains(&name);
-            let cross_file = top_level && cross_file_used.contains(&name);
 
-            if !later_use && !closure_use && !exported && !cross_file {
-                out.push(Diagnostic::new(
-                    ViolationData::new(
-                        "unused_object".to_string(),
-                        format!("Object `{name}` is defined but never used."),
-                        None,
-                    ),
-                    lhs_range,
-                    Fix::empty(),
-                ));
+            if later_use || closure_use {
+                continue;
             }
+            let diagnostic = Diagnostic::new(
+                ViolationData::new(
+                    "unused_object".to_string(),
+                    format!("Object `{name}` is defined but never used."),
+                    None,
+                ),
+                lhs_range,
+                Fix::empty(),
+            );
+            if top_level {
+                if exports.contains(&name) {
+                    continue;
+                }
+                if defer {
+                    provisional.push((name.to_string(), diagnostic));
+                    continue;
+                }
+                if cross_file_used.contains(&name) {
+                    continue;
+                }
+            }
+            out.push(diagnostic);
         }
     }
-    out
+    (out, provisional)
 }

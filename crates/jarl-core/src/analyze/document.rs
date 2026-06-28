@@ -145,19 +145,26 @@ pub(crate) fn check_document(
         checker.report_diagnostic(empty_file(&expressions, syntax));
     }
 
-    // Filter diagnostics by suppressions. This removes suppressed violations
-    // and tracks which suppressions were used (for outdated suppression detection).
-    // Must happen BEFORE checking for outdated suppressions.
-    checker.diagnostics = checker
-        .suppression
-        .filter_diagnostics(std::mem::take(&mut checker.diagnostics));
+    // Filter diagnostics by suppressions, then report outdated ones. Filtering
+    // removes suppressed violations and records which suppressions were used, so
+    // it must run before the outdated check.
+    //
+    // The fused lint-only pass skips this: it has to drop cross-file-used
+    // `unused_object` diagnostics *before* filtering (so a suppression on such
+    // an object is still seen as outdated), which it can only do once every file
+    // in the package has been parsed. It re-runs the same two steps afterwards
+    // on a `Send` snapshot of the suppression state.
+    if !checker.defer_finalization {
+        checker.diagnostics = checker
+            .suppression
+            .filter_diagnostics(std::mem::take(&mut checker.diagnostics));
 
-    // Report outdated suppressions (suppressions that didn't suppress anything).
-    if checker.is_rule_enabled(Rule::OutdatedSuppression) {
-        let unused = checker.suppression.get_unused_suppressions();
-        let outdated_diagnostics = outdated_suppression(&unused);
-        for diag in outdated_diagnostics {
-            checker.report_diagnostic(Some(diag));
+        if checker.is_rule_enabled(Rule::OutdatedSuppression) {
+            let unused = checker.suppression.get_unused_suppressions();
+            let outdated_diagnostics = outdated_suppression(&unused);
+            for diag in outdated_diagnostics {
+                checker.report_diagnostic(Some(diag));
+            }
         }
     }
 

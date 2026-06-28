@@ -260,13 +260,36 @@ pub fn make_package_analysis(
     config: &Config,
     namespace_contents: &HashMap<PathBuf, String>,
 ) -> PackageAnalysis {
+    make_package_analysis_inner(paths, config, namespace_contents, false).0
+}
+
+/// Like [`make_package_analysis`] but skips the cross-file `unused_object`
+/// pre-pass (which parses every package file) and hands back the scanned
+/// [`AnalysisDb`]. The fused lint-only pass computes cross-file usage itself
+/// from the single parse it already does per file, so it only needs the db for
+/// file discovery here. Returns `None` for the db when no package-level rule is
+/// enabled (nothing was scanned).
+pub(crate) fn make_package_analysis_deferred(
+    paths: &[PathBuf],
+    config: &Config,
+    namespace_contents: &HashMap<PathBuf, String>,
+) -> (PackageAnalysis, Option<crate::db::AnalysisDb>) {
+    make_package_analysis_inner(paths, config, namespace_contents, true)
+}
+
+fn make_package_analysis_inner(
+    paths: &[PathBuf],
+    config: &Config,
+    namespace_contents: &HashMap<PathBuf, String>,
+    defer_cross_file: bool,
+) -> (PackageAnalysis, Option<crate::db::AnalysisDb>) {
     let rules = &config.rules_to_apply;
     let check_duplicates = rules.contains(&Rule::DuplicatedFunctionDefinition);
     let check_unused = rules.contains(&Rule::UnusedFunction);
     let check_unused_object = rules.contains(&Rule::UnusedObject);
 
     if !check_duplicates && !check_unused && !check_unused_object {
-        return PackageAnalysis::default();
+        return (PackageAnalysis::default(), None);
     }
 
     // File discovery comes from oak's scan of each package root rather than a
@@ -364,18 +387,21 @@ pub fn make_package_analysis(
 
     // Reuse the database scanned above: find top-level objects read from
     // another file, and keep the per-file indices for the lint pass to reuse.
-    let cross_file = if check_unused_object {
+    // In deferred mode the fused lint-only pass computes cross-file usage from
+    // its own single parse, so we skip the parse-every-file pre-pass here.
+    let cross_file = if check_unused_object && !defer_cross_file {
         db.cross_file_used_objects()
     } else {
         crate::db::CrossFileAnalysis::default()
     };
 
-    PackageAnalysis {
+    let analysis = PackageAnalysis {
         duplicate_assignments,
         unused_functions,
         cross_file_used: cross_file.used,
         file_indices: cross_file.indices,
-    }
+    };
+    (analysis, Some(db))
 }
 
 /// Determine the `FileScope` for a non-R/ file based on its path.

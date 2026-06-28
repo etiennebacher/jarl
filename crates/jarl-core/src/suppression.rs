@@ -627,85 +627,186 @@ impl SuppressionManager {
 
     /// Check if a diagnostic should be suppressed, and if so, mark the suppression as used.
     fn is_diagnostic_suppressed(&mut self, diag: &Diagnostic) -> bool {
-        let Some(rule) = Rule::from_name(&diag.message.name) else {
-            return false;
-        };
-
-        // Check file-level suppressions
-        for sup in &self.file_suppressions {
-            if sup.rule == rule {
-                self.used_suppressions.insert(sup.comment_range);
-                return true;
-            }
-        }
-
-        // Check chunk-level suppressions
-        for sup in &self.chunk_suppressions {
-            if sup.rule == rule {
-                self.used_suppressions.insert(sup.comment_range);
-                return true;
-            }
-        }
-
-        // Check region-level suppressions
-        for region in &self.skip_regions {
-            if region.rule == rule && region.range.contains_range(diag.range) {
-                self.used_suppressions.insert(region.comment_range);
-                return true;
-            }
-        }
-
-        // Check node-level suppressions (cascading: diagnostic within node range,
-        // or node within diagnostic range for multi-node diagnostics like pipe chains).
-        // Also check full_node_range (includes leading trivia) to match roxygen
-        // diagnostics whose remapped ranges fall within the node's leading comments.
-        for sup in &self.node_suppressions {
-            if sup.rule == rule
-                && (sup.node_range.contains_range(diag.range)
-                    || diag.range.contains_range(sup.node_range)
-                    || sup.full_node_range.contains_range(diag.range))
-            {
-                self.used_suppressions.insert(sup.comment_range);
-                return true;
-            }
-        }
-
-        false
+        diagnostic_suppressed(
+            diag,
+            &self.file_suppressions,
+            &self.chunk_suppressions,
+            &self.skip_regions,
+            &self.node_suppressions,
+            &mut self.used_suppressions,
+        )
     }
 
     /// Get all suppression comment ranges that were never used.
     /// This is used to report outdated suppressions.
     pub fn get_unused_suppressions(&self) -> Vec<TextRange> {
-        let mut unused = Vec::new();
+        unused_suppression_ranges(
+            &self.file_suppressions,
+            &self.chunk_suppressions,
+            &self.skip_regions,
+            &self.node_suppressions,
+            &self.used_suppressions,
+        )
+    }
 
-        // Check file-level suppressions
-        for sup in &self.file_suppressions {
-            if !self.used_suppressions.contains(&sup.comment_range) {
-                unused.push(sup.comment_range);
-            }
+    /// A `Send` snapshot of just the data needed to filter diagnostics and
+    /// report outdated suppressions later, without the `!Send` `Comments` tree.
+    ///
+    /// The fused lint-only pass parses a file, builds this snapshot, then drops
+    /// the syntax tree before crossing the rayon collection boundary. The
+    /// snapshot finishes suppression filtering in a later pass, once cross-file
+    /// usage of top-level objects is known.
+    pub fn filter_snapshot(&self) -> SuppressionFilter {
+        SuppressionFilter {
+            file_suppressions: self.file_suppressions.clone(),
+            chunk_suppressions: self.chunk_suppressions.clone(),
+            skip_regions: self.skip_regions.clone(),
+            node_suppressions: self.node_suppressions.clone(),
+            used_suppressions: self.used_suppressions.clone(),
+            has_any_suppressions: self.has_any_suppressions,
         }
+    }
+}
 
-        // Check chunk-level suppressions
-        for sup in &self.chunk_suppressions {
-            if !self.used_suppressions.contains(&sup.comment_range) {
-                unused.push(sup.comment_range);
-            }
+/// Decide whether `diag` is suppressed, recording the matching suppression as
+/// used. Takes the suppression records by reference so it can be shared between
+/// [`SuppressionManager`] and the `Send` [`SuppressionFilter`] snapshot.
+fn diagnostic_suppressed(
+    diag: &Diagnostic,
+    file_suppressions: &[FileSuppression],
+    chunk_suppressions: &[ChunkSuppression],
+    skip_regions: &[SkipRegion],
+    node_suppressions: &[NodeSuppression],
+    used_suppressions: &mut HashSet<TextRange>,
+) -> bool {
+    let Some(rule) = Rule::from_name(&diag.message.name) else {
+        return false;
+    };
+
+    // Check file-level suppressions
+    for sup in file_suppressions {
+        if sup.rule == rule {
+            used_suppressions.insert(sup.comment_range);
+            return true;
         }
+    }
 
-        // Check region-level suppressions
-        for region in &self.skip_regions {
-            if !self.used_suppressions.contains(&region.comment_range) {
-                unused.push(region.comment_range);
-            }
+    // Check chunk-level suppressions
+    for sup in chunk_suppressions {
+        if sup.rule == rule {
+            used_suppressions.insert(sup.comment_range);
+            return true;
         }
+    }
 
-        // Check node-level suppressions
-        for sup in &self.node_suppressions {
-            if !self.used_suppressions.contains(&sup.comment_range) {
-                unused.push(sup.comment_range);
-            }
+    // Check region-level suppressions
+    for region in skip_regions {
+        if region.rule == rule && region.range.contains_range(diag.range) {
+            used_suppressions.insert(region.comment_range);
+            return true;
         }
+    }
 
-        unused
+    // Check node-level suppressions (cascading: diagnostic within node range,
+    // or node within diagnostic range for multi-node diagnostics like pipe chains).
+    // Also check full_node_range (includes leading trivia) to match roxygen
+    // diagnostics whose remapped ranges fall within the node's leading comments.
+    for sup in node_suppressions {
+        if sup.rule == rule
+            && (sup.node_range.contains_range(diag.range)
+                || diag.range.contains_range(sup.node_range)
+                || sup.full_node_range.contains_range(diag.range))
+        {
+            used_suppressions.insert(sup.comment_range);
+            return true;
+        }
+    }
+
+    false
+}
+
+/// Suppression comment ranges that never matched a diagnostic, used to report
+/// `outdated_suppression`. Shared like [`diagnostic_suppressed`].
+fn unused_suppression_ranges(
+    file_suppressions: &[FileSuppression],
+    chunk_suppressions: &[ChunkSuppression],
+    skip_regions: &[SkipRegion],
+    node_suppressions: &[NodeSuppression],
+    used_suppressions: &HashSet<TextRange>,
+) -> Vec<TextRange> {
+    let mut unused = Vec::new();
+
+    for sup in file_suppressions {
+        if !used_suppressions.contains(&sup.comment_range) {
+            unused.push(sup.comment_range);
+        }
+    }
+
+    for sup in chunk_suppressions {
+        if !used_suppressions.contains(&sup.comment_range) {
+            unused.push(sup.comment_range);
+        }
+    }
+
+    for region in skip_regions {
+        if !used_suppressions.contains(&region.comment_range) {
+            unused.push(region.comment_range);
+        }
+    }
+
+    for sup in node_suppressions {
+        if !used_suppressions.contains(&sup.comment_range) {
+            unused.push(sup.comment_range);
+        }
+    }
+
+    unused
+}
+
+/// A `Send` snapshot of the suppression state needed to filter diagnostics and
+/// report outdated suppressions, without the `!Send` `Comments` syntax tree.
+/// Produced by [`SuppressionManager::filter_snapshot`].
+#[derive(Debug, Clone)]
+pub struct SuppressionFilter {
+    file_suppressions: Vec<FileSuppression>,
+    chunk_suppressions: Vec<ChunkSuppression>,
+    skip_regions: Vec<SkipRegion>,
+    node_suppressions: Vec<NodeSuppression>,
+    used_suppressions: HashSet<TextRange>,
+    has_any_suppressions: bool,
+}
+
+impl SuppressionFilter {
+    /// Filter diagnostics by suppressions, recording which suppressions were
+    /// used. Mirrors [`SuppressionManager::filter_diagnostics`].
+    pub fn filter_diagnostics(&mut self, diagnostics: Vec<Diagnostic>) -> Vec<Diagnostic> {
+        if !self.has_any_suppressions {
+            return diagnostics;
+        }
+        diagnostics
+            .into_iter()
+            .filter(|diag| {
+                !diagnostic_suppressed(
+                    diag,
+                    &self.file_suppressions,
+                    &self.chunk_suppressions,
+                    &self.skip_regions,
+                    &self.node_suppressions,
+                    &mut self.used_suppressions,
+                )
+            })
+            .collect()
+    }
+
+    /// Suppression ranges that never matched a diagnostic. Mirrors
+    /// [`SuppressionManager::get_unused_suppressions`].
+    pub fn get_unused_suppressions(&self) -> Vec<TextRange> {
+        unused_suppression_ranges(
+            &self.file_suppressions,
+            &self.chunk_suppressions,
+            &self.skip_regions,
+            &self.node_suppressions,
+            &self.used_suppressions,
+        )
     }
 }

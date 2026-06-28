@@ -1,17 +1,17 @@
 use crate::error::ParseError;
 use crate::package::{
     FilePackageInfo, FileScope, PackageAnalysis, PackageContext, PackageFileAnalysis,
-    make_package_analysis, summarize_package_info,
+    make_package_analysis, make_package_analysis_deferred, summarize_package_info,
 };
 use crate::roxygen::{extract_roxygen_examples, remap_roxygen_fix, remap_roxygen_range};
-use crate::suppression::SuppressionManager;
+use crate::suppression::{SuppressionFilter, SuppressionManager};
 use crate::vcs::check_version_control;
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
-use air_r_syntax::RSyntaxNode;
+use air_r_syntax::{RExpressionList, RSyntaxNode};
 use anyhow::{Context, Result};
 use rayon::prelude::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
@@ -21,9 +21,11 @@ use crate::analyze::document::check_document;
 use crate::analyze::expression::check_expression;
 pub use crate::checker::Checker;
 use crate::config::Config;
+use crate::db::FileUses;
 use crate::diagnostic::*;
 use crate::fix::*;
-use crate::rule_set::RuleSet;
+use crate::lints::comments::outdated_suppression::outdated_suppression::outdated_suppression;
+use crate::rule_set::{Rule, RuleSet};
 use crate::utils::*;
 
 pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
@@ -37,21 +39,42 @@ pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Err
                 .map(|c| (root.clone(), c.clone()))
         })
         .collect();
-    let pkg = make_package_analysis(&config.paths, &config, &namespace_contents);
-    let pkg_contexts = Arc::new(pkg_contexts);
-    let file_pkg_info = Arc::new(file_pkg_info);
 
+    // Fix mode keeps the two-pass design (a cross-file pre-pass that parses
+    // every package file, then a per-file fix loop) because the loop rewrites
+    // files between iterations and re-parses each one anyway. Read-only linting
+    // uses the fused single-parse pass, which is where the per-file parse would
+    // otherwise be paid twice.
+    if config.apply_fixes || config.apply_unsafe_fixes {
+        return check_with_fixes(config, pkg_contexts, file_pkg_info, &namespace_contents);
+    }
+
+    check_lint_only_fused(config, pkg_contexts, file_pkg_info, &namespace_contents)
+}
+
+/// Apply fixes: validate VCS coverage, run the cross-file pre-pass, then fix
+/// each file in parallel.
+fn check_with_fixes(
+    config: Config,
+    pkg_contexts: HashMap<PathBuf, PackageContext>,
+    file_pkg_info: HashMap<PathBuf, FilePackageInfo>,
+    namespace_contents: &HashMap<PathBuf, String>,
+) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
     // Ensure that all paths are covered by VCS. This is conservative because
     // technically we could apply fixes on those that are covered by VCS and
     // error for the others, but I'd rather be on the safe side and force the
     // user to deal with that before applying any fixes.
-    if (config.apply_fixes || config.apply_unsafe_fixes) && !config.paths.is_empty() {
+    if !config.paths.is_empty() {
         let path_strings: Vec<String> = config.paths.iter().map(relativize_path).collect();
         if let Err(e) = check_version_control(&path_strings, &config) {
             let first_path = path_strings.first().unwrap().clone();
             return vec![(first_path, Err(e))];
         }
     }
+
+    let pkg = make_package_analysis(&config.paths, &config, namespace_contents);
+    let pkg_contexts = Arc::new(pkg_contexts);
+    let file_pkg_info = Arc::new(file_pkg_info);
 
     // Wrap config and package analysis in Arc to avoid expensive clones in parallel execution
     let config = Arc::new(config);
@@ -71,6 +94,327 @@ pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Err
             (relativize_path(file), res)
         })
         .collect()
+}
+
+/// One target file's phase-1 result: its cross-file contribution (if it belongs
+/// to the package namespace) and either a finished diagnostic list or the
+/// deferred state to finalize once cross-file usage is known.
+struct TargetOutput {
+    /// Relativized path, the key used by the cross-file map and the output.
+    rel: PathBuf,
+    /// `Some` only for package-namespace files when `unused_object` runs.
+    file_uses: Option<FileUses>,
+    lint: LintOutcome,
+}
+
+enum LintOutcome {
+    /// Already complete: Rmd, generated, parse error, or a run with no
+    /// cross-file `unused_object` to resolve.
+    Final(Result<Vec<Diagnostic>, anyhow::Error>),
+    /// Needs phase 2: drop cross-file-used top-level objects, then filter
+    /// suppressions and compute locations. Boxed because it is much larger than
+    /// the `Final` variant and most targets in a package take this path.
+    Deferred(Box<DeferredLint>),
+}
+
+/// `Send` state carried from phase 1 to phase 2 for a target whose top-level
+/// `unused_object` decision was deferred. Holds no syntax tree — only the
+/// raw diagnostics, the provisional top-level diagnostics keyed by name, and a
+/// snapshot of the suppression state.
+struct DeferredLint {
+    diagnostics: Vec<Diagnostic>,
+    provisional: Vec<(String, Diagnostic)>,
+    suppression: SuppressionFilter,
+    new_lines: Vec<usize>,
+    rule_set: RuleSet,
+    outdated_enabled: bool,
+}
+
+/// Read-only linting that parses each file exactly once.
+///
+/// A package's R files share one namespace, so `unused_object` must know
+/// whether a file's top-level object is read by a sibling before flagging it.
+/// The two-pass design paid for that by parsing every package file in a
+/// cross-file pre-pass and then parsing each linted file again. This fuses the
+/// two: every file is parsed once, targets are linted with the cross-file
+/// decision deferred, and a cheap merge resolves it afterwards.
+fn check_lint_only_fused(
+    config: Config,
+    pkg_contexts: HashMap<PathBuf, PackageContext>,
+    file_pkg_info: HashMap<PathBuf, FilePackageInfo>,
+    namespace_contents: &HashMap<PathBuf, String>,
+) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
+    let (pkg, db) = make_package_analysis_deferred(&config.paths, &config, namespace_contents);
+
+    let check_unused_object = config.rules_to_apply.contains(&Rule::UnusedObject);
+
+    // The package-namespace universe (every scanned R file). A target's
+    // top-level object counts as used when a sibling here reads it. Only files
+    // in this set participate in cross-file resolution, so loose scripts never
+    // pollute (or borrow from) a package's namespace.
+    let universe: Vec<PathBuf> = if check_unused_object {
+        db.as_ref()
+            .map(|db| db.universe_paths())
+            .unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+    let universe_set: HashSet<PathBuf> = universe.iter().cloned().collect();
+
+    let config = Arc::new(config);
+    let pkg = Arc::new(pkg);
+    let pkg_contexts = Arc::new(pkg_contexts);
+    let file_pkg_info = Arc::new(file_pkg_info);
+
+    // Targets: the files we emit diagnostics for. Keyed by relativized path to
+    // match the universe and cross-file maps.
+    let targets: Vec<PathBuf> = config
+        .paths
+        .iter()
+        .map(|p| PathBuf::from(relativize_path(p)))
+        .collect();
+    let target_set: HashSet<&PathBuf> = targets.iter().collect();
+
+    // Sibling files: in the package namespace but not lint targets. Parsed once
+    // only to contribute their free uses to cross-file resolution.
+    let extra_universe: Vec<&PathBuf> = universe
+        .iter()
+        .filter(|p| !target_set.contains(*p))
+        .collect();
+
+    // PHASE 1: parse each file once. Targets get the full lint (with the
+    // top-level `unused_object` decision deferred); siblings only contribute
+    // their free uses.
+    let target_outputs: Vec<TargetOutput> = targets
+        .par_iter()
+        .map(|rel| {
+            let in_universe = universe_set.contains(rel);
+            process_target(
+                rel,
+                &config,
+                &pkg,
+                &pkg_contexts,
+                &file_pkg_info,
+                check_unused_object && in_universe,
+            )
+        })
+        .collect();
+
+    let sibling_uses: Vec<FileUses> = if check_unused_object {
+        extra_universe
+            .par_iter()
+            .filter_map(|path| extract_file_uses(path))
+            .collect()
+    } else {
+        Vec::new()
+    };
+
+    // Split phase-1 results: cross-file contributions feed the merge, lint
+    // outcomes go to phase 2.
+    let mut target_uses: Vec<FileUses> = Vec::new();
+    let mut lints: Vec<(PathBuf, LintOutcome)> = Vec::with_capacity(target_outputs.len());
+    for output in target_outputs {
+        if let Some(uses) = output.file_uses {
+            target_uses.push(uses);
+        }
+        lints.push((output.rel, output.lint));
+    }
+
+    // MERGE: which top-level names are read across files.
+    let cross_file_used = if check_unused_object {
+        let mut all_uses = sibling_uses;
+        all_uses.append(&mut target_uses);
+        crate::db::merge_cross_file(&all_uses)
+    } else {
+        HashMap::new()
+    };
+
+    // PHASE 2: drop cross-file-used objects, then finalize each target.
+    let mut by_path: HashMap<PathBuf, Result<Vec<Diagnostic>, anyhow::Error>> = HashMap::new();
+    for (rel, lint) in lints {
+        let result = finalize_target(lint, &rel, &config, &cross_file_used);
+        by_path.insert(rel, result);
+    }
+
+    // Emit results in `config.paths` order.
+    config
+        .paths
+        .iter()
+        .map(|orig| {
+            let rel = PathBuf::from(relativize_path(orig));
+            let result = by_path.remove(&rel).unwrap_or_else(|| Ok(Vec::new()));
+            (relativize_path(orig), result)
+        })
+        .collect()
+}
+
+/// Phase 1 for one lint target: parse once, then lint. `extract` is set when the
+/// file belongs to the package namespace and `unused_object` runs, in which case
+/// its top-level definitions and free uses are read off the same index the lint
+/// uses.
+fn process_target(
+    rel: &Path,
+    config: &Config,
+    pkg: &PackageAnalysis,
+    pkg_contexts: &HashMap<PathBuf, PackageContext>,
+    file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
+    extract: bool,
+) -> TargetOutput {
+    let output = |file_uses, lint| TargetOutput { rel: rel.to_path_buf(), file_uses, lint };
+
+    // The error contexts mirror those the two-pass path added in `lint_only`.
+    let contents = match fs::read_to_string(rel) {
+        Ok(contents) => contents,
+        Err(e) => {
+            let err =
+                anyhow::Error::new(e).context(format!("Failed to read file: {}", rel.display()));
+            return output(None, LintOutcome::Final(Err(err)));
+        }
+    };
+
+    // Rmd/Qmd: self-contained (own parse, no semantic index), and not part of
+    // the package namespace.
+    if crate::fs::has_rmd_extension(rel) {
+        let lint = get_checks_rmd(&contents, rel, config)
+            .with_context(|| format!("Failed to get checks for file: {}", rel.display()));
+        return output(None, LintOutcome::Final(lint));
+    }
+
+    // Auto-generated files are never linted, but a generated file in `R/` still
+    // defines package-namespace names that siblings may read.
+    let generated = crate::fs::looks_generated(&contents);
+
+    let parsed = air_r_parser::parse(&contents, RParserOptions::default());
+    if parsed.has_error() {
+        // A file we can't parse contributes no cross-file uses. Generated files
+        // are reported as clean (the two-pass path skipped them before parsing);
+        // otherwise raise the same parse error `get_checks` would.
+        let lint: Result<Vec<Diagnostic>, anyhow::Error> = if generated {
+            Ok(Vec::new())
+        } else {
+            Err(ParseError { filename: rel.to_path_buf() }.into())
+        };
+        return output(
+            None,
+            LintOutcome::Final(
+                lint.with_context(|| format!("Failed to get checks for file: {}", rel.display())),
+            ),
+        );
+    }
+
+    let semantic =
+        oak_semantic::build_index(&parsed.tree(), jarl_semantic::JarlImportsResolver::new(rel));
+
+    let file_uses = extract.then(|| crate::db::collect_file_uses(rel.to_path_buf(), &semantic));
+
+    if generated {
+        return output(file_uses, LintOutcome::Final(Ok(Vec::new())));
+    }
+
+    let syntax = parsed.syntax();
+    let expressions = parsed.tree().expressions();
+
+    // Defer the cross-file `unused_object` decision exactly when cross-file
+    // resolution is in play; otherwise the file is independent and finalizes
+    // inline.
+    let defer = extract;
+    let core = run_checks_core(
+        &contents,
+        &syntax,
+        &expressions,
+        rel,
+        config,
+        pkg,
+        pkg_contexts,
+        file_pkg_info,
+        &semantic,
+        defer,
+    )
+    .with_context(|| format!("Failed to get checks for file: {}", rel.display()));
+    let (mut checker, new_lines) = match core {
+        Ok(value) => value,
+        Err(e) => return output(file_uses, LintOutcome::Final(Err(e))),
+    };
+
+    if !defer {
+        // `check_document` already filtered suppressions for this file.
+        let diagnostics = finalize_diagnostics(
+            std::mem::take(&mut checker.diagnostics),
+            &checker.rule_set,
+            config,
+            rel,
+            &new_lines,
+        );
+        return output(file_uses, LintOutcome::Final(Ok(diagnostics)));
+    }
+
+    let outdated_enabled = checker.is_rule_enabled(Rule::OutdatedSuppression);
+    let deferred = DeferredLint {
+        diagnostics: std::mem::take(&mut checker.diagnostics),
+        provisional: std::mem::take(&mut checker.deferred_unused_object),
+        suppression: checker.suppression.filter_snapshot(),
+        new_lines,
+        rule_set: checker.rule_set.clone(),
+        outdated_enabled,
+    };
+    output(file_uses, LintOutcome::Deferred(Box::new(deferred)))
+}
+
+/// Parse a sibling file once and read off its cross-file contribution. Mirrors
+/// the per-file work of [`crate::db::AnalysisDb::cross_file_used_objects`];
+/// files that fail to parse contribute nothing.
+fn extract_file_uses(path: &Path) -> Option<FileUses> {
+    let source = fs::read_to_string(path).ok()?;
+    let parsed = air_r_parser::parse(&source, RParserOptions::default());
+    if parsed.has_error() {
+        return None;
+    }
+    let index = oak_semantic::build_index(
+        &parsed.tree(),
+        jarl_semantic::JarlImportsResolver::new(path),
+    );
+    Some(crate::db::collect_file_uses(path.to_path_buf(), &index))
+}
+
+/// Phase 2 for one target: drop top-level `unused_object` diagnostics whose
+/// object is read by a sibling, then run the suppression filtering and location
+/// steps that `check_document`/`get_checks` would otherwise have done inline.
+fn finalize_target(
+    lint: LintOutcome,
+    rel: &Path,
+    config: &Config,
+    cross_file_used: &HashMap<PathBuf, HashSet<String>>,
+) -> Result<Vec<Diagnostic>, anyhow::Error> {
+    let deferred = match lint {
+        LintOutcome::Final(result) => return result,
+        LintOutcome::Deferred(deferred) => *deferred,
+    };
+
+    // Keep provisional top-level diagnostics only for objects no sibling reads.
+    // This must happen before suppression filtering so a suppression on a
+    // cross-file-used object is still seen as outdated.
+    let used = cross_file_used.get(rel);
+    let mut diagnostics = deferred.diagnostics;
+    for (name, diagnostic) in deferred.provisional {
+        if !used.is_some_and(|names| names.contains(&name)) {
+            diagnostics.push(diagnostic);
+        }
+    }
+
+    let mut suppression = deferred.suppression;
+    let mut diagnostics = suppression.filter_diagnostics(diagnostics);
+    if deferred.outdated_enabled {
+        let unused = suppression.get_unused_suppressions();
+        diagnostics.extend(outdated_suppression(&unused));
+    }
+
+    Ok(finalize_diagnostics(
+        diagnostics,
+        &deferred.rule_set,
+        config,
+        rel,
+        &deferred.new_lines,
+    ))
 }
 
 pub fn check_path(
@@ -219,26 +563,21 @@ pub fn get_checks(
         return Err(ParseError { filename: file.to_path_buf() }.into());
     }
 
-    let syntax = &parsed.syntax();
-    let expressions = &parsed.tree().expressions();
-
-    let suppression = SuppressionManager::from_node(syntax, contents);
-
-    let mut checker = Checker::new(suppression, config.rule_options.clone());
-    // Drop any rules ignored for this file via `[lint.per-file-ignores]`.
-    checker.rule_set = effective_rules_for_file(config, file);
-    checker.minimum_r_version = config.minimum_r_version;
+    let syntax = parsed.syntax();
+    let expressions = parsed.tree().expressions();
 
     // Build the semantic index for use-def-based rules. `source("path")`
     // calls inject `DefinitionKind::Import` entries via JarlImportsResolver;
     // the complementary "names read by sourced files" path is still handled
     // inside `SemanticInfo`.
     //
-    // When `unused_object` runs, the cross-file pre-pass already built this
-    // file's index (with the same resolver) and stored it in `pkg.file_indices`;
-    // reuse it rather than rebuilding. The pre-pass reads from disk, so the
-    // cache is only valid in lint-only mode — fix mode rewrites the file
-    // between passes, so it always rebuilds from the in-memory contents.
+    // When `unused_object` runs in fix mode, the cross-file pre-pass already
+    // built this file's index (with the same resolver) and stored it in
+    // `pkg.file_indices`; reuse it rather than rebuilding. The pre-pass reads
+    // from disk, so the cache is only valid before the first fix is applied —
+    // fix mode rewrites the file between passes, so it always rebuilds from the
+    // in-memory contents. (The lint-only path no longer goes through here; it
+    // uses the fused single-parse pass.)
     //
     // Building (when not cached) happens here, in the parallel per-file pass,
     // rather than via the shared `AnalysisDb`: oak's salsa database is `Send`
@@ -257,6 +596,57 @@ pub fn get_checks(
             &owned_semantic
         }
     };
+
+    let (mut checker, loc_new_lines) = run_checks_core(
+        contents,
+        &syntax,
+        &expressions,
+        file,
+        config,
+        pkg,
+        pkg_contexts,
+        file_pkg_info,
+        semantic,
+        false,
+    )?;
+
+    Ok(finalize_diagnostics(
+        std::mem::take(&mut checker.diagnostics),
+        &checker.rule_set,
+        config,
+        file,
+        &loc_new_lines,
+    ))
+}
+
+/// Run every per-file check on an already-parsed file and return the populated
+/// `Checker` together with the file's newline offsets.
+///
+/// Shared by [`get_checks`] (fix mode / LSP) and the fused lint-only pass. When
+/// `defer` is set, `unused_object` routes its top-level diagnostics into
+/// `checker.deferred_unused_object` and `check_document` skips suppression
+/// filtering, so the caller can drop cross-file-used objects and finalize once
+/// every file in the package has been parsed.
+#[allow(clippy::too_many_arguments)]
+fn run_checks_core(
+    contents: &str,
+    syntax: &RSyntaxNode,
+    expressions: &RExpressionList,
+    file: &Path,
+    config: &Config,
+    pkg: &PackageAnalysis,
+    pkg_contexts: &HashMap<PathBuf, PackageContext>,
+    file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
+    semantic: &oak_semantic::semantic_index::SemanticIndex,
+    defer: bool,
+) -> Result<(Checker, Vec<usize>)> {
+    let suppression = SuppressionManager::from_node(syntax, contents);
+
+    let mut checker = Checker::new(suppression, config.rule_options.clone());
+    // Drop any rules ignored for this file via `[lint.per-file-ignores]`.
+    checker.rule_set = effective_rules_for_file(config, file);
+    checker.minimum_r_version = config.minimum_r_version;
+    checker.defer_finalization = defer;
     checker.file_path = file.to_path_buf();
 
     // Wire up package context for package-specific rules.
@@ -308,21 +698,33 @@ pub fn get_checks(
         Some(semantic),
     )?;
 
-    // Some rules have a fix available in their implementation but do not have
-    // fix in the config, for instance because they are part of the "unfixable"
-    // arg or not part of the "fixable" arg in `jarl.toml`.
-    // When we get all the diagnostics with check_expression() above, we don't
-    // pay attention to whether the user wants to fix them or not. Adding this
-    // step here is a way to filter those fixes out before calling apply_fixes().
-    let rules_without_fix = checker
-        .rule_set
+    let loc_new_lines = find_new_lines(syntax)?;
+    Ok((checker, loc_new_lines))
+}
+
+/// Strip fixes that the user disabled and resolve each diagnostic's `(row, col)`
+/// location.
+///
+/// Some rules carry a fix in their implementation even when the config disables
+/// it (via the `unfixable`/`fixable` settings or a rule that is never fixable);
+/// this clears those before `apply_fixes` runs. Locations are computed from
+/// precomputed newline offsets so the fused lint-only pass — which no longer
+/// holds the syntax tree by the time it finalizes — can call this with offsets
+/// captured earlier.
+fn finalize_diagnostics(
+    diagnostics: Vec<Diagnostic>,
+    rule_set: &RuleSet,
+    config: &Config,
+    file: &Path,
+    loc_new_lines: &[usize],
+) -> Vec<Diagnostic> {
+    let rules_without_fix = rule_set
         .iter()
         .filter(|x| x.has_no_fix())
         .map(|x| x.name().to_string())
         .collect::<Vec<String>>();
 
-    let diagnostics: Vec<Diagnostic> = checker
-        .diagnostics
+    let diagnostics: Vec<Diagnostic> = diagnostics
         .into_iter()
         .map(|mut x| {
             x.filename = file.to_path_buf();
@@ -349,10 +751,7 @@ pub fn get_checks(
         })
         .collect();
 
-    let loc_new_lines = find_new_lines(syntax)?;
-    let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
-
-    Ok(diagnostics)
+    compute_lints_location(diagnostics, loc_new_lines)
 }
 
 /// Populate package context on the checker from pre-computed data.

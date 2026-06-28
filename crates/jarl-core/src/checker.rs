@@ -78,6 +78,19 @@ pub struct Checker {
     // paths relative to the current file (e.g. `unused_object` resolving
     // `source("...")` arguments).
     pub file_path: std::path::PathBuf,
+    // When true, the cross-file decision for top-level `unused_object`
+    // bindings is deferred: the rule routes those provisional diagnostics into
+    // `deferred_unused_object` instead of resolving them, and `check_document`
+    // skips suppression filtering so a later pass can drop cross-file-used
+    // objects *before* filtering (preserving `outdated_suppression`). Set only
+    // by the fused lint-only pass, which computes cross-file usage after every
+    // file is parsed. Off everywhere else.
+    pub defer_finalization: bool,
+    // Provisional top-level `unused_object` diagnostics collected when
+    // `defer_finalization` is set: `(object_name, diagnostic)`. A binding here
+    // is unused within its own file and not exported; the fused pass keeps it
+    // only if no sibling file reads its name.
+    pub deferred_unused_object: Vec<(String, Diagnostic)>,
 }
 
 impl Checker {
@@ -96,6 +109,8 @@ impl Checker {
             import_from: HashMap::new(),
             namespace_exports: HashSet::new(),
             file_path: std::path::PathBuf::new(),
+            defer_finalization: false,
+            deferred_unused_object: Vec::new(),
         }
     }
 
