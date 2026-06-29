@@ -200,41 +200,61 @@ fn check_lint_only_fused(
         })
         .collect();
 
-    let sibling_uses: Vec<FileUses> = if check_unused_object {
-        extra_universe
-            .par_iter()
-            .filter_map(|path| extract_file_uses(path))
-            .collect()
-    } else {
-        Vec::new()
-    };
-
-    // Split phase-1 results: cross-file contributions feed the merge, lint
-    // outcomes go to phase 2.
+    // Split phase-1 results into the cross-file contributions (fed to the merge)
+    // and the lint outcomes (finalized in phase 2). Also collect the *candidate*
+    // names: top-level objects that look unused within their own file. These are
+    // the only objects whose verdict a sibling file can change, so they decide
+    // whether any cross-file work is needed at all.
     let mut target_uses: Vec<FileUses> = Vec::new();
     let mut lints: Vec<(PathBuf, LintOutcome)> = Vec::with_capacity(target_outputs.len());
+    let mut candidate_names: HashSet<String> = HashSet::new();
     for output in target_outputs {
         if let Some(uses) = output.file_uses {
             target_uses.push(uses);
         }
+        if let LintOutcome::Deferred(deferred) = &output.lint {
+            candidate_names.extend(deferred.provisional.iter().map(|(name, _)| name.clone()));
+        }
         lints.push((output.rel, output.lint));
     }
 
-    // MERGE: which top-level names are read across files.
-    let cross_file_used = if check_unused_object {
+    // MERGE: which candidate names are read by another file. Cross-file
+    // resolution only matters when some target has a candidate — with none, no
+    // sibling can change a verdict, so the siblings are never parsed. When there
+    // are candidates, a sibling can only matter if its source text mentions one
+    // (a file that never names `foo` cannot read `foo`), so we parse just those.
+    let cross_file_used = if candidate_names.is_empty() {
+        HashMap::new()
+    } else {
+        let sibling_uses: Vec<FileUses> = extra_universe
+            .par_iter()
+            .filter_map(|path| {
+                let source = fs::read_to_string(path).ok()?;
+                if !candidate_names
+                    .iter()
+                    .any(|name| source.contains(name.as_str()))
+                {
+                    return None;
+                }
+                file_uses_from_source(path, &source)
+            })
+            .collect();
         let mut all_uses = sibling_uses;
         all_uses.append(&mut target_uses);
         crate::db::merge_cross_file(&all_uses)
-    } else {
-        HashMap::new()
     };
 
-    // PHASE 2: drop cross-file-used objects, then finalize each target.
-    let mut by_path: HashMap<PathBuf, Result<Vec<Diagnostic>, anyhow::Error>> = HashMap::new();
-    for (rel, lint) in lints {
-        let result = finalize_target(lint, &rel, &config, &cross_file_used);
-        by_path.insert(rel, result);
-    }
+    // PHASE 2: drop cross-file-used objects, then finalize each target. Runs in
+    // parallel because suppression filtering and location computation are
+    // per-file independent (they read only this file's deferred state and the
+    // shared cross-file map).
+    let mut by_path: HashMap<PathBuf, Result<Vec<Diagnostic>, anyhow::Error>> = lints
+        .into_par_iter()
+        .map(|(rel, lint)| {
+            let result = finalize_target(lint, &rel, &config, &cross_file_used);
+            (rel, result)
+        })
+        .collect();
 
     // Emit results in `config.paths` order.
     config
@@ -360,12 +380,12 @@ fn process_target(
     output(file_uses, LintOutcome::Deferred(Box::new(deferred)))
 }
 
-/// Parse a sibling file once and read off its cross-file contribution. Mirrors
-/// the per-file work of [`crate::db::AnalysisDb::cross_file_used_objects`];
-/// files that fail to parse contribute nothing.
-fn extract_file_uses(path: &Path) -> Option<FileUses> {
-    let source = fs::read_to_string(path).ok()?;
-    let parsed = air_r_parser::parse(&source, RParserOptions::default());
+/// Parse a sibling file and read off its cross-file contribution from the
+/// already-read source. Mirrors the per-file work of
+/// [`crate::db::AnalysisDb::cross_file_used_objects`]; files that fail to parse
+/// contribute nothing.
+fn file_uses_from_source(path: &Path, source: &str) -> Option<FileUses> {
+    let parsed = air_r_parser::parse(source, RParserOptions::default());
     if parsed.has_error() {
         return None;
     }
