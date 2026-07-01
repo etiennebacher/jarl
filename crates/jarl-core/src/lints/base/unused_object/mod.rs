@@ -297,6 +297,17 @@ foo <- \"b\""),
     }
 
     #[test]
+    fn test_no_lint_interpolation_reads_branch_assignments() {
+        // Both `if`/`else` arms assign `x` in the same scope and both reach the
+        // later `glue` read through branching control flow, so neither is unused.
+        expect_no_lint(
+            "if (a) {\n  x <- \"a\"\n} else {\n  x <- \"b\"\n}\nglue(\"{x}\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
     fn test_no_lint_interpolation_captures_enclosing_definition() {
         // The interpolated read is a closure capture evaluated later, so the
         // top-level `prefix` it reads stays used even though it is defined

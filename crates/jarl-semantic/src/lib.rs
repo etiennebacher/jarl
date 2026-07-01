@@ -589,13 +589,16 @@ impl<'a> SemanticInfo<'a> {
         }
     }
 
-    /// Mark the definition an interpolated read of `name` at `pos` resolves to.
+    /// Mark the definition(s) an interpolated read of `name` at `pos` resolves
+    /// to.
     ///
     /// Interpolation reads are position-aware, so — unlike `synthetic_used_names`
     /// — a *later* same-scope reassignment of the name isn't kept alive. Walk
     /// outward from the reading scope to the scope that binds `name`:
-    /// - if that's the reading scope, only the nearest preceding definition is
-    ///   read (sequential execution);
+    /// - if that's the reading scope, mark every definition that precedes the
+    ///   read: more than one can reach it through branching control flow (e.g.
+    ///   an `if`/`else` assigning in both arms), but a later reassignment is
+    ///   excluded so it stays reported;
     /// - if it's an enclosing scope, the read is a closure capture evaluated
     ///   later, so textual order is irrelevant and every definition of the name
     ///   there is kept alive.
@@ -617,16 +620,9 @@ impl<'a> SemanticInfo<'a> {
             if defs.is_empty() {
                 continue;
             }
-            if owner == read_scope {
-                if let Some(&(def_id, _)) = defs
-                    .iter()
-                    .filter(|(_, start)| *start < pos)
-                    .max_by_key(|(_, start)| *start)
-                {
-                    self.reaching_used.insert((owner, def_id));
-                }
-            } else {
-                for (def_id, _) in defs {
+            let captured = owner != read_scope;
+            for (def_id, start) in defs {
+                if captured || start < pos {
                     self.reaching_used.insert((owner, def_id));
                 }
             }
