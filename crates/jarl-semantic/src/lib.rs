@@ -194,6 +194,12 @@ impl<'a> SemanticInfo<'a> {
             | RSyntaxKind::R_REPEAT_STATEMENT => {
                 self.collect_loop_assignment_names(node);
             }
+            // `return` is parsed as a special RETURN expression, not an identifier.
+            // Mark the keyword name as a synthetic use so the param isn't
+            // flagged as unused.
+            RSyntaxKind::R_RETURN_EXPRESSION => {
+                self.synthetic_used_names.insert("return".to_string());
+            }
             _ => {}
         }
     }
@@ -593,6 +599,16 @@ impl<'a> SemanticInfo<'a> {
 }
 
 // ── Free helpers (also used by rule policy) ──────────────────────────────
+
+fn collect_scope_ids(index: &SemanticIndex) -> Vec<ScopeId> {
+    let mut ids = Vec::new();
+    let mut stack = vec![ScopeId::from(0)];
+    while let Some(s) = stack.pop() {
+        ids.push(s);
+        stack.extend(index.child_scopes(s));
+    }
+    ids
+}
 
 fn in_any_range(target: TextRange, ranges: &[TextRange]) -> bool {
     ranges.iter().any(|r| r.contains_range(target))
