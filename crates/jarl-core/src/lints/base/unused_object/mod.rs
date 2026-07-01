@@ -125,6 +125,25 @@ mod tests {
     }
 
     #[test]
+    fn test_no_lint_custom_operator_used() {
+        // oak doesn't model `1 %op% 2` as a use of the `%op%` binding, so a
+        // custom infix operator defined via a non-function RHS would otherwise
+        // look unused.
+        expect_no_lint(
+            "f <- function() {}\n`%op%` <- f\n1 %op% 2",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_custom_operator_never_used() {
+        // A custom operator defined but never used at a call site is still
+        // reported.
+        assert_snapshot!(snapshot_lint("`%op%` <- 42\nprint(1)"));
+    }
+
+    #[test]
     fn test_no_lint_replacement_function() {
         expect_no_lint(
             "x <- list()\nnames(x) <- 'a'\nprint(x)",

@@ -343,6 +343,15 @@ impl<'a> SemanticInfo<'a> {
             return;
         }
 
+        // Custom infix operators (`a %op% b`): oak doesn't model the operator
+        // as a use of the `%op%` binding, so an operator whose only reference
+        // is at a call site would look unused. Record the operator name as a
+        // synthetic use. Only user-defined `%...%` bindings can match; R's
+        // built-in operators have no local definition to keep alive.
+        if op_text.starts_with('%') && op_text.ends_with('%') {
+            self.synthetic_used_names.insert(op_text.to_string());
+        }
+
         // Short-circuit operators: `cond || (x <- 2)` may skip the
         // assignment entirely, so prior defs of `x` should remain alive.
         // Oak walks linearly and shadows them. Workaround: any LHS
