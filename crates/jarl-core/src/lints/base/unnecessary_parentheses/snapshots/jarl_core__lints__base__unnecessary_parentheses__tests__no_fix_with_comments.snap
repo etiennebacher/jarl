@@ -1,0 +1,32 @@
+---
+source: crates/jarl-core/src/lints/base/unnecessary_parentheses/mod.rs
+expression: "get_fixed_text(vec![\"(\\n  # explain x\\n  (x)\\n)\", \"# leading comment\\n((x))\",\n\"((x)) # trailing comment\",], \"unnecessary_parentheses\", None)"
+---
+OLD:
+====
+(
+  # explain x
+  (x)
+)
+NEW:
+====
+(
+  # explain x
+  (x)
+)
+
+OLD:
+====
+# leading comment
+((x))
+NEW:
+====
+# leading comment
+x
+
+OLD:
+====
+((x)) # trailing comment
+NEW:
+====
+x # trailing comment
