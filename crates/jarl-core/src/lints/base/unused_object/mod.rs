@@ -140,7 +140,15 @@ mod tests {
     fn test_lint_custom_operator_never_used() {
         // A custom operator defined but never used at a call site is still
         // reported.
-        assert_snapshot!(snapshot_lint("`%op%` <- 42\nprint(1)"));
+        assert_snapshot!(snapshot_lint("`%op%` <- 42\nprint(1)"), @"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | `%op%` <- 42
+          | ------ Object `%op%` is defined but never used.
+          |
+        Found 1 error.
+        ");
     }
 
     #[test]
@@ -254,6 +262,56 @@ mod tests {
     }
 
     #[test]
+    fn test_no_lint_glue_same_char_delimiters() {
+        // `.open` and `.close` are the same character, so nesting is
+        // impossible and the closing `|` must not be read as another opener.
+        expect_no_lint(
+            "
+x <- 1
+glue(\"|x|\", .open = \"|\", .close = \"|\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_interpolation_does_not_revive_later_reassignment() {
+        // The `glue` read resolves to the preceding `foo`; the later, unread
+        // reassignment of the same name is still reported unused.
+        assert_snapshot!(
+            snapshot_lint("
+foo <- \"a\"
+glue(\"{foo}\")
+
+foo <- \"b\""),
+        @r#"
+        warning: unused_object
+         --> <test>:5:1
+          |
+        5 | foo <- "b"
+          | --- Object `foo` is defined but never used.
+          |
+        Found 1 error.
+        "#
+        );
+    }
+
+    #[test]
+    fn test_no_lint_interpolation_captures_enclosing_definition() {
+        // The interpolated read is a closure capture evaluated later, so the
+        // top-level `prefix` it reads stays used even though it is defined
+        // after the function.
+        expect_no_lint(
+            "
+f <- function() glue(\"{prefix}\")
+prefix <- \"info\"
+f()",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
     fn test_no_lint_cli_interpolation() {
         expect_no_lint("x <- 1\ncli_abort(\"{x}\")", "unused_object", None);
         expect_no_lint("x <- 1\ncli_warn(\"{x}\")", "unused_object", None);
@@ -268,6 +326,35 @@ mod tests {
     fn test_no_lint_cli_nested_markup_with_interpolation() {
         expect_no_lint(
             "x <- 1\ncli_abort(\"{.strong {.emph {x}}}\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_cli_interpolation_does_not_revive_later_reassignment() {
+        // Same position-aware resolution as glue: the `cli_abort` markup read
+        // resolves to the preceding `foo`, so the later reassignment is unused.
+        assert_snapshot!(
+            snapshot_lint("foo <- \"a\"\ncli_abort(\"{.field {foo}}\")\n\nfoo <- \"b\""),
+            @r#"
+        warning: unused_object
+         --> <test>:4:1
+          |
+        4 | foo <- "b"
+          | --- Object `foo` is defined but never used.
+          |
+        Found 1 error.
+        "#
+        );
+    }
+
+    #[test]
+    fn test_no_lint_cli_interpolation_captures_enclosing_definition() {
+        // A cli markup read inside a closure captures the enclosing `prefix`
+        // even though it is defined after the function.
+        expect_no_lint(
+            "f <- function() cli_abort(\"{.field {prefix}}\")\nprefix <- \"info\"\nf()",
             "unused_object",
             None,
         );

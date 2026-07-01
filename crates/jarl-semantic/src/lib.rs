@@ -19,7 +19,7 @@ use air_r_syntax::{
     AnyRArgumentName, AnyRExpression, RArgument, RArgumentList, RBinaryExpression, RCall,
     RExtractExpression, RNamespaceExpression, RStringValue, RSyntaxKind, RSyntaxNode,
 };
-use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange};
+use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange, TextSize};
 use oak_core::syntax_ext::{RIdentifierExt, RStringValueExt};
 use oak_semantic::DefinitionId;
 use oak_semantic::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex};
@@ -34,11 +34,18 @@ pub struct SemanticInfo<'a> {
     /// Path of the file being analyzed. Used to resolve `source("path")`
     /// arguments against the current file's directory.
     file: &'a std::path::Path,
-    /// Names that have a synthetic use from AST passes (string interpolation,
-    /// `do.call("f", …)`, `..cols`, `on.exit` bodies, loop assignment LHSes,
-    /// short-circuit assignment LHSes). A definition whose symbol name is in
-    /// this set is treated as used.
+    /// Names that have a synthetic use from AST passes (`do.call("f", …)`,
+    /// `..cols`, `on.exit` bodies, loop assignment LHSes, short-circuit
+    /// assignment LHSes, custom infix operators). A definition whose symbol
+    /// name is in this set is treated as used.
     synthetic_used_names: HashSet<String>,
+    /// String-interpolation reads (`glue("{x}")`, cli markup, custom
+    /// delimiters) as `(name, read range)` pairs. Unlike `synthetic_used_names`,
+    /// these are resolved position-aware in
+    /// [`Self::precompute_interpolation_uses`]: a read resolves to the
+    /// definition it actually sees, so a *later* same-scope reassignment of the
+    /// name is not kept alive by it.
+    interpolation_uses: Vec<(String, TextRange)>,
     /// Identifier `Use` ranges that should be ignored because they sit inside
     /// an NSE call argument (`quote(x)`, `substitute(…)`, …).
     nse_ranges: Vec<TextRange>,
@@ -72,6 +79,7 @@ impl<'a> SemanticInfo<'a> {
             root: root.clone(),
             file,
             synthetic_used_names: HashSet::new(),
+            interpolation_uses: Vec::new(),
             nse_ranges: Vec::new(),
             unquote_ranges: Vec::new(),
             local_body_ranges: Vec::new(),
@@ -81,6 +89,7 @@ impl<'a> SemanticInfo<'a> {
         this.collect_ast_passes(expressions);
         let scopes = this.scope_ids();
         this.precompute_reaching_uses(&scopes);
+        this.precompute_interpolation_uses();
         this
     }
 
@@ -215,12 +224,15 @@ impl<'a> SemanticInfo<'a> {
         let Some(token) = node.first_token() else {
             return;
         };
+        // The read happens where the string sits, so identifiers inside it
+        // resolve against the definitions live at this position.
+        let read_range = node.text_trimmed_range();
         // cli's inline markup (`{.field {x}}`) interleaves styling with
         // interpolation, so strings inside a cli call need a markup-aware scan
         // rather than the plain glue scan.
         if node_in_cli_markup_call(node) {
             if let Some(content) = strings::get_string_literal_contents(token.text_trimmed()) {
-                self.collect_cli_interpolation(&content);
+                self.collect_cli_interpolation(&content, read_range);
             }
             return;
         }
@@ -229,7 +241,7 @@ impl<'a> SemanticInfo<'a> {
         // the delimiters via `.open`/`.close` are handled separately in
         // `collect_custom_glue_interpolation`.
         for segment in scan_interpolation_segments(token.text_trimmed(), "{", "}") {
-            self.collect_identifiers_in_interpolation(segment);
+            self.collect_identifiers_in_interpolation(segment, read_range);
         }
     }
 
@@ -241,12 +253,12 @@ impl<'a> SemanticInfo<'a> {
     /// still interpolated. So `{.field {x}}` uses `x`, but `{.field x}` does
     /// not. Markup spans recurse into their content; plain segments are parsed
     /// as R code.
-    fn collect_cli_interpolation(&mut self, content: &str) {
+    fn collect_cli_interpolation(&mut self, content: &str, read_range: TextRange) {
         for segment in scan_interpolation_segments(content, "{", "}") {
             if let Some(inner) = cli_markup_content(segment) {
-                self.collect_cli_interpolation(inner);
+                self.collect_cli_interpolation(inner, read_range);
             } else {
-                self.collect_identifiers_in_interpolation(segment);
+                self.collect_identifiers_in_interpolation(segment, read_range);
             }
         }
     }
@@ -283,16 +295,18 @@ impl<'a> SemanticInfo<'a> {
             let Some(content) = strings::get_string_literal_contents(token.text_trimmed()) else {
                 continue;
             };
+            let read_range = value.text_trimmed_range();
             for segment in scan_interpolation_segments(&content, &open, &close) {
-                self.collect_identifiers_in_interpolation(segment);
+                self.collect_identifiers_in_interpolation(segment, read_range);
             }
         }
     }
 
     /// Parse a glue-style `{...}` interpolation as R code and collect every
-    /// identifier reference. Skips the field side of `x$a` / `x@a` and the
-    /// namespace side of `pkg::name` — those name members, not bindings.
-    fn collect_identifiers_in_interpolation(&mut self, src: &str) {
+    /// identifier reference as an interpolation use at `read_range`. Skips the
+    /// field side of `x$a` / `x@a` and the namespace side of `pkg::name` —
+    /// those name members, not bindings.
+    fn collect_identifiers_in_interpolation(&mut self, src: &str, read_range: TextRange) {
         let parsed = air_r_parser::parse(src, RParserOptions::default());
         if parsed.has_error() {
             return;
@@ -305,8 +319,8 @@ impl<'a> SemanticInfo<'a> {
                 continue;
             }
             if let Some(token) = node.first_token() {
-                self.synthetic_used_names
-                    .insert(token.text_trimmed().to_string());
+                self.interpolation_uses
+                    .push((token.text_trimmed().to_string(), read_range));
             }
         }
     }
@@ -565,6 +579,61 @@ impl<'a> SemanticInfo<'a> {
         best.map(|(id, _)| id)
     }
 
+    /// Resolve each string-interpolation read to the definition(s) it uses and
+    /// record them in `reaching_used`, mirroring the real-use pass. Runs after
+    /// the AST pass so the NSE ranges it consults are already collected.
+    fn precompute_interpolation_uses(&mut self) {
+        let uses = std::mem::take(&mut self.interpolation_uses);
+        for (name, read_range) in &uses {
+            self.mark_interpolation_use(name, read_range.start());
+        }
+    }
+
+    /// Mark the definition an interpolated read of `name` at `pos` resolves to.
+    ///
+    /// Interpolation reads are position-aware, so — unlike `synthetic_used_names`
+    /// — a *later* same-scope reassignment of the name isn't kept alive. Walk
+    /// outward from the reading scope to the scope that binds `name`:
+    /// - if that's the reading scope, only the nearest preceding definition is
+    ///   read (sequential execution);
+    /// - if it's an enclosing scope, the read is a closure capture evaluated
+    ///   later, so textual order is irrelevant and every definition of the name
+    ///   there is kept alive.
+    fn mark_interpolation_use(&mut self, name: &str, pos: TextSize) {
+        let index = self.index;
+        let (read_scope, _) = index.scope_at(pos);
+        for owner in index.ancestor_scope_ids(read_scope) {
+            let Some(symbol_id) = index.symbols(owner).id(name) else {
+                continue;
+            };
+            let defs: Vec<(DefinitionId, TextSize)> = index
+                .definitions(owner)
+                .iter()
+                .filter(|(_, def)| def.symbol() == symbol_id && !self.is_in_nse(def.range()))
+                .map(|(id, def)| (id, def.range().start()))
+                .collect();
+            // `name` may be referenced but not bound in this scope; if so, keep
+            // walking outward to the scope that actually binds it.
+            if defs.is_empty() {
+                continue;
+            }
+            if owner == read_scope {
+                if let Some(&(def_id, _)) = defs
+                    .iter()
+                    .filter(|(_, start)| *start < pos)
+                    .max_by_key(|(_, start)| *start)
+                {
+                    self.reaching_used.insert((owner, def_id));
+                }
+            } else {
+                for (def_id, _) in defs {
+                    self.reaching_used.insert((owner, def_id));
+                }
+            }
+            return;
+        }
+    }
+
     fn is_used_inside_local_body(&self, scope_id: ScopeId, def: &Definition) -> bool {
         if self.local_body_ranges.is_empty() {
             return false;
@@ -610,8 +679,10 @@ fn in_any_range(target: TextRange, ranges: &[TextRange]) -> bool {
 /// Extract glue-style interpolation segments delimited by `open`/`close`.
 /// Doubled delimiters (`{{`/`}}` for the default case) are glue escapes and
 /// are skipped. Nested delimiters are tracked so `{f({x})}` yields the whole
-/// inner expression. Returns the source slices between the outermost
-/// delimiter pairs.
+/// inner expression — except when `open == close` (e.g. `.open`/`.close`
+/// both `|`), where the delimiters are indistinguishable so nesting is
+/// impossible and the first delimiter after an opener always closes it.
+/// Returns the source slices between the outermost delimiter pairs.
 fn scan_interpolation_segments<'t>(text: &'t str, open: &str, close: &str) -> Vec<&'t str> {
     let mut segments = Vec::new();
     if open.is_empty() || close.is_empty() {
@@ -637,7 +708,9 @@ fn scan_interpolation_segments<'t>(text: &'t str, open: &str, close: &str) -> Ve
             let mut end = start;
             while end < text.len() && depth > 0 {
                 let rest = &text[end..];
-                if rest.starts_with(open) {
+                // When `open == close` a delimiter can only close the current
+                // segment; treating it as a nested opener would never balance.
+                if open != close && rest.starts_with(open) {
                     depth += 1;
                     end += open.len();
                 } else if rest.starts_with(close) {
