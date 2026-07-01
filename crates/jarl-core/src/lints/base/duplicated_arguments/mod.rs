@@ -286,7 +286,8 @@ mod tests {
           |
         1 | / fun(
         2 | |                 arg # xxx
-        ... |
+        3 | |                 = 1,
+        4 | |                 arg # yyy
         5 | |                 = 2
         6 | |               )
           | |_______________- Avoid duplicated arguments in function calls. Duplicated argument(s): "arg".
@@ -307,7 +308,8 @@ mod tests {
           |
         1 | / fun(
         2 | |                 arg = # xxx
-        ... |
+        3 | |                 1,
+        4 | |                 arg = # yyy
         5 | |                 2
         6 | |               )
           | |_______________- Avoid duplicated arguments in function calls. Duplicated argument(s): "arg".

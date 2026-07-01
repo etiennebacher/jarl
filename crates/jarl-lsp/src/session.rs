@@ -7,7 +7,7 @@ use anyhow::{Result, anyhow};
 use lsp_types::{
     ClientCapabilities, CodeActionKind, CodeActionOptions, CodeActionProviderCapability,
     InitializeParams, InitializeResult, SaveOptions, ServerCapabilities, ServerInfo,
-    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Url,
+    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Uri,
     WorkDoneProgressOptions,
 };
 use rustc_hash::FxHashMap;
@@ -95,12 +95,12 @@ impl Session {
         if let Some(workspace_folders) = params.workspace_folders {
             self.workspace_roots.clear();
             for folder in workspace_folders {
-                if let Ok(path) = folder.uri.to_file_path() {
+                if let Some(path) = crate::uri_ext::uri_to_file_path(&folder.uri) {
                     self.workspace_roots.push(path);
                 }
             }
         } else if let Some(root_uri) = params.root_uri {
-            if let Ok(path) = root_uri.to_file_path() {
+            if let Some(path) = crate::uri_ext::uri_to_file_path(&root_uri) {
                 self.workspace_roots = vec![path];
             }
         } else if let Some(root_path) = params.root_path {
@@ -149,16 +149,16 @@ impl Session {
     }
 
     /// Open a new text document
-    pub fn open_document(&mut self, uri: Url, document: TextDocument) {
+    pub fn open_document(&mut self, uri: Uri, document: TextDocument) {
         let key = DocumentKey::from(uri);
-        tracing::debug!("Opening document: {}", key.uri());
+        tracing::debug!("Opening document: {}", key.uri().as_str());
         self.documents.insert(key, document);
     }
 
     /// Update an existing document with changes
     pub fn update_document(
         &mut self,
-        uri: Url,
+        uri: Uri,
         changes: Vec<lsp_types::TextDocumentContentChangeEvent>,
         version: DocumentVersion,
     ) -> LspResult<()> {
@@ -166,7 +166,7 @@ impl Session {
 
         eprintln!(
             "JARL LSP: Updating document {} with {} changes to version {}",
-            key.uri(),
+            key.uri().as_str(),
             changes.len(),
             version
         );
@@ -174,34 +174,38 @@ impl Session {
         let document = self
             .documents
             .get_mut(&key)
-            .ok_or_else(|| anyhow!("Document not found: {}", key.uri()))?;
+            .ok_or_else(|| anyhow!("Document not found: {}", key.uri().as_str()))?;
 
         document.apply_changes(changes, version, self.position_encoding)?;
 
-        tracing::debug!("Updated document: {} to version {}", key.uri(), version);
+        tracing::debug!(
+            "Updated document: {} to version {}",
+            key.uri().as_str(),
+            version
+        );
         Ok(())
     }
 
     /// Close a document
-    pub fn close_document(&mut self, uri: Url) -> LspResult<()> {
+    pub fn close_document(&mut self, uri: Uri) -> LspResult<()> {
         let key = DocumentKey::from(uri);
 
         if self.documents.remove(&key).is_some() {
-            tracing::debug!("Closed document: {}", key.uri());
+            tracing::debug!("Closed document: {}", key.uri().as_str());
             Ok(())
         } else {
-            Err(anyhow!("Document not found: {}", key.uri()))
+            Err(anyhow!("Document not found: {}", key.uri().as_str()))
         }
     }
 
     /// Get a document by URI
-    pub fn get_document(&self, uri: &Url) -> Option<&TextDocument> {
+    pub fn get_document(&self, uri: &Uri) -> Option<&TextDocument> {
         let key = DocumentKey::from(uri.clone());
         self.documents.get(&key)
     }
 
     /// Take a snapshot of a document
-    pub fn take_snapshot(&self, uri: Url) -> Option<DocumentSnapshot> {
+    pub fn take_snapshot(&self, uri: Uri) -> Option<DocumentSnapshot> {
         let key = DocumentKey::from(uri);
         let document = self.documents.get(&key)?;
 
@@ -220,7 +224,7 @@ impl Session {
     }
 
     /// Get all open document URIs
-    pub fn open_documents(&self) -> impl Iterator<Item = &Url> {
+    pub fn open_documents(&self) -> impl Iterator<Item = &Uri> {
         self.documents.keys().map(|key| key.uri())
     }
 
@@ -364,7 +368,7 @@ impl DocumentSnapshot {
     }
 
     /// Get the document URI
-    pub fn uri(&self) -> &Url {
+    pub fn uri(&self) -> &Uri {
         self.key.uri()
     }
 
@@ -482,7 +486,7 @@ mod tests {
     #[test]
     fn test_document_lifecycle() {
         let mut session = create_test_session();
-        let uri = Url::parse("file:///test.py").unwrap();
+        let uri: Uri = "file:///test.py".parse().unwrap();
         let document = TextDocument::new("hello world".to_string(), 1);
 
         // Open document
@@ -501,6 +505,62 @@ mod tests {
         session.close_document(uri.clone()).unwrap();
         assert_eq!(session.document_count(), 0);
         assert!(session.get_document(&uri).is_none());
+    }
+
+    #[test]
+    fn test_update_document_and_open_documents() {
+        let mut session = create_test_session();
+        let uri: Uri = "file:///test.R".parse().unwrap();
+        session.open_document(uri.clone(), TextDocument::new("x <- 1".to_string(), 1));
+
+        // Apply an incremental change via update_document.
+        let change = lsp_types::TextDocumentContentChangeEvent {
+            range: Some(lsp_types::Range::new(
+                lsp_types::Position::new(0, 0),
+                lsp_types::Position::new(0, 1),
+            )),
+            range_length: None,
+            text: "y".to_string(),
+        };
+        session
+            .update_document(uri.clone(), vec![change], 2)
+            .unwrap();
+        assert_eq!(session.get_document(&uri).unwrap().content(), "y <- 1");
+
+        // open_documents lists the currently open URIs.
+        let open: Vec<_> = session.open_documents().cloned().collect();
+        assert_eq!(open, vec![uri]);
+
+        // Updating or closing an unknown document is an error.
+        let missing: Uri = "file:///missing.R".parse().unwrap();
+        assert!(session.update_document(missing.clone(), vec![], 1).is_err());
+        assert!(session.close_document(missing).is_err());
+    }
+
+    #[test]
+    fn test_initialize_populates_workspace_roots() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let uri = crate::uri_ext::file_path_to_uri(dir.path()).unwrap();
+
+        // From workspace folders.
+        let mut session = create_test_session();
+        #[allow(deprecated)]
+        let params = InitializeParams {
+            workspace_folders: Some(vec![lsp_types::WorkspaceFolder {
+                uri: uri.clone(),
+                name: "root".to_string(),
+            }]),
+            ..Default::default()
+        };
+        session.initialize(params).unwrap();
+        assert_eq!(session.workspace_roots(), [dir.path().to_path_buf()]);
+
+        // From a single root URI.
+        let mut session = create_test_session();
+        #[allow(deprecated)]
+        let params = InitializeParams { root_uri: Some(uri), ..Default::default() };
+        session.initialize(params).unwrap();
+        assert_eq!(session.workspace_roots(), [dir.path().to_path_buf()]);
     }
 
     #[test]
