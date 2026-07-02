@@ -115,8 +115,8 @@ pub fn quotes(
 ) -> anyhow::Result<Option<Diagnostic>> {
     let string = unwrap_or_return_none!(ast.as_r_string_value());
 
-    let token = string.value_token()?;
-    let text = token.text_trimmed();
+    let token_text = string.to_trimmed_text();
+    let text = token_text.text();
 
     // Malformed raw strings like `r'(hello]'` are parsed as identifier (`r`)
     // followed by a regular string literal. Skip these invalid forms.

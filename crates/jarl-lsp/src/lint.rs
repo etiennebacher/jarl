@@ -395,10 +395,10 @@ mod tests {
     use super::*;
     use crate::document::{DocumentKey, TextDocument};
     use crate::session::DocumentSnapshot;
-    use lsp_types::{ClientCapabilities, Url};
+    use lsp_types::ClientCapabilities;
 
     fn create_test_snapshot(file_path: &std::path::Path, content: &str) -> DocumentSnapshot {
-        let uri = Url::from_file_path(file_path).unwrap();
+        let uri = crate::uri_ext::file_path_to_uri(file_path).unwrap();
         let key = DocumentKey::from(uri);
         let document = TextDocument::new(content.to_string(), 1);
 
@@ -519,7 +519,7 @@ mod tests {
         std::fs::write(&file_path, content).unwrap();
 
         // Create snapshot for the renv file
-        let uri = lsp_types::Url::from_file_path(&file_path).unwrap();
+        let uri = crate::uri_ext::file_path_to_uri(&file_path).unwrap();
         let key = crate::document::DocumentKey::from(uri);
         let document = crate::document::TextDocument::new(content.to_string(), 1);
         let snapshot = DocumentSnapshot::new(
@@ -562,7 +562,7 @@ mod tests {
         std::fs::write(&file_path, content).unwrap();
 
         // Create snapshot for the renv file
-        let uri = lsp_types::Url::from_file_path(&file_path).unwrap();
+        let uri = crate::uri_ext::file_path_to_uri(&file_path).unwrap();
         let key = crate::document::DocumentKey::from(uri);
         let document = crate::document::TextDocument::new(content.to_string(), 1);
         let snapshot = DocumentSnapshot::new(
@@ -586,16 +586,16 @@ mod tests {
 
     /// Lint Rmd/Qmd content and return the LSP diagnostics.
     ///
-    /// Writes the content to a real temporary file so that `Url::from_file_path`
+    /// Writes the content to a real temporary file so that `file_path_to_uri`
     /// produces a valid URI on all platforms (including Windows, where a fake
-    /// `file:///test.Rmd` path would cause `to_file_path()` to fail and return
-    /// no diagnostics).
+    /// `file:///test.Rmd` path would cause the path round-trip to fail and
+    /// return no diagnostics).
     fn lint_rmd_content(content: &str, ext: &str) -> Vec<lsp_types::Diagnostic> {
         let temp_dir = TempDir::new().unwrap();
         let file_path = temp_dir.path().join(format!("test.{ext}"));
         std::fs::write(&file_path, content).unwrap();
 
-        let uri = lsp_types::Url::from_file_path(&file_path).unwrap();
+        let uri = crate::uri_ext::file_path_to_uri(&file_path).unwrap();
         let key = DocumentKey::from(uri);
         let document = TextDocument::new(content.to_string(), 1);
         let snapshot = DocumentSnapshot::new(
@@ -757,7 +757,7 @@ mod tests {
 
     /// Create a snapshot backed by a real file on disk.
     fn create_snapshot_for_file(file_path: &std::path::Path, content: &str) -> DocumentSnapshot {
-        let uri = Url::from_file_path(file_path).unwrap();
+        let uri = crate::uri_ext::file_path_to_uri(file_path).unwrap();
         let key = DocumentKey::from(uri);
         let document = TextDocument::new(content.to_string(), 1);
         DocumentSnapshot::new(
@@ -873,7 +873,7 @@ mod tests {
         std::fs::write(&file_path, content).unwrap();
 
         // Create snapshot for the generated file
-        let uri = lsp_types::Url::from_file_path(&file_path).unwrap();
+        let uri = crate::uri_ext::file_path_to_uri(&file_path).unwrap();
         let key = crate::document::DocumentKey::from(uri);
         let document = crate::document::TextDocument::new(content.to_string(), 1);
         let snapshot = DocumentSnapshot::new(

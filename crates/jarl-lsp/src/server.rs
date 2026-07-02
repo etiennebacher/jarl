@@ -279,7 +279,7 @@ impl Server {
                 let params: types::DidOpenTextDocumentParams =
                     serde_json::from_value(notification.params)?;
 
-                tracing::debug!("Document opened: {}", params.text_document.uri);
+                tracing::debug!("Document opened: {}", params.text_document.uri.as_str());
 
                 let document =
                     TextDocument::new(params.text_document.text, params.text_document.version)
@@ -288,7 +288,8 @@ impl Server {
                 session.open_document(params.text_document.uri.clone(), document);
 
                 // Check and notify about config file location (once per session, only if not in CWD)
-                if let Ok(file_path) = params.text_document.uri.to_file_path() {
+                if let Some(file_path) = crate::uri_ext::uri_to_file_path(&params.text_document.uri)
+                {
                     session.check_and_notify_config(&file_path);
                 }
 
@@ -299,7 +300,7 @@ impl Server {
                 let params: types::DidChangeTextDocumentParams =
                     serde_json::from_value(notification.params)?;
 
-                tracing::debug!("Document changed: {}", params.text_document.uri);
+                tracing::debug!("Document changed: {}", params.text_document.uri.as_str());
 
                 session.update_document(
                     params.text_document.uri.clone(),
@@ -326,7 +327,7 @@ impl Server {
                 let params: types::DidSaveTextDocumentParams =
                     serde_json::from_value(notification.params)?;
 
-                tracing::debug!("Document saved: {}", params.text_document.uri);
+                tracing::debug!("Document saved: {}", params.text_document.uri.as_str());
 
                 if let Some(snapshot) = session.take_snapshot(params.text_document.uri) {
                     task_sender.send(Task::LintDocument {
@@ -371,7 +372,7 @@ impl Server {
 
         tracing::debug!(
             "Linted {} in {:?}: {} diagnostics found",
-            snapshot.uri(),
+            snapshot.uri().as_str(),
             elapsed,
             output.diagnostics.len()
         );
@@ -457,6 +458,10 @@ impl Server {
     }
 
     /// Convert a diagnostic with fix information to a code action
+    // `lsp_types::WorkspaceEdit` keys its `changes` map by `Uri`, which carries
+    // an internal `Cell` for lazily-parsed offsets. The cache doesn't affect
+    // hashing (it hashes by string), so the lint is a false positive here.
+    #[allow(clippy::mutable_key_type)]
     fn diagnostic_to_code_action(
         diagnostic: &types::Diagnostic,
         snapshot: &DocumentSnapshot,
@@ -509,6 +514,7 @@ impl Server {
 
     /// Create a code action to add a jarl-ignore comment for a specific rule.
     /// Uses the hoisting infrastructure from jarl-core to find the correct insertion point.
+    #[allow(clippy::mutable_key_type)] // `Uri` key hashes by string; see above.
     fn diagnostic_to_jarl_ignore_rule_action(
         diagnostic: &types::Diagnostic,
         snapshot: &DocumentSnapshot,
@@ -615,6 +621,7 @@ impl Server {
     /// This action is only offered for Rmd/Qmd files.  It inserts the directive
     /// at the very beginning of the chunk so it is easy to spot, and suppresses
     /// the named rule for every expression in that chunk.
+    #[allow(clippy::mutable_key_type)] // `Uri` key hashes by string; see above.
     fn diagnostic_to_jarl_ignore_chunk_action(
         diagnostic: &types::Diagnostic,
         snapshot: &DocumentSnapshot,
@@ -704,7 +711,7 @@ mod tests {
     use crate::lint;
     use crate::session::DocumentSnapshot;
     use lsp_server::Connection;
-    use lsp_types::{Position, Range, Url};
+    use lsp_types::{Position, Range};
     use tempfile::TempDir;
 
     const CURSOR: &str = "<CURS>";
@@ -746,7 +753,7 @@ select = ["ALL"]
         }
 
         fn create_snapshot(&self, content: &str) -> DocumentSnapshot {
-            let uri = Url::from_file_path(&self.file_path).unwrap();
+            let uri = crate::uri_ext::file_path_to_uri(&self.file_path).unwrap();
             let key = DocumentKey::from(uri);
             let document = TextDocument::new(content.to_string(), 1);
 
@@ -760,7 +767,7 @@ select = ["ALL"]
     }
 
     fn create_test_snapshot(content: &str) -> DocumentSnapshot {
-        let uri = Url::parse("file:///test.R").unwrap();
+        let uri: lsp_types::Uri = "file:///test.R".parse().unwrap();
         let key = DocumentKey::from(uri);
         let document = TextDocument::new(content.to_string(), 1);
 
@@ -825,6 +832,7 @@ select = ["ALL"]
     }
 
     /// Apply a quick fix at the cursor position by running the actual linter.
+    #[allow(clippy::mutable_key_type)] // `Uri` key hashes by string; see above.
     fn apply_fix_at_cursor(source_with_cursor: &str) -> Option<String> {
         let cursor_pos = source_with_cursor.find(CURSOR)?;
         let content = source_with_cursor.replace(CURSOR, "");
@@ -859,6 +867,7 @@ select = ["ALL"]
     }
 
     /// Apply a jarl-ignore action at the cursor position by running the actual linter.
+    #[allow(clippy::mutable_key_type)] // `Uri` key hashes by string; see above.
     fn apply_jarl_ignore_at_cursor(source_with_cursor: &str) -> Option<String> {
         let cursor_pos = source_with_cursor.find(CURSOR)?;
         let content = source_with_cursor.replace(CURSOR, "");
@@ -893,6 +902,7 @@ select = ["ALL"]
     }
 
     /// Apply a jarl-ignore-chunk action at the cursor position for an Rmd file.
+    #[allow(clippy::mutable_key_type)] // `Uri` key hashes by string; see above.
     fn apply_jarl_ignore_chunk_at_cursor(source_with_cursor: &str) -> Option<String> {
         let cursor_pos = source_with_cursor.find(CURSOR)?;
         let content = source_with_cursor.replace(CURSOR, "");
