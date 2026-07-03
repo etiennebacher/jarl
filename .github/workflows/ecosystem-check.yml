@@ -49,6 +49,7 @@ env:
 
     # other
     alexpghayes/network-mediation-replication@05ecf2df92d018a433d192f6fb2f598b7ce71000
+    atsyplenkov/nth-west-caucasus-sediments@8f2f400405603fbe0474fce97720082bb9749325
     geocompx/geocompr@ee6ef3aa98c3c5cdb13fa1bd674b0a5332b9db3c
     grantmcdermott/skeptic-priors@45de00d7593e462c6d6ac9d5185733ff9665ea90
     lrberge/linking_winst@5256288ff88cdd9f32241bf3a85ccf7627691a08
