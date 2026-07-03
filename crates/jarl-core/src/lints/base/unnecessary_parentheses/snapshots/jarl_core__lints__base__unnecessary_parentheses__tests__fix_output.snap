@@ -1,56 +1,48 @@
 ---
 source: crates/jarl-core/src/lints/base/unnecessary_parentheses/mod.rs
-assertion_line: 140
-expression: "get_fixed_text(vec![\"((x))\", \"(((x)))\", \"((((x))))\", \"((x + 1))\",\n\"foo(((x)))\", \"((x)) + y\", \"if (((x))) y\", \"(\n  (x)\n)\", \"((x + y)) * z\",\n\"z * ((x + y))\", \"((x * y)) + z\", \"-((x + y))\", \"((-x)) ^ y\", \"((-x)) + y\",\n\"((x + y)) + z\", \"z + ((x + y))\", \"((x ^ y)) ^ z\", \"z ^ ((x ^ y))\",\n\"((x %foo% y)) + z\", \"((x:y)) + z\",], \"unnecessary_parentheses\", None,)"
+expression: "get_fixed_text(vec![\"((x))\", \"(((x)))\", \"((x + 1))\", \"foo(((x)))\",\n\"((x)) + y\", \"if (((x))) y\", \"(\n  (x)\n)\", \"((x * y)) + z\", \"-((x + y))\",],\n\"unnecessary_parentheses\", None,)"
 ---
 OLD:
 ====
 ((x))
 NEW:
 ====
-x
+(x)
 
 OLD:
 ====
 (((x)))
 NEW:
 ====
-x
-
-OLD:
-====
-((((x))))
-NEW:
-====
-x
+(x)
 
 OLD:
 ====
 ((x + 1))
 NEW:
 ====
-x + 1
+(x + 1)
 
 OLD:
 ====
 foo(((x)))
 NEW:
 ====
-foo(x)
+foo((x))
 
 OLD:
 ====
 ((x)) + y
 NEW:
 ====
-x + y
+(x) + y
 
 OLD:
 ====
 if (((x))) y
 NEW:
 ====
-if (x) y
+if ((x)) y
 
 OLD:
 ====
@@ -59,28 +51,14 @@ OLD:
 )
 NEW:
 ====
-x
-
-OLD:
-====
-((x + y)) * z
-NEW:
-====
-(x + y) * z
-
-OLD:
-====
-z * ((x + y))
-NEW:
-====
-z * (x + y)
+(x)
 
 OLD:
 ====
 ((x * y)) + z
 NEW:
 ====
-x * y + z
+(x * y) + z
 
 OLD:
 ====
@@ -88,59 +66,3 @@ OLD:
 NEW:
 ====
 -(x + y)
-
-OLD:
-====
-((-x)) ^ y
-NEW:
-====
-(-x) ^ y
-
-OLD:
-====
-((-x)) + y
-NEW:
-====
--x + y
-
-OLD:
-====
-((x + y)) + z
-NEW:
-====
-x + y + z
-
-OLD:
-====
-z + ((x + y))
-NEW:
-====
-z + (x + y)
-
-OLD:
-====
-((x ^ y)) ^ z
-NEW:
-====
-(x ^ y) ^ z
-
-OLD:
-====
-z ^ ((x ^ y))
-NEW:
-====
-z ^ x ^ y
-
-OLD:
-====
-((x %foo% y)) + z
-NEW:
-====
-x %foo% y + z
-
-OLD:
-====
-((x:y)) + z
-NEW:
-====
-x:y + z

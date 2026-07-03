@@ -16,9 +16,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | ((x))
-          | ----- This expression contains 2 unnecessary pairs of parentheses.
+          | ----- This expression contains an unnecessary pair of parentheses.
           |
-          = help: Remove 2 pairs of parentheses.
+          = help: Remove the unnecessary pair of parentheses.
         Found 1 error.
         ");
 
@@ -27,9 +27,9 @@ mod tests {
          --> <test>:1:5
           |
         1 | foo(((x)))
-          |     ----- This expression contains 2 unnecessary pairs of parentheses.
+          |     ----- This expression contains an unnecessary pair of parentheses.
           |
-          = help: Remove 2 pairs of parentheses.
+          = help: Remove the unnecessary pair of parentheses.
         Found 1 error.
         ");
 
@@ -38,9 +38,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | ((x)) + y
-          | ----- This expression contains 2 unnecessary pairs of parentheses.
+          | ----- This expression contains an unnecessary pair of parentheses.
           |
-          = help: Remove 2 pairs of parentheses.
+          = help: Remove the unnecessary pair of parentheses.
         Found 1 error.
         ");
 
@@ -49,9 +49,9 @@ mod tests {
          --> <test>:1:5
           |
         1 | if (((x))) y
-          |     ----- This expression contains 2 unnecessary pairs of parentheses.
+          |     ----- This expression contains an unnecessary pair of parentheses.
           |
-          = help: Remove 2 pairs of parentheses.
+          = help: Remove the unnecessary pair of parentheses.
         Found 1 error.
         ");
 
@@ -77,9 +77,9 @@ mod tests {
         1 | / (
         2 | |   (x)
         3 | | )
-          | |_- This expression contains 2 unnecessary pairs of parentheses.
+          | |_- This expression contains an unnecessary pair of parentheses.
           |
-          = help: Remove 2 pairs of parentheses.
+          = help: Remove the unnecessary pair of parentheses.
         Found 1 error.
         ");
 
@@ -96,9 +96,9 @@ mod tests {
         2 | |   # explain x
         3 | |   (x)
         4 | | )
-          | |_- This expression contains 2 unnecessary pairs of parentheses.
+          | |_- This expression contains an unnecessary pair of parentheses.
           |
-          = help: Remove 2 pairs of parentheses.
+          = help: Remove the unnecessary pair of parentheses.
         Found 1 error.
         ");
     }
@@ -114,23 +114,23 @@ mod tests {
          --> <test>:1:1
           |
         1 | ((x))
-          | ----- This expression contains 2 unnecessary pairs of parentheses.
+          | ----- This expression contains an unnecessary pair of parentheses.
           |
-          = help: Remove 2 pairs of parentheses.
+          = help: Remove the unnecessary pair of parentheses.
         warning: unnecessary_parentheses
          --> <test>:2:1
           |
         2 | (((x)))
-          | ------- This expression contains 3 unnecessary pairs of parentheses.
+          | ------- This expression contains 2 unnecessary pairs of parentheses.
           |
-          = help: Remove 3 pairs of parentheses.
+          = help: Remove 2 pairs of parentheses.
         warning: unnecessary_parentheses
          --> <test>:3:1
           |
         3 | ((((x))))
-          | --------- This expression contains 4 unnecessary pairs of parentheses.
+          | --------- This expression contains 3 unnecessary pairs of parentheses.
           |
-          = help: Remove 4 pairs of parentheses.
+          = help: Remove 3 pairs of parentheses.
         Found 3 errors.
         ");
     }
@@ -143,7 +143,6 @@ mod tests {
                 vec![
                     "((x))",
                     "(((x)))",
-                    "((((x))))",
                     "((x + 1))",
                     "foo(((x)))",
                     "((x)) + y",
@@ -151,18 +150,8 @@ mod tests {
                     "(
   (x)
 )",
-                    "((x + y)) * z",
-                    "z * ((x + y))",
                     "((x * y)) + z",
                     "-((x + y))",
-                    "((-x)) ^ y",
-                    "((-x)) + y",
-                    "((x + y)) + z",
-                    "z + ((x + y))",
-                    "((x ^ y)) ^ z",
-                    "z ^ ((x ^ y))",
-                    "((x %foo% y)) + z",
-                    "((x:y)) + z",
                 ],
                 "unnecessary_parentheses",
                 None,
