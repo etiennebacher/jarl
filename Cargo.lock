@@ -29,7 +29,7 @@ dependencies = [
 [[package]]
 name = "air_r_factory"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+source = "git+https://github.com/etiennebacher/air?branch=pratt-parser#865c4ca4339ffb65340a28f44ea0986d1075841e"
 dependencies = [
  "air_r_syntax",
  "biome_rowan",
@@ -38,13 +38,14 @@ dependencies = [
 [[package]]
 name = "air_r_formatter"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+source = "git+https://github.com/etiennebacher/air?branch=pratt-parser#865c4ca4339ffb65340a28f44ea0986d1075841e"
 dependencies = [
  "air_r_syntax",
  "biome_formatter",
  "biome_rowan",
  "comments",
  "itertools",
+ "line_ending",
  "settings",
  "tracing",
 ]
@@ -52,7 +53,7 @@ dependencies = [
 [[package]]
 name = "air_r_parser"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+source = "git+https://github.com/etiennebacher/air?branch=pratt-parser#865c4ca4339ffb65340a28f44ea0986d1075841e"
 dependencies = [
  "air_r_factory",
  "air_r_syntax",
@@ -61,14 +62,12 @@ dependencies = [
  "biome_unicode_table",
  "serde",
  "tracing",
- "tree-sitter",
- "tree-sitter-r",
 ]
 
 [[package]]
 name = "air_r_syntax"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+source = "git+https://github.com/etiennebacher/air?branch=pratt-parser#865c4ca4339ffb65340a28f44ea0986d1075841e"
 dependencies = [
  "biome_rowan",
  "serde",
@@ -409,16 +408,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e629a66d692cb9ff1a1c664e41771b3dcaf961985a9774c0eb0bd1b51cf60a48"
 
 [[package]]
-name = "cc"
-version = "1.2.56"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aebf35691d1bfb0ac386a69bac2fde4dd276fb618cf8bf4f5318fe285e821bb2"
-dependencies = [
- "find-msvc-tools",
- "shlex",
-]
-
-[[package]]
 name = "cfg-if"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -482,7 +471,7 @@ dependencies = [
 [[package]]
 name = "comments"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+source = "git+https://github.com/etiennebacher/air?branch=pratt-parser#865c4ca4339ffb65340a28f44ea0986d1075841e"
 
 [[package]]
 name = "console"
@@ -640,12 +629,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
 
 [[package]]
-name = "find-msvc-tools"
-version = "0.1.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5baebc0774151f905a1a2cc41989300b1e6fbb29aff0ceffa1064fdd3088d582"
-
-[[package]]
 name = "foldhash"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -663,7 +646,7 @@ dependencies = [
 [[package]]
 name = "fs"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+source = "git+https://github.com/etiennebacher/air?branch=pratt-parser#865c4ca4339ffb65340a28f44ea0986d1075841e"
 dependencies = [
  "path-absolutize",
 ]
@@ -995,7 +978,7 @@ checksum = "6800badb6cb2082ffd7b6a67e6125bb39f18782f793520caee8cb8846be06112"
 [[package]]
 name = "line_ending"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+source = "git+https://github.com/etiennebacher/air?branch=pratt-parser#865c4ca4339ffb65340a28f44ea0986d1075841e"
 dependencies = [
  "memchr",
  "settings",
@@ -1395,7 +1378,7 @@ dependencies = [
 [[package]]
 name = "settings"
 version = "0.0.0"
-source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+source = "git+https://github.com/etiennebacher/air?branch=pratt-parser#865c4ca4339ffb65340a28f44ea0986d1075841e"
 dependencies = [
  "biome_formatter",
  "serde",
@@ -1409,12 +1392,6 @@ checksum = "f40ca3c46823713e0d4209592e8d6e826aa57e928f09752619fc696c499637f6"
 dependencies = [
  "lazy_static",
 ]
-
-[[package]]
-name = "shlex"
-version = "1.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "similar"
@@ -1446,12 +1423,6 @@ name = "stable_deref_trait"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
-
-[[package]]
-name = "streaming-iterator"
-version = "0.1.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b2231b7c3057d5e4ad0156fb3dc807d900806020c5ffa3ee6ff2c8c76fb8520"
 
 [[package]]
 name = "strip-ansi-escapes"
@@ -1668,34 +1639,6 @@ dependencies = [
  "thread_local",
  "tracing-core",
  "tracing-log",
-]
-
-[[package]]
-name = "tree-sitter"
-version = "0.24.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5387dffa7ffc7d2dae12b50c6f7aab8ff79d6210147c6613561fc3d474c6f75"
-dependencies = [
- "cc",
- "regex",
- "regex-syntax",
- "streaming-iterator",
- "tree-sitter-language",
-]
-
-[[package]]
-name = "tree-sitter-language"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "009994f150cc0cd50ff54917d5bc8bffe8cad10ca10d81c34da2ec421ae61782"
-
-[[package]]
-name = "tree-sitter-r"
-version = "1.2.0"
-source = "git+https://github.com/r-lib/tree-sitter-r?rev=37a6b1b5c8cc2426fd6ec16ca818cc98597d755b#37a6b1b5c8cc2426fd6ec16ca818cc98597d755b"
-dependencies = [
- "cc",
- "tree-sitter-language",
 ]
 
 [[package]]
@@ -2162,7 +2105,7 @@ dependencies = [
 [[package]]
 name = "workspace"
 version = "0.1.0"
-source = "git+https://github.com/posit-dev/air?rev=0eadd6938d0316b1fc885c91e7af55d7c8de8530#0eadd6938d0316b1fc885c91e7af55d7c8de8530"
+source = "git+https://github.com/etiennebacher/air?branch=pratt-parser#865c4ca4339ffb65340a28f44ea0986d1075841e"
 dependencies = [
  "air_r_formatter",
  "air_r_parser",

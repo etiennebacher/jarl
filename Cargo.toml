@@ -11,10 +11,10 @@ repository = "https://github.com/etiennebacher/jarl/"
 readme = "README.md"
 
 [workspace.dependencies]
-air_fs = { package = "fs", git = "https://github.com/posit-dev/air", rev = "0eadd6938d0316b1fc885c91e7af55d7c8de8530" }
-air_r_parser = { git = "https://github.com/posit-dev/air", rev = "0eadd6938d0316b1fc885c91e7af55d7c8de8530" }
-air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "0eadd6938d0316b1fc885c91e7af55d7c8de8530" }
-air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air", rev = "0eadd6938d0316b1fc885c91e7af55d7c8de8530" }
+air_fs = { package = "fs", git = "https://github.com/etiennebacher/air", branch = "pratt-parser" }
+air_r_parser = { git = "https://github.com/etiennebacher/air", branch = "pratt-parser" }
+air_r_syntax = { git = "https://github.com/etiennebacher/air", branch = "pratt-parser" }
+air_workspace = { package = "workspace", git = "https://github.com/etiennebacher/air", branch = "pratt-parser" }
 anyhow = "1.0.94"
 biome_formatter = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
 biome_rowan = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
