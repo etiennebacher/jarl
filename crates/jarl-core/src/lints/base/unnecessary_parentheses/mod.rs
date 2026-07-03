@@ -185,6 +185,7 @@ mod tests {
         expect_no_lint("x", "unnecessary_parentheses", None);
         expect_no_lint("(x)", "unnecessary_parentheses", None);
         expect_no_lint("(x + y) * z", "unnecessary_parentheses", None);
+        expect_no_lint("((x + y) + 1)", "unnecessary_parentheses", None);
         expect_no_lint("foo(x)", "unnecessary_parentheses", None);
         expect_no_lint("if (x) y", "unnecessary_parentheses", None);
         expect_no_lint("while (x) y", "unnecessary_parentheses", None);
