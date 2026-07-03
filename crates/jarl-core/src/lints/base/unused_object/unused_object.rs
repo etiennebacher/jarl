@@ -51,8 +51,10 @@ pub fn unused_object(
             if info.is_definition_used(scope_id, def_id, def) {
                 continue;
             }
-            // Top-level bindings are shared across a package's files, so an
-            // object read from a sibling file (or exported) is still used.
+            // Top-level bindings are visible to other files — package
+            // siblings share the namespace, and `source()` injects them into
+            // the sourcing file — so an object read from another file (or
+            // exported) is still used.
             if scope_id == top_level
                 && (is_exported(semantic, exports, scope_id, def)
                     || is_used_cross_file(semantic, cross_file_used, scope_id, def))
@@ -124,9 +126,10 @@ fn is_exported(
     exports.contains(name)
 }
 
-/// True when this top-level binding is read from another file in the same
-/// package. `cross_file_used` is precomputed from oak's cross-file resolution
-/// (see [`crate::db::AnalysisDb::cross_file_used_objects`]).
+/// True when this top-level binding is read from another file — a sibling in
+/// the same package, or a file that `source()`s this one. `cross_file_used`
+/// is precomputed from oak's cross-file resolution (see
+/// [`crate::db::AnalysisDb::cross_file_used_objects`]).
 fn is_used_cross_file(
     semantic: &SemanticIndex,
     cross_file_used: &std::collections::HashSet<String>,

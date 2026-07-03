@@ -963,28 +963,62 @@ fn string_literal_value(node: &RSyntaxNode) -> Option<String> {
 }
 
 /// Resolve a `source("path")` argument against the currently-analyzed file.
-/// Absolute paths are taken as-is; relative paths are joined to the
-/// directory containing the analyzed file. When the analyzed file has no
-/// parent directory (e.g. just a bare filename), the relative path is
-/// returned as-is — `std::fs` will resolve it against the process CWD.
+///
+/// Absolute paths are taken as-is. Relative paths are tried against a chain
+/// of anchors, nearest first: the analyzed file's directory (helpers usually
+/// sit next to the script), then each ancestor up to the process CWD. R
+/// itself resolves `source()` against `getwd()`, and the project root a
+/// script is run from sits somewhere between the file and where jarl was
+/// invoked — trying every level catches layouts like `jarl check foo` where
+/// `foo/sub/a.R` sources a file at `foo/` (the same reason oak's salsa
+/// resolver anchors at the workspace root). Lint paths are CWD-relative, so
+/// walking their ancestors down to `""` is exactly that chain and never
+/// escapes the CWD.
 fn resolve_sourced_path(current_file: &std::path::Path, path: &str) -> Option<std::path::PathBuf> {
     let candidate = std::path::Path::new(path);
     if candidate.is_absolute() {
         return Some(candidate.to_path_buf());
     }
-    match current_file.parent() {
-        Some(dir) if !dir.as_os_str().is_empty() => Some(dir.join(candidate)),
-        _ => Some(candidate.to_path_buf()),
+    let file_dir = current_file.parent().unwrap_or(std::path::Path::new(""));
+    let fallback = file_dir.join(candidate);
+
+    if current_file.is_absolute() {
+        // An absolute analyzed path has no CWD-bounded ancestor chain to
+        // walk (it would climb toward the filesystem root); anchor next to
+        // the file, then at the CWD.
+        if fallback.is_file() {
+            return Some(fallback);
+        }
+        if candidate.is_file() {
+            return Some(candidate.to_path_buf());
+        }
+        return Some(fallback);
+    }
+
+    let mut dir = file_dir;
+    loop {
+        let resolved = dir.join(candidate);
+        if resolved.is_file() {
+            return Some(resolved);
+        }
+        if dir.as_os_str().is_empty() {
+            // Every anchor between the file and the CWD missed; keep the
+            // file-relative guess so callers fail uniformly when reading it.
+            return Some(fallback);
+        }
+        dir = dir.parent().unwrap_or(std::path::Path::new(""));
     }
 }
 
 /// `ImportsResolver` impl that plugs `source("path")` injection into oak's
 /// builder.
 ///
-/// The resolver parses the target file, builds a noop-resolved
-/// `SemanticIndex` for it, and reports its top-level definitions as
-/// `SourceResolution.names`. Oak then materialises `DefinitionKind::Import`
-/// entries at the `source()` call site in the calling file's index.
+/// The resolver parses the target file, builds its `SemanticIndex` with
+/// another `JarlImportsResolver` (so `source()` chains resolve
+/// transitively), and reports its top-level definitions — own and
+/// forwarded — as `SourceResolution.names`. Oak then materialises
+/// `DefinitionKind::Import` entries at the `source()` call site in the
+/// calling file's index.
 ///
 /// This handles the *defined-by-source* side of `source()` semantics.
 /// The complementary *used-by-source* side — names *read* by the sourced
@@ -993,33 +1027,61 @@ fn resolve_sourced_path(current_file: &std::path::Path, path: &str) -> Option<st
 /// oak's [`oak_semantic::SourceResolution`] only carries defined names.
 pub struct JarlImportsResolver {
     current_file: std::path::PathBuf,
+    /// Files already resolved along this `source()` chain (absolutized),
+    /// the analyzed file included. Shared across the whole chain so cyclic
+    /// `source()` graphs terminate: a file is resolved at most once per
+    /// chain, and a repeat contributes no names (mirroring oak_db's
+    /// cycle-recovery on `File::exports`).
+    visited: std::rc::Rc<std::cell::RefCell<HashSet<std::path::PathBuf>>>,
 }
 
 impl JarlImportsResolver {
     pub fn new(current_file: impl Into<std::path::PathBuf>) -> Self {
-        Self { current_file: current_file.into() }
+        let current_file = current_file.into();
+        let mut visited = HashSet::new();
+        visited.insert(absolutize_path(&current_file));
+        Self {
+            current_file,
+            visited: std::rc::Rc::new(std::cell::RefCell::new(visited)),
+        }
     }
 }
 
 impl oak_semantic::ImportsResolver for JarlImportsResolver {
     fn resolve_source(&mut self, path: &str) -> Option<oak_semantic::SourceResolution> {
         let target = resolve_sourced_path(&self.current_file, path)?;
+        let target_key = absolutize_path(&target);
+        if !self.visited.borrow_mut().insert(target_key.clone()) {
+            return None;
+        }
         let contents = std::fs::read_to_string(&target).ok()?;
         let parsed = air_r_parser::parse(&contents, RParserOptions::default());
         if parsed.has_error() {
             return None;
         }
+        // The URL is built from the absolutized path so consumers (e.g. the
+        // cross-file pre-pass) can round-trip it back to a filesystem path.
         // `Url::from_file_path` rejects relative paths; fall back to a
-        // synthetic `file:///` URL so test fixtures (which often use
-        // relative paths) still index.
-        let url = url::Url::from_file_path(&target)
+        // synthetic `file:///` URL so exotic paths still index.
+        let url = url::Url::from_file_path(&target_key)
             .ok()
-            .or_else(|| url::Url::parse(&format!("file:///{}", target.display())).ok())?;
-        let sub_index =
-            oak_semantic::build_index(&parsed.tree(), oak_semantic::NoopImportsResolver);
-        // TODO: extend to transitive `source()` resolution by recursing
-        // through nested `SemanticCallKind::Source` entries here.
+            .or_else(|| url::Url::parse(&format!("file:///{}", target_key.display())).ok())?;
+        // Recurse with the chain's visited set: the target's own `source()`
+        // calls inject Import entries into its index, so its exports below
+        // include names it forwards from deeper files.
+        let sub_resolver = JarlImportsResolver {
+            current_file: target,
+            visited: std::rc::Rc::clone(&self.visited),
+        };
+        let sub_index = oak_semantic::build_index(&parsed.tree(), sub_resolver);
         let names: Vec<String> = sub_index.exports().keys().map(|s| s.to_string()).collect();
         Some(oak_semantic::SourceResolution { url, names, packages: Vec::new() })
     }
+}
+
+/// Absolutize `path` against the process CWD, without touching the
+/// filesystem. Gives `source()` targets a canonical key so cycle detection
+/// and URL construction agree regardless of how the path was spelled.
+fn absolutize_path(path: &std::path::Path) -> std::path::PathBuf {
+    std::path::absolute(path).unwrap_or_else(|_| path.to_path_buf())
 }
