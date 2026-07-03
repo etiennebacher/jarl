@@ -115,16 +115,15 @@ pub fn quotes(
 ) -> anyhow::Result<Option<Diagnostic>> {
     let string = unwrap_or_return_none!(ast.as_r_string_value());
 
-    let token = string.content_token().unwrap();
-    let text = token.text_trimmed();
+    let text = string.to_trimmed_string();
 
     // Malformed raw strings like `r'(hello]'` are parsed as identifier (`r`)
     // followed by a regular string literal. Skip these invalid forms.
-    if is_malformed_raw_string(ast, text) {
+    if is_malformed_raw_string(ast, &text) {
         return Ok(None);
     }
 
-    let parsed = unwrap_or_return_none!(parse_string(text));
+    let parsed = unwrap_or_return_none!(parse_string(&text));
 
     let quote_char = preferred_quote.as_char();
 
