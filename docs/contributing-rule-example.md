@@ -16,7 +16,7 @@ So far, most (if not all) rules in Jarl come from [the list of rules available i
 If you want to add a rule that is not in `lintr`, please [open an issue](https://github.com/etiennebacher/jarl/issues/new/choose) first.
 
 Note that not all `lintr` rules are suitable for Jarl.
-In particular, rules that are only about formatting (spaces before parenthesis, newlines between arguments, etc.) are **out of scope** for Jarl.
+In particular, rules that are only about formatting (spaces before parentheses, newlines between arguments, etc.) are **out of scope** for Jarl.
 
 **If you are unsure about whether a rule can or should be implemented, open an issue first.**
 
