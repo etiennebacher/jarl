@@ -186,7 +186,9 @@ fn has_incomplete_delimiters(text: &str, open: &str, close: &str) -> bool {
             continue;
         }
 
-        index += 1;
+        // Advance by the full width of the current character so `index` always
+        // lands on a char boundary, even for multi-byte UTF-8 characters.
+        index += slice.chars().next().map_or(1, char::len_utf8);
     }
 
     balance != 0
