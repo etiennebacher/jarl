@@ -83,11 +83,12 @@ pub struct PackageAnalysis {
     /// exported.
     pub unused_functions: HashMap<PathBuf, Vec<(String, TextRange, String)>>,
     /// Per-file set of top-level object names that are read from *another*
-    /// file in the same package. Keyed by relativized file path. All of a
-    /// package's R files share one namespace, so a top-level binding defined
-    /// in one file and used in another is not unused; `unused_object`
-    /// consults this to avoid flagging such cross-file-used objects. Computed
-    /// from oak's cross-file name resolution (`File::resolve_at`).
+    /// file. Keyed by relativized file path. All of a package's R files share
+    /// one namespace, so a top-level binding defined in one file and used in
+    /// another is not unused; the same holds for a binding in a script that
+    /// another file `source()`s and then reads. `unused_object` consults this
+    /// to avoid flagging such cross-file-used objects. Computed in
+    /// [`crate::db::AnalysisDb::cross_file_used_objects`].
     pub cross_file_used: HashMap<PathBuf, HashSet<String>>,
     /// Per-file semantic index built during the cross-file pass, keyed by
     /// relativized path. The parallel lint pass reuses these instead of
@@ -389,8 +390,11 @@ fn make_package_analysis_inner(
     // another file, and keep the per-file indices for the lint pass to reuse.
     // In deferred mode the fused lint-only pass computes cross-file usage from
     // its own single parse, so we skip the parse-every-file pre-pass here.
+    // Loose scripts have no package root for the db to scan, so the lint set
+    // itself is their file universe: hand them over directly and they resolve
+    // against each other through `source()` edges.
     let cross_file = if check_unused_object && !defer_cross_file {
-        db.cross_file_used_objects()
+        db.cross_file_used_objects(&loose_script_paths(paths))
     } else {
         crate::db::CrossFileAnalysis::default()
     };
@@ -402,6 +406,26 @@ fn make_package_analysis_inner(
         file_indices: cross_file.indices,
     };
     (analysis, Some(db))
+}
+
+/// The linted R files that live outside any R package (no `DESCRIPTION`
+/// ancestor). These are invisible to the oak scan — which is bounded by
+/// package roots — so the cross-file pass takes them straight from the lint
+/// set. Package membership is cached per parent directory: siblings share
+/// the walk up to the root.
+fn loose_script_paths(paths: &[PathBuf]) -> Vec<PathBuf> {
+    let mut in_package_by_dir: HashMap<PathBuf, bool> = HashMap::new();
+    paths
+        .iter()
+        .filter(|path| has_r_extension(path))
+        .filter(|path| {
+            let dir = path.parent().unwrap_or_else(|| Path::new("")).to_path_buf();
+            !*in_package_by_dir
+                .entry(dir)
+                .or_insert_with(|| find_package_root(path).is_some())
+        })
+        .cloned()
+        .collect()
 }
 
 /// Determine the `FileScope` for a non-R/ file based on its path.

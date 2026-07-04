@@ -19,7 +19,7 @@ use air_r_syntax::{
     AnyRArgumentName, AnyRExpression, RArgument, RArgumentList, RBinaryExpression, RCall,
     RExtractExpression, RNamespaceExpression, RStringValue, RSyntaxKind, RSyntaxNode,
 };
-use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange};
+use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange, TextSize};
 use oak_core::syntax_ext::{RIdentifierExt, RStringValueExt};
 use oak_semantic::DefinitionId;
 use oak_semantic::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex};
@@ -34,11 +34,18 @@ pub struct SemanticInfo<'a> {
     /// Path of the file being analyzed. Used to resolve `source("path")`
     /// arguments against the current file's directory.
     file: &'a std::path::Path,
-    /// Names that have a synthetic use from AST passes (string interpolation,
-    /// `do.call("f", …)`, `..cols`, `on.exit` bodies, loop assignment LHSes,
-    /// short-circuit assignment LHSes). A definition whose symbol name is in
-    /// this set is treated as used.
+    /// Names that have a synthetic use from AST passes (`do.call("f", …)`,
+    /// `..cols`, `on.exit` bodies, loop assignment LHSes, short-circuit
+    /// assignment LHSes, custom infix operators). A definition whose symbol
+    /// name is in this set is treated as used.
     synthetic_used_names: HashSet<String>,
+    /// String-interpolation reads (`glue("{x}")`, cli markup, custom
+    /// delimiters) as `(name, read range)` pairs. Unlike `synthetic_used_names`,
+    /// these are resolved position-aware in
+    /// [`Self::precompute_interpolation_uses`]: a read resolves to the
+    /// definition it actually sees, so a *later* same-scope reassignment of the
+    /// name is not kept alive by it.
+    interpolation_uses: Vec<(String, TextRange)>,
     /// Identifier `Use` ranges that should be ignored because they sit inside
     /// an NSE call argument (`quote(x)`, `substitute(…)`, …).
     nse_ranges: Vec<TextRange>,
@@ -72,6 +79,7 @@ impl<'a> SemanticInfo<'a> {
             root: root.clone(),
             file,
             synthetic_used_names: HashSet::new(),
+            interpolation_uses: Vec::new(),
             nse_ranges: Vec::new(),
             unquote_ranges: Vec::new(),
             local_body_ranges: Vec::new(),
@@ -81,6 +89,7 @@ impl<'a> SemanticInfo<'a> {
         this.collect_ast_passes(expressions);
         let scopes = this.scope_ids();
         this.precompute_reaching_uses(&scopes);
+        this.precompute_interpolation_uses();
         this
     }
 
@@ -215,12 +224,15 @@ impl<'a> SemanticInfo<'a> {
         let Some(token) = node.first_token() else {
             return;
         };
+        // The read happens where the string sits, so identifiers inside it
+        // resolve against the definitions live at this position.
+        let read_range = node.text_trimmed_range();
         // cli's inline markup (`{.field {x}}`) interleaves styling with
         // interpolation, so strings inside a cli call need a markup-aware scan
         // rather than the plain glue scan.
         if node_in_cli_markup_call(node) {
             if let Some(content) = strings::get_string_literal_contents(token.text_trimmed()) {
-                self.collect_cli_interpolation(&content);
+                self.collect_cli_interpolation(&content, read_range);
             }
             return;
         }
@@ -229,7 +241,7 @@ impl<'a> SemanticInfo<'a> {
         // the delimiters via `.open`/`.close` are handled separately in
         // `collect_custom_glue_interpolation`.
         for segment in scan_interpolation_segments(token.text_trimmed(), "{", "}") {
-            self.collect_identifiers_in_interpolation(segment);
+            self.collect_identifiers_in_interpolation(segment, read_range);
         }
     }
 
@@ -241,12 +253,12 @@ impl<'a> SemanticInfo<'a> {
     /// still interpolated. So `{.field {x}}` uses `x`, but `{.field x}` does
     /// not. Markup spans recurse into their content; plain segments are parsed
     /// as R code.
-    fn collect_cli_interpolation(&mut self, content: &str) {
+    fn collect_cli_interpolation(&mut self, content: &str, read_range: TextRange) {
         for segment in scan_interpolation_segments(content, "{", "}") {
             if let Some(inner) = cli_markup_content(segment) {
-                self.collect_cli_interpolation(inner);
+                self.collect_cli_interpolation(inner, read_range);
             } else {
-                self.collect_identifiers_in_interpolation(segment);
+                self.collect_identifiers_in_interpolation(segment, read_range);
             }
         }
     }
@@ -283,16 +295,18 @@ impl<'a> SemanticInfo<'a> {
             let Some(content) = strings::get_string_literal_contents(token.text_trimmed()) else {
                 continue;
             };
+            let read_range = value.text_trimmed_range();
             for segment in scan_interpolation_segments(&content, &open, &close) {
-                self.collect_identifiers_in_interpolation(segment);
+                self.collect_identifiers_in_interpolation(segment, read_range);
             }
         }
     }
 
     /// Parse a glue-style `{...}` interpolation as R code and collect every
-    /// identifier reference. Skips the field side of `x$a` / `x@a` and the
-    /// namespace side of `pkg::name` — those name members, not bindings.
-    fn collect_identifiers_in_interpolation(&mut self, src: &str) {
+    /// identifier reference as an interpolation use at `read_range`. Skips the
+    /// field side of `x$a` / `x@a` and the namespace side of `pkg::name` —
+    /// those name members, not bindings.
+    fn collect_identifiers_in_interpolation(&mut self, src: &str, read_range: TextRange) {
         let parsed = air_r_parser::parse(src, RParserOptions::default());
         if parsed.has_error() {
             return;
@@ -305,8 +319,8 @@ impl<'a> SemanticInfo<'a> {
                 continue;
             }
             if let Some(token) = node.first_token() {
-                self.synthetic_used_names
-                    .insert(token.text_trimmed().to_string());
+                self.interpolation_uses
+                    .push((token.text_trimmed().to_string(), read_range));
             }
         }
     }
@@ -341,6 +355,15 @@ impl<'a> SemanticInfo<'a> {
         if op_text == "~" {
             self.formula_ranges.push(bin.syntax().text_trimmed_range());
             return;
+        }
+
+        // Custom infix operators (`a %op% b`): oak doesn't model the operator
+        // as a use of the `%op%` binding, so an operator whose only reference
+        // is at a call site would look unused. Record the operator name as a
+        // synthetic use. Only user-defined `%...%` bindings can match; R's
+        // built-in operators have no local definition to keep alive.
+        if op_text.starts_with('%') && op_text.ends_with('%') {
+            self.synthetic_used_names.insert(op_text.to_string());
         }
 
         // Short-circuit operators: `cond || (x <- 2)` may skip the
@@ -556,6 +579,57 @@ impl<'a> SemanticInfo<'a> {
         best.map(|(id, _)| id)
     }
 
+    /// Resolve each string-interpolation read to the definition(s) it uses and
+    /// record them in `reaching_used`, mirroring the real-use pass. Runs after
+    /// the AST pass so the NSE ranges it consults are already collected.
+    fn precompute_interpolation_uses(&mut self) {
+        let uses = std::mem::take(&mut self.interpolation_uses);
+        for (name, read_range) in &uses {
+            self.mark_interpolation_use(name, read_range.start());
+        }
+    }
+
+    /// Mark the definition(s) an interpolated read of `name` at `pos` resolves
+    /// to.
+    ///
+    /// Interpolation reads are position-aware, so — unlike `synthetic_used_names`
+    /// — a *later* same-scope reassignment of the name isn't kept alive. Walk
+    /// outward from the reading scope to the scope that binds `name`:
+    /// - if that's the reading scope, mark every definition that precedes the
+    ///   read: more than one can reach it through branching control flow (e.g.
+    ///   an `if`/`else` assigning in both arms), but a later reassignment is
+    ///   excluded so it stays reported;
+    /// - if it's an enclosing scope, the read is a closure capture evaluated
+    ///   later, so textual order is irrelevant and every definition of the name
+    ///   there is kept alive.
+    fn mark_interpolation_use(&mut self, name: &str, pos: TextSize) {
+        let index = self.index;
+        let (read_scope, _) = index.scope_at(pos);
+        for owner in index.ancestor_scope_ids(read_scope) {
+            let Some(symbol_id) = index.symbols(owner).id(name) else {
+                continue;
+            };
+            let defs: Vec<(DefinitionId, TextSize)> = index
+                .definitions(owner)
+                .iter()
+                .filter(|(_, def)| def.symbol() == symbol_id && !self.is_in_nse(def.range()))
+                .map(|(id, def)| (id, def.range().start()))
+                .collect();
+            // `name` may be referenced but not bound in this scope; if so, keep
+            // walking outward to the scope that actually binds it.
+            if defs.is_empty() {
+                continue;
+            }
+            let captured = owner != read_scope;
+            for (def_id, start) in defs {
+                if captured || start < pos {
+                    self.reaching_used.insert((owner, def_id));
+                }
+            }
+            return;
+        }
+    }
+
     fn is_used_inside_local_body(&self, scope_id: ScopeId, def: &Definition) -> bool {
         if self.local_body_ranges.is_empty() {
             return false;
@@ -601,8 +675,10 @@ fn in_any_range(target: TextRange, ranges: &[TextRange]) -> bool {
 /// Extract glue-style interpolation segments delimited by `open`/`close`.
 /// Doubled delimiters (`{{`/`}}` for the default case) are glue escapes and
 /// are skipped. Nested delimiters are tracked so `{f({x})}` yields the whole
-/// inner expression. Returns the source slices between the outermost
-/// delimiter pairs.
+/// inner expression — except when `open == close` (e.g. `.open`/`.close`
+/// both `|`), where the delimiters are indistinguishable so nesting is
+/// impossible and the first delimiter after an opener always closes it.
+/// Returns the source slices between the outermost delimiter pairs.
 fn scan_interpolation_segments<'t>(text: &'t str, open: &str, close: &str) -> Vec<&'t str> {
     let mut segments = Vec::new();
     if open.is_empty() || close.is_empty() {
@@ -628,7 +704,9 @@ fn scan_interpolation_segments<'t>(text: &'t str, open: &str, close: &str) -> Ve
             let mut end = start;
             while end < text.len() && depth > 0 {
                 let rest = &text[end..];
-                if rest.starts_with(open) {
+                // When `open == close` a delimiter can only close the current
+                // segment; treating it as a nested opener would never balance.
+                if open != close && rest.starts_with(open) {
                     depth += 1;
                     end += open.len();
                 } else if rest.starts_with(close) {
@@ -885,28 +963,62 @@ fn string_literal_value(node: &RSyntaxNode) -> Option<String> {
 }
 
 /// Resolve a `source("path")` argument against the currently-analyzed file.
-/// Absolute paths are taken as-is; relative paths are joined to the
-/// directory containing the analyzed file. When the analyzed file has no
-/// parent directory (e.g. just a bare filename), the relative path is
-/// returned as-is — `std::fs` will resolve it against the process CWD.
+///
+/// Absolute paths are taken as-is. Relative paths are tried against a chain
+/// of anchors, nearest first: the analyzed file's directory (helpers usually
+/// sit next to the script), then each ancestor up to the process CWD. R
+/// itself resolves `source()` against `getwd()`, and the project root a
+/// script is run from sits somewhere between the file and where jarl was
+/// invoked — trying every level catches layouts like `jarl check foo` where
+/// `foo/sub/a.R` sources a file at `foo/` (the same reason oak's salsa
+/// resolver anchors at the workspace root). Lint paths are CWD-relative, so
+/// walking their ancestors down to `""` is exactly that chain and never
+/// escapes the CWD.
 fn resolve_sourced_path(current_file: &std::path::Path, path: &str) -> Option<std::path::PathBuf> {
     let candidate = std::path::Path::new(path);
     if candidate.is_absolute() {
         return Some(candidate.to_path_buf());
     }
-    match current_file.parent() {
-        Some(dir) if !dir.as_os_str().is_empty() => Some(dir.join(candidate)),
-        _ => Some(candidate.to_path_buf()),
+    let file_dir = current_file.parent().unwrap_or(std::path::Path::new(""));
+    let fallback = file_dir.join(candidate);
+
+    if current_file.is_absolute() {
+        // An absolute analyzed path has no CWD-bounded ancestor chain to
+        // walk (it would climb toward the filesystem root); anchor next to
+        // the file, then at the CWD.
+        if fallback.is_file() {
+            return Some(fallback);
+        }
+        if candidate.is_file() {
+            return Some(candidate.to_path_buf());
+        }
+        return Some(fallback);
+    }
+
+    let mut dir = file_dir;
+    loop {
+        let resolved = dir.join(candidate);
+        if resolved.is_file() {
+            return Some(resolved);
+        }
+        if dir.as_os_str().is_empty() {
+            // Every anchor between the file and the CWD missed; keep the
+            // file-relative guess so callers fail uniformly when reading it.
+            return Some(fallback);
+        }
+        dir = dir.parent().unwrap_or(std::path::Path::new(""));
     }
 }
 
 /// `ImportsResolver` impl that plugs `source("path")` injection into oak's
 /// builder.
 ///
-/// The resolver parses the target file, builds a noop-resolved
-/// `SemanticIndex` for it, and reports its top-level definitions as
-/// `SourceResolution.names`. Oak then materialises `DefinitionKind::Import`
-/// entries at the `source()` call site in the calling file's index.
+/// The resolver parses the target file, builds its `SemanticIndex` with
+/// another `JarlImportsResolver` (so `source()` chains resolve
+/// transitively), and reports its top-level definitions — own and
+/// forwarded — as `SourceResolution.names`. Oak then materialises
+/// `DefinitionKind::Import` entries at the `source()` call site in the
+/// calling file's index.
 ///
 /// This handles the *defined-by-source* side of `source()` semantics.
 /// The complementary *used-by-source* side — names *read* by the sourced
@@ -915,33 +1027,61 @@ fn resolve_sourced_path(current_file: &std::path::Path, path: &str) -> Option<st
 /// oak's [`oak_semantic::SourceResolution`] only carries defined names.
 pub struct JarlImportsResolver {
     current_file: std::path::PathBuf,
+    /// Files already resolved along this `source()` chain (absolutized),
+    /// the analyzed file included. Shared across the whole chain so cyclic
+    /// `source()` graphs terminate: a file is resolved at most once per
+    /// chain, and a repeat contributes no names (mirroring oak_db's
+    /// cycle-recovery on `File::exports`).
+    visited: std::rc::Rc<std::cell::RefCell<HashSet<std::path::PathBuf>>>,
 }
 
 impl JarlImportsResolver {
     pub fn new(current_file: impl Into<std::path::PathBuf>) -> Self {
-        Self { current_file: current_file.into() }
+        let current_file = current_file.into();
+        let mut visited = HashSet::new();
+        visited.insert(absolutize_path(&current_file));
+        Self {
+            current_file,
+            visited: std::rc::Rc::new(std::cell::RefCell::new(visited)),
+        }
     }
 }
 
 impl oak_semantic::ImportsResolver for JarlImportsResolver {
     fn resolve_source(&mut self, path: &str) -> Option<oak_semantic::SourceResolution> {
         let target = resolve_sourced_path(&self.current_file, path)?;
+        let target_key = absolutize_path(&target);
+        if !self.visited.borrow_mut().insert(target_key.clone()) {
+            return None;
+        }
         let contents = std::fs::read_to_string(&target).ok()?;
         let parsed = air_r_parser::parse(&contents, RParserOptions::default());
         if parsed.has_error() {
             return None;
         }
+        // The URL is built from the absolutized path so consumers (e.g. the
+        // cross-file pre-pass) can round-trip it back to a filesystem path.
         // `Url::from_file_path` rejects relative paths; fall back to a
-        // synthetic `file:///` URL so test fixtures (which often use
-        // relative paths) still index.
-        let url = url::Url::from_file_path(&target)
+        // synthetic `file:///` URL so exotic paths still index.
+        let url = url::Url::from_file_path(&target_key)
             .ok()
-            .or_else(|| url::Url::parse(&format!("file:///{}", target.display())).ok())?;
-        let sub_index =
-            oak_semantic::build_index(&parsed.tree(), oak_semantic::NoopImportsResolver);
-        // TODO: extend to transitive `source()` resolution by recursing
-        // through nested `SemanticCallKind::Source` entries here.
+            .or_else(|| url::Url::parse(&format!("file:///{}", target_key.display())).ok())?;
+        // Recurse with the chain's visited set: the target's own `source()`
+        // calls inject Import entries into its index, so its exports below
+        // include names it forwards from deeper files.
+        let sub_resolver = JarlImportsResolver {
+            current_file: target,
+            visited: std::rc::Rc::clone(&self.visited),
+        };
+        let sub_index = oak_semantic::build_index(&parsed.tree(), sub_resolver);
         let names: Vec<String> = sub_index.exports().keys().map(|s| s.to_string()).collect();
         Some(oak_semantic::SourceResolution { url, names, packages: Vec::new() })
     }
+}
+
+/// Absolutize `path` against the process CWD, without touching the
+/// filesystem. Gives `source()` targets a canonical key so cycle detection
+/// and URL construction agree regardless of how the path was spelled.
+fn absolutize_path(path: &std::path::Path) -> std::path::PathBuf {
+    std::path::absolute(path).unwrap_or_else(|_| path.to_path_buf())
 }

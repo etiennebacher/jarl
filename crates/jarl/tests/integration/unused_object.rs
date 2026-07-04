@@ -186,6 +186,251 @@ fn test_object_unused_across_package_files_is_flagged() -> anyhow::Result<()> {
 }
 
 #[test]
+fn test_object_read_by_sourcing_script_not_flagged() -> anyhow::Result<()> {
+    // Loose scripts (no DESCRIPTION anywhere): `a.R` sources `b.R` and then
+    // reads `x`, so `b.R`'s binding is consumed cross-file and not unused.
+    let case = CliTest::with_files([("b.R", "x <- 1\n"), ("a.R", "source(\"b.R\")\nprint(x)\n")])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_source_path_anchored_at_cwd_not_flagged() -> anyhow::Result<()> {
+    // R resolves `source("b.R")` against `getwd()`, so a script in a subfolder
+    // run from the project root reads the root's `b.R`. Nothing exists next to
+    // `foo/a.R`, so resolution falls back to the CWD anchor.
+    let case = CliTest::with_files([
+        ("b.R", "x <- 1\n"),
+        ("foo/a.R", "source(\"b.R\")\nprint(x)\n"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_source_path_anchored_at_linted_folder_not_flagged() -> anyhow::Result<()> {
+    // Scripts of a project run from its root anchor `source()` there, even
+    // when the project sits below jarl's CWD: `foo/sub/a.R` sources `b.R`
+    // living at `foo/`, and `jarl check foo` runs from the parent. The
+    // ancestor walk between the file's directory and the CWD finds it.
+    let case = CliTest::with_files([
+        ("foo/b.R", "x <- 1\n"),
+        ("foo/sub/a.R", "source(\"b.R\")\nprint(x)\n"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("foo")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_object_not_read_by_sourcing_script_is_flagged() -> anyhow::Result<()> {
+    // Sourcing alone doesn't consume a binding: `a.R` runs `b.R` but never
+    // reads `x`, so `x` is still unused.
+    let case = CliTest::with_files([
+        ("b.R", "x <- 1\n"),
+        ("a.R", "source(\"b.R\")\nprint(\"hi\")\n"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @r"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> b.R:1:1
+      |
+    1 | x <- 1
+      | - Object `x` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_object_read_through_source_chain_not_flagged() -> anyhow::Result<()> {
+    // Transitive chain: `a.R` sources `b.R`, which sources `c.R`. The read of
+    // `z` in `a.R` reaches `c.R`'s binding through the forwarded exports.
+    let case = CliTest::with_files([
+        ("c.R", "z <- 1\n"),
+        ("b.R", "source(\"c.R\")\n"),
+        ("a.R", "source(\"b.R\")\nprint(z)\n"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_source_cycle_terminates() -> anyhow::Result<()> {
+    // `p.R` and `q.R` source each other. Resolution must terminate, and the
+    // read of `k` in `p.R` still consumes `q.R`'s binding.
+    let case = CliTest::with_files([
+        ("p.R", "source(\"q.R\")\nprint(k)\n"),
+        ("q.R", "source(\"p.R\")\nk <- 1\n"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_free_name_in_unrelated_script_does_not_suppress() -> anyhow::Result<()> {
+    // Unlike package files, loose scripts share no namespace: `e.R` reads a
+    // free `y` but never sources `d.R`, so `d.R`'s `y` stays unused.
+    let case = CliTest::with_files([("d.R", "y <- 1\n"), ("e.R", "print(y)\n")])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @r"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> d.R:1:1
+      |
+    1 | y <- 1
+      | - Object `y` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
 fn test_unexported_alias_is_flagged() -> anyhow::Result<()> {
     // Same code, but no NAMESPACE export — `summarize_each` is dead.
     let case = CliTest::with_files([

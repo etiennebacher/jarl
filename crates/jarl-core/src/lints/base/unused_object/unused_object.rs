@@ -149,9 +149,10 @@ fn is_exported(
     exports.contains(name)
 }
 
-/// True when this top-level binding is read from another file in the same
-/// package. `cross_file_used` is precomputed from oak's cross-file resolution
-/// (see [`crate::db::AnalysisDb::cross_file_used_objects`]).
+/// True when this top-level binding is read from another file — a sibling in
+/// the same package, or a file that `source()`s this one. `cross_file_used`
+/// is precomputed from oak's cross-file resolution (see
+/// [`crate::db::AnalysisDb::cross_file_used_objects`]).
 fn is_used_cross_file(
     semantic: &SemanticIndex,
     cross_file_used: &std::collections::HashSet<String>,
