@@ -34,6 +34,8 @@
 
 * Clearer output of `jarl check --help` (#521).
 
+* Jarl now reports rule violations in files that contain syntax errors (#538).
+
 ### Bug fixes
 
 * `implicit_assignment` no longer flags chained assignments like

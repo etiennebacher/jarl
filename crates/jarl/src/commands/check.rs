@@ -208,9 +208,21 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
                     all_diagnostics.push((path, diagnostics));
                 }
             }
-            Err(e) => {
-                all_errors.push((path, e));
-            }
+            // The parser recovers from syntax errors, so a file that fails to
+            // parse still carries the diagnostics found in its valid code:
+            // report those alongside the error.
+            Err(e) => match e.downcast::<jarl_core::error::ParseError>() {
+                Ok(mut parse_error) => {
+                    let diagnostics = std::mem::take(&mut parse_error.diagnostics);
+                    if !diagnostics.is_empty() {
+                        all_diagnostics.push((path.clone(), diagnostics));
+                    }
+                    all_errors.push((path, parse_error.into()));
+                }
+                Err(e) => {
+                    all_errors.push((path, e));
+                }
+            },
         }
     }
 
