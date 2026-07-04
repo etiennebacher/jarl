@@ -60,7 +60,14 @@ pub(crate) struct FileUses {
     /// `(target file, name)` per `Import`-kind definition reached by a use:
     /// this file reads `name` out of `target file` via `source()`.
     import_uses: HashSet<(PathBuf, String)>,
+    /// Exported names that are themselves `Import`-kind bindings forwarded
+    /// from a file this one `source()`s. The cross-file merge chases these
+    /// to the real definer.
+    forwarded_exports: ForwardedExports,
 }
+
+/// One file's forwarded-export edges: `name → (target file, name there)`.
+type ForwardedExports = HashMap<String, Vec<(PathBuf, String)>>;
 
 /// Result of the package-wide cross-file pass.
 #[derive(Default)]
@@ -211,8 +218,7 @@ impl AnalysisDb {
         // throwaway work. Reading from disk here (rather than via the db's
         // `source_text`) is what lets the read run in parallel; in the one-shot
         // CLI the disk is the source of truth, so the two are equivalent.
-        let built: Vec<(Arc<SemanticIndex>, FileUses)> = self
-            .universe_paths()
+        let built: Vec<(Arc<SemanticIndex>, FileUses)> = paths
             .par_iter()
             .filter_map(|(path, in_package)| {
                 let source = std::fs::read_to_string(path).ok()?;
@@ -259,13 +265,14 @@ impl AnalysisDb {
     }
 }
 
-/// From every file's top-level definitions and free uses, compute for each
-/// defining file the set of its top-level names read by *another* file in the
-/// same package.
+/// From every file's top-level definitions, free uses, and `source()` import
+/// uses, compute for each defining file the set of its top-level names read by
+/// *another* file — through the shared package namespace or a `source()` edge.
 ///
 /// A package's R files share one namespace, so a top-level binding defined in
 /// one file and read freely in another is used even when its own file never
-/// reads it.
+/// reads it. Loose scripts contribute no namespace names; they participate
+/// only through their import uses and forwarded exports.
 pub(crate) fn merge_cross_file(files: &[FileUses]) -> HashMap<PathBuf, HashSet<String>> {
     // Only a name defined at top level somewhere in the package can be the
     // target of a cross-file read, so we ignore free uses of locals, library
@@ -298,48 +305,34 @@ pub(crate) fn merge_cross_file(files: &[FileUses]) -> HashMap<PathBuf, HashSet<S
                     .insert(name.clone());
             }
         }
+    }
 
-        // `source()` edges: a read that reaches an `Import`-kind definition
-        // consumes the target file's top-level binding, so mark it used there.
-        // A target may forward the name from a file it sources itself; chase
-        // those `Import`-kind exports to the real definer (jarl's parallel of
-        // oak_db's `File::collect_exports`), marking every hop. The visited
-        // set makes `source()` cycles terminate. `exports()` is recomputed
-        // per hop, but chains are short and edges few, so a per-file cache
-        // isn't worth it.
-        let index_by_path: HashMap<&Path, &SemanticIndex> = built
-            .iter()
-            .map(|(index, file)| (file.path.as_path(), index.as_ref()))
-            .collect();
-        let mut pending: Vec<(PathBuf, String)> = built
-            .iter()
-            .flat_map(|(_, file)| file.import_uses.iter().cloned())
-            .collect();
-        let mut chased: HashSet<(PathBuf, String)> = HashSet::new();
-        while let Some((path, name)) = pending.pop() {
-            if !chased.insert((path.clone(), name.clone())) {
-                continue;
-            }
-            used.entry(path.clone()).or_default().insert(name.clone());
-            let Some(index) = index_by_path.get(path.as_path()) else {
-                continue;
-            };
-            for &(_, def) in index.exports().get(name.as_str()).into_iter().flatten() {
-                let DefinitionKind::Import { file: url, name: forwarded, .. } = def.kind() else {
-                    continue;
-                };
-                let Some(target) = import_target_path(url) else {
-                    continue;
-                };
-                pending.push((target, forwarded.clone()));
-            }
+    // `source()` edges: a read that reaches an `Import`-kind definition
+    // consumes the target file's top-level binding, so mark it used there.
+    // A target may forward the name from a file it sources itself; chase
+    // those forwarded exports to the real definer (jarl's parallel of
+    // oak_db's `File::collect_exports`), marking every hop. The visited
+    // set makes `source()` cycles terminate.
+    let forwards_by_path: HashMap<&Path, &ForwardedExports> = files
+        .iter()
+        .map(|file| (file.path.as_path(), &file.forwarded_exports))
+        .collect();
+    let mut pending: Vec<(PathBuf, String)> = files
+        .iter()
+        .flat_map(|file| file.import_uses.iter().cloned())
+        .collect();
+    let mut chased: HashSet<(PathBuf, String)> = HashSet::new();
+    while let Some((path, name)) = pending.pop() {
+        if !chased.insert((path.clone(), name.clone())) {
+            continue;
         }
-
-        let indices = built
-            .iter()
-            .map(|(index, file)| (file.path.clone(), Arc::clone(index)))
-            .collect();
-        CrossFileAnalysis { used, indices }
+        used.entry(path.clone()).or_default().insert(name.clone());
+        let Some(forwards) = forwards_by_path.get(path.as_path()) else {
+            continue;
+        };
+        for (target, forwarded) in forwards.get(name.as_str()).into_iter().flatten() {
+            pending.push((target.clone(), forwarded.clone()));
+        }
     }
     used
 }
@@ -360,16 +353,35 @@ pub(crate) fn merge_cross_file(files: &[FileUses]) -> HashMap<PathBuf, HashSet<S
 /// `in_package` gates the namespace-based side (`top_defs` / `free_uses`):
 /// loose scripts share no namespace, so name matching would count unrelated
 /// scripts as readers of each other. They contribute import uses only.
-pub(crate) fn collect_file_uses(path: PathBuf, index: &SemanticIndex, in_package: bool) -> FileUses {
+pub(crate) fn collect_file_uses(
+    path: PathBuf,
+    index: &SemanticIndex,
+    in_package: bool,
+) -> FileUses {
+    let exports = index.exports();
     let top_defs: Vec<String> = if in_package {
-        index
-            .exports()
-            .keys()
-            .map(|name| name.to_string())
-            .collect()
+        exports.keys().map(|name| name.to_string()).collect()
     } else {
         Vec::new()
     };
+
+    // Forwarded exports feed the merge's `source()`-edge chase, so they're
+    // collected for scripts too.
+    let mut forwarded_exports = ForwardedExports::new();
+    for (name, defs) in &exports {
+        for (_, def) in defs {
+            let DefinitionKind::Import { file: url, name: forwarded, .. } = def.kind() else {
+                continue;
+            };
+            let Some(target) = import_target_path(url) else {
+                continue;
+            };
+            forwarded_exports
+                .entry(name.to_string())
+                .or_default()
+                .push((target, forwarded.clone()));
+        }
+    }
 
     let mut free_uses: HashSet<String> = HashSet::new();
     let mut import_uses: HashSet<(PathBuf, String)> = HashSet::new();
@@ -394,7 +406,13 @@ pub(crate) fn collect_file_uses(path: PathBuf, index: &SemanticIndex, in_package
         }
     }
 
-    FileUses { path, top_defs, free_uses, import_uses }
+    FileUses {
+        path,
+        top_defs,
+        free_uses,
+        import_uses,
+        forwarded_exports,
+    }
 }
 
 /// Convert an `Import` definition's file URL back to the relativized path

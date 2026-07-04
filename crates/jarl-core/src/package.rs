@@ -413,7 +413,7 @@ fn make_package_analysis_inner(
 /// package roots — so the cross-file pass takes them straight from the lint
 /// set. Package membership is cached per parent directory: siblings share
 /// the walk up to the root.
-fn loose_script_paths(paths: &[PathBuf]) -> Vec<PathBuf> {
+pub(crate) fn loose_script_paths(paths: &[PathBuf]) -> Vec<PathBuf> {
     let mut in_package_by_dir: HashMap<PathBuf, bool> = HashMap::new();
     paths
         .iter()

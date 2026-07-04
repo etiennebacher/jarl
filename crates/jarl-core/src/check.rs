@@ -102,7 +102,8 @@ fn check_with_fixes(
 struct TargetOutput {
     /// Relativized path, the key used by the cross-file map and the output.
     rel: PathBuf,
-    /// `Some` only for package-namespace files when `unused_object` runs.
+    /// `Some` only when `unused_object` runs and the file takes part in
+    /// cross-file resolution (package-namespace files and loose scripts).
     file_uses: Option<FileUses>,
     lint: LintOutcome,
 }
@@ -161,6 +162,18 @@ fn check_lint_only_fused(
     };
     let universe_set: HashSet<PathBuf> = universe.iter().cloned().collect();
 
+    // Loose scripts: linted R files outside any package root. They share no
+    // namespace with anything, so they join cross-file resolution only through
+    // `source()` edges — the lint set itself is their file universe.
+    let loose_scripts: HashSet<PathBuf> = if check_unused_object {
+        crate::package::loose_script_paths(&config.paths)
+            .iter()
+            .map(|path| PathBuf::from(relativize_path(path)))
+            .collect()
+    } else {
+        HashSet::new()
+    };
+
     let config = Arc::new(config);
     let pkg = Arc::new(pkg);
     let pkg_contexts = Arc::new(pkg_contexts);
@@ -189,13 +202,15 @@ fn check_lint_only_fused(
         .par_iter()
         .map(|rel| {
             let in_universe = universe_set.contains(rel);
+            let is_loose_script = loose_scripts.contains(rel);
             process_target(
                 rel,
                 &config,
                 &pkg,
                 &pkg_contexts,
                 &file_pkg_info,
-                check_unused_object && in_universe,
+                check_unused_object && (in_universe || is_loose_script),
+                in_universe,
             )
         })
         .collect();
@@ -268,10 +283,12 @@ fn check_lint_only_fused(
         .collect()
 }
 
-/// Phase 1 for one lint target: parse once, then lint. `extract` is set when the
-/// file belongs to the package namespace and `unused_object` runs, in which case
-/// its top-level definitions and free uses are read off the same index the lint
-/// uses.
+/// Phase 1 for one lint target: parse once, then lint. `extract` is set when
+/// the file takes part in cross-file resolution and `unused_object` runs, in
+/// which case its cross-file contribution is read off the same index the lint
+/// uses. `in_package` distinguishes package-namespace files (which contribute
+/// top-level definitions and free uses) from loose scripts (which contribute
+/// `source()` edges only).
 fn process_target(
     rel: &Path,
     config: &Config,
@@ -279,6 +296,7 @@ fn process_target(
     pkg_contexts: &HashMap<PathBuf, PackageContext>,
     file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
     extract: bool,
+    in_package: bool,
 ) -> TargetOutput {
     let output = |file_uses, lint| TargetOutput { rel: rel.to_path_buf(), file_uses, lint };
 
@@ -325,7 +343,8 @@ fn process_target(
     let semantic =
         oak_semantic::build_index(&parsed.tree(), jarl_semantic::JarlImportsResolver::new(rel));
 
-    let file_uses = extract.then(|| crate::db::collect_file_uses(rel.to_path_buf(), &semantic));
+    let file_uses =
+        extract.then(|| crate::db::collect_file_uses(rel.to_path_buf(), &semantic, in_package));
 
     if generated {
         return output(file_uses, LintOutcome::Final(Ok(Vec::new())));
@@ -393,7 +412,13 @@ fn file_uses_from_source(path: &Path, source: &str) -> Option<FileUses> {
         &parsed.tree(),
         jarl_semantic::JarlImportsResolver::new(path),
     );
-    Some(crate::db::collect_file_uses(path.to_path_buf(), &index))
+    // Siblings come from the package-namespace universe, never the loose
+    // scripts (whose universe is the lint set itself).
+    Some(crate::db::collect_file_uses(
+        path.to_path_buf(),
+        &index,
+        true,
+    ))
 }
 
 /// Phase 2 for one target: drop top-level `unused_object` diagnostics whose
