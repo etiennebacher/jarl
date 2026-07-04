@@ -29,7 +29,7 @@ dependencies = [
 [[package]]
 name = "air_r_factory"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air?branch=pratt-parser#8ceff800cc541cce446dc9991d7bb67549327759"
+source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
 dependencies = [
  "air_r_syntax",
  "biome_rowan",
@@ -38,7 +38,7 @@ dependencies = [
 [[package]]
 name = "air_r_formatter"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air?branch=pratt-parser#8ceff800cc541cce446dc9991d7bb67549327759"
+source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
 dependencies = [
  "air_r_syntax",
  "biome_formatter",
@@ -53,7 +53,7 @@ dependencies = [
 [[package]]
 name = "air_r_parser"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air?branch=pratt-parser#8ceff800cc541cce446dc9991d7bb67549327759"
+source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
 dependencies = [
  "air_r_factory",
  "air_r_syntax",
@@ -68,7 +68,7 @@ dependencies = [
 [[package]]
 name = "air_r_syntax"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air?branch=pratt-parser#8ceff800cc541cce446dc9991d7bb67549327759"
+source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
 dependencies = [
  "biome_rowan",
  "serde",
@@ -491,7 +491,7 @@ dependencies = [
 [[package]]
 name = "comments"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air?branch=pratt-parser#8ceff800cc541cce446dc9991d7bb67549327759"
+source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
 
 [[package]]
 name = "console"
@@ -672,7 +672,7 @@ dependencies = [
 [[package]]
 name = "fs"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air?branch=pratt-parser#8ceff800cc541cce446dc9991d7bb67549327759"
+source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
 dependencies = [
  "path-absolutize",
 ]
@@ -1004,7 +1004,7 @@ checksum = "6800badb6cb2082ffd7b6a67e6125bb39f18782f793520caee8cb8846be06112"
 [[package]]
 name = "line_ending"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air?branch=pratt-parser#8ceff800cc541cce446dc9991d7bb67549327759"
+source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
 dependencies = [
  "memchr",
  "settings",
@@ -1414,7 +1414,7 @@ dependencies = [
 [[package]]
 name = "settings"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air?branch=pratt-parser#8ceff800cc541cce446dc9991d7bb67549327759"
+source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
 dependencies = [
  "biome_formatter",
  "serde",
@@ -2160,7 +2160,7 @@ dependencies = [
 [[package]]
 name = "workspace"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/air?branch=pratt-parser#8ceff800cc541cce446dc9991d7bb67549327759"
+source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
 dependencies = [
  "air_r_formatter",
  "air_r_parser",
