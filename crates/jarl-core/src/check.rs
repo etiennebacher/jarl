@@ -129,6 +129,9 @@ struct DeferredLint {
     new_lines: Vec<usize>,
     rule_set: RuleSet,
     outdated_enabled: bool,
+    /// Fixes are dropped and the finalized diagnostics are reported through a
+    /// [`ParseError`] when the file had syntax errors.
+    has_parse_errors: bool,
 }
 
 /// Read-only linting that parses each file exactly once.
@@ -323,28 +326,21 @@ fn process_target(
     let generated = crate::fs::looks_generated(&contents);
 
     let parsed = air_r_parser::parse(&contents, RParserOptions::default());
-    if parsed.has_error() {
-        // A file we can't parse contributes no cross-file uses. Generated files
-        // are reported as clean (the two-pass path skipped them before parsing);
-        // otherwise raise the same parse error `get_checks` would.
-        let lint: Result<Vec<Diagnostic>, anyhow::Error> = if generated {
-            Ok(Vec::new())
-        } else {
-            Err(ParseError { filename: rel.to_path_buf() }.into())
-        };
-        return output(
-            None,
-            LintOutcome::Final(
-                lint.with_context(|| format!("Failed to get checks for file: {}", rel.display())),
-            ),
-        );
+    // The parser recovers from syntax errors, so the valid code is still linted
+    // (with fixes disabled); `finalize_diagnostics` raises the parse error with
+    // the diagnostics attached. A file with parse errors contributes no
+    // cross-file uses, consistent with the fix-mode pre-pass and with sibling
+    // parsing below.
+    let has_parse_errors = parsed.has_error();
+    if generated && has_parse_errors {
+        return output(None, LintOutcome::Final(Ok(Vec::new())));
     }
 
     let semantic =
         oak_semantic::build_index(&parsed.tree(), jarl_semantic::JarlImportsResolver::new(rel));
 
-    let file_uses =
-        extract.then(|| crate::db::collect_file_uses(rel.to_path_buf(), &semantic, in_package));
+    let file_uses = (extract && !has_parse_errors)
+        .then(|| crate::db::collect_file_uses(rel.to_path_buf(), &semantic, in_package));
 
     if generated {
         return output(file_uses, LintOutcome::Final(Ok(Vec::new())));
@@ -377,14 +373,16 @@ fn process_target(
 
     if !defer {
         // `check_document` already filtered suppressions for this file.
-        let diagnostics = finalize_diagnostics(
+        let lint = finalize_diagnostics(
             std::mem::take(&mut checker.diagnostics),
             &checker.rule_set,
             config,
             rel,
             &new_lines,
-        );
-        return output(file_uses, LintOutcome::Final(Ok(diagnostics)));
+            has_parse_errors,
+        )
+        .with_context(|| format!("Failed to get checks for file: {}", rel.display()));
+        return output(file_uses, LintOutcome::Final(lint));
     }
 
     let outdated_enabled = checker.is_rule_enabled(Rule::OutdatedSuppression);
@@ -395,6 +393,7 @@ fn process_target(
         new_lines,
         rule_set: checker.rule_set.clone(),
         outdated_enabled,
+        has_parse_errors,
     };
     output(file_uses, LintOutcome::Deferred(Box::new(deferred)))
 }
@@ -453,13 +452,15 @@ fn finalize_target(
         diagnostics.extend(outdated_suppression(&unused));
     }
 
-    Ok(finalize_diagnostics(
+    finalize_diagnostics(
         diagnostics,
         &deferred.rule_set,
         config,
         rel,
         &deferred.new_lines,
-    ))
+        deferred.has_parse_errors,
+    )
+    .with_context(|| format!("Failed to get checks for file: {}", rel.display()))
 }
 
 pub fn check_path(
@@ -657,13 +658,14 @@ pub fn get_checks(
         false,
     )?;
 
-    Ok(finalize_diagnostics(
+    finalize_diagnostics(
         std::mem::take(&mut checker.diagnostics),
         &checker.rule_set,
         config,
         file,
         &loc_new_lines,
-    ))
+        has_parse_errors,
+    )
 }
 
 /// Run every per-file check on an already-parsed file and return the populated
@@ -758,13 +760,18 @@ fn run_checks_core(
 /// precomputed newline offsets so the fused lint-only pass — which no longer
 /// holds the syntax tree by the time it finalizes — can call this with offsets
 /// captured earlier.
+///
+/// When the file had parse errors, all fixes are dropped (edits computed around
+/// broken code are not reliable) and the finalized diagnostics are returned
+/// inside a [`ParseError`] so the caller reports them alongside the error.
 fn finalize_diagnostics(
     diagnostics: Vec<Diagnostic>,
     rule_set: &RuleSet,
     config: &Config,
     file: &Path,
     loc_new_lines: &[usize],
-) -> Vec<Diagnostic> {
+    has_parse_errors: bool,
+) -> Result<Vec<Diagnostic>> {
     let rules_without_fix = rule_set
         .iter()
         .filter(|x| x.has_no_fix())
@@ -801,7 +808,6 @@ fn finalize_diagnostics(
         })
         .collect();
 
-    let loc_new_lines = find_new_lines(syntax)?;
     let diagnostics = compute_lints_location(diagnostics, loc_new_lines);
 
     if has_parse_errors {
