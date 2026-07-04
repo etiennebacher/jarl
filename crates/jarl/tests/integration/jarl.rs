@@ -141,6 +141,67 @@ fn test_parsing_error_for_some_files() -> anyhow::Result<()> {
 }
 
 #[test]
+fn test_parsing_error_with_valid_code_in_same_file() -> anyhow::Result<()> {
+    let case = CliTest::with_file("test.R", "any(is.na(x))\nf <-")?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    Error: Failed to parse test.R due to syntax errors.
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_parsing_error_disables_fixes() -> anyhow::Result<()> {
+    let case = CliTest::with_file("test.R", "any(is.na(x))\nf <-")?;
+
+    case.command()
+        .arg("check")
+        .arg(".")
+        .arg("--fix")
+        .arg("--allow-no-vcs")
+        .run();
+
+    // `any(is.na(x))` has a safe fix, but a file with syntax errors must be
+    // left untouched: edits computed around broken code are not reliable.
+    let content = case.read_file("test.R")?;
+    insta::assert_snapshot!(
+        content,
+        @"
+    any(is.na(x))
+    f <-
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
 fn test_parsing_weird_raw_strings() -> anyhow::Result<()> {
     let case = CliTest::with_file("test.R", "c(r\"(abc(\\w+))\")\nr\"(c(\"\\dots\"))\"")?;
     insta::assert_snapshot!(

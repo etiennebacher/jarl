@@ -162,12 +162,7 @@ impl Emitter for ConciseEmitter {
         if !errors.is_empty() {
             writer.flush()?; // Flush before writing to stderr
             for (_path, err) in errors {
-                let root_cause = err.chain().last().unwrap();
-                if root_cause.is::<jarl_core::error::ParseError>() {
-                    eprintln!("{}: {}", "Error".red().bold(), root_cause);
-                } else {
-                    eprintln!("{}: {}", "Error".red().bold(), err);
-                }
+                eprintln!("{}: {}", "Error".red().bold(), err);
             }
         }
 
@@ -613,12 +608,7 @@ impl Emitter for FullEmitter {
         if !errors.is_empty() {
             writer.flush()?; // Flush before writing to stderr
             for (_path, err) in errors {
-                let root_cause = err.chain().last().unwrap();
-                if root_cause.is::<jarl_core::error::ParseError>() {
-                    eprintln!("{}: {}", "Error".red().bold(), root_cause);
-                } else {
-                    eprintln!("{}: {}", "Error".red().bold(), err);
-                }
+                eprintln!("{}: {}", "Error".red().bold(), err);
             }
             if !diagnostics.is_empty() {
                 eprintln!(); // Add separator between errors and diagnostics

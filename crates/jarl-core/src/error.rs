@@ -1,10 +1,17 @@
 use std::fmt;
 use std::path::PathBuf;
 
+use crate::diagnostic::Diagnostic;
+
 /// Custom error type for R parsing errors.
+///
+/// The parser recovers from syntax errors, so the rest of the file is still
+/// linted: the diagnostics found in the code that parsed successfully are
+/// carried here for the caller to report alongside the error.
 #[derive(Debug)]
 pub struct ParseError {
     pub filename: PathBuf,
+    pub diagnostics: Vec<Diagnostic>,
 }
 
 impl fmt::Display for ParseError {
