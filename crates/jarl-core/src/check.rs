@@ -604,9 +604,11 @@ pub fn get_checks(
     let parser_options = RParserOptions::default();
     let parsed = air_r_parser::parse(contents, parser_options);
 
-    if parsed.has_error() {
-        return Err(ParseError { filename: file.to_path_buf() }.into());
-    }
+    // The parser recovers from syntax errors: each failed statement is wrapped
+    // in a bogus node and the rest of the file is parsed normally, so we can
+    // still lint the valid code. Autofixes are disabled for the whole file
+    // because edits computed around broken code are not reliable.
+    let has_parse_errors = parsed.has_error();
 
     let syntax = parsed.syntax();
     let expressions = parsed.tree().expressions();
@@ -792,11 +794,21 @@ fn finalize_diagnostics(
             if x.fix.to_skip {
                 x.fix = Fix::empty();
             }
+            if has_parse_errors {
+                x.fix = Fix::empty();
+            }
             x
         })
         .collect();
 
-    compute_lints_location(diagnostics, loc_new_lines)
+    let loc_new_lines = find_new_lines(syntax)?;
+    let diagnostics = compute_lints_location(diagnostics, loc_new_lines);
+
+    if has_parse_errors {
+        return Err(ParseError { filename: file.to_path_buf(), diagnostics }.into());
+    }
+
+    Ok(diagnostics)
 }
 
 /// Populate package context on the checker from pre-computed data.
@@ -938,9 +950,7 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     }
 
     let parsed = air_r_parser::parse(&virtual_source, RParserOptions::default());
-    if parsed.has_error() {
-        return Err(crate::error::ParseError { filename: file.to_path_buf() }.into());
-    }
+    let has_parse_errors = parsed.has_error();
 
     let syntax = parsed.syntax();
     let suppression = SuppressionManager::from_node(&syntax, &virtual_source);
@@ -976,7 +986,13 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
         .collect();
 
     let loc_new_lines = crate::utils::find_new_lines_from_content(contents);
-    Ok(compute_lints_location(diagnostics, &loc_new_lines))
+    let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
+
+    if has_parse_errors {
+        return Err(ParseError { filename: file.to_path_buf(), diagnostics }.into());
+    }
+
+    Ok(diagnostics)
 }
 
 #[cfg(test)]

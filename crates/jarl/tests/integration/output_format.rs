@@ -626,7 +626,7 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
       "errors": [
         {
           "file": "test2.R",
-          "error": "Failed to get checks for file: test2.R: Failed to parse test2.R due to syntax errors."
+          "error": "Failed to parse test2.R due to syntax errors."
         }
       ]
     }

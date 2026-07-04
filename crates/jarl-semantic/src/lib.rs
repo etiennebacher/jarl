@@ -221,9 +221,7 @@ impl<'a> SemanticInfo<'a> {
     }
 
     fn collect_string_interpolation(&mut self, node: &RSyntaxNode) {
-        let Some(token) = node.first_token() else {
-            return;
-        };
+        let text = node.text_trimmed().to_string();
         // The read happens where the string sits, so identifiers inside it
         // resolve against the definitions live at this position.
         let read_range = node.text_trimmed_range();
@@ -231,7 +229,7 @@ impl<'a> SemanticInfo<'a> {
         // interpolation, so strings inside a cli call need a markup-aware scan
         // rather than the plain glue scan.
         if node_in_cli_markup_call(node) {
-            if let Some(content) = strings::get_string_literal_contents(token.text_trimmed()) {
+            if let Some(content) = strings::get_string_literal_contents(&text) {
                 self.collect_cli_interpolation(&content, read_range);
             }
             return;
@@ -240,7 +238,7 @@ impl<'a> SemanticInfo<'a> {
         // call: any `{x}` in any string keeps `x` alive. Calls that override
         // the delimiters via `.open`/`.close` are handled separately in
         // `collect_custom_glue_interpolation`.
-        for segment in scan_interpolation_segments(token.text_trimmed(), "{", "}") {
+        for segment in scan_interpolation_segments(&text, "{", "}") {
             self.collect_identifiers_in_interpolation(segment, read_range);
         }
     }
@@ -289,10 +287,9 @@ impl<'a> SemanticInfo<'a> {
             if name.is_some() || value.kind() != RSyntaxKind::R_STRING_VALUE {
                 continue;
             }
-            let Some(token) = value.first_token() else {
-                continue;
-            };
-            let Some(content) = strings::get_string_literal_contents(token.text_trimmed()) else {
+            let Some(content) =
+                strings::get_string_literal_contents(&value.text_trimmed().to_string())
+            else {
                 continue;
             };
             let read_range = value.text_trimmed_range();
@@ -743,7 +740,7 @@ fn named_string_arg(args: &[(Option<String>, RSyntaxNode)], name: &str) -> Optio
     if value.kind() != RSyntaxKind::R_STRING_VALUE {
         return None;
     }
-    strings::get_string_literal_contents(value.first_token()?.text_trimmed())
+    strings::get_string_literal_contents(&value.text_trimmed().to_string())
 }
 
 /// True if `node` sits inside a cli call that glue-interpolates its arguments

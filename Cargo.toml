@@ -11,10 +11,10 @@ repository = "https://github.com/etiennebacher/jarl/"
 readme = "README.md"
 
 [workspace.dependencies]
-air_fs = { package = "fs", git = "https://github.com/posit-dev/air", rev = "0eadd6938d0316b1fc885c91e7af55d7c8de8530" }
-air_r_parser = { git = "https://github.com/posit-dev/air", rev = "0eadd6938d0316b1fc885c91e7af55d7c8de8530" }
-air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "0eadd6938d0316b1fc885c91e7af55d7c8de8530" }
-air_workspace = { package = "workspace", git = "https://github.com/posit-dev/air", rev = "0eadd6938d0316b1fc885c91e7af55d7c8de8530" }
+air_fs = { package = "fs", git = "https://github.com/etiennebacher/air_pratt" }
+air_r_parser = { git = "https://github.com/etiennebacher/air_pratt" }
+air_r_syntax = { git = "https://github.com/etiennebacher/air_pratt" }
+air_workspace = { package = "workspace", git = "https://github.com/etiennebacher/air_pratt" }
 aether_path = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
 oak_core = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
 oak_db = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
@@ -49,6 +49,13 @@ tempfile = "3.27.0"
 toml = "0.8.23"
 tracing = "0.1.41"
 
+# The oak crates (from the ark fork) declare their air dependencies against
+# posit-dev/air; redirect them to the same Pratt-parser fork used by jarl so a
+# single copy of the syntax/parser crates exists in the graph.
+[patch."https://github.com/posit-dev/air"]
+air_r_parser = { git = "https://github.com/etiennebacher/air_pratt" }
+air_r_syntax = { git = "https://github.com/etiennebacher/air_pratt" }
+
 [profile.release]
 lto = true
 
@@ -56,3 +63,4 @@ lto = true
 [profile.dist]
 inherits = "release"
 lto = "thin"
+
