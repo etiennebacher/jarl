@@ -1,10 +1,11 @@
 pub(crate) mod implicit_assignment;
+pub(crate) mod options;
 
 #[cfg(test)]
 mod tests {
+    use crate::lints::base::implicit_assignment::options::ImplicitAssignmentOptions;
+    use crate::lints::base::implicit_assignment::options::ResolvedImplicitAssignmentOptions;
     use crate::rule_options::ResolvedRuleOptions;
-    use crate::rule_options::implicit_assignment::ImplicitAssignmentOptions;
-    use crate::rule_options::implicit_assignment::ResolvedImplicitAssignmentOptions;
     use crate::settings::{LinterSettings, Settings};
     use crate::utils_test::*;
     use insta::assert_snapshot;

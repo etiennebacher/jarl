@@ -1,3 +1,4 @@
+pub(crate) mod options;
 pub(crate) mod unused_function;
 
 #[cfg(test)]
@@ -498,7 +499,7 @@ mod tests {
 
     // ── ResolvedUnusedFunctionOptions ────────────────────────────────────
 
-    use crate::rule_options::unused_function::{
+    use crate::lints::base::unused_function::options::{
         ResolvedUnusedFunctionOptions, UnusedFunctionOptions,
     };
 

@@ -165,7 +165,7 @@ fn scope_dir_from_path(rel_path: &Path) -> String {
 /// contents. Packages without a NAMESPACE entry are skipped.
 pub(crate) fn compute_unused_from_shared(
     shared_data: &[SharedFileData],
-    options: &crate::rule_options::unused_function::ResolvedUnusedFunctionOptions,
+    options: &crate::lints::base::unused_function::options::ResolvedUnusedFunctionOptions,
     namespace_contents: &HashMap<PathBuf, String>,
 ) -> HashMap<PathBuf, Vec<(String, TextRange, String)>> {
     // Group by package root

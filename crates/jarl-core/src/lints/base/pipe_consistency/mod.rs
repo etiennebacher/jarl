@@ -1,9 +1,12 @@
+pub(crate) mod options;
 pub(crate) mod pipe_consistency;
 
 #[cfg(test)]
 mod tests {
+    use crate::lints::base::pipe_consistency::options::{
+        PreferredPipe, ResolvedPipeConsistencyOptions,
+    };
     use crate::rule_options::ResolvedRuleOptions;
-    use crate::rule_options::pipe_consistency::{PreferredPipe, ResolvedPipeConsistencyOptions};
     use crate::settings::{LinterSettings, Settings};
     use crate::utils_test::*;
     use insta::assert_snapshot;
