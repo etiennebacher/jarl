@@ -12,7 +12,7 @@ use air_r_syntax::RSyntaxKind;
 use anyhow::Result;
 use std::{collections::HashSet, fs, path::PathBuf, sync::Arc};
 
-use crate::rule_options::assignment::ResolvedAssignmentOptions;
+use crate::lints::base::assignment::options::ResolvedAssignmentOptions;
 
 /// Parsed rule selection from CLI or TOML configuration.
 /// Contains selected rules, extended rules, and ignored rules.

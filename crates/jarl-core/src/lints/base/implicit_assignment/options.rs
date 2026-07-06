@@ -1,39 +1,42 @@
 use std::collections::HashSet;
 
-use super::resolve_with_extend;
+use crate::rule_options::resolve_with_extend;
 
-/// Default functions whose empty arguments are not reported.
+/// Default functions where implicit assignments are allowed.
 const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
-    "switch",
-    "tibble",
-    "list2",
-    "mutate",
-    "summarize",
-    "transmute",
+    "alist",
+    "expect_error",
+    "expect_warning",
+    "expect_message",
+    "expect_snapshot",
+    "quote",
+    "suppressMessages",
+    "suppressWarnings",
 ];
 
-/// TOML options for `[lint.missing_argument]`.
+/// TOML options for `[lint.implicit_assignment]`.
 ///
 /// Use `skipped-functions` to fully replace the default list of functions
-/// whose empty arguments are allowed. Use `extend-skipped-functions` to add
-/// to the default list. Specifying both is an error.
+/// where implicit assignments are allowed. Use
+/// `extend-skipped-functions` to add to the default list.
+/// Specifying both is an error.
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
-pub struct MissingArgumentOptions {
+pub struct ImplicitAssignmentOptions {
     pub skipped_functions: Option<Vec<String>>,
     pub extend_skipped_functions: Option<Vec<String>>,
 }
 
-/// Resolved options for the `missing_argument` rule, ready for use during
+/// Resolved options for the `implicit_assignment` rule, ready for use during
 /// linting.
 #[derive(Clone, Debug)]
-pub struct ResolvedMissingArgumentOptions {
+pub struct ResolvedImplicitAssignmentOptions {
     pub skipped_functions: HashSet<String>,
 }
 
-impl ResolvedMissingArgumentOptions {
-    pub fn resolve(options: Option<&MissingArgumentOptions>) -> anyhow::Result<Self> {
+impl ResolvedImplicitAssignmentOptions {
+    pub fn resolve(options: Option<&ImplicitAssignmentOptions>) -> anyhow::Result<Self> {
         let (base, extend) = match options {
             Some(opts) => (
                 opts.skipped_functions.as_ref(),
@@ -46,7 +49,7 @@ impl ResolvedMissingArgumentOptions {
             base,
             extend,
             DEFAULT_SKIPPED_FUNCTIONS,
-            "missing_argument",
+            "implicit_assignment",
             "skipped-functions",
         )?;
 

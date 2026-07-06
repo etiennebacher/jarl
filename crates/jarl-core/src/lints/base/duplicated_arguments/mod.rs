@@ -1,10 +1,11 @@
 pub(crate) mod duplicated_arguments;
+pub(crate) mod options;
 
 #[cfg(test)]
 mod tests {
+    use crate::lints::base::duplicated_arguments::options::DuplicatedArgumentsOptions;
+    use crate::lints::base::duplicated_arguments::options::ResolvedDuplicatedArgumentsOptions;
     use crate::rule_options::ResolvedRuleOptions;
-    use crate::rule_options::duplicated_arguments::DuplicatedArgumentsOptions;
-    use crate::rule_options::duplicated_arguments::ResolvedDuplicatedArgumentsOptions;
     use crate::settings::{LinterSettings, Settings};
     use crate::utils_test::*;
     use insta::assert_snapshot;

@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::rule_options::quotes::PreferredQuote;
+use crate::lints::base::quotes::options::PreferredQuote;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 

@@ -1,10 +1,11 @@
 pub(crate) mod missing_argument;
+pub(crate) mod options;
 
 #[cfg(test)]
 mod tests {
+    use crate::lints::base::missing_argument::options::MissingArgumentOptions;
+    use crate::lints::base::missing_argument::options::ResolvedMissingArgumentOptions;
     use crate::rule_options::ResolvedRuleOptions;
-    use crate::rule_options::missing_argument::MissingArgumentOptions;
-    use crate::rule_options::missing_argument::ResolvedMissingArgumentOptions;
     use crate::settings::{LinterSettings, Settings};
     use crate::utils_test::*;
     use insta::assert_snapshot;
