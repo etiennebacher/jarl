@@ -23,6 +23,7 @@ use crate::lints::base::missing_argument::options::MissingArgumentOptions;
 use crate::lints::base::nested_pipe::options::NestedPipeOptions;
 use crate::lints::base::pipe_consistency::options::PipeConsistencyOptions;
 use crate::lints::base::quotes::options::QuotesOptions;
+use crate::lints::base::true_false_symbol::options::TrueFalseSymbolOptions;
 use crate::lints::base::undesirable_function::options::UndesirableFunctionOptions;
 use crate::lints::base::unreachable_code::options::UnreachableCodeOptions;
 use crate::lints::base::unused_function::options::UnusedFunctionOptions;
@@ -300,6 +301,13 @@ pub struct LinterTomlOptions {
     #[serde(rename = "quotes")]
     pub quotes: Option<QuotesOptions>,
 
+    /// # Options for the `true_false_symbol` rule
+    ///
+    /// Use `skipped-functions` to list functions whose arguments are allowed to
+    /// contain the `T` and `F` symbols. This list is empty by default.
+    #[serde(rename = "true_false_symbol")]
+    pub true_false_symbol: Option<TrueFalseSymbolOptions>,
+
     /// # Options for the `undesirable_function` rule
     ///
     /// Use `functions` to fully replace the default list of undesirable functions.
@@ -411,6 +419,7 @@ impl TomlOptions {
                 linter.nested_pipe.as_ref(),
                 linter.pipe_consistency.as_ref(),
                 linter.quotes.as_ref(),
+                linter.true_false_symbol.as_ref(),
                 linter.undesirable_function.as_ref(),
                 linter.unreachable_code.as_ref(),
                 linter.unused_function.as_ref(),

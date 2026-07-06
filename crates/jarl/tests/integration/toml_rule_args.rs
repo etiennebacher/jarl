@@ -213,6 +213,94 @@ unknown-option = ["list"]
     Ok(())
 }
 
+// true_false_symbol ----------------------------------------
+
+#[test]
+fn test_true_false_symbol_wrong_type() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+
+[lint.true_false_symbol]
+skipped-functions = 1
+"#,
+        ),
+        ("test.R", "foo(T)"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 5, column 21
+      |
+    5 | skipped-functions = 1
+      |                     ^
+    invalid type: integer `1`, expected a sequence
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_true_false_symbol_unknown_field_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+
+[lint.true_false_symbol]
+unknown-option = ["list"]
+"#,
+        ),
+        ("test.R", "foo(T)"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 5, column 1
+      |
+    5 | unknown-option = ["list"]
+      | ^^^^^^^^^^^^^^
+    unknown field `unknown-option`, expected `skipped-functions`
+    "#
+    );
+
+    Ok(())
+}
+
 // missing_argument ----------------------------------------
 
 #[test]
