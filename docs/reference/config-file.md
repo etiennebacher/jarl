@@ -411,6 +411,24 @@ Default: `double`
 quote = "single" # or "double"
 ```
 
+### `true_false_symbol`
+
+Use `skipped-functions` to list functions whose arguments are allowed to contain
+the `T` and `F` symbols.
+
+Function names in `skipped-functions` also match namespaced calls, e.g.
+`skipped-functions = ["foo"]` will ignore `foo(T)` and `pkg::foo(T)`.
+
+Default: `skipped-functions = []`
+
+```toml
+[lint]
+...
+
+[lint.true_false_symbol]
+skipped-functions = ["foo"]
+```
+
 ### `unreachable_code`
 
 Use `stopping-functions` to fully replace the default list of functions that are

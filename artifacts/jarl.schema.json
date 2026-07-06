@@ -301,6 +301,18 @@
             "type": "string"
           }
         },
+        "true_false_symbol": {
+          "title": "Options for the `true_false_symbol` rule",
+          "description": "Use `skipped-functions` to list functions whose arguments are allowed to\ncontain the `T` and `F` symbols. This list is empty by default.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TrueFalseSymbolOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "undesirable_function": {
           "title": "Options for the `undesirable_function` rule",
           "description": "Use `functions` to fully replace the default list of undesirable functions.\nUse `extend-functions` to add to the default list.\nSpecifying both is an error.",
@@ -422,6 +434,22 @@
             "string",
             "null"
           ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "TrueFalseSymbolOptions": {
+      "description": "TOML options for `[lint.true_false_symbol]`.\n\nUse `skipped-functions` to list functions whose arguments are allowed to\ncontain the `T` and `F` symbols. This list is empty by default.",
+      "type": "object",
+      "properties": {
+        "skipped-functions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
         }
       },
       "additionalProperties": false

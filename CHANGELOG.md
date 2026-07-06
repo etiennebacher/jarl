@@ -25,6 +25,10 @@
 * New argument `[lint.per-file-ignores]` in `jarl.toml` to deactivate rules on
   specific files (#500).
 
+* New argument `skipped-functions` for the `true_false_symbol` rule in `jarl.toml`
+  to list functions whose arguments are allowed to contain the `T` and `F`
+  symbols (#542).
+
 * The CLI now suggests close rule names when some rule names don't exist (#501).
 
 * New `--output-format sarif` to export to [SARIF](https://sarifweb.azurewebsites.net/) (#508, @dieghernan).
