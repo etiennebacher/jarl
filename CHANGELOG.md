@@ -40,6 +40,8 @@
 
 * Jarl now reports rule violations in files that contain syntax errors (#538).
 
+* Three more functions skipped by default from `implicit_assignment`: `expect_silent` (from testthat), `expect_defunct` (from lifecycle) and `expect_deprecated` (from lifecycle) (#543).
+
 ### Bug fixes
 
 * `implicit_assignment` no longer flags chained assignments like
