@@ -467,7 +467,7 @@ After that, run `cargo test` to ensure that all tests pass.
 The rule is implemented, all tests pass, perfect!
 We now need to document this change:
 
-* update `CHANGELOG.md`
+* update `docs/changelog.md`
 * update `docs/rules.md`
 
 If you have installed `just` as [recommended](contributing.md#tools), you can now run `just document` to update the website.
