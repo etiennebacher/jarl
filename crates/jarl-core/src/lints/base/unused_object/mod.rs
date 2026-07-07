@@ -97,6 +97,32 @@ mod tests {
     }
 
     #[test]
+    fn test_no_lint_chained_function_definition() {
+        // Every name in a chained function assignment is a function binding, so
+        // the function-definition exemption covers the whole chain.
+        expect_no_lint("x <- y <- function() {}", "unused_object", None);
+    }
+
+    #[test]
+    fn test_lint_chained_non_function_assignment() {
+        assert_snapshot!(snapshot_lint("x <- y <- 1"), @r"
+        warning: unused_object
+         --> <test>:1:6
+          |
+        1 | x <- y <- 1
+          |      - Object `y` is defined but never used.
+          |
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- y <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 2 errors.
+        ");
+    }
+
+    #[test]
     fn test_no_lint_used_in_closure() {
         expect_no_lint(
             "x <- 1\nf <- function() {\n  y <- x + 1\n  y\n}",

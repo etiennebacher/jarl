@@ -824,11 +824,25 @@ fn is_member_name(node: &RSyntaxNode) -> bool {
     }
 }
 
-/// True if the RHS of a binary assignment is a function definition.
+/// True if the value assigned by this binary assignment is a function
+/// definition, following chained assignments (`x <- y <- function() {}`) down
+/// to the innermost value so every name in the chain is treated as a function
+/// binding.
 pub fn assignment_rhs_is_function_def(bin: &RBinaryExpression) -> bool {
     for child in bin.syntax().children() {
-        if child.kind() == RSyntaxKind::R_FUNCTION_DEFINITION {
-            return true;
+        match child.kind() {
+            RSyntaxKind::R_FUNCTION_DEFINITION => return true,
+            // The value is itself an assignment (`x <- y <- function() {}`), so
+            // follow the chain down to its own value.
+            RSyntaxKind::R_BINARY_EXPRESSION => {
+                if let Some(inner) = child.cast::<RBinaryExpression>()
+                    && assignment_lhs_name(inner.syntax()).is_some()
+                    && assignment_rhs_is_function_def(&inner)
+                {
+                    return true;
+                }
+            }
+            _ => {}
         }
     }
     false
