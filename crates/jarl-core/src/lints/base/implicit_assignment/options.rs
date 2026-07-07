@@ -8,6 +8,9 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
     "expect_error",
     "expect_warning",
     "expect_message",
+    "expect_silent",
+    "expect_defunct",    // from {lifecycle}
+    "expect_deprecated", // from {lifecycle}
     "expect_snapshot",
     "quote",
     "suppressMessages",
