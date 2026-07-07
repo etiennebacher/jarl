@@ -339,7 +339,10 @@ namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
 `rlang::list2()`.
 
 Default: `skipped-functions = ["alist", "expect_error", "expect_warning", "expect_message",
+"expect_silent", "expect_defunct", "expect_deprecated",
 "expect_snapshot", "quote", "suppressMessages", "suppressWarnings"]`
+(`expect_`functions come from the `testthat` package, except `expect_defunct` and
+`expect_deprecated` which come from the `lifecycle` package)
 
 ```toml
 [lint]

@@ -188,6 +188,17 @@ mod tests {
         expect_no_lint("expect_message(x <- 1)", "implicit_assignment", None);
         expect_no_lint("expect_warning(x <- 1)", "implicit_assignment", None);
         expect_no_lint("expect_error(x <- 1)", "implicit_assignment", None);
+        expect_no_lint("expect_silent(x <- 1)", "implicit_assignment", None);
+        expect_no_lint(
+            "expect_defunct(x <- defunct(1))",
+            "implicit_assignment",
+            None,
+        );
+        expect_no_lint(
+            "expect_deprecated(x <- deprecated(1))",
+            "implicit_assignment",
+            None,
+        );
         expect_no_lint("expect_snapshot(x <- 1)", "implicit_assignment", None);
         expect_no_lint("quote(x <- 1)", "implicit_assignment", None);
         expect_no_lint("suppressMessages(x <- 1)", "implicit_assignment", None);
