@@ -339,7 +339,10 @@ namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
 `rlang::list2()`.
 
 Default: `skipped-functions = ["alist", "expect_error", "expect_warning", "expect_message",
+"expect_silent", "expect_defunct", "expect_deprecated",
 "expect_snapshot", "quote", "suppressMessages", "suppressWarnings"]`
+(`expect_`functions come from the `testthat` package, except `expect_defunct` and
+`expect_deprecated` which come from the `lifecycle` package)
 
 ```toml
 [lint]
@@ -409,6 +412,24 @@ Default: `double`
 
 [lint.quotes]
 quote = "single" # or "double"
+```
+
+### `true_false_symbol`
+
+Use `skipped-functions` to list functions whose arguments are allowed to contain
+the `T` and `F` symbols.
+
+Function names in `skipped-functions` also match namespaced calls, e.g.
+`skipped-functions = ["foo"]` will ignore `foo(T)` and `pkg::foo(T)`.
+
+Default: `skipped-functions = []`
+
+```toml
+[lint]
+...
+
+[lint.true_false_symbol]
+skipped-functions = ["foo"]
 ```
 
 ### `unreachable_code`

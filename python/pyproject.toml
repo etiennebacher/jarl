@@ -18,7 +18,7 @@ classifiers = [
 ]
 
 [project.urls]
-Changelog = "https://github.com/etiennebacher/jarl/blob/main/CHANGELOG.md"
+Changelog = "https://github.com/etiennebacher/jarl/blob/main/docs/changelog.md"
 Documentation = "https://jarl.etiennebacher.com"
 Repository = "https://github.com/etiennebacher/jarl"
 

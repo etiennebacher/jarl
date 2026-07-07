@@ -1,36 +1,27 @@
-pub mod assignment;
-pub mod duplicated_arguments;
-pub mod implicit_assignment;
-pub mod missing_argument;
-pub mod nested_pipe;
-pub mod pipe_consistency;
-pub mod quotes;
-pub mod undesirable_function;
-pub mod unreachable_code;
-pub mod unused_function;
-
-use assignment::AssignmentOptions;
-use assignment::ResolvedAssignmentOptions;
-use duplicated_arguments::DuplicatedArgumentsOptions;
-use duplicated_arguments::ResolvedDuplicatedArgumentsOptions;
 use std::collections::HashSet;
-use undesirable_function::ResolvedUndesirableFunctionOptions;
-use undesirable_function::UndesirableFunctionOptions;
-use unreachable_code::ResolvedUnreachableCodeOptions;
-use unreachable_code::UnreachableCodeOptions;
-use unused_function::ResolvedUnusedFunctionOptions;
-use unused_function::UnusedFunctionOptions;
 
-use crate::rule_options::implicit_assignment::ImplicitAssignmentOptions;
-use crate::rule_options::implicit_assignment::ResolvedImplicitAssignmentOptions;
-use crate::rule_options::missing_argument::MissingArgumentOptions;
-use crate::rule_options::missing_argument::ResolvedMissingArgumentOptions;
-use crate::rule_options::nested_pipe::NestedPipeOptions;
-use crate::rule_options::nested_pipe::ResolvedNestedPipeOptions;
-use crate::rule_options::pipe_consistency::PipeConsistencyOptions;
-use crate::rule_options::pipe_consistency::ResolvedPipeConsistencyOptions;
-use crate::rule_options::quotes::QuotesOptions;
-use crate::rule_options::quotes::ResolvedQuotesOptions;
+use crate::lints::base::assignment::options::AssignmentOptions;
+use crate::lints::base::assignment::options::ResolvedAssignmentOptions;
+use crate::lints::base::duplicated_arguments::options::DuplicatedArgumentsOptions;
+use crate::lints::base::duplicated_arguments::options::ResolvedDuplicatedArgumentsOptions;
+use crate::lints::base::implicit_assignment::options::ImplicitAssignmentOptions;
+use crate::lints::base::implicit_assignment::options::ResolvedImplicitAssignmentOptions;
+use crate::lints::base::missing_argument::options::MissingArgumentOptions;
+use crate::lints::base::missing_argument::options::ResolvedMissingArgumentOptions;
+use crate::lints::base::nested_pipe::options::NestedPipeOptions;
+use crate::lints::base::nested_pipe::options::ResolvedNestedPipeOptions;
+use crate::lints::base::pipe_consistency::options::PipeConsistencyOptions;
+use crate::lints::base::pipe_consistency::options::ResolvedPipeConsistencyOptions;
+use crate::lints::base::quotes::options::QuotesOptions;
+use crate::lints::base::quotes::options::ResolvedQuotesOptions;
+use crate::lints::base::true_false_symbol::options::ResolvedTrueFalseSymbolOptions;
+use crate::lints::base::true_false_symbol::options::TrueFalseSymbolOptions;
+use crate::lints::base::undesirable_function::options::ResolvedUndesirableFunctionOptions;
+use crate::lints::base::undesirable_function::options::UndesirableFunctionOptions;
+use crate::lints::base::unreachable_code::options::ResolvedUnreachableCodeOptions;
+use crate::lints::base::unreachable_code::options::UnreachableCodeOptions;
+use crate::lints::base::unused_function::options::ResolvedUnusedFunctionOptions;
+use crate::lints::base::unused_function::options::UnusedFunctionOptions;
 
 /// Resolve a pair of `field` / `extend-field` options against a set of defaults.
 ///
@@ -71,7 +62,8 @@ pub fn resolve_with_extend(
 /// Resolved per-rule options, ready for use during linting.
 ///
 /// To add options for a new rule:
-/// 1. Create `rule_options/<rule_name>.rs` with the TOML and resolved types.
+/// 1. Create `lints/<group>/<rule_name>/options.rs` with the TOML and resolved
+///    types, and declare `pub(crate) mod options;` in the rule's `mod.rs`.
 /// 2. Add a field to `ResolvedRuleOptions` and a resolve line in `resolve()`.
 /// 3. Add the TOML field to `LinterTomlOptions` in `toml.rs` and pass it to
 ///    `resolve()` in `into_settings()`.
@@ -84,6 +76,7 @@ pub struct ResolvedRuleOptions {
     pub nested_pipe: ResolvedNestedPipeOptions,
     pub pipe_consistency: ResolvedPipeConsistencyOptions,
     pub quotes: ResolvedQuotesOptions,
+    pub true_false_symbol: ResolvedTrueFalseSymbolOptions,
     pub undesirable_function: ResolvedUndesirableFunctionOptions,
     pub unreachable_code: ResolvedUnreachableCodeOptions,
     pub unused_function: ResolvedUnusedFunctionOptions,
@@ -99,6 +92,7 @@ impl ResolvedRuleOptions {
         nested_pipe: Option<&NestedPipeOptions>,
         pipe_consistency: Option<&PipeConsistencyOptions>,
         quotes: Option<&QuotesOptions>,
+        true_false_symbol: Option<&TrueFalseSymbolOptions>,
         undesirable_function: Option<&UndesirableFunctionOptions>,
         unreachable_code: Option<&UnreachableCodeOptions>,
         unused_function: Option<&UnusedFunctionOptions>,
@@ -113,6 +107,7 @@ impl ResolvedRuleOptions {
             nested_pipe: ResolvedNestedPipeOptions::resolve(nested_pipe)?,
             pipe_consistency: ResolvedPipeConsistencyOptions::resolve(pipe_consistency)?,
             quotes: ResolvedQuotesOptions::resolve(quotes)?,
+            true_false_symbol: ResolvedTrueFalseSymbolOptions::resolve(true_false_symbol)?,
             undesirable_function: ResolvedUndesirableFunctionOptions::resolve(
                 undesirable_function,
             )?,
@@ -124,7 +119,9 @@ impl ResolvedRuleOptions {
 
 impl Default for ResolvedRuleOptions {
     fn default() -> Self {
-        Self::resolve(None, None, None, None, None, None, None, None, None, None)
-            .expect("default rule options should always resolve")
+        Self::resolve(
+            None, None, None, None, None, None, None, None, None, None, None,
+        )
+        .expect("default rule options should always resolve")
     }
 }

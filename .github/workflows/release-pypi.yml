@@ -74,7 +74,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v8.2.0
 
       - name: "Download binary"
         run: |
@@ -132,7 +132,7 @@ jobs:
       id-token: write
 
     steps:
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v8.2.0
 
       - name: "Download wheels"
         uses: actions/download-artifact@v8

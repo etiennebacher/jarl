@@ -1,9 +1,10 @@
 pub(crate) mod assignment;
+pub(crate) mod options;
 
 #[cfg(test)]
 mod tests {
+    use crate::lints::base::assignment::options::ResolvedAssignmentOptions;
     use crate::rule_options::ResolvedRuleOptions;
-    use crate::rule_options::assignment::ResolvedAssignmentOptions;
     use crate::settings::{LinterSettings, Settings};
     use crate::utils_test::*;
     use air_r_syntax::RSyntaxKind;

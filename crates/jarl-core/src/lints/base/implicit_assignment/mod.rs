@@ -1,10 +1,11 @@
 pub(crate) mod implicit_assignment;
+pub(crate) mod options;
 
 #[cfg(test)]
 mod tests {
+    use crate::lints::base::implicit_assignment::options::ImplicitAssignmentOptions;
+    use crate::lints::base::implicit_assignment::options::ResolvedImplicitAssignmentOptions;
     use crate::rule_options::ResolvedRuleOptions;
-    use crate::rule_options::implicit_assignment::ImplicitAssignmentOptions;
-    use crate::rule_options::implicit_assignment::ResolvedImplicitAssignmentOptions;
     use crate::settings::{LinterSettings, Settings};
     use crate::utils_test::*;
     use insta::assert_snapshot;
@@ -187,6 +188,17 @@ mod tests {
         expect_no_lint("expect_message(x <- 1)", "implicit_assignment", None);
         expect_no_lint("expect_warning(x <- 1)", "implicit_assignment", None);
         expect_no_lint("expect_error(x <- 1)", "implicit_assignment", None);
+        expect_no_lint("expect_silent(x <- 1)", "implicit_assignment", None);
+        expect_no_lint(
+            "expect_defunct(x <- defunct(1))",
+            "implicit_assignment",
+            None,
+        );
+        expect_no_lint(
+            "expect_deprecated(x <- deprecated(1))",
+            "implicit_assignment",
+            None,
+        );
         expect_no_lint("expect_snapshot(x <- 1)", "implicit_assignment", None);
         expect_no_lint("quote(x <- 1)", "implicit_assignment", None);
         expect_no_lint("suppressMessages(x <- 1)", "implicit_assignment", None);

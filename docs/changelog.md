@@ -25,6 +25,10 @@
 * New argument `[lint.per-file-ignores]` in `jarl.toml` to deactivate rules on
   specific files (#500).
 
+* New argument `skipped-functions` for the `true_false_symbol` rule in `jarl.toml`
+  to list functions whose arguments are allowed to contain the `T` and `F`
+  symbols (#542).
+
 * The CLI now suggests close rule names when some rule names don't exist (#501).
 
 * New `--output-format sarif` to export to [SARIF](https://sarifweb.azurewebsites.net/) (#508, @dieghernan).
@@ -35,6 +39,10 @@
 * Clearer output of `jarl check --help` (#521).
 
 * Jarl now reports rule violations in files that contain syntax errors (#538).
+
+* Three more functions skipped by default from `implicit_assignment`: `expect_silent` (from
+  `testthat`), `expect_defunct` (from lifecycle) and `expect_deprecated` (from `lifecycle`)
+  (#543, @maelle).
 
 ### Bug fixes
 

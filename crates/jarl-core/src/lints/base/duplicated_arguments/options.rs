@@ -1,31 +1,33 @@
 use std::collections::HashSet;
 
-use super::resolve_with_extend;
+use crate::rule_options::resolve_with_extend;
 
-/// Default outer calls whose nested pipes are allowed.
-const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &["try", "tryCatch", "withCallingHandlers"];
+/// Default functions that are allowed to have duplicated arguments.
+const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &["c", "mutate", "summarize", "transmute"];
 
-/// TOML options for `[lint.nested_pipe]`.
+/// TOML options for `[lint.duplicated_arguments]`.
 ///
-/// Use `skipped-functions` to fully replace the default list of outer calls
-/// whose nested pipes are allowed. Use `extend-skipped-functions` to add to the
-/// default list. Specifying both is an error.
+/// Use `skipped-functions` to fully replace the default list of functions
+/// that are allowed to have duplicated arguments. Use
+/// `extend-skipped-functions` to add to the default list.
+/// Specifying both is an error.
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
-pub struct NestedPipeOptions {
+pub struct DuplicatedArgumentsOptions {
     pub skipped_functions: Option<Vec<String>>,
     pub extend_skipped_functions: Option<Vec<String>>,
 }
 
-/// Resolved options for the `nested_pipe` rule, ready for use during linting.
+/// Resolved options for the `duplicated_arguments` rule, ready for use during
+/// linting.
 #[derive(Clone, Debug)]
-pub struct ResolvedNestedPipeOptions {
+pub struct ResolvedDuplicatedArgumentsOptions {
     pub skipped_functions: HashSet<String>,
 }
 
-impl ResolvedNestedPipeOptions {
-    pub fn resolve(options: Option<&NestedPipeOptions>) -> anyhow::Result<Self> {
+impl ResolvedDuplicatedArgumentsOptions {
+    pub fn resolve(options: Option<&DuplicatedArgumentsOptions>) -> anyhow::Result<Self> {
         let (base, extend) = match options {
             Some(opts) => (
                 opts.skipped_functions.as_ref(),
@@ -38,7 +40,7 @@ impl ResolvedNestedPipeOptions {
             base,
             extend,
             DEFAULT_SKIPPED_FUNCTIONS,
-            "nested_pipe",
+            "duplicated_arguments",
             "skipped-functions",
         )?;
 

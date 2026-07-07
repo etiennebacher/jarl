@@ -15,19 +15,20 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use crate::config::{get_invalid_rules, replace_group_rules, unknown_rules_error};
+use crate::lints::base::assignment::options::AssignmentConfig;
+use crate::lints::base::assignment::options::AssignmentOptions;
+use crate::lints::base::duplicated_arguments::options::DuplicatedArgumentsOptions;
+use crate::lints::base::implicit_assignment::options::ImplicitAssignmentOptions;
+use crate::lints::base::missing_argument::options::MissingArgumentOptions;
+use crate::lints::base::nested_pipe::options::NestedPipeOptions;
+use crate::lints::base::pipe_consistency::options::PipeConsistencyOptions;
+use crate::lints::base::quotes::options::QuotesOptions;
+use crate::lints::base::true_false_symbol::options::TrueFalseSymbolOptions;
+use crate::lints::base::undesirable_function::options::UndesirableFunctionOptions;
+use crate::lints::base::unreachable_code::options::UnreachableCodeOptions;
+use crate::lints::base::unused_function::options::UnusedFunctionOptions;
 use crate::per_file_ignores::PerFileIgnores;
 use crate::rule_options::ResolvedRuleOptions;
-use crate::rule_options::assignment::AssignmentConfig;
-use crate::rule_options::assignment::AssignmentOptions;
-use crate::rule_options::duplicated_arguments::DuplicatedArgumentsOptions;
-use crate::rule_options::implicit_assignment::ImplicitAssignmentOptions;
-use crate::rule_options::missing_argument::MissingArgumentOptions;
-use crate::rule_options::nested_pipe::NestedPipeOptions;
-use crate::rule_options::pipe_consistency::PipeConsistencyOptions;
-use crate::rule_options::quotes::QuotesOptions;
-use crate::rule_options::undesirable_function::UndesirableFunctionOptions;
-use crate::rule_options::unreachable_code::UnreachableCodeOptions;
-use crate::rule_options::unused_function::UnusedFunctionOptions;
 use crate::rule_set::Rule;
 use crate::settings::LinterSettings;
 use crate::settings::Settings;
@@ -300,6 +301,13 @@ pub struct LinterTomlOptions {
     #[serde(rename = "quotes")]
     pub quotes: Option<QuotesOptions>,
 
+    /// # Options for the `true_false_symbol` rule
+    ///
+    /// Use `skipped-functions` to list functions whose arguments are allowed to
+    /// contain the `T` and `F` symbols. This list is empty by default.
+    #[serde(rename = "true_false_symbol")]
+    pub true_false_symbol: Option<TrueFalseSymbolOptions>,
+
     /// # Options for the `undesirable_function` rule
     ///
     /// Use `functions` to fully replace the default list of undesirable functions.
@@ -411,6 +419,7 @@ impl TomlOptions {
                 linter.nested_pipe.as_ref(),
                 linter.pipe_consistency.as_ref(),
                 linter.quotes.as_ref(),
+                linter.true_false_symbol.as_ref(),
                 linter.undesirable_function.as_ref(),
                 linter.unreachable_code.as_ref(),
                 linter.unused_function.as_ref(),
