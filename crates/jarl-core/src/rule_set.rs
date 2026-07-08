@@ -307,6 +307,13 @@ declare_rules! {
         fix: Unsafe,
         min_r_version: None,
     },
+    ConditionMessage => {
+        name: "condition_message",
+        categories: [Read],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
     DownloadFile => {
         name: "download_file",
         categories: [Susp],
