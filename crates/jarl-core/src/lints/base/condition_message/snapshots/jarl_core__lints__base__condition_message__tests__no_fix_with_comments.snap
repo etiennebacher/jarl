@@ -1,6 +1,5 @@
 ---
 source: crates/jarl-core/src/lints/base/condition_message/mod.rs
-assertion_line: 255
 expression: "get_unsafe_fixed_text(vec![\"stop( # a comment\\n  paste0('hello')\\n)\",\n\"stop(paste0('hello'), call. = TRUE) # trailing comment\",],\n\"condition_message\",)"
 ---
 OLD:
