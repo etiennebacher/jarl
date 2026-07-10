@@ -594,6 +594,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    StopifnotAll => {
+        name: "stopifnot_all",
+        categories: [Read],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     StringBoundary => {
         name: "string_boundary",
         categories: [Perf, Read],
