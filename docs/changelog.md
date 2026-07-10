@@ -18,6 +18,7 @@
   * `notin` (#459, @Yousa-Mirage)
   * `pipe_consistency` (#482)
   * `pipe_return` (#502)
+  * `strings_as_factors` (@Yousa-Mirage)
   * `unnecessary_parentheses` (#510, @JosephBARBIERDARNAL)
 
 * Jarl is now available on PyPI under the name `jarl-linter`, enabling its

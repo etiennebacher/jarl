@@ -26,6 +26,7 @@ use crate::lints::base::redundant_ifelse::redundant_ifelse::redundant_ifelse;
 use crate::lints::base::sample_int::sample_int::sample_int;
 use crate::lints::base::seq2::seq2::seq2;
 use crate::lints::base::sprintf::sprintf::sprintf;
+use crate::lints::base::strings_as_factors::strings_as_factors::strings_as_factors;
 use crate::lints::base::system_file::system_file::system_file;
 use crate::lints::base::undesirable_function::undesirable_function::undesirable_function;
 use crate::lints::base::which_grepl::which_grepl::which_grepl;
@@ -115,6 +116,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled(Rule::Sprintf) {
         checker.report_diagnostic(sprintf(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::StringsAsFactors) {
+        checker.report_diagnostic(strings_as_factors(r_expr, checker.minimum_r_version)?);
     }
     if checker.is_rule_enabled(Rule::SystemFile) {
         checker.report_diagnostic(system_file(r_expr)?);
