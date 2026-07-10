@@ -123,9 +123,9 @@ fn is_known_character_expression(expression: AnyRExpression) -> bool {
     let Some(call) = expression.as_r_call() else {
         return false;
     };
-    let Ok(function) = call.function() else {
-        return false;
-    };
+    let function = call
+        .function()
+        .expect("a call in a valid expression must have a function");
 
     match get_function_name(function).as_str() {
         "c" => is_literal_character_combine(call),
@@ -135,9 +135,9 @@ fn is_known_character_expression(expression: AnyRExpression) -> bool {
 }
 
 fn is_literal_character_combine(call: &RCall) -> bool {
-    let Ok(arguments) = call.arguments() else {
-        return false;
-    };
+    let arguments = call
+        .arguments()
+        .expect("a call in a valid expression must have arguments");
 
     let mut has_string = false;
     for argument in arguments
@@ -168,9 +168,9 @@ fn is_literal_character_combine(call: &RCall) -> bool {
 }
 
 fn rep_starts_with_known_character(call: &RCall) -> bool {
-    let Ok(arguments) = call.arguments() else {
-        return false;
-    };
+    let arguments = call
+        .arguments()
+        .expect("a call in a valid expression must have arguments");
     let Some(first_argument) = get_arg_by_position(&arguments.items(), 1) else {
         return false;
     };

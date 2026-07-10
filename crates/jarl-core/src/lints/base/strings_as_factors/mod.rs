@@ -58,6 +58,12 @@ mod tests {
             "strings_as_factors",
             Some("3.6"),
         );
+        expect_no_lint("data.frame(x = rep())", "strings_as_factors", Some("3.6"));
+        expect_no_lint(
+            "data.frame(x = rep(, 2))",
+            "strings_as_factors",
+            Some("3.6"),
+        );
         expect_no_lint(
             "data.frame(x = rep(times = 2, x = \"a\"))",
             "strings_as_factors",
