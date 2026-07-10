@@ -54,9 +54,11 @@ pub fn stopifnot_all(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let Some(argument) = ast.syntax().parent().and_then(RArgument::cast) else {
         return Ok(None);
     };
-    let Some(outer_call) = argument.syntax().ancestors().find_map(RCall::cast) else {
-        return Ok(None);
-    };
+    let outer_call = argument
+        .syntax()
+        .ancestors()
+        .find_map(RCall::cast)
+        .expect("an R argument must belong to a call");
 
     if get_function_name(outer_call.function()?) != "stopifnot" {
         return Ok(None);
