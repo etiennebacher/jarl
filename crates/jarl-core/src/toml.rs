@@ -18,6 +18,7 @@ use crate::config::{get_invalid_rules, replace_group_rules, unknown_rules_error}
 use crate::lints::base::assignment::options::AssignmentConfig;
 use crate::lints::base::assignment::options::AssignmentOptions;
 use crate::lints::base::duplicated_arguments::options::DuplicatedArgumentsOptions;
+use crate::lints::base::if_not_else::options::IfNotElseOptions;
 use crate::lints::base::implicit_assignment::options::ImplicitAssignmentOptions;
 use crate::lints::base::missing_argument::options::MissingArgumentOptions;
 use crate::lints::base::nested_pipe::options::NestedPipeOptions;
@@ -260,6 +261,15 @@ pub struct LinterTomlOptions {
     #[serde(rename = "duplicated_arguments")]
     pub duplicated_arguments: Option<DuplicatedArgumentsOptions>,
 
+    /// # Options for the `if_not_else` rule
+    ///
+    /// Use `exceptions` to fully replace the default list of functions whose
+    /// negated calls are allowed as an `if`/`ifelse()` condition. Use
+    /// `extend-exceptions` to add to the default list.
+    /// Specifying both is an error.
+    #[serde(rename = "if_not_else")]
+    pub if_not_else: Option<IfNotElseOptions>,
+
     /// # Options for the `implicit_assignment` rule
     ///
     /// Use `skipped-functions` to fully replace the default list of functions
@@ -414,6 +424,7 @@ impl TomlOptions {
             rule_options: ResolvedRuleOptions::resolve(
                 assignment_options.as_ref(),
                 linter.duplicated_arguments.as_ref(),
+                linter.if_not_else.as_ref(),
                 linter.implicit_assignment.as_ref(),
                 linter.missing_argument.as_ref(),
                 linter.nested_pipe.as_ref(),
