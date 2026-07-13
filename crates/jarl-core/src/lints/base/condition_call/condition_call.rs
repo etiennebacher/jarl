@@ -118,7 +118,7 @@ pub fn condition_call(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         }
         // `call.` is absent: it defaults to `TRUE`, so insert `call. = FALSE`.
         None => {
-            let last_arg = args.into_iter().filter_map(|x| x.ok()).last();
+            let last_arg = args.into_iter().filter_map(|x| x.ok()).next_back();
             let (start, content) = match last_arg {
                 Some(arg) => (
                     usize::from(arg.syntax().text_trimmed_range().end()),
