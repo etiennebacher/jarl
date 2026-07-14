@@ -12,6 +12,7 @@
   * `equals_na` now also reports `x %notin% NA` cases (#469, @Yousa-Mirage)
   * `empty_file` (#477, @JosephBARBIERDARNAL)
   * `glue` (#484, @novica)
+  * `if_not_else` (#551)
   * `literal_coercion` (#504)
   * `missing_argument` (#506)
   * `nested_pipe` (#516)
