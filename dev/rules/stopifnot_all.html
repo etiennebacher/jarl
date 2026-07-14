@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>strings_as_factors – Jarl</title>
+<title>stopifnot_all – Jarl</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -349,7 +349,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../rules/all_equal.html">List of rules</a></li><li class="breadcrumb-item"><a href="../rules/strings_as_factors.html">strings_as_factors</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../rules/all_equal.html">List of rules</a></li><li class="breadcrumb-item"><a href="../rules/stopifnot_all.html">stopifnot_all</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -783,7 +783,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../rules/stopifnot_all.html" class="sidebar-item-text sidebar-link">
+  <a href="../rules/stopifnot_all.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">stopifnot_all</span></a>
   </div>
 </li>
@@ -795,7 +795,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../rules/strings_as_factors.html" class="sidebar-item-text sidebar-link active">
+  <a href="../rules/strings_as_factors.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">strings_as_factors</span></a>
   </div>
 </li>
@@ -877,7 +877,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#strings_as_factors" id="toc-strings_as_factors" class="nav-link active" data-scroll-target="#strings_as_factors">strings_as_factors</a>
+  <li><a href="#stopifnot_all" id="toc-stopifnot_all" class="nav-link active" data-scroll-target="#stopifnot_all">stopifnot_all</a>
   <ul>
   <li><a href="#what-it-does" id="toc-what-it-does" class="nav-link" data-scroll-target="#what-it-does">What it does</a></li>
   <li><a href="#why-is-this-bad" id="toc-why-is-this-bad" class="nav-link" data-scroll-target="#why-is-this-bad">Why is this bad?</a></li>
@@ -885,16 +885,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
   </ul></li>
   </ul>
-<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/strings_as_factors.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/stopifnot_all.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../rules/all_equal.html">List of rules</a></li><li class="breadcrumb-item"><a href="../rules/strings_as_factors.html">strings_as_factors</a></li></ol></nav></header>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../rules/all_equal.html">List of rules</a></li><li class="breadcrumb-item"><a href="../rules/stopifnot_all.html">stopifnot_all</a></li></ol></nav></header>
 
 
 
 
-<section id="strings_as_factors" class="level1">
-<h1>strings_as_factors</h1>
+<section id="stopifnot_all" class="level1">
+<h1>stopifnot_all</h1>
 <div class="low-opacity callout callout-style-default callout-note callout-empty-content callout-titled" title="Added in 0.6.0">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -910,23 +910,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="what-it-does" class="level2">
 <h2 class="anchored" data-anchor-id="what-it-does">What it does</h2>
-<p>Checks for calls to <code>data.frame()</code> that contain a statically identifiable character column but do not explicitly set <code>stringsAsFactors</code>. This rule only applies when the project’s minimum supported R version is known and is below R 4.0.0.</p>
+<p>Checks for direct calls to <code>all()</code> inside <code>stopifnot()</code>.</p>
 </section>
 <section id="why-is-this-bad" class="level2">
 <h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
-<p>Before R 4.0.0, <code>data.frame()</code> converted strings to factors by default. From R 4.0.0 onward, strings remain character vectors by default. Code supporting versions on both sides of this change can therefore return columns with different types depending on the R version used.</p>
-<p>This rule does not provide an automatic fix because either <code>TRUE</code> or <code>FALSE</code> can be the intended value of <code>stringsAsFactors</code>.</p>
+<p><code>stopifnot()</code> already checks that all values of each argument are <code>TRUE</code>. Wrapping an argument in <code>all()</code> is therefore unnecessary. Calls that explicitly set <code>na.rm</code> are not reported because removing <code>all()</code> would not preserve their missing-value handling.</p>
+<p>This rule has an automated fix that is marked unsafe and therefore requires passing <code>--unsafe-fixes</code>. This is because <code>all()</code> coerces its arguments to logical vectors, so removing it can change runtime behavior.</p>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(<span class="at">x =</span> <span class="st">"a"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Use one of the following instead:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(<span class="at">x =</span> <span class="st">"a"</span>, <span class="at">stringsAsFactors =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(<span class="at">x =</span> <span class="st">"a"</span>, <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">all</span>(x <span class="sc">&gt;</span> <span class="dv">0</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Use instead:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(x <span class="sc">&gt;</span> <span class="dv">0</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="references" class="level2">
 <h2 class="anchored" data-anchor-id="references">References</h2>
-<p>See <code>?data.frame</code> and the <a href="https://developer.r-project.org/Blog/public/2020/02/16/stringsasfactors/" target="_blank">R Core discussion</a>.</p>
+<p>See <code>?stopifnot</code>.</p>
 
 
 </section>
@@ -1338,4 +1337,4 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/strings_as_factors.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/stopifnot_all.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
