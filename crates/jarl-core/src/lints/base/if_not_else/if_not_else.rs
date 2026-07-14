@@ -6,15 +6,13 @@ use crate::utils::{get_arg_by_position, get_function_name};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
-/// Version added: 0.4.0
+/// Version added: 0.6.0
 ///
 /// ## What it does
 ///
-/// Checks for `if`/`else` statements and `ifelse()` calls whose condition is a
-/// simple negation, e.g. `if (!A) x else y` or `ifelse(!A, x, y)`.
-///
-/// This also covers the data.table (`fifelse()`) and dplyr (`if_else()`)
-/// equivalents of `ifelse()`.
+/// Checks for `if` - `else` statements and `ifelse()` / `dplyr::if_else()` /
+/// `data.table::fifelse()` calls whose condition is a simple negation, e.g.
+/// `if (!cond) x else y` or `ifelse(!cond, x, y)`.
 ///
 /// ## Why is this bad?
 ///
@@ -31,17 +29,17 @@ use biome_rowan::AstNode;
 /// ## Example
 ///
 /// ```r
-/// if (!A) x else y
+/// if (!cond) x else y
 ///
-/// ifelse(!A, x, y)
+/// ifelse(!cond, x, y)
 /// ```
 ///
 /// Use instead:
 ///
 /// ```r
-/// if (A) y else x
+/// if (cond) y else x
 ///
-/// ifelse(A, y, x)
+/// ifelse(cond, y, x)
 /// ```
 pub fn if_not_else(ast: &RIfStatement, checker: &Checker) -> anyhow::Result<Option<Diagnostic>> {
     // Only simple `if`/`else` statements, not `if`/`else if` chains: swapping the
@@ -63,8 +61,8 @@ pub fn if_not_else(ast: &RIfStatement, checker: &Checker) -> anyhow::Result<Opti
     let diagnostic = Diagnostic::new(
         ViolationData::new(
             "if_not_else".to_string(),
-            "Prefer `if (A) x else y` to the less-readable `if (!A) y else x` in a simple if/else statement.".to_string(),
-            None,
+            "Negating the condition like `if (!A) y else x` can be hard to read.".to_string(),
+            Some("Remove the negation and swap branches, such as `if (A) x else y`".to_string()),
         ),
         range,
         Fix::empty(),
@@ -97,10 +95,10 @@ pub fn if_not_else_call(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
     let diagnostic = Diagnostic::new(
         ViolationData::new(
             "if_not_else".to_string(),
-            format!(
-                "Prefer `{function_name}(A, x, y)` to the less-readable `{function_name}(!A, y, x)`."
-            ),
-            None,
+            format!("Negating the condition like `{function_name}(!A, y, x)` can be hard to read."),
+            Some(format!(
+                "Remove the negation and swap branches, such as `{function_name}(A, x, y)`."
+            )),
         ),
         range,
         Fix::empty(),
