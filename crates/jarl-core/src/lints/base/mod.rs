@@ -50,6 +50,7 @@ pub(crate) mod sort;
 pub(crate) mod sprintf;
 pub(crate) mod stopifnot_all;
 pub(crate) mod string_boundary;
+pub(crate) mod strings_as_factors;
 pub(crate) mod system_file;
 pub(crate) mod true_false_symbol;
 pub(crate) mod undesirable_function;
