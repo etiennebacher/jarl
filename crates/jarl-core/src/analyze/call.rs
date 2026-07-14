@@ -120,6 +120,7 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled(Rule::StopifnotAll) {
         checker.report_diagnostic(stopifnot_all(r_expr)?);
+    }
     if checker.is_rule_enabled(Rule::StringsAsFactors) {
         checker.report_diagnostic(strings_as_factors(r_expr, checker)?);
     }
