@@ -48,6 +48,7 @@ pub(crate) mod seq;
 pub(crate) mod seq2;
 pub(crate) mod sort;
 pub(crate) mod sprintf;
+pub(crate) mod stopifnot_all;
 pub(crate) mod string_boundary;
 pub(crate) mod strings_as_factors;
 pub(crate) mod system_file;
