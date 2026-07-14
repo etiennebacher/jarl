@@ -30,8 +30,7 @@ pub struct StopifnotAll;
 ///
 /// ## References
 ///
-/// See the [`lintr` rule](https://lintr.r-lib.org/reference/stopifnot_all_linter.html)
-/// and `?stopifnot`.
+/// See `?stopifnot`.
 impl Violation for StopifnotAll {
     fn name(&self) -> String {
         "stopifnot_all".to_string()
