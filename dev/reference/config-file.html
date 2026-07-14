@@ -379,6 +379,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#assignment-1" id="toc-assignment-1" class="nav-link" data-scroll-target="#assignment-1"><code>assignment</code></a></li>
   <li><a href="#duplicated_arguments" id="toc-duplicated_arguments" class="nav-link" data-scroll-target="#duplicated_arguments"><code>duplicated_arguments</code></a></li>
+  <li><a href="#if_not_else" id="toc-if_not_else" class="nav-link" data-scroll-target="#if_not_else"><code>if_not_else</code></a></li>
   <li><a href="#implicit_assignment" id="toc-implicit_assignment" class="nav-link" data-scroll-target="#implicit_assignment"><code>implicit_assignment</code></a></li>
   <li><a href="#missing_argument" id="toc-missing_argument" class="nav-link" data-scroll-target="#missing_argument"><code>missing_argument</code></a></li>
   <li><a href="#pipe_consistency" id="toc-pipe_consistency" class="nav-link" data-scroll-target="#pipe_consistency"><code>pipe_consistency</code></a></li>
@@ -614,72 +615,84 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Ignore duplicated arguments in `list()` only.</span></span>
 <span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="dt">skipped-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"list"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
+<section id="if_not_else" class="level3">
+<h3 class="anchored" data-anchor-id="if_not_else"><code>if_not_else</code></h3>
+<p>Use <code>skipped-functions</code> to fully replace the default list of functions whose negated calls are allowed as an <code>if</code>/<code>ifelse()</code> condition (e.g.&nbsp;<code>!is.null(x)</code>). Use <code>extend-skipped-functions</code> to add to the default list. Specifying both is an error.</p>
+<p>Function names in <code>skipped-functions</code> or <code>extend-skipped-functions</code> also match namespaced calls, e.g.&nbsp;<code>skipped-functions = ["is.null"]</code> will allow <code>is.null()</code> and <code>base::is.null()</code>.</p>
+<p>Default: <code>skipped-functions = ["is.null", "is.na", "missing"]</code></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.if_not_else]</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Also allow a negated `is.data.frame()` call in the condition.</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="dt">extend-skipped-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"is.data.frame"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
 <section id="implicit_assignment" class="level3">
 <h3 class="anchored" data-anchor-id="implicit_assignment"><code>implicit_assignment</code></h3>
 <p>Use <code>skipped-functions</code> to fully replace the default list of functions that are allowed to contain implicit assignment. Use <code>extend-skipped-functions</code> to add to the default list. Specifying both is an error.</p>
 <p>Function names in <code>skipped-functions</code> or <code>extend-skipped-functions</code> also match namespaced calls, e.g.&nbsp;<code>skipped-functions = ["list2"]</code> will ignore <code>list2()</code> and <code>rlang::list2()</code>.</p>
 <p>Default: <code>skipped-functions = ["alist", "expect_error", "expect_warning", "expect_message", "expect_silent", "expect_defunct", "expect_deprecated", "expect_snapshot", "quote", "suppressMessages", "suppressWarnings"]</code> (<code>expect_</code>functions come from the <code>testthat</code> package, except <code>expect_defunct</code> and <code>expect_deprecated</code> which come from the <code>lifecycle</code> package)</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.implicit_assignment]</span></span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Ignore implicit assignment in `list()` only.</span></span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="dt">skipped-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"list"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.implicit_assignment]</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Ignore implicit assignment in `list()` only.</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="dt">skipped-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"list"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="missing_argument" class="level3">
 <h3 class="anchored" data-anchor-id="missing_argument"><code>missing_argument</code></h3>
 <p>Use <code>skipped-functions</code> to fully replace the default list of functions that are allowed to contain missing arguments. Use <code>extend-skipped-functions</code> to add to the default list. Specifying both is an error.</p>
 <p>Function names in <code>skipped-functions</code> or <code>extend-skipped-functions</code> also match namespaced calls, e.g.&nbsp;<code>skipped-functions = ["list2"]</code> will ignore <code>list2()</code> and <code>rlang::list2()</code>.</p>
 <p>Default: <code>skipped-functions = [     "switch",     "tibble",     "list2",     "mutate",     "summarize",     "transmute", ]</code></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.missing_argument]</span></span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Ignore missing arguments in `my_function()` only.</span></span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="dt">skipped-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"my_function"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.missing_argument]</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Ignore missing arguments in `my_function()` only.</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="dt">skipped-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"my_function"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="pipe_consistency" class="level3">
 <h3 class="anchored" data-anchor-id="pipe_consistency"><code>pipe_consistency</code></h3>
 <p>This takes a single value (<code>"|&gt;"</code> or <code>"%&gt;%"</code>) indicating the preferred pipe operator in the files to check. If <code>pipe = "|&gt;"</code> and if the <code>"pipe_consistency"</code> rule is enabled, then any use of <code>%&gt;%</code> will be reported, and vice-versa.</p>
 <p>Default: <code>"|&gt;"</code></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.pipe_consistency]</span></span>
-<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="dt">pipe</span> <span class="op">=</span> <span class="st">"|&gt;"</span> <span class="co"># or "%&gt;%"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.pipe_consistency]</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="dt">pipe</span> <span class="op">=</span> <span class="st">"|&gt;"</span> <span class="co"># or "%&gt;%"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="quotes" class="level3">
 <h3 class="anchored" data-anchor-id="quotes"><code>quotes</code></h3>
 <p>This takes a single value (<code>"single"</code> or <code>"double"</code>) indicating the preferred quote style in the files to check. If <code>quote = "double"</code> and if the <code>"quotes"</code> rule is enabled, then any use of single quotes <code>'</code> will be reported, and vice-versa.</p>
 <p>Default: <code>double</code></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.quotes]</span></span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="dt">quote</span> <span class="op">=</span> <span class="st">"single"</span> <span class="co"># or "double"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.quotes]</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="dt">quote</span> <span class="op">=</span> <span class="st">"single"</span> <span class="co"># or "double"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="true_false_symbol" class="level3">
 <h3 class="anchored" data-anchor-id="true_false_symbol"><code>true_false_symbol</code></h3>
 <p>Use <code>skipped-functions</code> to list functions whose arguments are allowed to contain the <code>T</code> and <code>F</code> symbols.</p>
 <p>Function names in <code>skipped-functions</code> also match namespaced calls, e.g. <code>skipped-functions = ["foo"]</code> will ignore <code>foo(T)</code> and <code>pkg::foo(T)</code>.</p>
 <p>Default: <code>skipped-functions = []</code></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.true_false_symbol]</span></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="dt">skipped-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"foo"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.true_false_symbol]</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a><span class="dt">skipped-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"foo"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="unreachable_code" class="level3">
 <h3 class="anchored" data-anchor-id="unreachable_code"><code>unreachable_code</code></h3>
 <p>Use <code>stopping-functions</code> to fully replace the default list of functions that are considered to stop execution (never return). Use <code>extend-stopping-functions</code> to add to the default list. Specifying both is an error.</p>
 <p>Function names in <code>stopping-functions</code> or <code>extend-stopping-functions</code> also match namespaced calls, e.g.&nbsp;<code>stopping-functions = ["abort"]</code> will consider <code>abort()</code> and <code>rlang::abort()</code> as stopping functions.</p>
 <p>Default: <code>stopping-functions = ["stop", ".Defunct", "abort", "cli_abort", "q", "quit"]</code>.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
-<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
-<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.unreachable_code]</span></span>
-<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Add a custom function to the list of stopping functions</span></span>
-<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a><span class="dt">extend-stopping-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"my_custom_stop"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.unreachable_code]</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Add a custom function to the list of stopping functions</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="dt">extend-stopping-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"my_custom_stop"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="unused_function" class="level3">
 <h3 class="anchored" data-anchor-id="unused_function"><code>unused_function</code></h3>
@@ -690,16 +703,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><code>skipped-functions = []</code></li>
 <li><code>threshold-ignore = 50</code></li>
 </ul>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.unused_function]</span></span>
-<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Ignore all functions that start with "pl_" or "cs_", and the function</span></span>
-<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="co"># "my.function"</span></span>
-<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="dt">skipped-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"^cs_"</span><span class="op">,</span> <span class="st">"^pl_"</span><span class="op">,</span> <span class="st">"my</span><span class="sc">\\</span><span class="st">.function"</span><span class="op">]</span></span>
-<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Set a custom threshold above which diagnostics for this rule aren't reported</span></span>
-<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a><span class="co"># (this is basically equivalent to never hiding unused functions).</span></span>
-<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a><span class="dt">threshold-ignore</span> <span class="op">=</span> <span class="dv">10000</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.unused_function]</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Ignore all functions that start with "pl_" or "cs_", and the function</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a><span class="co"># "my.function"</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a><span class="dt">skipped-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"^cs_"</span><span class="op">,</span> <span class="st">"^pl_"</span><span class="op">,</span> <span class="st">"my</span><span class="sc">\\</span><span class="st">.function"</span><span class="op">]</span></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Set a custom threshold above which diagnostics for this rule aren't reported</span></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a><span class="co"># (this is basically equivalent to never hiding unused functions).</span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a><span class="dt">threshold-ignore</span> <span class="op">=</span> <span class="dv">10000</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>
