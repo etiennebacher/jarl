@@ -13,9 +13,8 @@ pub struct StopifnotAll;
 ///
 /// ## Why is this bad?
 ///
-/// `stopifnot()` already checks `all()` of each argument internally. Passing
-/// `all(x)` hides the original expression from `stopifnot()`, which results in
-/// a less informative error message when the condition fails.
+/// `stopifnot()` already checks that all values of each argument are `TRUE`.
+/// Wrapping an argument in `all()` is therefore unnecessary.
 ///
 /// ## Example
 ///
@@ -46,18 +45,19 @@ impl Violation for StopifnotAll {
 }
 
 pub fn stopifnot_all(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
+    // Start from `all()` because it can appear in any argument of `stopifnot()`,
+    // then verify that the containing call is `stopifnot()`.
+
     if get_function_name(ast.function()?) != "all" {
         return Ok(None);
     }
 
-    let Some(argument) = ast.syntax().parent().and_then(RArgument::cast) else {
-        return Ok(None);
-    };
+    let argument = unwrap_or_return_none!(ast.syntax().parent().and_then(RArgument::cast));
     let outer_call = argument
         .syntax()
         .ancestors()
         .find_map(RCall::cast)
-        .expect("an R argument must belong to a call");
+        .ok_or_else(|| anyhow::anyhow!("an R argument must belong to a call"))?;
 
     if get_function_name(outer_call.function()?) != "stopifnot" {
         return Ok(None);

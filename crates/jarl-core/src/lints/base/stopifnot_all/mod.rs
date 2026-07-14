@@ -30,29 +30,84 @@ mod tests {
          --> <test>:1:11
           |
         1 | stopifnot(all(x > 0))
-          |           ---------- `stopifnot(all(x))` produces a less informative error message.
+          |           ---------- `stopifnot(all(...))` contains an unnecessary call to `all()`.
           |
-          = help: Use `stopifnot(x)` instead.
+          = help: Use `stopifnot(...)` instead.
         Found 1 error.
         "
         );
 
-        for code in [
-            "stopifnot(check = all(x))",
-            "base::stopifnot(base::all(x))",
-            "stopifnot(all(x, na.rm = TRUE))",
-            "stopifnot(all(x, y))",
-        ] {
-            assert_eq!(
-                check_code(code, "stopifnot_all", None).len(),
-                1,
-                "expected a lint for `{code}`"
-            );
-        }
-
-        assert_eq!(
-            check_code("stopifnot(x, all(y), all(z))", "stopifnot_all", None).len(),
-            2
+        assert_snapshot!(
+            snapshot_lint("stopifnot(check = all(x))"),
+            @r"
+        warning: stopifnot_all
+         --> <test>:1:19
+          |
+        1 | stopifnot(check = all(x))
+          |                   ------ `stopifnot(all(...))` contains an unnecessary call to `all()`.
+          |
+          = help: Use `stopifnot(...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("base::stopifnot(base::all(x))"),
+            @r"
+        warning: stopifnot_all
+         --> <test>:1:17
+          |
+        1 | base::stopifnot(base::all(x))
+          |                 ------------ `stopifnot(all(...))` contains an unnecessary call to `all()`.
+          |
+          = help: Use `stopifnot(...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("stopifnot(all(x, na.rm = TRUE))"),
+            @r"
+        warning: stopifnot_all
+         --> <test>:1:11
+          |
+        1 | stopifnot(all(x, na.rm = TRUE))
+          |           -------------------- `stopifnot(all(...))` contains an unnecessary call to `all()`.
+          |
+          = help: Use `stopifnot(...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("stopifnot(all(x, y))"),
+            @r"
+        warning: stopifnot_all
+         --> <test>:1:11
+          |
+        1 | stopifnot(all(x, y))
+          |           --------- `stopifnot(all(...))` contains an unnecessary call to `all()`.
+          |
+          = help: Use `stopifnot(...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("stopifnot(x, all(y), all(z))"),
+            @r"
+        warning: stopifnot_all
+         --> <test>:1:14
+          |
+        1 | stopifnot(x, all(y), all(z))
+          |              ------ `stopifnot(all(...))` contains an unnecessary call to `all()`.
+          |
+          = help: Use `stopifnot(...)` instead.
+        warning: stopifnot_all
+         --> <test>:1:22
+          |
+        1 | stopifnot(x, all(y), all(z))
+          |                      ------ `stopifnot(all(...))` contains an unnecessary call to `all()`.
+          |
+          = help: Use `stopifnot(...)` instead.
+        Found 2 errors.
+        "
         );
     }
 }

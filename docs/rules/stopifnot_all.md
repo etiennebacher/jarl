@@ -8,9 +8,8 @@ Checks for direct calls to `all()` inside `stopifnot()`.
 
 ## Why is this bad?
 
-`stopifnot()` already checks `all()` of each argument internally. Passing
-`all(x)` hides the original expression from `stopifnot()`, which results in
-a less informative error message when the condition fails.
+`stopifnot()` already checks that all values of each argument are `TRUE`.
+Wrapping an argument in `all()` is therefore unnecessary.
 
 ## Example
 
@@ -25,5 +24,4 @@ stopifnot(x > 0)
 
 ## References
 
-See the [`lintr` rule](https://lintr.r-lib.org/reference/stopifnot_all_linter.html)
-and `?stopifnot`.
+See `?stopifnot`.

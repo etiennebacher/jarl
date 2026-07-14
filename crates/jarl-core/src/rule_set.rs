@@ -597,7 +597,7 @@ declare_rules! {
     StopifnotAll => {
         name: "stopifnot_all",
         categories: [Read],
-        default: Enabled,
+        default: Disabled,
         fix: None,
         min_r_version: None,
     },
