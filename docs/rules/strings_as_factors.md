@@ -33,5 +33,5 @@ data.frame(x = "a", stringsAsFactors = FALSE)
 
 ## References
 
-See the [`lintr` rule](https://lintr.r-lib.org/reference/strings_as_factors_linter.html)
+See `?data.frame`
 and the [R Core discussion](https://developer.r-project.org/Blog/public/2020/02/16/stringsasfactors/).

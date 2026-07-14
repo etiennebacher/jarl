@@ -127,6 +127,7 @@ dat <- as.data.frame(
     c("sort", "performance, readability", "✅", ""),
     c("sprintf", "correctness, suspicious", "✅", ""),
     c("string_boundary", "performance, readability", "✅", ""),
+    c("strings_as_factors", "suspicious", "❌", "R < 4.0"),
     c("system_file", "readability", "✅", ""),
     c("true_false_symbol", "readability", "❌", ""),
     c("undesirable_function", "correctness", "❌", ""),

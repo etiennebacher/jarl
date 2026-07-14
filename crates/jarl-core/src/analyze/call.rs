@@ -118,7 +118,7 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
         checker.report_diagnostic(sprintf(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::StringsAsFactors) {
-        checker.report_diagnostic(strings_as_factors(r_expr, checker.minimum_r_version)?);
+        checker.report_diagnostic(strings_as_factors(r_expr, checker)?);
     }
     if checker.is_rule_enabled(Rule::SystemFile) {
         checker.report_diagnostic(system_file(r_expr)?);

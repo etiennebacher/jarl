@@ -1,3 +1,4 @@
+use crate::checker::Checker;
 use crate::diagnostic::*;
 use crate::utils::{get_arg_by_name, get_arg_by_position, get_function_name};
 use air_r_syntax::*;
@@ -38,7 +39,7 @@ pub struct StringsAsFactors;
 ///
 /// ## References
 ///
-/// See the [`lintr` rule](https://lintr.r-lib.org/reference/strings_as_factors_linter.html)
+/// See `?data.frame`
 /// and the [R Core discussion](https://developer.r-project.org/Blog/public/2020/02/16/stringsasfactors/).
 impl Violation for StringsAsFactors {
     fn name(&self) -> String {
@@ -58,12 +59,12 @@ impl Violation for StringsAsFactors {
     }
 }
 
-pub fn strings_as_factors(
-    ast: &RCall,
-    minimum_r_version: Option<(u32, u32, u32)>,
-) -> anyhow::Result<Option<Diagnostic>> {
+pub fn strings_as_factors(ast: &RCall, checker: &Checker) -> anyhow::Result<Option<Diagnostic>> {
     // This rule only applies when the minimum R version is known and is below 4.0.0.
-    if minimum_r_version.is_none_or(|version| version >= (4, 0, 0)) {
+    if checker
+        .minimum_r_version
+        .is_none_or(|version| version >= (4, 0, 0))
+    {
         return Ok(None);
     }
 
@@ -79,28 +80,30 @@ pub fn strings_as_factors(
         return Ok(None);
     }
 
-    let has_character_column =
-        arguments
-            .iter()
-            .filter_map(|argument| argument.ok())
-            .any(|argument| {
-                let is_row_names = argument
-                    .name_clause()
-                    .and_then(|name_clause| name_clause.name().ok())
-                    .is_some_and(|name| name.to_string().trim() == "row.names");
+    for argument in arguments.iter().filter_map(|argument| argument.ok()) {
+        let is_row_names = argument
+            .name_clause()
+            .and_then(|name_clause| name_clause.name().ok())
+            .is_some_and(|name| name.to_string().trim() == "row.names");
 
-                !is_row_names && argument.value().is_some_and(is_known_character_expression)
-            });
+        if is_row_names {
+            continue;
+        }
 
-    if !has_character_column {
-        return Ok(None);
+        let Some(value) = argument.value() else {
+            continue;
+        };
+
+        if is_known_character_expression(value)? {
+            return Ok(Some(Diagnostic::new(
+                StringsAsFactors,
+                ast.syntax().text_trimmed_range(),
+                Fix::empty(),
+            )));
+        }
     }
 
-    Ok(Some(Diagnostic::new(
-        StringsAsFactors,
-        ast.syntax().text_trimmed_range(),
-        Fix::empty(),
-    )))
+    Ok(None)
 }
 
 const KNOWN_CHARACTER_FUNCTIONS: &[&str] = &[
@@ -115,29 +118,25 @@ const KNOWN_CHARACTER_FUNCTIONS: &[&str] = &[
     "encodeString",
 ];
 
-fn is_known_character_expression(expression: AnyRExpression) -> bool {
+fn is_known_character_expression(expression: AnyRExpression) -> anyhow::Result<bool> {
     if is_string_literal(&expression) {
-        return true;
+        return Ok(true);
     }
 
     let Some(call) = expression.as_r_call() else {
-        return false;
+        return Ok(false);
     };
-    let function = call
-        .function()
-        .expect("a call in a valid expression must have a function");
+    let function = call.function()?;
 
     match get_function_name(function).as_str() {
         "c" => is_literal_character_combine(call),
         "rep" => rep_starts_with_known_character(call),
-        function => KNOWN_CHARACTER_FUNCTIONS.contains(&function),
+        function => Ok(KNOWN_CHARACTER_FUNCTIONS.contains(&function)),
     }
 }
 
-fn is_literal_character_combine(call: &RCall) -> bool {
-    let arguments = call
-        .arguments()
-        .expect("a call in a valid expression must have arguments");
+fn is_literal_character_combine(call: &RCall) -> anyhow::Result<bool> {
+    let arguments = call.arguments()?;
 
     let mut has_string = false;
     for argument in arguments
@@ -160,33 +159,37 @@ fn is_literal_character_combine(call: &RCall) -> bool {
             | AnyRExpression::RNanExpression(_)
             | AnyRExpression::RNullExpression(_)
             | AnyRExpression::RTrueExpression(_) => {}
-            _ => return false,
+            _ => return Ok(false),
         }
     }
 
-    has_string
+    Ok(has_string)
 }
 
-fn rep_starts_with_known_character(call: &RCall) -> bool {
-    let arguments = call
-        .arguments()
-        .expect("a call in a valid expression must have arguments");
+fn rep_starts_with_known_character(call: &RCall) -> anyhow::Result<bool> {
+    let arguments = call.arguments()?;
     let Some(first_argument) = get_arg_by_position(&arguments.items(), 1) else {
-        return false;
+        return Ok(false);
     };
     let Some(value) = first_argument.value() else {
-        return false;
+        return Ok(false);
     };
 
     if is_string_literal(&value) {
-        return true;
+        return Ok(true);
     }
 
-    value.as_r_call().is_some_and(|call| {
-        call.function()
-            .is_ok_and(|function| get_function_name(function) == "c")
-            && is_literal_character_combine(call)
-    })
+    let Some(call) = value.as_r_call() else {
+        return Ok(false);
+    };
+    let Ok(function) = call.function() else {
+        return Ok(false);
+    };
+    if get_function_name(function) != "c" {
+        return Ok(false);
+    }
+
+    is_literal_character_combine(call)
 }
 
 fn is_string_literal(expression: &AnyRExpression) -> bool {

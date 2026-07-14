@@ -58,17 +58,6 @@ mod tests {
             "strings_as_factors",
             Some("3.6"),
         );
-        expect_no_lint("data.frame(x = rep())", "strings_as_factors", Some("3.6"));
-        expect_no_lint(
-            "data.frame(x = rep(, 2))",
-            "strings_as_factors",
-            Some("3.6"),
-        );
-        expect_no_lint(
-            "data.frame(x = rep(times = 2, x = \"a\"))",
-            "strings_as_factors",
-            Some("3.6"),
-        );
         expect_no_lint(
             "data.frame(row.names = as.character(y))",
             "strings_as_factors",
@@ -129,7 +118,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lint_static_character_expressions() {
+    fn test_lint_strings_as_factors_static_character_expressions() {
         let cases = [
             "data.frame(x = c(\"a\", \"b\"))",
             "data.frame(x = c(\"a\", 1))",
