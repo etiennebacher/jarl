@@ -601,11 +601,25 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    StopifnotAll => {
+        name: "stopifnot_all",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     StringBoundary => {
         name: "string_boundary",
         categories: [Perf, Read],
         default: Enabled,
         fix: Safe,
+        min_r_version: None,
+    },
+    StringsAsFactors => {
+        name: "strings_as_factors",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
         min_r_version: None,
     },
     SystemFile => {
