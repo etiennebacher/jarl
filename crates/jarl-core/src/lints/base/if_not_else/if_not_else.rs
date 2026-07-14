@@ -62,7 +62,7 @@ pub fn if_not_else(ast: &RIfStatement, checker: &Checker) -> anyhow::Result<Opti
         ViolationData::new(
             "if_not_else".to_string(),
             "Negating the condition like `if (!A) y else x` can be hard to read.".to_string(),
-            Some("Remove the negation and swap branches, such as `if (A) x else y`".to_string()),
+            Some("Remove the negation and swap branches, such as `if (A) x else y`.".to_string()),
         ),
         range,
         Fix::empty(),

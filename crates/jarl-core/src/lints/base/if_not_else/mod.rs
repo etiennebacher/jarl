@@ -55,7 +55,7 @@ mod tests {
         1 | if (!A) x else y
           | ---------------- Negating the condition like `if (!A) y else x` can be hard to read.
           |
-          = help: Remove the negation and swap branches, such as `if (A) x else y`
+          = help: Remove the negation and swap branches, such as `if (A) x else y`.
         Found 1 error.
         ");
         // The outer `if` is an else-if (skipped); the inner `if (!B) y else z` lints.
@@ -66,7 +66,7 @@ mod tests {
         1 | if (!A) x else if (!B) y else z
           |                ---------------- Negating the condition like `if (!A) y else x` can be hard to read.
           |
-          = help: Remove the negation and swap branches, such as `if (A) x else y`
+          = help: Remove the negation and swap branches, such as `if (A) x else y`.
         Found 1 error.
         ");
         // `!` is still the outer operator of a more complex expression.
@@ -77,7 +77,7 @@ mod tests {
         1 | if (!x %in% 1:10) y else z
           | -------------------------- Negating the condition like `if (!A) y else x` can be hard to read.
           |
-          = help: Remove the negation and swap branches, such as `if (A) x else y`
+          = help: Remove the negation and swap branches, such as `if (A) x else y`.
         Found 1 error.
         ");
     }
@@ -155,7 +155,7 @@ mod tests {
         1 | if (!is.null(x)) x else y
           | ------------------------- Negating the condition like `if (!A) y else x` can be hard to read.
           |
-          = help: Remove the negation and swap branches, such as `if (A) x else y`
+          = help: Remove the negation and swap branches, such as `if (A) x else y`.
         Found 1 error.
         "
         );
