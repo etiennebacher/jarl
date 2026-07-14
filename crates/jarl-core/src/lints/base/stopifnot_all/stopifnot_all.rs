@@ -41,7 +41,7 @@ impl Violation for StopifnotAll {
     }
 
     fn suggestion(&self) -> Option<String> {
-        Some("Use `stopifnot(x)` instead.".to_string())
+        Some("Use `stopifnot(...)` instead.".to_string())
     }
 }
 
