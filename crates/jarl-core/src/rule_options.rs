@@ -4,6 +4,8 @@ use crate::lints::base::assignment::options::AssignmentOptions;
 use crate::lints::base::assignment::options::ResolvedAssignmentOptions;
 use crate::lints::base::duplicated_arguments::options::DuplicatedArgumentsOptions;
 use crate::lints::base::duplicated_arguments::options::ResolvedDuplicatedArgumentsOptions;
+use crate::lints::base::if_not_else::options::IfNotElseOptions;
+use crate::lints::base::if_not_else::options::ResolvedIfNotElseOptions;
 use crate::lints::base::implicit_assignment::options::ImplicitAssignmentOptions;
 use crate::lints::base::implicit_assignment::options::ResolvedImplicitAssignmentOptions;
 use crate::lints::base::missing_argument::options::MissingArgumentOptions;
@@ -71,6 +73,7 @@ pub fn resolve_with_extend(
 pub struct ResolvedRuleOptions {
     pub assignment: ResolvedAssignmentOptions,
     pub duplicated_arguments: ResolvedDuplicatedArgumentsOptions,
+    pub if_not_else: ResolvedIfNotElseOptions,
     pub implicit_assignment: ResolvedImplicitAssignmentOptions,
     pub missing_argument: ResolvedMissingArgumentOptions,
     pub nested_pipe: ResolvedNestedPipeOptions,
@@ -87,6 +90,7 @@ impl ResolvedRuleOptions {
     pub fn resolve(
         assignment: Option<&AssignmentOptions>,
         duplicated_arguments: Option<&DuplicatedArgumentsOptions>,
+        if_not_else: Option<&IfNotElseOptions>,
         implicit_assignment: Option<&ImplicitAssignmentOptions>,
         missing_argument: Option<&MissingArgumentOptions>,
         nested_pipe: Option<&NestedPipeOptions>,
@@ -102,6 +106,7 @@ impl ResolvedRuleOptions {
             duplicated_arguments: ResolvedDuplicatedArgumentsOptions::resolve(
                 duplicated_arguments,
             )?,
+            if_not_else: ResolvedIfNotElseOptions::resolve(if_not_else)?,
             implicit_assignment: ResolvedImplicitAssignmentOptions::resolve(implicit_assignment)?,
             missing_argument: ResolvedMissingArgumentOptions::resolve(missing_argument)?,
             nested_pipe: ResolvedNestedPipeOptions::resolve(nested_pipe)?,
@@ -120,7 +125,7 @@ impl ResolvedRuleOptions {
 impl Default for ResolvedRuleOptions {
     fn default() -> Self {
         Self::resolve(
-            None, None, None, None, None, None, None, None, None, None, None,
+            None, None, None, None, None, None, None, None, None, None, None, None,
         )
         .expect("default rule options should always resolve")
     }
