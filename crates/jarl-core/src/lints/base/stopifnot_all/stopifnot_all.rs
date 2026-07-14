@@ -37,7 +37,7 @@ impl Violation for StopifnotAll {
     }
 
     fn body(&self) -> String {
-        "`stopifnot(all(x))` produces a less informative error message.".to_string()
+        "`stopifnot(all(...))` contains an unnecessary call to `all()`.".to_string()
     }
 
     fn suggestion(&self) -> Option<String> {
