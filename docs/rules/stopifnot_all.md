@@ -10,6 +10,12 @@ Checks for direct calls to `all()` inside `stopifnot()`.
 
 `stopifnot()` already checks that all values of each argument are `TRUE`.
 Wrapping an argument in `all()` is therefore unnecessary.
+Calls that explicitly set `na.rm` are not reported because removing `all()`
+would not preserve their missing-value handling.
+
+This rule has an automated fix that is marked unsafe and therefore requires
+passing `--unsafe-fixes`. This is because `all()` coerces its arguments to
+logical vectors, so removing it can change runtime behavior.
 
 ## Example
 

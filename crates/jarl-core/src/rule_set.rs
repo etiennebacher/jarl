@@ -598,7 +598,7 @@ declare_rules! {
         name: "stopifnot_all",
         categories: [Read],
         default: Disabled,
-        fix: None,
+        fix: Unsafe,
         min_r_version: None,
     },
     StringBoundary => {

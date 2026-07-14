@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::get_function_name;
+use crate::utils::{get_arg_by_name, get_function_name, node_contains_comments};
 use air_r_syntax::{RArgument, RCall};
 use biome_rowan::AstNode;
 
@@ -15,6 +15,12 @@ pub struct StopifnotAll;
 ///
 /// `stopifnot()` already checks that all values of each argument are `TRUE`.
 /// Wrapping an argument in `all()` is therefore unnecessary.
+/// Calls that explicitly set `na.rm` are not reported because removing `all()`
+/// would not preserve their missing-value handling.
+///
+/// This rule has an automated fix that is marked unsafe and therefore requires
+/// passing `--unsafe-fixes`. This is because `all()` coerces its arguments to
+/// logical vectors, so removing it can change runtime behavior.
 ///
 /// ## Example
 ///
@@ -52,6 +58,11 @@ pub fn stopifnot_all(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
+    let arguments = ast.arguments()?.items();
+    if get_arg_by_name(&arguments, "na.rm").is_some() {
+        return Ok(None);
+    }
+
     let argument = unwrap_or_return_none!(ast.syntax().parent().and_then(RArgument::cast));
     let outer_call = argument
         .syntax()
@@ -63,9 +74,15 @@ pub fn stopifnot_all(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
+    let range = ast.syntax().text_trimmed_range();
     Ok(Some(Diagnostic::new(
         StopifnotAll,
-        ast.syntax().text_trimmed_range(),
-        Fix::empty(),
+        range,
+        Fix {
+            content: arguments.into_syntax().to_string(),
+            start: range.start().into(),
+            end: range.end().into(),
+            to_skip: node_contains_comments(ast.syntax()),
+        },
     )))
 }

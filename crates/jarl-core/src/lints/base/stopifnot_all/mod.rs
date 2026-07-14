@@ -19,6 +19,12 @@ mod tests {
         expect_no_lint("stopifnot((all(x)))", "stopifnot_all", None);
         expect_no_lint("stopifnot(all(x)[1])", "stopifnot_all", None);
         expect_no_lint("stopifnot(all = x)", "stopifnot_all", None);
+        expect_no_lint("stopifnot(all(x, na.rm = TRUE))", "stopifnot_all", None);
+        expect_no_lint(
+            "stopifnot(all(x, na.rm = remove_na))",
+            "stopifnot_all",
+            None,
+        );
     }
 
     #[test]
@@ -64,19 +70,6 @@ mod tests {
         "
         );
         assert_snapshot!(
-            snapshot_lint("stopifnot(all(x, na.rm = TRUE))"),
-            @r"
-        warning: stopifnot_all
-         --> <test>:1:11
-          |
-        1 | stopifnot(all(x, na.rm = TRUE))
-          |           -------------------- `stopifnot(all(...))` contains an unnecessary call to `all()`.
-          |
-          = help: Use `stopifnot(...)` instead.
-        Found 1 error.
-        "
-        );
-        assert_snapshot!(
             snapshot_lint("stopifnot(all(x, y))"),
             @r"
         warning: stopifnot_all
@@ -108,6 +101,35 @@ mod tests {
           = help: Use `stopifnot(...)` instead.
         Found 2 errors.
         "
+        );
+    }
+
+    #[test]
+    fn test_fix_stopifnot_all() {
+        assert_snapshot!(
+            "fix_output",
+            get_unsafe_fixed_text(
+                vec![
+                    "stopifnot(all(x > 0))",
+                    "stopifnot(check = all(x))",
+                    "base::stopifnot(base::all(x))",
+                    "stopifnot(all(x, y))",
+                    "stopifnot(all(1, 2, 3))",
+                    "stopifnot(x, all(a, b, c), all(y, z))",
+                ],
+                "stopifnot_all",
+            )
+        );
+    }
+
+    #[test]
+    fn test_stopifnot_all_with_comments_no_fix() {
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_unsafe_fixed_text(
+                vec!["stopifnot(all(\n  # comment\n  x\n))"],
+                "stopifnot_all",
+            )
         );
     }
 }
