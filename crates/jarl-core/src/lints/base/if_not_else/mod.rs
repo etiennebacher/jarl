@@ -28,7 +28,7 @@ mod tests {
     }
 
     #[test]
-    fn test_skips_allowed_usages() {
+    fn test_if_not_else_skips_allowed_usages() {
         // Simple if/else statement is fine.
         expect_no_lint("if (A) x else y", "if_not_else", None);
         // Not a plain negation.
@@ -47,7 +47,7 @@ mod tests {
     }
 
     #[test]
-    fn test_blocks_simple_usages() {
+    fn test_if_not_else_blocks_simple_usages() {
         assert_snapshot!(snapshot_lint("if (!A) x else y"), @"
         warning: if_not_else
          --> <test>:1:1
@@ -83,7 +83,7 @@ mod tests {
     }
 
     #[test]
-    fn test_skips_ifelse_and_friends() {
+    fn test_if_not_else_skips_ifelse_and_friends() {
         for fun in ["ifelse", "fifelse", "if_else"] {
             expect_no_lint(&format!("{fun}(!A | B, x, y)"), "if_not_else", None);
             expect_no_lint(&format!("{fun}(A, !x, y)"), "if_not_else", None);
@@ -93,7 +93,7 @@ mod tests {
     }
 
     #[test]
-    fn test_blocks_ifelse_and_friends() {
+    fn test_if_not_else_blocks_ifelse_and_friends() {
         assert_snapshot!(snapshot_lint("ifelse(!A, x, y)"), @"
         warning: if_not_else
          --> <test>:1:1
@@ -127,7 +127,7 @@ mod tests {
     }
 
     #[test]
-    fn test_skips_negated_is_null_and_similar() {
+    fn test_if_not_else_skips_negated_is_null_and_similar() {
         expect_no_lint("if (!is.null(x)) x else y", "if_not_else", None);
         expect_no_lint("if (!is.na(x)) x else y", "if_not_else", None);
         expect_no_lint("if (!missing(x)) x else y", "if_not_else", None);
@@ -135,56 +135,11 @@ mod tests {
     }
 
     #[test]
-    fn test_multiple_lints() {
-        assert_snapshot!(
-            snapshot_lint(
-                "{
-    if (!A) x else B
-    ifelse(!A, x, y)
-    fifelse(!A, x, y)
-    if_else(!A, x, y)
-}"
-            ),
-            @"
-        warning: if_not_else
-         --> <test>:2:5
-          |
-        2 |     if (!A) x else B
-          |     ---------------- Negating the condition like `if (!A) y else x` can be hard to read.
-          |
-          = help: Remove the negation and swap branches, such as `if (A) x else y`
-        warning: if_not_else
-         --> <test>:3:5
-          |
-        3 |     ifelse(!A, x, y)
-          |     ---------------- Negating the condition like `ifelse(!A, y, x)` can be hard to read.
-          |
-          = help: Remove the negation and swap branches, such as `ifelse(A, x, y)`.
-        warning: if_not_else
-         --> <test>:4:5
-          |
-        4 |     fifelse(!A, x, y)
-          |     ----------------- Negating the condition like `fifelse(!A, y, x)` can be hard to read.
-          |
-          = help: Remove the negation and swap branches, such as `fifelse(A, x, y)`.
-        warning: if_not_else
-         --> <test>:5:5
-          |
-        5 |     if_else(!A, x, y)
-          |     ----------------- Negating the condition like `if_else(!A, y, x)` can be hard to read.
-          |
-          = help: Remove the negation and swap branches, such as `if_else(A, x, y)`.
-        Found 4 errors.
-        "
-        );
-    }
-
-    #[test]
-    fn test_exceptions_argument() {
-        // With no exceptions, negated `is.null()` is flagged.
+    fn test_if_not_else_skipped_functions_argument() {
+        // With no skipped functions, negated `is.null()` is flagged.
         let settings = settings_with_options(IfNotElseOptions {
-            exceptions: Some(vec![]),
-            extend_exceptions: None,
+            skipped_functions: Some(vec![]),
+            extend_skipped_functions: None,
         });
         assert_snapshot!(
             format_diagnostics_with_settings(
@@ -205,10 +160,10 @@ mod tests {
         "
         );
 
-        // With `foo` as the only exception, negated `foo()` is allowed.
+        // With `foo` as the only skipped function, negated `foo()` is allowed.
         let settings = settings_with_options(IfNotElseOptions {
-            exceptions: Some(vec!["foo".to_string()]),
-            extend_exceptions: None,
+            skipped_functions: Some(vec!["foo".to_string()]),
+            extend_skipped_functions: None,
         });
         expect_no_lint_with_settings("if (!foo(x)) y else z", "if_not_else", None, settings);
     }

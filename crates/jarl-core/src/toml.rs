@@ -263,9 +263,9 @@ pub struct LinterTomlOptions {
 
     /// # Options for the `if_not_else` rule
     ///
-    /// Use `exceptions` to fully replace the default list of functions whose
-    /// negated calls are allowed as an `if`/`ifelse()` condition. Use
-    /// `extend-exceptions` to add to the default list.
+    /// Use `skipped-functions` to fully replace the default list of functions
+    /// whose negated calls are allowed as an `if`/`ifelse()` condition. Use
+    /// `extend-skipped-functions` to add to the default list.
     /// Specifying both is an error.
     #[serde(rename = "if_not_else")]
     pub if_not_else: Option<IfNotElseOptions>,

@@ -21,8 +21,8 @@ use biome_rowan::AstNode;
 /// `if (A) y else x` instead of `if (!A) x else y`.
 ///
 /// Negated calls such as `is.null()`, `is.na()` and `missing()` are common and
-/// read naturally, so they are allowed by default. Use the `exceptions` option
-/// to change this list.
+/// read naturally, so they are allowed by default. Use the `skipped-functions`
+/// option to change this list.
 ///
 /// This rule does not have an automatic fix.
 ///
@@ -52,8 +52,8 @@ pub fn if_not_else(ast: &RIfStatement, checker: &Checker) -> anyhow::Result<Opti
         return Ok(None);
     }
 
-    let exceptions = &checker.rule_options.if_not_else.exceptions;
-    if !is_flaggable_negation(&ast.condition()?, exceptions)? {
+    let skipped_functions = &checker.rule_options.if_not_else.skipped_functions;
+    if !is_flaggable_negation(&ast.condition()?, skipped_functions)? {
         return Ok(None);
     }
 
@@ -86,8 +86,8 @@ pub fn if_not_else_call(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
         return Ok(None);
     };
 
-    let exceptions = &checker.rule_options.if_not_else.exceptions;
-    if !is_flaggable_negation(&condition, exceptions)? {
+    let skipped_functions = &checker.rule_options.if_not_else.skipped_functions;
+    if !is_flaggable_negation(&condition, skipped_functions)? {
         return Ok(None);
     }
 
@@ -108,11 +108,11 @@ pub fn if_not_else_call(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
 }
 
 /// A condition is flaggable when its outer operator is a `!` negation, unless it
-/// is a double negation (`!!A`) or a negated call to one of the `exceptions`
-/// (e.g. `!is.null(x)`).
+/// is a double negation (`!!A`) or a negated call to one of the
+/// `skipped_functions` (e.g. `!is.null(x)`).
 fn is_flaggable_negation(
     condition: &AnyRExpression,
-    exceptions: &HashSet<String>,
+    skipped_functions: &HashSet<String>,
 ) -> anyhow::Result<bool> {
     let AnyRExpression::RUnaryExpression(unary) = condition else {
         return Ok(false);
@@ -128,10 +128,10 @@ fn is_flaggable_negation(
         return Ok(false);
     }
 
-    // Skip negated calls to excepted functions like `!is.null(x)`.
+    // Skip negated calls to skipped functions like `!is.null(x)`.
     if let AnyRExpression::RCall(call) = &argument {
         let name = get_function_name(call.function()?);
-        if exceptions.contains(&name) {
+        if skipped_functions.contains(&name) {
             return Ok(false);
         }
     }
