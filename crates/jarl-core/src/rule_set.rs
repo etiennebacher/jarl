@@ -601,6 +601,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    StringsAsFactors => {
+        name: "strings_as_factors",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     SystemFile => {
         name: "system_file",
         categories: [Read],

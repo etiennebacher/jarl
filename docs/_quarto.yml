@@ -148,6 +148,7 @@ website:
       - rules/sort.md
       - rules/sprintf.md
       - rules/string_boundary.md
+      - rules/strings_as_factors.md
       - rules/system_file.md
       - rules/true_false_symbol.md
       - rules/undesirable_function.md
