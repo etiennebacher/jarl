@@ -31,10 +31,40 @@ mod tests {
             "strings_as_factors",
             Some("3.6"),
         );
+        expect_no_lint(
+            "data.frame(x = \"a\", \"stringsAsFactors\" = FALSE)",
+            "strings_as_factors",
+            Some("3.6"),
+        );
+        expect_no_lint(
+            "data.frame(x = \"a\", 'stringsAsFactors' = FALSE)",
+            "strings_as_factors",
+            Some("3.6"),
+        );
+        expect_no_lint(
+            "data.frame(x = \"a\", `stringsAsFactors` = FALSE)",
+            "strings_as_factors",
+            Some("3.6"),
+        );
 
         expect_no_lint("data.frame(x = 1.2)", "strings_as_factors", Some("3.6"));
         expect_no_lint(
             "data.frame(row.names = \"a\")",
+            "strings_as_factors",
+            Some("3.6"),
+        );
+        expect_no_lint(
+            "data.frame(\"row.names\" = \"a\")",
+            "strings_as_factors",
+            Some("3.6"),
+        );
+        expect_no_lint(
+            "data.frame('row.names' = \"a\")",
+            "strings_as_factors",
+            Some("3.6"),
+        );
+        expect_no_lint(
+            "data.frame(`row.names` = \"a\")",
             "strings_as_factors",
             Some("3.6"),
         );

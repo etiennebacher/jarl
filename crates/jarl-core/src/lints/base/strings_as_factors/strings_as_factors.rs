@@ -1,6 +1,6 @@
 use crate::checker::Checker;
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name, get_arg_by_position, get_function_name};
+use crate::utils::{get_arg_by_position, get_function_name};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
@@ -76,17 +76,16 @@ pub fn strings_as_factors(ast: &RCall, checker: &Checker) -> anyhow::Result<Opti
 
     // Check if `stringsAsFactors` is explicitly set.
     let arguments = arguments?.items();
-    if get_arg_by_name(&arguments, "stringsAsFactors").is_some() {
+    if arguments
+        .iter()
+        .filter_map(|argument| argument.ok())
+        .any(|argument| argument_name_is(&argument, "stringsAsFactors"))
+    {
         return Ok(None);
     }
 
     for argument in arguments.iter().filter_map(|argument| argument.ok()) {
-        let is_row_names = argument
-            .name_clause()
-            .and_then(|name_clause| name_clause.name().ok())
-            .is_some_and(|name| name.to_string().trim() == "row.names");
-
-        if is_row_names {
+        if argument_name_is(&argument, "row.names") {
             continue;
         }
 
@@ -104,6 +103,24 @@ pub fn strings_as_factors(ast: &RCall, checker: &Checker) -> anyhow::Result<Opti
     }
 
     Ok(None)
+}
+
+fn argument_name_is(argument: &RArgument, expected: &str) -> bool {
+    let Some(name) = argument
+        .name_clause()
+        .and_then(|name_clause| name_clause.name().ok())
+    else {
+        return false;
+    };
+    let name = name.to_string();
+    let name = name.trim();
+
+    name == expected
+        || ['"', '\'', '`'].into_iter().any(|quote| {
+            name.strip_prefix(quote)
+                .and_then(|name| name.strip_suffix(quote))
+                == Some(expected)
+        })
 }
 
 const KNOWN_CHARACTER_FUNCTIONS: &[&str] = &[
