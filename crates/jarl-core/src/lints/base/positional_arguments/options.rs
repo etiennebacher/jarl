@@ -1,16 +1,38 @@
+use std::collections::HashSet;
+
+use crate::rule_options::resolve_with_extend;
+
 /// Default maximum number of positional arguments allowed in a call.
 const DEFAULT_MAX_POSITIONAL_ARGS: usize = 2;
+
+/// Variadic functions whose positional arguments are idiomatic and therefore
+/// allowed by default, e.g. `c(1, 2, 3)` or `paste("a", "b", "c")`.
+const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
+    "c",
+    "paste",
+    "paste0",
+    "cat",
+    "sprintf",
+    "switch",
+    "file.path",
+];
 
 /// TOML options for `[lint.positional_arguments]`.
 ///
 /// Use `max-positional-args` to control how many positional (unnamed) arguments
 /// a call may have before it is reported. Defaults to `2`.
+///
+/// Use `skipped-functions` to fully replace the default list of functions whose
+/// positional arguments are allowed. Use `extend-skipped-functions` to add to
+/// the default list. Specifying both is an error.
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct PositionalArgumentsOptions {
     #[serde(default, deserialize_with = "deserialize_max_positional_args")]
     pub max_positional_args: Option<usize>,
+    pub skipped_functions: Option<Vec<String>>,
+    pub extend_skipped_functions: Option<Vec<String>>,
 }
 
 /// Deserialize `max-positional-args` while reporting a human-readable type in
@@ -55,6 +77,7 @@ where
 #[derive(Clone, Debug)]
 pub struct ResolvedPositionalArgumentsOptions {
     pub max_positional_args: usize,
+    pub skipped_functions: HashSet<String>,
 }
 
 impl ResolvedPositionalArgumentsOptions {
@@ -63,6 +86,14 @@ impl ResolvedPositionalArgumentsOptions {
             .and_then(|opts| opts.max_positional_args)
             .unwrap_or(DEFAULT_MAX_POSITIONAL_ARGS);
 
-        Ok(Self { max_positional_args })
+        let skipped_functions = resolve_with_extend(
+            options.and_then(|opts| opts.skipped_functions.as_ref()),
+            options.and_then(|opts| opts.extend_skipped_functions.as_ref()),
+            DEFAULT_SKIPPED_FUNCTIONS,
+            "positional_arguments",
+            "skipped-functions",
+        )?;
+
+        Ok(Self { max_positional_args, skipped_functions })
     }
 }

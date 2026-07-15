@@ -1,6 +1,6 @@
 use crate::checker::Checker;
 use crate::diagnostic::*;
-use crate::utils::get_unnamed_args;
+use crate::utils::{get_function_name, get_unnamed_args};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -21,6 +21,10 @@ use biome_rowan::AstNode;
 /// The maximum number of allowed positional arguments is 2 by default and can
 /// be customized with the `max-positional-args` option in `jarl.toml` (see [rule-specific arguments](https://jarl.etiennebacher.com/reference/config-file#rule-specific-arguments)).
 ///
+/// Variadic functions whose positional arguments are idiomatic, such as `c()`,
+/// `paste()` and `paste0()`, are skipped by default. The list of skipped
+/// functions can be customized with `skipped-functions` / `extend-skipped-functions`.
+///
 /// ## Example
 ///
 /// ```r
@@ -33,15 +37,17 @@ use biome_rowan::AstNode;
 /// grepl("a", x, ignore.case = TRUE)
 /// ```
 pub fn positional_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Option<Diagnostic>> {
-    let max_positional_args = checker
-        .rule_options
-        .positional_arguments
-        .max_positional_args;
+    let options = &checker.rule_options.positional_arguments;
+
+    let function_name = get_function_name(ast.function()?);
+    if options.skipped_functions.contains(&function_name) {
+        return Ok(None);
+    }
 
     let args = ast.arguments()?.items();
     let n_positional = get_unnamed_args(&args).len();
 
-    if n_positional <= max_positional_args {
+    if n_positional <= options.max_positional_args {
         return Ok(None);
     }
 

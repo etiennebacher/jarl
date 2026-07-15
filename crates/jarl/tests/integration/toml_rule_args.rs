@@ -623,7 +623,7 @@ unknown-option = 2
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r#"
+        @"
 
     success: false
     exit_code: 255
@@ -636,8 +636,48 @@ unknown-option = 2
       |
     5 | unknown-option = 2
       | ^^^^^^^^^^^^^^
-    unknown field `unknown-option`, expected `max-positional-args`
-    "#
+    unknown field `unknown-option`, expected one of `max-positional-args`, `skipped-functions`, `extend-skipped-functions`
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_positional_arguments_both_skipped_and_extend_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+
+[lint.positional_arguments]
+skipped-functions = ["c"]
+extend-skipped-functions = ["my_fun"]
+"#,
+        ),
+        ("test.R", "foo(1, 2, 3)"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Cannot specify both `skipped-functions` and `extend-skipped-functions` in `[lint.positional_arguments]`.
+    "
     );
 
     Ok(())
