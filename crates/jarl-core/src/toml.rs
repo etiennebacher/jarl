@@ -308,7 +308,7 @@ pub struct LinterTomlOptions {
     /// # Options for the `positional_arguments` rule
     ///
     /// Use `max-positional-args` to control how many positional (unnamed)
-    /// arguments a call may have before it is reported. Defaults to `2`.
+    /// arguments a call may have before it is reported. Defaults to `3`.
     #[serde(rename = "positional_arguments")]
     pub positional_arguments: Option<PositionalArgumentsOptions>,
 

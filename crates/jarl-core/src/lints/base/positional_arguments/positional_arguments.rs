@@ -18,7 +18,7 @@ use biome_rowan::AstNode;
 /// changes in the argument order. Naming the arguments documents intent at the
 /// call site and is more robust.
 ///
-/// The maximum number of allowed positional arguments is 2 by default and can
+/// The maximum number of allowed positional arguments is 3 by default and can
 /// be customized with the `max-positional-args` option in `jarl.toml` (see [rule-specific arguments](https://jarl.etiennebacher.com/reference/config-file#rule-specific-arguments)).
 ///
 /// Variadic functions whose positional arguments are idiomatic, such as `c()`,
@@ -28,13 +28,13 @@ use biome_rowan::AstNode;
 /// ## Example
 ///
 /// ```r
-/// grepl("a", x, TRUE)
+/// grepl("a", x, TRUE, FALSE)
 /// ```
 ///
 /// Use instead:
 ///
 /// ```r
-/// grepl("a", x, ignore.case = TRUE)
+/// grepl("a", x, ignore.case = TRUE, perl = FALSE)
 /// ```
 pub fn positional_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Option<Diagnostic>> {
     let options = &checker.rule_options.positional_arguments;

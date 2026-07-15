@@ -36,32 +36,36 @@ mod tests {
 
     #[test]
     fn test_no_lint_positional_arguments() {
-        // At most two positional arguments are allowed by default.
+        // At most three positional arguments are allowed by default.
         expect_no_lint("foo()", "positional_arguments", None);
         expect_no_lint("foo(1)", "positional_arguments", None);
         expect_no_lint("foo(x)", "positional_arguments", None);
-        expect_no_lint("foo(1, 2)", "positional_arguments", None);
+        expect_no_lint("foo(1, 2, 3)", "positional_arguments", None);
 
         // Naming the extra arguments makes the call compliant.
-        expect_no_lint("foo(1, 2, z = 3)", "positional_arguments", None);
-        expect_no_lint("foo(x = 1, y = 2, z = 3)", "positional_arguments", None);
+        expect_no_lint("foo(1, 2, 3, w = 4)", "positional_arguments", None);
+        expect_no_lint(
+            "foo(w = 1, x = 2, y = 3, z = 4)",
+            "positional_arguments",
+            None,
+        );
 
         // Variadic functions are skipped by default.
-        expect_no_lint("c(1, 2, 3)", "positional_arguments", None);
-        expect_no_lint("paste(a, b, c)", "positional_arguments", None);
-        expect_no_lint("paste0(a, b, c)", "positional_arguments", None);
+        expect_no_lint("c(1, 2, 3, 4)", "positional_arguments", None);
+        expect_no_lint("paste(a, b, c, d)", "positional_arguments", None);
+        expect_no_lint("paste0(a, b, c, d)", "positional_arguments", None);
     }
 
     #[test]
     fn test_lint_positional_arguments() {
         assert_snapshot!(
-            snapshot_lint("grepl(\"a\", x, TRUE)"),
+            snapshot_lint("grepl(\"a\", x, TRUE, FALSE)"),
             @r#"
         warning: positional_arguments
          --> <test>:1:1
           |
-        1 | grepl("a", x, TRUE)
-          | ------------------- Calling a function with 3 positional arguments can be hard to read and is prone to mistakes.
+        1 | grepl("a", x, TRUE, FALSE)
+          | -------------------------- Calling a function with 4 positional arguments can be hard to read and is prone to mistakes.
           |
           = help: Name the arguments to clarify what each value refers to.
         Found 1 error.
@@ -70,13 +74,13 @@ mod tests {
 
         // Named arguments are not counted, only the positional ones.
         assert_snapshot!(
-            snapshot_lint("foo(1, 2, 3, w = 4)"),
+            snapshot_lint("foo(1, 2, 3, 4, w = 5)"),
             @"
         warning: positional_arguments
          --> <test>:1:1
           |
-        1 | foo(1, 2, 3, w = 4)
-          | ------------------- Calling a function with 3 positional arguments can be hard to read and is prone to mistakes.
+        1 | foo(1, 2, 3, 4, w = 5)
+          | ---------------------- Calling a function with 4 positional arguments can be hard to read and is prone to mistakes.
           |
           = help: Name the arguments to clarify what each value refers to.
         Found 1 error.
@@ -88,11 +92,11 @@ mod tests {
     fn test_positional_arguments_max_positional_args() {
         // Raising the threshold allows more positional arguments.
         let settings = settings_with_options(PositionalArgumentsOptions {
-            max_positional_args: Some(3),
+            max_positional_args: Some(4),
             ..Default::default()
         });
         assert_snapshot!(
-            snapshot_lint_with_settings("foo(1, 2, 3)", settings),
+            snapshot_lint_with_settings("foo(1, 2, 3, 4)", settings),
             @"All checks passed!"
         );
 
@@ -124,13 +128,13 @@ mod tests {
             ..Default::default()
         });
         assert_snapshot!(
-            snapshot_lint_with_settings("c(1, 2, 3)", settings),
+            snapshot_lint_with_settings("c(1, 2, 3, 4)", settings),
             @"
         warning: positional_arguments
          --> <test>:1:1
           |
-        1 | c(1, 2, 3)
-          | ---------- Calling a function with 3 positional arguments can be hard to read and is prone to mistakes.
+        1 | c(1, 2, 3, 4)
+          | ------------- Calling a function with 4 positional arguments can be hard to read and is prone to mistakes.
           |
           = help: Name the arguments to clarify what each value refers to.
         Found 1 error.
@@ -143,13 +147,13 @@ mod tests {
             ..Default::default()
         });
         assert_snapshot!(
-            snapshot_lint_with_settings("foo(1, 2, 3)\nc(1, 2, 3)", settings),
+            snapshot_lint_with_settings("foo(1, 2, 3, 4)\nc(1, 2, 3, 4)", settings),
             @"
         warning: positional_arguments
          --> <test>:2:1
           |
-        2 | c(1, 2, 3)
-          | ---------- Calling a function with 3 positional arguments can be hard to read and is prone to mistakes.
+        2 | c(1, 2, 3, 4)
+          | ------------- Calling a function with 4 positional arguments can be hard to read and is prone to mistakes.
           |
           = help: Name the arguments to clarify what each value refers to.
         Found 1 error.
@@ -161,6 +165,6 @@ mod tests {
             extend_skipped_functions: Some(vec!["foo".to_string()]),
             ..Default::default()
         });
-        expect_no_lint_with_settings("foo(1, 2, 3)", "positional_arguments", None, settings);
+        expect_no_lint_with_settings("foo(1, 2, 3, 4)", "positional_arguments", None, settings);
     }
 }

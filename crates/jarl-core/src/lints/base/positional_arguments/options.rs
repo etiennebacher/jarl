@@ -20,6 +20,7 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
     "paste0",
     "sprintf",
     "switch",
+    "vapply",
     // in packages
     "fifelse",
     "if_else",
@@ -29,7 +30,7 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
 /// TOML options for `[lint.positional_arguments]`.
 ///
 /// Use `max-positional-args` to control how many positional (unnamed) arguments
-/// a call may have before it is reported. Defaults to `2`.
+/// a call may have before it is reported. Defaults to `3`.
 ///
 /// Use `skipped-functions` to fully replace the default list of functions whose
 /// positional arguments are allowed. Use `extend-skipped-functions` to add to
