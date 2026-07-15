@@ -54,6 +54,9 @@ mod tests {
         expect_no_lint("c(1, 2, 3, 4)", "positional_arguments", None);
         expect_no_lint("paste(a, b, c, d)", "positional_arguments", None);
         expect_no_lint("paste0(a, b, c, d)", "positional_arguments", None);
+
+        // The `...` forwarding argument is not counted as positional.
+        expect_no_lint("foo(a, b, c, ...)", "positional_arguments", None);
     }
 
     #[test]

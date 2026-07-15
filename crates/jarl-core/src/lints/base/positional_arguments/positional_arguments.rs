@@ -44,8 +44,14 @@ pub fn positional_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Op
         return Ok(None);
     }
 
+    // Count unnamed arguments, but not the `...` forwarding argument: it stands
+    // for arguments passed from the enclosing function, which cannot be named
+    // here.
     let args = ast.arguments()?.items();
-    let n_positional = get_unnamed_args(&args).len();
+    let n_positional = get_unnamed_args(&args)
+        .iter()
+        .filter(|arg| !matches!(arg.value(), Some(AnyRExpression::RDots(_))))
+        .count();
 
     if n_positional <= options.max_positional_args {
         return Ok(None);
