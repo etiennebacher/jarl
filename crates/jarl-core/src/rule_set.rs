@@ -541,7 +541,7 @@ declare_rules! {
     PositionalArguments => {
         name: "positional_arguments",
         categories: [Read, Susp],
-        default: Enabled,
+        default: Disabled,
         fix: None,
         min_r_version: None,
     },
