@@ -3,18 +3,27 @@ use std::collections::HashSet;
 use crate::rule_options::resolve_with_extend;
 
 /// Default maximum number of positional arguments allowed in a call.
-const DEFAULT_MAX_POSITIONAL_ARGS: usize = 2;
+const DEFAULT_MAX_POSITIONAL_ARGS: usize = 3;
 
 /// Variadic functions whose positional arguments are idiomatic and therefore
 /// allowed by default, e.g. `c(1, 2, 3)` or `paste("a", "b", "c")`.
 const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
+    // in base R
     "c",
+    "cat",
+    "file.path",
+    "gsub",
+    "ifelse",
+    "lapply",
+    "list",
     "paste",
     "paste0",
-    "cat",
     "sprintf",
     "switch",
-    "file.path",
+    // in packages
+    "fifelse",
+    "if_else",
+    "tribble",
 ];
 
 /// TOML options for `[lint.positional_arguments]`.
