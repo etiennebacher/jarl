@@ -538,6 +538,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    PositionalArguments => {
+        name: "positional_arguments",
+        categories: [Read, Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     Quotes => {
         name: "quotes",
         categories: [Read],

@@ -113,6 +113,7 @@ dat <- as.data.frame(
       "Disabled by default. R >= 4.2"
     ),
     c("pipe_return", "correctness", "❌", ""),
+    c("positional_arguments", "readability, suspicious", "❌", ""),
     c("quotes", "readability", "✅", "Disabled by default"),
     c("redundant_equals", "readability", "✅", ""),
     c(

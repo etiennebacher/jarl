@@ -139,6 +139,7 @@ website:
       - rules/outer_negation.md
       - rules/pipe_consistency.md
       - rules/pipe_return.md
+      - rules/positional_arguments.md
       - rules/quotes.md
       - rules/redundant_equals.md
       - rules/redundant_ifelse.md
