@@ -24,7 +24,8 @@
   * `unnecessary_parentheses` (#510, @JosephBARBIERDARNAL)
 
 * Jarl is now available on PyPI under the name `jarl-linter`, enabling its
-  installation via `uv`, `pipx`, and other tools (#466).
+  installation via `uv`, `pipx`, and other tools (#466). It is also on `conda-forge`,
+  meaning that it can be installed via `mise` and `pixi` (@salim-b).
 
 * New argument `[lint.per-file-ignores]` in `jarl.toml` to deactivate rules on
   specific files (#500).
