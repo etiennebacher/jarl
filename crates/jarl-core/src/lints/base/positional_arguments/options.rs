@@ -9,18 +9,23 @@ const DEFAULT_MAX_POSITIONAL_ARGS: usize = 3;
 /// allowed by default, e.g. `c(1, 2, 3)` or `paste("a", "b", "c")`.
 const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
     // in base R
+    "apply",
     "c",
     "cat",
     "file.path",
     "gsub",
     "ifelse",
+    "ISOdatetime",
     "lapply",
     "list",
+    "message",
     "paste",
     "paste0",
     "sprintf",
+    "stop",
     "switch",
     "vapply",
+    "warning",
     // in packages
     "fifelse",
     "if_else",
