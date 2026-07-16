@@ -1387,4 +1387,91 @@ x + 1"
             @"All checks passed!"
         );
     }
+
+    #[test]
+    fn test_no_lint_sourced_file_reads_var() {
+        // `x` looks unused in main.R, but the sourced helper reads it, so
+        // the binding is consumed at the source() call site.
+        assert_snapshot!(
+            snapshot_lint_with_sourced_files(
+                "x <- 1\nsource(\"helper.R\")\n",
+                &[("helper.R", "print(x + 1)")],
+            ),
+            @"All checks passed!"
+        );
+    }
+
+    #[test]
+    fn test_no_lint_sourced_file_absolute_path_outside_project() {
+        // The sourced file lives in a separate tempdir, referenced by an
+        // absolute path. Resolution should follow the path verbatim rather
+        // than joining it under the linted file's directory.
+        use std::fs;
+
+        let project_dir = tempfile::tempdir().expect("create project tempdir");
+        let external_dir = tempfile::tempdir().expect("create external tempdir");
+
+        let helper_path = external_dir.path().join("helper.R");
+        fs::write(&helper_path, "print(x + 1)").expect("write helper.R");
+
+        let main = format!(
+            "x <- 1\nsource(\"{}\")\n",
+            helper_path.to_str().expect("utf-8 path")
+        );
+        let main_path = project_dir.path().join("main.R");
+        fs::write(&main_path, &main).expect("write main.R");
+
+        assert_snapshot!(snapshot_unused_object_at(&main_path, &main), @"All checks passed!");
+    }
+
+    #[test]
+    fn test_sourced_file_field_access_is_not_a_use() {
+        // `helper.R` mentions `x` only as a `$` field, which reads a member
+        // of `df`, never the caller's binding.
+        assert_snapshot!(
+            snapshot_lint_with_sourced_files(
+                "x <- 1\nsource(\"helper.R\")\n",
+                &[("helper.R", "df$x\n")],
+            ),
+            @r"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_sourced_file_rebind_before_read_does_not_suppress() {
+        // The helper rebinds `x` before reading it, so its read reaches its
+        // own definition and the caller's `x <- 1` is dead.
+        assert_snapshot!(
+            snapshot_lint_with_sourced_files(
+                "x <- 1\nsource(\"helper.R\")\n",
+                &[("helper.R", "x <- 2\nprint(x)\n")],
+            ),
+            @r"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+        // Read *before* the rebind: the read is free in the helper, so it
+        // consumes the caller's binding.
+        assert_snapshot!(
+            snapshot_lint_with_sourced_files(
+                "x <- 1\nsource(\"helper.R\")\n",
+                &[("helper.R", "print(x)\nx <- 2\n")],
+            ),
+            @"All checks passed!"
+        );
+    }
 }

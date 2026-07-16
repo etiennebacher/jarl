@@ -29,6 +29,9 @@ pub struct SemanticInfo<'a> {
     /// Root syntax node of the analyzed file. Needed to resolve
     /// `AstPtr` references stored in [`DefinitionKind`] back to nodes.
     root: RSyntaxNode,
+    /// Path of the file being analyzed. Used to resolve `source("path")`
+    /// arguments against the current file's directory.
+    file: &'a std::path::Path,
     /// Names that have a synthetic use from AST passes (`do.call("f", …)`,
     /// `..cols`, `on.exit` bodies, loop/short-circuit assignment LHSes,
     /// custom infix operators). A definition whose symbol name is in this set
@@ -56,19 +59,19 @@ pub struct SemanticInfo<'a> {
 }
 
 impl<'a> SemanticInfo<'a> {
-    /// Build the info table. Runs the AST pass (collecting interpolation
-    /// reads, NSE ranges, formula ranges) and then the reaching-use
-    /// precomputation over oak's use-def maps. `_file` is unused for now; it
-    /// feeds the sourced-file reads pass once that lands.
+    /// Build the info table. Runs the AST pass (collecting synthetic uses,
+    /// interpolation reads, NSE ranges, formula ranges) and then the
+    /// reaching-use precomputation over oak's use-def maps.
     pub fn build(
         root: &RSyntaxNode,
         expressions: &[RSyntaxNode],
         index: &'a SemanticIndex,
-        _file: &std::path::Path,
+        file: &'a std::path::Path,
     ) -> Self {
         let mut this = Self {
             index,
             root: root.clone(),
+            file,
             synthetic_used_names: HashSet::new(),
             positional_uses: Vec::new(),
             nse_ranges: Vec::new(),
@@ -384,7 +387,51 @@ impl<'a> SemanticInfo<'a> {
                     self.collect_on_exit_uses(body);
                 }
             }
+            "source" => {
+                if let Some((_, first)) = arg_values.first()
+                    && let Some(path) = string_literal_value(first)
+                {
+                    self.import_uses_from_sourced_file(&path);
+                }
+            }
             _ => {}
+        }
+    }
+
+    /// Resolves a `source("path")` argument against the current file, builds
+    /// the target's semantic index, and records its *free* uses — reads that
+    /// no definition inside the target reaches — as synthetic uses. R's
+    /// `source()` runs its argument in the caller's environment, so a name
+    /// the sourced script reads without binding it first consumes a binding
+    /// in this file.
+    ///
+    /// Going through the index rather than harvesting raw identifiers keeps
+    /// non-reads out: a member name (`df$x`, `pkg::x`) is never a use, and a
+    /// read that reaches the target's own rebind (`x <- 2; print(x)`) stays
+    /// local to the target, so neither keeps a caller binding alive.
+    fn import_uses_from_sourced_file(&mut self, path: &str) {
+        let Some(target) = resolve_sourced_path(self.file, path) else {
+            return;
+        };
+        let Ok(contents) = std::fs::read_to_string(&target) else {
+            return;
+        };
+        let parsed = air_r_parser::parse(&contents, RParserOptions::default());
+        if parsed.has_error() {
+            return;
+        }
+        // The resolver lets the target's own `source()` chain inject Import
+        // definitions, so a read satisfied by a deeper file doesn't count as
+        // free here (the cross-file pass credits that file instead).
+        let index = oak_semantic::build_index(&parsed.tree(), JarlImportsResolver::new(&target));
+        for scope in index.scope_ids() {
+            let symbols = index.symbols(scope);
+            for (use_id, use_site) in index.uses(scope).iter() {
+                if index.reaching_definitions(scope, use_id).next().is_none() {
+                    self.synthetic_used_names
+                        .insert(symbols.symbol(use_site.symbol()).name().to_string());
+                }
+            }
         }
     }
 
@@ -894,6 +941,12 @@ fn resolve_sourced_path(current_file: &std::path::Path, path: &str) -> Option<st
 /// forwarded — as `SourceResolution.names`. Oak then materialises
 /// `DefinitionKind::Import` entries at the `source()` call site in the
 /// calling file's index.
+///
+/// This handles the *defined-by-source* side of `source()` semantics.
+/// The complementary *used-by-source* side — names *read* by the sourced
+/// file consume bindings in the calling file — is still handled
+/// separately by [`SemanticInfo::import_uses_from_sourced_file`] because
+/// oak's [`oak_semantic::SourceResolution`] only carries defined names.
 pub struct JarlImportsResolver {
     current_file: std::path::PathBuf,
     /// Files already resolved along this `source()` chain (absolutized),
