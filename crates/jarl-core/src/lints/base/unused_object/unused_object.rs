@@ -82,9 +82,19 @@ fn should_lint_definition(info: &SemanticInfo<'_>, def: &Definition) -> bool {
                 return false;
             }
         }
-        // A call-created binding (`assign("x", …)`, `x %<>% f()`): not linted
-        // yet.
-        DefinitionKind::Assign { .. } => return false,
+        // A call-created binding: only operator sites (`x %<>% f()`) are
+        // linted. Assign *calls* can redirect the binding to another
+        // environment in ways that aren't statically visible (e.g.
+        // `delayedAssign`'s `assign.env` redirect), so an unused-looking name
+        // there may well be consumed through that environment.
+        DefinitionKind::Assign { node, .. } => {
+            if !matches!(
+                node.to_node(info.root()),
+                air_r_syntax::AnyRExpression::RBinaryExpression(_)
+            ) {
+                return false;
+            }
+        }
     }
 
     // `=` inside a formula RHS is named-arg syntax, not assignment.
