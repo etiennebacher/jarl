@@ -87,6 +87,17 @@ fn should_lint_definition(info: &SemanticInfo<'_>, def: &Definition) -> bool {
         DefinitionKind::Assign { .. } => return false,
     }
 
+    // `=` inside a formula RHS is named-arg syntax, not assignment.
+    if info.is_in_formula(def.range()) {
+        return false;
+    }
+
+    // An assignment inside an NSE context (`substitute(x <- 2)`, …) is quoted
+    // code, not a real definition.
+    if info.is_in_nse(def.range()) {
+        return false;
+    }
+
     true
 }
 
