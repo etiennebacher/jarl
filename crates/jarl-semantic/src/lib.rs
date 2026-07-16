@@ -8,14 +8,16 @@
 //! `info.is_definition_used(scope, def_id, def)` rather than walking the
 //! semantic index themselves.
 
+pub mod strings;
+
 use std::collections::HashSet;
 
 use air_r_parser::RParserOptions;
 use air_r_syntax::{
     AnyRArgumentName, AnyRExpression, RArgument, RArgumentList, RBinaryExpression, RCall,
-    RSyntaxKind, RSyntaxNode,
+    RExtractExpression, RNamespaceExpression, RSyntaxKind, RSyntaxNode,
 };
-use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange};
+use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange, TextSize};
 use oak_core::syntax_ext::RIdentifierExt;
 use oak_semantic::DefinitionId;
 use oak_semantic::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex};
@@ -27,6 +29,13 @@ pub struct SemanticInfo<'a> {
     /// Root syntax node of the analyzed file. Needed to resolve
     /// `AstPtr` references stored in [`DefinitionKind`] back to nodes.
     root: RSyntaxNode,
+    /// Position-aware reads collected by the AST pass: string interpolation
+    /// (`glue("{x}")`, cli markup, custom delimiters). Stored as
+    /// `(name, read range)` pairs and resolved in
+    /// [`Self::precompute_positional_uses`]: a read resolves to the definition
+    /// it actually sees, so a *later* same-scope reassignment of the name is
+    /// not kept alive by it.
+    positional_uses: Vec<(String, TextRange)>,
     /// Identifier `Use` ranges that should be ignored because they sit inside
     /// a quoting call oak's effects registry doesn't cover (`substitute(…)`,
     /// `Quote(…)`, `expression(…)`, `alist(…)`). `quote()` and `bquote()` are
@@ -42,10 +51,10 @@ pub struct SemanticInfo<'a> {
 }
 
 impl<'a> SemanticInfo<'a> {
-    /// Build the info table. Runs the AST pass (collecting NSE ranges and
-    /// formula ranges) and then the reaching-use precomputation over oak's
-    /// use-def maps. `_file` is unused for now; it feeds the sourced-file
-    /// reads pass once that lands.
+    /// Build the info table. Runs the AST pass (collecting interpolation
+    /// reads, NSE ranges, formula ranges) and then the reaching-use
+    /// precomputation over oak's use-def maps. `_file` is unused for now; it
+    /// feeds the sourced-file reads pass once that lands.
     pub fn build(
         root: &RSyntaxNode,
         expressions: &[RSyntaxNode],
@@ -55,6 +64,7 @@ impl<'a> SemanticInfo<'a> {
         let mut this = Self {
             index,
             root: root.clone(),
+            positional_uses: Vec::new(),
             nse_ranges: Vec::new(),
             formula_ranges: Vec::new(),
             reaching_used: HashSet::new(),
@@ -62,6 +72,7 @@ impl<'a> SemanticInfo<'a> {
         this.collect_ast_passes(expressions);
         let scopes = this.scope_ids();
         this.precompute_reaching_uses(&scopes);
+        this.precompute_positional_uses();
         this
     }
 
@@ -122,6 +133,7 @@ impl<'a> SemanticInfo<'a> {
 
     fn visit_node(&mut self, node: &RSyntaxNode) {
         match node.kind() {
+            RSyntaxKind::R_STRING_VALUE => self.collect_string_interpolation(node),
             RSyntaxKind::R_CALL => {
                 if let Some(call) = node.clone().cast::<RCall>() {
                     self.visit_call(&call);
@@ -133,6 +145,108 @@ impl<'a> SemanticInfo<'a> {
                 }
             }
             _ => {}
+        }
+    }
+
+    fn collect_string_interpolation(&mut self, node: &RSyntaxNode) {
+        let text = node.text_trimmed().to_string();
+        // The read happens where the string sits, so identifiers inside it
+        // resolve against the definitions live at this position.
+        let read_range = node.text_trimmed_range();
+        // cli's inline markup (`{.field {x}}`) interleaves styling with
+        // interpolation, so strings inside a cli call need a markup-aware scan
+        // rather than the plain glue scan.
+        if node_in_cli_markup_call(node) {
+            if let Some(content) = strings::get_string_literal_contents(&text) {
+                self.collect_cli_interpolation(&content, read_range);
+            }
+            return;
+        }
+        // Scanned with the default glue delimiters regardless of the wrapping
+        // call: any `{x}` in any string keeps `x` alive. Calls that override
+        // the delimiters via `.open`/`.close` are handled separately in
+        // `collect_custom_glue_interpolation`.
+        for segment in scan_interpolation_segments(&text, "{", "}") {
+            self.collect_identifiers_in_interpolation(segment, read_range);
+        }
+    }
+
+    /// Collect identifier uses from a cli-formatted string.
+    ///
+    /// cli reuses glue's `{...}` interpolation but adds inline markup spans of
+    /// the form `{.class content}`, where `.class` and the literal `content`
+    /// are styling — not R code — yet any nested `{...}` inside the content is
+    /// still interpolated. So `{.field {x}}` uses `x`, but `{.field x}` does
+    /// not. Markup spans recurse into their content; plain segments are parsed
+    /// as R code.
+    fn collect_cli_interpolation(&mut self, content: &str, read_range: TextRange) {
+        for segment in scan_interpolation_segments(content, "{", "}") {
+            if let Some(inner) = cli_markup_content(segment) {
+                self.collect_cli_interpolation(inner, read_range);
+            } else {
+                self.collect_identifiers_in_interpolation(segment, read_range);
+            }
+        }
+    }
+
+    /// glue-family calls can override the interpolation delimiters with
+    /// `.open` / `.close` (e.g. `glue("<x>", .open = "<", .close = ">")`). The
+    /// default-`{}` scan in [`Self::collect_string_interpolation`] can't see
+    /// those, so when a call sets custom delimiters, rescan its unnamed string
+    /// arguments with them and record the identifiers as positional uses.
+    ///
+    /// Operates on the *unquoted* string contents, not the raw token text: a
+    /// custom delimiter like `(`/`)` would otherwise collide with the
+    /// `r"(...)"` raw-string wrapper.
+    fn collect_custom_glue_interpolation(&mut self, args: &[(Option<String>, RSyntaxNode)]) {
+        let open = named_string_arg(args, ".open");
+        let close = named_string_arg(args, ".close");
+        // Nothing to do unless a delimiter is actually customised; the default
+        // case is already covered by `collect_string_interpolation`.
+        if open.is_none() && close.is_none() {
+            return;
+        }
+        let open = open.unwrap_or_else(|| "{".to_string());
+        let close = close.unwrap_or_else(|| "}".to_string());
+        if open == "{" && close == "}" {
+            return;
+        }
+        for (name, value) in args {
+            if name.is_some() || value.kind() != RSyntaxKind::R_STRING_VALUE {
+                continue;
+            }
+            let Some(content) =
+                strings::get_string_literal_contents(&value.text_trimmed().to_string())
+            else {
+                continue;
+            };
+            let read_range = value.text_trimmed_range();
+            for segment in scan_interpolation_segments(&content, &open, &close) {
+                self.collect_identifiers_in_interpolation(segment, read_range);
+            }
+        }
+    }
+
+    /// Parse a glue-style `{...}` interpolation as R code and collect every
+    /// identifier reference as an interpolation use at `read_range`. Skips the
+    /// field side of `x$a` / `x@a` and the namespace side of `pkg::name` —
+    /// those name members, not bindings.
+    fn collect_identifiers_in_interpolation(&mut self, src: &str, read_range: TextRange) {
+        let parsed = air_r_parser::parse(src, RParserOptions::default());
+        if parsed.has_error() {
+            return;
+        }
+        for node in parsed.syntax().descendants() {
+            if node.kind() != RSyntaxKind::R_IDENTIFIER {
+                continue;
+            }
+            if is_member_name(&node) {
+                continue;
+            }
+            if let Some(token) = node.first_token() {
+                self.positional_uses
+                    .push((token.text_trimmed().to_string(), read_range));
+            }
         }
     }
 
@@ -158,6 +272,8 @@ impl<'a> SemanticInfo<'a> {
         };
 
         let arg_values: Vec<(Option<String>, RSyntaxNode)> = call_args(call);
+
+        self.collect_custom_glue_interpolation(&arg_values);
 
         match name.as_str() {
             // Quoting calls oak's effects registry doesn't cover. (`quote` and
@@ -252,12 +368,221 @@ impl<'a> SemanticInfo<'a> {
         }
         best.map(|(id, _)| id)
     }
+
+    /// Resolve each position-aware read (interpolation) to the definition(s)
+    /// it uses and record them in `reaching_used`, mirroring the real-use
+    /// pass. Runs after the AST pass so the NSE ranges it consults are
+    /// already collected.
+    fn precompute_positional_uses(&mut self) {
+        let uses = std::mem::take(&mut self.positional_uses);
+        for (name, read_range) in &uses {
+            self.mark_positional_use(name, read_range.start());
+        }
+    }
+
+    /// Mark the definition(s) a position-aware read of `name` at `pos`
+    /// resolves to.
+    ///
+    /// These reads are position-aware, so — unlike a blanket "name is used"
+    /// marker — a *later* same-scope reassignment of the name isn't kept
+    /// alive. Walk outward from the reading scope to the scope that binds
+    /// `name` before the read:
+    /// - in the reading scope itself, mark every definition that precedes the
+    ///   read: more than one can reach it through branching control flow (e.g.
+    ///   an `if`/`else` assigning in both arms), but a later reassignment is
+    ///   excluded so it stays reported. If no definition precedes the read,
+    ///   the read falls through to the enclosing scope, so keep walking;
+    /// - in an enclosing scope, the read is a closure capture evaluated
+    ///   later, so textual order is irrelevant and every definition of the
+    ///   name there is kept alive.
+    fn mark_positional_use(&mut self, name: &str, pos: TextSize) {
+        let index = self.index;
+        let (read_scope, _) = index.scope_at(pos);
+        for owner in index.ancestor_scope_ids(read_scope) {
+            let Some(symbol_id) = index.symbols(owner).id(name) else {
+                continue;
+            };
+            let captured = owner != read_scope;
+            let reached: Vec<DefinitionId> = index
+                .definitions(owner)
+                .iter()
+                .filter(|(_, def)| def.symbol() == symbol_id && !self.is_in_nse(def.range()))
+                .filter(|(_, def)| captured || def.range().start() < pos)
+                .map(|(id, _)| id)
+                .collect();
+            // `name` may be referenced but not bound (before `pos`) in this
+            // scope; if so, keep walking outward to the scope whose binding
+            // the read actually consumes.
+            if reached.is_empty() {
+                continue;
+            }
+            for def_id in reached {
+                self.reaching_used.insert((owner, def_id));
+            }
+            return;
+        }
+    }
 }
 
 // ── Free helpers (also used by rule policy) ──────────────────────────────
 
 fn in_any_range(target: TextRange, ranges: &[TextRange]) -> bool {
     ranges.iter().any(|r| r.contains_range(target))
+}
+
+/// Extract glue-style interpolation segments delimited by `open`/`close`.
+/// Doubled delimiters (`{{`/`}}` for the default case) are glue escapes and
+/// are skipped. Nested delimiters are tracked so `{f({x})}` yields the whole
+/// inner expression — except when `open == close` (e.g. `.open`/`.close`
+/// both `|`), where the delimiters are indistinguishable so nesting is
+/// impossible and the first delimiter after an opener always closes it.
+/// Returns the source slices between the outermost delimiter pairs.
+fn scan_interpolation_segments<'t>(text: &'t str, open: &str, close: &str) -> Vec<&'t str> {
+    let mut segments = Vec::new();
+    if open.is_empty() || close.is_empty() {
+        return segments;
+    }
+    let escaped_open = format!("{open}{open}");
+    let escaped_close = format!("{close}{close}");
+    let mut i = 0;
+    while i < text.len() {
+        let slice = &text[i..];
+        // Doubled delimiters are glue escape sequences for literal characters.
+        if slice.starts_with(&escaped_open) {
+            i += escaped_open.len();
+            continue;
+        }
+        if slice.starts_with(&escaped_close) {
+            i += escaped_close.len();
+            continue;
+        }
+        if slice.starts_with(open) {
+            let start = i + open.len();
+            let mut depth = 1usize;
+            let mut end = start;
+            while end < text.len() && depth > 0 {
+                let rest = &text[end..];
+                // When `open == close` a delimiter can only close the current
+                // segment; treating it as a nested opener would never balance.
+                if open != close && rest.starts_with(open) {
+                    depth += 1;
+                    end += open.len();
+                } else if rest.starts_with(close) {
+                    depth -= 1;
+                    if depth > 0 {
+                        end += close.len();
+                    }
+                } else {
+                    end += next_char_len(text, end);
+                }
+            }
+            if depth == 0 && end > start {
+                segments.push(&text[start..end]);
+            }
+            // Skip past the closing delimiter (`end` points at its start).
+            i = end + close.len();
+        } else {
+            i += next_char_len(text, i);
+        }
+    }
+    segments
+}
+
+/// Byte length of the UTF-8 character starting at `i` (which must be a char
+/// boundary). Used to advance scanning without splitting multi-byte chars.
+fn next_char_len(text: &str, i: usize) -> usize {
+    text[i..].chars().next().map_or(1, |c| c.len_utf8())
+}
+
+/// Unquoted contents of a named string-literal argument (e.g. `.open = "<"`),
+/// or `None` if absent or not a string literal.
+fn named_string_arg(args: &[(Option<String>, RSyntaxNode)], name: &str) -> Option<String> {
+    let (_, value) = args.iter().find(|(n, _)| n.as_deref() == Some(name))?;
+    if value.kind() != RSyntaxKind::R_STRING_VALUE {
+        return None;
+    }
+    strings::get_string_literal_contents(&value.text_trimmed().to_string())
+}
+
+/// True if `node` sits inside a cli call that glue-interpolates its arguments
+/// with inline markup support. Walks all ancestors (not just the immediate
+/// call) so message strings nested in a `c(...)` bullets vector still count.
+fn node_in_cli_markup_call(node: &RSyntaxNode) -> bool {
+    node.ancestors().any(|ancestor| {
+        ancestor.kind() == RSyntaxKind::R_CALL
+            && ancestor
+                .cast::<RCall>()
+                .and_then(|call| call_name(&call))
+                .is_some_and(|name| is_cli_markup_function(&name))
+    })
+}
+
+/// cli functions that glue-interpolate their text arguments with inline markup.
+/// Excludes non-interpolating ones (`cli_verbatim`, `cli_code`,
+/// `cli_bullets_raw`). Namespaced calls (`cli::cli_abort`) resolve to the bare
+/// name via [`call_name`].
+fn is_cli_markup_function(name: &str) -> bool {
+    matches!(
+        name,
+        "cli_abort"
+            | "cli_warn"
+            | "cli_inform"
+            | "cli_alert"
+            | "cli_alert_success"
+            | "cli_alert_info"
+            | "cli_alert_warning"
+            | "cli_alert_danger"
+            | "cli_text"
+            | "cli_h1"
+            | "cli_h2"
+            | "cli_h3"
+            | "cli_li"
+            | "cli_ul"
+            | "cli_ol"
+            | "cli_dl"
+            | "cli_bullets"
+            | "cli_par"
+            | "cli_progress_message"
+            | "cli_progress_step"
+            | "format_inline"
+            | "format_error"
+            | "format_warning"
+            | "format_message"
+    )
+}
+
+/// If `segment` is a cli inline-markup span (`.class content`), return the
+/// `content` part, which is itself glue-interpolated. The leading `.class` and
+/// any literal text are styling, not R code. Returns `None` for plain
+/// interpolation segments (`x`, `mean(x)`, `.x` with no following space).
+fn cli_markup_content(segment: &str) -> Option<&str> {
+    let rest = segment.strip_prefix('.')?;
+    let class_len = rest
+        .find(|c: char| !(c.is_alphanumeric() || c == '_'))
+        .unwrap_or(rest.len());
+    if class_len == 0 {
+        return None;
+    }
+    // A markup span separates the class from its content with whitespace.
+    let after_class = rest[class_len..].strip_prefix(|c: char| c.is_whitespace())?;
+    Some(after_class.trim_start())
+}
+
+fn is_member_name(node: &RSyntaxNode) -> bool {
+    let Some(parent) = node.parent() else {
+        return false;
+    };
+    match parent.kind() {
+        RSyntaxKind::R_EXTRACT_EXPRESSION => parent
+            .cast::<RExtractExpression>()
+            .and_then(|e| e.right().ok())
+            .is_some_and(|r| r.syntax() == node),
+        RSyntaxKind::R_NAMESPACE_EXPRESSION => parent
+            .cast::<RNamespaceExpression>()
+            .and_then(|e| e.right().ok())
+            .is_some_and(|r| r.syntax() == node),
+        _ => false,
+    }
 }
 
 /// The value node of the quoted-expression argument (`expr`) of a quote-like
