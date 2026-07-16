@@ -9,7 +9,7 @@ use crate::suppression::SuppressionManager;
 use crate::vcs::check_version_control;
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
-use air_r_syntax::{RExpressionList, RSyntaxNode};
+use air_r_syntax::RSyntaxNode;
 use anyhow::{Context, Result};
 use biome_rowan::{TextRange, TextSize};
 use rayon::prelude::*;
@@ -226,11 +226,22 @@ pub fn get_checks(
     checker.rule_set = effective_rules_for_file(config, file);
     checker.minimum_r_version = config.minimum_r_version;
 
+    // Build the semantic index for use-def-based rules. `source("path")`
+    // calls inject `DefinitionKind::Import` entries via JarlImportsResolver.
+    //
+    // Building happens here, in the parallel per-file pass, rather than via a
+    // shared database: oak's salsa database is `Send` but not `Sync`, so it
+    // can't be borrowed across rayon worker threads.
+    let semantic = oak_semantic::build_index(
+        &parsed.tree(),
+        jarl_semantic::JarlImportsResolver::new(file),
+    );
+
     // Wire up package context for package-specific rules.
     get_package_info(
         &mut checker,
         file,
-        expressions,
+        &semantic,
         config,
         pkg_contexts,
         file_pkg_info,
@@ -398,11 +409,12 @@ fn end_of_content(contents: &str) -> TextRange {
 /// Populate package context on the checker from pre-computed data.
 ///
 /// For files inside an R package, copies the pre-computed `PackageContext`
-/// fields. For scripts, scans for `library()`/`require()` calls.
+/// fields. For scripts, harvests `library()`/`require()` calls from the
+/// semantic index.
 fn get_package_info(
     checker: &mut Checker,
     file: &Path,
-    expressions: &RExpressionList,
+    semantic: &oak_semantic::semantic_index::SemanticIndex,
     config: &Config,
     pkg_contexts: &HashMap<PathBuf, PackageContext>,
     file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
@@ -420,11 +432,29 @@ fn get_package_info(
                 .iter()
                 .map(|s| s.to_string())
                 .collect();
-            packages.extend(crate::library_calls::extract_library_calls(expressions));
+            packages.extend(top_level_attached_packages(semantic));
             checker.loaded_packages = packages;
         }
     }
     checker.package_cache = config.package_cache.clone();
+}
+
+/// Collect the packages a file attaches with `library()`/`require()`, in load
+/// order, deduplicated. Oak counts a call only when it runs as the file loads,
+/// so calls inside a function body are excluded (their attachment isn't
+/// statically guaranteed) while calls inside a top-level `if`/loop are kept (R
+/// runs top-level code sequentially, so the attach is visible to later code if
+/// the branch runs).
+fn top_level_attached_packages(
+    semantic: &oak_semantic::semantic_index::SemanticIndex,
+) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for package in semantic.attached_packages() {
+        if !out.iter().any(|p| p == package) {
+            out.push(package.to_string());
+        }
+    }
+    out
 }
 
 /// Lint R code inside roxygen `@examples` and `@examplesIf` sections.

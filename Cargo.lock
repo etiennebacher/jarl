@@ -978,6 +978,8 @@ dependencies = [
  "fs",
  "ignore",
  "insta",
+ "jarl-semantic",
+ "oak_semantic",
  "path-absolutize",
  "rayon",
  "regex",
