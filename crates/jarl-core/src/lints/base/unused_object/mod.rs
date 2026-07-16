@@ -1183,4 +1183,132 @@ f()",
             None,
         );
     }
+
+    #[test]
+    fn test_no_lint_custom_operator_used() {
+        // oak doesn't model `1 %op% 2` as a use of the `%op%` binding, so a
+        // custom infix operator defined via a non-function RHS would otherwise
+        // look unused.
+        expect_no_lint(
+            "f <- function() {}\n`%op%` <- f\n1 %op% 2",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_used_in_while() {
+        expect_no_lint("x <- TRUE\nwhile (x) { x <- FALSE }", "unused_object", None);
+    }
+
+    #[test]
+    fn test_with_on_exit() {
+        // no lint when on.exit() refers to objects defined after it's called
+        expect_no_lint(
+            "
+        f <- function() {
+            on.exit(print(a))
+            a <- 1
+            'hi'
+        }
+        ",
+            "unused_object",
+            None,
+        );
+
+        // See comment in `process_call()`
+        expect_no_lint(
+            "
+        f <- function() {
+            foo <- TRUE
+            on.exit(
+                if (foo) print('bye')
+            )
+            # <some operation that might error here>
+            foo <- FALSE
+        }
+        ",
+            "unused_object",
+            None,
+        );
+        // report when on.exit() doesn't use objects
+        assert_snapshot!(
+            snapshot_lint("
+f <- function() {
+    foo <- TRUE
+    on.exit(print('bye'))
+    foo <- FALSE
+}
+        "),
+            @"
+        warning: unused_object
+         --> <test>:3:5
+          |
+        3 |     foo <- TRUE
+          |     --- Object `foo` is defined but never used.
+          |
+        warning: unused_object
+         --> <test>:5:5
+          |
+        5 |     foo <- FALSE
+          |     --- Object `foo` is defined but never used.
+          |
+        Found 2 errors.
+        "
+        );
+    }
+
+    // ---------------------------------------------------------------
+    // Lint cases
+    // ---------------------------------------------------------------
+
+    #[test]
+    fn test_dot_dot_prefix_data_table() {
+        expect_no_lint(
+            "
+cols <- 'a'
+dt[, ..cols]
+",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_shadowing_after_condition() {
+        // `x <- 2` wouldn't run if the first condition is true, so `x <- 1`
+        // might be used.
+        expect_no_lint(
+            "
+x <- 1
+if (runif(1) < 0.5 || (x <- 2)) {
+  print(x)
+}",
+            "unused_object",
+            None,
+        );
+        // `x <- 2` wouldn't run if the first condition is false, so `x <- 1`
+        // might be used.
+        expect_no_lint(
+            "
+x <- 1
+if (runif(1) < 0.5 && (x <- 2)) {
+  1 + 1
+}
+x",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_special_functions_use_quoted_objects() {
+        expect_no_lint(
+            "
+        f <- mean
+        do.call('f', list(x = 1:3))",
+            "unused_object",
+            None,
+        );
+    }
 }
