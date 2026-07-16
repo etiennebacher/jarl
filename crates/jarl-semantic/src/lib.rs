@@ -31,8 +31,9 @@ pub struct SemanticInfo<'a> {
     /// `AstPtr` references stored in [`DefinitionKind`] back to nodes.
     root: RSyntaxNode,
     /// Names that have a synthetic use from AST passes (`do.call("f", …)`,
-    /// `..cols`, `on.exit` bodies, custom infix operators). A definition whose
-    /// symbol name is in this set is treated as used.
+    /// `..cols`, `on.exit` bodies, loop/short-circuit assignment LHSes,
+    /// custom infix operators). A definition whose symbol name is in this set
+    /// is treated as used.
     synthetic_used_names: HashSet<String>,
     /// Assignments sitting inside a short-circuit operand (`cond || (x <- 2)`),
     /// stored as `(name, assignment range)` and resolved in
