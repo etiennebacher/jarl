@@ -979,6 +979,7 @@ dependencies = [
  "ignore",
  "insta",
  "jarl-semantic",
+ "oak_package_metadata",
  "oak_semantic",
  "path-absolutize",
  "rayon",
