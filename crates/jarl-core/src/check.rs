@@ -236,6 +236,7 @@ pub fn get_checks(
         &parsed.tree(),
         jarl_semantic::JarlImportsResolver::new(file),
     );
+    checker.file_path = file.to_path_buf();
 
     // Wire up package context for package-specific rules.
     get_package_info(
@@ -289,6 +290,7 @@ pub fn get_checks(
         &mut checker,
         &duplicate_assignments,
         &unused_functions,
+        Some(&semantic),
     )?;
 
     // Some rules have a fix available in their implementation but do not have
@@ -496,7 +498,7 @@ fn get_checks_roxygen(
         // otherwise unnecessary here (no package-level analysis, no
         // suppression-related diagnostics to report).
         if has_suppressions {
-            check_document(expressions, &syntax, &mut checker, &[], &[])?;
+            check_document(expressions, &syntax, &mut checker, &[], &[], None)?;
         }
 
         for mut d in checker.diagnostics {
@@ -547,7 +549,7 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     // check_document runs suppression filtering internally, so
     // checker.diagnostics is the post-suppression list after this call.
     // Rmd chunks don't participate in package-level analysis, so pass empty slices.
-    check_document(expressions, &syntax, &mut checker, &[], &[])?;
+    check_document(expressions, &syntax, &mut checker, &[], &[], None)?;
 
     // Remap ranges from virtual-string offsets to original Rmd file offsets.
     let diagnostics: Vec<Diagnostic> = checker
