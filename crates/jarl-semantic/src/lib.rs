@@ -11,41 +11,55 @@
 use std::collections::HashSet;
 
 use air_r_parser::RParserOptions;
-use air_r_syntax::{RBinaryExpression, RSyntaxKind, RSyntaxNode};
-use biome_rowan::{AstNode, SyntaxNodeCast, TextRange};
+use air_r_syntax::{
+    AnyRArgumentName, AnyRExpression, RArgument, RArgumentList, RBinaryExpression, RCall,
+    RSyntaxKind, RSyntaxNode,
+};
+use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange};
 use oak_core::syntax_ext::RIdentifierExt;
 use oak_semantic::DefinitionId;
 use oak_semantic::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex};
 
-/// Per-file semantic info derived from oak's [`SemanticIndex`].
-/// Computed once per file; consumed by lints.
+/// Per-file semantic info derived from oak's [`SemanticIndex`] plus AST
+/// passes over the syntax tree. Computed once per file; consumed by lints.
 pub struct SemanticInfo<'a> {
     index: &'a SemanticIndex,
     /// Root syntax node of the analyzed file. Needed to resolve
     /// `AstPtr` references stored in [`DefinitionKind`] back to nodes.
     root: RSyntaxNode,
-    /// Definitions reached by some use anywhere in the file. Computed
+    /// Identifier `Use` ranges that should be ignored because they sit inside
+    /// a quoting call oak's effects registry doesn't cover (`substitute(…)`,
+    /// `Quote(…)`, `expression(…)`, `alist(…)`). `quote()` and `bquote()` are
+    /// modeled by oak itself (their quoted arguments produce no uses or
+    /// definitions in the index), so they don't need ranges here.
+    nse_ranges: Vec<TextRange>,
+    /// Ranges of formula RHSes (`~ rhs`).
+    formula_ranges: Vec<TextRange>,
+    /// Definitions reached by some non-NSE use anywhere in the file. Computed
     /// from oak's `reaching_definitions`, which resolves both local uses and
     /// free-variable uses in nested closures (via enclosing snapshots).
     reaching_used: HashSet<(ScopeId, DefinitionId)>,
 }
 
 impl<'a> SemanticInfo<'a> {
-    /// Build the info table: the reaching-use precomputation over oak's
-    /// use-def maps. `_expressions` and `_file` are unused for now; they feed
-    /// the AST passes (NSE ranges, interpolation reads, sourced-file reads)
-    /// as those land.
+    /// Build the info table. Runs the AST pass (collecting NSE ranges and
+    /// formula ranges) and then the reaching-use precomputation over oak's
+    /// use-def maps. `_file` is unused for now; it feeds the sourced-file
+    /// reads pass once that lands.
     pub fn build(
         root: &RSyntaxNode,
-        _expressions: &[RSyntaxNode],
+        expressions: &[RSyntaxNode],
         index: &'a SemanticIndex,
         _file: &std::path::Path,
     ) -> Self {
         let mut this = Self {
             index,
             root: root.clone(),
+            nse_ranges: Vec::new(),
+            formula_ranges: Vec::new(),
             reaching_used: HashSet::new(),
         };
+        this.collect_ast_passes(expressions);
         let scopes = this.scope_ids();
         this.precompute_reaching_uses(&scopes);
         this
@@ -80,27 +94,232 @@ impl<'a> SemanticInfo<'a> {
         false
     }
 
+    // ── Low-level predicates (compose for new rules) ──────────────────
+
+    pub fn is_in_formula(&self, range: TextRange) -> bool {
+        in_any_range(range, &self.formula_ranges)
+    }
+
+    /// True when `range` sits in a quoted NSE context (`substitute(...)`,
+    /// `expression(...)`, …) where code is captured rather than evaluated, so
+    /// neither an assignment nor a read there touches the live binding. Only
+    /// covers the quoting calls oak's effects registry doesn't model —
+    /// `quote()`/`bquote()` arguments never enter the index in the first
+    /// place.
+    pub fn is_in_nse(&self, range: TextRange) -> bool {
+        in_any_range(range, &self.nse_ranges)
+    }
+
+    // ── Internal: AST pass ────────────────────────────────────────────
+
+    fn collect_ast_passes(&mut self, expressions: &[RSyntaxNode]) {
+        for expr in expressions {
+            for node in expr.descendants() {
+                self.visit_node(&node);
+            }
+        }
+    }
+
+    fn visit_node(&mut self, node: &RSyntaxNode) {
+        match node.kind() {
+            RSyntaxKind::R_CALL => {
+                if let Some(call) = node.clone().cast::<RCall>() {
+                    self.visit_call(&call);
+                }
+            }
+            RSyntaxKind::R_BINARY_EXPRESSION => {
+                if let Some(bin) = node.clone().cast::<RBinaryExpression>() {
+                    self.visit_binary(&bin);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn visit_binary(&mut self, bin: &RBinaryExpression) {
+        let Ok(op) = bin.operator() else {
+            return;
+        };
+        let op_text = op.text_trimmed();
+        // Formulas are `R_BINARY_EXPRESSION` with a `~` operator. Only an `=`
+        // inside a formula is non-standard (it's named-arg syntax, not an
+        // assignment), so the formula range is recorded to suppress those
+        // definitions. Identifier *reads* in a formula still consume bindings:
+        // `X <- 2; lm(1 ~ X)` looks `X` up at evaluation time, so the formula
+        // is deliberately not added to `nse_ranges`.
+        if op_text == "~" {
+            self.formula_ranges.push(bin.syntax().text_trimmed_range());
+        }
+    }
+
+    fn visit_call(&mut self, call: &RCall) {
+        let Some(name) = call_name(call) else {
+            return;
+        };
+
+        let arg_values: Vec<(Option<String>, RSyntaxNode)> = call_args(call);
+
+        match name.as_str() {
+            // Quoting calls oak's effects registry doesn't cover. (`quote` and
+            // `bquote` are covered: oak drops their quoted arguments from the
+            // index entirely, and walks `bquote`'s `.()` unquote holes as real
+            // uses.)
+            //
+            // Only the quoted `expr` argument is NSE. Other arguments are
+            // evaluated normally — e.g. `substitute(x, env = env)` reads
+            // `env` — so their identifiers stay real uses.
+            "substitute" | "Quote" => {
+                if let Some(expr) = nse_expr_arg(&arg_values) {
+                    self.nse_ranges.push(expr.text_trimmed_range());
+                }
+            }
+            // `expression(...)` and `alist(...)` quote every argument: their
+            // values are stored unevaluated, so an assignment like
+            // `alist(x <- 1)` is captured code, not a real definition of `x`.
+            "expression" | "alist" => {
+                for (_, value) in &arg_values {
+                    self.nse_ranges.push(value.text_trimmed_range());
+                }
+            }
+            _ => {}
+        }
+    }
+
     // ── Internal: reach / closure analysis ────────────────────────────
 
-    /// Collect every definition reached by a use, in every scope.
+    /// Collect every definition reached by a non-NSE use, in every scope.
     ///
     /// `reaching_definitions` returns both local reaching definitions and, for
     /// a free variable in a nested closure, the enclosing-scope definitions
     /// captured by oak's enclosing snapshots. So a single pass over all uses
-    /// covers in-scope reads and closure captures alike.
+    /// covers in-scope reads and closure captures alike. Uses sitting inside an
+    /// NSE argument (`substitute(x)`, …) are skipped: they don't consume a
+    /// binding.
     fn precompute_reaching_uses(&mut self, scopes: &[ScopeId]) {
         let index = self.index;
         for &scope_id in scopes {
-            for (use_id, _) in index.uses(scope_id).iter() {
+            for (use_id, u) in index.uses(scope_id).iter() {
+                if self.is_in_nse(u.range()) {
+                    continue;
+                }
                 for (def_scope, def_id) in index.reaching_definitions(scope_id, use_id) {
-                    self.reaching_used.insert((def_scope, def_id));
+                    self.mark_reaching_definition_used(def_scope, def_id);
                 }
             }
         }
     }
+
+    /// Record a definition reached by a real read as used.
+    ///
+    /// For the quoting calls oak doesn't model, an NSE assignment
+    /// (`substitute(x <- 2)`) is quoted code, not an executed assignment, but
+    /// oak still lets it shadow a prior real definition in its dataflow. So a
+    /// real read after such an assignment resolves to the NSE definition
+    /// instead of the live binding it actually reads. When that happens, walk
+    /// back to the nearest preceding real definition of the same symbol and
+    /// mark it used instead.
+    fn mark_reaching_definition_used(&mut self, def_scope: ScopeId, def_id: DefinitionId) {
+        let def = &self.index.definitions(def_scope)[def_id];
+        if !self.is_in_nse(def.range()) {
+            self.reaching_used.insert((def_scope, def_id));
+            return;
+        }
+        if let Some(real_id) = self.preceding_real_definition(def_scope, def) {
+            self.reaching_used.insert((def_scope, real_id));
+        }
+    }
+
+    /// The nearest definition of `target`'s symbol in `scope` that starts
+    /// before `target` and is not itself an NSE (quoted) assignment.
+    fn preceding_real_definition(
+        &self,
+        scope: ScopeId,
+        target: &Definition,
+    ) -> Option<DefinitionId> {
+        let symbol = target.symbol();
+        let cutoff = target.range().start();
+        let mut best: Option<(DefinitionId, TextRange)> = None;
+        for (id, def) in self.index.definitions(scope).iter() {
+            if def.symbol() != symbol || def.range().start() >= cutoff {
+                continue;
+            }
+            if self.is_in_nse(def.range()) {
+                continue;
+            }
+            if best.is_none_or(|(_, best_range)| def.range().start() > best_range.start()) {
+                best = Some((id, def.range()));
+            }
+        }
+        best.map(|(id, _)| id)
+    }
 }
 
 // ── Free helpers (also used by rule policy) ──────────────────────────────
+
+fn in_any_range(target: TextRange, ranges: &[TextRange]) -> bool {
+    ranges.iter().any(|r| r.contains_range(target))
+}
+
+/// The value node of the quoted-expression argument (`expr`) of a quote-like
+/// call: the argument named `expr =` if present, otherwise the first
+/// positional (unnamed) argument. Other arguments — `substitute`'s `env` —
+/// are evaluated normally, so their reads must not be swallowed as NSE.
+fn nse_expr_arg(args: &[(Option<String>, RSyntaxNode)]) -> Option<&RSyntaxNode> {
+    if let Some((_, value)) = args
+        .iter()
+        .find(|(name, _)| name.as_deref() == Some("expr"))
+    {
+        return Some(value);
+    }
+    args.iter()
+        .find(|(name, _)| name.is_none())
+        .map(|(_, value)| value)
+}
+
+fn call_name(call: &RCall) -> Option<String> {
+    let func = call.function().ok()?;
+    match func {
+        AnyRExpression::RIdentifier(ident) => Some(ident.name_text()),
+        AnyRExpression::RNamespaceExpression(ns) => ns
+            .right()
+            .ok()
+            .and_then(|r| r.syntax().first_token())
+            .map(|t| t.text_trimmed().to_string()),
+        _ => None,
+    }
+}
+
+fn call_args(call: &RCall) -> Vec<(Option<String>, RSyntaxNode)> {
+    let Ok(arguments) = call.arguments() else {
+        return Vec::new();
+    };
+    let items = arguments.items();
+    args_iter(&items)
+}
+
+fn args_iter(list: &RArgumentList) -> Vec<(Option<String>, RSyntaxNode)> {
+    let mut out = Vec::new();
+    for item in list.iter() {
+        let Ok(arg) = item else { continue };
+        let name = argument_name(&arg);
+        let value = arg.value().map(|v| v.syntax().clone());
+        if let Some(value) = value {
+            out.push((name, value));
+        }
+    }
+    out
+}
+
+fn argument_name(arg: &RArgument) -> Option<String> {
+    let clause = arg.name_clause()?;
+    let name = clause.name().ok()?;
+    match name {
+        AnyRArgumentName::RIdentifier(ident) => Some(ident.name_text()),
+        AnyRArgumentName::RDots(_) => Some("...".to_string()),
+        _ => None,
+    }
+}
+
 
 /// True if the value assigned by this binary assignment is a function
 /// definition, following chained assignments (`x <- y <- function() {}`) down

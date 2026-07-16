@@ -888,4 +888,52 @@ for (i in 1:2) {
         );
     }
 
+    #[test]
+    fn test_assignment_inside_nse_is_not_definition() {
+        // `x <- 2` inside `quote()` is quoted code, not a real assignment.
+        expect_no_lint("as.call(quote(x <- 2))", "unused_object", None);
+        expect_no_lint("substitute(y <- 1)", "unused_object", None);
+    }
+
+    #[test]
+    fn test_assignment_inside_alist_is_not_definition() {
+        // `alist()` stores its arguments unevaluated (as if describing
+        // function arguments), so `x <- 1` is captured code, not a real
+        // assignment of `x`.
+        expect_no_lint("alist(x <- 1)", "unused_object", None);
+    }
+
+    #[test]
+    fn test_mention_inside_alist_is_not_used() {
+        assert_snapshot!(snapshot_lint("x <- 1\nalist(x)"), @"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        ");
+    }
+
+    #[test]
+    fn test_nse_assignment_does_not_shadow_real_definition() {
+        // The quoted `x <- 2` must not kill the real `x <- 1`; `print(x)`
+        // reads the live binding (which is still `1`).
+        expect_no_lint(
+            "x <- 1\nsubstitute(x <- 2)\nprint(x)",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_equal_in_formula_is_not_definition() {
+        expect_no_lint(
+            "
+        a ~ b + (c = 1)",
+            "unused_object",
+            None,
+        );
+    }
 }
