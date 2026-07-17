@@ -117,6 +117,7 @@ website:
       - rules/glue.md
       - rules/grepv.md
       - rules/if_always_true.md
+      - rules/if_not_else.md
       - rules/implicit_assignment.md
       - rules/internal_function.md
       - rules/invalid_chunk_suppression.md

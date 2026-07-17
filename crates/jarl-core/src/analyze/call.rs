@@ -14,6 +14,7 @@ use crate::lints::base::duplicated_arguments::duplicated_arguments::duplicated_a
 use crate::lints::base::fixed_regex::fixed_regex::fixed_regex;
 use crate::lints::base::glue::glue::glue;
 use crate::lints::base::grepv::grepv::grepv;
+use crate::lints::base::if_not_else::if_not_else::if_not_else_call;
 use crate::lints::base::length_levels::length_levels::length_levels;
 use crate::lints::base::length_test::length_test::length_test;
 use crate::lints::base::lengths::lengths::lengths;
@@ -82,6 +83,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled(Rule::Grepv) {
         checker.report_diagnostic(grepv(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::IfNotElse) {
+        checker.report_diagnostic(if_not_else_call(r_expr, checker)?);
     }
     if checker.is_rule_enabled(Rule::LengthLevels) {
         checker.report_diagnostic(length_levels(r_expr)?);

@@ -412,6 +412,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    IfNotElse => {
+        name: "if_not_else",
+        categories: [Read],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
     ImplicitAssignment => {
         name: "implicit_assignment",
         categories: [Read],

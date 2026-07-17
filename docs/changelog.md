@@ -13,6 +13,7 @@
   * `empty_file` (#477, @JosephBARBIERDARNAL)
   * `expect_s4_class` (#553, @Yousa-Mirage)
   * `glue` (#484, @novica)
+  * `if_not_else` (#551)
   * `literal_coercion` (#504)
   * `missing_argument` (#506)
   * `nested_pipe` (#516)
@@ -24,7 +25,8 @@
   * `unnecessary_parentheses` (#510, @JosephBARBIERDARNAL)
 
 * Jarl is now available on PyPI under the name `jarl-linter`, enabling its
-  installation via `uv`, `pipx`, and other tools (#466).
+  installation via `uv`, `pipx`, and other tools (#466). It is also on `conda-forge`,
+  meaning that it can be installed via `mise` and `pixi` (@salim-b).
 
 * New argument `[lint.per-file-ignores]` in `jarl.toml` to deactivate rules on
   specific files (#500).

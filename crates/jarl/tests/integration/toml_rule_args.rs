@@ -128,6 +128,91 @@ unknown-option = ["list"]
     Ok(())
 }
 
+// if_not_else ----------------------------------------
+
+#[test]
+fn test_if_not_else_both_skipped_and_extend_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+
+[lint.if_not_else]
+skipped-functions = ["is.null"]
+extend-skipped-functions = ["is.data.frame"]
+"#,
+        ),
+        ("test.R", "if (!A) x else y"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Cannot specify both `skipped-functions` and `extend-skipped-functions` in `[lint.if_not_else]`.
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_if_not_else_unknown_field_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+
+[lint.if_not_else]
+unknown-option = ["is.null"]
+"#,
+        ),
+        ("test.R", "if (!A) x else y"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 5, column 1
+      |
+    5 | unknown-option = ["is.null"]
+      | ^^^^^^^^^^^^^^
+    unknown field `unknown-option`, expected `skipped-functions` or `extend-skipped-functions`
+    "#
+    );
+
+    Ok(())
+}
+
 // implicit_assignment ----------------------------------------
 
 #[test]

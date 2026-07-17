@@ -87,6 +87,7 @@ dat <- as.data.frame(
     c("glue", "correctness", "❌", ""),
     c("grepv", "readability", "✅", "R >= 4.5"),
     c("if_always_true", "readability, suspicious", "❌", ""),
+    c("if_not_else", "readability", "❌", "Disabled by default"),
     c("implicit_assignment", "readability", "❌", ""),
     c("internal_function", "suspicious", "❌", ""),
     c("invalid_chunk_suppression", "comments", "❌", ""),
