@@ -43,6 +43,7 @@ use crate::lints::testthat::expect_no_match::expect_no_match::expect_no_match;
 use crate::lints::testthat::expect_not::expect_not::expect_not;
 use crate::lints::testthat::expect_null::expect_null::expect_null;
 use crate::lints::testthat::expect_s3_class::expect_s3_class::expect_s3_class;
+use crate::lints::testthat::expect_s4_class::expect_s4_class::expect_s4_class;
 use crate::lints::testthat::expect_true_false::expect_true_false::expect_true_false;
 use crate::lints::testthat::expect_type::expect_type::expect_type;
 
@@ -171,6 +172,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled(Rule::TestthatExpectS3Class) {
         checker.report_diagnostic(expect_s3_class(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::TestthatExpectS4Class) {
+        checker.report_diagnostic(expect_s4_class(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::TestthatExpectType) {
         checker.report_diagnostic(expect_type(r_expr)?);
