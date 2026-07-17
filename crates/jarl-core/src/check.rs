@@ -247,6 +247,12 @@ pub fn get_checks(
     // Building (when not cached) happens here, in the parallel per-file pass,
     // rather than via the shared `AnalysisDb`: oak's salsa database is `Send`
     // but not `Sync`, so it can't be borrowed across rayon worker threads.
+    // The source-target memo follows the same validity rule as the per-file
+    // index cache: sharable while the run's caches match the disk, fresh when
+    // they may drift (fix mode, LSP buffers).
+    if use_cached_index {
+        checker.source_index_cache = pkg.source_index_cache.clone();
+    }
     let owned_semantic;
     let semantic: &oak_semantic::semantic_index::SemanticIndex = match use_cached_index
         .then(|| pkg.file_indices.get(file))
@@ -256,7 +262,10 @@ pub fn get_checks(
         None => {
             owned_semantic = oak_semantic::build_index(
                 &parsed.tree(),
-                jarl_semantic::JarlImportsResolver::new(file),
+                jarl_semantic::JarlImportsResolver::with_cache(
+                    file,
+                    checker.source_index_cache.clone(),
+                ),
             );
             &owned_semantic
         }
