@@ -11,6 +11,9 @@ all_files <- list.files(
 )
 all_files_name <- basename(all_files)
 
+# Name of the branch the PR is compared against, used to label the results.
+base_ref <- Sys.getenv("BASE_REF", "main")
+
 repos_raw <- Sys.getenv("TEST_REPOS")
 repo_lines <- strsplit(repos_raw, "\n")[[1]]
 repo_lines <- repo_lines[repo_lines != ""]
@@ -20,7 +23,7 @@ all_repos <- setNames(
   sapply(repo_parts, function(x) trimws(x[1])) # the repo names
 )
 
-cat("### Benchmark on real-projects\n\n", file = "benchmark.md")
+cat("### Benchmark on real-life projects\n\n", file = "benchmark.md")
 
 list_results <- list()
 
@@ -29,10 +32,10 @@ for (i in seq_along(all_repos)) {
   repos_sha <- all_repos[[i]]
 
   message("Processing results of ", repos)
-  main_results_json <- jsonlite::read_json(paste0(
+  base_results_json <- jsonlite::read_json(paste0(
     "results_bench/",
     gsub("/", "_", repos),
-    "_main.json"
+    "_base.json"
   ))[["results"]][[1]][["times"]]
   pr_results_json <- jsonlite::read_json(paste0(
     "results_bench/",
@@ -40,21 +43,31 @@ for (i in seq_along(all_repos)) {
     "_pr.json"
   ))[["results"]][[1]][["times"]]
 
-  main_mean <- mean(unlist(main_results_json))
+  base_mean <- mean(unlist(base_results_json))
   pr_mean <- mean(unlist(pr_results_json))
 
   list_results[[i]] <- data.frame(
-    Repository = repos,
-    "Avg. duration (main, seconds)" = main_mean,
-    "Avg. duration (PR, seconds)" = pr_mean,
-    "PR - main" = pr_mean - main_mean,
-    "PR - main (%)" = (pr_mean - main_mean) / main_mean * 100,
-    "Number of iterations" = length(main_results_json),
-    check.names = FALSE
+    repository = repos,
+    base_mean = base_mean,
+    pr_mean = pr_mean,
+    diff = pr_mean - base_mean,
+    diff_pct = (pr_mean - base_mean) / base_mean * 100,
+    n_iterations = length(base_results_json)
   )
 }
 
 all_results <- rbindlist(list_results)
+setnames(
+  all_results,
+  c(
+    "Repository",
+    sprintf("Avg. duration (%s, seconds)", base_ref),
+    "Avg. duration (PR, seconds)",
+    sprintf("PR - %s", base_ref),
+    sprintf("PR - %s (%%)", base_ref),
+    "Number of iterations"
+  )
+)
 
 tt(all_results) |>
   theme_markdown(style = "gfm") |>

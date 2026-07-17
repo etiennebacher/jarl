@@ -3,10 +3,11 @@
 
 name: Ecosystem check
 
+# "edited" is included so that retargeting the PR to another base branch
+# re-runs the comparison against the new base.
 on:
   pull_request:
-    branches:
-      - main
+    types: [opened, synchronize, reopened, edited]
     paths:
       - .github/workflows/ecosystem-check.yml
       - .github/scripts/process_lint_ci.R
@@ -59,6 +60,9 @@ env:
 
 jobs:
   ecosystem-check:
+    # For "edited" events, only run when the base branch was changed (not for
+    # title/description edits).
+    if: github.event.action != 'edited' || github.event.changes.base != null
     runs-on: macos-latest
 
     steps:
@@ -96,14 +100,14 @@ jobs:
           cp target/release/jarl target/release/jarl-pr
           echo "PR_JARL=$(pwd)/target/release/jarl-pr" >> $GITHUB_ENV
 
-      - name: Build jarl binary from main branch
+      - name: Build jarl binary from base branch
         run: |
-          git fetch origin main
-          git checkout origin/main
+          git fetch origin ${{ github.base_ref }}
+          git checkout origin/${{ github.base_ref }}
           cargo build --release --package jarl
 
-      - name: Save main binary path
-        run: echo "MAIN_JARL=$(pwd)/target/release/jarl" >> $GITHUB_ENV
+      - name: Save base binary path
+        run: echo "BASE_JARL=$(pwd)/target/release/jarl" >> $GITHUB_ENV
 
       - name: Clone all test repos
         run: |
@@ -137,8 +141,8 @@ jobs:
             repo_name=$(echo "$repo" | cut -d'@' -f1)
             repo_dir=$(echo "$repo_name" | tr '/' '_')
 
-            # Run main
-            (cd "$repo_dir" && $MAIN_JARL check . --select ALL --min-r-version 99.99 --output-format json) > "../results/${repo_dir}_main.json" || true
+            # Run base branch (the "_base" suffix is expected by process_lint_ci.R)
+            (cd "$repo_dir" && $BASE_JARL check . --select ALL --min-r-version 99.99 --output-format json) > "../results/${repo_dir}_base.json" || true
 
             # Run PR
             (cd "$repo_dir" && $PR_JARL check . --select ALL --min-r-version 99.99 --output-format json) > "../results/${repo_dir}_pr.json" || true
