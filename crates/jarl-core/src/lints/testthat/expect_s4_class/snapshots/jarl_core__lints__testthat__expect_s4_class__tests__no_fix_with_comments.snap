@@ -1,0 +1,30 @@
+---
+source: crates/jarl-core/src/lints/testthat/expect_s4_class/mod.rs
+expression: "get_fixed_text(vec![\"# leading comment\\nexpect_true(is(x, \\\"Matrix\\\"))\",\n\"expect_true(is(x,\\n  # comment\\n  \\\"Matrix\\\"))\",\n\"expect_true(is(x, \\\"Matrix\\\")) # trailing comment\",], \"expect_s4_class\",\nNone,)"
+---
+OLD:
+====
+# leading comment
+expect_true(is(x, "Matrix"))
+NEW:
+====
+# leading comment
+expect_s4_class(x, "Matrix")
+
+OLD:
+====
+expect_true(is(x,
+  # comment
+  "Matrix"))
+NEW:
+====
+expect_true(is(x,
+  # comment
+  "Matrix"))
+
+OLD:
+====
+expect_true(is(x, "Matrix")) # trailing comment
+NEW:
+====
+expect_s4_class(x, "Matrix") # trailing comment

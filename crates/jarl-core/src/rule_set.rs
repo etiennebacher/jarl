@@ -809,6 +809,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    TestthatExpectS4Class => {
+        name: "expect_s4_class",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
     TestthatExpectTrueFalse => {
         name: "expect_true_false",
         categories: [Testthat],

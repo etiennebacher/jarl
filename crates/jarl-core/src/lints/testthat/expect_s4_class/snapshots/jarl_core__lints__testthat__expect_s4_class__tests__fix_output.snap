@@ -1,0 +1,31 @@
+---
+source: crates/jarl-core/src/lints/testthat/expect_s4_class/mod.rs
+expression: "get_fixed_text(vec![\"expect_true(is(x, \\\"Matrix\\\"))\",\n\"expect_true(is(foo(x), class_name))\",\n\"expect_true(is(class2 = \\\"Matrix\\\", object = x))\",\n\"testthat::expect_true(methods::is(x, \\\"Matrix\\\"))\",], \"expect_s4_class\",\nNone,)"
+---
+OLD:
+====
+expect_true(is(x, "Matrix"))
+NEW:
+====
+expect_s4_class(x, "Matrix")
+
+OLD:
+====
+expect_true(is(foo(x), class_name))
+NEW:
+====
+expect_s4_class(foo(x), class_name)
+
+OLD:
+====
+expect_true(is(class2 = "Matrix", object = x))
+NEW:
+====
+expect_s4_class(x, "Matrix")
+
+OLD:
+====
+testthat::expect_true(methods::is(x, "Matrix"))
+NEW:
+====
+testthat::expect_s4_class(x, "Matrix")
