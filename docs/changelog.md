@@ -50,6 +50,9 @@
   `testthat`), `expect_defunct` (from lifecycle) and `expect_deprecated` (from `lifecycle`)
   (#543, @maelle).
 
+* Passing `--statistics` in the CLI now indicates which violations have an automatic
+  unsafe fix (#554).
+
 ### Bug fixes
 
 * `implicit_assignment` no longer flags chained assignments like
