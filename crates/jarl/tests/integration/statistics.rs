@@ -18,7 +18,6 @@ any(is.na(x))
 any(is.na(x))
 any(is.na(x))
 any(is.na(x))
-f(x = 1, x = 2)
 stop('x')
 ",
         ),
@@ -31,7 +30,7 @@ stop('x')
             .arg("check")
             .arg(".")
             .arg("--select")
-            .arg("any_is_na,condition_call,duplicated_arguments")
+            .arg("any_is_na,condition_call,implicit_assignment")
             .arg("--statistics")
             .run()
             .normalize_os_executable_name(),
@@ -41,7 +40,7 @@ stop('x')
     exit_code: 1
     ----- stdout -----
        12 [*] any_is_na
-        1 [ ] duplicated_arguments
+        1 [ ] implicit_assignment
         1 [^] condition_call
 
     Rules with `[*]` have an automatic safe fix.
