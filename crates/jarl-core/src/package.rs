@@ -1,7 +1,9 @@
 use biome_rowan::TextRange;
+use oak_semantic::semantic_index::SemanticIndex;
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use crate::checker::DEFAULT_PACKAGES;
 use crate::config::Config;
@@ -80,6 +82,42 @@ pub struct PackageAnalysis {
     /// help)` triples for functions that are defined but never called and not
     /// exported.
     pub unused_functions: HashMap<PathBuf, Vec<(String, TextRange, String)>>,
+    /// Per-file set of top-level object names that are read from *another*
+    /// file. Keyed by relativized file path. All of a package's R files share
+    /// one namespace, so a top-level binding defined in one file and used in
+    /// another is not unused; the same holds for a binding in a script that
+    /// another file `source()`s and then reads. `unused_object` consults this
+    /// to avoid flagging such cross-file-used objects. Computed in
+    /// [`crate::db::AnalysisDb::cross_file_used_objects`].
+    pub cross_file_used: HashMap<PathBuf, HashSet<String>>,
+    /// Per-file semantic index built during the cross-file pass, keyed by
+    /// relativized path. The parallel lint pass reuses these instead of
+    /// rebuilding each file's index. Empty unless `unused_object` runs.
+    pub file_indices: HashMap<PathBuf, Arc<SemanticIndex>>,
+}
+
+/// The entries of [`PackageAnalysis`] for a single file. Bundled so the
+/// document-level checks take one argument instead of one per cross-file map.
+#[derive(Clone, Debug, Default)]
+pub struct PackageFileAnalysis {
+    pub duplicate_assignments: Vec<(String, TextRange, String)>,
+    pub unused_functions: Vec<(String, TextRange, String)>,
+    pub cross_file_used: HashSet<String>,
+}
+
+impl PackageFileAnalysis {
+    /// Pull the entries for `file` out of the package-wide analysis.
+    pub fn for_file(pkg: &PackageAnalysis, file: &Path) -> Self {
+        Self {
+            duplicate_assignments: pkg
+                .duplicate_assignments
+                .get(file)
+                .cloned()
+                .unwrap_or_default(),
+            unused_functions: pkg.unused_functions.get(file).cloned().unwrap_or_default(),
+            cross_file_used: pkg.cross_file_used.get(file).cloned().unwrap_or_default(),
+        }
+    }
 }
 
 /// Classify every file and pre-compute per-package metadata in one pass.
@@ -226,8 +264,9 @@ pub fn make_package_analysis(
     let rules = &config.rules_to_apply;
     let check_duplicates = rules.contains(&Rule::DuplicatedFunctionDefinition);
     let check_unused = rules.contains(&Rule::UnusedFunction);
+    let check_unused_object = rules.contains(&Rule::UnusedObject);
 
-    if !check_duplicates && !check_unused {
+    if !check_duplicates && !check_unused && !check_unused_object {
         return PackageAnalysis::default();
     }
 
@@ -324,7 +363,43 @@ pub fn make_package_analysis(
         HashMap::new()
     };
 
-    PackageAnalysis { duplicate_assignments, unused_functions }
+    // Reuse the database scanned above: find top-level objects read from
+    // another file, and keep the per-file indices for the lint pass to reuse.
+    // Loose scripts have no package root for the db to scan, so the lint set
+    // itself is their file universe: hand them over directly and they resolve
+    // against each other through `source()` edges.
+    let cross_file = if check_unused_object {
+        db.cross_file_used_objects(&loose_script_paths(paths))
+    } else {
+        crate::db::CrossFileAnalysis::default()
+    };
+
+    PackageAnalysis {
+        duplicate_assignments,
+        unused_functions,
+        cross_file_used: cross_file.used,
+        file_indices: cross_file.indices,
+    }
+}
+
+/// The linted R files that live outside any R package (no `DESCRIPTION`
+/// ancestor). These are invisible to the oak scan — which is bounded by
+/// package roots — so the cross-file pass takes them straight from the lint
+/// set. Package membership is cached per parent directory: siblings share
+/// the walk up to the root.
+fn loose_script_paths(paths: &[PathBuf]) -> Vec<PathBuf> {
+    let mut in_package_by_dir: HashMap<PathBuf, bool> = HashMap::new();
+    paths
+        .iter()
+        .filter(|path| has_r_extension(path))
+        .filter(|path| {
+            let dir = path.parent().unwrap_or_else(|| Path::new("")).to_path_buf();
+            !*in_package_by_dir
+                .entry(dir)
+                .or_insert_with(|| find_package_root(path).is_some())
+        })
+        .cloned()
+        .collect()
 }
 
 /// Determine the `FileScope` for a non-R/ file based on its path.

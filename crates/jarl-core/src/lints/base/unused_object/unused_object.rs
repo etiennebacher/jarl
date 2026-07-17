@@ -29,6 +29,7 @@ use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 pub fn unused_object(
     expressions: &[RSyntaxNode],
     semantic: &SemanticIndex,
+    cross_file_used: &std::collections::HashSet<String>,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
     let Some(first) = expressions.first() else {
@@ -50,8 +51,12 @@ pub fn unused_object(
             }
             // Top-level bindings are visible to other files — package
             // siblings share the namespace, and `source()` injects them into
-            // the sourcing file — so an exported object is still used.
-            if scope_id == top_level && is_exported(semantic, exports, scope_id, def) {
+            // the sourcing file — so an object read from another file (or
+            // exported) is still used.
+            if scope_id == top_level
+                && (is_exported(semantic, exports, scope_id, def)
+                    || is_used_cross_file(semantic, cross_file_used, scope_id, def))
+            {
                 continue;
             }
             diagnostics.push(make_diagnostic(semantic, scope_id, def, info.root()));
@@ -115,6 +120,23 @@ fn is_exported(
     }
     let name = semantic.symbols(scope_id).symbol(def.symbol()).name();
     exports.contains(name)
+}
+
+/// True when this top-level binding is read from another file — a sibling in
+/// the same package, or a file that `source()`s this one. `cross_file_used`
+/// is precomputed from oak's cross-file resolution (see
+/// [`crate::db::AnalysisDb::cross_file_used_objects`]).
+fn is_used_cross_file(
+    semantic: &SemanticIndex,
+    cross_file_used: &std::collections::HashSet<String>,
+    scope_id: ScopeId,
+    def: &Definition,
+) -> bool {
+    if cross_file_used.is_empty() {
+        return false;
+    }
+    let name = semantic.symbols(scope_id).symbol(def.symbol()).name();
+    cross_file_used.contains(name)
 }
 
 fn make_diagnostic(

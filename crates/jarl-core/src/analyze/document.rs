@@ -17,14 +17,14 @@ use crate::lints::comments::unexplained_suppression::unexplained_suppression::un
 use crate::lints::comments::unmatched_range_suppression::unmatched_range_suppression::{
     unmatched_range_suppression_end, unmatched_range_suppression_start,
 };
+use crate::package::PackageFileAnalysis;
 use crate::rule_set::Rule;
 
 pub(crate) fn check_document(
     expressions: &RExpressionList,
     syntax: &RSyntaxNode,
     checker: &mut Checker,
-    duplicate_assignments: &[(String, biome_rowan::TextRange, String)],
-    unused_functions: &[(String, biome_rowan::TextRange, String)],
+    package: &PackageFileAnalysis,
     semantic: Option<&SemanticIndex>,
 ) -> anyhow::Result<()> {
     // --- Document-level analysis ---
@@ -42,7 +42,7 @@ pub(crate) fn check_document(
     if checker.is_rule_enabled(Rule::UnusedObject)
         && let Some(semantic) = semantic
     {
-        unused_object(&expressions, semantic, checker)?;
+        unused_object(&expressions, semantic, &package.cross_file_used, checker)?;
     }
 
     // --- Comment/suppression checks ---
@@ -114,7 +114,7 @@ pub(crate) fn check_document(
     // Emit package-level diagnostics before suppression filtering so that
     // # jarl-ignore and # jarl-ignore-file comments can suppress them.
     if checker.is_rule_enabled(Rule::DuplicatedFunctionDefinition) {
-        for (name, range, help) in duplicate_assignments {
+        for (name, range, help) in &package.duplicate_assignments {
             checker.report_diagnostic(Some(Diagnostic::new(
                 ViolationData::new(
                     "duplicated_function_definition".to_string(),
@@ -128,7 +128,7 @@ pub(crate) fn check_document(
     }
 
     if checker.is_rule_enabled(Rule::UnusedFunction) {
-        for (name, range, help) in unused_functions {
+        for (name, range, help) in &package.unused_functions {
             checker.report_diagnostic(Some(Diagnostic::new(
                 ViolationData::new(
                     "unused_function".to_string(),
