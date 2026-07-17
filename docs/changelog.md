@@ -11,7 +11,7 @@
   * `condition_message` (#545)
   * `equals_na` now also reports `x %notin% NA` cases (#469, @Yousa-Mirage)
   * `empty_file` (#477, @JosephBARBIERDARNAL)
-  * `expect_s4_class` (@Yousa-Mirage)
+  * `expect_s4_class` (#553, @Yousa-Mirage)
   * `glue` (#484, @novica)
   * `literal_coercion` (#504)
   * `missing_argument` (#506)
