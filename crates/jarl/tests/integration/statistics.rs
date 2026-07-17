@@ -19,6 +19,7 @@ any(is.na(x))
 any(is.na(x))
 any(is.na(x))
 stop('x')
+stop('x')
 ",
         ),
         ("test2.R", "mean(x <- 1)"),
@@ -40,8 +41,8 @@ stop('x')
     exit_code: 1
     ----- stdout -----
        12 [*] any_is_na
+        2 [^] condition_call
         1 [ ] implicit_assignment
-        1 [^] condition_call
 
     Rules with `[*]` have an automatic safe fix.
     Rules with `[^]` have an automatic unsafe fix.
