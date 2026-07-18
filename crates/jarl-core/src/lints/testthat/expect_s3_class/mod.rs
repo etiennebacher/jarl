@@ -33,15 +33,6 @@ mod tests {
         expect_no_lint("expect_equal(class(x), 'logical')", "expect_s3_class", None);
         expect_no_lint("expect_equal(class(x), 'matrix')", "expect_s3_class", None);
 
-        // Not sure if those should be fixed here because if it's an object then
-        // it could contain classes that don't work in `expect_s3_class()`.
-        expect_no_lint("expect_equal(class(x), k)", "expect_s3_class", None);
-        expect_no_lint(
-            "expect_equal(class(x), c('a', 'b'))",
-            "expect_s3_class",
-            None,
-        );
-
         // Wrong code but no panic
         expect_no_lint("expect_equal(class(x))", "expect_s3_class", None);
         expect_no_lint("expect_equal(class())", "expect_s3_class", None);
@@ -61,12 +52,6 @@ mod tests {
         expect_no_lint("expect_true(is.data.frame(x, y))", "expect_s3_class", None);
         expect_no_lint("expect_true(is.data.frame(x =))", "expect_s3_class", None);
         expect_no_lint("expect_true(inherits(x))", "expect_s3_class", None);
-        expect_no_lint("expect_true(inherits(x, classes))", "expect_s3_class", None);
-        expect_no_lint(
-            "expect_true(inherits(x, c('foo', 'bar')))",
-            "expect_s3_class",
-            None,
-        );
         expect_no_lint(
             "expect_true(inherits(x, 'matrix'))",
             "expect_s3_class",
@@ -159,6 +144,50 @@ mod tests {
                     "expect_equal(class(x), \"data.frame\")",
                     "testthat::expect_equal(class(x), 'data.frame')",
                     "expect_equal('data.frame', class(x))",
+                    "expect_equal(object = class(x), 'data.frame')",
+                ],
+                "expect_s3_class",
+                None,
+            )
+        );
+    }
+
+    #[test]
+    fn test_lint_expect_s3_class_dynamic_class() {
+        assert_snapshot!(
+            snapshot_lint("expect_equal(class(x), classes)"),
+            @"
+        warning: expect_s3_class
+         --> <test>:1:1
+          |
+        1 | expect_equal(class(x), classes)
+          | ------------------------------- `expect_equal(class(x), classes)` may fail if `x` gets more classes in the future.
+          |
+          = help: Use `expect_s3_class(x, classes)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("expect_true(inherits(x, classes))"),
+            @"
+        warning: expect_s3_class
+         --> <test>:1:1
+          |
+        1 | expect_true(inherits(x, classes))
+          | --------------------------------- `expect_s3_class(x, classes)` is better than `expect_true(inherits(x, classes))`.
+          |
+          = help: Use `expect_s3_class(x, classes)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            "dynamic_class_no_fix",
+            get_fixed_text(
+                vec![
+                    "expect_equal(class(x), classes)",
+                    "expect_equal(classes, class(x))",
+                    "expect_true(inherits(x, classes))",
+                    "expect_true(inherits(x, c('foo', 'bar')))",
                 ],
                 "expect_s3_class",
                 None,
@@ -258,6 +287,7 @@ mod tests {
                     "expect_true(inherits(foo$bar, \"Date\"))",
                     "testthat::expect_true(base::inherits(what = 'factor', x = foo(x)))",
                     "expect_true(inherits(x = foo(x), 'factor'))",
+                    "expect_true(inherits(what = 'factor', foo(x)))",
                 ],
                 "expect_s3_class",
                 None,

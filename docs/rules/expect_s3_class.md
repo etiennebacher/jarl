@@ -22,7 +22,10 @@ To test that `x` only has the class `"y"`, then one can use
 This rule is **disabled by default**. Select it either with the rule name
 `"expect_s3_class"` or with the rule group `"TESTTHAT"`.
 
-This rule has a safe automatic fix but doesn't report cases where:
+This rule has a safe automatic fix for statically supported class names.
+Dynamic class expressions are reported without an automatic fix.
+
+This rule doesn't report cases where:
 
 * an `is.*()` predicate is not known to test an S3 class. For example,
   `is.matrix(x)` does not imply that `x` is an S3 object.
@@ -33,12 +36,6 @@ This rule has a safe automatic fix but doesn't report cases where:
   testthat::expect_s3_class(1L, "integer")
   ```
   For those cases, it is recommended to use `expect_type()` instead.
-
-* the `expected` object could have multiple values, such as:
-  ```r
-  testthat::expect_equal(class(x), c("foo", "bar"))
-  testthat::expect_equal(class(x), vec_of_classes)
-  ```
 
 Finally, the intent of the test cannot be inferred with the code only, so
 the user will have to add `exact = TRUE` if necessary.

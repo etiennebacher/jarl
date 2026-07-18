@@ -28,7 +28,10 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// This rule is **disabled by default**. Select it either with the rule name
 /// `"expect_s3_class"` or with the rule group `"TESTTHAT"`.
 ///
-/// This rule has a safe automatic fix but doesn't report cases where:
+/// This rule has a safe automatic fix for statically supported class names.
+/// Dynamic class expressions are reported without an automatic fix.
+///
+/// This rule doesn't report cases where:
 ///
 /// * an `is.*()` predicate is not known to test an S3 class. For example,
 ///   `is.matrix(x)` does not imply that `x` is an S3 object.
@@ -39,12 +42,6 @@ use biome_rowan::{AstNode, AstSeparatedList};
 ///   testthat::expect_s3_class(1L, "integer")
 ///   ```
 ///   For those cases, it is recommended to use `expect_type()` instead.
-///
-/// * the `expected` object could have multiple values, such as:
-///   ```r
-///   testthat::expect_equal(class(x), c("foo", "bar"))
-///   testthat::expect_equal(class(x), vec_of_classes)
-///   ```
 ///
 /// Finally, the intent of the test cannot be inferred with the code only, so
 /// the user will have to add `exact = TRUE` if necessary.
@@ -87,10 +84,8 @@ fn check_expect_class_comparison(
         return Ok(None);
     }
 
-    let object_argument =
-        unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "object", 1));
-    let expected_argument =
-        unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "expected", 2));
+    let (object_argument, expected_argument) =
+        unwrap_or_return_none!(get_two_arguments(&arguments, "object", "expected"));
 
     let object_value = unwrap_or_return_none!(object_argument.value());
     let expected_value = unwrap_or_return_none!(expected_argument.value());
@@ -109,9 +104,11 @@ fn check_expect_class_comparison(
         return Ok(None);
     };
 
-    if !is_supported_class_literal(&class_expression) {
-        return Ok(None);
-    }
+    let can_fix = match classify_class_expression(&class_expression) {
+        ClassExpressionKind::SupportedLiteral => true,
+        ClassExpressionKind::UnsupportedLiteral => return Ok(None),
+        ClassExpressionKind::Dynamic => false,
+    };
 
     // Extract the argument of class()
     let class_arguments = class_call.arguments()?.items();
@@ -136,14 +133,18 @@ fn check_expect_class_comparison(
             Some(format!("Use `{replacement}` instead.")),
         ),
         range,
-        Fix {
-            content: format!(
-                "{}expect_s3_class({}, {})",
-                namespace_prefix, object_text, class_text
-            ),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
+        if can_fix {
+            Fix {
+                content: format!(
+                    "{}expect_s3_class({}, {})",
+                    namespace_prefix, object_text, class_text
+                ),
+                start: range.start().into(),
+                end: range.end().into(),
+                to_skip: node_contains_comments(ast.syntax()),
+            }
+        } else {
+            Fix::empty()
         },
     )))
 }
@@ -163,63 +164,15 @@ fn check_expect_true_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let predicate_name = get_function_name(predicate_call.function()?);
 
     let predicate_arguments = predicate_call.arguments()?.items();
-
-    let (object_text, class_text) = if predicate_name == "inherits" {
-        // Check for `expect_true(inherits(x, "foo"))`
-        if predicate_arguments.iter().count() != 2 {
-            return Ok(None);
+    let class_check = match predicate_name.as_str() {
+        "inherits" => unwrap_or_return_none!(extract_inherits_check(&predicate_arguments)?),
+        name if S3_CLASS_PREDICATES.contains(&name) => {
+            unwrap_or_return_none!(extract_predicate_check(name, &predicate_arguments)?)
         }
-
-        let named_object = get_arg_by_name(&predicate_arguments, "x");
-        let named_class = get_arg_by_name(&predicate_arguments, "what");
-
-        // The arguments can be named or unnamed, so we need to handle all combinations.
-        let (object_argument, class_argument) = match (named_object, named_class) {
-            (Some(object), Some(class)) => (object, class),
-            (Some(object), None) => (
-                object,
-                unwrap_or_return_none!(get_unnamed_arg_by_position(&predicate_arguments, 1)),
-            ),
-            (None, Some(class)) => (
-                unwrap_or_return_none!(get_unnamed_arg_by_position(&predicate_arguments, 1)),
-                class,
-            ),
-            (None, None) => (
-                unwrap_or_return_none!(get_unnamed_arg_by_position(&predicate_arguments, 1)),
-                unwrap_or_return_none!(get_unnamed_arg_by_position(&predicate_arguments, 2)),
-            ),
-        };
-        let object = unwrap_or_return_none!(object_argument.value());
-        let class = unwrap_or_return_none!(class_argument.value());
-
-        if !is_supported_class_literal(&class) {
-            return Ok(None);
-        }
-
-        (
-            object.to_trimmed_text().to_string(),
-            class.to_trimmed_text().to_string(),
-        )
-    } else if S3_CLASS_PREDICATES.contains(&predicate_name.as_str()) {
-        // Check for `expect_true(is.<class>(x))`
-        if predicate_arguments.iter().count() != 1 {
-            return Ok(None);
-        }
-
-        let predicate_argument =
-            unwrap_or_return_none!(get_arg_by_position(&predicate_arguments, 1));
-        let object = unwrap_or_return_none!(predicate_argument.value());
-
-        // For example, "is.data.frame" -> "data.frame"
-        let class_name = unwrap_or_return_none!(predicate_name.strip_prefix("is."));
-        (
-            object.to_trimmed_text().to_string(),
-            format!("\"{class_name}\""),
-        )
-    } else {
-        return Ok(None);
+        _ => return Ok(None),
     };
 
+    let ClassCheck { object_text, class_text, can_fix } = class_check;
     let replacement = format!("expect_s3_class({object_text}, {class_text})");
     let linted_text = format!("expect_true({})", predicate_call.to_trimmed_text());
 
@@ -234,13 +187,83 @@ fn check_expect_true_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             Some(format!("Use `{replacement}` instead.")),
         ),
         range,
-        Fix {
-            content: format!("{namespace_prefix}{replacement}"),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
+        if can_fix {
+            Fix {
+                content: format!("{namespace_prefix}{replacement}"),
+                start: range.start().into(),
+                end: range.end().into(),
+                to_skip: node_contains_comments(ast.syntax()),
+            }
+        } else {
+            Fix::empty()
         },
     )))
+}
+
+struct ClassCheck {
+    object_text: String,
+    class_text: String,
+    can_fix: bool,
+}
+
+fn extract_inherits_check(arguments: &RArgumentList) -> anyhow::Result<Option<ClassCheck>> {
+    if arguments.iter().count() != 2 {
+        return Ok(None);
+    }
+
+    let (object_argument, class_argument) =
+        unwrap_or_return_none!(get_two_arguments(arguments, "x", "what"));
+    let object = unwrap_or_return_none!(object_argument.value());
+    let class = unwrap_or_return_none!(class_argument.value());
+    let can_fix = match classify_class_expression(&class) {
+        ClassExpressionKind::SupportedLiteral => true,
+        ClassExpressionKind::UnsupportedLiteral => return Ok(None),
+        ClassExpressionKind::Dynamic => false,
+    };
+
+    Ok(Some(ClassCheck {
+        object_text: object.to_trimmed_text().to_string(),
+        class_text: class.to_trimmed_text().to_string(),
+        can_fix,
+    }))
+}
+
+fn get_two_arguments(
+    arguments: &RArgumentList,
+    first_name: &str,
+    second_name: &str,
+) -> Option<(RArgument, RArgument)> {
+    match (
+        get_arg_by_name(arguments, first_name),
+        get_arg_by_name(arguments, second_name),
+    ) {
+        (Some(first), Some(second)) => Some((first, second)),
+        (Some(first), None) => Some((first, get_unnamed_arg_by_position(arguments, 1)?)),
+        (None, Some(second)) => Some((get_unnamed_arg_by_position(arguments, 1)?, second)),
+        (None, None) => Some((
+            get_unnamed_arg_by_position(arguments, 1)?,
+            get_unnamed_arg_by_position(arguments, 2)?,
+        )),
+    }
+}
+
+fn extract_predicate_check(
+    predicate_name: &str,
+    arguments: &RArgumentList,
+) -> anyhow::Result<Option<ClassCheck>> {
+    if arguments.iter().count() != 1 {
+        return Ok(None);
+    }
+
+    let argument = unwrap_or_return_none!(get_arg_by_position(arguments, 1));
+    let object = unwrap_or_return_none!(argument.value());
+    let class_name = unwrap_or_return_none!(predicate_name.strip_prefix("is."));
+
+    Ok(Some(ClassCheck {
+        object_text: object.to_trimmed_text().to_string(),
+        class_text: format!("\"{class_name}\""),
+        can_fix: true,
+    }))
 }
 
 fn as_class_call(expression: &AnyRExpression) -> anyhow::Result<Option<&RCall>> {
@@ -310,16 +333,30 @@ const NON_S3_CLASSES: &[&str] = &[
     "function",
 ];
 
-fn is_supported_class_literal(expression: &AnyRExpression) -> bool {
+/// Classifies a class expression according to whether the rule can safely fix it.
+enum ClassExpressionKind {
+    /// A string literal naming a class supported by `expect_s3_class()`.
+    SupportedLiteral,
+    /// A string literal naming a class that is not an S3 class.
+    UnsupportedLiteral,
+    /// An expression whose class value cannot be determined statically.
+    Dynamic,
+}
+
+fn classify_class_expression(expression: &AnyRExpression) -> ClassExpressionKind {
     let Some(string) = expression
         .as_any_r_value()
         .and_then(|value| value.as_r_string_value())
     else {
-        return false;
+        return ClassExpressionKind::Dynamic;
     };
 
     let content = string.content_token();
     let class_name = content.as_ref().map_or("", |token| token.text_trimmed());
 
-    !NON_S3_CLASSES.contains(&class_name)
+    if NON_S3_CLASSES.contains(&class_name) {
+        ClassExpressionKind::UnsupportedLiteral
+    } else {
+        ClassExpressionKind::SupportedLiteral
+    }
 }

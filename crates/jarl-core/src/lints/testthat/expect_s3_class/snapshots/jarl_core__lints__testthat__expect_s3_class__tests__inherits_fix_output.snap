@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/testthat/expect_s3_class/mod.rs
-expression: "get_fixed_text(vec![\"expect_true(inherits(foo$bar, \\\"Date\\\"))\",\n\"testthat::expect_true(base::inherits(what = 'factor', x = foo(x)))\",\n\"expect_true(inherits(x = foo(x), 'factor'))\",], \"expect_s3_class\", None,)"
+expression: "get_fixed_text(vec![\"expect_true(inherits(foo$bar, \\\"Date\\\"))\",\n\"testthat::expect_true(base::inherits(what = 'factor', x = foo(x)))\",\n\"expect_true(inherits(x = foo(x), 'factor'))\",\n\"expect_true(inherits(what = 'factor', foo(x)))\",], \"expect_s3_class\", None,)"
 ---
 OLD:
 ====
@@ -19,6 +19,13 @@ testthat::expect_s3_class(foo(x), 'factor')
 OLD:
 ====
 expect_true(inherits(x = foo(x), 'factor'))
+NEW:
+====
+expect_s3_class(foo(x), 'factor')
+
+OLD:
+====
+expect_true(inherits(what = 'factor', foo(x)))
 NEW:
 ====
 expect_s3_class(foo(x), 'factor')
