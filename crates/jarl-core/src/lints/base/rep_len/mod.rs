@@ -14,13 +14,14 @@ mod tests {
         expect_no_lint("rep(x, y)", "rep_len", None);
         expect_no_lint("rep(1:10, 2)", "rep_len", None);
         expect_no_lint("rep(1:10, 10:1)", "rep_len", None);
-        expect_no_lint("rep(1:10, 10:1, length.out = 50)", "rep_len", None);
-        expect_no_lint("rep(1:10, times = 10:1, length.out = 50)", "rep_len", None);
-        expect_no_lint("rep(1:10, 10:1, 50)", "rep_len", None);
+        expect_no_lint("rep(x = 1:10, 50)", "rep_len", None);
+        expect_no_lint("rep(times = 2, 50)", "rep_len", None);
         expect_no_lint("rep(x, each = 4, length.out = 50)", "rep_len", None);
+        expect_no_lint("rep(x, eac = 4, length.out = 50)", "rep_len", None);
+        expect_no_lint("rep(x, other = 4, length.out = 50)", "rep_len", None);
+        expect_no_lint("rep(x = x, x = y, length.out = 50)", "rep_len", None);
         expect_no_lint("rep(a, b, length.out = c, d)", "rep_len", None);
         expect_no_lint("rep(a, b, c, d)", "rep_len", None);
-        expect_no_lint("rep(x = a, b, c)", "rep_len", None);
         expect_no_lint("rep(x, length.out =)", "rep_len", None);
         expect_no_lint("rep_len(x, 10)", "rep_len", None);
     }
@@ -66,6 +67,71 @@ mod tests {
         Found 1 error.
         "
         );
+        assert_snapshot!(
+            snapshot_lint("rep(1:10, 10:1, length.out = 50)"),
+            @"
+        warning: rep_len
+         --> <test>:1:1
+          |
+        1 | rep(1:10, 10:1, length.out = 50)
+          | -------------------------------- `rep_len(1:10, 50)` is more explicit than `rep(1:10, 10:1, length.out = 50)`.
+          |
+          = help: Use `rep_len(1:10, 50)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("rep(1:10, times = 10:1, length.out = 50)"),
+            @"
+        warning: rep_len
+         --> <test>:1:1
+          |
+        1 | rep(1:10, times = 10:1, length.out = 50)
+          | ---------------------------------------- `rep_len(1:10, 50)` is more explicit than `rep(1:10, times = 10:1, length.out = 50)`.
+          |
+          = help: Use `rep_len(1:10, 50)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("rep(1:10, 10:1, 50)"),
+            @"
+        warning: rep_len
+         --> <test>:1:1
+          |
+        1 | rep(1:10, 10:1, 50)
+          | ------------------- `rep_len(1:10, 50)` is more explicit than `rep(1:10, 10:1, 50)`.
+          |
+          = help: Use `rep_len(1:10, 50)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("rep(x = 1:2, 2, 50)"),
+            @"
+        warning: rep_len
+         --> <test>:1:1
+          |
+        1 | rep(x = 1:2, 2, 50)
+          | ------------------- `rep_len(1:2, 50)` is more explicit than `rep(x = 1:2, 2, 50)`.
+          |
+          = help: Use `rep_len(1:2, 50)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("rep(1:2, times = 2, 50)"),
+            @"
+        warning: rep_len
+         --> <test>:1:1
+          |
+        1 | rep(1:2, times = 2, 50)
+          | ----------------------- `rep_len(1:2, 50)` is more explicit than `rep(1:2, times = 2, 50)`.
+          |
+          = help: Use `rep_len(1:2, 50)` instead.
+        Found 1 error.
+        "
+        );
     }
 
     #[test]
@@ -77,6 +143,11 @@ mod tests {
                     "rep(x, length.out = 4L)",
                     "base::rep(length.out = 50, x = 1:10)",
                     "rep(length.out = 50, 1:10)",
+                    "rep(1:10, 10:1, length.out = 50)",
+                    "rep(1:10, times = 10:1, length.out = 50)",
+                    "rep(1:10, 10:1, 50)",
+                    "rep(x = 1:2, 2, 50)",
+                    "rep(1:2, times = 2, 50)",
                 ],
                 "rep_len",
             )

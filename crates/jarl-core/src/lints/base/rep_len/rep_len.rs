@@ -1,8 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{
-    get_arg_by_name, get_arg_by_name_then_position, get_function_name,
-    get_function_namespace_prefix, node_contains_comments,
-};
+use crate::utils::{get_function_name, get_function_namespace_prefix, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
@@ -46,12 +43,43 @@ pub fn rep_len(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 
     let arguments = arguments?.items();
 
-    if arguments.iter().count() != 2 {
+    let argument_count = arguments.iter().count();
+    if !(2..=3).contains(&argument_count) {
         return Ok(None);
     }
 
-    let object_argument = unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "x", 1));
-    let length_argument = unwrap_or_return_none!(get_arg_by_name(&arguments, "length.out"));
+    // Match the formals in `rep(x, times, length.out)` order. R resolves exact
+    // argument names before assigning unnamed arguments to the remaining slots.
+    let mut matched_arguments = [None, None, None];
+    let mut unnamed_arguments = Vec::new();
+    for argument in arguments.iter() {
+        let argument = argument?;
+        let Some(name_clause) = argument.name_clause() else {
+            unnamed_arguments.push(argument);
+            continue;
+        };
+        let position = match name_clause.name()?.to_trimmed_string().as_str() {
+            "x" => 0,
+            "times" => 1,
+            "length.out" => 2,
+            // Skip partial and unknown names rather than risk an incorrect fix.
+            _ => return Ok(None),
+        };
+        if matched_arguments[position].replace(argument).is_some() {
+            return Ok(None);
+        }
+    }
+
+    // Positional arguments fill the first unmatched formal from left to right.
+    for argument in unnamed_arguments {
+        let slot = unwrap_or_return_none!(matched_arguments.iter_mut().find(|slot| slot.is_none()));
+        *slot = Some(argument);
+    }
+
+    // Only the `x` and `length.out` arguments are required for a valid replacement.
+    let [Some(object_argument), _, Some(length_argument)] = matched_arguments else {
+        return Ok(None);
+    };
     let object = unwrap_or_return_none!(object_argument.value());
     let length = unwrap_or_return_none!(length_argument.value());
 
