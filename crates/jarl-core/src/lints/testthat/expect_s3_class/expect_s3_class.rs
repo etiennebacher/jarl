@@ -33,7 +33,7 @@ use biome_rowan::{AstNode, AstSeparatedList};
 ///
 /// This rule doesn't report cases where:
 ///
-/// * the `is.*()` predicate does not test an S3 class. For example, `is.matrix(x)` does 
+/// * the `is.*()` predicate does not test an S3 class. For example, `is.matrix(x)` does
 ///   not imply that `x` is an S3 object.
 ///
 /// * `expect_s3_class()` would fail, such as:
