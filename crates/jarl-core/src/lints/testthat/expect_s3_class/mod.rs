@@ -37,7 +37,7 @@ mod tests {
         // it could contain classes that don't work in `expect_s3_class()`.
         expect_no_lint("expect_equal(class(x), k)", "expect_s3_class", None);
         expect_no_lint(
-            "expect_equal(class(x), c('a', 'b')",
+            "expect_equal(class(x), c('a', 'b'))",
             "expect_s3_class",
             None,
         );
