@@ -562,7 +562,7 @@ declare_rules! {
     RepLen => {
         name: "rep_len",
         categories: [Read],
-        default: Enabled,
+        default: Disabled,
         fix: Unsafe,
         min_r_version: None,
     },

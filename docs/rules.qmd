@@ -122,7 +122,7 @@ dat <- as.data.frame(
       "✅",
       ""
     ),
-    c("rep_len", "readability", "❗", ""),
+    c("rep_len", "readability", "❗", "Disabled by default"),
     c("repeat", "readability", "✅", ""),
     c("sample_int", "readability", "✅", ""),
     c("seq", "suspicious", "✅", ""),

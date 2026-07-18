@@ -14,8 +14,10 @@ use biome_rowan::{AstNode, AstSeparatedList};
 ///
 /// ## Why is this bad?
 ///
-/// `rep(x, length.out = n)` calls `rep_len(x, n)` "under the hood". The latter
+/// `rep(x, length.out = n)` calls `rep_len(x, n)` internally. The latter
 /// is thus more direct and equally readable.
+///
+/// This rule is disabled by default.
 ///
 /// This rule has an unsafe automatic fix because `rep_len()` drops most
 /// attributes, including names, while `rep()` can preserve them.
