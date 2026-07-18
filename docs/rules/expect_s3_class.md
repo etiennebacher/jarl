@@ -23,12 +23,13 @@ This rule is **disabled by default**. Select it either with the rule name
 `"expect_s3_class"` or with the rule group `"TESTTHAT"`.
 
 This rule has a safe automatic fix for statically supported class names.
-Dynamic class expressions are reported without an automatic fix.
+Dynamic class expressions are reported without an automatic fix because they
+could contain classes that are not supported by `expect_s3_class()`.
 
 This rule doesn't report cases where:
 
-* an `is.*()` predicate is not known to test an S3 class. For example,
-  `is.matrix(x)` does not imply that `x` is an S3 object.
+* the `is.*()` predicate does not test an S3 class. For example, `is.matrix(x)` does
+  not imply that `x` is an S3 object.
 
 * `expect_s3_class()` would fail, such as:
   ```r

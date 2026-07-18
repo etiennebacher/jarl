@@ -29,7 +29,8 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// `"expect_s3_class"` or with the rule group `"TESTTHAT"`.
 ///
 /// This rule has a safe automatic fix for statically supported class names.
-/// Dynamic class expressions are reported without an automatic fix.
+/// Dynamic class expressions are reported without an automatic fix because they
+/// could contain classes that are not supported by `expect_s3_class()`.
 ///
 /// This rule doesn't report cases where:
 ///
@@ -341,6 +342,10 @@ const NON_S3_CLASSES: &[&str] = &[
     "list",
     // See `?class`
     "matrix",
+    "dgCMatrix",
+    "dgRMatrix",
+    "dgeMatrix",
+    "dgTMatrix",
     "array",
     "function",
 ];
