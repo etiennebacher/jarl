@@ -1,7 +1,7 @@
 use crate::diagnostic::*;
 use crate::utils::{
-    get_arg_by_name_then_position, get_arg_by_position, get_function_name,
-    get_function_namespace_prefix, node_contains_comments,
+    get_arg_by_name, get_arg_by_name_then_position, get_arg_by_position, get_function_name,
+    get_function_namespace_prefix, get_unnamed_arg_by_position, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
@@ -11,8 +11,8 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// ## What it does
 ///
 /// Checks for usage of `expect_equal(class(x), "y")`,
-/// `expect_identical(class(x), "y")`, and selected
-/// `expect_true(is.<class>(x))` calls.
+/// `expect_identical(class(x), "y")`, selected
+/// `expect_true(is.<class>(x))`, and `expect_true(inherits(x, "y"))` calls.
 ///
 /// ## Why is this bad?
 ///
@@ -55,6 +55,7 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// expect_equal(class(x), "data.frame")
 /// expect_identical(class(x), "Date")
 /// expect_true(is.factor(x))
+/// expect_true(inherits(x, "foo"))
 /// ```
 ///
 /// Use instead:
@@ -62,6 +63,7 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// expect_s3_class(x, "data.frame")
 /// expect_s3_class(x, "Date")
 /// expect_s3_class(x, "factor")
+/// expect_s3_class(x, "foo")
 /// ```
 pub fn expect_s3_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let function = ast.function()?;
@@ -69,7 +71,7 @@ pub fn expect_s3_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 
     match function_name.as_str() {
         "expect_equal" | "expect_identical" => check_expect_class_comparison(ast, &function_name),
-        "expect_true" => check_expect_true_is_class(ast),
+        "expect_true" => check_expect_true_class(ast),
         _ => Ok(None),
     }
 }
@@ -146,7 +148,7 @@ fn check_expect_class_comparison(
     )))
 }
 
-fn check_expect_true_is_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
+fn check_expect_true_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let arguments = ast.arguments()?.items();
 
     // skip patterns like `expect_true(is.data.frame(x), info = "context")`
@@ -160,22 +162,65 @@ fn check_expect_true_is_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>>
     let predicate_call = unwrap_or_return_none!(object_value.as_r_call());
     let predicate_name = get_function_name(predicate_call.function()?);
 
-    if !S3_CLASS_PREDICATES.contains(&predicate_name.as_str()) {
-        return Ok(None);
-    }
-
     let predicate_arguments = predicate_call.arguments()?.items();
-    if predicate_arguments.iter().count() != 1 {
+
+    let (object_text, class_text) = if predicate_name == "inherits" {
+        // Check for `expect_true(inherits(x, "foo"))`
+        if predicate_arguments.iter().count() != 2 {
+            return Ok(None);
+        }
+
+        let named_object = get_arg_by_name(&predicate_arguments, "x");
+        let named_class = get_arg_by_name(&predicate_arguments, "what");
+
+        // The arguments can be named or unnamed, so we need to handle all combinations.
+        let (object_argument, class_argument) = match (named_object, named_class) {
+            (Some(object), Some(class)) => (object, class),
+            (Some(object), None) => (
+                object,
+                unwrap_or_return_none!(get_unnamed_arg_by_position(&predicate_arguments, 1)),
+            ),
+            (None, Some(class)) => (
+                unwrap_or_return_none!(get_unnamed_arg_by_position(&predicate_arguments, 1)),
+                class,
+            ),
+            (None, None) => (
+                unwrap_or_return_none!(get_unnamed_arg_by_position(&predicate_arguments, 1)),
+                unwrap_or_return_none!(get_unnamed_arg_by_position(&predicate_arguments, 2)),
+            ),
+        };
+        let object = unwrap_or_return_none!(object_argument.value());
+        let class = unwrap_or_return_none!(class_argument.value());
+
+        if !is_supported_class_literal(&class) {
+            return Ok(None);
+        }
+
+        (
+            object.to_trimmed_text().to_string(),
+            class.to_trimmed_text().to_string(),
+        )
+    } else if S3_CLASS_PREDICATES.contains(&predicate_name.as_str()) {
+        // Check for `expect_true(is.<class>(x))`
+        if predicate_arguments.iter().count() != 1 {
+            return Ok(None);
+        }
+
+        let predicate_argument =
+            unwrap_or_return_none!(get_arg_by_position(&predicate_arguments, 1));
+        let object = unwrap_or_return_none!(predicate_argument.value());
+
+        // For example, "is.data.frame" -> "data.frame"
+        let class_name = unwrap_or_return_none!(predicate_name.strip_prefix("is."));
+        (
+            object.to_trimmed_text().to_string(),
+            format!("\"{class_name}\""),
+        )
+    } else {
         return Ok(None);
-    }
+    };
 
-    let predicate_argument = unwrap_or_return_none!(get_arg_by_position(&predicate_arguments, 1));
-    let object = unwrap_or_return_none!(predicate_argument.value());
-
-    // For example, "is.data.frame" -> "data.frame"
-    let object_text = object.to_trimmed_text();
-    let class_name = unwrap_or_return_none!(predicate_name.strip_prefix("is."));
-    let replacement = format!("expect_s3_class({object_text}, \"{class_name}\")");
+    let replacement = format!("expect_s3_class({object_text}, {class_text})");
     let linted_text = format!("expect_true({})", predicate_call.to_trimmed_text());
 
     let function = ast.function()?;

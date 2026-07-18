@@ -5,8 +5,8 @@
 ## What it does
 
 Checks for usage of `expect_equal(class(x), "y")`,
-`expect_identical(class(x), "y")`, and selected
-`expect_true(is.<class>(x))` calls.
+`expect_identical(class(x), "y")`, selected
+`expect_true(is.<class>(x))`, and `expect_true(inherits(x, "y"))` calls.
 
 ## Why is this bad?
 
@@ -49,6 +49,7 @@ the user will have to add `exact = TRUE` if necessary.
 expect_equal(class(x), "data.frame")
 expect_identical(class(x), "Date")
 expect_true(is.factor(x))
+expect_true(inherits(x, "foo"))
 ```
 
 Use instead:
@@ -56,4 +57,5 @@ Use instead:
 expect_s3_class(x, "data.frame")
 expect_s3_class(x, "Date")
 expect_s3_class(x, "factor")
+expect_s3_class(x, "foo")
 ```

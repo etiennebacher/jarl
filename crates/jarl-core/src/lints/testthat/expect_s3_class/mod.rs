@@ -60,6 +60,28 @@ mod tests {
         expect_no_lint("expect_true(is.data.frame())", "expect_s3_class", None);
         expect_no_lint("expect_true(is.data.frame(x, y))", "expect_s3_class", None);
         expect_no_lint("expect_true(is.data.frame(x =))", "expect_s3_class", None);
+        expect_no_lint("expect_true(inherits(x))", "expect_s3_class", None);
+        expect_no_lint("expect_true(inherits(x, classes))", "expect_s3_class", None);
+        expect_no_lint(
+            "expect_true(inherits(x, c('foo', 'bar')))",
+            "expect_s3_class",
+            None,
+        );
+        expect_no_lint(
+            "expect_true(inherits(x, 'matrix'))",
+            "expect_s3_class",
+            None,
+        );
+        expect_no_lint(
+            "expect_true(inherits(x, 'foo', which = TRUE))",
+            "expect_s3_class",
+            None,
+        );
+        expect_no_lint(
+            "expect_true(inherits(x, 'foo'), info = 'context')",
+            "expect_s3_class",
+            None,
+        );
     }
 
     #[test]
@@ -202,6 +224,48 @@ mod tests {
     }
 
     #[test]
+    fn test_lint_expect_s3_class_inherits() {
+        assert_snapshot!(
+            snapshot_lint("expect_true(inherits(foo$bar, \"Date\"))"),
+            @r#"
+        warning: expect_s3_class
+         --> <test>:1:1
+          |
+        1 | expect_true(inherits(foo$bar, "Date"))
+          | -------------------------------------- `expect_s3_class(foo$bar, "Date")` is better than `expect_true(inherits(foo$bar, "Date"))`.
+          |
+          = help: Use `expect_s3_class(foo$bar, "Date")` instead.
+        Found 1 error.
+        "#
+        );
+        assert_snapshot!(
+            snapshot_lint("testthat::expect_true(base::inherits(what = 'factor', x = foo(x)))"),
+            @"
+        warning: expect_s3_class
+         --> <test>:1:1
+          |
+        1 | testthat::expect_true(base::inherits(what = 'factor', x = foo(x)))
+          | ------------------------------------------------------------------ `expect_s3_class(foo(x), 'factor')` is better than `expect_true(base::inherits(what = 'factor', x = foo(x)))`.
+          |
+          = help: Use `expect_s3_class(foo(x), 'factor')` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            "inherits_fix_output",
+            get_fixed_text(
+                vec![
+                    "expect_true(inherits(foo$bar, \"Date\"))",
+                    "testthat::expect_true(base::inherits(what = 'factor', x = foo(x)))",
+                    "expect_true(inherits(x = foo(x), 'factor'))",
+                ],
+                "expect_s3_class",
+                None,
+            )
+        );
+    }
+
+    #[test]
     fn test_expect_s3_class_with_comments_no_fix() {
         // Should detect lint but skip fix when comments are present
         assert_snapshot!(
@@ -227,6 +291,7 @@ mod tests {
                     "expect_equal(class(x),\n # a comment \n'data.frame')",
                     "expect_equal(class(x), 'data.frame') # trailing comment",
                     "expect_true(is.data.frame(\n # a comment\n x))",
+                    "expect_true(inherits(x,\n # a comment\n 'factor'))",
                 ],
                 "expect_s3_class",
                 None
