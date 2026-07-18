@@ -1,7 +1,7 @@
 use crate::diagnostic::*;
 use crate::utils::{
-    get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
-    node_contains_comments,
+    get_arg_by_name_then_position, get_arg_by_position, get_function_name,
+    get_function_namespace_prefix, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
@@ -10,8 +10,9 @@ use biome_rowan::{AstNode, AstSeparatedList};
 ///
 /// ## What it does
 ///
-/// Checks for usage of `expect_equal(class(x), "y")` and
-/// `expect_identical(class(x), "y")`.
+/// Checks for usage of `expect_equal(class(x), "y")`,
+/// `expect_identical(class(x), "y")`, and selected
+/// `expect_true(is.<class>(x))` calls.
 ///
 /// ## Why is this bad?
 ///
@@ -28,6 +29,9 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// `"expect_s3_class"` or with the rule group `"TESTTHAT"`.
 ///
 /// This rule has a safe automatic fix but doesn't report cases where:
+///
+/// * an `is.*()` predicate is not known to test an S3 class. For example,
+///   `is.matrix(x)` does not imply that `x` is an S3 object.
 ///
 /// * `expect_s3_class()` would fail, such as:
 ///   ```r
@@ -50,101 +54,183 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// ```r
 /// expect_equal(class(x), "data.frame")
 /// expect_identical(class(x), "Date")
+/// expect_true(is.factor(x))
 /// ```
 ///
 /// Use instead:
 /// ```r
 /// expect_s3_class(x, "data.frame")
 /// expect_s3_class(x, "Date")
+/// expect_s3_class(x, "factor")
 /// ```
 pub fn expect_s3_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let function = ast.function()?;
-    let function_name = get_function_name(function.clone());
+    let function_name = get_function_name(function);
 
-    // Only check expect_equal and expect_identical
-    if function_name != "expect_equal" && function_name != "expect_identical" {
+    match function_name.as_str() {
+        "expect_equal" | "expect_identical" => check_expect_class_comparison(ast, &function_name),
+        "expect_true" => check_expect_true_is_class(ast),
+        _ => Ok(None),
+    }
+}
+
+fn check_expect_class_comparison(
+    ast: &RCall,
+    function_name: &str,
+) -> anyhow::Result<Option<Diagnostic>> {
+    let arguments = ast.arguments()?.items();
+
+    // The replacement cannot preserve additional expectation arguments.
+    if arguments.iter().count() != 2 {
         return Ok(None);
     }
 
-    let args = ast.arguments()?.items();
+    let object_argument =
+        unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "object", 1));
+    let expected_argument =
+        unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "expected", 2));
 
-    let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
-    let expected = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "expected", 2));
-
-    // Don't know how to handle argument `label` for instance.
-    if args.iter().count() > 2 {
-        return Ok(None);
-    }
-
-    let object_value = unwrap_or_return_none!(object.value());
-    let expected_value = unwrap_or_return_none!(expected.value());
+    let object_value = unwrap_or_return_none!(object_argument.value());
+    let expected_value = unwrap_or_return_none!(expected_argument.value());
+    let linted_text = format!(
+        "{function_name}({}, {})",
+        object_value.to_trimmed_text(),
+        expected_value.to_trimmed_text()
+    );
 
     // Find patterns like `expect_equal(class(x), 'y')` and `expect_equal('y', class(x))`.
-    let (class_arg, other_arg) = if let Some(object_call) = object_value.as_r_call() {
-        let obj_fn = object_call.function()?;
-        let obj_fn_name = get_function_name(obj_fn);
-
-        if obj_fn_name == "class" {
-            (object_call, expected_value)
-        } else {
-            return Ok(None);
-        }
-    } else if let Some(expected_call) = expected_value.as_r_call() {
-        let exp_fn = expected_call.function()?;
-        let exp_fn_name = get_function_name(exp_fn);
-
-        if exp_fn_name == "class" {
-            (expected_call, object_value)
-        } else {
-            return Ok(None);
-        }
+    let (class_call, class_expression) = if let Some(call) = as_class_call(&object_value)? {
+        (call, expected_value)
+    } else if let Some(call) = as_class_call(&expected_value)? {
+        (call, object_value)
     } else {
         return Ok(None);
     };
 
-    if !check_class_is_s3(&other_arg) {
+    if !is_supported_class_literal(&class_expression) {
         return Ok(None);
     }
 
     // Extract the argument of class()
-    let class_args = class_arg.arguments()?.items();
-    let class_x_arg = unwrap_or_return_none!(get_arg_by_name_then_position(&class_args, "x", 1));
-    let class_x_value = unwrap_or_return_none!(class_x_arg.value());
+    let class_arguments = class_call.arguments()?.items();
+    let class_object_argument =
+        unwrap_or_return_none!(get_arg_by_name_then_position(&class_arguments, "x", 1));
+    let class_object = unwrap_or_return_none!(class_object_argument.value());
 
-    let x_text = class_x_value.to_trimmed_text();
-    let n_text = other_arg.to_trimmed_text();
+    let object_text = class_object.to_trimmed_text();
+    let class_text = class_expression.to_trimmed_text();
+    let replacement = format!("expect_s3_class({object_text}, {class_text})");
 
     // Preserve namespace prefix if present
+    let function = ast.function()?;
     let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();
 
     let range = ast.syntax().text_trimmed_range();
-    let diagnostic = Diagnostic::new(
+
+    Ok(Some(Diagnostic::new(
         ViolationData::new(
             "expect_s3_class".to_string(),
-            format!(
-                "`{}(class(x), 'y')` may fail if `x` gets more classes in the future.",
-                function_name
-            ),
-            Some("Use `expect_s3_class(x, 'y')` instead.".to_string()),
+            format!("`{linted_text}` may fail if `{object_text}` gets more classes in the future."),
+            Some(format!("Use `{replacement}` instead.")),
         ),
         range,
         Fix {
             content: format!(
                 "{}expect_s3_class({}, {})",
-                namespace_prefix, x_text, n_text
+                namespace_prefix, object_text, class_text
             ),
             start: range.start().into(),
             end: range.end().into(),
             to_skip: node_contains_comments(ast.syntax()),
         },
-    );
-
-    Ok(Some(diagnostic))
+    )))
 }
+
+fn check_expect_true_is_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
+    let arguments = ast.arguments()?.items();
+
+    // skip patterns like `expect_true(is.data.frame(x), info = "context")`
+    if arguments.iter().count() != 1 {
+        return Ok(None);
+    }
+
+    let object_argument =
+        unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "object", 1));
+    let object_value = unwrap_or_return_none!(object_argument.value());
+    let predicate_call = unwrap_or_return_none!(object_value.as_r_call());
+    let predicate_name = get_function_name(predicate_call.function()?);
+
+    if !S3_CLASS_PREDICATES.contains(&predicate_name.as_str()) {
+        return Ok(None);
+    }
+
+    let predicate_arguments = predicate_call.arguments()?.items();
+    if predicate_arguments.iter().count() != 1 {
+        return Ok(None);
+    }
+
+    let predicate_argument = unwrap_or_return_none!(get_arg_by_position(&predicate_arguments, 1));
+    let object = unwrap_or_return_none!(predicate_argument.value());
+
+    // For example, "is.data.frame" -> "data.frame"
+    let object_text = object.to_trimmed_text();
+    let class_name = unwrap_or_return_none!(predicate_name.strip_prefix("is."));
+    let replacement = format!("expect_s3_class({object_text}, \"{class_name}\")");
+    let linted_text = format!("expect_true({})", predicate_call.to_trimmed_text());
+
+    let function = ast.function()?;
+    let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();
+    let range = ast.syntax().text_trimmed_range();
+
+    Ok(Some(Diagnostic::new(
+        ViolationData::new(
+            "expect_s3_class".to_string(),
+            format!("`{replacement}` is better than `{linted_text}`."),
+            Some(format!("Use `{replacement}` instead.")),
+        ),
+        range,
+        Fix {
+            content: format!("{namespace_prefix}{replacement}"),
+            start: range.start().into(),
+            end: range.end().into(),
+            to_skip: node_contains_comments(ast.syntax()),
+        },
+    )))
+}
+
+fn as_class_call(expression: &AnyRExpression) -> anyhow::Result<Option<&RCall>> {
+    let Some(call) = expression.as_r_call() else {
+        return Ok(None);
+    };
+
+    Ok((get_function_name(call.function()?) == "class").then_some(call))
+}
+
+// This list follows lintr's manually curated set of predicates that test S3 classes.
+// See https://github.com/r-lib/lintr/blob/main/R/expect_s3_class_linter.R
+const S3_CLASS_PREDICATES: &[&str] = &[
+    "is.data.frame",
+    "is.factor",
+    "is.numeric_version",
+    "is.ordered",
+    "is.package_version",
+    "is.qr",
+    "is.table",
+    "is.relistable",
+    "is.raster",
+    "is.tclObj",
+    "is.tkwin",
+    "is.grob",
+    "is.unit",
+    "is.mts",
+    "is.stepfun",
+    "is.ts",
+    "is.tskernel",
+];
 
 // https://github.com/wch/r-source/blob/e945946d165f3d9d2afa2e214a39aa4af61be45c/src/main/util.c#L209-L240
 // Link provided in https://github.com/etiennebacher/jarl/issues/232#issuecomment-3632266565
-pub static IGNORED_CLASSES: &[&str] = &[
+const NON_S3_CLASSES: &[&str] = &[
     "NULL",
     "symbol",
     "pairlist",
@@ -163,7 +249,6 @@ pub static IGNORED_CLASSES: &[&str] = &[
     "...",
     "any",
     "expression",
-    "list",
     "externalptr",
     "bytecode",
     "weakref",
@@ -180,18 +265,16 @@ pub static IGNORED_CLASSES: &[&str] = &[
     "function",
 ];
 
-fn check_class_is_s3(x: &AnyRExpression) -> bool {
-    if let Some(x) = x.as_any_r_value()
-        && let Some(x) = x.as_r_string_value()
-    {
-        !IGNORED_CLASSES.contains(
-            &x.to_trimmed_text()
-                .to_string()
-                .replace("\"", "")
-                .replace("'", "")
-                .as_str(),
-        )
-    } else {
-        false
-    }
+fn is_supported_class_literal(expression: &AnyRExpression) -> bool {
+    let Some(string) = expression
+        .as_any_r_value()
+        .and_then(|value| value.as_r_string_value())
+    else {
+        return false;
+    };
+
+    let content = string.content_token();
+    let class_name = content.as_ref().map_or("", |token| token.text_trimmed());
+
+    !NON_S3_CLASSES.contains(&class_name)
 }

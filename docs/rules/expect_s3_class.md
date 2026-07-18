@@ -4,8 +4,9 @@
 
 ## What it does
 
-Checks for usage of `expect_equal(class(x), "y")` and
-`expect_identical(class(x), "y")`.
+Checks for usage of `expect_equal(class(x), "y")`,
+`expect_identical(class(x), "y")`, and selected
+`expect_true(is.<class>(x))` calls.
 
 ## Why is this bad?
 
@@ -22,6 +23,9 @@ This rule is **disabled by default**. Select it either with the rule name
 `"expect_s3_class"` or with the rule group `"TESTTHAT"`.
 
 This rule has a safe automatic fix but doesn't report cases where:
+
+* an `is.*()` predicate is not known to test an S3 class. For example,
+  `is.matrix(x)` does not imply that `x` is an S3 object.
 
 * `expect_s3_class()` would fail, such as:
   ```r
@@ -44,10 +48,12 @@ the user will have to add `exact = TRUE` if necessary.
 ```r
 expect_equal(class(x), "data.frame")
 expect_identical(class(x), "Date")
+expect_true(is.factor(x))
 ```
 
 Use instead:
 ```r
 expect_s3_class(x, "data.frame")
 expect_s3_class(x, "Date")
+expect_s3_class(x, "factor")
 ```
