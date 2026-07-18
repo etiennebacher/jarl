@@ -559,6 +559,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    RepLen => {
+        name: "rep_len",
+        categories: [Read],
+        default: Enabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     Repeat => {
         name: "repeat",
         categories: [Read],

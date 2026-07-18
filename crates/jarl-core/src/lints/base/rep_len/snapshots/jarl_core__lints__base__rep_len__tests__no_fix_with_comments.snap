@@ -1,0 +1,30 @@
+---
+source: crates/jarl-core/src/lints/base/rep_len/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"# leading comment\\nrep(x, length.out = 4L)\",\n\"rep(x,\\n  # comment\\n  length.out = 4L)\",\n\"rep(x, length.out = 4L) # trailing comment\",], \"rep_len\",)"
+---
+OLD:
+====
+# leading comment
+rep(x, length.out = 4L)
+NEW:
+====
+# leading comment
+rep_len(x, 4L)
+
+OLD:
+====
+rep(x,
+  # comment
+  length.out = 4L)
+NEW:
+====
+rep(x,
+  # comment
+  length.out = 4L)
+
+OLD:
+====
+rep(x, length.out = 4L) # trailing comment
+NEW:
+====
+rep_len(x, 4L) # trailing comment
