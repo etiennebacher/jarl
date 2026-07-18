@@ -82,6 +82,9 @@ pub fn rep_len(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     };
     let object = unwrap_or_return_none!(object_argument.value());
     let length = unwrap_or_return_none!(length_argument.value());
+    if length.as_r_na_expression().is_some() {
+        return Ok(None);
+    }
 
     let range = ast.syntax().text_trimmed_range();
     let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();

@@ -23,6 +23,9 @@ mod tests {
         expect_no_lint("rep(a, b, length.out = c, d)", "rep_len", None);
         expect_no_lint("rep(a, b, c, d)", "rep_len", None);
         expect_no_lint("rep(x, length.out =)", "rep_len", None);
+        expect_no_lint("rep(x, length.out = NA)", "rep_len", None);
+        expect_no_lint("rep(x, times = 2, length.out = NA)", "rep_len", None);
+        expect_no_lint("rep(x, length.out = NA_integer_)", "rep_len", None);
         expect_no_lint("rep_len(x, 10)", "rep_len", None);
     }
 
