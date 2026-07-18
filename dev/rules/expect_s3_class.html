@@ -921,32 +921,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="what-it-does" class="level2">
 <h2 class="anchored" data-anchor-id="what-it-does">What it does</h2>
-<p>Checks for usage of <code>expect_equal(class(x), "y")</code> and <code>expect_identical(class(x), "y")</code>.</p>
+<p>Checks for usage of <code>expect_equal(class(x), "y")</code>, <code>expect_identical(class(x), "y")</code>, selected <code>expect_true(is.&lt;class&gt;(x))</code>, and <code>expect_true(inherits(x, "y"))</code> calls.</p>
 </section>
 <section id="why-is-this-bad" class="level2">
 <h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
 <p><code>expect_equal(class(x), "y")</code> will fail if <code>x</code> gets more classes in the future, even if <code>"y"</code> is still one of those classes. <code>expect_s3_class(x, "y")</code> is more robust because the test success doesn’t depend on the number or on the order of classes of <code>x</code>. This function also gives clearer error messages in case of failure.</p>
 <p>To test that <code>x</code> only has the class <code>"y"</code>, then one can use <code>expect_s3_class(x, "y", exact = TRUE)</code>.</p>
 <p>This rule is <strong>disabled by default</strong>. Select it either with the rule name <code>"expect_s3_class"</code> or with the rule group <code>"TESTTHAT"</code>.</p>
-<p>This rule has a safe automatic fix but doesn’t report cases where:</p>
+<p>This rule has a safe automatic fix for statically supported class names. Dynamic class expressions are reported without an automatic fix because they could contain classes that are not supported by <code>expect_s3_class()</code>.</p>
+<p>This rule doesn’t report cases where:</p>
 <ul>
+<li><p>the <code>is.*()</code> predicate does not test an S3 class. For example, <code>is.matrix(x)</code> does not imply that <code>x</code> is an S3 object.</p></li>
 <li><p><code>expect_s3_class()</code> would fail, such as:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>testthat<span class="sc">::</span><span class="fu">expect_s3_class</span>(<span class="fu">list</span>(<span class="dv">1</span>), <span class="st">"list"</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>testthat<span class="sc">::</span><span class="fu">expect_s3_class</span>(<span class="dv">1</span>L, <span class="st">"integer"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>For those cases, it is recommended to use <code>expect_type()</code> instead.</p></li>
-<li><p>the <code>expected</code> object could have multiple values, such as:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>testthat<span class="sc">::</span><span class="fu">expect_equal</span>(<span class="fu">class</span>(x), <span class="fu">c</span>(<span class="st">"foo"</span>, <span class="st">"bar"</span>))</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>testthat<span class="sc">::</span><span class="fu">expect_equal</span>(<span class="fu">class</span>(x), vec_of_classes)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
 </ul>
 <p>Finally, the intent of the test cannot be inferred with the code only, so the user will have to add <code>exact = TRUE</code> if necessary.</p>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">expect_equal</span>(<span class="fu">class</span>(x), <span class="st">"data.frame"</span>)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">expect_identical</span>(<span class="fu">class</span>(x), <span class="st">"Date"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">expect_equal</span>(<span class="fu">class</span>(x), <span class="st">"data.frame"</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">expect_identical</span>(<span class="fu">class</span>(x), <span class="st">"Date"</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">expect_true</span>(<span class="fu">is.factor</span>(x))</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">expect_true</span>(<span class="fu">inherits</span>(x, <span class="st">"foo"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Use instead:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">expect_s3_class</span>(x, <span class="st">"data.frame"</span>)</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">expect_s3_class</span>(x, <span class="st">"Date"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">expect_s3_class</span>(x, <span class="st">"data.frame"</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">expect_s3_class</span>(x, <span class="st">"Date"</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">expect_s3_class</span>(x, <span class="st">"factor"</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">expect_s3_class</span>(x, <span class="st">"foo"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>
