@@ -1,7 +1,7 @@
 use crate::diagnostic::*;
 use crate::utils::{
-    get_arg_by_name, get_arg_by_name_then_position, get_arg_by_position, get_function_name,
-    get_function_namespace_prefix, get_unnamed_arg_by_position, node_contains_comments,
+    get_arg_by_name_then_position, get_arg_by_position, get_function_name,
+    get_function_namespace_prefix, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
@@ -73,6 +73,7 @@ pub fn expect_s3_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     }
 }
 
+/// Checks comparisons such as `expect_equal(class(x), "data.frame")`.
 fn check_expect_class_comparison(
     ast: &RCall,
     function_name: &str,
@@ -84,8 +85,18 @@ fn check_expect_class_comparison(
         return Ok(None);
     }
 
-    let (object_argument, expected_argument) =
-        unwrap_or_return_none!(get_two_arguments(&arguments, "object", "expected"));
+    let object_argument =
+        unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "object", 1));
+    let expected_position = if object_argument.name_clause().is_some() {
+        1
+    } else {
+        2
+    };
+    let expected_argument = unwrap_or_return_none!(get_arg_by_name_then_position(
+        &arguments,
+        "expected",
+        expected_position,
+    ));
 
     let object_value = unwrap_or_return_none!(object_argument.value());
     let expected_value = unwrap_or_return_none!(expected_argument.value());
@@ -149,6 +160,8 @@ fn check_expect_class_comparison(
     )))
 }
 
+/// Checks `expect_true()` calls containing `inherits()` or a known S3 predicate,
+/// such as `expect_true(inherits(x, "foo"))` and `expect_true(is.factor(x))`.
 fn check_expect_true_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let arguments = ast.arguments()?.items();
 
@@ -200,19 +213,32 @@ fn check_expect_true_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     )))
 }
 
+/// The object, expected class, and fix safety extracted from a class check.
+///
+/// For example, `inherits(x, "foo")` produces `x`, `"foo"`, and a safe fix.
 struct ClassCheck {
     object_text: String,
     class_text: String,
     can_fix: bool,
 }
 
+/// Extracts the object and class from a call such as `inherits(x, "foo")`.
 fn extract_inherits_check(arguments: &RArgumentList) -> anyhow::Result<Option<ClassCheck>> {
     if arguments.iter().count() != 2 {
         return Ok(None);
     }
 
-    let (object_argument, class_argument) =
-        unwrap_or_return_none!(get_two_arguments(arguments, "x", "what"));
+    let object_argument = unwrap_or_return_none!(get_arg_by_name_then_position(arguments, "x", 1));
+    let class_position = if object_argument.name_clause().is_some() {
+        1
+    } else {
+        2
+    };
+    let class_argument = unwrap_or_return_none!(get_arg_by_name_then_position(
+        arguments,
+        "what",
+        class_position,
+    ));
     let object = unwrap_or_return_none!(object_argument.value());
     let class = unwrap_or_return_none!(class_argument.value());
     let can_fix = match classify_class_expression(&class) {
@@ -228,25 +254,8 @@ fn extract_inherits_check(arguments: &RArgumentList) -> anyhow::Result<Option<Cl
     }))
 }
 
-fn get_two_arguments(
-    arguments: &RArgumentList,
-    first_name: &str,
-    second_name: &str,
-) -> Option<(RArgument, RArgument)> {
-    match (
-        get_arg_by_name(arguments, first_name),
-        get_arg_by_name(arguments, second_name),
-    ) {
-        (Some(first), Some(second)) => Some((first, second)),
-        (Some(first), None) => Some((first, get_unnamed_arg_by_position(arguments, 1)?)),
-        (None, Some(second)) => Some((get_unnamed_arg_by_position(arguments, 1)?, second)),
-        (None, None) => Some((
-            get_unnamed_arg_by_position(arguments, 1)?,
-            get_unnamed_arg_by_position(arguments, 2)?,
-        )),
-    }
-}
-
+/// Converts a known predicate such as `is.factor(x)` into object `x` and class
+/// `"factor"`.
 fn extract_predicate_check(
     predicate_name: &str,
     arguments: &RArgumentList,
@@ -266,12 +275,15 @@ fn extract_predicate_check(
     }))
 }
 
+/// Returns the call when an expression has the form `class(x)`.
 fn as_class_call(expression: &AnyRExpression) -> anyhow::Result<Option<&RCall>> {
-    let Some(call) = expression.as_r_call() else {
-        return Ok(None);
-    };
-
-    Ok((get_function_name(call.function()?) == "class").then_some(call))
+    if let Some(call) = expression.as_r_call()
+        && get_function_name(call.function()?) == "class"
+    {
+        Ok(Some(call))
+    } else {
+        Ok(None)
+    }
 }
 
 // This list follows lintr's manually curated set of predicates that test S3 classes.
@@ -334,6 +346,9 @@ const NON_S3_CLASSES: &[&str] = &[
 ];
 
 /// Classifies a class expression according to whether the rule can safely fix it.
+///
+/// For example, `"Date"` is supported, `"integer"` is unsupported, and a
+/// variable such as `expected_class` is dynamic.
 enum ClassExpressionKind {
     /// A string literal naming a class supported by `expect_s3_class()`.
     SupportedLiteral,
@@ -343,6 +358,7 @@ enum ClassExpressionKind {
     Dynamic,
 }
 
+/// Classifies the class argument used by `expect_s3_class()`.
 fn classify_class_expression(expression: &AnyRExpression) -> ClassExpressionKind {
     let Some(string) = expression
         .as_any_r_value()
