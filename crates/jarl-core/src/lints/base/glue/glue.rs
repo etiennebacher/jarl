@@ -1,7 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{
-    get_arg_by_name, get_function_name, get_function_namespace_prefix, get_unnamed_args,
-};
+use crate::utils::{get_arg_by_name, get_unnamed_args};
 use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -46,15 +44,16 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// See `?glue::glue`
-pub fn glue(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let fn_name = get_function_name(ast.function()?);
-    let fn_ns = get_function_namespace_prefix(ast.function()?);
-
+pub fn glue(
+    ast: &RCall,
+    fn_name: &str,
+    ns_prefix: Option<&str>,
+) -> anyhow::Result<Option<Diagnostic>> {
     // Only trigger on `glue()` or `glue::glue()`
     if fn_name != "glue" {
         return Ok(None);
     }
-    if let Some(ref ns) = fn_ns
+    if let Some(ns) = ns_prefix
         && ns != "glue::"
     {
         return Ok(None);

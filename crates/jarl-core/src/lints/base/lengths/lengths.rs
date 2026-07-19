@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name_then_position, get_function_name, node_contains_comments};
+use crate::utils::{get_arg_by_name_then_position, node_contains_comments};
 use air_r_syntax::*;
 use anyhow::Context;
 use biome_rowan::AstNode;
@@ -47,17 +47,13 @@ impl Violation for Lengths {
     }
 }
 
-pub fn lengths(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let RCallFields { function, arguments } = ast.as_fields();
-    let function = function?;
-    let fn_name = get_function_name(function);
-
+pub fn lengths(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     let funs_to_watch = ["sapply", "vapply", "map_dbl", "map_int"];
-    if !funs_to_watch.contains(&fn_name.as_str()) {
+    if !funs_to_watch.contains(&fn_name) {
         return Ok(None);
     }
 
-    let arguments = arguments?.items();
+    let arguments = ast.arguments()?.items();
     let arg_x = get_arg_by_name_then_position(&arguments, "x", 1);
     let arg_fun = get_arg_by_name_then_position(&arguments, "FUN", 2);
 

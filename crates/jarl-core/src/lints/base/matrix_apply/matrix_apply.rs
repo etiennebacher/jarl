@@ -1,7 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{
-    get_arg_by_name, get_arg_by_name_then_position, get_function_name, node_contains_comments,
-};
+use crate::utils::{get_arg_by_name, get_arg_by_name_then_position, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 use biome_rowan::AstSeparatedList;
@@ -55,10 +53,7 @@ use biome_rowan::AstSeparatedList;
 /// ## References
 ///
 /// See `?colSums`
-pub fn matrix_apply(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let fn_name = get_function_name(function);
-
+pub fn matrix_apply(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "apply" {
         return Ok(None);
     }

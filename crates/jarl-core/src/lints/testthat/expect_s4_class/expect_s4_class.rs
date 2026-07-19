@@ -34,11 +34,9 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// ```r
 /// expect_s4_class(x, "Matrix")
 /// ```
-pub fn expect_s4_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-
+pub fn expect_s4_class(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Only check expect_true
-    if get_function_name(function.clone()) != "expect_true" {
+    if fn_name != "expect_true" {
         return Ok(None);
     }
 
@@ -72,7 +70,7 @@ pub fn expect_s4_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let replacement = format!("expect_s4_class({object_text}, {class_text})");
     let linted_text = format!("expect_true({})", is_call.to_trimmed_text());
 
-    let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();
+    let namespace_prefix = get_function_namespace_prefix(ast.function()?).unwrap_or_default();
     let range = ast.syntax().text_trimmed_range();
 
     Ok(Some(Diagnostic::new(

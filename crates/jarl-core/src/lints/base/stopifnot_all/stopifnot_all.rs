@@ -50,11 +50,11 @@ impl Violation for StopifnotAll {
     }
 }
 
-pub fn stopifnot_all(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
+pub fn stopifnot_all(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Start from `all()` because it can appear in any argument of `stopifnot()`,
     // then verify that the containing call is `stopifnot()`.
 
-    if get_function_name(ast.function()?) != "all" {
+    if fn_name != "all" {
         return Ok(None);
     }
 

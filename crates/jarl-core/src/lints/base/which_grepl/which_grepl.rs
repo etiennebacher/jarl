@@ -45,9 +45,10 @@ impl Violation for WhichGrepl {
     }
 }
 
-pub fn which_grepl(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let (inner_content, outer_syntax) =
-        unwrap_or_return_none!(get_nested_functions_content(ast, "which", "grepl")?);
+pub fn which_grepl(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
+    let (inner_content, outer_syntax) = unwrap_or_return_none!(get_nested_functions_content(
+        ast, fn_name, "which", "grepl"
+    )?);
 
     let range = outer_syntax.text_trimmed_range();
     Ok(Some(Diagnostic::new(
