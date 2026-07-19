@@ -40,6 +40,7 @@ pub(crate) mod nzchar;
 pub(crate) mod outer_negation;
 pub(crate) mod pipe_consistency;
 pub(crate) mod pipe_return;
+pub(crate) mod positional_arguments;
 pub(crate) mod quotes;
 pub(crate) mod redundant_equals;
 pub(crate) mod redundant_ifelse;

@@ -1,0 +1,79 @@
+use crate::checker::Checker;
+use crate::diagnostic::*;
+use crate::utils::{get_function_name, get_unnamed_args};
+use air_r_syntax::*;
+use biome_rowan::AstNode;
+
+/// Version added: 0.6.0
+///
+/// ## What it does
+///
+/// Reports function calls that use more than a configurable number of positional
+/// (unnamed) arguments.
+///
+/// ## Why is this bad?
+///
+/// Relying on argument position forces the reader to remember the function's
+/// signature to understand what each value means, and makes calls fragile to
+/// changes in the argument order. Naming the arguments documents intent at the
+/// call site and is more robust.
+///
+/// The maximum number of allowed positional arguments is 3 by default and can
+/// be customized with the `max-positional-args` option in `jarl.toml` (see [rule-specific arguments](https://jarl.etiennebacher.com/reference/config-file#rule-specific-arguments)).
+///
+/// Variadic functions whose positional arguments are idiomatic, such as `c()`,
+/// `paste()` and `paste0()`, are skipped by default. The list of skipped
+/// functions can be customized with `skipped-functions` / `extend-skipped-functions`.
+///
+/// ## Example
+///
+/// ```r
+/// grepl("a", x, TRUE, FALSE)
+/// ```
+///
+/// Use instead:
+///
+/// ```r
+/// grepl("a", x, ignore.case = TRUE, perl = FALSE)
+/// ```
+pub fn positional_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Option<Diagnostic>> {
+    let options = &checker.rule_options.positional_arguments;
+
+    let function_name = get_function_name(ast.function()?);
+    if options.skipped_functions.contains(&function_name) {
+        return Ok(None);
+    }
+
+    // Count unnamed arguments, but not the `...` forwarding argument: it stands
+    // for arguments passed from the enclosing function, which cannot be named
+    // here.
+    let args = ast.arguments()?.items();
+    let n_positional = get_unnamed_args(&args)
+        .iter()
+        .filter(|arg| !matches!(arg.value(), Some(AnyRExpression::RDots(_))))
+        .count();
+
+    if n_positional <= options.max_positional_args {
+        return Ok(None);
+    }
+
+    let plural = if n_positional > 1 {
+        "arguments"
+    } else {
+        "argument"
+    };
+    let range = ast.syntax().text_trimmed_range();
+    let diagnostic = Diagnostic::new(
+        ViolationData::new(
+            "positional_arguments".to_string(),
+            format!(
+                "Calling a function with {n_positional} positional {plural} can be hard to read and is prone to mistakes."
+            ),
+            Some("Name the arguments to clarify what each value refers to.".to_string()),
+        ),
+        range,
+        Fix::empty(),
+    );
+
+    Ok(Some(diagnostic))
+}

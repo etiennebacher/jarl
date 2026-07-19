@@ -14,6 +14,8 @@ use crate::lints::base::nested_pipe::options::NestedPipeOptions;
 use crate::lints::base::nested_pipe::options::ResolvedNestedPipeOptions;
 use crate::lints::base::pipe_consistency::options::PipeConsistencyOptions;
 use crate::lints::base::pipe_consistency::options::ResolvedPipeConsistencyOptions;
+use crate::lints::base::positional_arguments::options::PositionalArgumentsOptions;
+use crate::lints::base::positional_arguments::options::ResolvedPositionalArgumentsOptions;
 use crate::lints::base::quotes::options::QuotesOptions;
 use crate::lints::base::quotes::options::ResolvedQuotesOptions;
 use crate::lints::base::true_false_symbol::options::ResolvedTrueFalseSymbolOptions;
@@ -78,6 +80,7 @@ pub struct ResolvedRuleOptions {
     pub missing_argument: ResolvedMissingArgumentOptions,
     pub nested_pipe: ResolvedNestedPipeOptions,
     pub pipe_consistency: ResolvedPipeConsistencyOptions,
+    pub positional_arguments: ResolvedPositionalArgumentsOptions,
     pub quotes: ResolvedQuotesOptions,
     pub true_false_symbol: ResolvedTrueFalseSymbolOptions,
     pub undesirable_function: ResolvedUndesirableFunctionOptions,
@@ -95,6 +98,7 @@ impl ResolvedRuleOptions {
         missing_argument: Option<&MissingArgumentOptions>,
         nested_pipe: Option<&NestedPipeOptions>,
         pipe_consistency: Option<&PipeConsistencyOptions>,
+        positional_arguments: Option<&PositionalArgumentsOptions>,
         quotes: Option<&QuotesOptions>,
         true_false_symbol: Option<&TrueFalseSymbolOptions>,
         undesirable_function: Option<&UndesirableFunctionOptions>,
@@ -111,6 +115,9 @@ impl ResolvedRuleOptions {
             missing_argument: ResolvedMissingArgumentOptions::resolve(missing_argument)?,
             nested_pipe: ResolvedNestedPipeOptions::resolve(nested_pipe)?,
             pipe_consistency: ResolvedPipeConsistencyOptions::resolve(pipe_consistency)?,
+            positional_arguments: ResolvedPositionalArgumentsOptions::resolve(
+                positional_arguments,
+            )?,
             quotes: ResolvedQuotesOptions::resolve(quotes)?,
             true_false_symbol: ResolvedTrueFalseSymbolOptions::resolve(true_false_symbol)?,
             undesirable_function: ResolvedUndesirableFunctionOptions::resolve(
@@ -125,7 +132,7 @@ impl ResolvedRuleOptions {
 impl Default for ResolvedRuleOptions {
     fn default() -> Self {
         Self::resolve(
-            None, None, None, None, None, None, None, None, None, None, None, None,
+            None, None, None, None, None, None, None, None, None, None, None, None, None,
         )
         .expect("default rule options should always resolve")
     }
