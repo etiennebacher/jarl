@@ -36,6 +36,10 @@
   to list functions whose arguments are allowed to contain the `T` and `F`
   symbols (#542).
 
+* `expect_s3_class` now also reports selected `expect_true(is.<class>(x))`,
+  `expect_true(inherits(x, class))`, and dynamic class expressions. Dynamic
+  class expressions are reported without an automatic fix (#555, @Yousa-Mirage).
+
 * The CLI now suggests close rule names when some rule names don't exist (#501).
 
 * New `--output-format sarif` to export to [SARIF](https://sarifweb.azurewebsites.net/) (#508, @dieghernan).
