@@ -1,7 +1,6 @@
 use crate::diagnostic::*;
 use crate::utils::{
-    get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
-    node_contains_comments,
+    get_arg_by_name_then_position, get_function_namespace_prefix, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -34,12 +33,9 @@ use biome_rowan::AstNode;
 /// expect_true(is.numeric(x))
 /// expect_false(is.character(y))
 /// ```
-pub fn expect_true_false(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let function_name = get_function_name(function.clone());
-
+pub fn expect_true_false(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Check if this is expect_equal or expect_identical
-    if function_name != "expect_equal" && function_name != "expect_identical" {
+    if fn_name != "expect_equal" && fn_name != "expect_identical" {
         return Ok(None);
     }
 
@@ -78,7 +74,7 @@ pub fn expect_true_false(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             "expect_true",
             format!(
                 "`{}(x, TRUE)` is not as clear as `expect_true(x)`.",
-                function_name
+                fn_name
             ),
             "Use `expect_true(x)` instead.",
         )
@@ -87,14 +83,14 @@ pub fn expect_true_false(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             "expect_false",
             format!(
                 "`{}(x, FALSE)` is not as clear as `expect_false(x)`.",
-                function_name
+                fn_name
             ),
             "Use `expect_false(x)` instead.",
         )
     };
 
     // Preserve namespace prefix if present
-    let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();
+    let namespace_prefix = get_function_namespace_prefix(ast.function()?).unwrap_or_default();
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(

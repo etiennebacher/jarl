@@ -1,5 +1,4 @@
 use crate::diagnostic::*;
-use crate::utils::get_function_name;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -46,10 +45,7 @@ impl Violation for Browser {
     }
 }
 
-pub fn browser(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let fn_name = get_function_name(function);
-
+pub fn browser(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "browser" {
         return Ok(None);
     }

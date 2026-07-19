@@ -1,7 +1,6 @@
 use crate::diagnostic::*;
 use crate::utils::{
-    drop_arg_by_name_or_position, get_arg_by_name_then_position, get_function_name,
-    node_contains_comments,
+    drop_arg_by_name_or_position, get_arg_by_name_then_position, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -48,16 +47,12 @@ impl Violation for SampleInt {
     }
 }
 
-pub fn sample_int(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let RCallFields { function, arguments } = ast.as_fields();
-
-    let function = function?;
-    let fn_name = get_function_name(function);
-    let args = arguments?.items();
-
+pub fn sample_int(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "sample" {
         return Ok(None);
     }
+
+    let args = ast.arguments()?.items();
 
     let n = get_arg_by_name_then_position(&args, "n", 1);
 

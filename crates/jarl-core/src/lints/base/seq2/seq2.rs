@@ -42,11 +42,8 @@ use biome_rowan::{AstNode, AstSeparatedList};
 ///   print("hi")
 /// }
 /// ```
-pub fn seq2(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let outer_fn_name = get_function_name(function);
-
-    if outer_fn_name != "seq" {
+pub fn seq2(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
+    if fn_name != "seq" {
         return Ok(None);
     }
 

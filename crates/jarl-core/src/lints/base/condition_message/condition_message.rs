@@ -27,14 +27,14 @@ use biome_rowan::AstNode;
 /// stop('hello ', 'there')
 /// warning('hello ', 'there')
 /// ```
-pub fn condition_message(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let orig_fn = get_function_name(ast.function()?);
-    if orig_fn != "stop" && orig_fn != "warning" {
+pub fn condition_message(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
+    if fn_name != "stop" && fn_name != "warning" {
         return Ok(None);
     }
 
-    let (inner_content, outer_syntax) =
-        unwrap_or_return_none!(get_nested_functions_content(ast, &orig_fn, "paste0")?);
+    let (inner_content, outer_syntax) = unwrap_or_return_none!(get_nested_functions_content(
+        ast, fn_name, fn_name, "paste0"
+    )?);
 
     // `stop()` doesn't have equivalents for recycle0 or collapse args, so bail
     // early
@@ -72,12 +72,12 @@ pub fn condition_message(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     Ok(Some(Diagnostic::new(
         ViolationData::new(
             "condition_message".to_string(),
-            format!("`{}(paste0(...))` can be simplified.", orig_fn),
-            Some(format!("Use `{}(...)` instead.", orig_fn)),
+            format!("`{}(paste0(...))` can be simplified.", fn_name),
+            Some(format!("Use `{}(...)` instead.", fn_name)),
         ),
         range,
         Fix {
-            content: format!("{}({})", orig_fn, new_content),
+            content: format!("{}({})", fn_name, new_content),
             start: range.start().into(),
             end: range.end().into(),
             to_skip: node_contains_comments(&outer_syntax),

@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name_then_position, get_function_name, node_contains_comments};
+use crate::utils::{get_arg_by_name_then_position, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
@@ -39,10 +39,7 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// x %in% letters
 /// !(x > 1) # (or `x <= 1`)
 /// ```
-pub fn redundant_ifelse(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let fn_name = get_function_name(function);
-
+pub fn redundant_ifelse(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "ifelse" && fn_name != "if_else" && fn_name != "fifelse" {
         return Ok(None);
     }
@@ -55,7 +52,7 @@ pub fn redundant_ifelse(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    let (arg_cond, arg_true, arg_false) = match fn_name.as_str() {
+    let (arg_cond, arg_true, arg_false) = match fn_name {
         "ifelse" => (
             unwrap_or_return_none!(get_arg_by_name_then_position(&args, "test", 1)),
             unwrap_or_return_none!(get_arg_by_name_then_position(&args, "yes", 2)),

@@ -52,18 +52,16 @@ impl Violation for ExpectNoMatch {
     }
 }
 
-pub fn expect_no_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
+pub fn expect_no_match(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     let range = ast.syntax().text_trimmed_range();
-    let function = ast.function()?;
-    let function_name = get_function_name(function.clone());
-    if function_name != "expect_false" {
+    if fn_name != "expect_false" {
         return Ok(None);
     }
 
     // For pipe cases (`grepl(...) |> expect_false()`), lint but skip fix.
     // Fix seems reasonably complex as x & pattern position are swapped
     if let Some((_inner_content, outer_syntax)) =
-        get_nested_functions_content(ast, "expect_false", "grepl")?
+        get_nested_functions_content(ast, fn_name, "expect_false", "grepl")?
         && outer_syntax.kind() == RSyntaxKind::R_BINARY_EXPRESSION
     {
         // Ignore negated pipe (e.g. `!grepl(...) |> expect_false()`) false positive.
@@ -144,7 +142,7 @@ pub fn expect_no_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         .collect::<Vec<_>>();
 
     // Preserve namespace prefix if present
-    let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();
+    let namespace_prefix = get_function_namespace_prefix(ast.function()?).unwrap_or_default();
 
     let diagnostic = Diagnostic::new(
         ExpectNoMatch,

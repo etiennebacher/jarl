@@ -40,9 +40,10 @@ impl Violation for LengthLevels {
     }
 }
 
-pub fn length_levels(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let (inner_content, outer_syntax) =
-        unwrap_or_return_none!(get_nested_functions_content(ast, "length", "levels")?);
+pub fn length_levels(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
+    let (inner_content, outer_syntax) = unwrap_or_return_none!(get_nested_functions_content(
+        ast, fn_name, "length", "levels"
+    )?);
 
     let range = outer_syntax.text_trimmed_range();
     Ok(Some(Diagnostic::new(
