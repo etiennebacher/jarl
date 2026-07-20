@@ -61,14 +61,35 @@ pub fn resolve_with_extend(
     }
 }
 
+/// Borrowed per-rule TOML options, grouped so they can be resolved in one go.
+///
+/// Fields default to `None` (no `[lint.<rule>]` table in the TOML), so call
+/// sites only need to name the options they actually have.
+#[derive(Debug, Default)]
+pub struct RuleOptions<'a> {
+    pub assignment: Option<&'a AssignmentOptions>,
+    pub duplicated_arguments: Option<&'a DuplicatedArgumentsOptions>,
+    pub if_not_else: Option<&'a IfNotElseOptions>,
+    pub implicit_assignment: Option<&'a ImplicitAssignmentOptions>,
+    pub missing_argument: Option<&'a MissingArgumentOptions>,
+    pub nested_pipe: Option<&'a NestedPipeOptions>,
+    pub pipe_consistency: Option<&'a PipeConsistencyOptions>,
+    pub quotes: Option<&'a QuotesOptions>,
+    pub true_false_symbol: Option<&'a TrueFalseSymbolOptions>,
+    pub undesirable_function: Option<&'a UndesirableFunctionOptions>,
+    pub unreachable_code: Option<&'a UnreachableCodeOptions>,
+    pub unused_function: Option<&'a UnusedFunctionOptions>,
+}
+
 /// Resolved per-rule options, ready for use during linting.
 ///
 /// To add options for a new rule:
 /// 1. Create `lints/<group>/<rule_name>/options.rs` with the TOML and resolved
 ///    types, and declare `pub(crate) mod options;` in the rule's `mod.rs`.
-/// 2. Add a field to `ResolvedRuleOptions` and a resolve line in `resolve()`.
-/// 3. Add the TOML field to `LinterTomlOptions` in `toml.rs` and pass it to
-///    `resolve()` in `into_settings()`.
+/// 2. Add a field to `RuleOptions` and `ResolvedRuleOptions`, and a resolve
+///    line in `resolve()`.
+/// 3. Add the TOML field to `LinterTomlOptions` in `toml.rs` and set it on the
+///    `RuleOptions` built in `into_settings()`.
 #[derive(Clone, Debug)]
 pub struct ResolvedRuleOptions {
     pub assignment: ResolvedAssignmentOptions,
@@ -86,47 +107,32 @@ pub struct ResolvedRuleOptions {
 }
 
 impl ResolvedRuleOptions {
-    #[allow(clippy::too_many_arguments)]
-    pub fn resolve(
-        assignment: Option<&AssignmentOptions>,
-        duplicated_arguments: Option<&DuplicatedArgumentsOptions>,
-        if_not_else: Option<&IfNotElseOptions>,
-        implicit_assignment: Option<&ImplicitAssignmentOptions>,
-        missing_argument: Option<&MissingArgumentOptions>,
-        nested_pipe: Option<&NestedPipeOptions>,
-        pipe_consistency: Option<&PipeConsistencyOptions>,
-        quotes: Option<&QuotesOptions>,
-        true_false_symbol: Option<&TrueFalseSymbolOptions>,
-        undesirable_function: Option<&UndesirableFunctionOptions>,
-        unreachable_code: Option<&UnreachableCodeOptions>,
-        unused_function: Option<&UnusedFunctionOptions>,
-    ) -> anyhow::Result<Self> {
+    pub fn resolve(options: &RuleOptions) -> anyhow::Result<Self> {
         Ok(Self {
-            assignment: ResolvedAssignmentOptions::resolve(assignment)?,
+            assignment: ResolvedAssignmentOptions::resolve(options.assignment)?,
             duplicated_arguments: ResolvedDuplicatedArgumentsOptions::resolve(
-                duplicated_arguments,
+                options.duplicated_arguments,
             )?,
-            if_not_else: ResolvedIfNotElseOptions::resolve(if_not_else)?,
-            implicit_assignment: ResolvedImplicitAssignmentOptions::resolve(implicit_assignment)?,
-            missing_argument: ResolvedMissingArgumentOptions::resolve(missing_argument)?,
-            nested_pipe: ResolvedNestedPipeOptions::resolve(nested_pipe)?,
-            pipe_consistency: ResolvedPipeConsistencyOptions::resolve(pipe_consistency)?,
-            quotes: ResolvedQuotesOptions::resolve(quotes)?,
-            true_false_symbol: ResolvedTrueFalseSymbolOptions::resolve(true_false_symbol)?,
+            if_not_else: ResolvedIfNotElseOptions::resolve(options.if_not_else)?,
+            implicit_assignment: ResolvedImplicitAssignmentOptions::resolve(
+                options.implicit_assignment,
+            )?,
+            missing_argument: ResolvedMissingArgumentOptions::resolve(options.missing_argument)?,
+            nested_pipe: ResolvedNestedPipeOptions::resolve(options.nested_pipe)?,
+            pipe_consistency: ResolvedPipeConsistencyOptions::resolve(options.pipe_consistency)?,
+            quotes: ResolvedQuotesOptions::resolve(options.quotes)?,
+            true_false_symbol: ResolvedTrueFalseSymbolOptions::resolve(options.true_false_symbol)?,
             undesirable_function: ResolvedUndesirableFunctionOptions::resolve(
-                undesirable_function,
+                options.undesirable_function,
             )?,
-            unreachable_code: ResolvedUnreachableCodeOptions::resolve(unreachable_code)?,
-            unused_function: ResolvedUnusedFunctionOptions::resolve(unused_function)?,
+            unreachable_code: ResolvedUnreachableCodeOptions::resolve(options.unreachable_code)?,
+            unused_function: ResolvedUnusedFunctionOptions::resolve(options.unused_function)?,
         })
     }
 }
 
 impl Default for ResolvedRuleOptions {
     fn default() -> Self {
-        Self::resolve(
-            None, None, None, None, None, None, None, None, None, None, None, None,
-        )
-        .expect("default rule options should always resolve")
+        Self::resolve(&RuleOptions::default()).expect("default rule options should always resolve")
     }
 }
