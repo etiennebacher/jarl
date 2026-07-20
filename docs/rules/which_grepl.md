@@ -14,15 +14,11 @@ since it requires two passes on the vector.
 ## Example
 
 ```r
-x <- c("hello", "there")
-which(grepl("hell", x))
 which(grepl("foo", x))
 ```
 
 Use instead:
 ```r
-x <- c("hello", "there")
-grep("hell", x)
 grep("foo", x)
 ```
 
