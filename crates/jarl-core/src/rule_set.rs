@@ -562,7 +562,7 @@ declare_rules! {
     RepTimesIgnored => {
         name: "rep_times_ignored",
         categories: [Susp],
-        default: Disabled,
+        default: Enabled,
         fix: Unsafe,
         min_r_version: None,
     },
