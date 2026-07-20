@@ -83,6 +83,7 @@ website:
       - rules/all_equal.md
       - rules/any_duplicated.md
       - rules/any_is_na.md
+      - rules/apply_paste.md
       - rules/assignment.md
       - rules/blanket_suppression.md
       - rules/browser.md
