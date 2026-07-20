@@ -143,6 +143,7 @@ website:
       - rules/quotes.md
       - rules/redundant_equals.md
       - rules/redundant_ifelse.md
+      - rules/rep_times_ignored.md
       - rules/repeat.md
       - rules/sample_int.md
       - rules/seq.md

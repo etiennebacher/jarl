@@ -43,6 +43,7 @@ pub(crate) mod pipe_return;
 pub(crate) mod quotes;
 pub(crate) mod redundant_equals;
 pub(crate) mod redundant_ifelse;
+pub(crate) mod rep_times_ignored;
 pub(crate) mod repeat;
 pub(crate) mod sample_int;
 pub(crate) mod seq;
