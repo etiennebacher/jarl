@@ -63,12 +63,9 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// expect_s3_class(x, "factor")
 /// expect_s3_class(x, "foo")
 /// ```
-pub fn expect_s3_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let function_name = get_function_name(function);
-
-    match function_name.as_str() {
-        "expect_equal" | "expect_identical" => check_expect_class_comparison(ast, &function_name),
+pub fn expect_s3_class(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
+    match fn_name {
+        "expect_equal" | "expect_identical" => check_expect_class_comparison(ast, fn_name),
         "expect_true" => check_expect_true_class(ast),
         _ => Ok(None),
     }

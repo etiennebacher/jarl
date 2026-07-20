@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name_then_position, get_function_name, node_contains_comments};
+use crate::utils::{get_arg_by_name_then_position, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -49,13 +49,11 @@ impl Violation for FixedRegex {
     }
 }
 
-pub fn fixed_regex(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let fn_name = get_function_name(function);
+pub fn fixed_regex(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     let args = ast.arguments()?.items();
 
     // Determine the position of the 'fixed' argument based on the function
-    let fixed_position = match fn_name.as_str() {
+    let fixed_position = match fn_name {
         "grep" | "gsub" | "sub" => 6,
         "regexpr" | "gregexpr" | "regexec" | "grepl" => 5,
         _ => return Ok(None),
@@ -69,7 +67,7 @@ pub fn fixed_regex(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     }
 
     // Check if ignore.case is explicitly supplied (implies regex interpretation)
-    let ignore_case_position = match fn_name.as_str() {
+    let ignore_case_position = match fn_name {
         "gsub" | "sub" => 4,
         "regexpr" | "gregexpr" | "regexec" | "grep" | "grepl" => 3,
         _ => return Ok(None),

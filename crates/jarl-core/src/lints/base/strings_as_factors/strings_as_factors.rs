@@ -59,7 +59,11 @@ impl Violation for StringsAsFactors {
     }
 }
 
-pub fn strings_as_factors(ast: &RCall, checker: &Checker) -> anyhow::Result<Option<Diagnostic>> {
+pub fn strings_as_factors(
+    ast: &RCall,
+    fn_name: &str,
+    checker: &Checker,
+) -> anyhow::Result<Option<Diagnostic>> {
     // This rule only applies when the minimum R version is known and is below 4.0.0.
     if checker
         .minimum_r_version
@@ -69,13 +73,12 @@ pub fn strings_as_factors(ast: &RCall, checker: &Checker) -> anyhow::Result<Opti
     }
 
     // Check if the call is to `data.frame()`.
-    let RCallFields { function, arguments } = ast.as_fields();
-    if get_function_name(function?) != "data.frame" {
+    if fn_name != "data.frame" {
         return Ok(None);
     }
 
     // Check if `stringsAsFactors` is explicitly set.
-    let arguments = arguments?.items();
+    let arguments = ast.arguments()?.items();
     if arguments
         .iter()
         .filter_map(|argument| argument.ok())

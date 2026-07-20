@@ -73,16 +73,15 @@ fn by_arg_name(verb: &str) -> &'static str {
 /// See the `.by` argument in `?dplyr::summarize`.
 pub fn dplyr_group_by_ungroup(
     ast: &RCall,
+    fn_name: &str,
+    ns_prefix: Option<&str>,
     checker: &Checker,
 ) -> anyhow::Result<Option<Diagnostic>> {
-    let fn_name = get_function_name(ast.function()?);
-    let fn_ns = get_function_namespace_prefix(ast.function()?);
-
     // Only trigger on `ungroup()` or `dplyr::ungroup()`
     if fn_name != "ungroup" {
         return Ok(None);
     }
-    if let Some(ref ns) = fn_ns
+    if let Some(ns) = ns_prefix
         && ns != "dplyr::"
     {
         return Ok(None);
@@ -91,7 +90,7 @@ pub fn dplyr_group_by_ungroup(
     // Without an explicit namespace, use the package cache to resolve
     // the package, falling back to requiring a pipe (which makes it
     // unlikely to be `stats::filter()`).
-    if fn_ns.is_none() {
+    if ns_prefix.is_none() {
         match checker.resolve_package("ungroup") {
             PackageOrigin::Resolved(ref pkg) if pkg == "dplyr" => {}
             PackageOrigin::Resolved(_) | PackageOrigin::Ambiguous(_) | PackageOrigin::Unknown => {

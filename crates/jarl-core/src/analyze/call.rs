@@ -1,5 +1,6 @@
 use crate::checker::Checker;
 use crate::rule_set::Rule;
+use crate::utils::{get_function_name, get_function_namespace_prefix};
 use air_r_syntax::RCall;
 
 use crate::lints::base::all_equal::all_equal::all_equal;
@@ -49,142 +50,150 @@ use crate::lints::testthat::expect_true_false::expect_true_false::expect_true_fa
 use crate::lints::testthat::expect_type::expect_type::expect_type;
 
 pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
+    // Extract function name and namespace prefix once and pass this info to the
+    // checks.
+    let function = r_expr.function()?;
+    let fn_name = get_function_name(function.clone());
+    let ns_prefix = get_function_namespace_prefix(function);
+    let fn_name = fn_name.as_str();
+    let ns_prefix = ns_prefix.as_deref();
+
     if checker.is_rule_enabled(Rule::AllEqual) {
-        checker.report_diagnostic(all_equal(r_expr)?);
+        checker.report_diagnostic(all_equal(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::AnyDuplicated) {
-        checker.report_diagnostic(any_duplicated(r_expr)?);
+        checker.report_diagnostic(any_duplicated(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::AnyIsNa) {
-        checker.report_diagnostic(any_is_na(r_expr)?);
+        checker.report_diagnostic(any_is_na(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::Browser) {
-        checker.report_diagnostic(browser(r_expr)?);
+        checker.report_diagnostic(browser(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::ClassEquals) {
-        checker.report_diagnostic(class_identical(r_expr)?);
+        checker.report_diagnostic(class_identical(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::ConditionCall) {
-        checker.report_diagnostic(condition_call(r_expr)?);
+        checker.report_diagnostic(condition_call(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::ConditionMessage) {
-        checker.report_diagnostic(condition_message(r_expr)?);
+        checker.report_diagnostic(condition_message(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::DownloadFile) {
-        checker.report_diagnostic(download_file(r_expr)?);
+        checker.report_diagnostic(download_file(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::DuplicatedArguments) {
         checker.report_diagnostic(duplicated_arguments(r_expr, checker)?);
     }
     if checker.is_rule_enabled(Rule::FixedRegex) {
-        checker.report_diagnostic(fixed_regex(r_expr)?);
+        checker.report_diagnostic(fixed_regex(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::Glue) {
-        checker.report_diagnostic(glue(r_expr)?);
+        checker.report_diagnostic(glue(r_expr, fn_name, ns_prefix)?);
     }
     if checker.is_rule_enabled(Rule::Grepv) {
-        checker.report_diagnostic(grepv(r_expr)?);
+        checker.report_diagnostic(grepv(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::IfNotElse) {
-        checker.report_diagnostic(if_not_else_call(r_expr, checker)?);
+        checker.report_diagnostic(if_not_else_call(r_expr, fn_name, checker)?);
     }
     if checker.is_rule_enabled(Rule::LengthLevels) {
-        checker.report_diagnostic(length_levels(r_expr)?);
+        checker.report_diagnostic(length_levels(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::LengthTest) {
-        checker.report_diagnostic(length_test(r_expr)?);
+        checker.report_diagnostic(length_test(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::Lengths) {
-        checker.report_diagnostic(lengths(r_expr)?);
+        checker.report_diagnostic(lengths(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::List2df) {
-        checker.report_diagnostic(list2df(r_expr)?);
+        checker.report_diagnostic(list2df(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::LiteralCoercion) {
-        checker.report_diagnostic(literal_coercion(r_expr)?);
+        checker.report_diagnostic(literal_coercion(r_expr, fn_name, ns_prefix)?);
     }
     if checker.is_rule_enabled(Rule::MatrixApply) {
-        checker.report_diagnostic(matrix_apply(r_expr)?);
+        checker.report_diagnostic(matrix_apply(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::MissingArgument) {
-        checker.report_diagnostic(missing_argument(r_expr, checker)?);
+        checker.report_diagnostic(missing_argument(r_expr, fn_name, checker)?);
     }
     if checker.is_rule_enabled(Rule::OuterNegation) {
         checker.report_diagnostic(outer_negation(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::RedundantIfelse) {
-        checker.report_diagnostic(redundant_ifelse(r_expr)?);
+        checker.report_diagnostic(redundant_ifelse(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::RepTimesIgnored) {
         checker.report_diagnostic(rep_times_ignored(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::SampleInt) {
-        checker.report_diagnostic(sample_int(r_expr)?);
+        checker.report_diagnostic(sample_int(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::Seq2) {
-        checker.report_diagnostic(seq2(r_expr)?);
+        checker.report_diagnostic(seq2(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::Sprintf) {
-        checker.report_diagnostic(sprintf(r_expr)?);
+        checker.report_diagnostic(sprintf(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::StopifnotAll) {
-        checker.report_diagnostic(stopifnot_all(r_expr)?);
+        checker.report_diagnostic(stopifnot_all(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::StringsAsFactors) {
-        checker.report_diagnostic(strings_as_factors(r_expr, checker)?);
+        checker.report_diagnostic(strings_as_factors(r_expr, fn_name, checker)?);
     }
     if checker.is_rule_enabled(Rule::SystemFile) {
-        checker.report_diagnostic(system_file(r_expr)?);
+        checker.report_diagnostic(system_file(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::UndesirableFunction) {
-        checker.report_diagnostic(undesirable_function(r_expr, checker)?);
+        checker.report_diagnostic(undesirable_function(r_expr, fn_name, checker)?);
     }
     if checker.is_rule_enabled(Rule::WhichGrepl) {
-        checker.report_diagnostic(which_grepl(r_expr)?);
+        checker.report_diagnostic(which_grepl(r_expr, fn_name)?);
     }
 
     //
     // ------------- DPLYR -------------
     //
     if checker.is_rule_enabled(Rule::DplyrFilterOut) {
-        checker.report_diagnostic(dplyr_filter_out(r_expr, checker)?);
+        checker.report_diagnostic(dplyr_filter_out(r_expr, fn_name, ns_prefix, checker)?);
     }
     if checker.is_rule_enabled(Rule::DplyrGroupByUngroup) {
-        checker.report_diagnostic(dplyr_group_by_ungroup(r_expr, checker)?);
+        checker.report_diagnostic(dplyr_group_by_ungroup(r_expr, fn_name, ns_prefix, checker)?);
     }
 
     //
     // ------------- TESTTHAT -------------
     //
     if checker.is_rule_enabled(Rule::TestthatExpectLength) {
-        checker.report_diagnostic(expect_length(r_expr)?);
+        checker.report_diagnostic(expect_length(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::TestthatExpectMatch) {
-        checker.report_diagnostic(expect_match(r_expr)?);
+        checker.report_diagnostic(expect_match(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::TestthatExpectNamed) {
-        checker.report_diagnostic(expect_named(r_expr)?);
+        checker.report_diagnostic(expect_named(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::TestthatExpectNoMatch) {
-        checker.report_diagnostic(expect_no_match(r_expr)?);
+        checker.report_diagnostic(expect_no_match(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::TestthatExpectNot) {
-        checker.report_diagnostic(expect_not(r_expr)?);
+        checker.report_diagnostic(expect_not(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::TestthatExpectNull) {
-        checker.report_diagnostic(expect_null(r_expr)?);
+        checker.report_diagnostic(expect_null(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::TestthatExpectS3Class) {
-        checker.report_diagnostic(expect_s3_class(r_expr)?);
+        checker.report_diagnostic(expect_s3_class(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::TestthatExpectS4Class) {
-        checker.report_diagnostic(expect_s4_class(r_expr)?);
+        checker.report_diagnostic(expect_s4_class(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::TestthatExpectType) {
-        checker.report_diagnostic(expect_type(r_expr)?);
+        checker.report_diagnostic(expect_type(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::TestthatExpectTrueFalse) {
-        checker.report_diagnostic(expect_true_false(r_expr)?);
+        checker.report_diagnostic(expect_true_false(r_expr, fn_name)?);
     }
     Ok(())
 }

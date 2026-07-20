@@ -2,7 +2,7 @@ use crate::diagnostic::Diagnostic;
 use crate::location::Location;
 use air_r_syntax::{
     AnyRExpression, RArgument, RArgumentList, RBinaryExpression, RBinaryExpressionFields, RCall,
-    RCallFields, RExtractExpressionFields, RSyntaxKind, RSyntaxNode,
+    RExtractExpressionFields, RSyntaxKind, RSyntaxNode,
 };
 use anyhow::{Result, anyhow};
 use biome_rowan::{AstNode, AstSeparatedList, Direction};
@@ -278,21 +278,23 @@ pub fn get_function_namespace_prefix(function: AnyRExpression) -> Option<String>
 /// - `inner_fn(content) |> outer_fn()`: `syntax_node` is the pipe expression
 /// - `content |> inner_fn() |> outer_fn()`: `syntax_node` is the pipe expression
 ///
+/// `fn_name` is the already-extracted callee name of `call`.
+///
 /// The returned `syntax_node` is the top-level node of the matched expression and should
 /// be used for the diagnostic range and comment checks.
 pub fn get_nested_functions_content(
     call: &RCall,
+    fn_name: &str,
     outer_fn: &str,
     inner_fn: &str,
 ) -> Result<Option<(String, RSyntaxNode)>> {
-    let RCallFields { function, arguments } = call.as_fields();
-
-    if get_function_name(function?) != outer_fn {
+    if fn_name != outer_fn {
         return Ok(None);
     }
 
     // Try nested case: outer_fn(inner_fn(content))
-    let unnamed_arg = arguments?
+    let unnamed_arg = call
+        .arguments()?
         .items()
         .into_iter()
         .find(|x| x.as_ref().is_ok_and(|arg| arg.name_clause().is_none()));

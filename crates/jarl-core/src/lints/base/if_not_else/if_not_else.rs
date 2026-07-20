@@ -72,9 +72,12 @@ pub fn if_not_else(ast: &RIfStatement, checker: &Checker) -> anyhow::Result<Opti
 }
 
 /// Handle the `ifelse()`/`fifelse()`/`if_else()` variants of the same pattern.
-pub fn if_not_else_call(ast: &RCall, checker: &Checker) -> anyhow::Result<Option<Diagnostic>> {
-    let function_name = get_function_name(ast.function()?);
-    if !matches!(function_name.as_str(), "ifelse" | "fifelse" | "if_else") {
+pub fn if_not_else_call(
+    ast: &RCall,
+    fn_name: &str,
+    checker: &Checker,
+) -> anyhow::Result<Option<Diagnostic>> {
+    if !matches!(fn_name, "ifelse" | "fifelse" | "if_else") {
         return Ok(None);
     }
 
@@ -95,9 +98,9 @@ pub fn if_not_else_call(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
     let diagnostic = Diagnostic::new(
         ViolationData::new(
             "if_not_else".to_string(),
-            format!("Negating the condition like `{function_name}(!A, y, x)` can be hard to read."),
+            format!("Negating the condition like `{fn_name}(!A, y, x)` can be hard to read."),
             Some(format!(
-                "Remove the negation and swap branches, such as `{function_name}(A, x, y)`."
+                "Remove the negation and swap branches, such as `{fn_name}(A, x, y)`."
             )),
         ),
         range,

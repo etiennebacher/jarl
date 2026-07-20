@@ -128,10 +128,8 @@ pub fn class_equals(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic
     Ok(Some(diagnostic))
 }
 
-pub fn class_identical(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let function_name = get_function_name(function);
-    if function_name != "identical" {
+pub fn class_identical(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
+    if fn_name != "identical" {
         return Ok(None);
     }
 
