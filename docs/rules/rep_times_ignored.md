@@ -11,7 +11,7 @@ Checks for `rep()` calls that supply both `times` and `length.out`.
 When both arguments are supplied, `length.out` takes priority and `times`
 is ignored. This likely indicates a mistake in the call.
 
-This rule is disabled by default and has an unsafe fix because
+This rule is enabled by default and has an unsafe fix because
 `length.out` can evaluate to `NA` or another invalid value, in which case
 `times` is still used.
 
