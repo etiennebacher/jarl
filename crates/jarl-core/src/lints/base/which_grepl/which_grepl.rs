@@ -53,9 +53,8 @@ pub fn which_grepl(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
         (content, ast.syntax().clone(), arguments.len() == 1)
     } else {
         // Handle pipeline input.
-        let (mut content, syntax) = unwrap_or_return_none!(get_nested_functions_content(
-            ast, fn_name, "which", "grepl"
-        )?);
+        let nested_content = get_nested_functions_content(ast, fn_name, "which", "grepl")?;
+        let (mut content, syntax) = unwrap_or_return_none!(nested_content);
 
         // The shared helper returns the piped input for
         // `input |> grepl(...) |> which()`, but not the named `grepl()` args.
