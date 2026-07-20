@@ -50,7 +50,7 @@ mod tests {
         );
         expect_no_lint("rep(x, length.out =)", "rep_times_ignored", None);
         expect_no_lint(
-            "rep(x, times = 2, length.out = NA)",
+            "other::rep(x, times = 2, length.out = 5)",
             "rep_times_ignored",
             None,
         );
@@ -189,6 +189,19 @@ mod tests {
         Found 1 error.
         "
         );
+        assert_snapshot!(
+            snapshot_lint("rep(x, times = 2, length.out = NULL)"),
+            @"
+        warning: rep_times_ignored
+         --> <test>:1:1
+          |
+        1 | rep(x, times = 2, length.out = NULL)
+          | ------------------------------------ `times` is ignored when `length.out` is supplied.
+          |
+          = help: Use `rep(x, length.out = NULL)` instead.
+        Found 1 error.
+        "
+        );
     }
 
     #[test]
@@ -207,6 +220,10 @@ mod tests {
                     "rep(x, 2, 5, 3)",
                     "rep(each = 3, x, length.out = 5, times = 2)",
                     "rep(x, times = 2, length.out = 5, each =)",
+                    "rep(x, times = 2, length.out = NA)",
+                    "rep(x, times = 2, length.out = NULL)",
+                    "rep(x, times = 2, length.out = Inf)",
+                    "rep(x, times = 2, length.out = -1)",
                 ],
                 "rep_times_ignored",
             )

@@ -15,7 +15,8 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// is ignored. This likely indicates a mistake in the call.
 ///
 /// This rule is disabled by default and has an unsafe fix because
-/// `length.out` can evaluate to `NA`, in which case `times` is still used.
+/// `length.out` can evaluate to `NA` or another invalid value, in which case
+/// `times` is still used.
 ///
 /// ## Example
 ///
@@ -36,6 +37,14 @@ pub fn rep_times_ignored(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let function = function?;
 
     if get_function_name(function.clone()) != "rep" {
+        return Ok(None);
+    }
+
+    let namespace_prefix = get_function_namespace_prefix(function);
+    if namespace_prefix
+        .as_deref()
+        .is_some_and(|namespace| namespace != "base::")
+    {
         return Ok(None);
     }
 
@@ -87,14 +96,11 @@ pub fn rep_times_ignored(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let _times = unwrap_or_return_none!(times_argument.value());
     let length = unwrap_or_return_none!(length_argument.value());
 
-    if length.as_r_na_expression().is_some() {
-        return Ok(None);
-    }
     // A missing `each` value (`each =`) has the same effect as omitting it.
     let each = each_argument.and_then(|argument| argument.value());
 
     let range = ast.syntax().text_trimmed_range();
-    let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();
+    let namespace_prefix = namespace_prefix.unwrap_or_default();
     let each = each
         .map(|each| format!(", each = {}", each.to_trimmed_text()))
         .unwrap_or_default();

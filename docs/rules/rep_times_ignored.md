@@ -12,7 +12,8 @@ When both arguments are supplied, `length.out` takes priority and `times`
 is ignored. This likely indicates a mistake in the call.
 
 This rule is disabled by default and has an unsafe fix because
-`length.out` can evaluate to `NA`, in which case `times` is still used.
+`length.out` can evaluate to `NA` or another invalid value, in which case
+`times` is still used.
 
 ## Example
 
