@@ -24,7 +24,7 @@ use crate::lints::base::matrix_apply::matrix_apply::matrix_apply;
 use crate::lints::base::missing_argument::missing_argument::missing_argument;
 use crate::lints::base::outer_negation::outer_negation::outer_negation;
 use crate::lints::base::redundant_ifelse::redundant_ifelse::redundant_ifelse;
-use crate::lints::base::rep_len::rep_len::rep_len;
+use crate::lints::base::rep_times_ignored::rep_times_ignored::rep_times_ignored;
 use crate::lints::base::sample_int::sample_int::sample_int;
 use crate::lints::base::seq2::seq2::seq2;
 use crate::lints::base::sprintf::sprintf::sprintf;
@@ -115,8 +115,8 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     if checker.is_rule_enabled(Rule::RedundantIfelse) {
         checker.report_diagnostic(redundant_ifelse(r_expr)?);
     }
-    if checker.is_rule_enabled(Rule::RepLen) {
-        checker.report_diagnostic(rep_len(r_expr)?);
+    if checker.is_rule_enabled(Rule::RepTimesIgnored) {
+        checker.report_diagnostic(rep_times_ignored(r_expr)?);
     }
     if checker.is_rule_enabled(Rule::SampleInt) {
         checker.report_diagnostic(sample_int(r_expr)?);

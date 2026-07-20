@@ -7,33 +7,31 @@ use biome_rowan::{AstNode, AstSeparatedList};
 ///
 /// ## What it does
 ///
-/// Checks for usage of `rep(x, length.out = n)`.
+/// Checks for `rep()` calls that supply both `times` and `length.out`.
 ///
 /// ## Why is this bad?
 ///
-/// `rep(x, length.out = n)` calls `rep_len(x, n)` internally. The latter
-/// is thus more direct and equally readable.
+/// When both arguments are supplied, `length.out` takes priority and `times`
+/// is ignored. This likely indicates a mistake in the call.
 ///
-/// This rule is disabled by default.
-///
-/// This rule has an unsafe automatic fix because `rep_len()` drops most
-/// attributes, including names, while `rep()` can preserve them.
+/// This rule is disabled by default and has an unsafe fix because
+/// `length.out` can evaluate to `NA`, in which case `times` is still used.
 ///
 /// ## Example
 ///
 /// ```r
-/// rep(1:3, length.out = 10)
+/// rep(1:3, times = 2, length.out = 10)
 /// ```
 ///
 /// Use instead:
 /// ```r
-/// rep_len(1:3, 10)
+/// rep(1:3, length.out = 10)
 /// ```
 ///
 /// ## References
 ///
 /// See `?rep`
-pub fn rep_len(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
+pub fn rep_times_ignored(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
     let function = function?;
 
@@ -43,14 +41,13 @@ pub fn rep_len(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 
     let arguments = arguments?.items();
 
-    let argument_count = arguments.iter().count();
-    if !(2..=3).contains(&argument_count) {
+    if !(3..=4).contains(&arguments.iter().count()) {
         return Ok(None);
     }
 
-    // Match the formals in `rep(x, times, length.out)` order. R resolves exact
-    // argument names before assigning unnamed arguments to the remaining slots.
-    let mut matched_arguments = [None, None, None];
+    // Match the formals in `rep(x, times, length.out, each)` order. R resolves
+    // exact names before assigning unnamed arguments to the remaining slots.
+    let mut matched_arguments = [None, None, None, None];
     let mut unnamed_arguments = Vec::new();
     for argument in arguments.iter() {
         let argument = argument?;
@@ -62,6 +59,7 @@ pub fn rep_len(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             "x" => 0,
             "times" => 1,
             "length.out" => 2,
+            "each" => 3,
             // Skip partial and unknown names rather than risk an incorrect fix.
             _ => return Ok(None),
         };
@@ -76,29 +74,40 @@ pub fn rep_len(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         *slot = Some(argument);
     }
 
-    // Only the `x` and `length.out` arguments are required for a valid replacement.
-    let [Some(object_argument), _, Some(length_argument)] = matched_arguments else {
+    let [
+        Some(object_argument),
+        Some(times_argument),
+        Some(length_argument),
+        each_argument,
+    ] = matched_arguments
+    else {
         return Ok(None);
     };
     let object = unwrap_or_return_none!(object_argument.value());
+    let _times = unwrap_or_return_none!(times_argument.value());
     let length = unwrap_or_return_none!(length_argument.value());
+
     if length.as_r_na_expression().is_some() {
         return Ok(None);
     }
+    // A missing `each` value (`each =`) has the same effect as omitting it.
+    let each = each_argument.and_then(|argument| argument.value());
 
     let range = ast.syntax().text_trimmed_range();
     let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();
+    let each = each
+        .map(|each| format!(", each = {}", each.to_trimmed_text()))
+        .unwrap_or_default();
     let replacement = format!(
-        "{namespace_prefix}rep_len({}, {})",
+        "{namespace_prefix}rep({}, length.out = {}{each})",
         object.to_trimmed_text(),
         length.to_trimmed_text()
     );
-    let linted_text = ast.to_trimmed_text();
 
     Ok(Some(Diagnostic::new(
         ViolationData::new(
-            "rep_len".to_string(),
-            format!("`{replacement}` is more explicit than `{linted_text}`."),
+            "rep_times_ignored".to_string(),
+            "`times` is ignored when `length.out` is supplied.".to_string(),
             Some(format!("Use `{replacement}` instead.")),
         ),
         range,

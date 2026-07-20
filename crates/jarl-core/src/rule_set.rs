@@ -559,9 +559,9 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
-    RepLen => {
-        name: "rep_len",
-        categories: [Read],
+    RepTimesIgnored => {
+        name: "rep_times_ignored",
+        categories: [Susp],
         default: Disabled,
         fix: Unsafe,
         min_r_version: None,
