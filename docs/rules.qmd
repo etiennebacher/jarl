@@ -53,6 +53,7 @@ dat <- as.data.frame(
     c("all_equal", "suspicious", "❗", ""),
     c("any_duplicated", "performance", "✅", ""),
     c("any_is_na", "performance", "✅", ""),
+    c("apply_paste", "performance", "❗", ""),
     c("assignment", "readability", "✅", "Disabled by default"),
     c("blanket_suppression", "comments", "❌", ""),
     c("browser", "correctness", "❌", ""),
