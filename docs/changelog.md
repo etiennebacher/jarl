@@ -58,6 +58,9 @@
 * Passing `--statistics` in the CLI now indicates which violations have an automatic
   unsafe fix (#554).
 
+* New command `jarl rule <rule_name>` to print a rule's documentation in the
+  terminal, for example `jarl rule any_is_na` (#566).
+
 ### Bug fixes
 
 * `implicit_assignment` no longer flags chained assignments like

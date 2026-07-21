@@ -19,6 +19,7 @@ fn test_help() -> anyhow::Result<()> {
 
     Commands:
       check   Check a set of files or directories
+      rule    Explain a rule (print its documentation)
       server  Start a language server
       help    Print this message or the help of the given subcommand(s)
 
@@ -50,6 +51,7 @@ fn test_help() -> anyhow::Result<()> {
 
     Commands:
       check   Check a set of files or directories
+      rule    Explain a rule (print its documentation)
       server  Start a language server
       help    Print this message or the help of the given subcommand(s)
 
@@ -81,6 +83,7 @@ fn test_help() -> anyhow::Result<()> {
 
     Commands:
       check   Check a set of files or directories
+      rule    Explain a rule (print its documentation)
       server  Start a language server
       help    Print this message or the help of the given subcommand(s)
 
