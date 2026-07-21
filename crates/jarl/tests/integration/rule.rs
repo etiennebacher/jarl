@@ -180,7 +180,7 @@ fn test_rule_without_name_shows_help() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    Explain a rule (print its documentation)
+    Print the documentation of a rule
 
     Usage: jarl rule [OPTIONS] <NAME>
 

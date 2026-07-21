@@ -32,7 +32,7 @@ pub(crate) enum Command {
     /// Check a set of files or directories
     Check(Box<CheckCommand>),
 
-    /// Explain a rule (print its documentation)
+    /// Print the documentation of a rule
     Rule(RuleCommand),
 
     /// Start a language server
