@@ -77,6 +77,205 @@ fn test_known_rule_prints_docs() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Check rule that is disabled by default
+#[test]
+fn test_known_rule_disabled_by_default() -> anyhow::Result<()> {
+    let case = CliTest::new()?;
+    insta::assert_snapshot!(
+        case.command()
+            .arg("rule")
+            .arg("assignment")
+            .run()
+            .normalize_os_executable_name(),
+        @r#"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    assignment
+    Categories: READ
+    Enabled by default: no
+    Fix: safe
+
+    Added in 0.0.8
+
+    ## What it does
+
+    Checks for consistency of assignment operator.
+
+    ## Why is this bad?
+
+    In most cases using `=` and `<-` is equivalent. Some very popular packages
+    use `=` without problems. This rule only ensures the consistency of the
+    assignment operator in a project.
+
+    Set the following option in `jarl.toml` to use `=` as the preferred operator:
+
+    ```toml
+    [lint.assignment]
+    operator = "=" # or "<-"
+    ```
+
+    ## Example
+
+    If the `operator` parameter is `"="` then replace:
+    ```r
+    x <- "a"
+    ```
+    by:
+    ```r
+    x = "a"
+    ```
+
+    Note that Jarl will not report some cases where `<-` is used because it
+    would change the meaning of code, e.g. this:
+
+    ```r
+    f(x <- 1)
+    ```
+    cannot be replaced by:
+
+    ```r
+    f(x = 1)
+    ```
+
+    ## References
+
+    See:
+
+    - [https://style.tidyverse.org/syntax.html#assignment-1](https://style.tidyverse.org/syntax.html#assignment-1)
+
+    ----- stderr -----
+    "#
+    );
+
+    Ok(())
+}
+
+/// Check rule that has no fix
+#[test]
+fn test_known_rule_with_no_fix() -> anyhow::Result<()> {
+    let case = CliTest::new()?;
+    insta::assert_snapshot!(
+        case.command()
+            .arg("rule")
+            .arg("if_always_true")
+            .run()
+            .normalize_os_executable_name(),
+        @r#"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    if_always_true
+    Categories: READ, SUSP
+    Enabled by default: yes
+    Fix: not available
+
+    Added in 0.4.0
+
+    ## What it does
+
+    Detects `if` conditions that always evaluate to `TRUE`. This is only triggered
+    for `if` statements without an `else` clause, these are handled by
+    `unreachable_code`.
+
+    ## Why is this bad?
+
+    Code in an `if` statement whose condition always evaluates to `TRUE` will
+    always run. It clutters the code and makes it more difficult to read. In
+    these cases, the `if` condition should be removed.
+
+    This rule does not have an automatic fix.
+
+    ## Example
+
+    ```r
+    if (TRUE) {
+      print("always true")
+    }
+
+    if (TRUE || ...) {
+      print("always true")
+    }
+
+    if (!FALSE) {
+      print("always true")
+    }
+    ```
+
+    Use instead:
+
+    ```r
+    print("always true")
+    ```
+
+    ----- stderr -----
+    "#
+    );
+
+    Ok(())
+}
+
+/// Check rule that has a minimum R version
+#[test]
+fn test_known_rule_with_min_r_version() -> anyhow::Result<()> {
+    let case = CliTest::new()?;
+    insta::assert_snapshot!(
+        case.command()
+            .arg("rule")
+            .arg("grepv")
+            .run()
+            .normalize_os_executable_name(),
+        @r#"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    grepv
+    Categories: READ
+    Enabled by default: yes
+    Fix: safe
+    Minimum R version: 4.5.0
+
+    Added in 0.0.16
+
+    ## What it does
+
+    Checks for usage of `grep(..., value = TRUE)` and recommends using
+    `grepv()` instead (only if the R version used in the project is >= 4.5).
+
+    ## Why is this bad?
+
+    Starting from R 4.5, there is a function `grepv()` that is identical to
+    `grep()` except that it uses `value = TRUE` by default.
+
+    Using `grepv(...)` is therefore more readable than `grep(...)`.
+
+    ## Example
+
+    ```r
+    x <- c("hello", "hi", "howdie")
+    grep("i", x, value = TRUE)
+    ```
+
+    Use instead:
+    ```r
+    x <- c("hello", "hi", "howdie")
+    grepv("i", x)
+    ```
+
+    ## References
+
+    See `?grepv`
+
+    ----- stderr -----
+    "#
+    );
+
+    Ok(())
+}
+
 /// A deprecated rule reports its deprecation in the metadata header.
 #[test]
 fn test_deprecated_rule_shows_note() -> anyhow::Result<()> {
