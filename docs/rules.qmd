@@ -122,6 +122,7 @@ dat <- as.data.frame(
       "✅",
       ""
     ),
+    c("rep_times_ignored", "suspicious", "❗", ""),
     c("repeat", "readability", "✅", ""),
     c("sample_int", "readability", "✅", ""),
     c("seq", "suspicious", "✅", ""),

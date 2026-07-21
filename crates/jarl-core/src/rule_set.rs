@@ -559,6 +559,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    RepTimesIgnored => {
+        name: "rep_times_ignored",
+        categories: [Susp],
+        default: Enabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     Repeat => {
         name: "repeat",
         categories: [Read],
