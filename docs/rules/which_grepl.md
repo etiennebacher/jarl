@@ -17,8 +17,10 @@ has no arguments and the piped value can be unambiguously assigned to
 `grepl()`'s `pattern` or `x` argument.
 
 Calls with additional arguments to `which()` are reported but not fixed
-because those arguments cannot be preserved by replacing `which()` with
-`grep()`.
+because those arguments cannot generally be preserved by replacing
+`which()` with `grep()`. The exception is a literal `arr.ind = TRUE` or
+`FALSE`: `grepl()` returns a vector without dimensions, so `arr.ind` has no
+effect.
 
 ## Example
 

@@ -23,8 +23,10 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// `grepl()`'s `pattern` or `x` argument.
 ///
 /// Calls with additional arguments to `which()` are reported but not fixed
-/// because those arguments cannot be preserved by replacing `which()` with
-/// `grep()`.
+/// because those arguments cannot generally be preserved by replacing
+/// `which()` with `grep()`. The exception is a literal `arr.ind = TRUE` or
+/// `FALSE`: `grepl()` returns a vector without dimensions, so `arr.ind` has no
+/// effect.
 ///
 /// ## Example
 ///
@@ -51,18 +53,23 @@ pub fn which_grepl(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
     let arguments = ast.arguments()?.items();
 
     // Handle `which(grepl(...))`, including a named `x` argument to `which()`.
-    let direct_content = if let Some(argument) = get_arg_by_name_then_position(&arguments, "x", 1)
+    let direct_match = if let Some(argument) = get_arg_by_name_then_position(&arguments, "x", 1)
         && let Some(value) = argument.value()
         && let Some(inner_call) = value.as_r_call()
         && get_function_name(inner_call.function()?) == "grepl"
     {
-        Some(inner_call.arguments()?.items().into_syntax().to_string())
+        // Keep the outer argument so it can be excluded when checking whether
+        // `which()` has any additional arguments that prevent a safe fix.
+        Some((
+            inner_call.arguments()?.items().into_syntax().to_string(),
+            argument,
+        ))
     } else {
         None
     };
 
-    let (inner_content, outer_syntax, can_fix) = if let Some(content) = direct_content {
-        (content, ast.syntax().clone(), arguments.len() == 1)
+    let (inner_content, outer_syntax, input) = if let Some((content, argument)) = direct_match {
+        (content, ast.syntax().clone(), Some(argument))
     } else {
         // Handle pipeline input.
         let nested_content = get_nested_functions_content(ast, fn_name, "which", "grepl")?;
@@ -89,8 +96,43 @@ pub fn which_grepl(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
             content = format!("{content}, {}", inner_arguments.into_syntax());
         }
 
-        (content, syntax, arguments.is_empty())
+        (content, syntax, None)
     };
+
+    // A direct call includes the `grepl()` argument in `arguments`, whereas a
+    // pipe supplies it implicitly. After excluding that input, both forms can
+    // use the same logic for checking additional arguments. The count check
+    // below also prevents a fix if any argument failed to parse.
+    let extra_arguments = arguments
+        .iter()
+        .filter_map(Result::ok)
+        .filter(|argument| {
+            input
+                .as_ref()
+                .is_none_or(|input| argument.syntax() != input.syntax())
+        })
+        .collect::<Vec<_>>();
+    let can_fix = extra_arguments.len() + usize::from(input.is_some()) == arguments.len()
+        && match extra_arguments.as_slice() {
+            [] => true,
+            [argument] => {
+                // Once `x` has been supplied, a sole unnamed argument occupies
+                // the `arr.ind` position. Only boolean literals are safe to
+                // remove because evaluating a dynamic value may have side effects.
+                let is_arr_ind = argument.name_clause().is_none_or(|clause| {
+                    clause
+                        .name()
+                        .is_ok_and(|name| name.to_string().trim() == "arr.ind")
+                });
+
+                is_arr_ind
+                    && argument.value().is_some_and(|value| {
+                        value.as_r_true_expression().is_some()
+                            || value.as_r_false_expression().is_some()
+                    })
+            }
+            _ => false,
+        };
 
     let range = outer_syntax.text_trimmed_range();
     let replacement = format!("grep({inner_content})");

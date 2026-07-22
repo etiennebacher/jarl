@@ -72,6 +72,9 @@ mod tests {
                     "which(grepl('^a', x, perl = TRUE, fixed = TRUE))",
                     "which(x = grepl('^a', x))",
                     "which(grepl('^a', x), arr.ind = TRUE)",
+                    "which(arr.ind = FALSE, x = grepl('^a', x))",
+                    "which(grepl('^a', x), TRUE)",
+                    "which(grepl('^a', x), arr.ind = flag)",
                     "which(grepl('^a', x), useNames = FALSE)",
                 ],
                 "which_grepl",
@@ -125,6 +128,9 @@ mod tests {
                 vec![
                     "grepl('^a', x) |>\n  which()",
                     "values |> grepl(pattern = \"a\") |> which()",
+                    "grepl('^a', x) |> which(arr.ind = TRUE)",
+                    "grepl('^a', x) |> which(FALSE)",
+                    "grepl('^a', x) |> which(arr.ind = flag)",
                 ],
                 "which_grepl",
                 None
