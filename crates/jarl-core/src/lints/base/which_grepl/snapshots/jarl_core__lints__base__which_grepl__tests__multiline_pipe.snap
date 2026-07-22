@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/base/which_grepl/mod.rs
-expression: "get_fixed_text(vec![\"grepl('^a', x) |>\\n  which()\"], \"which_grepl\", None)"
+expression: "get_fixed_text(vec![\"grepl('^a', x) |>\\n  which()\",\n\"values |> grepl(pattern = \\\"a\\\") |> which()\",\n\"grepl('^a', x) |> which(arr.ind = TRUE)\", \"grepl('^a', x) |> which(FALSE)\",\n\"grepl('^a', x) |> which(arr.ind = flag)\",], \"which_grepl\", None)"
 ---
 OLD:
 ====
@@ -9,3 +9,31 @@ grepl('^a', x) |>
 NEW:
 ====
 grep('^a', x)
+
+OLD:
+====
+values |> grepl(pattern = "a") |> which()
+NEW:
+====
+grep(values, pattern = "a")
+
+OLD:
+====
+grepl('^a', x) |> which(arr.ind = TRUE)
+NEW:
+====
+grep('^a', x)
+
+OLD:
+====
+grepl('^a', x) |> which(FALSE)
+NEW:
+====
+grep('^a', x)
+
+OLD:
+====
+grepl('^a', x) |> which(arr.ind = flag)
+NEW:
+====
+grepl('^a', x) |> which(arr.ind = flag)

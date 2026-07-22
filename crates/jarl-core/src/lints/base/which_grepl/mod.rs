@@ -20,7 +20,7 @@ mod tests {
         1 | which(grepl('^a', x))
           | --------------------- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
-          = help: Use `grep(pattern, x)` instead.
+          = help: Use `grep('^a', x)` instead.
         Found 1 error.
         "
         );
@@ -33,7 +33,33 @@ mod tests {
         1 | which(grepl('^a', x, perl = TRUE, fixed = TRUE))
           | ------------------------------------------------ `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
-          = help: Use `grep(pattern, x)` instead.
+          = help: Use `grep('^a', x, perl = TRUE, fixed = TRUE)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("which(x = grepl('^a', x))"),
+            @"
+        warning: which_grepl
+         --> <test>:1:1
+          |
+        1 | which(x = grepl('^a', x))
+          | ------------------------- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
+          |
+          = help: Use `grep('^a', x)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("which(grepl('^a', x), arr.ind = TRUE)"),
+            @"
+        warning: which_grepl
+         --> <test>:1:1
+          |
+        1 | which(grepl('^a', x), arr.ind = TRUE)
+          | ------------------------------------- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
+          |
+          = help: Use `grep('^a', x)` instead.
         Found 1 error.
         "
         );
@@ -44,6 +70,12 @@ mod tests {
                 vec![
                     "which(grepl('^a', x))",
                     "which(grepl('^a', x, perl = TRUE, fixed = TRUE))",
+                    "which(x = grepl('^a', x))",
+                    "which(grepl('^a', x), arr.ind = TRUE)",
+                    "which(arr.ind = FALSE, x = grepl('^a', x))",
+                    "which(grepl('^a', x), TRUE)",
+                    "which(grepl('^a', x), arr.ind = flag)",
+                    "which(grepl('^a', x), useNames = FALSE)",
                 ],
                 "which_grepl",
                 None
@@ -58,27 +90,51 @@ mod tests {
         // Incomplete pipe chains should not trigger
         expect_no_lint("x |> which()", "which_grepl", None);
         expect_no_lint("grepl('^a', x) |> sum()", "which_grepl", None);
+        expect_no_lint("x |> grepl() |> which()", "which_grepl", None);
     }
 
     #[test]
     fn test_lint_which_grepl_piped() {
         assert_snapshot!(
-            snapshot_lint("grepl('^a', x) |> \n which()"),
+            snapshot_lint("grepl('^a', x) |>\n which()"),
             @"
         warning: which_grepl
          --> <test>:1:1
           |
-        1 | / grepl('^a', x) |> 
+        1 | / grepl('^a', x) |>
         2 | |  which()
           | |________- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
-          = help: Use `grep(pattern, x)` instead.
+          = help: Use `grep('^a', x)` instead.
         Found 1 error.
         "
         );
         assert_snapshot!(
+            snapshot_lint("values |> grepl(pattern = \"a\") |> which()"),
+            @r#"
+        warning: which_grepl
+         --> <test>:1:1
+          |
+        1 | values |> grepl(pattern = "a") |> which()
+          | ----------------------------------------- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
+          |
+          = help: Use `grep(values, pattern = "a")` instead.
+        Found 1 error.
+        "#
+        );
+        assert_snapshot!(
             "multiline_pipe",
-            get_fixed_text(vec!["grepl('^a', x) |>\n  which()"], "which_grepl", None)
+            get_fixed_text(
+                vec![
+                    "grepl('^a', x) |>\n  which()",
+                    "values |> grepl(pattern = \"a\") |> which()",
+                    "grepl('^a', x) |> which(arr.ind = TRUE)",
+                    "grepl('^a', x) |> which(FALSE)",
+                    "grepl('^a', x) |> which(arr.ind = flag)",
+                ],
+                "which_grepl",
+                None
+            )
         );
     }
 

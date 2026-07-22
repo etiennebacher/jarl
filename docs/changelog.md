@@ -40,6 +40,10 @@
   `expect_true(inherits(x, class))`, and dynamic class expressions. Dynamic
   class expressions are reported without an automatic fix (#555, @Yousa-Mirage).
 
+* `which_grepl` now supports named `which(x = ...)` arguments and native pipe
+  chains such as `x |> grepl(pattern = ...) |> which()`. Calls with additional
+  `which()` arguments are reported without an automatic fix (#560, @Yousa-Mirage).
+
 * The CLI now suggests close rule names when some rule names don't exist (#501).
 
 * New `--output-format sarif` to export to [SARIF](https://sarifweb.azurewebsites.net/) (#508, @dieghernan).
