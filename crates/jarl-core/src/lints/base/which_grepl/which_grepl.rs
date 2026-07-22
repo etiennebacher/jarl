@@ -17,14 +17,26 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// `which(grepl(...))` is harder to read and is less efficient than `grep()`
 /// since it requires two passes on the vector.
 ///
+/// This rule has an automatic fix for direct calls where `which()` only
+/// contains the `grepl()` call, and for pipe chains where the final `which()`
+/// has no arguments and the piped value can be unambiguously assigned to
+/// `grepl()`'s `pattern` or `x` argument.
+///
+/// Calls with additional arguments to `which()` are reported but not fixed
+/// because those arguments cannot be preserved by replacing `which()` with
+/// `grep()`.
+///
 /// ## Example
 ///
 /// ```r
+/// x <- c("hello", "there")
+/// which(grepl("hell", x))
 /// which(grepl("foo", x))
 /// ```
 ///
 /// Use instead:
 /// ```r
+/// grep("hell", x)
 /// grep("foo", x)
 /// ```
 ///
@@ -83,11 +95,10 @@ pub fn which_grepl(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
     let range = outer_syntax.text_trimmed_range();
     let replacement = format!("grep({inner_content})");
 
-    let linted_text = outer_syntax.text_trimmed().to_string();
     Ok(Some(Diagnostic::new(
         ViolationData::new(
             "which_grepl".to_string(),
-            format!("`{linted_text}` is less efficient than `{replacement}`."),
+            "`which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.".to_string(),
             Some(format!("Use `{replacement}` instead.")),
         ),
         range,

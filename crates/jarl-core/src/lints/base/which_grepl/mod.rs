@@ -18,7 +18,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | which(grepl('^a', x))
-          | --------------------- `which(grepl('^a', x))` is less efficient than `grep('^a', x)`.
+          | --------------------- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
           = help: Use `grep('^a', x)` instead.
         Found 1 error.
@@ -31,7 +31,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | which(grepl('^a', x, perl = TRUE, fixed = TRUE))
-          | ------------------------------------------------ `which(grepl('^a', x, perl = TRUE, fixed = TRUE))` is less efficient than `grep('^a', x, perl = TRUE, fixed = TRUE)`.
+          | ------------------------------------------------ `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
           = help: Use `grep('^a', x, perl = TRUE, fixed = TRUE)` instead.
         Found 1 error.
@@ -44,7 +44,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | which(x = grepl('^a', x))
-          | ------------------------- `which(x = grepl('^a', x))` is less efficient than `grep('^a', x)`.
+          | ------------------------- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
           = help: Use `grep('^a', x)` instead.
         Found 1 error.
@@ -57,7 +57,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | which(grepl('^a', x), arr.ind = TRUE)
-          | ------------------------------------- `which(grepl('^a', x), arr.ind = TRUE)` is less efficient than `grep('^a', x)`.
+          | ------------------------------------- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
           = help: Use `grep('^a', x)` instead.
         Found 1 error.
@@ -100,8 +100,7 @@ mod tests {
           |
         1 | / grepl('^a', x) |>
         2 | |  which()
-          | |________- `grepl('^a', x) |>
-         which()` is less efficient than `grep('^a', x)`.
+          | |________- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
           = help: Use `grep('^a', x)` instead.
         Found 1 error.
@@ -114,7 +113,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | values |> grepl(pattern = "a") |> which()
-          | ----------------------------------------- `values |> grepl(pattern = "a") |> which()` is less efficient than `grep(values, pattern = "a")`.
+          | ----------------------------------------- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
           = help: Use `grep(values, pattern = "a")` instead.
         Found 1 error.
