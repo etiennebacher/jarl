@@ -1,10 +1,12 @@
 use air_r_syntax::{RExpressionList, RSyntaxNode};
 use biome_rowan::{AstNode, AstNodeList};
+use oak_semantic::semantic_index::SemanticIndex;
 
 use crate::checker::Checker;
 use crate::diagnostic::*;
 use crate::lints::base::empty_file::empty_file::empty_file;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
+use crate::lints::base::unused_object::unused_object::unused_object;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
 use crate::lints::comments::invalid_chunk_suppression::invalid_chunk_suppression::invalid_chunk_suppression;
 use crate::lints::comments::misnamed_suppression::misnamed_suppression::misnamed_suppression;
@@ -15,14 +17,15 @@ use crate::lints::comments::unexplained_suppression::unexplained_suppression::un
 use crate::lints::comments::unmatched_range_suppression::unmatched_range_suppression::{
     unmatched_range_suppression_end, unmatched_range_suppression_start,
 };
+use crate::package::PackageFileAnalysis;
 use crate::rule_set::Rule;
 
 pub(crate) fn check_document(
     expressions: &RExpressionList,
     syntax: &RSyntaxNode,
     checker: &mut Checker,
-    duplicate_assignments: &[(String, biome_rowan::TextRange, String)],
-    unused_functions: &[(String, biome_rowan::TextRange, String)],
+    package: &PackageFileAnalysis,
+    semantic: Option<&SemanticIndex>,
 ) -> anyhow::Result<()> {
     // --- Document-level analysis ---
 
@@ -33,6 +36,13 @@ pub(crate) fn check_document(
         for diagnostic in unreachable_code_top_level(&expressions, checker)? {
             checker.report_diagnostic(Some(diagnostic));
         }
+    }
+
+    // Check for unused local objects via the semantic index.
+    if checker.is_rule_enabled(Rule::UnusedObject)
+        && let Some(semantic) = semantic
+    {
+        unused_object(&expressions, semantic, &package.cross_file_used, checker)?;
     }
 
     // --- Comment/suppression checks ---
@@ -104,7 +114,7 @@ pub(crate) fn check_document(
     // Emit package-level diagnostics before suppression filtering so that
     // # jarl-ignore and # jarl-ignore-file comments can suppress them.
     if checker.is_rule_enabled(Rule::DuplicatedFunctionDefinition) {
-        for (name, range, help) in duplicate_assignments {
+        for (name, range, help) in &package.duplicate_assignments {
             checker.report_diagnostic(Some(Diagnostic::new(
                 ViolationData::new(
                     "duplicated_function_definition".to_string(),
@@ -118,7 +128,7 @@ pub(crate) fn check_document(
     }
 
     if checker.is_rule_enabled(Rule::UnusedFunction) {
-        for (name, range, help) in unused_functions {
+        for (name, range, help) in &package.unused_functions {
             checker.report_diagnostic(Some(Diagnostic::new(
                 ViolationData::new(
                     "unused_function".to_string(),
@@ -135,19 +145,26 @@ pub(crate) fn check_document(
         checker.report_diagnostic(empty_file(&expressions, syntax));
     }
 
-    // Filter diagnostics by suppressions. This removes suppressed violations
-    // and tracks which suppressions were used (for outdated suppression detection).
-    // Must happen BEFORE checking for outdated suppressions.
-    checker.diagnostics = checker
-        .suppression
-        .filter_diagnostics(std::mem::take(&mut checker.diagnostics));
+    // Filter diagnostics by suppressions, then report outdated ones. Filtering
+    // removes suppressed violations and records which suppressions were used, so
+    // it must run before the outdated check.
+    //
+    // The fused lint-only pass skips this: it has to drop cross-file-used
+    // `unused_object` diagnostics *before* filtering (so a suppression on such
+    // an object is still seen as outdated), which it can only do once every file
+    // in the package has been parsed. It re-runs the same two steps afterwards
+    // on a `Send` snapshot of the suppression state.
+    if !checker.defer_finalization {
+        checker.diagnostics = checker
+            .suppression
+            .filter_diagnostics(std::mem::take(&mut checker.diagnostics));
 
-    // Report outdated suppressions (suppressions that didn't suppress anything).
-    if checker.is_rule_enabled(Rule::OutdatedSuppression) {
-        let unused = checker.suppression.get_unused_suppressions();
-        let outdated_diagnostics = outdated_suppression(&unused);
-        for diag in outdated_diagnostics {
-            checker.report_diagnostic(Some(diag));
+        if checker.is_rule_enabled(Rule::OutdatedSuppression) {
+            let unused = checker.suppression.get_unused_suppressions();
+            let outdated_diagnostics = outdated_suppression(&unused);
+            for diag in outdated_diagnostics {
+                checker.report_diagnostic(Some(diag));
+            }
         }
     }
 

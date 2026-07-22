@@ -15,6 +15,16 @@ air_fs = { package = "fs", git = "https://github.com/etiennebacher/air_pratt" }
 air_r_parser = { git = "https://github.com/etiennebacher/air_pratt" }
 air_r_syntax = { git = "https://github.com/etiennebacher/air_pratt" }
 air_workspace = { package = "workspace", git = "https://github.com/etiennebacher/air_pratt" }
+aether_path = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_core = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_db = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_ide = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_index_vec = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_package_metadata = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_scan = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_semantic = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+salsa = "0.26.2"
+url = "2.5"
 anyhow = "1.0.94"
 biome_formatter = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
 biome_rowan = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
@@ -25,6 +35,7 @@ insta = { version = "1.47.2", features = ["yaml", "filters"] }
 etcetera = "0.11.0"
 jarl-core = { path = "crates/jarl-core" }
 jarl-lsp = { path = "crates/jarl-lsp" }
+jarl-semantic = { path = "crates/jarl-semantic" }
 path-absolutize = "3.1.1"
 rayon = "1.12.0"
 regex = { version = "1.11.1", default-features = false, features = ["std"] }
@@ -38,6 +49,13 @@ tempfile = "3.27.0"
 toml = "0.8.23"
 tracing = "0.1.41"
 
+# The oak crates (from the ark fork) declare their air dependencies against
+# posit-dev/air; redirect them to the same Pratt-parser fork used by jarl so a
+# single copy of the syntax/parser crates exists in the graph.
+[patch."https://github.com/posit-dev/air"]
+air_r_parser = { git = "https://github.com/etiennebacher/air_pratt" }
+air_r_syntax = { git = "https://github.com/etiennebacher/air_pratt" }
+
 [profile.release]
 lto = true
 
@@ -45,4 +63,5 @@ lto = true
 [profile.dist]
 inherits = "release"
 lto = "thin"
+
 
