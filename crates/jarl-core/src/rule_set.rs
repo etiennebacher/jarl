@@ -264,6 +264,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    ApplyPaste => {
+        name: "apply_paste",
+        categories: [Perf],
+        default: Enabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     Assignment => {
         name: "assignment",
         categories: [Read],
