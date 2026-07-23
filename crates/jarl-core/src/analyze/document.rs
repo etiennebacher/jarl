@@ -6,6 +6,7 @@ use crate::checker::Checker;
 use crate::diagnostic::*;
 use crate::lints::base::empty_file::empty_file::empty_file;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
+use crate::lints::base::unused_argument::unused_argument::unused_argument;
 use crate::lints::base::unused_object::unused_object::unused_object;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
 use crate::lints::comments::invalid_chunk_suppression::invalid_chunk_suppression::invalid_chunk_suppression;
@@ -43,6 +44,18 @@ pub(crate) fn check_document(
         && let Some(semantic) = semantic
     {
         unused_object(&expressions, semantic, &package.cross_file_used, checker)?;
+    }
+
+    // Check for unused function parameters via the semantic index. Conceptually
+    // this fires per `R_FUNCTION_DEFINITION`, but the "is this param used?"
+    // query needs whole-file `SemanticInfo` (closure escape, NSE ranges, string
+    // interpolation, ...). Building that once per file and walking function
+    // scopes inside the rule avoids threading `SemanticInfo` through every
+    // `check_expression` dispatcher.
+    if checker.is_rule_enabled(Rule::UnusedArgument)
+        && let Some(semantic) = semantic
+    {
+        unused_argument(&expressions, semantic, checker)?;
     }
 
     // --- Comment/suppression checks ---
