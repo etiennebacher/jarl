@@ -26,6 +26,7 @@ use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 ///
 /// ```r
 /// x <- 1   # unused
+/// y <- 2
 /// print(y)
 /// ```
 pub fn unused_object(

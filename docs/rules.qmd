@@ -135,6 +135,7 @@ dat <- as.data.frame(
     c("unnecessary_parentheses", "readability", "✅", ""),
     c("unreachable_code", "readability, suspicious", "❌", ""),
     c("unused_function", "correctness", "❌", ""),
+    c("unused_object", "correctness", "❌", "Disabled by default"),
     c("unused_suppression", "comments", "❌", ""),
     c("vector_logic", "performance", "❌", ""),
     c("which_grepl", "performance, readability", "✅", "")

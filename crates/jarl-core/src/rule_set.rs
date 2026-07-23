@@ -646,7 +646,7 @@ declare_rules! {
     UnusedObject => {
         name: "unused_object",
         categories: [Corr],
-        default: Enabled,
+        default: Disabled,
         fix: None,
         min_r_version: None,
     },
