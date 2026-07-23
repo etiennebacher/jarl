@@ -204,29 +204,27 @@ fn collect_assignment_pipe_diagnostics(
 
             let (scope_id, _) = semantic.scope_at(lhs_range.start());
 
-            let symbol = semantic.symbols(scope_id).id(&name);
-            let later_use = symbol.is_some_and(|sym| {
-                semantic
-                    .uses(scope_id)
-                    .iter()
-                    .any(|(_, u)| u.symbol() == sym && u.range().start() >= expr_end)
-            });
-            let closure_use = info.is_used_in_nested_scope(scope_id, &name);
-            let top_level = scope_id == ScopeId::from(0);
-            let exported = top_level && exports.contains(&name);
-            let cross_file = top_level && cross_file_used.contains(&name);
-
-            if !later_use && !closure_use && !exported && !cross_file {
-                out.push(Diagnostic::new(
-                    ViolationData::new(
-                        "unused_object".to_string(),
-                        format!("Object `{name}` is defined but never used."),
-                        None,
-                    ),
-                    lhs_range,
-                    Fix::empty(),
-                ));
+            // `%<>%` isn't an oak definition, so route the "is it used?" check
+            // through `SemanticInfo` (real reads, closure captures, synthetic
+            // uses, and string interpolation) rather than querying oak's use
+            // maps directly, which would miss glue/`..x`/`do.call` uses.
+            if info.is_pipe_target_used(scope_id, &name, expr_end) {
+                continue;
             }
+            let top_level = scope_id == ScopeId::from(0);
+            if top_level && (exports.contains(&name) || cross_file_used.contains(&name)) {
+                continue;
+            }
+
+            out.push(Diagnostic::new(
+                ViolationData::new(
+                    "unused_object".to_string(),
+                    format!("Object `{name}` is defined but never used."),
+                    None,
+                ),
+                lhs_range,
+                Fix::empty(),
+            ));
         }
     }
     out

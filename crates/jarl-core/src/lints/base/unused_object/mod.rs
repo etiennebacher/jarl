@@ -960,6 +960,79 @@ x + 1"
     }
 
     #[test]
+    fn test_no_lint_pipe_target_used_in_glue() {
+        // The `%<>%` binding is read only inside a glue string, which oak's
+        // use maps don't see; `SemanticInfo` interpolation tracking does.
+        expect_no_lint(
+            "x <- 1\nx %<>% as.character()\nglue(\"{x}\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_pipe_target_used_in_cli() {
+        expect_no_lint(
+            "x <- 1\nx %<>% as.character()\ncli::cli_inform(\"{x}\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_pipe_target_used_in_dotdot() {
+        // `..cols` is a synthetic use of `cols`.
+        expect_no_lint(
+            "cols <- 1\ncols %<>% rev()\ndplyr::select(df, ..cols)",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_pipe_target_used_in_do_call() {
+        // `do.call("f", …)` marks `f` synthetically used.
+        expect_no_lint(
+            "f <- 1\nf %<>% identity()\ndo.call(\"f\", list())",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_pipe_target_captured_in_nested_glue() {
+        // The pipe target is read by an interpolation inside a nested closure,
+        // evaluated later, so it stays used regardless of textual order.
+        expect_no_lint(
+            "x <- 1\nx %<>% sum()\ng <- function() glue(\"{x}\")\ng()",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_pipe_target_glue_before_reassignment() {
+        // The glue read sees the pre-pipe `x`; the `%<>%` rebinding is never
+        // read afterward, so it is still reported (position-aware, like a plain
+        // reassignment).
+        assert_snapshot!(
+            snapshot_lint("
+x <- 1
+glue(\"{x}\")
+x %<>% sum()"),
+            @"
+        warning: unused_object
+         --> <test>:4:1
+          |
+        4 | x %<>% sum()
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
     fn test_assign() {
         // shouldn't lint: env is used as argument to assign()
         expect_no_lint(

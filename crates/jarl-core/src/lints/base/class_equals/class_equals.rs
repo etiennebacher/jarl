@@ -205,10 +205,9 @@ fn extract_class_and_string(
             return None;
         }
         left_is_class = true;
-    } else if let Some(left_val) = left.as_any_r_value() {
-        left_val.as_r_string_value()?;
     } else {
-        return None;
+        let left_val = left.as_any_r_value()?;
+        left_val.as_r_string_value()?;
     }
 
     // Check if right is a class() call or a string
@@ -219,10 +218,9 @@ fn extract_class_and_string(
             return None;
         }
         right_is_class = true;
-    } else if let Some(right_val) = right.as_any_r_value() {
-        right_val.as_r_string_value()?;
     } else {
-        return None;
+        let right_val = right.as_any_r_value()?;
+        right_val.as_r_string_value()?;
     }
 
     // We need exactly one class() and one string

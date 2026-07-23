@@ -260,9 +260,9 @@ pub fn find_r_project_root(file_path: &Path) -> Option<PathBuf> {
         if dir.join("renv.lock").exists() {
             return Some(dir.to_path_buf());
         }
-        match dir.parent() {
-            Some(parent) => dir = parent,
-            None => return None,
+        {
+            let parent = dir.parent()?;
+            dir = parent
         }
     }
 }

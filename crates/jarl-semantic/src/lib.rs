@@ -173,6 +173,64 @@ impl<'a> SemanticInfo<'a> {
         false
     }
 
+    /// Answer "is this name used?" for an assignment-pipe target (`x %<>% f()`),
+    /// which oak doesn't model as a definition (so `is_definition_used` can't
+    /// apply). Mirrors the definition check, keyed by name + the rebinding's end
+    /// position instead of a `DefinitionId`:
+    /// - a real (oak) read later in `scope_id`, or one captured by a nested
+    ///   scope;
+    /// - a synthetic use (name-based: `..x`, `do.call("x", …)`, custom infix, …);
+    /// - a string-interpolation read (`glue("{x}")`, cli, custom delimiters)
+    ///   later in `scope_id`, or one in a nested scope.
+    pub fn is_pipe_target_used(&self, scope_id: ScopeId, name: &str, rebind_end: TextSize) -> bool {
+        if let Some(sym) = self.index.symbols(scope_id).id(name)
+            && self
+                .index
+                .uses(scope_id)
+                .iter()
+                .any(|(_, u)| u.symbol() == sym && u.range().start() >= rebind_end)
+        {
+            return true;
+        }
+        if self.is_used_in_nested_scope(scope_id, name) {
+            return true;
+        }
+        // Synthetic uses carry no position, matching the main loop's check.
+        if self.synthetic_used_names.contains(name) {
+            return true;
+        }
+        self.interpolation_use_reaches(scope_id, name, rebind_end)
+    }
+
+    /// True if a string-interpolation read of `name` sees the binding created at
+    /// `rebind_end`: a read later in `scope_id`, or one in a nested scope
+    /// (evaluated later, so textual order is irrelevant — the same same-scope /
+    /// nested-scope split as the oak-use checks in [`Self::is_pipe_target_used`]).
+    fn interpolation_use_reaches(
+        &self,
+        scope_id: ScopeId,
+        name: &str,
+        rebind_end: TextSize,
+    ) -> bool {
+        if self.interpolation_uses.is_empty() {
+            return false;
+        }
+        let descendants = self.scope_descendants(scope_id);
+        self.interpolation_uses
+            .iter()
+            .any(|(use_name, read_range)| {
+                if use_name != name {
+                    return false;
+                }
+                let (read_scope, _) = self.index.scope_at(read_range.start());
+                if read_scope == scope_id {
+                    read_range.start() >= rebind_end
+                } else {
+                    descendants.contains(&read_scope)
+                }
+            })
+    }
+
     // ── Internal: AST pass ────────────────────────────────────────────
 
     fn collect_ast_passes(&mut self, expressions: &[RSyntaxNode]) {
@@ -580,7 +638,10 @@ impl<'a> SemanticInfo<'a> {
     /// record them in `reaching_used`, mirroring the real-use pass. Runs after
     /// the AST pass so the NSE ranges it consults are already collected.
     fn precompute_interpolation_uses(&mut self) {
-        let uses = std::mem::take(&mut self.interpolation_uses);
+        // Keep `interpolation_uses` populated (clone rather than take): pipe
+        // targets, which oak doesn't model as definitions, query it later via
+        // `interpolation_use_reaches`.
+        let uses = self.interpolation_uses.clone();
         for (name, read_range) in &uses {
             self.mark_interpolation_use(name, read_range.start());
         }
