@@ -1377,8 +1377,8 @@ x |>
     fn test_suppression_no_duplicate_rule() {
         let result = apply_jarl_ignore_at_cursor(
             r#"
-# jarl-ignore assignment: already suppressed
-<CURS>x = 1
+# jarl-ignore any_is_na: already suppressed
+<CURS>any(is.na(x))
 "#,
         );
 

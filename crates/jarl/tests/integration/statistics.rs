@@ -22,7 +22,7 @@ stop('x')
 stop('x')
 ",
         ),
-        ("test2.R", "mean(x <- 1)"),
+        ("test2.R", "mean(x <- 1); x"),
     ])?;
 
     insta::assert_snapshot!(
@@ -56,7 +56,7 @@ stop('x')
 
 #[test]
 fn test_stats_no_violation() -> anyhow::Result<()> {
-    let case = CliTest::with_file("test.R", "x <- 1")?;
+    let case = CliTest::with_file("test.R", "1 + 1")?;
 
     insta::assert_snapshot!(
         &mut case

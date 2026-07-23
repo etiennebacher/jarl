@@ -162,5 +162,6 @@ website:
       - rules/unnecessary_parentheses.md
       - rules/unreachable_code.md
       - rules/unused_function.md
+      - rules/unused_object.md
       - rules/vector_logic.md
       - rules/which_grepl.md
