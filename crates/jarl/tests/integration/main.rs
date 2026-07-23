@@ -23,6 +23,7 @@ mod output_format;
 mod per_file_ignores;
 mod rmd;
 mod roxygen;
+mod rule;
 mod rules;
 mod statistics;
 mod toml;

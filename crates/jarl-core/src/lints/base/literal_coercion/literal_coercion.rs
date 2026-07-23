@@ -1,8 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{
-    get_arg_by_position, get_function_name, get_function_namespace_prefix, get_unnamed_args,
-    node_contains_comments,
-};
+use crate::utils::{get_arg_by_position, get_unnamed_args, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, Direction};
 
@@ -41,13 +38,13 @@ use biome_rowan::{AstNode, Direction};
 /// TRUE
 /// 1L
 /// ```
-pub fn literal_coercion(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let fn_name = get_function_name(function.clone());
-    let fn_ns = get_function_namespace_prefix(function);
-
+pub fn literal_coercion(
+    ast: &RCall,
+    fn_name: &str,
+    ns_prefix: Option<&str>,
+) -> anyhow::Result<Option<Diagnostic>> {
     // Determine the target type and which family the function belongs to.
-    let (target, is_rlang) = match fn_name.as_str() {
+    let (target, is_rlang) = match fn_name {
         "as.logical" => (TargetType::Logical, false),
         "as.integer" => (TargetType::Integer, false),
         "as.numeric" | "as.double" => (TargetType::Double, false),
@@ -61,7 +58,7 @@ pub fn literal_coercion(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 
     // Reject calls that come from an unrelated namespace. Base coercions may be
     // qualified with `base::`, rlang helpers with `rlang::`.
-    if let Some(ref ns) = fn_ns {
+    if let Some(ns) = ns_prefix {
         let expected = if is_rlang { "rlang::" } else { "base::" };
         if ns != expected {
             return Ok(None);

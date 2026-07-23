@@ -32,6 +32,9 @@ pub(crate) enum Command {
     /// Check a set of files or directories
     Check(Box<CheckCommand>),
 
+    /// Print the documentation of a rule
+    Rule(RuleCommand),
+
     /// Start a language server
     Server(ServerCommand),
 }
@@ -190,6 +193,16 @@ pub struct CheckCommand {
     )]
     pub help: Option<bool>,
 }
+#[derive(Clone, Debug, Parser)]
+#[command(arg_required_else_help(true))]
+pub struct RuleCommand {
+    #[arg(
+        required = true,
+        help = "Name of the rule to explain, for example `jarl rule all_equal`."
+    )]
+    pub name: String,
+}
+
 #[derive(Clone, Debug, Parser)]
 pub(crate) struct ServerCommand {}
 

@@ -3,10 +3,11 @@
 
 name: Benchmark
 
+# "edited" is included so that retargeting the PR to another base branch
+# re-runs the comparison against the new base.
 on:
   pull_request:
-    branches:
-      - main
+    types: [opened, synchronize, reopened, edited]
     paths:
       - .github/workflows/benchmark.yml
       - .github/scripts/process_bench_ci.R
@@ -26,6 +27,8 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  # Used by process_bench_ci.R to label the reference branch in the report
+  BASE_REF: ${{ github.base_ref }}
   # Same repositories as ecosystem-check for consistency
   TEST_REPOS: |
     easystats/datawizard@7466ff6f91040e25f826b224a4ef5e9aeb63b567
@@ -41,6 +44,9 @@ env:
 
 jobs:
   benchmark:
+    # For "edited" events, only run when the base branch was changed (not for
+    # title/description edits).
+    if: github.event.action != 'edited' || github.event.changes.base != null
     runs-on: ubuntu-latest
 
     steps:
@@ -58,7 +64,7 @@ jobs:
           key: benchmark-pr
 
       - name: Set up Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1.16.1
+        uses: actions-rust-lang/setup-rust-toolchain@v1.17.0
 
       - name: Set up R for package-specific rules and to process results
         uses: r-lib/actions/setup-r@v2.12.0
@@ -86,14 +92,14 @@ jobs:
           cp target/release/jarl target/release/jarl-pr
           echo "PR_JARL=$(pwd)/target/release/jarl-pr" >> $GITHUB_ENV
 
-      - name: Build jarl binary from main branch
+      - name: Build jarl binary from base branch
         run: |
-          git fetch origin main
-          git checkout origin/main
+          git fetch origin ${{ github.base_ref }}
+          git checkout origin/${{ github.base_ref }}
           cargo build --release --package jarl
 
-      - name: Save main binary path
-        run: echo "MAIN_JARL=$(pwd)/target/release/jarl" >> $GITHUB_ENV
+      - name: Save base binary path
+        run: echo "BASE_JARL=$(pwd)/target/release/jarl" >> $GITHUB_ENV
 
       - name: Clone all test repos
         run: |
@@ -118,8 +124,8 @@ jobs:
             repo_name=$(echo "$repo" | cut -d'@' -f1)
             repo_dir=$(echo "$repo_name" | tr '/' '_')
 
-            # Run main
-            (cd "$repo_dir" && hyperfine --warmup 5 --min-runs 50 '$MAIN_JARL check . --select ALL' --ignore-failure  --export-json ../../results_bench/${repo_dir}_main.json) || true
+            # Run base branch (the "_base" suffix is expected by process_bench_ci.R)
+            (cd "$repo_dir" && hyperfine --warmup 5 --min-runs 50 '$BASE_JARL check . --select ALL' --ignore-failure  --export-json ../../results_bench/${repo_dir}_base.json) || true
 
             # Run PR
             (cd "$repo_dir" && hyperfine --warmup 5 --min-runs 50 '$PR_JARL check . --select ALL' --ignore-failure  --export-json ../../results_bench/${repo_dir}_pr.json) || true

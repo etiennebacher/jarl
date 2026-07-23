@@ -148,8 +148,7 @@ pub fn parse_comment_directive(text: &str) -> Option<DirectiveParseResult> {
     } else if let Some(rest) = text.strip_prefix("# ") {
         (rest, false)
     } else {
-        let rest = text.strip_prefix('#')?;
-        (rest, false)
+        (text.strip_prefix('#')?, false)
     };
 
     // Must start with "jarl-ignore"

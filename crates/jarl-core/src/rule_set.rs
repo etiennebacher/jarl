@@ -307,6 +307,13 @@ declare_rules! {
         fix: Unsafe,
         min_r_version: None,
     },
+    ConditionMessage => {
+        name: "condition_message",
+        categories: [Read],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
     DownloadFile => {
         name: "download_file",
         categories: [Susp],
@@ -402,6 +409,13 @@ declare_rules! {
         name: "if_always_true",
         categories: [Read, Susp],
         default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    IfNotElse => {
+        name: "if_not_else",
+        categories: [Read],
+        default: Disabled,
         fix: None,
         min_r_version: None,
     },
@@ -545,6 +559,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    RepTimesIgnored => {
+        name: "rep_times_ignored",
+        categories: [Susp],
+        default: Enabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     Repeat => {
         name: "repeat",
         categories: [Read],
@@ -587,11 +608,25 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    StopifnotAll => {
+        name: "stopifnot_all",
+        categories: [Read],
+        default: Disabled,
+        fix: Unsafe,
+        min_r_version: None,
+    },
     StringBoundary => {
         name: "string_boundary",
         categories: [Perf, Read],
         default: Enabled,
         fix: Safe,
+        min_r_version: None,
+    },
+    StringsAsFactors => {
+        name: "strings_as_factors",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
         min_r_version: None,
     },
     SystemFile => {
@@ -790,6 +825,13 @@ declare_rules! {
     },
     TestthatExpectS3Class => {
         name: "expect_s3_class",
+        categories: [Testthat],
+        default: Disabled,
+        fix: Safe,
+        min_r_version: None,
+    },
+    TestthatExpectS4Class => {
+        name: "expect_s4_class",
         categories: [Testthat],
         default: Disabled,
         fix: Safe,

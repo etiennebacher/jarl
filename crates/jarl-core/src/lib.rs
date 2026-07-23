@@ -30,6 +30,7 @@ pub mod package_cache;
 pub mod per_file_ignores;
 pub mod rmd;
 pub mod roxygen;
+pub mod rule_docs;
 pub mod rule_options;
 pub mod rule_set;
 pub mod settings;

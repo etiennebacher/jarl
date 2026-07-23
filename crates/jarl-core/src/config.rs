@@ -550,6 +550,16 @@ pub(crate) fn unknown_rules_error(message: String, help: Vec<String>) -> anyhow:
 /// only when that distance is within an acceptance threshold (so unrelated
 /// input like "foo" yields no suggestion). Uses Damerau-Levenshtein distance,
 /// which also accounts for adjacent transpositions (e.g. "treu" -> "true").
+/// Suggest known rule names close to `input`, for "did you mean" hints when a
+/// user passes an unknown rule (e.g. to `jarl rule <name>`).
+pub fn suggest_rules(input: &str) -> Vec<String> {
+    let candidates: Vec<&str> = crate::rule_set::ALL_RULES
+        .iter()
+        .map(|rule| rule.name())
+        .collect();
+    suggest_rule_names(input, &candidates)
+}
+
 fn suggest_rule_names(input: &str, candidates: &[&str]) -> Vec<String> {
     // Allow roughly one edit per three characters, with a floor of 1 so short
     // typos are still caught.

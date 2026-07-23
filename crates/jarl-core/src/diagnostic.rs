@@ -207,13 +207,10 @@ fn expand_span_line_tabs(source: &str, start: usize, end: usize) -> (String, usi
         return (source.to_string(), start, end);
     }
 
-    // Count tabs in the three regions: before span lines, before span start
-    // on the span line, and within the span.
+    // Count tabs on the span lines: before the span start, within the span,
+    // and after it. Lines before the span lines are copied unexpanded, so
+    // their tabs must not shift the adjusted offsets.
     let source_bytes = source.as_bytes();
-    let tabs_before_lines = source_bytes[..line_start]
-        .iter()
-        .filter(|&&b| b == TAB)
-        .count();
     let tabs_line_to_start = source_bytes[line_start..start]
         .iter()
         .filter(|&&b| b == TAB)
@@ -236,9 +233,8 @@ fn expand_span_line_tabs(source: &str, start: usize, end: usize) -> (String, usi
     result.push_str(&expanded_lines);
     result.push_str(&source[line_end..]);
 
-    let total_before = tabs_before_lines + tabs_line_to_start;
-    let adj_start = start + total_before * EXTRA_PER_TAB;
-    let adj_end = end + (total_before + tabs_in_span) * EXTRA_PER_TAB;
+    let adj_start = start + tabs_line_to_start * EXTRA_PER_TAB;
+    let adj_end = end + (tabs_line_to_start + tabs_in_span) * EXTRA_PER_TAB;
 
     (result, adj_start, adj_end)
 }

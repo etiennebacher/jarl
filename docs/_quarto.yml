@@ -90,6 +90,7 @@ website:
       - rules/coalesce.md
       - rules/comparison_negation.md
       - rules/condition_call.md
+      - rules/condition_message.md
       - rules/download_file.md
       - rules/dplyr_filter_out.md
       - rules/dplyr_group_by_ungroup.md
@@ -107,6 +108,7 @@ website:
       - rules/expect_not.md
       - rules/expect_null.md
       - rules/expect_s3_class.md
+      - rules/expect_s4_class.md
       - rules/expect_true_false.md
       - rules/expect_type.md
       - rules/fixed_regex.md
@@ -115,6 +117,7 @@ website:
       - rules/glue.md
       - rules/grepv.md
       - rules/if_always_true.md
+      - rules/if_not_else.md
       - rules/implicit_assignment.md
       - rules/internal_function.md
       - rules/invalid_chunk_suppression.md
@@ -140,13 +143,16 @@ website:
       - rules/quotes.md
       - rules/redundant_equals.md
       - rules/redundant_ifelse.md
+      - rules/rep_times_ignored.md
       - rules/repeat.md
       - rules/sample_int.md
       - rules/seq.md
       - rules/seq2.md
       - rules/sort.md
       - rules/sprintf.md
+      - rules/stopifnot_all.md
       - rules/string_boundary.md
+      - rules/strings_as_factors.md
       - rules/system_file.md
       - rules/true_false_symbol.md
       - rules/undesirable_function.md

@@ -85,6 +85,31 @@
       },
       "additionalProperties": false
     },
+    "IfNotElseOptions": {
+      "description": "TOML options for `[lint.if_not_else]`.\n\nUse `skipped-functions` to fully replace the default list of functions whose\nnegated calls are allowed as an `if`/`ifelse()` condition. Use\n`extend-skipped-functions` to add to the default list. Specifying both is an\nerror.",
+      "type": "object",
+      "properties": {
+        "extend-skipped-functions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "skipped-functions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "ImplicitAssignmentOptions": {
       "description": "TOML options for `[lint.implicit_assignment]`.\n\nUse `skipped-functions` to fully replace the default list of functions\nwhere implicit assignments are allowed. Use\n`extend-skipped-functions` to add to the default list.\nSpecifying both is an error.",
       "type": "object",
@@ -193,6 +218,18 @@
           "items": {
             "type": "string"
           }
+        },
+        "if_not_else": {
+          "title": "Options for the `if_not_else` rule",
+          "description": "Use `skipped-functions` to fully replace the default list of functions\nwhose negated calls are allowed as an `if`/`ifelse()` condition. Use\n`extend-skipped-functions` to add to the default list.\nSpecifying both is an error.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IfNotElseOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "ignore": {
           "title": "Rules to ignore",
