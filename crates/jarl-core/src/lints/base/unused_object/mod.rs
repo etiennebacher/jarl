@@ -1249,6 +1249,57 @@ f()",
     }
 
     #[test]
+    fn test_defer_keeps_object_alive() {
+        // `defer()` shares `on.exit`'s `Current + Lazy` shape: a read in its
+        // body consumes the caller-frame binding. Covers the bare call and both
+        // namespaced spellings.
+        for call in [
+            "defer(print(a))",
+            "withr::defer(print(a))",
+            "rlang::defer(print(a))",
+        ] {
+            expect_no_lint(
+                &format!(
+                    "
+        f <- function() {{
+            a <- 1
+            {call}
+        }}
+        "
+                ),
+                "unused_object",
+                None,
+            );
+        }
+    }
+
+    #[test]
+    fn test_on_exit_member_name_reports() {
+        // Only genuine variable reads in the `on.exit` body keep a binding
+        // alive. `df$x` reads `df`, not `x`, so `x` is still unused.
+        assert_snapshot!(
+            snapshot_lint(
+                "
+f <- function() {
+    df <- data.frame()
+    x <- 1
+    on.exit(print(df$x))
+}
+        "
+            ),
+            @"
+        warning: unused_object
+         --> <test>:4:5
+          |
+        4 |     x <- 1
+          |     - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
     fn test_with_on_exit() {
         // no lint when on.exit() refers to objects defined after it's called
         expect_no_lint(
