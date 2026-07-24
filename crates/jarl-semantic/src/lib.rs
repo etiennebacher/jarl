@@ -91,9 +91,8 @@ pub struct SemanticInfo<'a> {
     /// Shared memo of `source()` target indices for this run.
     source_cache: SourceIndexCache,
     /// Names that have a synthetic use from AST passes (`do.call("f", …)`,
-    /// `..cols`, `on.exit` bodies, loop/short-circuit assignment LHSes,
-    /// custom infix operators). A definition whose symbol name is in this set
-    /// is treated as used.
+    /// `..cols`, loop/short-circuit assignment LHSes, custom infix operators).
+    /// A definition whose symbol name is in this set is treated as used.
     synthetic_used_names: HashSet<String>,
     /// Assignments sitting inside a short-circuit operand (`cond || (x <- 2)`),
     /// stored as `(name, assignment range)` and resolved in
@@ -465,11 +464,6 @@ impl<'a> SemanticInfo<'a> {
                     self.synthetic_used_names.insert(s);
                 }
             }
-            "on.exit" => {
-                if let Some((_, body)) = arg_values.first() {
-                    self.collect_on_exit_uses(body);
-                }
-            }
             "source" => {
                 if let Some((_, first)) = arg_values.first()
                     && let Some(path) = string_literal_value(first)
@@ -532,17 +526,6 @@ impl<'a> SemanticInfo<'a> {
                     self.synthetic_used_names
                         .insert(symbols.symbol(use_site.symbol()).name().to_string());
                 }
-            }
-        }
-    }
-
-    fn collect_on_exit_uses(&mut self, body: &RSyntaxNode) {
-        for node in body.descendants() {
-            if node.kind() == RSyntaxKind::R_IDENTIFIER
-                && let Some(token) = node.first_token()
-            {
-                self.synthetic_used_names
-                    .insert(token.text_trimmed().to_string());
             }
         }
     }
