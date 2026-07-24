@@ -1,17 +1,37 @@
 use std::fmt;
 use std::path::PathBuf;
 
+use biome_rowan::TextRange;
+
 use crate::diagnostic::Diagnostic;
+use crate::location::Location;
+
+/// A single syntax error reported by the parser.
+///
+/// Carries the parser's message (e.g. `expected a value`) along with the range
+/// it points at and its resolved (row, column) location, so the caller can
+/// render it as an annotated snippet. Both the range and the location are
+/// optional: a few low-level failures (e.g. an unterminated string reported by
+/// the lexer) have no span to attach.
+#[derive(Debug)]
+pub struct SyntaxError {
+    pub message: String,
+    pub range: Option<TextRange>,
+    pub location: Option<Location>,
+}
 
 /// Custom error type for R parsing errors.
 ///
 /// The parser recovers from syntax errors, so the rest of the file is still
 /// linted: the diagnostics found in the code that parsed successfully are
-/// carried here for the caller to report alongside the error.
+/// carried here for the caller to report alongside the error. The individual
+/// syntax errors (message + location) are carried in `syntax_errors` so the
+/// caller can report each of them precisely rather than a single generic line.
 #[derive(Debug)]
 pub struct ParseError {
     pub filename: PathBuf,
     pub diagnostics: Vec<Diagnostic>,
+    pub syntax_errors: Vec<SyntaxError>,
 }
 
 impl fmt::Display for ParseError {

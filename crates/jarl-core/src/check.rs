@@ -1,4 +1,5 @@
-use crate::error::ParseError;
+use crate::error::{ParseError, SyntaxError};
+use crate::location::Location;
 use crate::package::{
     FilePackageInfo, FileScope, PackageAnalysis, PackageContext, make_package_analysis,
     summarize_package_info,
@@ -10,6 +11,7 @@ use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
 use air_r_syntax::{RExpressionList, RSyntaxNode};
 use anyhow::{Context, Result};
+use biome_rowan::{TextRange, TextSize};
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fs;
@@ -326,10 +328,69 @@ pub fn get_checks(
     let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
 
     if has_parse_errors {
-        return Err(ParseError { filename: file.to_path_buf(), diagnostics }.into());
+        let syntax_errors = collect_syntax_errors(&parsed, contents);
+        return Err(ParseError {
+            filename: file.to_path_buf(),
+            diagnostics,
+            syntax_errors,
+        }
+        .into());
     }
 
     Ok(diagnostics)
+}
+
+/// Convert the parser's diagnostics (message + optional span) into the
+/// `SyntaxError`s carried by [`ParseError`], resolving each span to a
+/// (row, column) location.
+///
+/// Locations are computed against `contents` (not the parsed tree) because
+/// `find_new_lines` reads the serialized tree, which can be truncated once the
+/// parser has recovered from an error, throwing later offsets off.
+fn collect_syntax_errors(parsed: &air_r_parser::Parse, contents: &str) -> Vec<SyntaxError> {
+    // `Diagnostic::location` (the trait method) is the only public accessor for
+    // a `ParseDiagnostic`'s span.
+    use biome_diagnostics::Diagnostic as _;
+
+    let loc_new_lines = crate::utils::find_new_lines_from_content(contents);
+
+    parsed
+        .diagnostics()
+        .iter()
+        .map(|diagnostic| {
+            let range = diagnostic
+                .location()
+                .span
+                .map(|range| normalize_eof_range(contents, range));
+            let location = range.map(|range| {
+                let start: usize = range.start().into();
+                let (row, col) = find_row_col(start, &loc_new_lines);
+                Location::new(row, col)
+            });
+            SyntaxError {
+                message: diagnostic.message.to_string(),
+                range,
+                location,
+            }
+        })
+        .collect()
+}
+
+/// Move an end-of-file error span back to the end of the last line with
+/// content.
+///
+/// Parser errors at EOF are zero-width spans sitting past the final newline, on
+/// an empty line. annotate-snippets renders those as an empty snippet, and the
+/// end of the last real line is the more useful place to point at anyway.
+fn normalize_eof_range(contents: &str, range: TextRange) -> TextRange {
+    let start: usize = range.start().into();
+    let end: usize = range.end().into();
+    if start == end && start == contents.len() {
+        let trimmed = contents.trim_end_matches(['\n', '\r']).len();
+        let pos = TextSize::from(trimmed as u32);
+        return TextRange::new(pos, pos);
+    }
+    range
 }
 
 /// Populate package context on the checker from pre-computed data.
@@ -472,7 +533,15 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
 
     if has_parse_errors {
-        return Err(ParseError { filename: file.to_path_buf(), diagnostics }.into());
+        // Rmd parse errors are reported against the combined virtual source;
+        // mapping arbitrary error spans back to the original file is unreliable,
+        // so we report only the generic summary here (no per-error snippets).
+        return Err(ParseError {
+            filename: file.to_path_buf(),
+            diagnostics,
+            syntax_errors: Vec::new(),
+        }
+        .into());
     }
 
     Ok(diagnostics)

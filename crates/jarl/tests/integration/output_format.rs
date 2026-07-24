@@ -555,7 +555,12 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
     1 fixable with the `--fix` option.
 
     ----- stderr -----
-    Error: Failed to parse test2.R due to syntax errors.
+    error: expected `)` but instead the file ends
+     --> test2.R:1:5
+      |
+    1 | any(
+      |     ^
+      |
     "
     );
 
@@ -580,7 +585,7 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
     1 fixable with the `--fix` option.
 
     ----- stderr -----
-    Error: Failed to parse test2.R due to syntax errors.
+    Error: test2.R:1:5 expected `)` but instead the file ends
     "
     );
 

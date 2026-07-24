@@ -191,6 +191,39 @@ pub fn render_diagnostic(
     format!("{}", renderer.render(message))
 }
 
+/// Render a single syntax error as an annotated code snippet.
+///
+/// Mirrors [`render_diagnostic`] but for parser errors: the message becomes the
+/// error title and, when the error has a span, the offending range is
+/// underlined in its source context. Errors without a span (e.g. some lexer
+/// failures) are rendered as a title-only error line.
+pub fn render_syntax_error(
+    source: &str,
+    origin: &str,
+    error: &crate::error::SyntaxError,
+    renderer: &Renderer,
+) -> String {
+    let Some(range) = error.range else {
+        return format!("{}", renderer.render(Level::Error.title(&error.message)));
+    };
+
+    let start_offset: usize = range.start().into();
+    let end_offset: usize = range.end().into();
+
+    // See `render_diagnostic`: annotate-snippets expands tabs for display but
+    // validates spans against the original length, so expand the span's lines.
+    let (expanded, adj_start, adj_end) = expand_span_line_tabs(source, start_offset, end_offset);
+
+    let snippet = Snippet::source(&expanded)
+        .origin(origin)
+        .fold(true)
+        .annotation(Level::Error.span(adj_start..adj_end));
+
+    let message = Level::Error.title(&error.message).snippet(snippet);
+
+    format!("{}", renderer.render(message))
+}
+
 /// Expand tabs only on the lines that overlap with `start..end` and adjust
 /// offsets accordingly. Returns the modified source and adjusted span bounds.
 fn expand_span_line_tabs(source: &str, start: usize, end: usize) -> (String, usize, usize) {

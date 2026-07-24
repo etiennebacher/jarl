@@ -96,7 +96,12 @@ fn test_parsing_error() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    Error: Failed to parse test.R due to syntax errors.
+    error: expected an expression
+     --> test.R:1:5
+      |
+    1 | f <-
+      |     ^
+      |
     "
     );
 
@@ -133,7 +138,12 @@ fn test_parsing_error_for_some_files() -> anyhow::Result<()> {
     1 fixable with the `--fix` option.
 
     ----- stderr -----
-    Error: Failed to parse test.R due to syntax errors.
+    error: expected an expression
+     --> test.R:1:5
+      |
+    1 | f <-
+      |     ^
+      |
     "
     );
 
@@ -169,7 +179,12 @@ fn test_parsing_error_with_valid_code_in_same_file() -> anyhow::Result<()> {
     Found 1 error.
 
     ----- stderr -----
-    Error: Failed to parse test.R due to syntax errors.
+    error: expected an expression
+     --> test.R:2:5
+      |
+    2 | f <-
+      |     ^
+      |
     "
     );
 
