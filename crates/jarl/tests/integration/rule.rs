@@ -390,7 +390,7 @@ fn test_rule_without_name_shows_help() -> anyhow::Result<()> {
       -h, --help  Print help
 
     Global options:
-          --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+          --log-level <LOG_LEVEL>  The log level [default: warn] [possible values: error, warn, info, debug, trace]
     "
     );
 

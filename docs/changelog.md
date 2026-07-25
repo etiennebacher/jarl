@@ -61,6 +61,10 @@
 * New command `jarl rule <rule_name>` to print a rule's documentation in the
   terminal, for example `jarl rule any_is_na` (#566).
 
+* Jarl now provides shell completions for `bash`, `zsh`, `fish`, `powershell`,
+  and `elvish`. See [Shell completions](howto/shell-completions.md) for more
+  information (#567).
+
 ### Bug fixes
 
 * `implicit_assignment` no longer flags chained assignments like

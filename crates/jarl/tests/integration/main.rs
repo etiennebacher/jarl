@@ -25,6 +25,7 @@ mod rmd;
 mod roxygen;
 mod rule;
 mod rules;
+mod shell_completion;
 mod statistics;
 mod toml;
 mod toml_hierarchical;

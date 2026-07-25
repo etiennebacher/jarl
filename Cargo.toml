@@ -19,6 +19,7 @@ anyhow = "1.0.94"
 biome_formatter = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
 biome_rowan = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
 clap = { version = "4.6.0", features = ["derive"] }
+clap_complete = { version = "4.5.66", features = ["unstable-dynamic"] }
 colored = "3.1.1"
 ignore = "0.4.23"
 insta = { version = "1.47.2", features = ["yaml", "filters"] }
