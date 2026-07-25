@@ -7,13 +7,33 @@ use crate::helpers::{CliTest, CommandExt};
 
 /// Candidates offered for the argument at `index`, as the shell would get them.
 fn complete(args: &[&str], index: usize) -> Vec<String> {
-    let args = args.iter().map(OsString::from).collect();
+    complete_os(args.iter().map(OsString::from).collect(), index)
+}
 
+/// Like [complete], for arguments that can't be written as a `str`.
+fn complete_os(args: Vec<OsString>, index: usize) -> Vec<String> {
     clap_complete::engine::complete(&mut Args::command(), args, index, None)
         .unwrap()
         .into_iter()
         .map(|candidate| candidate.get_value().to_string_lossy().into_owned())
         .collect()
+}
+
+/// Shells hand over whatever the user typed, which isn't necessarily text Rust can look
+/// at as a `str`.
+fn invalid_utf8() -> OsString {
+    #[cfg(unix)]
+    {
+        use std::os::unix::ffi::OsStringExt;
+        OsString::from_vec(vec![0xff])
+    }
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::ffi::OsStringExt;
+        // Unpaired surrogate
+        OsString::from_wide(&[0xd800])
+    }
 }
 
 /// Shells get their completions by re-running `jarl` with `COMPLETE` set, so running it
@@ -78,6 +98,21 @@ fn test_complete_rule_names_after_comma() {
     );
 
     assert_eq!(candidates, ["PERF,any_is_na,seq", "PERF,any_is_na,seq2"]);
+}
+
+#[test]
+fn test_complete_rule_names_ignores_invalid_utf8() {
+    let args = vec![
+        OsString::from("jarl"),
+        OsString::from("check"),
+        OsString::from("--select"),
+        invalid_utf8(),
+    ];
+
+    assert!(complete_os(args, 3).is_empty());
+
+    // Guards against the assertion above passing because nothing is ever completed
+    assert!(!complete(&["jarl", "check", "--select", "any"], 3).is_empty());
 }
 
 #[test]
