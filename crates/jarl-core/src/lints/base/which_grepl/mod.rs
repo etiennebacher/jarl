@@ -20,7 +20,7 @@ mod tests {
         1 | which(grepl('^a', x))
           | --------------------- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
-          = help: Use `grep('^a', x)` instead.
+          = help: Use `grep(pattern, x)` instead.
         Found 1 error.
         "
         );
@@ -33,7 +33,7 @@ mod tests {
         1 | which(grepl('^a', x, perl = TRUE, fixed = TRUE))
           | ------------------------------------------------ `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
-          = help: Use `grep('^a', x, perl = TRUE, fixed = TRUE)` instead.
+          = help: Use `grep(pattern, x)` instead.
         Found 1 error.
         "
         );
@@ -46,7 +46,7 @@ mod tests {
         1 | which(x = grepl('^a', x))
           | ------------------------- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
-          = help: Use `grep('^a', x)` instead.
+          = help: Use `grep(pattern, x)` instead.
         Found 1 error.
         "
         );
@@ -59,7 +59,7 @@ mod tests {
         1 | which(grepl('^a', x), arr.ind = TRUE)
           | ------------------------------------- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
-          = help: Use `grep('^a', x)` instead.
+          = help: Use `grep(pattern, x)` instead.
         Found 1 error.
         "
         );
@@ -105,7 +105,7 @@ mod tests {
         2 | |  which()
           | |________- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
-          = help: Use `grep('^a', x)` instead.
+          = help: Use `grep(pattern, x)` instead.
         Found 1 error.
         "
         );
@@ -118,7 +118,7 @@ mod tests {
         1 | values |> grepl(pattern = "a") |> which()
           | ----------------------------------------- `which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.
           |
-          = help: Use `grep(values, pattern = "a")` instead.
+          = help: Use `grep(pattern, x)` instead.
         Found 1 error.
         "#
         );

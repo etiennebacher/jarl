@@ -6,6 +6,8 @@ use crate::utils::{
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
+pub struct WhichGrepl;
+
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -46,6 +48,18 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// ## References
 ///
 /// See `?grep`
+impl Violation for WhichGrepl {
+    fn name(&self) -> String {
+        "which_grepl".to_string()
+    }
+    fn body(&self) -> String {
+        "`which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.".to_string()
+    }
+    fn suggestion(&self) -> Option<String> {
+        Some("Use `grep(pattern, x)` instead.".to_string())
+    }
+}
+
 pub fn which_grepl(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "which" {
         return Ok(None);
@@ -139,11 +153,7 @@ pub fn which_grepl(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
     let replacement = format!("grep({inner_content})");
 
     Ok(Some(Diagnostic::new(
-        ViolationData::new(
-            "which_grepl".to_string(),
-            "`which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.".to_string(),
-            Some(format!("Use `{replacement}` instead.")),
-        ),
+        WhichGrepl,
         range,
         if can_fix {
             Fix {
