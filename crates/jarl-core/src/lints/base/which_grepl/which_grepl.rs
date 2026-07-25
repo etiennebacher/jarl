@@ -38,6 +38,7 @@ use biome_rowan::{AstNode, AstSeparatedList};
 ///
 /// Use instead:
 /// ```r
+/// x <- c("hello", "there")
 /// grep("hell", x)
 /// grep("foo", x)
 /// ```

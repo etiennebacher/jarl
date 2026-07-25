@@ -32,6 +32,7 @@ which(grepl("foo", x))
 
 Use instead:
 ```r
+x <- c("hello", "there")
 grep("hell", x)
 grep("foo", x)
 ```
