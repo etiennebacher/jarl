@@ -1,6 +1,10 @@
 use crate::diagnostic::*;
-use crate::utils::{get_nested_functions_content, node_contains_comments};
+use crate::utils::{
+    get_arg_by_name, get_arg_by_name_then_position, get_function_name,
+    get_nested_functions_content, node_contains_comments,
+};
 use air_r_syntax::*;
+use biome_rowan::AstNode;
 
 pub struct WhichGrepl;
 
@@ -14,6 +18,10 @@ pub struct WhichGrepl;
 ///
 /// `which(grepl(...))` is harder to read and is less efficient than `grep()`
 /// since it requires two passes on the vector.
+///
+/// This rule has an automatic fix for direct calls and for pipe chains where
+/// the piped value can be unambiguously assigned to `grepl()`'s `pattern` or
+/// `x` argument.
 ///
 /// ## Example
 ///
@@ -46,16 +54,64 @@ impl Violation for WhichGrepl {
 }
 
 pub fn which_grepl(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
-    let (inner_content, outer_syntax) = unwrap_or_return_none!(get_nested_functions_content(
-        ast, fn_name, "which", "grepl"
-    )?);
+    if fn_name != "which" {
+        return Ok(None);
+    }
+
+    let arguments = ast.arguments()?.items();
+
+    // Handle `which(grepl(...))`, including a named `x` argument to `which()`.
+    let direct_content = if let Some(argument) = get_arg_by_name_then_position(&arguments, "x", 1)
+        && let Some(value) = argument.value()
+        && let Some(inner_call) = value.as_r_call()
+        && get_function_name(inner_call.function()?) == "grepl"
+    {
+        Some(inner_call.arguments()?.items().into_syntax().to_string())
+    } else {
+        None
+    };
+
+    let (inner_content, outer_syntax) = if let Some(content) = direct_content {
+        (content, ast.syntax().clone())
+    } else {
+        // Handle pipeline input.
+        let nested_content = get_nested_functions_content(ast, fn_name, "which", "grepl")?;
+        let (mut content, syntax) = unwrap_or_return_none!(nested_content);
+
+        // The shared helper returns the piped input for
+        // `input |> grepl(...) |> which()`, but not the named `grepl()` args.
+        // Append those arguments so the replacement preserves the full call.
+        if let Some(outer_pipe) = RBinaryExpression::cast(syntax.clone())
+            && let Some(inner_pipe) = outer_pipe.left()?.as_r_binary_expression()
+        {
+            let inner_right = inner_pipe.right()?;
+            let inner_call = unwrap_or_return_none!(inner_right.as_r_call());
+            let inner_arguments = inner_call.arguments()?.items();
+            let has_pattern = get_arg_by_name(&inner_arguments, "pattern").is_some();
+            let has_x = get_arg_by_name(&inner_arguments, "x").is_some();
+
+            // The pipe supplies the first unnamed argument. Requiring exactly
+            // one of `pattern` and `x` makes its destination unambiguous.
+            if has_pattern == has_x {
+                return Ok(None);
+            }
+
+            content = format!("{content}, {}", inner_arguments.into_syntax());
+        }
+
+        (content, syntax)
+    };
 
     let range = outer_syntax.text_trimmed_range();
+    let replacement = format!("grep({inner_content})");
+
+    // `grepl()` returns an unnamed vector without dimensions, so additional
+    // `which()` arguments such as `arr.ind` and `useNames` cannot affect the result.
     Ok(Some(Diagnostic::new(
         WhichGrepl,
         range,
         Fix {
-            content: format!("grep({inner_content})"),
+            content: replacement.clone(),
             start: range.start().into(),
             end: range.end().into(),
             to_skip: node_contains_comments(&outer_syntax),

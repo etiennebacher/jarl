@@ -26,6 +26,7 @@ jarl-lsp.workspace = true
 
 # CLI specific dependencies
 clap.workspace = true
+clap_complete.workspace = true
 colored.workspace = true
 anyhow.workspace = true
 serde.workspace = true
