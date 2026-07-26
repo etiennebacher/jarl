@@ -76,6 +76,8 @@ mod tests {
                     "which(grepl('^a', x), TRUE)",
                     "which(grepl('^a', x), arr.ind = flag)",
                     "which(grepl('^a', x), useNames = FALSE)",
+                    "which(grepl('^a', x), arr.ind = flag, useNames = names)",
+                    "which(useNames = names, x = grepl('^a', x), arr.ind = flag)",
                 ],
                 "which_grepl",
                 None
@@ -131,6 +133,8 @@ mod tests {
                     "grepl('^a', x) |> which(arr.ind = TRUE)",
                     "grepl('^a', x) |> which(FALSE)",
                     "grepl('^a', x) |> which(arr.ind = flag)",
+                    "grepl('^a', x) |> which(useNames = names)",
+                    "grepl('^a', x) |> which(arr.ind = flag, useNames = names)",
                 ],
                 "which_grepl",
                 None
