@@ -55,6 +55,8 @@ website:
         href: howto/ci.md
       - text: Pre-commit tools
         href: howto/precommit.md
+      - text: Shell completions
+        href: howto/shell-completions.md
     - text: Reference
       menu:
       - text: Rules

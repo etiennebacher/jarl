@@ -48,7 +48,7 @@ fn test_must_pass_path() -> anyhow::Result<()> {
       -h, --help                           Print help (see a summary with '-h')
 
     Global options:
-          --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+          --log-level <LOG_LEVEL>  The log level [default: warn] [possible values: error, warn, info, debug, trace]
     "#
     );
 
