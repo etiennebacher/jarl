@@ -1,6 +1,7 @@
 pub(crate) mod all_equal;
 pub(crate) mod any_duplicated;
 pub(crate) mod any_is_na;
+pub(crate) mod apply_paste;
 pub(crate) mod assignment;
 pub(crate) mod browser;
 pub(crate) mod class_equals;

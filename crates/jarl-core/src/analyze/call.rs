@@ -6,6 +6,7 @@ use air_r_syntax::RCall;
 use crate::lints::base::all_equal::all_equal::all_equal;
 use crate::lints::base::any_duplicated::any_duplicated::any_duplicated;
 use crate::lints::base::any_is_na::any_is_na::any_is_na;
+use crate::lints::base::apply_paste::apply_paste::apply_paste;
 use crate::lints::base::browser::browser::browser;
 use crate::lints::base::class_equals::class_equals::class_identical;
 use crate::lints::base::condition_call::condition_call::condition_call;
@@ -66,6 +67,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled(Rule::AnyIsNa) {
         checker.report_diagnostic(any_is_na(r_expr, fn_name)?);
+    }
+    if checker.is_rule_enabled(Rule::ApplyPaste) {
+        checker.report_diagnostic(apply_paste(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::Browser) {
         checker.report_diagnostic(browser(r_expr, fn_name)?);
