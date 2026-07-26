@@ -8,16 +8,14 @@ use crate::location::Location;
 
 /// A single syntax error reported by the parser.
 ///
-/// Carries the parser's message (e.g. `expected a value`) along with the range
-/// it points at and its resolved (row, column) location, so the caller can
-/// render it as an annotated snippet. Both the range and the location are
-/// optional: a few low-level failures (e.g. an unterminated string reported by
-/// the lexer) have no span to attach.
+/// Carries the parser's message (e.g. `expected an expression`) along with the
+/// range it points at and its resolved (row, column) location, so the caller
+/// can render it as an annotated snippet.
 #[derive(Debug)]
 pub struct SyntaxError {
     pub message: String,
-    pub range: Option<TextRange>,
-    pub location: Option<Location>,
+    pub range: TextRange,
+    pub location: Location,
 }
 
 /// Custom error type for R parsing errors.

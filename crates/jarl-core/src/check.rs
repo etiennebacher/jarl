@@ -340,9 +340,8 @@ pub fn get_checks(
     Ok(diagnostics)
 }
 
-/// Convert the parser's diagnostics (message + optional span) into the
-/// `SyntaxError`s carried by [`ParseError`], resolving each span to a
-/// (row, column) location.
+/// Convert the parser's diagnostics (message + span) into the `SyntaxError`s
+/// carried by [`ParseError`], resolving each span to a (row, column) location.
 ///
 /// Locations are computed against `contents` (not the parsed tree) because
 /// `find_new_lines` reads the serialized tree, which can be truncated once the
@@ -358,19 +357,19 @@ fn collect_syntax_errors(parsed: &air_r_parser::Parse, contents: &str) -> Vec<Sy
         .diagnostics()
         .iter()
         .map(|diagnostic| {
-            let range = diagnostic
-                .location()
-                .span
-                .map(|range| normalize_eof_range(contents, range));
-            let location = range.map(|range| {
-                let start: usize = range.start().into();
-                let (row, col) = find_row_col(start, &loc_new_lines);
-                Location::new(row, col)
-            });
+            // The span is optional on `ParseDiagnostic`, but every diagnostic
+            // the R parser builds is given a range, so this only ever falls
+            // back if that changes upstream.
+            let range = diagnostic.location().span.map_or_else(
+                || end_of_content(contents),
+                |range| normalize_eof_range(contents, range),
+            );
+            let start: usize = range.start().into();
+            let (row, col) = find_row_col(start, &loc_new_lines);
             SyntaxError {
                 message: diagnostic.message.to_string(),
                 range,
-                location,
+                location: Location::new(row, col),
             }
         })
         .collect()
@@ -383,14 +382,17 @@ fn collect_syntax_errors(parsed: &air_r_parser::Parse, contents: &str) -> Vec<Sy
 /// an empty line. annotate-snippets renders those as an empty snippet, and the
 /// end of the last real line is the more useful place to point at anyway.
 fn normalize_eof_range(contents: &str, range: TextRange) -> TextRange {
-    let start: usize = range.start().into();
-    let end: usize = range.end().into();
-    if start == end && start == contents.len() {
-        let trimmed = contents.trim_end_matches(['\n', '\r']).len();
-        let pos = TextSize::from(trimmed as u32);
-        return TextRange::new(pos, pos);
+    if range.is_empty() && usize::from(range.start()) == contents.len() {
+        return end_of_content(contents);
     }
     range
+}
+
+/// The empty range at the end of the last line with content.
+fn end_of_content(contents: &str) -> TextRange {
+    let trimmed = contents.trim_end_matches(['\n', '\r']).len();
+    let pos = TextSize::from(trimmed as u32);
+    TextRange::new(pos, pos)
 }
 
 /// Populate package context on the checker from pre-computed data.

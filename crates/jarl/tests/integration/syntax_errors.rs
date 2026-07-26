@@ -427,10 +427,6 @@ fn test_unexpected_semicolon() -> anyhow::Result<()> {
     Ok(())
 }
 
-// ---------------------------------------------------------------------------
-// Reporting shape
-// ---------------------------------------------------------------------------
-
 /// Independent errors are reported one by one instead of collapsing into a
 /// single "this file failed to parse" line.
 #[test]
@@ -507,6 +503,57 @@ fn test_several_syntax_errors_concise() -> anyhow::Result<()> {
     Error: test.R:1:5 expected a comma between arguments
     Error: test.R:2:8 expected `in`
     Error: test.R:3:5 expected `]]`
+    "
+    );
+    Ok(())
+}
+
+/// Rmd chunks that fail to parse are dropped before linting, so the only way
+/// the combined source still fails is a chunk that is valid on its own but not
+/// once concatenated — such as a BOM opening a chunk that is not the first.
+/// Ranges in the combined source can't be mapped back to the Rmd file, so this
+/// is the one case reported as the generic summary line rather than per-error
+/// snippets.
+#[test]
+fn test_rmd_parse_error_reports_generic_summary() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "```{r}\nx <- 1\n```\n\n```{r}\n\u{feff}y <- 2\n```\n",
+    )?;
+    insta::assert_snapshot!(case.command().arg("check").arg(".").run(), @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    Error: Failed to parse test.Rmd due to syntax errors.
+    ");
+    Ok(())
+}
+
+/// The same Rmd fallback in the concise emitter.
+#[test]
+fn test_rmd_parse_error_reports_generic_summary_concise() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "```{r}\nx <- 1\n```\n\n```{r}\n\u{feff}y <- 2\n```\n",
+    )?;
+    insta::assert_snapshot!(
+        case.command()
+            .arg("check")
+            .arg(".")
+            .arg("--output-format")
+            .arg("concise")
+            .run(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    Error: Failed to parse test.Rmd due to syntax errors.
     "
     );
     Ok(())

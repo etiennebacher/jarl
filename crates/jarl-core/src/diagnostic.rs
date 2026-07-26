@@ -194,21 +194,15 @@ pub fn render_diagnostic(
 /// Render a single syntax error as an annotated code snippet.
 ///
 /// Mirrors [`render_diagnostic`] but for parser errors: the message becomes the
-/// error title and, when the error has a span, the offending range is
-/// underlined in its source context. Errors without a span (e.g. some lexer
-/// failures) are rendered as a title-only error line.
+/// error title and the offending range is underlined in its source context.
 pub fn render_syntax_error(
     source: &str,
     origin: &str,
     error: &crate::error::SyntaxError,
     renderer: &Renderer,
 ) -> String {
-    let Some(range) = error.range else {
-        return format!("{}", renderer.render(Level::Error.title(&error.message)));
-    };
-
-    let start_offset: usize = range.start().into();
-    let end_offset: usize = range.end().into();
+    let start_offset: usize = error.range.start().into();
+    let end_offset: usize = error.range.end().into();
 
     // See `render_diagnostic`: annotate-snippets expands tabs for display but
     // validates spans against the original length, so expand the span's lines.

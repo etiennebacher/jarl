@@ -155,23 +155,15 @@ fn emit_errors_concise(errors: &[(String, anyhow::Error)]) {
         match err.downcast_ref::<jarl_core::error::ParseError>() {
             Some(parse_error) if !parse_error.syntax_errors.is_empty() => {
                 for syntax_error in &parse_error.syntax_errors {
-                    match syntax_error.location {
-                        // Column is 0-based internally; display it 1-based.
-                        Some(loc) => eprintln!(
-                            "{}: {}:{}:{} {}",
-                            "Error".red().bold(),
-                            path,
-                            loc.row(),
-                            loc.column() + 1,
-                            syntax_error.message
-                        ),
-                        None => eprintln!(
-                            "{}: {} {}",
-                            "Error".red().bold(),
-                            path,
-                            syntax_error.message
-                        ),
-                    }
+                    // Column is 0-based internally; display it 1-based.
+                    eprintln!(
+                        "{}: {}:{}:{} {}",
+                        "Error".red().bold(),
+                        path,
+                        syntax_error.location.row(),
+                        syntax_error.location.column() + 1,
+                        syntax_error.message
+                    );
                 }
             }
             _ => eprintln!("{}: {}", "Error".red().bold(), err),
