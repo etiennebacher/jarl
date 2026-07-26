@@ -26,6 +26,7 @@ mod roxygen;
 mod rule;
 mod rules;
 mod statistics;
+mod syntax_errors;
 mod toml;
 mod toml_hierarchical;
 mod toml_rule_args;
