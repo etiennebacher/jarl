@@ -940,6 +940,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="why-is-this-bad" class="level2">
 <h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
 <p><code>which(grepl(...))</code> is harder to read and is less efficient than <code>grep()</code> since it requires two passes on the vector.</p>
+<p>This rule has an automatic fix for direct calls and for pipe chains where the piped value can be unambiguously assigned to <code>grepl()</code>’s <code>pattern</code> or <code>x</code> argument.</p>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
