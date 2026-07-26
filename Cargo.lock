@@ -29,7 +29,7 @@ dependencies = [
 [[package]]
 name = "air_r_factory"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
+source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 dependencies = [
  "air_r_syntax",
  "biome_rowan",
@@ -38,7 +38,7 @@ dependencies = [
 [[package]]
 name = "air_r_formatter"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
+source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 dependencies = [
  "air_r_syntax",
  "biome_formatter",
@@ -53,7 +53,7 @@ dependencies = [
 [[package]]
 name = "air_r_parser"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
+source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 dependencies = [
  "air_r_factory",
  "air_r_syntax",
@@ -68,7 +68,7 @@ dependencies = [
 [[package]]
 name = "air_r_syntax"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
+source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 dependencies = [
  "biome_rowan",
  "serde",
@@ -503,7 +503,7 @@ dependencies = [
 [[package]]
 name = "comments"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
+source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 
 [[package]]
 name = "console"
@@ -684,9 +684,9 @@ dependencies = [
 [[package]]
 name = "fs"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
+source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 dependencies = [
- "path-absolutize",
+ "path-absolutize 3.1.1",
 ]
 
 [[package]]
@@ -968,7 +968,7 @@ dependencies = [
  "fs",
  "ignore",
  "insta",
- "path-absolutize",
+ "path-absolutize 4.0.1",
  "rayon",
  "regex",
  "rustc-hash",
@@ -1026,7 +1026,7 @@ checksum = "6800badb6cb2082ffd7b6a67e6125bb39f18782f793520caee8cb8846be06112"
 [[package]]
 name = "line_ending"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
+source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 dependencies = [
  "memchr",
  "settings",
@@ -1052,9 +1052,9 @@ checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
 
 [[package]]
 name = "lsp-server"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ad8be6fe0ca81b8298bfbbe8a77e9fcd8895ad6c84cd7794d5ebadcbb09ae43"
+checksum = "62e55c013e58520c3471c904b6a4b95367acb73f20e718e1a0026d4297c9fc8e"
 dependencies = [
  "crossbeam-channel",
  "log",
@@ -1127,7 +1127,16 @@ version = "3.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4af381fe79fa195b4909485d99f73a80792331df0625188e707854f0b3383f5"
 dependencies = [
- "path-dedot",
+ "path-dedot 3.1.1",
+]
+
+[[package]]
+name = "path-absolutize"
+version = "4.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f808742975794703469f67a28dd14b1d1009a1743c18b0353b4b951dbb0068ad"
+dependencies = [
+ "path-dedot 4.0.1",
 ]
 
 [[package]]
@@ -1138,6 +1147,12 @@ checksum = "07ba0ad7e047712414213ff67533e6dd477af0a4e1d14fb52343e53d30ea9397"
 dependencies = [
  "once_cell",
 ]
+
+[[package]]
+name = "path-dedot"
+version = "4.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03351d0f1c066c114015408dc6a3e101f080fc03ef9d8d799aa58ec760cac5a6"
 
 [[package]]
 name = "percent-encoding"
@@ -1267,9 +1282,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.12.3"
+version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e10754a14b9137dd7b1e3e5b0493cc9171fdd105e0ab477f51b72e7f3ac0e276"
+checksum = "f020237b6c8eed93db2e2cb53c00c60a8e1bc73da7d073199a1180401450218d"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -1279,9 +1294,9 @@ dependencies = [
 
 [[package]]
 name = "regex-automata"
-version = "0.4.14"
+version = "0.4.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e1dd4122fc1595e8162618945476892eefca7b88c52820e74af6262213cae8f"
+checksum = "8fcfdb36bda0c880c5931cdc7a2bcdc8ba4556847b9d912bca70bc94708711ad"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -1290,9 +1305,9 @@ dependencies = [
 
 [[package]]
 name = "regex-syntax"
-version = "0.8.9"
+version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a96887878f22d7bad8a3b6dc5b7440e0ada9a245242924394987b21cf2210a4c"
+checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
 name = "rustc-demangle"
@@ -1436,7 +1451,7 @@ dependencies = [
 [[package]]
 name = "settings"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
+source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 dependencies = [
  "biome_formatter",
  "serde",
@@ -2182,7 +2197,7 @@ dependencies = [
 [[package]]
 name = "workspace"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
+source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 dependencies = [
  "air_r_formatter",
  "air_r_parser",
