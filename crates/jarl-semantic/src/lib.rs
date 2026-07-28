@@ -110,9 +110,9 @@ pub struct SemanticInfo<'a> {
     /// not kept alive by it.
     positional_uses: Vec<(String, TextRange)>,
     /// Identifier `Use` ranges that should be ignored because they sit inside
-    /// a quoting call oak's effects registry doesn't cover (`substitute(…)`,
-    /// `Quote(…)`, `expression(…)`, `alist(…)`). `quote()` and `bquote()` are
-    /// modeled by oak itself (their quoted arguments produce no uses or
+    /// a quoting call oak's effects registry doesn't cover (`Quote(…)`,
+    /// `expression(…)`, `alist(…)`). `quote()`, `bquote()` and `substitute()`
+    /// are modeled by oak itself (their quoted arguments produce no uses or
     /// definitions in the index), so they don't need ranges here.
     nse_ranges: Vec<TextRange>,
     /// Ranges of formula RHSes (`~ rhs`).
@@ -200,12 +200,12 @@ impl<'a> SemanticInfo<'a> {
         self.synthetic_used_names.contains(name)
     }
 
-    /// True when `range` sits in a quoted NSE context (`substitute(...)`,
-    /// `expression(...)`, …) where code is captured rather than evaluated, so
+    /// True when `range` sits in a quoted NSE context (`expression(...)`,
+    /// `alist(...)`, …) where code is captured rather than evaluated, so
     /// neither an assignment nor a read there touches the live binding. Only
     /// covers the quoting calls oak's effects registry doesn't model —
-    /// `quote()`/`bquote()` arguments never enter the index in the first
-    /// place.
+    /// `quote()`/`bquote()`/`substitute()` arguments never enter the index in
+    /// the first place.
     pub fn is_in_nse(&self, range: TextRange) -> bool {
         in_any_range(range, &self.nse_ranges)
     }
@@ -436,15 +436,15 @@ impl<'a> SemanticInfo<'a> {
         self.collect_custom_glue_interpolation(&name, &arg_values);
 
         match name.as_str() {
-            // Quoting calls oak's effects registry doesn't cover. (`quote` and
-            // `bquote` are covered: oak drops their quoted arguments from the
-            // index entirely, and walks `bquote`'s `.()` unquote holes as real
-            // uses.)
+            // Quoting calls oak's effects registry doesn't cover. (`quote`,
+            // `bquote` and `substitute` are covered: oak drops their quoted
+            // arguments from the index entirely, and walks the sub-expressions
+            // that escape back to evaluation — `bquote`'s `.()` unquote holes,
+            // the symbols `substitute` replaces from its frame — as real uses.)
             //
-            // Only the quoted `expr` argument is NSE. Other arguments are
-            // evaluated normally — e.g. `substitute(x, env = env)` reads
-            // `env` — so their identifiers stay real uses.
-            "substitute" | "Quote" => {
+            // Only the quoted `expr` argument is NSE. Any other argument is
+            // evaluated normally, so its identifiers stay real uses.
+            "Quote" => {
                 if let Some(expr) = nse_expr_arg(&arg_values) {
                     self.nse_ranges.push(expr.text_trimmed_range());
                 }
@@ -538,7 +538,7 @@ impl<'a> SemanticInfo<'a> {
     /// a free variable in a nested closure, the enclosing-scope definitions
     /// captured by oak's enclosing snapshots. So a single pass over all uses
     /// covers in-scope reads and closure captures alike. Uses sitting inside an
-    /// NSE argument (`substitute(x)`, …) are skipped: they don't consume a
+    /// NSE argument (`expression(x)`, …) are skipped: they don't consume a
     /// binding.
     fn precompute_reaching_uses(&mut self, scopes: &[ScopeId]) {
         let index = self.index;
@@ -557,7 +557,7 @@ impl<'a> SemanticInfo<'a> {
     /// Record a definition reached by a real read as used.
     ///
     /// For the quoting calls oak doesn't model, an NSE assignment
-    /// (`substitute(x <- 2)`) is quoted code, not an executed assignment, but
+    /// (`expression(x <- 2)`) is quoted code, not an executed assignment, but
     /// oak still lets it shadow a prior real definition in its dataflow. So a
     /// real read after such an assignment resolves to the NSE definition
     /// instead of the live binding it actually reads. When that happens, walk
@@ -975,8 +975,8 @@ fn is_member_name(node: &RSyntaxNode) -> bool {
 
 /// The value node of the quoted-expression argument (`expr`) of a quote-like
 /// call: the argument named `expr =` if present, otherwise the first
-/// positional (unnamed) argument. Other arguments — `substitute`'s `env` —
-/// are evaluated normally, so their reads must not be swallowed as NSE.
+/// positional (unnamed) argument. Any other argument is evaluated normally,
+/// so its reads must not be swallowed as NSE.
 fn nse_expr_arg(args: &[(Option<String>, RSyntaxNode)]) -> Option<&RSyntaxNode> {
     if let Some((_, value)) = args
         .iter()

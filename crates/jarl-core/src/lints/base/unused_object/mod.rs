@@ -976,6 +976,37 @@ for (i in 1:2) {
     }
 
     #[test]
+    fn test_substitute_in_function_scope_reads_frame_bindings() {
+        // `substitute()` replaces the symbols its frame binds, so inside a
+        // function `substitute(x)` reads `x`. The constructed expression is
+        // typically `eval`d later, which isn't statically visible, so treating
+        // the substitution as a read is what keeps `x` alive.
+        expect_no_lint(
+            "f <- function() {
+          x <- 1
+          eval(substitute(x))
+        }",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_substitute_at_top_level_substitutes_nothing() {
+        // R's `substitute()` substitutes nothing in the global environment, so
+        // the mention of `x` there is inert and doesn't keep `x` alive.
+        assert_snapshot!(snapshot_lint("x <- 1\nsubstitute(x)"), @"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        ");
+    }
+
+    #[test]
     fn test_assignment_inside_alist_is_not_definition() {
         // `alist()` stores its arguments unevaluated (as if describing
         // function arguments), so `x <- 1` is captured code, not a real
