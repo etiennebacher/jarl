@@ -368,19 +368,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#development-version" id="toc-development-version" class="nav-link" data-scroll-target="#development-version">Development version</a>
   <ul class="collapse">
-  <li><a href="#features" id="toc-features" class="nav-link" data-scroll-target="#features">Features</a></li>
+  <li><a href="#new-and-improved-rules" id="toc-new-and-improved-rules" class="nav-link" data-scroll-target="#new-and-improved-rules">New and improved rules</a></li>
+  <li><a href="#cli-improvements" id="toc-cli-improvements" class="nav-link" data-scroll-target="#cli-improvements">CLI improvements</a></li>
+  <li><a href="#toml-improvements" id="toc-toml-improvements" class="nav-link" data-scroll-target="#toml-improvements">TOML improvements</a></li>
+  <li><a href="#other-improvements" id="toc-other-improvements" class="nav-link" data-scroll-target="#other-improvements">Other improvements</a></li>
   <li><a href="#bug-fixes" id="toc-bug-fixes" class="nav-link" data-scroll-target="#bug-fixes">Bug fixes</a></li>
   </ul></li>
   <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section">0.5.0</a>
   <ul class="collapse">
   <li><a href="#deprecations" id="toc-deprecations" class="nav-link" data-scroll-target="#deprecations">Deprecations</a></li>
-  <li><a href="#features-1" id="toc-features-1" class="nav-link" data-scroll-target="#features-1">Features</a></li>
+  <li><a href="#features" id="toc-features" class="nav-link" data-scroll-target="#features">Features</a></li>
   <li><a href="#bug-fixes-1" id="toc-bug-fixes-1" class="nav-link" data-scroll-target="#bug-fixes-1">Bug fixes</a></li>
   </ul></li>
   <li><a href="#section-1" id="toc-section-1" class="nav-link" data-scroll-target="#section-1">0.4.0</a>
   <ul class="collapse">
   <li><a href="#breaking-changes" id="toc-breaking-changes" class="nav-link" data-scroll-target="#breaking-changes">Breaking changes</a></li>
-  <li><a href="#features-2" id="toc-features-2" class="nav-link" data-scroll-target="#features-2">Features</a></li>
+  <li><a href="#features-1" id="toc-features-1" class="nav-link" data-scroll-target="#features-1">Features</a></li>
   <li><a href="#other-changes" id="toc-other-changes" class="nav-link" data-scroll-target="#other-changes">Other changes</a></li>
   <li><a href="#bug-fixes-2" id="toc-bug-fixes-2" class="nav-link" data-scroll-target="#bug-fixes-2">Bug fixes</a></li>
   <li><a href="#documentation" id="toc-documentation" class="nav-link" data-scroll-target="#documentation">Documentation</a></li>
@@ -388,7 +391,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#section-2" id="toc-section-2" class="nav-link" data-scroll-target="#section-2">0.3.0</a>
   <ul class="collapse">
   <li><a href="#breaking-changes-1" id="toc-breaking-changes-1" class="nav-link" data-scroll-target="#breaking-changes-1">Breaking changes</a></li>
-  <li><a href="#features-3" id="toc-features-3" class="nav-link" data-scroll-target="#features-3">Features</a></li>
+  <li><a href="#features-2" id="toc-features-2" class="nav-link" data-scroll-target="#features-2">Features</a></li>
   <li><a href="#fixes" id="toc-fixes" class="nav-link" data-scroll-target="#fixes">Fixes</a></li>
   <li><a href="#other-changes-1" id="toc-other-changes-1" class="nav-link" data-scroll-target="#other-changes-1">Other changes</a></li>
   </ul></li>
@@ -399,13 +402,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#section-4" id="toc-section-4" class="nav-link" data-scroll-target="#section-4">0.2.0</a>
   <ul class="collapse">
   <li><a href="#breaking-changes-2" id="toc-breaking-changes-2" class="nav-link" data-scroll-target="#breaking-changes-2">Breaking changes</a></li>
-  <li><a href="#features-4" id="toc-features-4" class="nav-link" data-scroll-target="#features-4">Features</a></li>
+  <li><a href="#features-3" id="toc-features-3" class="nav-link" data-scroll-target="#features-3">Features</a></li>
   <li><a href="#fixes-1" id="toc-fixes-1" class="nav-link" data-scroll-target="#fixes-1">Fixes</a></li>
   <li><a href="#documentation-1" id="toc-documentation-1" class="nav-link" data-scroll-target="#documentation-1">Documentation</a></li>
   </ul></li>
   <li><a href="#section-5" id="toc-section-5" class="nav-link" data-scroll-target="#section-5">0.1.2</a>
   <ul class="collapse">
-  <li><a href="#features-5" id="toc-features-5" class="nav-link" data-scroll-target="#features-5">Features</a></li>
+  <li><a href="#features-4" id="toc-features-4" class="nav-link" data-scroll-target="#features-4">Features</a></li>
   <li><a href="#fixes-2" id="toc-fixes-2" class="nav-link" data-scroll-target="#fixes-2">Fixes</a></li>
   <li><a href="#documentation-2" id="toc-documentation-2" class="nav-link" data-scroll-target="#documentation-2">Documentation</a></li>
   </ul></li>
@@ -429,15 +432,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h1>Changelog</h1>
 <section id="development-version" class="level2">
 <h2 class="anchored" data-anchor-id="development-version">Development version</h2>
-<section id="features" class="level3">
-<h3 class="anchored" data-anchor-id="features">Features</h3>
+<section id="new-and-improved-rules" class="level3">
+<h3 class="anchored" data-anchor-id="new-and-improved-rules">New and improved rules</h3>
 <ul>
 <li><p>New rules:</p>
 <ul>
-<li><code>any_is_na</code> now also reports <code>NA %notin% x</code> cases (#470, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
 <li><code>condition_call</code> (#503)</li>
 <li><code>condition_message</code> (#545)</li>
-<li><code>equals_na</code> now also reports <code>x %notin% NA</code> cases (#469, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
 <li><code>empty_file</code> (#477, <span class="citation" data-cites="JosephBARBIERDARNAL">@JosephBARBIERDARNAL</span>)</li>
 <li><code>expect_s4_class</code> (#553, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
 <li><code>glue</code> (#484, <span class="citation" data-cites="novica">@novica</span>)</li>
@@ -453,21 +454,40 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><code>strings_as_factors</code> (#546, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
 <li><code>unnecessary_parentheses</code> (#510, <span class="citation" data-cites="JosephBARBIERDARNAL">@JosephBARBIERDARNAL</span>)</li>
 </ul></li>
-<li><p>Jarl is now available on PyPI under the name <code>jarl-linter</code>, enabling its installation via <code>uv</code>, <code>pipx</code>, and other tools (#466). It is also on <code>conda-forge</code>, meaning that it can be installed via <code>mise</code> and <code>pixi</code> (<span class="citation" data-cites="salim-b">@salim-b</span>).</p></li>
-<li><p>New argument <code>[lint.per-file-ignores]</code> in <code>jarl.toml</code> to deactivate rules on specific files (#500).</p></li>
-<li><p>New argument <code>skipped-functions</code> for the <code>true_false_symbol</code> rule in <code>jarl.toml</code> to list functions whose arguments are allowed to contain the <code>T</code> and <code>F</code> symbols (#542).</p></li>
-<li><p><code>expect_s3_class</code> now also reports selected <code>expect_true(is.&lt;class&gt;(x))</code>, <code>expect_true(inherits(x, class))</code>, and dynamic class expressions. Dynamic class expressions are reported without an automatic fix (#555, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
-<li><p><code>which_grepl</code> now supports named <code>which(x = ...)</code> arguments and native pipe chains such as <code>x |&gt; grepl(pattern = ...) |&gt; which()</code>. Calls with additional <code>which()</code> arguments are reported without an automatic fix (#560, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
-<li><p>The CLI now suggests close rule names when some rule names don’t exist (#501).</p></li>
-<li><p>New <code>--output-format sarif</code> to export to <a href="https://sarifweb.azurewebsites.net/" target="_blank">SARIF</a> (#508, <span class="citation" data-cites="dieghernan">@dieghernan</span>).</p></li>
+<li><p>Improved rules:</p>
+<ul>
+<li><code>any_is_na</code> now also reports <code>NA %notin% x</code> cases (#470, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
+<li><code>equals_na</code> now also reports <code>x %notin% NA</code> cases (#469, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
+<li><code>expect_s3_class</code> now also reports <code>expect_true(is.&lt;class&gt;(x))</code>, <code>expect_true(inherits(x, class))</code>, and dynamic class expressions. Dynamic class expressions are reported without an automatic fix (#555, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</li>
+<li>Three more functions skipped by default from <code>implicit_assignment</code>: <code>expect_silent</code> (from <code>testthat</code>), <code>expect_defunct</code> (from lifecycle) and <code>expect_deprecated</code> (from <code>lifecycle</code>) (#543, <span class="citation" data-cites="maelle">@maelle</span>).</li>
+<li><code>which_grepl</code> now supports named <code>which(x = ...)</code> arguments and native pipe chains such as <code>x |&gt; grepl(pattern = ...) |&gt; which()</code>. Calls with additional <code>which()</code> arguments are reported without an automatic fix (#560, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</li>
+</ul></li>
+</ul>
+</section>
+<section id="cli-improvements" class="level3">
+<h3 class="anchored" data-anchor-id="cli-improvements">CLI improvements</h3>
+<ul>
+<li><p>The CLI now gives suggestions when some rule names don’t exist (#501).</p></li>
 <li><p>New CLI argument <code>--exclude</code> to exclude files or directories from the checks, mirroring the <code>exclude</code> argument in <code>jarl.toml</code> (#520).</p></li>
-<li><p>Clearer output of <code>jarl check --help</code> (#521).</p></li>
-<li><p>Jarl now reports rule violations in files that contain syntax errors (#538).</p></li>
-<li><p>Jarl report clearer messages in case of syntax errors (#569).</p></li>
-<li><p>Three more functions skipped by default from <code>implicit_assignment</code>: <code>expect_silent</code> (from <code>testthat</code>), <code>expect_defunct</code> (from lifecycle) and <code>expect_deprecated</code> (from <code>lifecycle</code>) (#543, <span class="citation" data-cites="maelle">@maelle</span>).</p></li>
 <li><p>Passing <code>--statistics</code> in the CLI now indicates which violations have an automatic unsafe fix (#554).</p></li>
+<li><p>Jarl now reports rule violations in files that contain syntax errors and provides clearer messages for syntax errors (#538, #569).</p></li>
+<li><p>New <code>--output-format sarif</code> to export to <a href="https://sarifweb.azurewebsites.net/" target="_blank">SARIF</a> (#508, <span class="citation" data-cites="dieghernan">@dieghernan</span>).</p></li>
+<li><p>Clearer output for <code>jarl check --help</code> (#521).</p></li>
 <li><p>New command <code>jarl rule &lt;rule_name&gt;</code> to print a rule’s documentation in the terminal, for example <code>jarl rule any_is_na</code> (#566).</p></li>
 <li><p>Jarl now provides shell completions for <code>bash</code>, <code>zsh</code>, <code>fish</code>, <code>powershell</code>, and <code>elvish</code>. See <a href="./howto/shell-completions.html" target="_blank">Shell completions</a> for more information (#567).</p></li>
+</ul>
+</section>
+<section id="toml-improvements" class="level3">
+<h3 class="anchored" data-anchor-id="toml-improvements">TOML improvements</h3>
+<ul>
+<li><p>New argument <code>[lint.per-file-ignores]</code> in <code>jarl.toml</code> to deactivate rules on specific files (#500).</p></li>
+<li><p>New argument <code>skipped-functions</code> for the <code>true_false_symbol</code> rule in <code>jarl.toml</code> to list functions whose arguments are allowed to contain the <code>T</code> and <code>F</code> symbols (#542).</p></li>
+</ul>
+</section>
+<section id="other-improvements" class="level3">
+<h3 class="anchored" data-anchor-id="other-improvements">Other improvements</h3>
+<ul>
+<li>Jarl is now available on PyPI under the name <code>jarl-linter</code>, enabling its installation via <code>uv</code>, <code>pipx</code>, and other tools (#466). It is also on <code>conda-forge</code>, meaning that it can be installed via <code>mise</code> and <code>pixi</code> (<span class="citation" data-cites="salim-b">@salim-b</span>).</li>
 </ul>
 </section>
 <section id="bug-fixes" class="level3">
@@ -496,8 +516,8 @@ operator = "&lt;-" # or "="</code></pre>
 <li><p>The rule <code>"browser"</code> is deprecated. Calls to <code>browser()</code> are now detected with the rule <code>"undesirable_function"</code> (#336).</p></li>
 </ul>
 </section>
-<section id="features-1" class="level3">
-<h3 class="anchored" data-anchor-id="features-1">Features</h3>
+<section id="features" class="level3">
+<h3 class="anchored" data-anchor-id="features">Features</h3>
 <ul>
 <li><p><code>jarl.toml</code> now accepts rule-specific options in subsections <code>[lint.&lt;rule_name&gt;]</code>, such as:</p>
 <pre><code>[lint]
@@ -566,8 +586,8 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 </ul></li>
 </ul>
 </section>
-<section id="features-2" class="level3">
-<h3 class="anchored" data-anchor-id="features-2">Features</h3>
+<section id="features-1" class="level3">
+<h3 class="anchored" data-anchor-id="features-1">Features</h3>
 <ul>
 <li><p>New CLI argument <code>--statistics</code> to show the number of violations per rule instead of the details of each violation. Jarl prints a hint to use this argument when more than 15 violations are reported (only when <code>--output-format</code> is <code>concise</code> or <code>full</code>). This value can be configured with the environment variable <code>JARL_N_VIOLATIONS_HINT_STAT</code>. (#250, #266)</p></li>
 <li><p>Jarl now looks in parent folders for <code>jarl.toml</code>. It searches until the user config folder is reached (the location of this folder depends on the OS: <code>~/.config</code> on Unix and <code>~/AppData/Roaming</code> on Windows). Jarl uses the first <code>jarl.toml</code> that is found. This is useful to store settings that should be common to all projects (e.g.&nbsp;<code>assignment = "&lt;-"</code>) without creating a <code>jarl.toml</code>, which is a common situation for standalone R scripts. (#253)</p></li>
@@ -627,8 +647,8 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <p>A new CLI argument <code>--no-default-exclude</code> can be used to check those files as well. This argument overrides the <code>default-exclude = true</code> option when set in <code>jarl.toml</code> (#178, <span class="citation" data-cites="novica">@novica</span>).</p></li>
 </ul>
 </section>
-<section id="features-3" class="level3">
-<h3 class="anchored" data-anchor-id="features-3">Features</h3>
+<section id="features-2" class="level3">
+<h3 class="anchored" data-anchor-id="features-2">Features</h3>
 <ul>
 <li><code>--output-format json</code> now contains two fields <code>diagnostics</code> and <code>errors</code> (#219).</li>
 <li>Better support for namespaced function calls, both when reporting violations and when fixing them (#221).</li>
@@ -684,8 +704,8 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 </ul></li>
 </ul>
 </section>
-<section id="features-4" class="level3">
-<h3 class="anchored" data-anchor-id="features-4">Features</h3>
+<section id="features-3" class="level3">
+<h3 class="anchored" data-anchor-id="features-3">Features</h3>
 <ul>
 <li>New argument <code>extend-select</code> in <code>jarl.toml</code> and <code>--extend-select</code> in the CLI to select additional rules on top of the existing selection. This can be useful to select opt-in rules in addition to the default set of rules (#193).</li>
 <li>Added support for <code>seq</code> and <code>seq2</code> rules (#187).</li>
@@ -715,8 +735,8 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 </section>
 <section id="section-5" class="level2">
 <h2 class="anchored" data-anchor-id="section-5">0.1.2</h2>
-<section id="features-5" class="level3">
-<h3 class="anchored" data-anchor-id="features-5">Features</h3>
+<section id="features-4" class="level3">
+<h3 class="anchored" data-anchor-id="features-4">Features</h3>
 <ul>
 <li>Added support for <code>list2df</code> rule (#179).</li>
 <li>Added support for <code>browser</code> rule (#185, <span class="citation" data-cites="jonocarroll">@jonocarroll</span>).</li>
