@@ -2,10 +2,14 @@ use crate::checker::Checker;
 use crate::rule_set::Rule;
 use air_r_syntax::AnyRValue;
 
+use crate::lints::base::nonportable_path::nonportable_path::nonportable_path;
 use crate::lints::base::numeric_leading_zero::numeric_leading_zero::numeric_leading_zero;
 use crate::lints::base::quotes::quotes::quotes;
 
 pub fn anyvalue(r_expr: &AnyRValue, checker: &mut Checker) -> anyhow::Result<()> {
+    if checker.is_rule_enabled(Rule::NonportablePath) {
+        checker.report_diagnostic(nonportable_path(r_expr)?);
+    }
     if checker.is_rule_enabled(Rule::NumericLeadingZero) {
         checker.report_diagnostic(numeric_leading_zero(r_expr)?);
     }

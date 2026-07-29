@@ -496,6 +496,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    NonportablePath => {
+        name: "nonportable_path",
+        categories: [Susp],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
     NotIn => {
         name: "notin",
         categories: [Read],
