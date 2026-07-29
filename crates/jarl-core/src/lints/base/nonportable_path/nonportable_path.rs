@@ -147,7 +147,6 @@ fn decode_standard_string(content: &str) -> Option<String> {
             // Windows path; the other branches below represent non-separator
             // characters or control characters.
             '\\' => '\\',
-            '/' => '/',
             '\'' => '\'',
             '"' => '"',
             'a' => '\x07',

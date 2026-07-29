@@ -85,6 +85,29 @@ mod tests {
     }
 
     #[test]
+    fn test_nonportable_path_escaped_strings() {
+        assert_eq!(
+            check_code(r#""foo/ba\'r""#, "nonportable_path", None).len(),
+            1
+        );
+
+        expect_no_lint(r#""foo/ba\"r""#, "nonportable_path", None);
+        expect_no_lint(r#""foo/ba\ar""#, "nonportable_path", None);
+        expect_no_lint(r#""foo/ba\br""#, "nonportable_path", None);
+        expect_no_lint(r#""foo/ba\fr""#, "nonportable_path", None);
+        expect_no_lint(r#""foo/ba\nr""#, "nonportable_path", None);
+        expect_no_lint(r#""foo/ba\rr""#, "nonportable_path", None);
+        expect_no_lint(r#""foo/ba\tr""#, "nonportable_path", None);
+        expect_no_lint(r#""foo/ba\vr""#, "nonportable_path", None);
+
+        // Numeric and Unicode escapes are deliberately skipped rather than
+        // partially decoded by this rule.
+        expect_no_lint(r#""foo/ba\x61r""#, "nonportable_path", None);
+        expect_no_lint(r#""foo/ba\u0061r""#, "nonportable_path", None);
+        expect_no_lint(r#""foo/ba\141r""#, "nonportable_path", None);
+    }
+
+    #[test]
     fn test_no_lint_nonportable_path_contexts() {
         expect_no_lint(r#"grep("foo/bar", x)"#, "nonportable_path", None);
         expect_no_lint(r#"grep(paste0("foo/bar"), x)"#, "nonportable_path", None);
