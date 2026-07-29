@@ -15,7 +15,7 @@
   * `literal_coercion` (#504)
   * `missing_argument` (#506)
   * `nested_pipe` (#516)
-  * `nonportable_path` (@Yousa-Mirage)
+  * `nonportable_path` (#573, @Yousa-Mirage)
   * `notin` (#459, @Yousa-Mirage)
   * `pipe_consistency` (#482)
   * `pipe_return` (#502)
