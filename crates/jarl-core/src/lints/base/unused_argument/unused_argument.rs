@@ -5,7 +5,7 @@ use air_r_syntax::{
 };
 use biome_rowan::{AstNode, SyntaxNodeCast, TextRange};
 use oak_core::syntax_ext::RIdentifierExt;
-use oak_index::semantic_index::{DefinitionKind, ScopeId, SemanticIndex};
+use oak_semantic::semantic_index::{DefinitionKind, ScopeId, SemanticIndex};
 
 use jarl_semantic::SemanticInfo;
 
@@ -58,7 +58,11 @@ pub fn unused_argument(
     semantic: &SemanticIndex,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
-    let info = SemanticInfo::build(expressions, semantic);
+    let Some(first) = expressions.first() else {
+        return Ok(());
+    };
+    let root = first.ancestors().last().unwrap_or_else(|| first.clone());
+    let info = SemanticInfo::build(&root, expressions, semantic, &checker.file_path);
     let exports = &checker.namespace_exports;
 
     let mut diagnostics = Vec::new();
@@ -68,10 +72,10 @@ pub fn unused_argument(
         }
 
         for (def_id, def) in semantic.definitions(scope_id).iter() {
-            let DefinitionKind::Parameter(node) = def.kind() else {
+            let DefinitionKind::Parameter(_) = def.kind() else {
                 continue;
             };
-            let name = semantic.symbols(scope_id).symbol_id(def.symbol()).name();
+            let name = semantic.symbols(scope_id).symbol(def.symbol()).name();
 
             if is_skipped_parameter_name(name) {
                 continue;
@@ -80,8 +84,9 @@ pub fn unused_argument(
                 continue;
             }
 
-            let range = parameter_name_range(node).unwrap_or_else(|| node.text_trimmed_range());
-            diagnostics.push(make_diagnostic(name, range));
+            // Oak records a parameter definition at its name identifier, so
+            // this already excludes any default-value clause (`= …`).
+            diagnostics.push(make_diagnostic(name, def.range()));
         }
     }
 
@@ -276,15 +281,6 @@ fn is_skipped_parameter_name(name: &str) -> bool {
     // `...` is the variadic parameter; it's never "unused" in any meaningful
     // sense — callers pass arguments through it, the body forwards it.
     name == "..."
-}
-
-/// Narrow the parameter range to just the identifier, excluding any
-/// default-value clause (`= …`). Oak's `Parameter(node)` carries the whole
-/// `R_PARAMETER` syntax.
-fn parameter_name_range(node: &RSyntaxNode) -> Option<TextRange> {
-    node.children()
-        .find(|c| c.kind() == RSyntaxKind::R_IDENTIFIER || c.kind() == RSyntaxKind::R_DOTS)
-        .map(|c| c.text_trimmed_range())
 }
 
 fn make_diagnostic(name: &str, range: TextRange) -> Diagnostic {
