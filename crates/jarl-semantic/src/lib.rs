@@ -17,12 +17,13 @@ use std::collections::HashSet;
 use air_r_parser::RParserOptions;
 use air_r_syntax::{
     AnyRArgumentName, AnyRExpression, RArgument, RArgumentList, RBinaryExpression, RCall,
-    RExtractExpression, RNamespaceExpression, RStringValue, RSyntaxKind, RSyntaxNode,
+    RExtractExpression, RNamespaceExpression, RStringValue, RSyntaxElement, RSyntaxKind,
+    RSyntaxNode,
 };
 use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange, TextSize};
 use oak_core::syntax_ext::{RIdentifierExt, RStringValueExt};
 use oak_semantic::DefinitionId;
-use oak_semantic::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex};
+use oak_semantic::semantic_index::{Definition, DefinitionKind, ScopeId, ScopeKind, SemanticIndex};
 
 /// Per-file semantic info derived from oak's [`SemanticIndex`] plus AST
 /// passes over the syntax tree. Computed once per file; consumed by lints.
@@ -104,6 +105,41 @@ impl<'a> SemanticInfo<'a> {
     /// Walk all scopes (root + descendants) in arbitrary order.
     pub fn scope_ids(&self) -> Vec<ScopeId> {
         self.index.scope_ids().collect()
+    }
+
+    /// The `R_FUNCTION_DEFINITION` node backing a function scope, or `None`
+    /// for the file scope and NSE scopes.
+    ///
+    /// Oak records a function scope's range but no node pointer, so the node
+    /// is recovered from the tree. The range is the definition's trimmed
+    /// range, so the covering element is the definition itself; the ancestor
+    /// walk just makes that robust to trivia landing on a token.
+    pub fn function_definition(&self, scope_id: ScopeId) -> Option<RSyntaxNode> {
+        let scope = self.index.scope(scope_id);
+        if scope.kind() != ScopeKind::Function {
+            return None;
+        }
+
+        let node = match self.root.covering_element(scope.range()) {
+            RSyntaxElement::Node(node) => node,
+            RSyntaxElement::Token(token) => token.parent()?,
+        };
+        node.ancestors()
+            .find(|node| node.kind() == RSyntaxKind::R_FUNCTION_DEFINITION)
+    }
+
+    /// The name a function scope is bound to (`f <- function() {}` → `f`).
+    ///
+    /// `None` for anonymous functions, functions passed as arguments, and
+    /// assignments to a complex LHS (`x$f <- function() {}`), none of which
+    /// give the function a plain name to reason about.
+    pub fn function_binding_name(&self, scope_id: ScopeId) -> Option<String> {
+        let func = self.function_definition(scope_id)?;
+        let parent = func.parent()?;
+        if parent.kind() != RSyntaxKind::R_BINARY_EXPRESSION {
+            return None;
+        }
+        assignment_lhs_name(&parent)
     }
 
     // ── High-level queries ────────────────────────────────────────────
