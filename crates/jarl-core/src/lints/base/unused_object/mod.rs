@@ -1519,8 +1519,64 @@ if (x && (y <- 1) > 2) {}"),
           |           - Object `y` is defined but never used.
           |
         Found 1 error.
-        "
+        ")
+    }
+
+    #[test]
+    fn test_shadowing_across_call_arguments() {
+        // Arguments are promises: only one of `ifelse`'s two branches runs for
+        // a given element, so the first `w <- ...` might be the one `w` reads.
+        expect_no_lint(
+            "
+ifelse(
+  is.null(foo),
+  x <- 1,
+  x <- 2
+)
+print(x)
+",
+            "unused_object",
+            None,
         );
+        // Same for `switch()`, and for user-defined functions: nothing here is
+        // specific to a known callee.
+        expect_no_lint(
+            "
+switch(k, a = x <- 1, b = x <- 2)
+print(x)",
+            "unused_object",
+            None,
+        );
+        expect_no_lint(
+            "
+f(x <- 1, g(x <- 2))
+print(x)",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_repeated_assignment_within_one_call_argument() {
+        // A single argument is one promise: its statements run in sequence, so
+        // `w <- 1` really is dead. Only assignments in *sibling* arguments are
+        // alternatives.
+        assert_snapshot!(snapshot_lint(
+            "
+f({
+  x <- 1
+  x <- 2
+})
+print(x)"
+        ), @r"
+        warning: unused_object
+         --> <test>:3:3
+          |
+        3 |   x <- 1
+          |   - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        ");
     }
 
     #[test]

@@ -426,12 +426,49 @@ impl<'a> SemanticInfo<'a> {
         }
     }
 
+    /// Arguments are promises, so a call can evaluate one of them and not the
+    /// others: `ifelse(cond, w <- 1, w <- 2)` and `switch(x, a = w <- 1, b =
+    /// w <- 2)` are branches, not a sequence. Oak walks the arguments linearly,
+    /// so the later assignment shadows the earlier one and a later read of `w`
+    /// only keeps the last branch alive. Workaround: when the same symbol is
+    /// assigned in two or more sibling arguments, they are alternatives rather
+    /// than redefinitions, so consider the name synthetically used.
+    ///
+    /// Keyed on the argument structure rather than on a list of callee names,
+    /// so user-defined branching wrappers get the same treatment. Repeated
+    /// assignments *within* one argument (`f({w <- 1; w <- 2})`) really are
+    /// sequential and stay lintable.
+    fn collect_branching_argument_assignments(&mut self, args: &[(Option<String>, RSyntaxNode)]) {
+        if args.len() < 2 {
+            return;
+        }
+
+        let mut seen_in_earlier_arg: HashSet<String> = HashSet::new();
+        for (_, value) in args {
+            let assigned: HashSet<String> = value
+                .descendants()
+                .filter(|d| d.kind() == RSyntaxKind::R_BINARY_EXPRESSION)
+                .filter_map(|d| assignment_lhs_name(&d))
+                .collect();
+            for name in &assigned {
+                if seen_in_earlier_arg.contains(name) {
+                    self.synthetic_used_names.insert(name.clone());
+                }
+            }
+            seen_in_earlier_arg.extend(assigned);
+        }
+    }
+
     fn visit_call(&mut self, call: &RCall) {
+        let all_args: Vec<(Option<String>, RSyntaxNode)> = call_args(call);
+
+        self.collect_branching_argument_assignments(&all_args);
+
         let Some(name) = call_name(call) else {
             return;
         };
 
-        let arg_values: Vec<(Option<String>, RSyntaxNode)> = call_args(call);
+        let arg_values = all_args;
 
         self.collect_custom_glue_interpolation(&name, &arg_values);
 
