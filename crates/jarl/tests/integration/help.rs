@@ -28,7 +28,7 @@ fn test_help() -> anyhow::Result<()> {
       -V, --version  Print version
 
     Global options:
-          --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+          --log-level <LOG_LEVEL>  The log level [default: warn] [possible values: error, warn, info, debug, trace]
 
     For help with a specific command, see: `jarl help <command>`.
 
@@ -60,7 +60,7 @@ fn test_help() -> anyhow::Result<()> {
       -V, --version  Print version
 
     Global options:
-          --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+          --log-level <LOG_LEVEL>  The log level [default: warn] [possible values: error, warn, info, debug, trace]
 
     For help with a specific command, see: `jarl help <command>`.
 
@@ -92,7 +92,7 @@ fn test_help() -> anyhow::Result<()> {
       -V, --version  Print version
 
     Global options:
-          --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+          --log-level <LOG_LEVEL>  The log level [default: warn] [possible values: error, warn, info, debug, trace]
 
     For help with a specific command, see: `jarl help <command>`.
 
@@ -196,7 +196,9 @@ fn test_help_check() -> anyhow::Result<()> {
 
     Global options:
           --log-level <LOG_LEVEL>
-              The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+              The log level [default: warn]
+              
+              [possible values: error, warn, info, debug, trace]
 
     ----- stderr -----
     "#
@@ -244,7 +246,7 @@ fn test_help_check() -> anyhow::Result<()> {
       -h, --help                           Print help (see a summary with '-h')
 
     Global options:
-          --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+          --log-level <LOG_LEVEL>  The log level [default: warn] [possible values: error, warn, info, debug, trace]
 
     ----- stderr -----
     "#

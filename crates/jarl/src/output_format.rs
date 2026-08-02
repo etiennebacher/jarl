@@ -147,6 +147,60 @@ pub trait Emitter {
     ) -> anyhow::Result<()>;
 }
 
+/// Print parse errors to stderr in the concise style: one `Error:` line per
+/// syntax error, located as `file:row:col`. Falls back to the generic summary
+/// line for errors the parser attached no structured information to (e.g. Rmd).
+fn emit_errors_concise(errors: &[(String, anyhow::Error)]) {
+    for (path, err) in errors {
+        match err.downcast_ref::<jarl_core::error::ParseError>() {
+            Some(parse_error) if !parse_error.syntax_errors.is_empty() => {
+                for syntax_error in &parse_error.syntax_errors {
+                    // Column is 0-based internally; display it 1-based.
+                    eprintln!(
+                        "{}: {}:{}:{} {}",
+                        "Error".red().bold(),
+                        path,
+                        syntax_error.location.row(),
+                        syntax_error.location.column() + 1,
+                        syntax_error.message
+                    );
+                }
+            }
+            _ => eprintln!("{}: {}", "Error".red().bold(), err),
+        }
+    }
+}
+
+/// Print parse errors to stderr in the full style: each syntax error rendered as
+/// an annotated source snippet (message + underlined range), reusing the same
+/// renderer as lint diagnostics. Falls back to the generic summary line when the
+/// parser attached no structured information or the source can't be read.
+fn emit_errors_full(errors: &[(String, anyhow::Error)], renderer: &Renderer) {
+    for (path, err) in errors {
+        match err.downcast_ref::<jarl_core::error::ParseError>() {
+            Some(parse_error) if !parse_error.syntax_errors.is_empty() => {
+                match fs::read_to_string(&parse_error.filename) {
+                    Ok(source) => {
+                        for syntax_error in &parse_error.syntax_errors {
+                            let rendered = jarl_core::diagnostic::render_syntax_error(
+                                &source,
+                                path,
+                                syntax_error,
+                                renderer,
+                            );
+                            eprintln!("{rendered}");
+                        }
+                    }
+                    // Without the source we can't build a snippet; keep the
+                    // generic line rather than dropping the error.
+                    Err(_) => eprintln!("{}: {}", "Error".red().bold(), err),
+                }
+            }
+            _ => eprintln!("{}: {}", "Error".red().bold(), err),
+        }
+    }
+}
+
 pub struct ConciseEmitter;
 
 impl Emitter for ConciseEmitter {
@@ -161,9 +215,7 @@ impl Emitter for ConciseEmitter {
         // First, print all parsing errors
         if !errors.is_empty() {
             writer.flush()?; // Flush before writing to stderr
-            for (_path, err) in errors {
-                eprintln!("{}: {}", "Error".red().bold(), err);
-            }
+            emit_errors_concise(errors);
         }
 
         // Cache relativized paths to avoid repeated filesystem operations
@@ -607,9 +659,7 @@ impl Emitter for FullEmitter {
         // First, print all parsing errors
         if !errors.is_empty() {
             writer.flush()?; // Flush before writing to stderr
-            for (_path, err) in errors {
-                eprintln!("{}: {}", "Error".red().bold(), err);
-            }
+            emit_errors_full(errors, &renderer);
             if !diagnostics.is_empty() {
                 eprintln!(); // Add separator between errors and diagnostics
             }

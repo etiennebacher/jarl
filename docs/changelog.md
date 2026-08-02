@@ -2,14 +2,12 @@
 
 ## Development version
 
-### Features
+### New and improved rules
 
 * New rules:
 
-  * `any_is_na` now also reports `NA %notin% x` cases (#470, @Yousa-Mirage)
   * `condition_call` (#503)
   * `condition_message` (#545)
-  * `equals_na` now also reports `x %notin% NA` cases (#469, @Yousa-Mirage)
   * `empty_file` (#477, @JosephBARBIERDARNAL)
   * `expect_s4_class` (#553, @Yousa-Mirage)
   * `glue` (#484, @novica)
@@ -25,9 +23,48 @@
   * `strings_as_factors` (#546, @Yousa-Mirage)
   * `unnecessary_parentheses` (#510, @JosephBARBIERDARNAL)
 
-* Jarl is now available on PyPI under the name `jarl-linter`, enabling its
-  installation via `uv`, `pipx`, and other tools (#466). It is also on `conda-forge`,
-  meaning that it can be installed via `mise` and `pixi` (@salim-b).
+* Improved rules:
+
+  * `any_is_na` now also reports `NA %notin% x` cases (#470, @Yousa-Mirage)
+  * `equals_na` now also reports `x %notin% NA` cases (#469, @Yousa-Mirage)
+  * `expect_s3_class` now also reports `expect_true(is.<class>(x))`,
+    `expect_true(inherits(x, class))`, and dynamic class expressions. Dynamic
+    class expressions are reported without an automatic fix (#555, @Yousa-Mirage).
+  * Three more functions skipped by default from `implicit_assignment`: `expect_silent` (from
+    `testthat`), `expect_defunct` (from lifecycle) and `expect_deprecated` (from `lifecycle`)
+    (#543, @maelle).
+  * `which_grepl` now supports named `which(x = ...)` arguments and native pipe
+    chains such as `x |> grepl(pattern = ...) |> which()`. Calls with additional
+    `which()` arguments are reported without an automatic fix (#560, @Yousa-Mirage).
+
+
+### CLI improvements
+
+* The CLI now gives suggestions when some rule names don't exist (#501).
+
+* New CLI argument `--exclude` to exclude files or directories from the checks,
+  mirroring the `exclude` argument in `jarl.toml` (#520).
+
+* Passing `--statistics` in the CLI now indicates which violations have an automatic
+  unsafe fix (#554).
+
+* Jarl now reports rule violations in files that contain syntax errors and provides 
+  clearer messages for syntax errors (#538, #569).
+
+* New `--output-format sarif` to export to [SARIF](https://sarifweb.azurewebsites.net/) 
+  (#508, @dieghernan).
+
+* Clearer output for `jarl check --help` (#521).
+
+* New command `jarl rule <rule_name>` to print a rule's documentation in the
+  terminal, for example `jarl rule any_is_na` (#566).
+
+* Jarl now provides shell completions for `bash`, `zsh`, `fish`, `powershell`,
+  and `elvish`. See [Shell completions](howto/shell-completions.md) for more
+  information (#567).
+
+
+### TOML improvements
 
 * New argument `[lint.per-file-ignores]` in `jarl.toml` to deactivate rules on
   specific files (#500).
@@ -36,30 +73,13 @@
   to list functions whose arguments are allowed to contain the `T` and `F`
   symbols (#542).
 
-* `expect_s3_class` now also reports selected `expect_true(is.<class>(x))`,
-  `expect_true(inherits(x, class))`, and dynamic class expressions. Dynamic
-  class expressions are reported without an automatic fix (#555, @Yousa-Mirage).
 
-* The CLI now suggests close rule names when some rule names don't exist (#501).
+### Other improvements
 
-* New `--output-format sarif` to export to [SARIF](https://sarifweb.azurewebsites.net/) (#508, @dieghernan).
+* Jarl is now available on PyPI under the name `jarl-linter`, enabling its
+  installation via `uv`, `pipx`, and other tools (#466). It is also on `conda-forge`,
+  meaning that it can be installed via `mise` and `pixi` (@salim-b).
 
-* New CLI argument `--exclude` to exclude files or directories from the checks,
-  mirroring the `exclude` argument in `jarl.toml` (#520).
-
-* Clearer output of `jarl check --help` (#521).
-
-* Jarl now reports rule violations in files that contain syntax errors (#538).
-
-* Three more functions skipped by default from `implicit_assignment`: `expect_silent` (from
-  `testthat`), `expect_defunct` (from lifecycle) and `expect_deprecated` (from `lifecycle`)
-  (#543, @maelle).
-
-* Passing `--statistics` in the CLI now indicates which violations have an automatic
-  unsafe fix (#554).
-
-* New command `jarl rule <rule_name>` to print a rule's documentation in the
-  terminal, for example `jarl rule any_is_na` (#566).
 
 ### Bug fixes
 

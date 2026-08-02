@@ -64,9 +64,13 @@ pub fn find_new_lines(ast: &RSyntaxNode) -> Result<Vec<usize>> {
 ///
 /// Note that the row position is 1-indexed but the column position is 0-indexed.
 pub fn find_row_col(start: usize, loc_new_lines: &[usize]) -> (usize, usize) {
+    // A newline sitting exactly at `start` belongs to the line it terminates,
+    // so it must not count as a preceding line (and counting it would underflow
+    // the column below). This only bites when `start` lands on a newline offset,
+    // which happens for end-of-file parse errors pointing at the end of a line.
     let new_lines_before = loc_new_lines
         .iter()
-        .filter(|x| *x <= &start)
+        .filter(|x| *x < &start)
         .collect::<Vec<&usize>>();
     let n_new_lines = new_lines_before.len();
     let last_new_line = match new_lines_before.last() {

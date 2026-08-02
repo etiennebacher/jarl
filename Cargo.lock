@@ -42,7 +42,7 @@ dependencies = [
 [[package]]
 name = "air_r_factory"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
+source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 dependencies = [
  "air_r_syntax",
  "biome_rowan",
@@ -51,7 +51,7 @@ dependencies = [
 [[package]]
 name = "air_r_formatter"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
+source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 dependencies = [
  "air_r_syntax",
  "biome_formatter",
@@ -66,7 +66,7 @@ dependencies = [
 [[package]]
 name = "air_r_parser"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
+source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 dependencies = [
  "air_r_factory",
  "air_r_syntax",
@@ -81,7 +81,7 @@ dependencies = [
 [[package]]
 name = "air_r_syntax"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
+source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 dependencies = [
  "biome_rowan",
  "serde",
@@ -505,6 +505,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "clap_complete"
+version = "4.6.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db8b397918185f0161ff3d6fcaa9e4bfc09b8367caf6e1d4a2848e5477ed027b"
+dependencies = [
+ "clap",
+ "clap_lex",
+ "is_executable",
+ "shlex",
+]
+
+[[package]]
 name = "clap_derive"
 version = "4.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -540,7 +552,7 @@ dependencies = [
 [[package]]
 name = "comments"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
+source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 
 [[package]]
 name = "compact_str"
@@ -751,7 +763,7 @@ dependencies = [
 [[package]]
 name = "fs"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
+source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 dependencies = [
  "path-absolutize",
 ]
@@ -1037,6 +1049,7 @@ dependencies = [
  "annotate-snippets",
  "anyhow",
  "clap",
+ "clap_complete",
  "colored",
  "fs",
  "insta",
@@ -1060,6 +1073,7 @@ dependencies = [
  "air_r_syntax",
  "annotate-snippets",
  "anyhow",
+ "biome_diagnostics",
  "biome_formatter",
  "biome_rowan",
  "etcetera",
@@ -1141,7 +1155,7 @@ checksum = "68ab91017fe16c622486840e4c83c9a37afeff978bd239b5293d61ece587de66"
 [[package]]
 name = "line_ending"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
+source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 dependencies = [
  "memchr",
  "settings",
@@ -1773,7 +1787,7 @@ dependencies = [
 [[package]]
 name = "settings"
 version = "0.0.0"
-source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
+source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 dependencies = [
  "biome_formatter",
  "serde",
@@ -2332,7 +2346,7 @@ dependencies = [
 [[package]]
 name = "workspace"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/air_pratt#f29d5399f481205fb915f9453633729cbf529aa2"
+source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 dependencies = [
  "air_r_formatter",
  "air_r_parser",
