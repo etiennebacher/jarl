@@ -1,11 +1,12 @@
 pub(crate) mod cfg;
+pub(crate) mod options;
 pub(crate) mod unreachable_code;
 
 #[cfg(test)]
 mod tests {
+    use crate::lints::base::unreachable_code::options::ResolvedUnreachableCodeOptions;
+    use crate::lints::base::unreachable_code::options::UnreachableCodeOptions;
     use crate::rule_options::ResolvedRuleOptions;
-    use crate::rule_options::unreachable_code::ResolvedUnreachableCodeOptions;
-    use crate::rule_options::unreachable_code::UnreachableCodeOptions;
     use crate::settings::{LinterSettings, Settings};
     use crate::utils_test::*;
 

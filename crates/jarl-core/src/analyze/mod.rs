@@ -8,6 +8,7 @@ pub(crate) mod function_definition;
 pub(crate) mod identifier;
 pub(crate) mod if_;
 pub(crate) mod namespace_expression;
+pub(crate) mod parenthesized_expression;
 pub(crate) mod subset;
 pub(crate) mod unary_expression;
 pub(crate) mod while_;

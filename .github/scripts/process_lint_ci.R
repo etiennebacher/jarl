@@ -8,30 +8,51 @@ all_files <- list.files(
   pattern = "\\.json$",
   full.names = TRUE
 )
-all_files_name <- basename(all_files)
 
 repos_raw <- Sys.getenv("TEST_REPOS")
 repo_lines <- strsplit(repos_raw, "\n")[[1]]
+repo_lines <- trimws(repo_lines)
 repo_lines <- repo_lines[repo_lines != ""]
-repo_parts <- strsplit(repo_lines, "@")
-all_repos <- setNames(
-  lapply(repo_parts, function(x) trimws(x[2])), # the commit SHAs
-  sapply(repo_parts, function(x) trimws(x[1])) # the repo names
-)
 
-cat("### Ecosystem checks\n\n", file = "lint_comparison.md")
+# Parse the repo list. Comment lines (e.g. "# packages", "# other") act as
+# category markers: every repo listed below such a line belongs to that
+# category, which is later used to group results under a subheader.
+repo_names <- character(0)
+repo_shas <- character(0)
+repo_categories <- character(0)
+current_category <- NA_character_
 
-n_without_changes <- 0
+for (line in repo_lines) {
+  if (startsWith(line, "#")) {
+    marker <- trimws(sub("^#+", "", line))
+    current_category <- if (grepl("package", marker, ignore.case = TRUE)) {
+      "Packages"
+    } else {
+      "Other repos"
+    }
+    next
+  }
+  parts <- strsplit(line, "@")[[1]]
+  repo_names <- c(repo_names, trimws(parts[1]))
+  repo_shas <- c(repo_shas, trimws(parts[2]))
+  repo_categories <- c(repo_categories, current_category)
+}
 
-for (i in seq_along(all_repos)) {
-  repos <- names(all_repos)[i]
-  repos_sha <- all_repos[[i]]
+total_new <- 0
+total_deleted <- 0
+body <- character(0)
+last_printed_category <- NULL
+
+for (i in seq_along(repo_names)) {
+  repos <- repo_names[i]
+  repos_sha <- repo_shas[i]
+  category <- repo_categories[i]
 
   message("Processing results of ", repos)
-  main_results_json <- jsonlite::read_json(paste0(
+  base_results_json <- jsonlite::read_json(paste0(
     "results/",
     gsub("/", "_", repos),
-    "_main.json"
+    "_base.json"
   ))[["diagnostics"]]
   pr_results_json <- jsonlite::read_json(paste0(
     "results/",
@@ -39,7 +60,7 @@ for (i in seq_along(all_repos)) {
     "_pr.json"
   ))[["diagnostics"]]
 
-  main_results <- lapply(main_results_json, \(x) {
+  base_results <- lapply(base_results_json, \(x) {
     data.table(
       name = x$message$name,
       body = x$message$body,
@@ -61,8 +82,8 @@ for (i in seq_along(all_repos)) {
   }) |>
     rbindlist()
 
-  if (identical(dim(main_results), c(0L, 0L))) {
-    main_results <- data.table(
+  if (identical(dim(base_results), c(0L, 0L))) {
+    base_results <- data.table(
       name = character(0),
       body = character(0),
       filename = character(0),
@@ -81,27 +102,24 @@ for (i in seq_along(all_repos)) {
     )
   }
 
-  new_lints <- pr_results[!main_results, on = .(name, filename, row, column)]
-  deleted_lints <- main_results[
+  new_lints <- pr_results[!base_results, on = .(name, filename, row, column)]
+  deleted_lints <- base_results[
     !pr_results,
     on = .(name, filename, row, column)
   ]
 
   if (nrow(new_lints) == 0 && nrow(deleted_lints) == 0) {
-    n_without_changes <- n_without_changes + 1
+    next
+  }
 
-    # If we are at the last repo and there were no changes anywhere, return
-    # early. Otherwise keep going.
-    if (n_without_changes == length(all_repos)) {
-      cat(
-        "✅ No new or removed violations",
-        file = "lint_comparison.md",
-        append = TRUE
-      )
-      break
-    } else {
-      next
-    }
+  total_new <- total_new + nrow(new_lints)
+  total_deleted <- total_deleted + nrow(deleted_lints)
+
+  # Add a category subheader the first time a repo with changes shows up in
+  # that category.
+  if (!is.na(category) && !identical(last_printed_category, category)) {
+    body <- c(body, paste0("## ", category, "\n\n"))
+    last_printed_category <- category
   }
 
   msg_header <- paste0(
@@ -187,12 +205,36 @@ for (i in seq_along(all_repos)) {
 
   msg_bottom <- "</pre></details>\n\n"
 
-  paste(
-    msg_header,
-    msg_new_violations,
-    msg_old_violations,
-    msg_bottom,
-    collapse = ""
-  ) |>
-    cat(file = "lint_comparison.md", append = TRUE)
+  body <- c(
+    body,
+    paste(
+      msg_header,
+      msg_new_violations,
+      msg_old_violations,
+      msg_bottom,
+      collapse = ""
+    )
+  )
+}
+
+cat("# Ecosystem results\n\n", file = "lint_comparison.md")
+
+if (length(body) == 0) {
+  cat(
+    "✅ No new or removed violations\n",
+    file = "lint_comparison.md",
+    append = TRUE
+  )
+} else {
+  cat(
+    paste0(
+      total_new,
+      " violations added, ",
+      total_deleted,
+      " violations removed\n\n"
+    ),
+    file = "lint_comparison.md",
+    append = TRUE
+  )
+  cat(paste(body, collapse = ""), file = "lint_comparison.md", append = TRUE)
 }

@@ -78,6 +78,27 @@ mod tests {
     }
 
     #[test]
+    fn test_glue_multibyte_chars() {
+        // Multi-byte UTF-8 characters between delimiters must not cause a panic
+        // when scanning for incomplete delimiters. This interpolates, so no lint.
+        expect_no_lint(r#"glue("{x} – {y}")"#, "glue", None);
+
+        // An incomplete delimiter after a multi-byte char is still reported.
+        assert_snapshot!(
+            snapshot_lint(r#"glue("{abc – ")"#),
+            @r#"
+        warning: glue
+         --> <test>:1:1
+          |
+        1 | glue("{abc – ")
+          | --------------- This `glue()` call contains incomplete delimiters and would error when evaluated.
+          |
+        Found 1 error.
+        "#
+        );
+    }
+
+    #[test]
     fn test_no_lint_glue_from_another_package() {
         expect_no_lint("foo::glue('abc')", "glue", None);
     }

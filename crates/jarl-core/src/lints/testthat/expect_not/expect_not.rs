@@ -1,7 +1,6 @@
 use crate::diagnostic::*;
 use crate::utils::{
-    get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
-    node_contains_comments,
+    get_arg_by_name_then_position, get_function_namespace_prefix, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
@@ -40,12 +39,9 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// # rlang "!!!" operator is left unmodified
 /// expect_true(!!!x)
 /// ```
-pub fn expect_not(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let function_name = get_function_name(function.clone());
-
+pub fn expect_not(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Only check expect_true and expect_false
-    if function_name != "expect_true" && function_name != "expect_false" {
+    if fn_name != "expect_true" && fn_name != "expect_false" {
         return Ok(None);
     }
 
@@ -95,14 +91,14 @@ pub fn expect_not(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     };
 
     // Determine the replacement function
-    let (current_fn, replacement_fn) = if function_name == "expect_true" {
+    let (current_fn, replacement_fn) = if fn_name == "expect_true" {
         ("expect_true", "expect_false")
     } else {
         ("expect_false", "expect_true")
     };
 
     // Preserve namespace prefix if present
-    let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();
+    let namespace_prefix = get_function_namespace_prefix(ast.function()?).unwrap_or_default();
 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(

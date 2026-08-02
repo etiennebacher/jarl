@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{get_function_name, node_contains_comments};
+use crate::utils::node_contains_comments;
 use air_r_syntax::RSyntaxKind::*;
 use air_r_syntax::*;
 use anyhow::Context;
@@ -40,17 +40,12 @@ impl Violation for LengthTest {
     }
 }
 
-pub fn length_test(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let RCallFields { function, arguments } = ast.as_fields();
-
-    let function = function?;
-    let outer_fn_name = get_function_name(function);
-
-    if outer_fn_name != "length" {
+pub fn length_test(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
+    if fn_name != "length" {
         return Ok(None);
     }
 
-    let arguments = arguments?.items();
+    let arguments = ast.arguments()?.items();
     let mut arg_is_binary_expr = false;
     let mut operator_text: String = "".to_string();
     let mut lhs: String = "".to_string();

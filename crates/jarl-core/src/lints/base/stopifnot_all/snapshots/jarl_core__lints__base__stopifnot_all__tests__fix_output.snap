@@ -1,0 +1,46 @@
+---
+source: crates/jarl-core/src/lints/base/stopifnot_all/mod.rs
+assertion_line: 109
+expression: "get_unsafe_fixed_text(vec![\"stopifnot(all(x > 0))\",\n\"stopifnot(check = all(x))\", \"base::stopifnot(base::all(x))\",\n\"stopifnot(all(x, y))\", \"stopifnot(all(1, 2, 3))\",\n\"stopifnot(x, all(a, b, c), all(y, z))\",], \"stopifnot_all\",)"
+---
+OLD:
+====
+stopifnot(all(x > 0))
+NEW:
+====
+stopifnot(x > 0)
+
+OLD:
+====
+stopifnot(check = all(x))
+NEW:
+====
+stopifnot(check = x)
+
+OLD:
+====
+base::stopifnot(base::all(x))
+NEW:
+====
+base::stopifnot(x)
+
+OLD:
+====
+stopifnot(all(x, y))
+NEW:
+====
+stopifnot(x, y)
+
+OLD:
+====
+stopifnot(all(1, 2, 3))
+NEW:
+====
+stopifnot(1, 2, 3)
+
+OLD:
+====
+stopifnot(x, all(a, b, c), all(y, z))
+NEW:
+====
+stopifnot(x, a, b, c, y, z)

@@ -1,0 +1,135 @@
+pub(crate) mod stopifnot_all;
+
+#[cfg(test)]
+mod tests {
+    use crate::utils_test::*;
+    use insta::assert_snapshot;
+
+    fn snapshot_lint(code: &str) -> String {
+        format_diagnostics(code, "stopifnot_all", None)
+    }
+
+    #[test]
+    fn test_no_lint_stopifnot_all() {
+        expect_no_lint("all(x)", "stopifnot_all", None);
+        expect_no_lint("stopifnot(x)", "stopifnot_all", None);
+        expect_no_lint("assert_that(all(x))", "stopifnot_all", None);
+        expect_no_lint("stopifnot(all(x) || any(y))", "stopifnot_all", None);
+        expect_no_lint("stopifnot(foo(all(x)))", "stopifnot_all", None);
+        expect_no_lint("stopifnot((all(x)))", "stopifnot_all", None);
+        expect_no_lint("stopifnot(all(x)[1])", "stopifnot_all", None);
+        expect_no_lint("stopifnot(all = x)", "stopifnot_all", None);
+        expect_no_lint("stopifnot(all(x, na.rm = TRUE))", "stopifnot_all", None);
+        expect_no_lint(
+            "stopifnot(all(x, na.rm = remove_na))",
+            "stopifnot_all",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_stopifnot_all() {
+        assert_snapshot!(
+            snapshot_lint("stopifnot(all(x > 0))"),
+            @r"
+        warning: stopifnot_all
+         --> <test>:1:11
+          |
+        1 | stopifnot(all(x > 0))
+          |           ---------- `stopifnot(all(...))` contains an unnecessary call to `all()`.
+          |
+          = help: Use `stopifnot(...)` instead.
+        Found 1 error.
+        "
+        );
+
+        assert_snapshot!(
+            snapshot_lint("stopifnot(check = all(x))"),
+            @r"
+        warning: stopifnot_all
+         --> <test>:1:19
+          |
+        1 | stopifnot(check = all(x))
+          |                   ------ `stopifnot(all(...))` contains an unnecessary call to `all()`.
+          |
+          = help: Use `stopifnot(...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("base::stopifnot(base::all(x))"),
+            @r"
+        warning: stopifnot_all
+         --> <test>:1:17
+          |
+        1 | base::stopifnot(base::all(x))
+          |                 ------------ `stopifnot(all(...))` contains an unnecessary call to `all()`.
+          |
+          = help: Use `stopifnot(...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("stopifnot(all(x, y))"),
+            @r"
+        warning: stopifnot_all
+         --> <test>:1:11
+          |
+        1 | stopifnot(all(x, y))
+          |           --------- `stopifnot(all(...))` contains an unnecessary call to `all()`.
+          |
+          = help: Use `stopifnot(...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("stopifnot(x, all(y), all(z))"),
+            @r"
+        warning: stopifnot_all
+         --> <test>:1:14
+          |
+        1 | stopifnot(x, all(y), all(z))
+          |              ------ `stopifnot(all(...))` contains an unnecessary call to `all()`.
+          |
+          = help: Use `stopifnot(...)` instead.
+        warning: stopifnot_all
+         --> <test>:1:22
+          |
+        1 | stopifnot(x, all(y), all(z))
+          |                      ------ `stopifnot(all(...))` contains an unnecessary call to `all()`.
+          |
+          = help: Use `stopifnot(...)` instead.
+        Found 2 errors.
+        "
+        );
+    }
+
+    #[test]
+    fn test_fix_stopifnot_all() {
+        assert_snapshot!(
+            "fix_output",
+            get_unsafe_fixed_text(
+                vec![
+                    "stopifnot(all(x > 0))",
+                    "stopifnot(check = all(x))",
+                    "base::stopifnot(base::all(x))",
+                    "stopifnot(all(x, y))",
+                    "stopifnot(all(1, 2, 3))",
+                    "stopifnot(x, all(a, b, c), all(y, z))",
+                ],
+                "stopifnot_all",
+            )
+        );
+    }
+
+    #[test]
+    fn test_stopifnot_all_with_comments_no_fix() {
+        assert_snapshot!(
+            "no_fix_with_comments",
+            get_unsafe_fixed_text(
+                vec!["stopifnot(all(\n  # comment\n  x\n))"],
+                "stopifnot_all",
+            )
+        );
+    }
+}

@@ -1,7 +1,8 @@
-use crate::error::ParseError;
+use crate::error::{ParseError, SyntaxError};
+use crate::location::Location;
 use crate::package::{
-    FilePackageInfo, FileScope, PackageAnalysis, PackageContext, make_package_analysis,
-    summarize_package_info,
+    FilePackageInfo, FileScope, PackageAnalysis, PackageContext, PackageFileAnalysis,
+    make_package_analysis, summarize_package_info,
 };
 use crate::roxygen::{extract_roxygen_examples, remap_roxygen_fix, remap_roxygen_range};
 use crate::suppression::SuppressionManager;
@@ -10,6 +11,7 @@ use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
 use air_r_syntax::RSyntaxNode;
 use anyhow::{Context, Result};
+use biome_rowan::{TextRange, TextSize};
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fs;
@@ -126,6 +128,8 @@ pub fn lint_only(
         &pkg,
         &pkg_contexts,
         &file_pkg_info,
+        // lint-only: on-disk contents match the cached index, so reuse it.
+        true,
     )
     .with_context(|| format!("Failed to get checks for file: {path}"))?;
 
@@ -164,6 +168,10 @@ pub fn lint_fix(
             &pkg,
             &pkg_contexts,
             &file_pkg_info,
+            // Fix mode rewrites the file between iterations, so the on-disk
+            // contents (and the index the pre-pass cached from them) drift from
+            // the in-memory `contents`; rebuild the index rather than reuse it.
+            false,
         )
         .with_context(|| format!("Failed to get checks for file: {path}",))?;
 
@@ -200,6 +208,7 @@ pub fn get_checks(
     pkg: &PackageAnalysis,
     pkg_contexts: &HashMap<PathBuf, PackageContext>,
     file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
+    use_cached_index: bool,
 ) -> Result<Vec<Diagnostic>> {
     if crate::fs::has_rmd_extension(file) {
         return get_checks_rmd(contents, file, config);
@@ -208,9 +217,11 @@ pub fn get_checks(
     let parser_options = RParserOptions::default();
     let parsed = air_r_parser::parse(contents, parser_options);
 
-    if parsed.has_error() {
-        return Err(ParseError { filename: file.to_path_buf() }.into());
-    }
+    // The parser recovers from syntax errors: each failed statement is wrapped
+    // in a bogus node and the rest of the file is parsed normally, so we can
+    // still lint the valid code. Autofixes are disabled for the whole file
+    // because edits computed around broken code are not reliable.
+    let has_parse_errors = parsed.has_error();
 
     let syntax = &parsed.syntax();
     let expressions = &parsed.tree().expressions();
@@ -226,29 +237,44 @@ pub fn get_checks(
     // calls inject `DefinitionKind::Import` entries via JarlImportsResolver;
     // the complementary "names read by sourced files" path is still handled
     // inside `SemanticInfo`.
-    let semantic = oak_semantic::build_index(
-        &parsed.tree(),
-        jarl_semantic::JarlImportsResolver::new(file),
-    );
+    //
+    // When `unused_object` runs, the cross-file pre-pass already built this
+    // file's index (with the same resolver) and stored it in `pkg.file_indices`;
+    // reuse it rather than rebuilding. The pre-pass reads from disk, so the
+    // cache is only valid in lint-only mode — fix mode rewrites the file
+    // between passes, so it always rebuilds from the in-memory contents.
+    //
+    // Building (when not cached) happens here, in the parallel per-file pass,
+    // rather than via the shared `AnalysisDb`: oak's salsa database is `Send`
+    // but not `Sync`, so it can't be borrowed across rayon worker threads.
+    let owned_semantic;
+    let semantic: &oak_semantic::semantic_index::SemanticIndex = match use_cached_index
+        .then(|| pkg.file_indices.get(file))
+        .flatten()
+    {
+        Some(cached) => cached,
+        None => {
+            owned_semantic = oak_semantic::build_index(
+                &parsed.tree(),
+                jarl_semantic::JarlImportsResolver::new(file),
+            );
+            &owned_semantic
+        }
+    };
     checker.file_path = file.to_path_buf();
 
     // Wire up package context for package-specific rules.
     get_package_info(
         &mut checker,
         file,
-        &semantic,
+        semantic,
         config,
         pkg_contexts,
         file_pkg_info,
     );
 
     // Look up per-file data from PackageAnalysis
-    let duplicate_assignments = pkg
-        .duplicate_assignments
-        .get(file)
-        .cloned()
-        .unwrap_or_default();
-    let unused_functions = pkg.unused_functions.get(file).cloned().unwrap_or_default();
+    let package_file = PackageFileAnalysis::for_file(pkg, file);
 
     // We run checks at expression-level. This gathers all violations, no matter
     // whether they are suppressed or not. They are filtered out in the next
@@ -282,9 +308,8 @@ pub fn get_checks(
         expressions,
         syntax,
         &mut checker,
-        &duplicate_assignments,
-        &unused_functions,
-        Some(&semantic),
+        &package_file,
+        Some(semantic),
     )?;
 
     // Some rules have a fix available in their implementation but do not have
@@ -324,6 +349,9 @@ pub fn get_checks(
             if x.fix.to_skip {
                 x.fix = Fix::empty();
             }
+            if has_parse_errors {
+                x.fix = Fix::empty();
+            }
             x
         })
         .collect();
@@ -331,7 +359,72 @@ pub fn get_checks(
     let loc_new_lines = find_new_lines(syntax)?;
     let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
 
+    if has_parse_errors {
+        let syntax_errors = collect_syntax_errors(&parsed, contents);
+        return Err(ParseError {
+            filename: file.to_path_buf(),
+            diagnostics,
+            syntax_errors,
+        }
+        .into());
+    }
+
     Ok(diagnostics)
+}
+
+/// Convert the parser's diagnostics (message + span) into the `SyntaxError`s
+/// carried by [`ParseError`], resolving each span to a (row, column) location.
+///
+/// Locations are computed against `contents` (not the parsed tree) because
+/// `find_new_lines` reads the serialized tree, which can be truncated once the
+/// parser has recovered from an error, throwing later offsets off.
+fn collect_syntax_errors(parsed: &air_r_parser::Parse, contents: &str) -> Vec<SyntaxError> {
+    // `Diagnostic::location` (the trait method) is the only public accessor for
+    // a `ParseDiagnostic`'s span.
+    use biome_diagnostics::Diagnostic as _;
+
+    let loc_new_lines = crate::utils::find_new_lines_from_content(contents);
+
+    parsed
+        .diagnostics()
+        .iter()
+        .map(|diagnostic| {
+            // The span is optional on `ParseDiagnostic`, but every diagnostic
+            // the R parser builds is given a range, so this only ever falls
+            // back if that changes upstream.
+            let range = diagnostic.location().span.map_or_else(
+                || end_of_content(contents),
+                |range| normalize_eof_range(contents, range),
+            );
+            let start: usize = range.start().into();
+            let (row, col) = find_row_col(start, &loc_new_lines);
+            SyntaxError {
+                message: diagnostic.message.to_string(),
+                range,
+                location: Location::new(row, col),
+            }
+        })
+        .collect()
+}
+
+/// Move an end-of-file error span back to the end of the last line with
+/// content.
+///
+/// Parser errors at EOF are zero-width spans sitting past the final newline, on
+/// an empty line. annotate-snippets renders those as an empty snippet, and the
+/// end of the last real line is the more useful place to point at anyway.
+fn normalize_eof_range(contents: &str, range: TextRange) -> TextRange {
+    if range.is_empty() && usize::from(range.start()) == contents.len() {
+        return end_of_content(contents);
+    }
+    range
+}
+
+/// The empty range at the end of the last line with content.
+fn end_of_content(contents: &str) -> TextRange {
+    let trimmed = contents.trim_end_matches(['\n', '\r']).len();
+    let pos = TextSize::from(trimmed as u32);
+    TextRange::new(pos, pos)
 }
 
 /// Populate package context on the checker from pre-computed data.
@@ -431,7 +524,13 @@ fn get_checks_roxygen(
         // otherwise unnecessary here (no package-level analysis, no
         // suppression-related diagnostics to report).
         if has_suppressions {
-            check_document(expressions, &syntax, &mut checker, &[], &[], None)?;
+            check_document(
+                expressions,
+                &syntax,
+                &mut checker,
+                &PackageFileAnalysis::default(),
+                None,
+            )?;
         }
 
         for mut d in checker.diagnostics {
@@ -467,9 +566,7 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     }
 
     let parsed = air_r_parser::parse(&virtual_source, RParserOptions::default());
-    if parsed.has_error() {
-        return Err(crate::error::ParseError { filename: file.to_path_buf() }.into());
-    }
+    let has_parse_errors = parsed.has_error();
 
     let syntax = parsed.syntax();
     let suppression = SuppressionManager::from_node(&syntax, &virtual_source);
@@ -483,8 +580,14 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     }
     // check_document runs suppression filtering internally, so
     // checker.diagnostics is the post-suppression list after this call.
-    // Rmd chunks don't participate in package-level analysis, so pass empty slices.
-    check_document(expressions, &syntax, &mut checker, &[], &[], None)?;
+    // Rmd chunks don't participate in package-level analysis.
+    check_document(
+        expressions,
+        &syntax,
+        &mut checker,
+        &PackageFileAnalysis::default(),
+        None,
+    )?;
 
     // Remap ranges from virtual-string offsets to original Rmd file offsets.
     let diagnostics: Vec<Diagnostic> = checker
@@ -499,7 +602,21 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
         .collect();
 
     let loc_new_lines = crate::utils::find_new_lines_from_content(contents);
-    Ok(compute_lints_location(diagnostics, &loc_new_lines))
+    let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
+
+    if has_parse_errors {
+        // Rmd parse errors are reported against the combined virtual source;
+        // mapping arbitrary error spans back to the original file is unreliable,
+        // so we report only the generic summary here (no per-error snippets).
+        return Err(ParseError {
+            filename: file.to_path_buf(),
+            diagnostics,
+            syntax_errors: Vec::new(),
+        }
+        .into());
+    }
+
+    Ok(diagnostics)
 }
 
 #[cfg(test)]

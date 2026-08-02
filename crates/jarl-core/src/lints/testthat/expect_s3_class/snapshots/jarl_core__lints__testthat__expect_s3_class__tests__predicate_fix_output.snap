@@ -1,0 +1,38 @@
+---
+source: crates/jarl-core/src/lints/testthat/expect_s3_class/mod.rs
+expression: "get_fixed_text(vec![\"expect_true(is.data.frame(x))\",\n\"testthat::expect_true(utils::is.relistable(foo(x)))\",\n\"expect_true(is.tskernel(k = x))\", \"expect_true(is.numeric_version(x))\",\n\"expect_true(is.tclObj(x))\",], \"expect_s3_class\", None,)"
+---
+OLD:
+====
+expect_true(is.data.frame(x))
+NEW:
+====
+expect_s3_class(x, "data.frame")
+
+OLD:
+====
+testthat::expect_true(utils::is.relistable(foo(x)))
+NEW:
+====
+testthat::expect_s3_class(foo(x), "relistable")
+
+OLD:
+====
+expect_true(is.tskernel(k = x))
+NEW:
+====
+expect_s3_class(x, "tskernel")
+
+OLD:
+====
+expect_true(is.numeric_version(x))
+NEW:
+====
+expect_s3_class(x, "numeric_version")
+
+OLD:
+====
+expect_true(is.tclObj(x))
+NEW:
+====
+expect_s3_class(x, "tclObj")

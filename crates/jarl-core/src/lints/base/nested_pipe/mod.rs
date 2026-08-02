@@ -1,10 +1,11 @@
 pub(crate) mod nested_pipe;
+pub(crate) mod options;
 
 #[cfg(test)]
 mod tests {
+    use crate::lints::base::nested_pipe::options::NestedPipeOptions;
+    use crate::lints::base::nested_pipe::options::ResolvedNestedPipeOptions;
     use crate::rule_options::ResolvedRuleOptions;
-    use crate::rule_options::nested_pipe::NestedPipeOptions;
-    use crate::rule_options::nested_pipe::ResolvedNestedPipeOptions;
     use crate::settings::{LinterSettings, Settings};
     use crate::utils_test::*;
     use insta::assert_snapshot;

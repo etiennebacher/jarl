@@ -1,6 +1,5 @@
 use crate::checker::Checker;
 use crate::diagnostic::*;
-use crate::utils::get_function_name;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -52,21 +51,26 @@ impl Violation for UndesirableFunction {
     }
 }
 
-pub fn undesirable_function(ast: &RCall, checker: &Checker) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let fn_name = get_function_name(function);
-
+pub fn undesirable_function(
+    ast: &RCall,
+    fn_name: &str,
+    checker: &Checker,
+) -> anyhow::Result<Option<Diagnostic>> {
     if !checker
         .rule_options
         .undesirable_function
         .functions
-        .contains(&fn_name)
+        .contains(fn_name)
     {
         return Ok(None);
     }
 
     let range = ast.syntax().text_trimmed_range();
-    let diagnostic = Diagnostic::new(UndesirableFunction { fn_name }, range, Fix::empty());
+    let diagnostic = Diagnostic::new(
+        UndesirableFunction { fn_name: fn_name.to_string() },
+        range,
+        Fix::empty(),
+    );
 
     Ok(Some(diagnostic))
 }

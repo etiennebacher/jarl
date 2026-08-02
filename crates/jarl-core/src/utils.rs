@@ -2,7 +2,7 @@ use crate::diagnostic::Diagnostic;
 use crate::location::Location;
 use air_r_syntax::{
     AnyRExpression, RArgument, RArgumentList, RBinaryExpression, RBinaryExpressionFields, RCall,
-    RCallFields, RExtractExpressionFields, RSyntaxKind, RSyntaxNode,
+    RExtractExpressionFields, RSyntaxKind, RSyntaxNode,
 };
 use anyhow::{Result, anyhow};
 use biome_rowan::{AstNode, AstSeparatedList, Direction};
@@ -64,9 +64,13 @@ pub fn find_new_lines(ast: &RSyntaxNode) -> Result<Vec<usize>> {
 ///
 /// Note that the row position is 1-indexed but the column position is 0-indexed.
 pub fn find_row_col(start: usize, loc_new_lines: &[usize]) -> (usize, usize) {
+    // A newline sitting exactly at `start` belongs to the line it terminates,
+    // so it must not count as a preceding line (and counting it would underflow
+    // the column below). This only bites when `start` lands on a newline offset,
+    // which happens for end-of-file parse errors pointing at the end of a line.
     let new_lines_before = loc_new_lines
         .iter()
-        .filter(|x| *x <= &start)
+        .filter(|x| *x < &start)
         .collect::<Vec<&usize>>();
     let n_new_lines = new_lines_before.len();
     let last_new_line = match new_lines_before.last() {
@@ -278,21 +282,23 @@ pub fn get_function_namespace_prefix(function: AnyRExpression) -> Option<String>
 /// - `inner_fn(content) |> outer_fn()`: `syntax_node` is the pipe expression
 /// - `content |> inner_fn() |> outer_fn()`: `syntax_node` is the pipe expression
 ///
+/// `fn_name` is the already-extracted callee name of `call`.
+///
 /// The returned `syntax_node` is the top-level node of the matched expression and should
 /// be used for the diagnostic range and comment checks.
 pub fn get_nested_functions_content(
     call: &RCall,
+    fn_name: &str,
     outer_fn: &str,
     inner_fn: &str,
 ) -> Result<Option<(String, RSyntaxNode)>> {
-    let RCallFields { function, arguments } = call.as_fields();
-
-    if get_function_name(function?) != outer_fn {
+    if fn_name != outer_fn {
         return Ok(None);
     }
 
     // Try nested case: outer_fn(inner_fn(content))
-    let unnamed_arg = arguments?
+    let unnamed_arg = call
+        .arguments()?
         .items()
         .into_iter()
         .find(|x| x.as_ref().is_ok_and(|arg| arg.name_clause().is_none()));

@@ -52,7 +52,7 @@ jobs:
 
     steps:
       - name: Checkout current PR branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
@@ -60,10 +60,10 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Set up Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v1.17.0
 
       - name: Set up R for package-specific rules and to process results
-        uses: r-lib/actions/setup-r@v2
+        uses: r-lib/actions/setup-r@v2.12.0
         with:
           use-public-rspm: true
 

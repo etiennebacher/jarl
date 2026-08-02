@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name, get_function_name, node_contains_comments};
+use crate::utils::{get_arg_by_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -62,10 +62,7 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// * https://design.tidyverse.org/err-call.html
-pub fn condition_call(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let fn_name = get_function_name(function);
-
+pub fn condition_call(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "stop" {
         return Ok(None);
     }
@@ -118,7 +115,7 @@ pub fn condition_call(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         }
         // `call.` is absent: it defaults to `TRUE`, so insert `call. = FALSE`.
         None => {
-            let last_arg = args.into_iter().filter_map(|x| x.ok()).last();
+            let last_arg = args.into_iter().filter_map(|x| x.ok()).next_back();
             let (start, content) = match last_arg {
                 Some(arg) => (
                     usize::from(arg.syntax().text_trimmed_range().end()),

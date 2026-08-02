@@ -24,7 +24,7 @@ fn test_must_pass_path() -> anyhow::Result<()> {
       <FILES>...  List of files or directories to check or fix lints, for example `jarl check .`.
 
     File selection:
-          --exclude <FILES>     List of file patterns to exclude from linting, separated by a comma (no spaces).
+          --exclude=<FILES>     List of file patterns to exclude from linting, separated by a comma (no spaces). Must be passed with an equals sign, e.g. `--exclude=R/*.R`, so the shell does not expand glob patterns.
           --no-default-exclude  Do not apply the default set of file patterns that should be excluded.
 
     Rule selection:
@@ -48,7 +48,7 @@ fn test_must_pass_path() -> anyhow::Result<()> {
       -h, --help                           Print help (see a summary with '-h')
 
     Global options:
-          --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+          --log-level <LOG_LEVEL>  The log level [default: warn] [possible values: error, warn, info, debug, trace]
     "#
     );
 
@@ -96,7 +96,12 @@ fn test_parsing_error() -> anyhow::Result<()> {
     ----- stdout -----
 
     ----- stderr -----
-    Error: Failed to parse test.R due to syntax errors.
+    error: expected an expression
+     --> test.R:1:5
+      |
+    1 | f <-
+      |     ^
+      |
     "
     );
 
@@ -133,7 +138,78 @@ fn test_parsing_error_for_some_files() -> anyhow::Result<()> {
     1 fixable with the `--fix` option.
 
     ----- stderr -----
-    Error: Failed to parse test.R due to syntax errors.
+    error: expected an expression
+     --> test.R:1:5
+      |
+    1 | f <-
+      |     ^
+      |
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_parsing_error_with_valid_code_in_same_file() -> anyhow::Result<()> {
+    let case = CliTest::with_file("test.R", "any(is.na(x))\nf <-")?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+    warning: any_is_na
+     --> test.R:1:1
+      |
+    1 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    error: expected an expression
+     --> test.R:2:5
+      |
+    2 | f <-
+      |     ^
+      |
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_parsing_error_disables_fixes() -> anyhow::Result<()> {
+    let case = CliTest::with_file("test.R", "any(is.na(x))\nf <-")?;
+
+    case.command()
+        .arg("check")
+        .arg(".")
+        .arg("--fix")
+        .arg("--allow-no-vcs")
+        .run();
+
+    // `any(is.na(x))` has a safe fix, but a file with syntax errors must be
+    // left untouched: edits computed around broken code are not reliable.
+    let content = case.read_file("test.R")?;
+    insta::assert_snapshot!(
+        content,
+        @"
+    any(is.na(x))
+    f <-
     "
     );
 

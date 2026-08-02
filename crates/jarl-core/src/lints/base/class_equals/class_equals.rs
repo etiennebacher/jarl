@@ -128,10 +128,8 @@ pub fn class_equals(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic
     Ok(Some(diagnostic))
 }
 
-pub fn class_identical(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let function_name = get_function_name(function);
-    if function_name != "identical" {
+pub fn class_identical(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
+    if fn_name != "identical" {
         return Ok(None);
     }
 
@@ -205,10 +203,9 @@ fn extract_class_and_string(
             return None;
         }
         left_is_class = true;
-    } else if let Some(left_val) = left.as_any_r_value() {
-        left_val.as_r_string_value()?;
     } else {
-        return None;
+        let left_val = left.as_any_r_value()?;
+        left_val.as_r_string_value()?;
     }
 
     // Check if right is a class() call or a string
@@ -219,10 +216,9 @@ fn extract_class_and_string(
             return None;
         }
         right_is_class = true;
-    } else if let Some(right_val) = right.as_any_r_value() {
-        right_val.as_r_string_value()?;
     } else {
-        return None;
+        let right_val = right.as_any_r_value()?;
+        right_val.as_r_string_value()?;
     }
 
     // We need exactly one class() and one string

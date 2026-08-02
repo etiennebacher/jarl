@@ -1,10 +1,11 @@
+pub(crate) mod options;
 pub(crate) mod undesirable_function;
 
 #[cfg(test)]
 mod tests {
+    use crate::lints::base::undesirable_function::options::ResolvedUndesirableFunctionOptions;
+    use crate::lints::base::undesirable_function::options::UndesirableFunctionOptions;
     use crate::rule_options::ResolvedRuleOptions;
-    use crate::rule_options::undesirable_function::ResolvedUndesirableFunctionOptions;
-    use crate::rule_options::undesirable_function::UndesirableFunctionOptions;
     use crate::settings::{LinterSettings, Settings};
     use crate::utils_test::*;
     use insta::assert_snapshot;

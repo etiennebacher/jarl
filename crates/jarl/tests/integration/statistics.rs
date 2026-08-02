@@ -18,6 +18,8 @@ any(is.na(x))
 any(is.na(x))
 any(is.na(x))
 any(is.na(x))
+stop('x')
+stop('x')
 ",
         ),
         ("test2.R", "mean(x <- 1); x"),
@@ -28,6 +30,8 @@ any(is.na(x))
             .command()
             .arg("check")
             .arg(".")
+            .arg("--select")
+            .arg("any_is_na,condition_call,implicit_assignment")
             .arg("--statistics")
             .run()
             .normalize_os_executable_name(),
@@ -37,9 +41,11 @@ any(is.na(x))
     exit_code: 1
     ----- stdout -----
        12 [*] any_is_na
+        2 [^] condition_call
         1 [ ] implicit_assignment
 
-    Rules with `[*]` have an automatic fix.
+    Rules with `[*]` have an automatic safe fix.
+    Rules with `[^]` have an automatic unsafe fix.
 
     ----- stderr -----
     "

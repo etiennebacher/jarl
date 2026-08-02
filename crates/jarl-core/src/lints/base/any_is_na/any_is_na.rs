@@ -33,9 +33,9 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// See `?anyNA`
-pub fn any_is_na(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
+pub fn any_is_na(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     let (inner_content, outer_syntax) =
-        unwrap_or_return_none!(get_nested_functions_content(ast, "any", "is.na")?);
+        unwrap_or_return_none!(get_nested_functions_content(ast, fn_name, "any", "is.na")?);
 
     let range = outer_syntax.text_trimmed_range();
     Ok(Some(Diagnostic::new(

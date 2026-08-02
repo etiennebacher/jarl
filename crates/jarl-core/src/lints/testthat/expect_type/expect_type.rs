@@ -36,17 +36,14 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// expect_type(x, "integer")
 /// expect_type(x, "character")
 /// ```
-pub fn expect_type(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let function_name = get_function_name(function);
-
+pub fn expect_type(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Case 1: expect_equal(typeof(x), type) or expect_identical(typeof(x), type)
-    if function_name == "expect_equal" || function_name == "expect_identical" {
-        return check_expect_equal_typeof(ast, &function_name);
+    if fn_name == "expect_equal" || fn_name == "expect_identical" {
+        return check_expect_equal_typeof(ast, fn_name);
     }
 
     // Case 2: expect_true(is.<type>(x))
-    if function_name == "expect_true" {
+    if fn_name == "expect_true" {
         return check_expect_true_is_type(ast);
     }
 

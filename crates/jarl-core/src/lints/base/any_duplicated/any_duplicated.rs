@@ -49,9 +49,13 @@ impl Violation for AnyDuplicated {
     }
 }
 
-pub fn any_duplicated(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let (inner_content, outer_syntax) =
-        unwrap_or_return_none!(get_nested_functions_content(ast, "any", "duplicated")?);
+pub fn any_duplicated(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
+    let (inner_content, outer_syntax) = unwrap_or_return_none!(get_nested_functions_content(
+        ast,
+        fn_name,
+        "any",
+        "duplicated"
+    )?);
 
     let range = outer_syntax.text_trimmed_range();
     Ok(Some(Diagnostic::new(

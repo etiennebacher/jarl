@@ -189,6 +189,32 @@ fn parse_settings(toml: &Path, root_directory: &Path) -> anyhow::Result<Settings
 
 type DiscoveredFiles = Vec<Result<PathBuf, ignore::Error>>;
 
+/// Whether `relative` is excluded by `overrides`, considering the path itself
+/// and all of its parent directories.
+///
+/// `Override::matched` only reports a match for the exact entry tested: a bare
+/// directory pattern like `foo` matches the entry `foo` but not `foo/bar.R`.
+/// During the walk this is enough because the walker prunes `foo/` entirely,
+/// but the exclude post-filters run over already-collected files where no
+/// pruning happens, so each ancestor directory must be tested too. This mirrors
+/// `Gitignore::matched_path_or_any_parents`, which `Override` does not expose.
+fn excluded_with_parents(overrides: &ignore::overrides::Override, relative: &Path) -> bool {
+    if matches!(overrides.matched(relative, false), ignore::Match::Ignore(_)) {
+        return true;
+    }
+    let mut ancestor = relative.parent();
+    while let Some(dir) = ancestor {
+        if dir.as_os_str().is_empty() {
+            break;
+        }
+        if matches!(overrides.matched(dir, true), ignore::Match::Ignore(_)) {
+            return true;
+        }
+        ancestor = dir.parent();
+    }
+    false
+}
+
 /// Validate user-supplied `--exclude` glob patterns, returning an error on the
 /// first invalid one so a bad pattern is a hard failure rather than a
 /// silently-ignored warning during discovery.
@@ -270,12 +296,6 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
             patterns.extend_from_slice(DEFAULT_EXCLUDE_PATTERNS);
         }
 
-        // Patterns passed via `--exclude` apply on top of any config-derived
-        // patterns, including when no config was discovered.
-        for pattern in cli_exclude {
-            patterns.push(pattern.as_str());
-        }
-
         // If we have patterns, create an override and add it to the builder
         if !patterns.is_empty() {
             let mut override_builder = ignore::overrides::OverrideBuilder::new(root);
@@ -306,6 +326,30 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
     walker.visit(&mut visitor_builder);
 
     let mut files = state.finish();
+
+    // Post-filter: apply `--exclude` patterns from the CLI. These are anchored
+    // at the current working directory (where the command is run), not at the
+    // checked path(s). This mirrors ripgrep/ruff: `jarl check R --exclude R/g*.R`
+    // must exclude `R/gen.R` even though `R` is the path argument, so the pattern
+    // cannot be matched relative to the `R` directory.
+    if !cli_exclude.is_empty() {
+        let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+        let mut override_builder = ignore::overrides::OverrideBuilder::new(&cwd);
+        for pattern in cli_exclude {
+            if let Err(e) = override_builder.add(&format!("!{pattern}")) {
+                tracing::warn!("Failed to add exclude pattern '{}': {}", pattern, e);
+            }
+        }
+        if let Ok(overrides) = override_builder.build() {
+            files.retain(|result| {
+                let Ok(path) = result else {
+                    return true;
+                };
+                let relative = path.strip_prefix(&cwd).unwrap_or(path.as_path());
+                !excluded_with_parents(&overrides, relative)
+            });
+        }
+    }
 
     // Post-filter: apply per-config exclude and include patterns.
     //
@@ -338,7 +382,7 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
                 }
                 if let Ok(overrides) = override_builder.build() {
                     let relative = path.strip_prefix(root).unwrap_or(path.as_path());
-                    if matches!(overrides.matched(relative, false), ignore::Match::Ignore(_)) {
+                    if excluded_with_parents(&overrides, relative) {
                         return false;
                     }
                 }

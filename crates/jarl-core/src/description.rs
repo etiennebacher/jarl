@@ -21,7 +21,7 @@ impl Description {
         let mut packages = Vec::new();
 
         for field_name in what {
-            if let Some(value) = parsed.get(*field_name) {
+            if let Some(value) = parsed.get(field_name) {
                 for dep in value.split(',') {
                     // Strip version constraints: "dplyr (>= 1.0.0)" → "dplyr"
                     let name = dep.split('(').next().unwrap_or("").trim();

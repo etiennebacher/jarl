@@ -97,6 +97,32 @@ mod tests {
     }
 
     #[test]
+    fn test_no_lint_chained_function_definition() {
+        // Every name in a chained function assignment is a function binding, so
+        // the function-definition exemption covers the whole chain.
+        expect_no_lint("x <- y <- function() {}", "unused_object", None);
+    }
+
+    #[test]
+    fn test_lint_chained_non_function_assignment() {
+        assert_snapshot!(snapshot_lint("x <- y <- 1"), @r"
+        warning: unused_object
+         --> <test>:1:6
+          |
+        1 | x <- y <- 1
+          |      - Object `y` is defined but never used.
+          |
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- y <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 2 errors.
+        ");
+    }
+
+    #[test]
     fn test_no_lint_used_in_closure() {
         expect_no_lint(
             "x <- 1\nf <- function() {\n  y <- x + 1\n  y\n}",
@@ -122,6 +148,33 @@ mod tests {
     #[test]
     fn test_no_lint_super_assignment() {
         expect_no_lint("f <- function() { x <<- 1 }", "unused_object", None);
+    }
+
+    #[test]
+    fn test_no_lint_custom_operator_used() {
+        // oak doesn't model `1 %op% 2` as a use of the `%op%` binding, so a
+        // custom infix operator defined via a non-function RHS would otherwise
+        // look unused.
+        expect_no_lint(
+            "f <- function() {}\n`%op%` <- f\n1 %op% 2",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_custom_operator_never_used() {
+        // A custom operator defined but never used at a call site is still
+        // reported.
+        assert_snapshot!(snapshot_lint("`%op%` <- 42\nprint(1)"), @"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | `%op%` <- 42
+          | ------ Object `%op%` is defined but never used.
+          |
+        Found 1 error.
+        ");
     }
 
     #[test]
@@ -169,6 +222,224 @@ mod tests {
             "x <- list(a = 1)\nglue::glue(\"{x$a}\")",
             "unused_object",
             None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_glue_basic() {
+        expect_no_lint("x <- 1\nglue(\"this is {x}\")", "unused_object", None);
+    }
+
+    #[test]
+    fn test_no_lint_glue_custom_delimiters() {
+        expect_no_lint(
+            "x <- 1\nglue(\"<x>\", .open = \"<\", .close = \">\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_glue_custom_multichar_delimiters() {
+        expect_no_lint(
+            "x <- 1\nglue(\"<<x>>\", .open = \"<<\", .close = \">>\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_glue_custom_delimiters_raw_string() {
+        expect_no_lint(
+            "x <- 1\nglue(r\"([x])\", .open = \"[\", .close = \"]\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_str_glue_default_delimiters() {
+        expect_no_lint("x <- 1\nstr_glue(\"{x}\")", "unused_object", None);
+    }
+
+    #[test]
+    fn test_no_lint_glue_sql_default_delimiters() {
+        expect_no_lint(
+            "col <- 1\nglue_sql(\"SELECT {col}\", .con = con)",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_glue_custom_delimiters_unrelated_object() {
+        assert_snapshot!(
+            snapshot_lint("x <- 1\nglue(\"[a]\", .open = \"[\", .close = \"]\")"),
+            @r#"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "#
+        );
+    }
+
+    #[test]
+    fn test_no_lint_glue_same_char_delimiters() {
+        // `.open` and `.close` are the same character, so nesting is
+        // impossible and the closing `|` must not be read as another opener.
+        expect_no_lint(
+            "
+x <- 1
+glue(\"|x|\", .open = \"|\", .close = \"|\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_interpolation_does_not_revive_later_reassignment() {
+        // The `glue` read resolves to the preceding `foo`; the later, unread
+        // reassignment of the same name is still reported unused.
+        assert_snapshot!(
+            snapshot_lint("
+foo <- \"a\"
+glue(\"{foo}\")
+
+foo <- \"b\""),
+        @r#"
+        warning: unused_object
+         --> <test>:5:1
+          |
+        5 | foo <- "b"
+          | --- Object `foo` is defined but never used.
+          |
+        Found 1 error.
+        "#
+        );
+    }
+
+    #[test]
+    fn test_no_lint_interpolation_reads_branch_assignments() {
+        // Both `if`/`else` arms assign `x` in the same scope and both reach the
+        // later `glue` read through branching control flow, so neither is unused.
+        expect_no_lint(
+            "if (a) {\n  x <- \"a\"\n} else {\n  x <- \"b\"\n}\nglue(\"{x}\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_interpolation_captures_enclosing_definition() {
+        // The interpolated read is a closure capture evaluated later, so the
+        // top-level `prefix` it reads stays used even though it is defined
+        // after the function.
+        expect_no_lint(
+            "
+f <- function() glue(\"{prefix}\")
+prefix <- \"info\"
+f()",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_cli_interpolation() {
+        expect_no_lint("x <- 1\ncli_abort(\"{x}\")", "unused_object", None);
+        expect_no_lint("x <- 1\ncli_warn(\"{x}\")", "unused_object", None);
+    }
+
+    #[test]
+    fn test_no_lint_cli_markup_with_interpolation() {
+        expect_no_lint("x <- 1\ncli_abort(\"{.field {x}}\")", "unused_object", None);
+    }
+
+    #[test]
+    fn test_no_lint_cli_nested_markup_with_interpolation() {
+        expect_no_lint(
+            "x <- 1\ncli_abort(\"{.strong {.emph {x}}}\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_cli_interpolation_does_not_revive_later_reassignment() {
+        // Same position-aware resolution as glue: the `cli_abort` markup read
+        // resolves to the preceding `foo`, so the later reassignment is unused.
+        assert_snapshot!(
+            snapshot_lint("foo <- \"a\"\ncli_abort(\"{.field {foo}}\")\n\nfoo <- \"b\""),
+            @r#"
+        warning: unused_object
+         --> <test>:4:1
+          |
+        4 | foo <- "b"
+          | --- Object `foo` is defined but never used.
+          |
+        Found 1 error.
+        "#
+        );
+    }
+
+    #[test]
+    fn test_no_lint_cli_interpolation_captures_enclosing_definition() {
+        // A cli markup read inside a closure captures the enclosing `prefix`
+        // even though it is defined after the function.
+        expect_no_lint(
+            "f <- function() cli_abort(\"{.field {prefix}}\")\nprefix <- \"info\"\nf()",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_cli_namespaced() {
+        expect_no_lint(
+            "x <- 1\ncli::cli_abort(\"{.val {x}}\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_cli_bullets_vector() {
+        expect_no_lint(
+            "path <- \"f\"\ncli_abort(c(\"Can't find {.file {path}}\", \"i\" = \"check it\"))",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_cli_other_families() {
+        expect_no_lint("x <- 1\ncli_text(\"{.emph {x}}\")", "unused_object", None);
+        expect_no_lint("x <- 1\ncli_alert_info(\"{x}\")", "unused_object", None);
+        expect_no_lint(
+            "x <- 1\nformat_inline(\"{.field {x}}\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_cli_markup_literal_text() {
+        // In `{.field x}`, `x` is literal styled text, not an interpolation.
+        assert_snapshot!(
+            snapshot_lint("x <- 1\ncli_abort(\"{.field x}\")"),
+            @r#"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "#
         );
     }
 
@@ -612,6 +883,54 @@ f <- function() {
     }
 
     #[test]
+    fn test_bquote_unquote_counts_as_use() {
+        // `bquote(x)` quotes `x`, so its value is unused -> report.
+        assert_snapshot!(
+            snapshot_lint("x <- 1\nbquote(x)"),
+            @r"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+        // `bquote(.(x))` unquotes (evaluates) `x`, so it is used -> no report.
+        expect_no_lint("x <- 1\nbquote(.(x))", "unused_object", None);
+        // The unquoted use resolves to the latest definition, so the shadowed
+        // `x <- 1` is still dead and reported.
+        assert_snapshot!(
+            snapshot_lint("x <- 1\nx <- 2\nbquote(.(x))"),
+            @r"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_bquote_where_arg_counts_as_use() {
+        expect_no_lint(
+            "env <- as.environment(list(x = 1))\nbquote(.(x), env)",
+            "unused_object",
+            None,
+        );
+
+        expect_no_lint(
+            "env <- as.environment(list(x = 1))\nbquote(where = env, .(x))",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
     fn test_with_assignment_pipe() {
         // should lint: re-assigned `x` isn't used
         assert_snapshot!(
@@ -641,8 +960,80 @@ x + 1"
     }
 
     #[test]
+    fn test_no_lint_pipe_target_used_in_glue() {
+        // The `%<>%` binding is read only inside a glue string, which oak's
+        // use maps don't see; `SemanticInfo` interpolation tracking does.
+        expect_no_lint(
+            "x <- 1\nx %<>% as.character()\nglue(\"{x}\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_pipe_target_used_in_cli() {
+        expect_no_lint(
+            "x <- 1\nx %<>% as.character()\ncli::cli_inform(\"{x}\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_pipe_target_used_in_dotdot() {
+        // `..cols` is a synthetic use of `cols`.
+        expect_no_lint(
+            "cols <- 1\ncols %<>% rev()\ndplyr::select(df, ..cols)",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_pipe_target_used_in_do_call() {
+        // `do.call("f", …)` marks `f` synthetically used.
+        expect_no_lint(
+            "f <- 1\nf %<>% identity()\ndo.call(\"f\", list())",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_pipe_target_captured_in_nested_glue() {
+        // The pipe target is read by an interpolation inside a nested closure,
+        // evaluated later, so it stays used regardless of textual order.
+        expect_no_lint(
+            "x <- 1\nx %<>% sum()\ng <- function() glue(\"{x}\")\ng()",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_pipe_target_glue_before_reassignment() {
+        // The glue read sees the pre-pipe `x`; the `%<>%` rebinding is never
+        // read afterward, so it is still reported (position-aware, like a plain
+        // reassignment).
+        assert_snapshot!(
+            snapshot_lint("
+x <- 1
+glue(\"{x}\")
+x %<>% sum()"),
+            @"
+        warning: unused_object
+         --> <test>:4:1
+          |
+        4 | x %<>% sum()
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
     fn test_assign() {
-        // TODO: this should report env
         // shouldn't lint: env is used as argument to assign()
         expect_no_lint(
             "
@@ -682,7 +1073,6 @@ env",
 
     #[test]
     fn test_delayed_assign() {
-        // TODO: this should report env
         // shouldn't lint: env is used as argument to delayedAssign()
         expect_no_lint(
             "
@@ -722,7 +1112,6 @@ env",
 
     #[test]
     fn test_make_active_binding() {
-        // TODO: this should report env
         // shouldn't lint: env is used as argument to makeActiveBinding()
         expect_no_lint(
             "
@@ -858,6 +1247,56 @@ for (i in 1:2) {
     }
 
     #[test]
+    fn test_assignment_inside_nse_is_not_definition() {
+        // `x <- 2` inside `quote()` is quoted code, not a real assignment.
+        expect_no_lint("as.call(quote(x <- 2))", "unused_object", None);
+        expect_no_lint("substitute(y <- 1)", "unused_object", None);
+    }
+
+    #[test]
+    fn test_assignment_inside_alist_is_not_definition() {
+        // `alist()` stores its arguments unevaluated (as if describing
+        // function arguments), so `x <- 1` is captured code, not a real
+        // assignment of `x`.
+        expect_no_lint("alist(x <- 1)", "unused_object", None);
+    }
+
+    #[test]
+    fn test_mention_inside_alist_is_not_used() {
+        assert_snapshot!(snapshot_lint("x <- 1\nalist(x)"), @"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        ");
+    }
+
+    #[test]
+    fn test_nse_evaluated_argument_counts_as_use() {
+        // `substitute`'s `env` argument is evaluated, not quoted, so the read
+        // of `env` keeps the binding alive.
+        expect_no_lint(
+            "env <- as.environment(list(x = 1))\nsubstitute(x, env = env)",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_nse_assignment_does_not_shadow_real_definition() {
+        // The quoted `x <- 2` must not kill the real `x <- 1`; `print(x)`
+        // reads the live binding (which is still `1`).
+        expect_no_lint(
+            "x <- 1\nsubstitute(x <- 2)\nprint(x)",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
     fn test_nse_in_same_call() {
         expect_no_lint(
             "
@@ -884,6 +1323,17 @@ for (i in 1:2) {
         expect_no_lint(
             "
         a ~ b + (c = 1)",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_object_used_in_formula_is_used() {
+        expect_no_lint(
+            "
+        X <- 2
+        lm(1 ~ X)",
             "unused_object",
             None,
         );

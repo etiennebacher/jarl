@@ -1,10 +1,9 @@
 use crate::diagnostic::*;
-use crate::utils::{
-    get_arg_by_name, get_function_name, get_function_namespace_prefix, get_unnamed_args,
-};
+use crate::utils::{get_arg_by_name, get_unnamed_args};
 use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
+use jarl_semantic::strings::get_string_literal_contents;
 
 /// Version added: 0.6.0
 ///
@@ -46,15 +45,16 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// See `?glue::glue`
-pub fn glue(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let fn_name = get_function_name(ast.function()?);
-    let fn_ns = get_function_namespace_prefix(ast.function()?);
-
+pub fn glue(
+    ast: &RCall,
+    fn_name: &str,
+    ns_prefix: Option<&str>,
+) -> anyhow::Result<Option<Diagnostic>> {
     // Only trigger on `glue()` or `glue::glue()`
     if fn_name != "glue" {
         return Ok(None);
     }
-    if let Some(ref ns) = fn_ns
+    if let Some(ns) = ns_prefix
         && ns != "glue::"
     {
         return Ok(None);
@@ -144,59 +144,6 @@ fn get_named_string_arg_text(args: &RArgumentList, name: &str) -> anyhow::Result
     ))
 }
 
-/// Parse string literal content from its raw token text (including quotes).
-/// Handles both standard strings ("abc" or 'abc') and raw strings (r"(abc)" or R'-[abc]-').
-/// Returns the unquoted content as a String if parsing succeeds, None otherwise.
-fn get_string_literal_contents(text: &str) -> Option<String> {
-    parse_standard_string(text)
-        .or_else(|| parse_raw_string(text))
-        .map(|content| content.to_string())
-}
-
-/// Parse a standard string literal: "content" or 'content'.
-/// Returns the unquoted content if the string has matching quotes, None otherwise.
-fn parse_standard_string(text: &str) -> Option<&str> {
-    let quote = text.chars().next()?;
-    if quote != '"' && quote != '\'' {
-        return None;
-    }
-
-    let content = text.strip_prefix(quote)?;
-    content.strip_suffix(quote)
-}
-
-/// Parse a raw string literal: r"(content)", r'-[content]-', etc. (R v4.0+)
-/// Handles dashes before the delimiter to avoid early termination.
-/// Returns the content between delimiters if parsing succeeds, None otherwise.
-fn parse_raw_string(text: &str) -> Option<&str> {
-    let raw_prefix = text.chars().next()?;
-    if raw_prefix != 'r' && raw_prefix != 'R' {
-        return None;
-    }
-
-    let rest = text.strip_prefix(raw_prefix)?;
-    let quote = rest.chars().next()?;
-    if quote != '"' && quote != '\'' {
-        return None;
-    }
-
-    let rest = rest.strip_prefix(quote)?;
-    let after_dashes = rest.trim_start_matches('-');
-    let leading_dashes = &rest[..rest.len() - after_dashes.len()];
-
-    let open_brace = after_dashes.chars().next()?;
-    let close_brace = match open_brace {
-        '(' => ')',
-        '[' => ']',
-        '{' => '}',
-        _ => return None,
-    };
-
-    let body_and_suffix = after_dashes.strip_prefix(open_brace)?;
-    let expected_closing_fence = format!("{}{}{}", close_brace, leading_dashes, quote);
-    body_and_suffix.strip_suffix(&expected_closing_fence)
-}
-
 fn has_incomplete_delimiters(text: &str, open: &str, close: &str) -> bool {
     if open.is_empty() || close.is_empty() {
         return false;
@@ -238,7 +185,9 @@ fn has_incomplete_delimiters(text: &str, open: &str, close: &str) -> bool {
             continue;
         }
 
-        index += 1;
+        // Advance by the full width of the current character so `index` always
+        // lands on a char boundary, even for multi-byte UTF-8 characters.
+        index += slice.chars().next().map_or(1, char::len_utf8);
     }
 
     balance != 0

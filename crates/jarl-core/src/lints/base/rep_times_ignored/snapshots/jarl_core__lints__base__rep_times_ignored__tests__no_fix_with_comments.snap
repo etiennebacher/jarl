@@ -1,0 +1,32 @@
+---
+source: crates/jarl-core/src/lints/base/rep_times_ignored/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"# leading comment\\nrep(x, times = 2, length.out = 4L)\",\n\"rep(x,\\n  times = 2,\\n  # comment\\n  length.out = 4L)\",\n\"rep(x, times = 2, length.out = 4L) # trailing comment\",],\n\"rep_times_ignored\",)"
+---
+OLD:
+====
+# leading comment
+rep(x, times = 2, length.out = 4L)
+NEW:
+====
+# leading comment
+rep(x, length.out = 4L)
+
+OLD:
+====
+rep(x,
+  times = 2,
+  # comment
+  length.out = 4L)
+NEW:
+====
+rep(x,
+  times = 2,
+  # comment
+  length.out = 4L)
+
+OLD:
+====
+rep(x, times = 2, length.out = 4L) # trailing comment
+NEW:
+====
+rep(x, length.out = 4L) # trailing comment

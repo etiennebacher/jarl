@@ -191,6 +191,33 @@ pub fn render_diagnostic(
     format!("{}", renderer.render(message))
 }
 
+/// Render a single syntax error as an annotated code snippet.
+///
+/// Mirrors [`render_diagnostic`] but for parser errors: the message becomes the
+/// error title and the offending range is underlined in its source context.
+pub fn render_syntax_error(
+    source: &str,
+    origin: &str,
+    error: &crate::error::SyntaxError,
+    renderer: &Renderer,
+) -> String {
+    let start_offset: usize = error.range.start().into();
+    let end_offset: usize = error.range.end().into();
+
+    // See `render_diagnostic`: annotate-snippets expands tabs for display but
+    // validates spans against the original length, so expand the span's lines.
+    let (expanded, adj_start, adj_end) = expand_span_line_tabs(source, start_offset, end_offset);
+
+    let snippet = Snippet::source(&expanded)
+        .origin(origin)
+        .fold(true)
+        .annotation(Level::Error.span(adj_start..adj_end));
+
+    let message = Level::Error.title(&error.message).snippet(snippet);
+
+    format!("{}", renderer.render(message))
+}
+
 /// Expand tabs only on the lines that overlap with `start..end` and adjust
 /// offsets accordingly. Returns the modified source and adjusted span bounds.
 fn expand_span_line_tabs(source: &str, start: usize, end: usize) -> (String, usize, usize) {
@@ -207,13 +234,10 @@ fn expand_span_line_tabs(source: &str, start: usize, end: usize) -> (String, usi
         return (source.to_string(), start, end);
     }
 
-    // Count tabs in the three regions: before span lines, before span start
-    // on the span line, and within the span.
+    // Count tabs on the span lines: before the span start, within the span,
+    // and after it. Lines before the span lines are copied unexpanded, so
+    // their tabs must not shift the adjusted offsets.
     let source_bytes = source.as_bytes();
-    let tabs_before_lines = source_bytes[..line_start]
-        .iter()
-        .filter(|&&b| b == TAB)
-        .count();
     let tabs_line_to_start = source_bytes[line_start..start]
         .iter()
         .filter(|&&b| b == TAB)
@@ -236,9 +260,8 @@ fn expand_span_line_tabs(source: &str, start: usize, end: usize) -> (String, usi
     result.push_str(&expanded_lines);
     result.push_str(&source[line_end..]);
 
-    let total_before = tabs_before_lines + tabs_line_to_start;
-    let adj_start = start + total_before * EXTRA_PER_TAB;
-    let adj_end = end + (total_before + tabs_in_span) * EXTRA_PER_TAB;
+    let adj_start = start + tabs_line_to_start * EXTRA_PER_TAB;
+    let adj_end = end + (tabs_line_to_start + tabs_in_span) * EXTRA_PER_TAB;
 
     (result, adj_start, adj_end)
 }

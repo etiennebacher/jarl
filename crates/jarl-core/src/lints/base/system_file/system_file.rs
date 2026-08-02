@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{get_function_name, get_named_args, get_unnamed_args, node_contains_comments};
+use crate::utils::{get_named_args, get_unnamed_args, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 pub struct SystemFile;
@@ -43,14 +43,12 @@ impl Violation for SystemFile {
     }
 }
 
-pub fn system_file(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let fn_name = get_function_name(function);
-    let arguments = ast.arguments()?;
-
+pub fn system_file(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "system.file" {
         return Ok(None);
     }
+
+    let arguments = ast.arguments()?;
 
     let args = arguments.items();
     let values = get_unnamed_args(&args);

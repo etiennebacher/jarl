@@ -3,6 +3,9 @@ use crate::output_format::OutputFormat;
 use clap::builder::Styles;
 use clap::builder::styling::{AnsiColor, Effects};
 use clap::{Parser, Subcommand};
+use clap_complete::engine::{ArgValueCompleter, CompletionCandidate};
+use jarl_core::rule_set::{Category, Rule};
+use std::ffi::OsStr;
 
 // Configures Clap v3-style help menu colors
 const STYLES: Styles = Styles::styled()
@@ -10,6 +13,34 @@ const STYLES: Styles = Styles::styled()
     .usage(AnsiColor::Green.on_default().effects(Effects::BOLD))
     .literal(AnsiColor::Cyan.on_default().effects(Effects::BOLD))
     .placeholder(AnsiColor::Cyan.on_default());
+
+/// Every name accepted by the arguments that select rules: the `ALL` keyword, the rule
+/// groups, and the rules themselves.
+fn rule_names() -> impl Iterator<Item = &'static str> {
+    std::iter::once("ALL")
+        .chain(Category::ALL.iter().map(|category| category.as_str()))
+        .chain(Rule::all().iter().map(|rule| rule.name()))
+}
+
+/// Complete the arguments that take a comma-separated list of rule names.
+///
+/// Everything up to the last comma is kept in the candidates, so that names are still
+/// completed past the first element: `any_is_na,cl` completes to `any_is_na,class_equals`.
+fn complete_rule_names(current: &OsStr) -> Vec<CompletionCandidate> {
+    let Some(current) = current.to_str() else {
+        return Vec::new();
+    };
+
+    let (completed, partial) = match current.rfind(',') {
+        Some(comma) => current.split_at(comma + 1),
+        None => ("", current),
+    };
+
+    rule_names()
+        .filter(|name| name.starts_with(partial))
+        .map(|name| CompletionCandidate::new(format!("{completed}{name}")))
+        .collect()
+}
 
 #[derive(Parser)]
 #[command(
@@ -32,6 +63,9 @@ pub(crate) enum Command {
     /// Check a set of files or directories
     Check(Box<CheckCommand>),
 
+    /// Print the documentation of a rule
+    Rule(RuleCommand),
+
     /// Start a language server
     Server(ServerCommand),
 }
@@ -48,8 +82,9 @@ pub struct CheckCommand {
         long,
         value_name = "FILES",
         value_delimiter = ',',
+        require_equals = true,
         help_heading = "File selection",
-        help = "List of file patterns to exclude from linting, separated by a comma (no spaces)."
+        help = "List of file patterns to exclude from linting, separated by a comma (no spaces). Must be passed with an equals sign, e.g. `--exclude=R/*.R`, so the shell does not expand glob patterns."
     )]
     pub exclude: Vec<String>,
     #[arg(
@@ -64,6 +99,7 @@ pub struct CheckCommand {
         long,
         value_name = "RULES",
         default_value = "",
+        add = ArgValueCompleter::new(complete_rule_names),
         help_heading = "Rule selection",
         help = "Names of rules to include, separated by a comma (no spaces). This also accepts names of groups of rules, such as \"PERF\"."
     )]
@@ -73,6 +109,7 @@ pub struct CheckCommand {
         long,
         value_name = "RULES",
         default_value = "",
+        add = ArgValueCompleter::new(complete_rule_names),
         help_heading = "Rule selection",
         help = "Like `--select` but adds additional rules in addition to those already specified."
     )]
@@ -82,6 +119,7 @@ pub struct CheckCommand {
         long,
         value_name = "RULES",
         default_value = "",
+        add = ArgValueCompleter::new(complete_rule_names),
         help_heading = "Rule selection",
         help = "Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as \"PERF\"."
     )]
@@ -190,14 +228,23 @@ pub struct CheckCommand {
     pub help: Option<bool>,
 }
 #[derive(Clone, Debug, Parser)]
+#[command(arg_required_else_help(true))]
+pub struct RuleCommand {
+    #[arg(
+        required = true,
+        help = "Name of the rule to explain, for example `jarl rule all_equal`."
+    )]
+    pub name: String,
+}
+
+#[derive(Clone, Debug, Parser)]
 pub(crate) struct ServerCommand {}
 
 /// All configuration options that can be passed "globally"
 #[derive(Debug, Default, clap::Args)]
 #[command(next_help_heading = "Global options")]
 pub(crate) struct GlobalOptions {
-    /// The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults
-    /// to `warn`.
+    /// The log level [default: warn]
     #[arg(long, global = true)]
     pub(crate) log_level: Option<LogLevel>,
 }

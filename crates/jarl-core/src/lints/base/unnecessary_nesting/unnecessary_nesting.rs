@@ -62,7 +62,7 @@ pub fn unnecessary_nesting(ast: &RIfStatement) -> anyhow::Result<Option<Diagnost
     let inner_condition = inner_if.condition()?;
     let inner_consequence = inner_if.consequence()?;
 
-    // Wrap conditions in parenthesis if they are more complex than a simple identifier.
+    // Wrap conditions in parentheses if they are more complex than a simple identifier.
     let outer_condition = if outer_condition.syntax().kind() == RSyntaxKind::R_IDENTIFIER {
         outer_condition.to_trimmed_string()
     } else {

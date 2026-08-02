@@ -13,9 +13,9 @@ pub fn print_statistics(
         return Ok(ExitStatus::Success);
     }
 
-    // Hashmap with rule name as key, and (number of occurrences, has_fix) as
+    // Hashmap with rule name as key, and (number of occurrences, has_fix, has_unsafe_fix) as
     // value.
-    let mut hm: HashMap<&String, (usize, bool)> = HashMap::new();
+    let mut hm: HashMap<&String, (usize, bool, bool)> = HashMap::new();
 
     for diagnostic in diagnostics {
         let rule_name = &diagnostic.message.name;
@@ -24,6 +24,9 @@ pub fn print_statistics(
         if diagnostic.has_safe_fix() {
             entry.1 = true;
         }
+        if diagnostic.has_unsafe_fix() {
+            entry.2 = true;
+        }
     }
 
     let mut sorted: Vec<_> = hm.iter().collect();
@@ -31,7 +34,13 @@ pub fn print_statistics(
     sorted.reverse();
 
     for (key, value) in sorted {
-        let star = if value.1 { "*" } else { " " };
+        let star = if value.1 {
+            "*"
+        } else if value.2 {
+            "^"
+        } else {
+            " "
+        };
         println!(
             "{:>5} [{}] {}",
             value.0.to_string().bold(),
@@ -40,7 +49,8 @@ pub fn print_statistics(
         );
     }
 
-    println!("\nRules with `[*]` have an automatic fix.");
+    println!("\nRules with `[*]` have an automatic safe fix.");
+    println!("Rules with `[^]` have an automatic unsafe fix.");
 
     // Inform the user if the config file used comes from a parent directory.
     if let Some(config_path) = parent_config_path {

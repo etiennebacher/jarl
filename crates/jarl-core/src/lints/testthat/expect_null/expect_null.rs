@@ -36,17 +36,14 @@ use biome_rowan::AstNode;
 /// expect_null(x)
 /// expect_null(foo(x))
 /// ```
-pub fn expect_null(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let function_name = get_function_name(function);
-
+pub fn expect_null(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Case 1: expect_equal(x, NULL) or expect_identical(x, NULL)
-    if function_name == "expect_equal" || function_name == "expect_identical" {
-        return check_expect_equal_null(ast, &function_name);
+    if fn_name == "expect_equal" || fn_name == "expect_identical" {
+        return check_expect_equal_null(ast, fn_name);
     }
 
     // Case 2: expect_true(is.null(x))
-    if function_name == "expect_true" {
+    if fn_name == "expect_true" {
         return check_expect_true_is_null(ast);
     }
 

@@ -7,7 +7,7 @@ use crate::helpers::{CliTest, CommandExt};
 #[test]
 fn test_excluded_file_contributes_symbols() -> anyhow::Result<()> {
     let case = CliTest::with_files([
-        ("DESCRIPTION", ""),
+        ("DESCRIPTION", "Package: testpkg\nVersion: 1.0.0\n"),
         ("NAMESPACE", ""),
         ("R/foo2.R", "f <- function() 1 + 1\n"),
         ("R/foo.R", "f()\n"),
@@ -47,7 +47,7 @@ exclude = ["R/foo.R"]
 #[test]
 fn test_excluded_file_not_in_r_folder_contributes_symbols() -> anyhow::Result<()> {
     let case = CliTest::with_files([
-        ("DESCRIPTION", ""),
+        ("DESCRIPTION", "Package: testpkg\nVersion: 1.0.0\n"),
         ("NAMESPACE", ""),
         ("R/foo.R", "f <- function() 1 + 1\n"),
         ("tests/foo.R", "f()\n"),
@@ -88,7 +88,7 @@ exclude = ["R/foo.R"]
 #[test]
 fn test_included_file_contributes_symbols() -> anyhow::Result<()> {
     let case = CliTest::with_files([
-        ("DESCRIPTION", ""),
+        ("DESCRIPTION", "Package: testpkg\nVersion: 1.0.0\n"),
         ("NAMESPACE", ""),
         ("R/foo2.R", "f <- function() 1 + 1\n"),
         ("R/foo.R", "f()\n"),
@@ -131,7 +131,7 @@ include = ["R/foo2.R"]
 #[test]
 fn test_excluded_file_contributes_assignments() -> anyhow::Result<()> {
     let case = CliTest::with_files([
-        ("DESCRIPTION", ""),
+        ("DESCRIPTION", "Package: testpkg\nVersion: 1.0.0\n"),
         ("NAMESPACE", ""),
         ("R/foo.R", "f <- function() 1\n"),
         ("R/foo2.R", "f <- function() 2\n"),
@@ -181,7 +181,7 @@ exclude = ["R/foo.R"]
 #[test]
 fn test_included_file_contributes_assignments() -> anyhow::Result<()> {
     let case = CliTest::with_files([
-        ("DESCRIPTION", ""),
+        ("DESCRIPTION", "Package: testpkg\nVersion: 1.0.0\n"),
         ("NAMESPACE", ""),
         ("R/foo.R", "f <- function() 1\n"),
         ("R/foo2.R", "f <- function() 2\n"),
@@ -228,6 +228,60 @@ include = ["R/foo2.R"]
     Ok(())
 }
 
+#[test]
+fn test_exclude_cli_arg_no_value() -> anyhow::Result<()> {
+    let case = CliTest::with_files([("foo.R", "x = 1\n")])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--exclude")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 2
+    ----- stdout -----
+
+    ----- stderr -----
+    error: equal sign is needed when assigning values to '--exclude=<FILES>'
+
+    Usage: jarl check [OPTIONS] <FILES>...
+
+    For more information, try '--help'.
+    "
+    );
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--exclude")
+            .arg("foo.R")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 2
+    ----- stdout -----
+
+    ----- stderr -----
+    error: equal sign is needed when assigning values to '--exclude=<FILES>'
+
+    Usage: jarl check [OPTIONS] <FILES>...
+
+    For more information, try '--help'.
+    "
+    );
+
+    Ok(())
+}
+
 /// The `--exclude` CLI flag skips the matched file's own diagnostics
 #[test]
 fn test_cli_exclude_skips_file() -> anyhow::Result<()> {
@@ -240,8 +294,7 @@ fn test_cli_exclude_skips_file() -> anyhow::Result<()> {
             .arg(".")
             .arg("--select")
             .arg("assignment")
-            .arg("--exclude")
-            .arg("bad.R")
+            .arg("--exclude=bad.R")
             .run()
             .normalize_os_executable_name(),
         @r"
@@ -272,8 +325,7 @@ fn test_cli_exclude_comma_separated() -> anyhow::Result<()> {
             .arg(".")
             .arg("--select")
             .arg("assignment")
-            .arg("--exclude")
-            .arg("a.R,b.R")
+            .arg("--exclude=a.R,b.R")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -300,6 +352,92 @@ fn test_cli_exclude_comma_separated() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[test]
+fn test_cli_exclude_glob_function_def_524() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        ("DESCRIPTION", "Package: testpkg\nVersion: 1.0.0\n"),
+        ("R/foo.R", "f <- function() {}\n"),
+        ("R/bar.R", "f <- function() {}\n"),
+        ("R/baz.R", "f <- function() {}\n"),
+    ])?;
+
+    // Do not exclude any file -> report duplicated definitions
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("R/")
+            .arg("--select")
+            .arg("duplicated_function_definition")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: duplicated_function_definition
+     --> R/baz.R:1:1
+      |
+    1 | f <- function() {}
+      | - `f` is defined more than once in this package.
+      |
+      = help: Other definition at R/bar.R:1:1
+
+    warning: duplicated_function_definition
+     --> R/foo.R:1:1
+      |
+    1 | f <- function() {}
+      | - `f` is defined more than once in this package.
+      |
+      = help: Other definition at R/bar.R:1:1
+
+
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+
+    ----- stderr -----
+    "
+    );
+
+    // Files that contain one of the duplicated definitions are explicitly excluded
+    // but still devtools::load_all() would load several function definitions with
+    // the same name and we want to flag that.
+    // Might give less control to the user so can be reconsidered in the future.
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("R/")
+            .arg("--exclude=R/b*.R")
+            .arg("--select")
+            .arg("duplicated_function_definition")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: duplicated_function_definition
+     --> R/foo.R:1:1
+      |
+    1 | f <- function() {}
+      | - `f` is defined more than once in this package.
+      |
+      = help: Other definition at R/bar.R:1:1
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
 /// `--exclude` accepts glob patterns, including path-anchored globs (those
 /// containing a `/`), even when no `jarl.toml` is present.
 #[test]
@@ -318,8 +456,7 @@ fn test_cli_exclude_glob_patterns() -> anyhow::Result<()> {
             .arg(".")
             .arg("--select")
             .arg("assignment")
-            .arg("--exclude")
-            .arg("R/*.R")
+            .arg("--exclude=R/*.R")
             .run()
             .normalize_os_executable_name(),
         @r"
@@ -331,6 +468,87 @@ fn test_cli_exclude_glob_patterns() -> anyhow::Result<()> {
      --> keep.R:1:1
       |
     1 | a = 1
+      | --- Use `<-` for assignment.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_cli_exclude_overrides_hardcoded_path_passed_in_files() -> anyhow::Result<()> {
+    let case = CliTest::with_files([("R/gen.R", "b = 2\n"), ("R/keep.R", "c = 3\n")])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("R")
+            .arg("--exclude=R/g*.R")
+            .arg("--select")
+            .arg("assignment")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: assignment
+     --> R/keep.R:1:1
+      |
+    1 | c = 3
+      | --- Use `<-` for assignment.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// A bare directory name passed to `--exclude` excludes the directory's
+/// contents, not just an entry literally named that. The post-filter must
+/// test each ancestor directory, since the walk-time pruning that gitignore
+/// directory semantics rely on doesn't apply to already-collected files.
+#[test]
+fn test_cli_exclude_bare_directory_name() -> anyhow::Result<()> {
+    let case = CliTest::with_files([("keep.R", "x = 1\n"), ("sub/skip.R", "y = 2\n")])?;
+
+    // Only keep.R is reported; everything under `sub/` is excluded.
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("assignment")
+            .arg("--exclude=sub")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: assignment
+     --> keep.R:1:1
+      |
+    1 | x = 1
       | --- Use `<-` for assignment.
       |
 
@@ -359,8 +577,7 @@ fn test_cli_exclude_wrong_glob_patterns() -> anyhow::Result<()> {
             .command()
             .arg("check")
             .arg(".")
-            .arg("--exclude")
-            .arg("[*.R")
+            .arg("--exclude=[*.R")
             .run()
             .normalize_os_executable_name(),
         @"
@@ -383,7 +600,7 @@ fn test_cli_exclude_wrong_glob_patterns() -> anyhow::Result<()> {
 #[test]
 fn test_cli_excluded_file_contributes_symbols() -> anyhow::Result<()> {
     let case = CliTest::with_files([
-        ("DESCRIPTION", ""),
+        ("DESCRIPTION", "Package: testpkg\nVersion: 1.0.0\n"),
         ("NAMESPACE", ""),
         ("R/foo2.R", "f <- function() 1 + 1\n"),
         ("R/foo.R", "f()\n"),
@@ -397,8 +614,7 @@ fn test_cli_excluded_file_contributes_symbols() -> anyhow::Result<()> {
             .arg(".")
             .arg("--select")
             .arg("unused_function")
-            .arg("--exclude")
-            .arg("R/foo.R")
+            .arg("--exclude=R/foo.R")
             .run()
             .normalize_os_executable_name(),
         @r"
@@ -421,7 +637,7 @@ fn test_cli_excluded_file_contributes_symbols() -> anyhow::Result<()> {
 #[test]
 fn test_cli_excluded_file_contributes_assignments() -> anyhow::Result<()> {
     let case = CliTest::with_files([
-        ("DESCRIPTION", ""),
+        ("DESCRIPTION", "Package: testpkg\nVersion: 1.0.0\n"),
         ("NAMESPACE", ""),
         ("R/foo.R", "f <- function() 1\n"),
         ("R/foo2.R", "f <- function() 2\n"),
@@ -435,8 +651,7 @@ fn test_cli_excluded_file_contributes_assignments() -> anyhow::Result<()> {
             .arg(".")
             .arg("--select")
             .arg("duplicated_function_definition")
-            .arg("--exclude")
-            .arg("R/foo.R")
+            .arg("--exclude=R/foo.R")
             .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
@@ -470,7 +685,7 @@ fn test_cli_excluded_file_contributes_assignments() -> anyhow::Result<()> {
 #[test]
 fn test_generated_file_skipped_but_contributes_symbols() -> anyhow::Result<()> {
     let case = CliTest::with_files([
-        ("DESCRIPTION", ""),
+        ("DESCRIPTION", "Package: testpkg\nVersion: 1.0.0\n"),
         ("NAMESPACE", ""),
         ("R/foo2.R", "f <- function() 1 + 1\n"),
         ("R/foo.R", "# Generated by foo\nany(is.na(x))\nf()\n"),
@@ -505,7 +720,7 @@ fn test_generated_file_skipped_but_contributes_symbols() -> anyhow::Result<()> {
 #[test]
 fn test_must_start_with_generated_by_to_be_ignored() -> anyhow::Result<()> {
     let case = CliTest::with_files([
-        ("DESCRIPTION", ""),
+        ("DESCRIPTION", "Package: testpkg\nVersion: 1.0.0\n"),
         ("NAMESPACE", ""),
         ("R/foo2.R", "f <- function() 1 + 1\n"),
         (

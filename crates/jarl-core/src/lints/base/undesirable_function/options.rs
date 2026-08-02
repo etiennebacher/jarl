@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::resolve_with_extend;
+use crate::rule_options::resolve_with_extend;
 
 /// Default functions that are considered undesirable.
 const DEFAULT_FUNCTIONS: &[&str] = &["browser"];

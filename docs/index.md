@@ -132,6 +132,9 @@ scoop update jarl
 
 #### Other
 
+<details>
+<summary>Using `uv`</summary>
+
 Jarl is published on PyPI under the name `jarl-linter`.
 Therefore, it can be installed via [`uv`](https://docs.astral.sh/uv/) and [`pipx`](https://pipx.pypa.io/stable/):
 
@@ -144,6 +147,43 @@ uv tool install jarl-linter
 # or
 pipx install jarl-linter
 ```
+</details>
+
+<details>
+<summary>Using `pixi`</summary>
+
+You can use [Pixi](https://pixi.prefix.dev/latest/) to install Jarl from [conda-forge](https://github.com/conda-forge/jarl-feedstock):
+
+``` bash
+# Add to a project
+pixi add jarl
+pixi run jarl check .
+
+# Install globally
+pixi global install jarl
+
+# Run one-off command
+pixi exec jarl check .
+```
+</details>
+
+<details>
+<summary>Using `mise`</summary>
+
+You can use [mise](https://mise.jdx.dev/) to install Jarl from [conda-forge](https://github.com/conda-forge/jarl-feedstock):
+
+``` bash
+# Add to a project
+mise use conda:jarl
+jarl check .
+
+# Install globally
+mise use --global conda:jarl
+
+# Run one-off command
+mise exec conda:jarl -- jarl check .
+```
+</details>
 
 ### Development version
 

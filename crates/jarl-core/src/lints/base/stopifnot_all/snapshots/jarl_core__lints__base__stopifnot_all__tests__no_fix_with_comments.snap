@@ -1,0 +1,16 @@
+---
+source: crates/jarl-core/src/lints/base/stopifnot_all/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"stopifnot(all(\\n  # comment\\n  x\\n))\"],\n\"stopifnot_all\",)"
+---
+OLD:
+====
+stopifnot(all(
+  # comment
+  x
+))
+NEW:
+====
+stopifnot(all(
+  # comment
+  x
+))

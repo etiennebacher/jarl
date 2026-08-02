@@ -1,7 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{
-    get_arg_by_name_then_position, get_function_name, get_unnamed_args, node_contains_comments,
-};
+use crate::utils::{get_arg_by_name_then_position, get_unnamed_args, node_contains_comments};
 use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -51,11 +49,8 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// See `?sprintf`
-pub fn sprintf(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let function_name = get_function_name(function);
-
-    if function_name != "sprintf" {
+pub fn sprintf(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
+    if fn_name != "sprintf" {
         return Ok(None);
     }
 

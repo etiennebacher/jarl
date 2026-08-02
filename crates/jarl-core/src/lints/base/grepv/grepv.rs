@@ -1,7 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{
-    drop_arg_by_name_or_position, get_function_name, is_argument_present, node_contains_comments,
-};
+use crate::utils::{drop_arg_by_name_or_position, is_argument_present, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 pub struct Grepv;
@@ -48,17 +46,12 @@ impl Violation for Grepv {
     }
 }
 
-pub fn grepv(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let RCallFields { function, arguments } = ast.as_fields();
-
-    let function = function?;
-    let fn_name = get_function_name(function);
-
+pub fn grepv(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "grep" {
         return Ok(None);
     }
 
-    let items = arguments?.items();
+    let items = ast.arguments()?.items();
 
     let arg_value_is_present = is_argument_present(&items, "value", 5);
 

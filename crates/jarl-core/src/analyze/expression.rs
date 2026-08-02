@@ -91,6 +91,7 @@ pub(crate) fn check_expression(
             analyze::namespace_expression::namespace_expression(children, checker)?;
         }
         AnyRExpression::RParenthesizedExpression(children) => {
+            analyze::parenthesized_expression::parenthesized_expression(children, checker)?;
             let body = children.body();
             check_expression(&body?, checker)?;
         }

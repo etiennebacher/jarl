@@ -35,12 +35,9 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// expect_length(x, n)
 /// expect_length(x, 2L)
 /// ```
-pub fn expect_length(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let function_name = get_function_name(function.clone());
-
+pub fn expect_length(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Only check expect_equal and expect_identical
-    if function_name != "expect_equal" && function_name != "expect_identical" {
+    if fn_name != "expect_equal" && fn_name != "expect_identical" {
         return Ok(None);
     }
 
@@ -122,7 +119,7 @@ pub fn expect_length(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let n_text = other_arg.to_trimmed_text();
 
     // Preserve namespace prefix if present
-    let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();
+    let namespace_prefix = get_function_namespace_prefix(ast.function()?).unwrap_or_default();
 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
@@ -130,7 +127,7 @@ pub fn expect_length(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             "expect_length".to_string(),
             format!(
                 "`expect_length(x, n)` is better than `{}(length(x), n)`.",
-                function_name
+                fn_name
             ),
             Some("Use `expect_length(x, n)` instead.".to_string()),
         ),

@@ -1,10 +1,11 @@
+pub(crate) mod options;
 pub(crate) mod quotes;
 
 #[cfg(test)]
 mod tests {
+    use crate::lints::base::quotes::options::QuotesOptions;
+    use crate::lints::base::quotes::options::ResolvedQuotesOptions;
     use crate::rule_options::ResolvedRuleOptions;
-    use crate::rule_options::quotes::QuotesOptions;
-    use crate::rule_options::quotes::ResolvedQuotesOptions;
     use crate::settings::{LinterSettings, Settings};
     use crate::utils_test::*;
     use insta::assert_snapshot;

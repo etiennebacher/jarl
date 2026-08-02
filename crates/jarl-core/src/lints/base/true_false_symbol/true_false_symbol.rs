@@ -1,4 +1,6 @@
+use crate::check::Checker;
 use crate::diagnostic::*;
+use crate::utils::get_function_name;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -43,7 +45,10 @@ impl Violation for TrueFalseSymbol {
     }
 }
 
-pub fn true_false_symbol(ast: &RIdentifier) -> anyhow::Result<Option<Diagnostic>> {
+pub fn true_false_symbol(
+    ast: &RIdentifier,
+    checker: &Checker,
+) -> anyhow::Result<Option<Diagnostic>> {
     let token = ast.name_token()?;
     let name = token.text_trimmed();
     if name != "T" && name != "F" {
@@ -53,6 +58,19 @@ pub fn true_false_symbol(ast: &RIdentifier) -> anyhow::Result<Option<Diagnostic>
     // Allow T(), F()
     if ast.parent::<RCall>().is_some() {
         return Ok(None);
+    }
+
+    // Allow `T` and `F` inside a call to one of the skipped functions.
+    let skipped_functions = &checker.rule_options.true_false_symbol.skipped_functions;
+    if !skipped_functions.is_empty() {
+        for ancestor in ast.syntax().ancestors() {
+            if let Some(call) = RCall::cast(ancestor) {
+                let function_name = get_function_name(call.function()?);
+                if skipped_functions.contains(&function_name) {
+                    return Ok(None);
+                }
+            }
+        }
     }
 
     // Allow df$T, df$F

@@ -26,11 +26,13 @@ use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 ///
 /// ```r
 /// x <- 1   # unused
+/// y <- 2
 /// print(y)
 /// ```
 pub fn unused_object(
     expressions: &[RSyntaxNode],
     semantic: &SemanticIndex,
+    cross_file_used: &std::collections::HashSet<String>,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
     let Some(first) = expressions.first() else {
@@ -50,7 +52,14 @@ pub fn unused_object(
             if info.is_definition_used(scope_id, def_id, def) {
                 continue;
             }
-            if scope_id == top_level && is_exported(semantic, exports, scope_id, def) {
+            // Top-level bindings are visible to other files — package
+            // siblings share the namespace, and `source()` injects them into
+            // the sourcing file — so an object read from another file (or
+            // exported) is still used.
+            if scope_id == top_level
+                && (is_exported(semantic, exports, scope_id, def)
+                    || is_used_cross_file(semantic, cross_file_used, scope_id, def))
+            {
                 continue;
             }
             diagnostics.push(make_diagnostic(semantic, scope_id, def, info.root()));
@@ -61,6 +70,7 @@ pub fn unused_object(
         semantic,
         &info,
         exports,
+        cross_file_used,
     ));
 
     for d in diagnostics {
@@ -95,6 +105,12 @@ fn should_lint_definition(info: &SemanticInfo<'_>, def: &Definition) -> bool {
         return false;
     }
 
+    // An assignment inside an NSE context (`quote(x <- 2)`, …) is quoted code,
+    // not a real definition.
+    if info.is_in_nse(def.range()) {
+        return false;
+    }
+
     true
 }
 
@@ -109,6 +125,23 @@ fn is_exported(
     }
     let name = semantic.symbols(scope_id).symbol(def.symbol()).name();
     exports.contains(name)
+}
+
+/// True when this top-level binding is read from another file — a sibling in
+/// the same package, or a file that `source()`s this one. `cross_file_used`
+/// is precomputed from oak's cross-file resolution (see
+/// [`crate::db::AnalysisDb::cross_file_used_objects`]).
+fn is_used_cross_file(
+    semantic: &SemanticIndex,
+    cross_file_used: &std::collections::HashSet<String>,
+    scope_id: ScopeId,
+    def: &Definition,
+) -> bool {
+    if cross_file_used.is_empty() {
+        return false;
+    }
+    let name = semantic.symbols(scope_id).symbol(def.symbol()).name();
+    cross_file_used.contains(name)
 }
 
 fn make_diagnostic(
@@ -143,6 +176,7 @@ fn collect_assignment_pipe_diagnostics(
     semantic: &SemanticIndex,
     info: &SemanticInfo<'_>,
     exports: &std::collections::HashSet<String>,
+    cross_file_used: &std::collections::HashSet<String>,
 ) -> Vec<Diagnostic> {
     let mut out = Vec::new();
     for expr in expressions {
@@ -170,27 +204,27 @@ fn collect_assignment_pipe_diagnostics(
 
             let (scope_id, _) = semantic.scope_at(lhs_range.start());
 
-            let symbol = semantic.symbols(scope_id).id(&name);
-            let later_use = symbol.is_some_and(|sym| {
-                semantic
-                    .uses(scope_id)
-                    .iter()
-                    .any(|(_, u)| u.symbol() == sym && u.range().start() >= expr_end)
-            });
-            let closure_use = info.is_used_in_nested_scope(scope_id, &name);
-            let exported = scope_id == ScopeId::from(0) && exports.contains(&name);
-
-            if !later_use && !closure_use && !exported {
-                out.push(Diagnostic::new(
-                    ViolationData::new(
-                        "unused_object".to_string(),
-                        format!("Object `{name}` is defined but never used."),
-                        None,
-                    ),
-                    lhs_range,
-                    Fix::empty(),
-                ));
+            // `%<>%` isn't an oak definition, so route the "is it used?" check
+            // through `SemanticInfo` (real reads, closure captures, synthetic
+            // uses, and string interpolation) rather than querying oak's use
+            // maps directly, which would miss glue/`..x`/`do.call` uses.
+            if info.is_pipe_target_used(scope_id, &name, expr_end) {
+                continue;
             }
+            let top_level = scope_id == ScopeId::from(0);
+            if top_level && (exports.contains(&name) || cross_file_used.contains(&name)) {
+                continue;
+            }
+
+            out.push(Diagnostic::new(
+                ViolationData::new(
+                    "unused_object".to_string(),
+                    format!("Object `{name}` is defined but never used."),
+                    None,
+                ),
+                lhs_range,
+                Fix::empty(),
+            ));
         }
     }
     out

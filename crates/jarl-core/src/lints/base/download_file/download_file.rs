@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name_then_position, get_function_name};
+use crate::utils::get_arg_by_name_then_position;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -31,10 +31,7 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// See `?download.file`
-pub fn download_file(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let fn_name = get_function_name(function);
-
+pub fn download_file(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "download.file" {
         return Ok(None);
     }

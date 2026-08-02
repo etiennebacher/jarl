@@ -1,6 +1,6 @@
 use crate::checker::{Checker, PackageOrigin};
 use crate::diagnostic::*;
-use crate::utils::{get_function_name, get_function_namespace_prefix, node_contains_comments};
+use crate::utils::{get_function_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -63,15 +63,17 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// - <https://dplyr.tidyverse.org/reference/filter.html>
-pub fn dplyr_filter_out(ast: &RCall, checker: &Checker) -> anyhow::Result<Option<Diagnostic>> {
-    let fn_name = get_function_name(ast.function()?);
-    let fn_ns = get_function_namespace_prefix(ast.function()?);
-
+pub fn dplyr_filter_out(
+    ast: &RCall,
+    fn_name: &str,
+    ns_prefix: Option<&str>,
+    checker: &Checker,
+) -> anyhow::Result<Option<Diagnostic>> {
     // Only trigger on `filter()` or `dplyr::filter()`
     if fn_name != "filter" {
         return Ok(None);
     }
-    if let Some(ref ns) = fn_ns
+    if let Some(ns) = ns_prefix
         && ns != "dplyr::"
     {
         return Ok(None);
@@ -80,7 +82,7 @@ pub fn dplyr_filter_out(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
     // Without an explicit namespace, use the package cache to resolve
     // the package, falling back to requiring a pipe (which makes it
     // unlikely to be `stats::filter()`).
-    if fn_ns.is_none() {
+    if ns_prefix.is_none() {
         match checker.resolve_package("filter") {
             PackageOrigin::Resolved(ref pkg) if pkg == "dplyr" => {}
             PackageOrigin::Resolved(_) => return Ok(None),
@@ -142,7 +144,7 @@ pub fn dplyr_filter_out(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
         return Ok(None);
     };
 
-    let ns_prefix = fn_ns.as_deref().unwrap_or("");
+    let ns_prefix = ns_prefix.unwrap_or("");
     // Multiple comma-separated args in filter() are AND conditions, so we
     // join the rewritten conditions with OR.
     let joined_conds = conditions.join(" | ");

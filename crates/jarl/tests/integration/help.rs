@@ -19,6 +19,7 @@ fn test_help() -> anyhow::Result<()> {
 
     Commands:
       check   Check a set of files or directories
+      rule    Print the documentation of a rule
       server  Start a language server
       help    Print this message or the help of the given subcommand(s)
 
@@ -27,7 +28,7 @@ fn test_help() -> anyhow::Result<()> {
       -V, --version  Print version
 
     Global options:
-          --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+          --log-level <LOG_LEVEL>  The log level [default: warn] [possible values: error, warn, info, debug, trace]
 
     For help with a specific command, see: `jarl help <command>`.
 
@@ -50,6 +51,7 @@ fn test_help() -> anyhow::Result<()> {
 
     Commands:
       check   Check a set of files or directories
+      rule    Print the documentation of a rule
       server  Start a language server
       help    Print this message or the help of the given subcommand(s)
 
@@ -58,7 +60,7 @@ fn test_help() -> anyhow::Result<()> {
       -V, --version  Print version
 
     Global options:
-          --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+          --log-level <LOG_LEVEL>  The log level [default: warn] [possible values: error, warn, info, debug, trace]
 
     For help with a specific command, see: `jarl help <command>`.
 
@@ -81,6 +83,7 @@ fn test_help() -> anyhow::Result<()> {
 
     Commands:
       check   Check a set of files or directories
+      rule    Print the documentation of a rule
       server  Start a language server
       help    Print this message or the help of the given subcommand(s)
 
@@ -89,7 +92,7 @@ fn test_help() -> anyhow::Result<()> {
       -V, --version  Print version
 
     Global options:
-          --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+          --log-level <LOG_LEVEL>  The log level [default: warn] [possible values: error, warn, info, debug, trace]
 
     For help with a specific command, see: `jarl help <command>`.
 
@@ -122,8 +125,8 @@ fn test_help_check() -> anyhow::Result<()> {
               List of files or directories to check or fix lints, for example `jarl check .`.
 
     File selection:
-          --exclude <FILES>
-              List of file patterns to exclude from linting, separated by a comma (no spaces).
+          --exclude=<FILES>
+              List of file patterns to exclude from linting, separated by a comma (no spaces). Must be passed with an equals sign, e.g. `--exclude=R/*.R`, so the shell does not expand glob patterns.
 
           --no-default-exclude
               Do not apply the default set of file patterns that should be excluded.
@@ -193,7 +196,9 @@ fn test_help_check() -> anyhow::Result<()> {
 
     Global options:
           --log-level <LOG_LEVEL>
-              The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+              The log level [default: warn]
+              
+              [possible values: error, warn, info, debug, trace]
 
     ----- stderr -----
     "#
@@ -217,7 +222,7 @@ fn test_help_check() -> anyhow::Result<()> {
       <FILES>...  List of files or directories to check or fix lints, for example `jarl check .`.
 
     File selection:
-          --exclude <FILES>     List of file patterns to exclude from linting, separated by a comma (no spaces).
+          --exclude=<FILES>     List of file patterns to exclude from linting, separated by a comma (no spaces). Must be passed with an equals sign, e.g. `--exclude=R/*.R`, so the shell does not expand glob patterns.
           --no-default-exclude  Do not apply the default set of file patterns that should be excluded.
 
     Rule selection:
@@ -241,7 +246,7 @@ fn test_help_check() -> anyhow::Result<()> {
       -h, --help                           Print help (see a summary with '-h')
 
     Global options:
-          --log-level <LOG_LEVEL>  The log level. One of: `error`, `warn`, `info`, `debug`, or `trace`. Defaults to `warn`
+          --log-level <LOG_LEVEL>  The log level [default: warn] [possible values: error, warn, info, debug, trace]
 
     ----- stderr -----
     "#

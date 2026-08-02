@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::{get_function_name, get_nested_functions_content, node_contains_comments};
+use crate::utils::{get_nested_functions_content, node_contains_comments};
 use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -52,10 +52,10 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// See `?all.equal`
-pub fn all_equal(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
+pub fn all_equal(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // 1) Check for isFALSE(all.equal(...))
     if let Some((inner_content, outer_syntax)) =
-        get_nested_functions_content(ast, "isFALSE", "all.equal")?
+        get_nested_functions_content(ast, fn_name, "isFALSE", "all.equal")?
     {
         let range = outer_syntax.text_trimmed_range();
         return Ok(Some(Diagnostic::new(
@@ -75,9 +75,7 @@ pub fn all_equal(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     }
 
     // 2) Check for other cases: if (all.equal()), while(all.equal()), etc.
-    let function = ast.function()?;
-    let fun_name = get_function_name(function);
-    if fun_name != "all.equal" {
+    if fn_name != "all.equal" {
         return Ok(None);
     }
 

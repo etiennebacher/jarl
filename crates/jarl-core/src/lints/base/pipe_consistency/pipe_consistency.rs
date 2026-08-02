@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::rule_options::pipe_consistency::PreferredPipe;
+use crate::lints::base::pipe_consistency::options::PreferredPipe;
 use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::{AstNode, Direction, TextRange};
