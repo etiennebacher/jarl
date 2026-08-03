@@ -83,6 +83,9 @@
 
 ### Bug fixes
 
+* Jarl now checks rule violations inside expressions on the left-hand side of
+  `[`, `[[`, `$`, and `@`.
+
 * `implicit_assignment` no longer flags chained assignments like
   `if (TRUE) a <- b <- 1`, aligning with `lintr` behavior (#480, @atsyplenkov).
 
