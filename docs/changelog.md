@@ -86,6 +86,9 @@
 * Jarl now checks rule violations inside expressions on the left-hand side of
   `[`, `[[`, `$`, and `@` (#581, @Yousa-Mirage).
 
+* `true_false_symbol` no longer reports `T` and `F` when they are used as
+  objects in subset expressions, such as `T[1:2]` (#582, @Yousa-Mirage).
+
 * `implicit_assignment` no longer flags chained assignments like
   `if (TRUE) a <- b <- 1`, aligning with `lintr` behavior (#480, @atsyplenkov).
 
