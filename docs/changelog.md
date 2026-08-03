@@ -83,6 +83,9 @@
 
 ### Bug fixes
 
+* `--statistics` now reports syntax errors and returns a non-zero status instead
+  of incorrectly reporting `All checks passed!` when parsing fails.
+
 * `implicit_assignment` no longer flags chained assignments like
   `if (TRUE) a <- b <- 1`, aligning with `lintr` behavior (#480, @atsyplenkov).
 
