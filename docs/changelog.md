@@ -83,6 +83,9 @@
 
 ### Bug fixes
 
+* `--fix-only` now implies `--fix` and no longer applies unsafe fixes by default
+  (#579, @Yousa-Mirage).
+
 * Jarl now checks rule violations inside expressions on the left-hand side of
   `[`, `[[`, `$`, and `@` (#581, @Yousa-Mirage).
 

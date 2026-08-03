@@ -64,7 +64,7 @@ pub struct Config {
     /// field `rules`. If we apply fixes too, then this might be different from
     /// `rules` because it may filter out rules that have unsafe fixes.
     pub rules_to_apply: RuleSet,
-    /// Did the user pass the --fix flag?
+    /// Whether safe fixes should be applied.
     pub apply_fixes: bool,
     /// Did the user pass the --unsafe-fixes flag?
     pub apply_unsafe_fixes: bool,
@@ -118,9 +118,10 @@ pub fn build_config(
     // These will be stored in Config and checked when applying fixes.
     let (fixable_toml, unfixable_toml) = parse_fixable_toml(toml_settings)?;
 
-    // Resolve the interaction between --fix and --unsafe-fixes first. Using
-    // --unsafe-fixes implies using --fix, but the opposite is not true.
-    let rules_to_apply = match (check_config.fix, check_config.unsafe_fixes) {
+    // --fix-only implies --fix, while --unsafe-fixes controls which fixes can
+    // be applied independently of how fix mode was enabled.
+    let apply_fixes = check_config.fix || check_config.fix_only;
+    let rules_to_apply = match (apply_fixes, check_config.unsafe_fixes) {
         (false, false) => rules.clone(),
 
         (true, false) => rules
@@ -138,7 +139,7 @@ pub fn build_config(
     // --fix-only. This could maybe be done above but dealing with the three
     // args at the same time makes it much more complex.
     let rules_to_apply = if check_config.fix_only {
-        rules
+        rules_to_apply
             .iter()
             .filter(|r| !r.has_no_fix())
             .collect::<RuleSet>()
@@ -171,7 +172,7 @@ pub fn build_config(
         paths,
         rules,
         rules_to_apply,
-        apply_fixes: check_config.fix,
+        apply_fixes,
         apply_unsafe_fixes: check_config.unsafe_fixes,
         minimum_r_version,
         allow_dirty: check_config.allow_dirty,
