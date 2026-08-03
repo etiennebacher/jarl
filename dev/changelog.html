@@ -493,6 +493,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="bug-fixes" class="level3">
 <h3 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h3>
 <ul>
+<li><p>Jarl now checks rule violations inside expressions on the left-hand side of <code>[</code>, <code>[[</code>, <code>$</code>, and <code>@</code> (#581, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
 <li><p><code>implicit_assignment</code> no longer flags chained assignments like <code>if (TRUE) a &lt;- b &lt;- 1</code>, aligning with <code>lintr</code> behavior (#480, <span class="citation" data-cites="atsyplenkov">@atsyplenkov</span>).</p></li>
 <li><p>Automatic fixes now skip rewrites when comments are inside the rewritten expression, while still allowing leading and trailing comments (#461, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
 <li><p>Suppression comments in <code>@examples</code> and <code>@examplesIf</code> now work correctly (#443).</p></li>
