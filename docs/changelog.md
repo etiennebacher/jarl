@@ -83,6 +83,8 @@
 
 ### Bug fixes
 
+* `--fix-only` now implies `--fix` and no longer applies unsafe fixes by default.
+
 * `implicit_assignment` no longer flags chained assignments like
   `if (TRUE) a <- b <- 1`, aligning with `lintr` behavior (#480, @atsyplenkov).
 

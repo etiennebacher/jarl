@@ -491,14 +491,16 @@ fn test_corner_case() -> anyhow::Result<()> {
 #[test]
 fn test_fix_options() -> anyhow::Result<()> {
     // File with 3 lints:
-    // - any_is_na (has fix)
-    // - class_equals (has unsafe fix)
+    // - any_is_na (has safe fix)
+    // - all_equal (has unsafe fix)
     // - duplicated_arguments (has no fix)
     let case = CliTest::with_file(
         "test.R",
-        "any(is.na(x))\nclass(x) == 'foo'\nlist(x = 1, x = 2)",
+        "any(is.na(x))\n!all.equal(x, y)\nlist(x = 1, x = 2)",
     )?;
-    let test_contents = "any(is.na(x))\nclass(x) == 'foo'\nlist(x = 1, x = 2)";
+    let test_contents = "any(is.na(x))\n!all.equal(x, y)\nlist(x = 1, x = 2)";
+    let safe_fixed_contents = "anyNA(x)\n!all.equal(x, y)\nlist(x = 1, x = 2)";
+    let all_fixed_contents = "anyNA(x)\n!isTRUE(all.equal(x, y))\nlist(x = 1, x = 2)";
 
     insta::assert_snapshot!(
         &mut case
@@ -528,6 +530,7 @@ fn test_fix_options() -> anyhow::Result<()> {
     ----- stderr -----
     "#
     );
+    assert_eq!(case.read_file("test.R")?, safe_fixed_contents);
 
     case.write_file("test.R", test_contents)?;
     insta::assert_snapshot!(
@@ -559,6 +562,7 @@ fn test_fix_options() -> anyhow::Result<()> {
     ----- stderr -----
     "#
     );
+    assert_eq!(case.read_file("test.R")?, all_fixed_contents);
 
     case.write_file("test.R", test_contents)?;
     insta::assert_snapshot!(
@@ -583,6 +587,7 @@ fn test_fix_options() -> anyhow::Result<()> {
     ----- stderr -----
     "
     );
+    assert_eq!(case.read_file("test.R")?, all_fixed_contents);
 
     case.write_file("test.R", test_contents)?;
     insta::assert_snapshot!(
@@ -606,6 +611,30 @@ fn test_fix_options() -> anyhow::Result<()> {
     ----- stderr -----
     "
     );
+    assert_eq!(case.read_file("test.R")?, safe_fixed_contents);
+
+    case.write_file("test.R", test_contents)?;
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--fix-only")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+    assert_eq!(case.read_file("test.R")?, safe_fixed_contents);
 
     case.write_file("test.R", test_contents)?;
     insta::assert_snapshot!(
@@ -629,6 +658,7 @@ fn test_fix_options() -> anyhow::Result<()> {
     ----- stderr -----
     "
     );
+    assert_eq!(case.read_file("test.R")?, all_fixed_contents);
 
     Ok(())
 }
