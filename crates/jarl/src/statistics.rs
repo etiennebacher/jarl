@@ -9,6 +9,7 @@ pub fn print_statistics(
     has_errors: bool,
     parent_config_path: Option<PathBuf>,
 ) -> anyhow::Result<ExitStatus> {
+    // Parse errors are not rule diagnostics, but they still make the check fail.
     if diagnostics.is_empty() {
         if has_errors {
             return Ok(ExitStatus::Error);

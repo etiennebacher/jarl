@@ -245,6 +245,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     let has_errors = !all_errors.is_empty();
 
     if args.statistics {
+        // Statistics must still report parse errors and preserve a failing exit status.
         if has_errors {
             let mut stdout = std::io::stdout();
             FullEmitter.emit(&mut stdout, &[], &all_errors)?;
