@@ -115,6 +115,12 @@ pub struct SemanticInfo<'a> {
     /// are modeled by oak itself (their quoted arguments produce no uses or
     /// definitions in the index), so they don't need ranges here.
     nse_ranges: Vec<TextRange>,
+    /// Packages this file can reach: attached with `library()`/`require()`,
+    /// listed in DESCRIPTION when linting package code, or named in a
+    /// `pkg::fn()` call. Package-specific idioms (`{x}` interpolation,
+    /// data.table's `..name`) are only honoured when their package is here,
+    /// so a file that never mentions cli doesn't get cli's markup rules.
+    available_packages: HashSet<String>,
     /// Ranges of formula RHSes (`~ rhs`).
     formula_ranges: Vec<TextRange>,
     /// Definitions reached by some non-NSE use anywhere in the file. Computed
@@ -133,7 +139,18 @@ impl<'a> SemanticInfo<'a> {
         index: &'a SemanticIndex,
         file: &'a std::path::Path,
         source_cache: &SourceIndexCache,
+        loaded_packages: &[String],
     ) -> Self {
+        // `pkg::fn()` reaches a package without attaching it, so namespaced
+        // accesses count alongside what the caller resolved from
+        // `library()` calls and DESCRIPTION.
+        let mut available_packages: HashSet<String> = loaded_packages.iter().cloned().collect();
+        available_packages.extend(
+            index
+                .namespace_accesses()
+                .iter()
+                .map(|access| access.package().to_string()),
+        );
         let mut this = Self {
             index,
             root: root.clone(),
@@ -144,6 +161,7 @@ impl<'a> SemanticInfo<'a> {
             loop_ranges: Vec::new(),
             positional_uses: Vec::new(),
             nse_ranges: Vec::new(),
+            available_packages,
             formula_ranges: Vec::new(),
             reaching_used: HashSet::new(),
         };
@@ -198,6 +216,12 @@ impl<'a> SemanticInfo<'a> {
 
     pub fn has_synthetic_use(&self, name: &str) -> bool {
         self.synthetic_used_names.contains(name)
+    }
+
+    /// Whether `package` is reachable from this file, and so whether its
+    /// idioms should be recognised here.
+    pub fn package_available(&self, package: &str) -> bool {
+        self.available_packages.contains(package)
     }
 
     /// True when `range` sits in a quoted NSE context (`expression(...)`,
@@ -255,6 +279,12 @@ impl<'a> SemanticInfo<'a> {
     }
 
     fn collect_dotdot_identifier(&mut self, node: &RSyntaxNode) {
+        // `dt[, ..cols]` is data.table's "resolve this name in the calling
+        // frame" prefix. Anywhere else `..cols` is just an identifier, and
+        // reading it says nothing about a binding named `cols`.
+        if !self.package_available("data.table") {
+            return;
+        }
         let Some(token) = node.first_token() else {
             return;
         };
@@ -272,10 +302,15 @@ impl<'a> SemanticInfo<'a> {
 
     fn collect_string_interpolation(&mut self, node: &RSyntaxNode) {
         // Only strings passed to an interpolating call are code: `{x}` in
-        // `message("{x}")` is literal text and reads nothing.
-        let Some(flavor) = interpolation_flavor(node) else {
+        // `message("{x}")` is literal text and reads nothing. And the idiom
+        // only applies when the package providing it is in reach, so
+        // `glue("{x}")` in a file that never mentions glue stays literal too.
+        let Some((flavor, package)) = interpolation_flavor(node) else {
             return;
         };
+        if !self.package_available(package) {
+            return;
+        }
         let Some(content) = strings::get_string_literal_contents(&node.text_trimmed().to_string())
         else {
             return;
@@ -331,7 +366,10 @@ impl<'a> SemanticInfo<'a> {
         call_name: &str,
         args: &[(Option<String>, RSyntaxNode)],
     ) {
-        if !is_glue_interpolating_function(call_name) {
+        let Some(package) = glue_interpolation_package(call_name) else {
+            return;
+        };
+        if !self.package_available(package) {
             return;
         }
         let open = named_string_arg(args, ".open");
@@ -900,46 +938,36 @@ enum InterpolationFlavor {
     CliMarkup,
 }
 
-/// The interpolation dialect applying to `node`, or `None` when no enclosing
-/// call interpolates its arguments — a string is only code when it is handed
-/// to a glue, stringr or cli function. Walks all ancestors (not just the
-/// immediate call) so message strings nested in a `c(...)` bullets vector
-/// still count.
-fn interpolation_flavor(node: &RSyntaxNode) -> Option<InterpolationFlavor> {
+/// The interpolation dialect applying to `node` and the package providing it,
+/// or `None` when no enclosing call interpolates its arguments — a string is
+/// only code when it is handed to a glue, stringr or cli function. Walks all
+/// ancestors (not just the immediate call) so message strings nested in a
+/// `c(...)` bullets vector still count.
+fn interpolation_flavor(node: &RSyntaxNode) -> Option<(InterpolationFlavor, &'static str)> {
     node.ancestors()
         .filter_map(|ancestor| ancestor.cast::<RCall>())
         .find_map(|call| {
             let name = call_name(&call)?;
             if is_cli_markup_function(&name) {
-                Some(InterpolationFlavor::CliMarkup)
-            } else if is_glue_interpolating_function(&name) {
-                Some(InterpolationFlavor::Glue)
-            } else {
-                None
+                return Some((InterpolationFlavor::CliMarkup, "cli"));
             }
+            glue_interpolation_package(&name).map(|package| (InterpolationFlavor::Glue, package))
         })
 }
 
-/// glue and stringr functions that glue-interpolate their string arguments.
-/// Excludes the non-interpolating helpers of both packages (`as_glue`,
-/// `glue_collapse`, `str_c`, …). `str_interp()` uses `${...}` rather than
-/// `{...}`, but scanning for `{`/`}` still finds its expressions.
-/// Namespaced calls (`glue::glue`) resolve to the bare name via [`call_name`].
-fn is_glue_interpolating_function(name: &str) -> bool {
-    matches!(
-        name,
-        "glue"
-            | "glue_data"
-            | "glue_col"
-            | "glue_data_col"
-            | "glue_safe"
-            | "glue_data_safe"
-            | "glue_sql"
-            | "glue_data_sql"
-            | "str_glue"
-            | "str_glue_data"
-            | "str_interp"
-    )
+/// The package providing `name` if it glue-interpolates its string arguments,
+/// `None` otherwise. Covers glue and stringr, excluding the non-interpolating
+/// helpers of both (`as_glue`, `glue_collapse`, `str_c`, …). `str_interp()`
+/// uses `${...}` rather than `{...}`, but scanning for `{`/`}` still finds its
+/// expressions. Namespaced calls (`glue::glue`) resolve to the bare name via
+/// [`call_name`].
+fn glue_interpolation_package(name: &str) -> Option<&'static str> {
+    match name {
+        "glue" | "glue_data" | "glue_col" | "glue_data_col" | "glue_safe" | "glue_data_safe"
+        | "glue_sql" | "glue_data_sql" => Some("glue"),
+        "str_glue" | "str_glue_data" | "str_interp" => Some("stringr"),
+        _ => None,
+    }
 }
 
 /// cli functions that glue-interpolate their text arguments with inline markup.

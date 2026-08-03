@@ -187,16 +187,16 @@ mod tests {
     #[test]
     fn test_lint_glue_custom_delimiters_unrelated_object() {
         assert_snapshot!(
-            snapshot_lint("x <- 1\nglue(\"[a]\", .open = \"[\", .close = \"]\")"),
-            @r#"
+            snapshot_lint("library(glue)\nx <- 1\nglue(\"[a]\", .open = \"[\", .close = \"]\")"),
+            @"
         warning: unused_object
-         --> <test>:1:1
+         --> <test>:2:1
           |
-        1 | x <- 1
+        2 | x <- 1
           | - Object `x` is defined but never used.
           |
         Found 1 error.
-        "#
+        "
         );
     }
 
@@ -204,16 +204,16 @@ mod tests {
     fn test_lint_cli_markup_literal_text() {
         // In `{.field x}`, `x` is literal styled text, not an interpolation.
         assert_snapshot!(
-            snapshot_lint("x <- 1\ncli_abort(\"{.field x}\")"),
-            @r#"
+            snapshot_lint("library(cli)\nx <- 1\ncli_abort(\"{.field x}\")"),
+            @"
         warning: unused_object
-         --> <test>:1:1
+         --> <test>:2:1
           |
-        1 | x <- 1
+        2 | x <- 1
           | - Object `x` is defined but never used.
           |
         Found 1 error.
-        "#
+        "
         );
     }
 
@@ -1101,24 +1101,29 @@ for (i in 1:2) {
     #[test]
     fn test_lint_braces_outside_interpolating_call() {
         // Only glue, stringr and cli functions interpolate `{...}`; elsewhere
-        // the braces are literal text and don't read `x`.
+        // the braces are literal text and don't read `x`, even with glue in
+        // reach.
         assert_snapshot!(
-            snapshot_lint("x <- 1\nmessage(\"value is {x}\")"),
-            @r#"
+            snapshot_lint("library(glue)\nx <- 1\nmessage(\"value is {x}\")"),
+            @"
         warning: unused_object
-         --> <test>:1:1
+         --> <test>:2:1
           |
-        1 | x <- 1
+        2 | x <- 1
           | - Object `x` is defined but never used.
           |
         Found 1 error.
-        "#
+        "
         );
     }
 
     #[test]
     fn test_no_lint_glue_interpolation() {
-        expect_no_lint("x <- 1\nglue(\"this is {x}\")", "unused_object", None);
+        expect_no_lint(
+            "library(glue)\nx <- 1\nglue(\"this is {x}\")",
+            "unused_object",
+            None,
+        );
         expect_no_lint("x <- 1\nglue::glue(\"{mean(x)}\")", "unused_object", None);
         // `x` is referenced (used); `a` is a field name, not a binding.
         expect_no_lint(
@@ -1130,40 +1135,52 @@ for (i in 1:2) {
 
     #[test]
     fn test_no_lint_glue_family_functions() {
-        expect_no_lint("x <- 1\nglue_data(d, \"{x}\")", "unused_object", None);
         expect_no_lint(
-            "col <- 1\nglue_sql(\"SELECT {col}\", .con = con)",
+            "library(glue)\nx <- 1\nglue_data(d, \"{x}\")",
+            "unused_object",
+            None,
+        );
+        expect_no_lint(
+            "library(glue)\ncol <- 1\nglue_sql(\"SELECT {col}\", .con = con)",
             "unused_object",
             None,
         );
         // stringr's glue wrappers.
-        expect_no_lint("x <- 1\nstr_glue(\"{x}\")", "unused_object", None);
-        expect_no_lint("x <- 1\nstr_interp(\"${x}\")", "unused_object", None);
+        expect_no_lint(
+            "library(stringr)\nx <- 1\nstr_glue(\"{x}\")",
+            "unused_object",
+            None,
+        );
+        expect_no_lint(
+            "library(stringr)\nx <- 1\nstr_interp(\"${x}\")",
+            "unused_object",
+            None,
+        );
     }
 
     #[test]
     fn test_no_lint_glue_custom_delimiters() {
         expect_no_lint(
-            "x <- 1\nglue(\"<x>\", .open = \"<\", .close = \">\")",
+            "library(glue)\nx <- 1\nglue(\"<x>\", .open = \"<\", .close = \">\")",
             "unused_object",
             None,
         );
         expect_no_lint(
-            "x <- 1\nglue(\"<<x>>\", .open = \"<<\", .close = \">>\")",
+            "library(glue)\nx <- 1\nglue(\"<<x>>\", .open = \"<<\", .close = \">>\")",
             "unused_object",
             None,
         );
         // Delimiters that would collide with the raw-string wrapper if the
         // scan ran on the token text rather than the string contents.
         expect_no_lint(
-            "x <- 1\nglue(r\"([x])\", .open = \"[\", .close = \"]\")",
+            "library(glue)\nx <- 1\nglue(r\"([x])\", .open = \"[\", .close = \"]\")",
             "unused_object",
             None,
         );
         // `.open` and `.close` are the same character, so nesting is
         // impossible and the closing `|` must not be read as another opener.
         expect_no_lint(
-            "x <- 1\nglue(\"|x|\", .open = \"|\", .close = \"|\")",
+            "library(glue)\nx <- 1\nglue(\"|x|\", .open = \"|\", .close = \"|\")",
             "unused_object",
             None,
         );
@@ -1175,15 +1192,16 @@ for (i in 1:2) {
         // reassignment of the same name is still reported unused.
         assert_snapshot!(
             snapshot_lint("
+library(glue)
 foo <- \"a\"
 glue(\"{foo}\")
 
 foo <- \"b\""),
         @r#"
         warning: unused_object
-         --> <test>:5:1
+         --> <test>:6:1
           |
-        5 | foo <- "b"
+        6 | foo <- "b"
           | --- Object `foo` is defined but never used.
           |
         Found 1 error.
@@ -1196,7 +1214,7 @@ foo <- \"b\""),
         // Both `if`/`else` arms assign `x` in the same scope and both reach the
         // later `glue` read through branching control flow, so neither is unused.
         expect_no_lint(
-            "if (a) {\n  x <- \"a\"\n} else {\n  x <- \"b\"\n}\nglue(\"{x}\")",
+            "library(glue)\nif (a) {\n  x <- \"a\"\n} else {\n  x <- \"b\"\n}\nglue(\"{x}\")",
             "unused_object",
             None,
         );
@@ -1209,6 +1227,7 @@ foo <- \"b\""),
         // after the function.
         expect_no_lint(
             "
+library(glue)
 f <- function() glue(\"{prefix}\")
 prefix <- \"info\"
 f()",
@@ -1219,19 +1238,31 @@ f()",
 
     #[test]
     fn test_no_lint_cli_interpolation() {
-        expect_no_lint("x <- 1\ncli_abort(\"{x}\")", "unused_object", None);
-        expect_no_lint("x <- 1\ncli_warn(\"{x}\")", "unused_object", None);
+        expect_no_lint(
+            "library(cli)\nx <- 1\ncli_abort(\"{x}\")",
+            "unused_object",
+            None,
+        );
+        expect_no_lint(
+            "library(cli)\nx <- 1\ncli_warn(\"{x}\")",
+            "unused_object",
+            None,
+        );
     }
 
     #[test]
     fn test_no_lint_cli_markup_with_interpolation() {
-        expect_no_lint("x <- 1\ncli_abort(\"{.field {x}}\")", "unused_object", None);
+        expect_no_lint(
+            "library(cli)\nx <- 1\ncli_abort(\"{.field {x}}\")",
+            "unused_object",
+            None,
+        );
     }
 
     #[test]
     fn test_no_lint_cli_nested_markup_with_interpolation() {
         expect_no_lint(
-            "x <- 1\ncli_abort(\"{.strong {.emph {x}}}\")",
+            "library(cli)\nx <- 1\ncli_abort(\"{.strong {.emph {x}}}\")",
             "unused_object",
             None,
         );
@@ -1242,12 +1273,12 @@ f()",
         // Same position-aware resolution as glue: the `cli_abort` markup read
         // resolves to the preceding `foo`, so the later reassignment is unused.
         assert_snapshot!(
-            snapshot_lint("foo <- \"a\"\ncli_abort(\"{.field {foo}}\")\n\nfoo <- \"b\""),
+            snapshot_lint("library(cli)\nfoo <- \"a\"\ncli_abort(\"{.field {foo}}\")\n\nfoo <- \"b\""),
             @r#"
         warning: unused_object
-         --> <test>:4:1
+         --> <test>:5:1
           |
-        4 | foo <- "b"
+        5 | foo <- "b"
           | --- Object `foo` is defined but never used.
           |
         Found 1 error.
@@ -1260,7 +1291,7 @@ f()",
         // A cli markup read inside a closure captures the enclosing `prefix`
         // even though it is defined after the function.
         expect_no_lint(
-            "f <- function() cli_abort(\"{.field {prefix}}\")\nprefix <- \"info\"\nf()",
+            "library(cli)\nf <- function() cli_abort(\"{.field {prefix}}\")\nprefix <- \"info\"\nf()",
             "unused_object",
             None,
         );
@@ -1278,7 +1309,7 @@ f()",
     #[test]
     fn test_no_lint_cli_bullets_vector() {
         expect_no_lint(
-            "path <- \"f\"\ncli_abort(c(\"Can't find {.file {path}}\", \"i\" = \"check it\"))",
+            "library(cli)\npath <- \"f\"\ncli_abort(c(\"Can't find {.file {path}}\", \"i\" = \"check it\"))",
             "unused_object",
             None,
         );
@@ -1286,10 +1317,18 @@ f()",
 
     #[test]
     fn test_no_lint_cli_other_families() {
-        expect_no_lint("x <- 1\ncli_text(\"{.emph {x}}\")", "unused_object", None);
-        expect_no_lint("x <- 1\ncli_alert_info(\"{x}\")", "unused_object", None);
         expect_no_lint(
-            "x <- 1\nformat_inline(\"{.field {x}}\")",
+            "library(cli)\nx <- 1\ncli_text(\"{.emph {x}}\")",
+            "unused_object",
+            None,
+        );
+        expect_no_lint(
+            "library(cli)\nx <- 1\ncli_alert_info(\"{x}\")",
+            "unused_object",
+            None,
+        );
+        expect_no_lint(
+            "library(cli)\nx <- 1\nformat_inline(\"{.field {x}}\")",
             "unused_object",
             None,
         );
@@ -1436,11 +1475,95 @@ f <- function() {
     fn test_dot_dot_prefix_data_table() {
         expect_no_lint(
             "
+library(data.table)
 cols <- 'a'
 dt[, ..cols]
 ",
             "unused_object",
             None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_dot_dot_prefix_data_table_namespaced() {
+        // `data.table::` reaches the package without attaching it.
+        expect_no_lint(
+            "
+cols <- 'a'
+data.table::setDT(dt)
+dt[, ..cols]
+",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_dot_dot_prefix_without_data_table() {
+        // Nothing in the file reaches data.table, so `..cols` is an ordinary
+        // identifier and says nothing about the binding `cols`.
+        assert_snapshot!(
+            snapshot_lint(
+                "
+cols <- 'a'
+dt[, ..cols]
+"
+            ),
+            @r"
+        warning: unused_object
+         --> <test>:2:1
+          |
+        2 | cols <- 'a'
+          | ---- Object `cols` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_lint_interpolation_without_glue_loaded() {
+        // Nothing in the file reaches glue, so `glue` is just some function and
+        // `"{x}"` is literal text.
+        assert_snapshot!(
+            snapshot_lint(
+                "
+x <- 1
+glue(\"value is {x}\")
+"
+            ),
+            @r#"
+        warning: unused_object
+         --> <test>:2:1
+          |
+        2 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "#
+        );
+    }
+
+    #[test]
+    fn test_lint_cli_markup_without_cli_loaded() {
+        // Without cli, `cli_abort` is just some function and its argument is
+        // an ordinary string.
+        assert_snapshot!(
+            snapshot_lint(
+                "
+x <- 1
+cli_abort(\"{.field {x}}\")
+"
+            ),
+            @r#"
+        warning: unused_object
+         --> <test>:2:1
+          |
+        2 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "#
         );
     }
 
