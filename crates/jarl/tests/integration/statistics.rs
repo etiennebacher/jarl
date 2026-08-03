@@ -81,6 +81,74 @@ fn test_stats_no_violation() -> anyhow::Result<()> {
 }
 
 #[test]
+fn test_stats_with_syntax_error() -> anyhow::Result<()> {
+    let case = CliTest::with_file("test.R", "repeat")?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--statistics")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    error: expected an expression
+     --> test.R:1:7
+      |
+    1 | repeat
+      |       ^
+      |
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_stats_with_diagnostic_and_syntax_error() -> anyhow::Result<()> {
+    let case = CliTest::with_file("test.R", "any(is.na(x))\nrepeat")?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("any_is_na")
+            .arg("--statistics")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+        1 [ ] any_is_na
+
+    Rules with `[*]` have an automatic safe fix.
+    Rules with `[^]` have an automatic unsafe fix.
+
+    ----- stderr -----
+    error: expected an expression
+     --> test.R:2:7
+      |
+    2 | repeat
+      |       ^
+      |
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
 fn test_hint_stats_arg() -> anyhow::Result<()> {
     let case = CliTest::with_file(
         "test.R",

@@ -242,8 +242,15 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
 
     all_diagnostics_flat.sort();
 
+    let has_errors = !all_errors.is_empty();
+
     if args.statistics {
-        return print_statistics(&all_diagnostics_flat, parent_config_path);
+        if has_errors {
+            let mut stdout = std::io::stdout();
+            FullEmitter.emit(&mut stdout, &[], &all_errors)?;
+        }
+
+        return print_statistics(&all_diagnostics_flat, has_errors, parent_config_path);
     }
 
     let mut stdout = std::io::stdout();
