@@ -241,20 +241,17 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         .collect();
 
     all_diagnostics_flat.sort();
-
-    let has_errors = !all_errors.is_empty();
+    let mut stdout = std::io::stdout();
 
     if args.statistics {
         // Statistics must still report parse errors and preserve a failing exit status.
+        let has_errors = !all_errors.is_empty();
         if has_errors {
-            let mut stdout = std::io::stdout();
             FullEmitter.emit(&mut stdout, &[], &all_errors)?;
         }
 
         return print_statistics(&all_diagnostics_flat, has_errors, parent_config_path);
     }
-
-    let mut stdout = std::io::stdout();
 
     match args.output_format {
         OutputFormat::Concise => {
