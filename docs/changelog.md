@@ -103,8 +103,7 @@
 * `implicit_assignment` now includes `alist()` in the list of functions skipped
   by default (#527).
 
-* `duplicated_arguments` no longer aborts checks when analyzing valid `...()` calls
-  used by `substitute()` (#584, @Yousa-Mirage).
+* Jarl no longer fails to parse `...()` (#584, @Yousa-Mirage).
 
 ## 0.5.0
 

@@ -39,7 +39,7 @@ for (i in 1:3) {
     Ok(())
 }
 
-// `...()` is valid R syntax used by `substitute()` to access dots.
+// https://github.com/etiennebacher/jarl/issues/583
 #[test]
 fn test_jarl_supports_dots_call() -> anyhow::Result<()> {
     let case = CliTest::with_file(
