@@ -60,7 +60,7 @@ Like `--select` but adds additional rules in addition to those already specified
 
 Names of rules to exclude, separated by a comma (no spaces). Also accepts names of groups of rules, such as `"PERF"`.
 
-#### Other options
+#### Fix options
 
 **`-f, --fix`**
 
@@ -90,7 +90,8 @@ Apply fixes even if the Git branch is not clean, meaning that there are uncommit
 
 Apply fixes even if there is no version control system.
 
----
+
+#### Other options
 
 **`-w, --with-timing`**
 

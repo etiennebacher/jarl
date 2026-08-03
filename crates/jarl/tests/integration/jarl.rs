@@ -32,12 +32,14 @@ fn test_must_pass_path() -> anyhow::Result<()> {
       -e, --extend-select <RULES>  Like `--select` but adds additional rules in addition to those already specified. [default: ""]
       -i, --ignore <RULES>         Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ""]
 
+    Fix options:
+      -f, --fix           Automatically fix issues detected by the linter.
+      -u, --unsafe-fixes  Include fixes that may not retain the original intent of the  code.
+          --fix-only      Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
+          --allow-dirty   Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
+          --allow-no-vcs  Apply fixes even if there is no version control system.
+
     Other options:
-      -f, --fix                            Automatically fix issues detected by the linter.
-      -u, --unsafe-fixes                   Include fixes that may not retain the original intent of the  code.
-          --fix-only                       Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
-          --allow-dirty                    Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
-          --allow-no-vcs                   Apply fixes even if there is no version control system.
       -w, --with-timing                    Show the time taken by the function.
       -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
           --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: full] [possible values: full, concise, github, json, sarif]
