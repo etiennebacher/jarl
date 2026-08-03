@@ -51,6 +51,9 @@ pub(crate) fn check_expression(
                 }
             }
         }
+        AnyRExpression::RExtractExpression(children) => {
+            check_expression(&children.left()?, checker)?;
+        }
         AnyRExpression::RForStatement(children) => {
             analyze::for_loop::for_loop(children, checker)?;
             let RForStatementFields { variable, sequence, body, .. } = children.as_fields();
@@ -102,6 +105,7 @@ pub(crate) fn check_expression(
         AnyRExpression::RSubset(children) => {
             analyze::subset::subset(children, checker)?;
 
+            check_expression(&children.function()?, checker)?;
             for arg in children.arguments()?.items() {
                 if let Some(expr) = arg?.value() {
                     check_expression(&expr, checker)?;
@@ -109,6 +113,7 @@ pub(crate) fn check_expression(
             }
         }
         AnyRExpression::RSubset2(children) => {
+            check_expression(&children.function()?, checker)?;
             for arg in children.arguments()?.items() {
                 if let Some(expr) = arg?.value() {
                     check_expression(&expr, checker)?;

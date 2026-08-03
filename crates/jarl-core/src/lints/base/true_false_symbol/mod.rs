@@ -8,6 +8,7 @@ mod tests {
     use crate::rule_options::ResolvedRuleOptions;
     use crate::settings::{LinterSettings, Settings};
     use crate::utils_test::*;
+    use insta::assert_snapshot;
 
     /// Build a `Settings` with custom `TrueFalseSymbolOptions`.
     fn settings_with_options(options: TrueFalseSymbolOptions) -> Settings {
@@ -50,7 +51,52 @@ mod tests {
         expect_no_lint("x <- \"T\"", "true_false_symbol", None);
         expect_no_lint("mtcars$F", "true_false_symbol", None);
         expect_no_lint("mtcars$T", "true_false_symbol", None);
+        expect_no_lint("T$F", "true_false_symbol", None);
     }
+
+    #[test]
+    fn test_true_false_symbol_in_subset() {
+        expect_no_lint("T[1:2]", "true_false_symbol", None);
+        expect_no_lint("F[1:2]", "true_false_symbol", None);
+        expect_no_lint("T[[1]]", "true_false_symbol", None);
+        expect_no_lint("F[[1]]", "true_false_symbol", None);
+
+        assert_snapshot!(
+            format_diagnostics(
+                "x[T]\nx[[F]]\nlist(value = T)[1]\nlist(value = F)[[1]]",
+                "true_false_symbol",
+                None,
+            ),
+            @"
+        warning: true_false_symbol
+         --> <test>:1:3
+          |
+        1 | x[T]
+          |   - `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
+          |
+        warning: true_false_symbol
+         --> <test>:2:4
+          |
+        2 | x[[F]]
+          |    - `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
+          |
+        warning: true_false_symbol
+         --> <test>:3:14
+          |
+        3 | list(value = T)[1]
+          |              - `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
+          |
+        warning: true_false_symbol
+         --> <test>:4:14
+          |
+        4 | list(value = F)[[1]]
+          |              - `T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.
+          |
+        Found 4 errors.
+        "
+        );
+    }
+
     #[test]
     fn test_true_false_symbol_in_formulas() {
         let _expected_message = "can be confused with variable names";

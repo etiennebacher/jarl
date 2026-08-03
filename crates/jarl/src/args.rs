@@ -128,7 +128,7 @@ pub struct CheckCommand {
         short,
         long,
         default_value = "false",
-        help_heading = "Other options",
+        help_heading = "Fix options",
         help = "Automatically fix issues detected by the linter."
     )]
     pub fix: bool,
@@ -136,28 +136,28 @@ pub struct CheckCommand {
         short,
         long,
         default_value = "false",
-        help_heading = "Other options",
+        help_heading = "Fix options",
         help = "Include fixes that may not retain the original intent of the  code."
     )]
     pub unsafe_fixes: bool,
     #[arg(
         long,
         default_value = "false",
-        help_heading = "Other options",
+        help_heading = "Fix options",
         help = "Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`."
     )]
     pub fix_only: bool,
     #[arg(
         long,
         default_value = "false",
-        help_heading = "Other options",
+        help_heading = "Fix options",
         help = "Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files."
     )]
     pub allow_dirty: bool,
     #[arg(
         long,
         default_value = "false",
-        help_heading = "Other options",
+        help_heading = "Fix options",
         help = "Apply fixes even if there is no version control system."
     )]
     pub allow_no_vcs: bool,

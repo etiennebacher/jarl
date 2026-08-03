@@ -47,6 +47,7 @@ pub fn duplicated_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Op
         AnyRExpression::RNamespaceExpression(x) => {
             x.right()?.into_syntax().text_trimmed().to_string()
         }
+        AnyRExpression::RDots(x) => x.into_syntax().text_trimmed().to_string(),
         AnyRExpression::RNextExpression(_) => "next".to_string(),
         AnyRExpression::RParenthesizedExpression(x) => {
             x.body()?.into_syntax().text_trimmed().to_string()

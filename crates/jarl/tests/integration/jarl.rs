@@ -32,12 +32,14 @@ fn test_must_pass_path() -> anyhow::Result<()> {
       -e, --extend-select <RULES>  Like `--select` but adds additional rules in addition to those already specified. [default: ""]
       -i, --ignore <RULES>         Names of rules to exclude, separated by a comma (no spaces). This also accepts names of groups of rules, such as "PERF". [default: ""]
 
+    Fix options:
+      -f, --fix           Automatically fix issues detected by the linter.
+      -u, --unsafe-fixes  Include fixes that may not retain the original intent of the  code.
+          --fix-only      Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
+          --allow-dirty   Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
+          --allow-no-vcs  Apply fixes even if there is no version control system.
+
     Other options:
-      -f, --fix                            Automatically fix issues detected by the linter.
-      -u, --unsafe-fixes                   Include fixes that may not retain the original intent of the  code.
-          --fix-only                       Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
-          --allow-dirty                    Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
-          --allow-no-vcs                   Apply fixes even if there is no version control system.
       -w, --with-timing                    Show the time taken by the function.
       -m, --min-r-version <MIN_R_VERSION>  The mimimum R version to be used by the linter. Some rules only work starting from a specific version.
           --output-format <OUTPUT_FORMAT>  Output serialization format for violations. [default: full] [possible values: full, concise, github, json, sarif]
@@ -491,14 +493,16 @@ fn test_corner_case() -> anyhow::Result<()> {
 #[test]
 fn test_fix_options() -> anyhow::Result<()> {
     // File with 3 lints:
-    // - any_is_na (has fix)
-    // - class_equals (has unsafe fix)
+    // - any_is_na (has safe fix)
+    // - all_equal (has unsafe fix)
     // - duplicated_arguments (has no fix)
     let case = CliTest::with_file(
         "test.R",
-        "any(is.na(x))\nclass(x) == 'foo'\nlist(x = 1, x = 2)",
+        "any(is.na(x))\n!all.equal(x, y)\nlist(x = 1, x = 2)",
     )?;
-    let test_contents = "any(is.na(x))\nclass(x) == 'foo'\nlist(x = 1, x = 2)";
+    let test_contents = "any(is.na(x))\n!all.equal(x, y)\nlist(x = 1, x = 2)";
+    let safe_fixed_contents = "anyNA(x)\n!all.equal(x, y)\nlist(x = 1, x = 2)";
+    let all_fixed_contents = "anyNA(x)\n!isTRUE(all.equal(x, y))\nlist(x = 1, x = 2)";
 
     insta::assert_snapshot!(
         &mut case
@@ -528,6 +532,7 @@ fn test_fix_options() -> anyhow::Result<()> {
     ----- stderr -----
     "#
     );
+    assert_eq!(case.read_file("test.R")?, safe_fixed_contents);
 
     case.write_file("test.R", test_contents)?;
     insta::assert_snapshot!(
@@ -559,6 +564,7 @@ fn test_fix_options() -> anyhow::Result<()> {
     ----- stderr -----
     "#
     );
+    assert_eq!(case.read_file("test.R")?, all_fixed_contents);
 
     case.write_file("test.R", test_contents)?;
     insta::assert_snapshot!(
@@ -583,6 +589,7 @@ fn test_fix_options() -> anyhow::Result<()> {
     ----- stderr -----
     "
     );
+    assert_eq!(case.read_file("test.R")?, all_fixed_contents);
 
     case.write_file("test.R", test_contents)?;
     insta::assert_snapshot!(
@@ -606,6 +613,30 @@ fn test_fix_options() -> anyhow::Result<()> {
     ----- stderr -----
     "
     );
+    assert_eq!(case.read_file("test.R")?, safe_fixed_contents);
+
+    case.write_file("test.R", test_contents)?;
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--fix-only")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+    assert_eq!(case.read_file("test.R")?, safe_fixed_contents);
 
     case.write_file("test.R", test_contents)?;
     insta::assert_snapshot!(
@@ -629,6 +660,7 @@ fn test_fix_options() -> anyhow::Result<()> {
     ----- stderr -----
     "
     );
+    assert_eq!(case.read_file("test.R")?, all_fixed_contents);
 
     Ok(())
 }
