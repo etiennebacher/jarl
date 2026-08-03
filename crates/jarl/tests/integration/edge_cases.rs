@@ -39,6 +39,41 @@ for (i in 1:3) {
     Ok(())
 }
 
+// https://github.com/etiennebacher/jarl/issues/583
+#[test]
+fn test_jarl_supports_dots_call() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.R",
+        r#"
+f <- function(..., env) {
+    substitute(...(), env = env)
+}
+f(mean, env = globalenv())
+"#,
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
 // Regression test for a panic in r-source
 #[test]
 fn test_jarl_with_tabs_on_earlier_lines() -> anyhow::Result<()> {
