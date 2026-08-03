@@ -493,6 +493,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="bug-fixes" class="level3">
 <h3 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h3>
 <ul>
+<li><p><code>--statistics</code> now reports syntax errors and returns a non-zero status when parsing fails (#577, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
 <li><p><code>--fix-only</code> now implies <code>--fix</code> and no longer applies unsafe fixes by default (#579, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
 <li><p>Jarl now checks rule violations inside expressions on the left-hand side of <code>[</code>, <code>[[</code>, <code>$</code>, and <code>@</code> (#581, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
 <li><p><code>true_false_symbol</code> no longer reports <code>T</code> and <code>F</code> when they are used as objects in subset expressions, such as <code>T[1:2]</code> (#582, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
