@@ -109,6 +109,8 @@
 * `implicit_assignment` now includes `alist()` in the list of functions skipped
   by default (#527).
 
+* Jarl no longer fails to parse `...()` (#584, @Yousa-Mirage).
+
 ## 0.5.0
 
 ### Deprecations
