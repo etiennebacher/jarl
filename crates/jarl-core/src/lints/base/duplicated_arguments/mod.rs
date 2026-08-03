@@ -182,6 +182,20 @@ mod tests {
         expect_no_lint("foo()", "duplicated_arguments", None);
     }
 
+    #[test]
+    fn test_duplicated_arguments_supports_dots_call() {
+        expect_no_lint(
+            r#"
+        f <- function(..., env) {
+            substitute(...(), env = env)
+        }
+        f(mean, env = globalenv())
+        "#,
+            "duplicated_arguments",
+            None,
+        );
+    }
+
     // ---- Rule-specific config tests ----
 
     #[test]
