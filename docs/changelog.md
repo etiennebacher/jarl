@@ -83,6 +83,9 @@
 
 ### Bug fixes
 
+* Valid R version constraints in `DESCRIPTION`, such as `R (> 4.0)`, no longer
+  cause Jarl to fail (#578, @Yousa-Mirage).
+
 * `implicit_assignment` no longer flags chained assignments like
   `if (TRUE) a <- b <- 1`, aligning with `lintr` behavior (#480, @atsyplenkov).
 

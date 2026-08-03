@@ -658,9 +658,14 @@ fn determine_minimum_r_version(
         if desc_path.exists() {
             let desc = fs::read_to_string(&desc_path)?;
             if let Ok(versions) = Description::get_depend_r_version(&desc)
-                && let Some(version_str) = versions.first()
+                // A DESCRIPTION can contain several constraints or an R-devel
+                // revision, so use the strictest numeric lower bound available.
+                && let Some(version) = versions
+                    .into_iter()
+                    .filter_map(|version| parse_r_version(version).ok())
+                    .max()
             {
-                return Ok(Some(parse_r_version(version_str.to_string())?));
+                return Ok(Some(version));
             }
         }
     }
