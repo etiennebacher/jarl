@@ -183,6 +183,49 @@ mod tests {
     }
 
     #[test]
+    fn test_lint_any_na_in_subset_and_extraction_objects() {
+        assert_snapshot!(
+            snapshot_lint(
+                r#"list(has_na = any(is.na(a)))[1]
+list(has_na = any(is.na(b)))[["has_na"]]
+list(has_na = any(is.na(c)))$has_na
+methods::new("Example", has_na = any(is.na(d)))@has_na"#
+            ),
+            @r#"
+        warning: any_is_na
+         --> <test>:1:15
+          |
+        1 | list(has_na = any(is.na(a)))[1]
+          |               ------------- `any(is.na(...))` is inefficient.
+          |
+          = help: Use `anyNA(...)` instead.
+        warning: any_is_na
+         --> <test>:2:15
+          |
+        2 | list(has_na = any(is.na(b)))[["has_na"]]
+          |               ------------- `any(is.na(...))` is inefficient.
+          |
+          = help: Use `anyNA(...)` instead.
+        warning: any_is_na
+         --> <test>:3:15
+          |
+        3 | list(has_na = any(is.na(c)))$has_na
+          |               ------------- `any(is.na(...))` is inefficient.
+          |
+          = help: Use `anyNA(...)` instead.
+        warning: any_is_na
+         --> <test>:4:34
+          |
+        4 | methods::new("Example", has_na = any(is.na(d)))@has_na
+          |                                  ------------- `any(is.na(...))` is inefficient.
+          |
+          = help: Use `anyNA(...)` instead.
+        Found 4 errors.
+        "#
+        );
+    }
+
+    #[test]
     fn test_any_is_na_with_comments_no_fix() {
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
