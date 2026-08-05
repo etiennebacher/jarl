@@ -152,11 +152,11 @@ impl AnalysisDb {
     /// A package's R files share one namespace, so a top-level binding defined
     /// in one file and read in another is used even when its own file never
     /// reads it. For every file we collect, from its per-file index, the names
-    /// it defines at top level and the names it reads *freely* — uses with no
-    /// binding anywhere in the file, which therefore reference the package
-    /// namespace (this is the same `reaching_definitions().is_empty()` test
-    /// oak's `resolve_at` uses to decide local-vs-cross-file). A top-level
-    /// definition is cross-file-used when another file reads its name freely.
+    /// it defines at top level and the names it reads *freely* — uses the file
+    /// doesn't definitely bind, which therefore may reference the package
+    /// namespace (this is the same `use_is_bound()` test oak's `resolve_at`
+    /// uses to decide local-vs-cross-file). A top-level definition is
+    /// cross-file-used when another file reads its name freely.
     ///
     /// `script_paths` are the linted R files living outside any package. They
     /// don't share a namespace with anything, so they skip the free-use
@@ -266,9 +266,7 @@ impl AnalysisDb {
         // A target may forward the name from a file it sources itself; chase
         // those `Import`-kind exports to the real definer (jarl's parallel of
         // oak_db's `File::collect_exports`), marking every hop. The visited
-        // set makes `source()` cycles terminate. `exports()` is recomputed
-        // per hop, but chains are short and edges few, so a per-file cache
-        // isn't worth it.
+        // set makes `source()` cycles terminate.
         let index_by_path: HashMap<&Path, &SemanticIndex> = built
             .iter()
             .map(|(index, file)| (file.path.as_path(), index.as_ref()))
@@ -286,7 +284,7 @@ impl AnalysisDb {
             let Some(index) = index_by_path.get(path.as_path()) else {
                 continue;
             };
-            for &(_, def) in index.exports().get(name.as_str()).into_iter().flatten() {
+            for (_, def) in index.export(&name) {
                 let DefinitionKind::Import { file: url, name: forwarded, .. } = def.kind() else {
                     continue;
                 };
@@ -308,11 +306,16 @@ impl AnalysisDb {
 /// Collect a file's top-level definitions, its free uses, and its `source()`
 /// import uses from its index.
 ///
-/// A use is *free* when no definition reaches it within the file — the same
-/// `reaching_definitions().is_empty()` test oak's `resolve_at` uses before
-/// falling back to cross-file resolution. Reaching definitions already fold in
-/// enclosing-scope captures, so a closure reading an outer local counts as
-/// bound, not free.
+/// A use is *free* when the file doesn't definitely bind it — the same
+/// `use_is_bound()` test oak's `resolve_at` uses before falling back to
+/// cross-file resolution. Reaching definitions already fold in enclosing-scope
+/// captures, so a closure reading an outer local counts as bound, not free.
+///
+/// Not definitely bound is weaker than unbound: a conditional local
+/// (`if (cond) x <- 2; x`) or a `<<-` write leaves some path reaching the use
+/// unbound, so the read can still resolve through the package namespace even
+/// though a definition in this file reaches it. Counting those as free keeps
+/// the cross-file side conservative in the *used* direction.
 ///
 /// A use reaching a [`DefinitionKind::Import`] instead reads a binding that
 /// `source()` injected from another file, so it's recorded as an import use
@@ -337,9 +340,7 @@ fn collect_file_uses(path: PathBuf, index: &SemanticIndex, in_package: bool) -> 
     for scope in index.scope_ids() {
         let symbols = index.symbols(scope);
         for (use_id, use_site) in index.uses(scope).iter() {
-            let mut reached = false;
             for (def_scope, def_id) in index.reaching_definitions(scope, use_id) {
-                reached = true;
                 let def = &index.definitions(def_scope)[def_id];
                 let DefinitionKind::Import { file: url, name, .. } = def.kind() else {
                     continue;
@@ -349,7 +350,7 @@ fn collect_file_uses(path: PathBuf, index: &SemanticIndex, in_package: bool) -> 
                 };
                 import_uses.insert((target, name.clone()));
             }
-            if !reached && in_package {
+            if in_package && !index.use_is_bound(scope, use_id) {
                 free_uses.insert(symbols.symbol(use_site.symbol()).name().to_string());
             }
         }
