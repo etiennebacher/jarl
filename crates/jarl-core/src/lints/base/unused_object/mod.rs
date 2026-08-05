@@ -678,6 +678,67 @@ env",
     }
 
     #[test]
+    fn test_assign_in_current_environment() {
+        // should lint: without a target environment, `assign()` binds in the
+        // current scope like `x <- 1 + 1` would, and nothing reads it.
+        assert_snapshot!(
+            snapshot_lint("
+f <- function() {
+  assign('x', 1 + 1)
+}
+f()"
+        ),
+            @"
+        warning: unused_object
+         --> <test>:3:10
+          |
+        3 |   assign('x', 1 + 1)
+          |          --- Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+        // shouldn't lint: the bound name is read afterwards
+        expect_no_lint(
+            "
+f <- function() {
+  assign('x', 1 + 1)
+  x
+}
+f()",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_assign_target_environment_by_name() {
+        // shouldn't lint: a target environment is matched by formal name, so
+        // it is still recognised when other arguments are named or reordered
+        // and the binding may land outside this scope.
+        expect_no_lint(
+            "
+f <- function() {
+  env <- new.env()
+  assign(envir = env, x = 'x', value = 1 + 1)
+}
+f()",
+            "unused_object",
+            None,
+        );
+        expect_no_lint(
+            "
+f <- function() {
+  env <- new.env()
+  assign('x', 1 + 1, pos = env)
+}
+f()",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
     fn test_delayed_assign() {
         // shouldn't lint: env is used as argument to delayedAssign()
         expect_no_lint(
@@ -713,6 +774,25 @@ f()
 env",
             "unused_object",
             None,
+        );
+        // should lint: without `assign.env` the promise binds in the current
+        // scope, and nothing forces it.
+        assert_snapshot!(
+            snapshot_lint("
+f <- function() {
+  delayedAssign('x', 1 + 1)
+}
+f()"
+        ),
+            @"
+        warning: unused_object
+         --> <test>:3:17
+          |
+        3 |   delayedAssign('x', 1 + 1)
+          |                 --- Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
         );
     }
 
