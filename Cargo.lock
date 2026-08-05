@@ -1126,7 +1126,7 @@ dependencies = [
 [[package]]
 name = "oak_core"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#ad5b9a03763e0f1b03b5f84b4607122ed6e23e84"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#34c9a73b9d2c5b97f258f75a29c05291bb2f6b19"
 dependencies = [
  "air_r_syntax",
  "anyhow",
@@ -1136,7 +1136,7 @@ dependencies = [
 [[package]]
 name = "oak_index_vec"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#ad5b9a03763e0f1b03b5f84b4607122ed6e23e84"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#34c9a73b9d2c5b97f258f75a29c05291bb2f6b19"
 dependencies = [
  "biome_text_size",
  "oak_core",
@@ -1145,7 +1145,7 @@ dependencies = [
 [[package]]
 name = "oak_package_metadata"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#ad5b9a03763e0f1b03b5f84b4607122ed6e23e84"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#34c9a73b9d2c5b97f258f75a29c05291bb2f6b19"
 dependencies = [
  "air_r_parser",
  "air_r_syntax",
@@ -1159,7 +1159,7 @@ dependencies = [
 [[package]]
 name = "oak_semantic"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#ad5b9a03763e0f1b03b5f84b4607122ed6e23e84"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#34c9a73b9d2c5b97f258f75a29c05291bb2f6b19"
 dependencies = [
  "air_r_parser",
  "air_r_syntax",
@@ -1581,7 +1581,7 @@ dependencies = [
 [[package]]
 name = "stdext"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#ad5b9a03763e0f1b03b5f84b4607122ed6e23e84"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#34c9a73b9d2c5b97f258f75a29c05291bb2f6b19"
 dependencies = [
  "anyhow",
  "log",
