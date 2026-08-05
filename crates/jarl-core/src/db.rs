@@ -2,13 +2,16 @@
 //!
 //! jarl's CLI is a one-shot tool over a list of paths, while oak's
 //! [`oak_scan`] machinery is built for editor workspace folders. We bridge
-//! the two by scanning only the **package roots** that the linted paths
-//! belong to (bounded by `DESCRIPTION` discovery), never the unbounded
-//! parent directory of a loose script. That keeps a `jarl /tmp/foo.R`
-//! invocation from walking all of `/tmp`. Loose scripts still take part in
-//! cross-file analysis: the lint set itself is their file universe, so they
-//! are handed to [`AnalysisDb::cross_file_used_objects`] directly and
-//! resolve against each other through explicit `source()` edges.
+//! the two by scanning only roots the invocation actually implies: the
+//! **package roots** the linted paths belong to (bounded by `DESCRIPTION`
+//! discovery), and the **project roots** the user declared by passing a
+//! directory or by having a `jarl.toml` next to the file. The unbounded
+//! parent directory of a bare loose script is never one, which keeps a
+//! `jarl /tmp/foo.R` invocation from walking all of `/tmp`. A loose script
+//! with no root of its own still takes part in cross-file analysis: the lint
+//! set itself is its file universe, so it is handed to
+//! [`AnalysisDb::cross_file_used_objects`] directly and resolves against the
+//! other linted files through explicit `source()` edges.
 //!
 //! The database is built and queried in jarl's *sequential* pre-pass
 //! ([`crate::package::make_package_analysis`]), not the parallel per-file
@@ -79,16 +82,21 @@ pub struct CrossFileAnalysis {
 }
 
 impl AnalysisDb {
-    /// Scan the package roots covering `paths` into a fresh database.
+    /// Scan the roots covering `paths` into a fresh database.
     ///
-    /// Loose scripts (not inside any R package) contribute no root, so
-    /// they're simply absent from the database; their per-file analysis
-    /// falls back to the standalone index builder. Only files under a
-    /// discovered package root are registered, which is exactly the set
-    /// that needs cross-file resolution.
-    pub fn build(paths: &[PathBuf]) -> Self {
+    /// Two kinds of root are registered. Every `DESCRIPTION` directory
+    /// covering `paths` is one, found by walking up from each linted file.
+    /// `project_roots` adds the directories the user declared explicitly (see
+    /// [`crate::config::Config::project_roots`]), which is what lets files in
+    /// a non-package project be scanned as a unit.
+    ///
+    /// A loose script with neither — a bare file argument in an unconfigured
+    /// directory — contributes no root and is simply absent from the database;
+    /// its per-file analysis falls back to the standalone index builder. That
+    /// is what keeps `jarl /tmp/foo.R` from walking all of `/tmp`.
+    pub fn build(paths: &[PathBuf], project_roots: &[PathBuf]) -> Self {
         let mut db = OakDatabase::new();
-        let roots = package_roots(paths);
+        let roots = scan_roots(paths, project_roots);
         if !roots.is_empty() {
             let mut scheduler = ScanScheduler::new();
             let editor_owned = HashSet::new();
@@ -398,26 +406,28 @@ fn file_paths(db: &dyn Db, files: &[File]) -> Vec<PathBuf> {
         .collect()
 }
 
-/// The deduplicated set of package roots (directories containing a
-/// `DESCRIPTION`) for `paths`, with nested roots collapsed to their
+/// The deduplicated set of directories to scan: the package roots
+/// (directories containing a `DESCRIPTION`) covering `paths`, plus the
+/// user-declared `project_roots`. Nested roots are collapsed to their
 /// outermost ancestor so each tree is scanned once.
 ///
 /// Paths are absolutized against the working directory first: oak's scanner
 /// keys files by `file://` URL and rejects relative paths, and walking up a
 /// relative path like `R/foo.R` would otherwise resolve the root to an empty
 /// (cwd-relative) path the scanner can't register.
-fn package_roots(paths: &[PathBuf]) -> Vec<PathBuf> {
+fn scan_roots(paths: &[PathBuf], project_roots: &[PathBuf]) -> Vec<PathBuf> {
     let cwd = std::env::current_dir().ok();
+    let absolutize = |path: &PathBuf| -> Option<PathBuf> {
+        if path.is_absolute() {
+            Some(path.clone())
+        } else {
+            Some(cwd.as_ref()?.join(path))
+        }
+    };
     let mut roots: Vec<PathBuf> = paths
         .iter()
-        .filter_map(|path| {
-            let absolute = if path.is_absolute() {
-                path.clone()
-            } else {
-                cwd.as_ref()?.join(path)
-            };
-            find_package_root(&absolute)
-        })
+        .filter_map(|path| find_package_root(&absolutize(path)?))
+        .chain(project_roots.iter().filter_map(absolutize))
         .collect::<HashSet<_>>()
         .into_iter()
         .collect();

@@ -281,7 +281,7 @@ pub fn make_package_analysis(
     // so `R/` files outside the lint set still feed cross-file analysis without
     // producing warnings. `src/` C/C++ files aren't R, so oak doesn't see them;
     // we walk those directly for the unused-function check.
-    let db = crate::db::AnalysisDb::build(paths);
+    let db = crate::db::AnalysisDb::build(paths, &config.project_roots);
     let mut all_files: Vec<(PathBuf, FileScope)> = Vec::new();
     for package in db.packages() {
         for r_file in package.r_files {
