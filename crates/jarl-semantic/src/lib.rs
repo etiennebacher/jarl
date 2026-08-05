@@ -409,6 +409,11 @@ impl<'a> SemanticInfo<'a> {
     /// non-reads out: a member name (`df$x`, `pkg::x`) is never a use, and a
     /// read that reaches the target's own rebind (`x <- 2; print(x)`) stays
     /// local to the target, so neither keeps a caller binding alive.
+    ///
+    /// "Free" means *not definitely bound*, not "unbound on every path". A
+    /// target that binds a name only conditionally (`if (cond) x <- 2; x`)
+    /// still reads the caller's binding when the branch isn't taken, so it
+    /// counts as free even though the conditional definition reaches the read.
     fn import_uses_from_sourced_file(&mut self, path: &str) {
         let Some(target) = resolve_sourced_path(self.file, path) else {
             return;
@@ -427,7 +432,7 @@ impl<'a> SemanticInfo<'a> {
         for scope in index.scope_ids() {
             let symbols = index.symbols(scope);
             for (use_id, use_site) in index.uses(scope).iter() {
-                if index.reaching_definitions(scope, use_id).next().is_none() {
+                if !index.use_is_bound(scope, use_id) {
                     self.synthetic_used_names
                         .insert(symbols.symbol(use_site.symbol()).name().to_string());
                 }

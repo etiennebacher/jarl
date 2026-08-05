@@ -1474,4 +1474,19 @@ x + 1"
             @"All checks passed!"
         );
     }
+
+    #[test]
+    fn test_sourced_file_conditional_rebind_does_not_suppress() {
+        // The helper rebinds `x` on only one path, so the read still falls
+        // through to the caller's binding when the branch isn't taken. Unlike
+        // the unconditional rebind above, the caller's `x <- 1` stays alive
+        // even though the helper's own definition reaches that read.
+        assert_snapshot!(
+            snapshot_lint_with_sourced_files(
+                "x <- 1\nsource(\"helper.R\")\n",
+                &[("helper.R", "if (interactive()) x <- 2\nprint(x)\n")],
+            ),
+            @"All checks passed!"
+        );
+    }
 }
