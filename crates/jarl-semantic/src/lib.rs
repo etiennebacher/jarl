@@ -15,10 +15,10 @@ use std::collections::HashSet;
 use air_r_parser::RParserOptions;
 use air_r_syntax::{
     AnyRArgumentName, AnyRExpression, RArgument, RArgumentList, RBinaryExpression, RCall,
-    RExtractExpression, RNamespaceExpression, RSyntaxKind, RSyntaxNode,
+    RExtractExpression, RNamespaceExpression, RStringValue, RSyntaxKind, RSyntaxNode,
 };
 use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange, TextSize};
-use oak_core::syntax_ext::RIdentifierExt;
+use oak_core::syntax_ext::{RIdentifierExt, RStringValueExt};
 use oak_semantic::DefinitionId;
 use oak_semantic::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex};
 
@@ -29,6 +29,11 @@ pub struct SemanticInfo<'a> {
     /// Root syntax node of the analyzed file. Needed to resolve
     /// `AstPtr` references stored in [`DefinitionKind`] back to nodes.
     root: RSyntaxNode,
+    /// Names that have a synthetic use from AST passes (`do.call("f", …)`,
+    /// `..cols`, `on.exit` bodies, loop/short-circuit assignment LHSes,
+    /// custom infix operators). A definition whose symbol name is in this set
+    /// is treated as used.
+    synthetic_used_names: HashSet<String>,
     /// Position-aware reads collected by the AST pass: string interpolation
     /// (`glue("{x}")`, cli markup, custom delimiters). Stored as
     /// `(name, read range)` pairs and resolved in
@@ -64,6 +69,7 @@ impl<'a> SemanticInfo<'a> {
         let mut this = Self {
             index,
             root: root.clone(),
+            synthetic_used_names: HashSet::new(),
             positional_uses: Vec::new(),
             nse_ranges: Vec::new(),
             formula_ranges: Vec::new(),
@@ -91,14 +97,19 @@ impl<'a> SemanticInfo<'a> {
 
     // ── High-level queries ────────────────────────────────────────────
 
-    /// True if a reaching use (local or via a nested closure) consumes this
-    /// definition.
+    /// True if any of the supported "is used" conditions hold for this
+    /// definition: synthetic AST-derived use, or a reaching use (local or via
+    /// a nested closure).
     pub fn is_definition_used(
         &self,
         scope_id: ScopeId,
         def_id: DefinitionId,
-        _def: &Definition,
+        def: &Definition,
     ) -> bool {
+        let symbol_name = self.index.symbols(scope_id).symbol(def.symbol()).name();
+        if self.synthetic_used_names.contains(symbol_name) {
+            return true;
+        }
         if self.reaching_used.contains(&(scope_id, def_id)) {
             return true;
         }
@@ -109,6 +120,10 @@ impl<'a> SemanticInfo<'a> {
 
     pub fn is_in_formula(&self, range: TextRange) -> bool {
         in_any_range(range, &self.formula_ranges)
+    }
+
+    pub fn has_synthetic_use(&self, name: &str) -> bool {
+        self.synthetic_used_names.contains(name)
     }
 
     /// True when `range` sits in a quoted NSE context (`substitute(...)`,
@@ -139,12 +154,48 @@ impl<'a> SemanticInfo<'a> {
                     self.visit_call(&call);
                 }
             }
+            RSyntaxKind::R_DOT_DOT_I => self.collect_dotdot_identifier(node),
+            RSyntaxKind::R_IDENTIFIER => self.collect_dotdot_identifier(node),
             RSyntaxKind::R_BINARY_EXPRESSION => {
                 if let Some(bin) = node.clone().cast::<RBinaryExpression>() {
                     self.visit_binary(&bin);
                 }
             }
+            RSyntaxKind::R_WHILE_STATEMENT
+            | RSyntaxKind::R_FOR_STATEMENT
+            | RSyntaxKind::R_REPEAT_STATEMENT => {
+                self.collect_loop_assignment_names(node);
+            }
             _ => {}
+        }
+    }
+
+    /// Workaround for oak not retroactively connecting loop-body defs to
+    /// loop-condition uses. Coarse but matches the test contract.
+    fn collect_loop_assignment_names(&mut self, loop_node: &RSyntaxNode) {
+        for descendant in loop_node.descendants() {
+            if descendant.kind() != RSyntaxKind::R_BINARY_EXPRESSION {
+                continue;
+            }
+            if let Some(name) = assignment_lhs_name(&descendant) {
+                self.synthetic_used_names.insert(name);
+            }
+        }
+    }
+
+    fn collect_dotdot_identifier(&mut self, node: &RSyntaxNode) {
+        let Some(token) = node.first_token() else {
+            return;
+        };
+        let text = token.text_trimmed();
+        if let Some(stripped) = text.strip_prefix("..")
+            && !stripped.is_empty()
+            && stripped
+                .chars()
+                .next()
+                .is_some_and(|c| c.is_alphabetic() || c == '_' || c == '.')
+        {
+            self.synthetic_used_names.insert(stripped.to_string());
         }
     }
 
@@ -263,6 +314,30 @@ impl<'a> SemanticInfo<'a> {
         // is deliberately not added to `nse_ranges`.
         if op_text == "~" {
             self.formula_ranges.push(bin.syntax().text_trimmed_range());
+            return;
+        }
+
+        // Custom infix operators (`a %op% b`): oak doesn't model the operator
+        // as a use of the `%op%` binding, so an operator whose only reference
+        // is at a call site would look unused. Record the operator name as a
+        // synthetic use. Only user-defined `%...%` bindings can match; R's
+        // built-in operators have no local definition to keep alive.
+        if op_text.starts_with('%') && op_text.ends_with('%') {
+            self.synthetic_used_names.insert(op_text.to_string());
+        }
+
+        // Short-circuit operators: `cond || (x <- 2)` may skip the
+        // assignment entirely, so prior defs of `x` should remain alive.
+        // Oak walks linearly and shadows them. Workaround: any LHS
+        // assigned inside a `||`/`&&` is considered synthetically used.
+        if op_text == "||" || op_text == "&&" || op_text == "|" || op_text == "&" {
+            for descendant in bin.syntax().descendants() {
+                if descendant.kind() == RSyntaxKind::R_BINARY_EXPRESSION
+                    && let Some(name) = assignment_lhs_name(&descendant)
+                {
+                    self.synthetic_used_names.insert(name);
+                }
+            }
         }
     }
 
@@ -297,7 +372,30 @@ impl<'a> SemanticInfo<'a> {
                     self.nse_ranges.push(value.text_trimmed_range());
                 }
             }
+            "do.call" | "match.fun" | "Recall" | "getFunction" => {
+                if let Some((_, first)) = arg_values.first()
+                    && let Some(s) = string_literal_value(first)
+                {
+                    self.synthetic_used_names.insert(s);
+                }
+            }
+            "on.exit" => {
+                if let Some((_, body)) = arg_values.first() {
+                    self.collect_on_exit_uses(body);
+                }
+            }
             _ => {}
+        }
+    }
+
+    fn collect_on_exit_uses(&mut self, body: &RSyntaxNode) {
+        for node in body.descendants() {
+            if node.kind() == RSyntaxKind::R_IDENTIFIER
+                && let Some(token) = node.first_token()
+            {
+                self.synthetic_used_names
+                    .insert(token.text_trimmed().to_string());
+            }
         }
     }
 
@@ -643,6 +741,10 @@ fn argument_name(arg: &RArgument) -> Option<String> {
         AnyRArgumentName::RDots(_) => Some("...".to_string()),
         _ => None,
     }
+}
+
+fn string_literal_value(node: &RSyntaxNode) -> Option<String> {
+    node.clone().cast::<RStringValue>()?.string_text()
 }
 
 
