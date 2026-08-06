@@ -44,7 +44,7 @@ dependencies = [
  "biome_formatter",
  "biome_rowan",
  "comments",
- "itertools",
+ "itertools 0.13.0",
  "line_ending",
  "settings",
  "tracing",
@@ -136,9 +136,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.101"
+version = "1.0.103"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f0e0fee31ef5ed1ba1316088939cea399010ed7731dba877ed44aeb407a75ea"
+checksum = "2a4385e2e34eb35d6b3efe798b9eb88096925d87726c0798709bf56d9ed84af3"
 
 [[package]]
 name = "ar_archive_writer"
@@ -927,6 +927,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b4baf93f58d4425749ca49a51c50ebab072c5df6994d08fed93541c331481dc"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -998,6 +1007,19 @@ dependencies = [
  "tempfile",
  "tracing",
  "workspace",
+]
+
+[[package]]
+name = "jarl-semantic"
+version = "0.5.0"
+dependencies = [
+ "air_r_parser",
+ "air_r_syntax",
+ "biome_rowan",
+ "oak_core",
+ "oak_index_vec",
+ "oak_semantic",
+ "url",
 ]
 
 [[package]]
@@ -1099,6 +1121,60 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "oak_core"
+version = "0.1.0"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#34c9a73b9d2c5b97f258f75a29c05291bb2f6b19"
+dependencies = [
+ "air_r_syntax",
+ "anyhow",
+ "biome_rowan",
+]
+
+[[package]]
+name = "oak_index_vec"
+version = "0.1.0"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#34c9a73b9d2c5b97f258f75a29c05291bb2f6b19"
+dependencies = [
+ "biome_text_size",
+ "oak_core",
+]
+
+[[package]]
+name = "oak_package_metadata"
+version = "0.1.0"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#34c9a73b9d2c5b97f258f75a29c05291bb2f6b19"
+dependencies = [
+ "air_r_parser",
+ "air_r_syntax",
+ "anyhow",
+ "biome_rowan",
+ "oak_core",
+ "regex",
+ "stdext",
+]
+
+[[package]]
+name = "oak_semantic"
+version = "0.1.0"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#34c9a73b9d2c5b97f258f75a29c05291bb2f6b19"
+dependencies = [
+ "air_r_parser",
+ "air_r_syntax",
+ "anyhow",
+ "biome_rowan",
+ "biome_text_size",
+ "itertools 0.15.0",
+ "log",
+ "oak_core",
+ "oak_index_vec",
+ "oak_package_metadata",
+ "rustc-hash",
+ "smallvec",
+ "stdext",
+ "url",
 ]
 
 [[package]]
@@ -1303,9 +1379,9 @@ checksum = "b50b8869d9fc858ce7266cce0194bd74df58b9d0e3f6df3a9fc8eb470d95c09d"
 
 [[package]]
 name = "rustc-hash"
-version = "2.1.1"
+version = "2.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "357703d41365b4b27c590e3ed91eabb1b663f07c4c084095e60cbed4362dff0d"
+checksum = "6b1e7f9a428571be2dc5bc0505c13fb6bf936822b894ec87abf8a08a4e51742d"
 
 [[package]]
 name = "rustix"
@@ -1500,6 +1576,15 @@ dependencies = [
  "libc",
  "psm",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "stdext"
+version = "0.1.0"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#34c9a73b9d2c5b97f258f75a29c05291bb2f6b19"
+dependencies = [
+ "anyhow",
+ "log",
 ]
 
 [[package]]
