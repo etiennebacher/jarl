@@ -82,9 +82,12 @@ fn should_lint_definition(info: &SemanticInfo<'_>, def: &Definition) -> bool {
                 return false;
             }
         }
-        // A call-created binding (`assign("x", …)`, `x %<>% f()`): not linted
-        // yet.
-        DefinitionKind::Assign { .. } => return false,
+        // A call-created binding (`assign("x", 1)`, `x %<>% f()`). A call that
+        // redirects its binding to another environment never reaches here:
+        // oak drops the effect when a target-environment argument is supplied
+        // (`assign`'s `pos`/`envir`, `delayedAssign`'s `assign.env`), so the
+        // name is not recorded as bound in this scope at all.
+        DefinitionKind::Assign { .. } => {}
     }
 
     // `=` inside a formula RHS is named-arg syntax, not assignment.
