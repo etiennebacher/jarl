@@ -25,6 +25,7 @@ biome_formatter.workspace = true
 biome_diagnostics.workspace = true
 
 # Semantic analysis (per-file scopes, definitions, uses, use-def map)
+oak_package_metadata.workspace = true
 oak_semantic.workspace = true
 
 # Per-file semantic info (used by semantic-aware lints)
