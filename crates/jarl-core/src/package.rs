@@ -94,6 +94,10 @@ pub struct PackageAnalysis {
     /// relativized path. The parallel lint pass reuses these instead of
     /// rebuilding each file's index. Empty unless `unused_object` runs.
     pub file_indices: HashMap<PathBuf, Arc<SemanticIndex>>,
+    /// Memo of `source()` target indices populated during the cross-file
+    /// pass and shared with the lint pass (lint-only mode; fix mode uses a
+    /// fresh cache since it rewrites files between iterations).
+    pub source_index_cache: jarl_semantic::SourceIndexCache,
 }
 
 /// The entries of [`PackageAnalysis`] for a single file. Bundled so the
@@ -379,6 +383,7 @@ pub fn make_package_analysis(
         unused_functions,
         cross_file_used: cross_file.used,
         file_indices: cross_file.indices,
+        source_index_cache: cross_file.source_index_cache,
     }
 }
 

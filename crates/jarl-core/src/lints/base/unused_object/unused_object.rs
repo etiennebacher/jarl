@@ -36,7 +36,13 @@ pub fn unused_object(
         return Ok(());
     };
     let root = first.ancestors().last().unwrap_or_else(|| first.clone());
-    let info = SemanticInfo::build(&root, expressions, semantic, &checker.file_path);
+    let info = SemanticInfo::build(
+        &root,
+        expressions,
+        semantic,
+        &checker.file_path,
+        &checker.source_index_cache,
+    );
     let exports = &checker.namespace_exports;
 
     let mut diagnostics = Vec::new();

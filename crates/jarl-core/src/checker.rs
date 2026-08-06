@@ -78,6 +78,11 @@ pub struct Checker {
     // paths relative to the current file (e.g. `unused_object` resolving
     // `source("...")` arguments).
     pub file_path: std::path::PathBuf,
+    // Run-wide memo of `source()` target indices, so a helper sourced by
+    // many files is parsed and indexed once per run rather than once per
+    // consumer. Fresh (empty) when the on-disk contents may drift from the
+    // run's caches (fix mode, LSP buffers).
+    pub source_index_cache: jarl_semantic::SourceIndexCache,
 }
 
 impl Checker {
@@ -96,6 +101,7 @@ impl Checker {
             import_from: HashMap::new(),
             namespace_exports: HashSet::new(),
             file_path: std::path::PathBuf::new(),
+            source_index_cache: jarl_semantic::SourceIndexCache::new(),
         }
     }
 

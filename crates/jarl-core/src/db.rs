@@ -72,6 +72,10 @@ pub struct CrossFileAnalysis {
     /// Per-file (relativized path) semantic index, built once here and shared
     /// with the parallel lint pass so it isn't rebuilt.
     pub indices: HashMap<PathBuf, Arc<SemanticIndex>>,
+    /// Memo of `source()` target indices populated by the resolvers above,
+    /// seeded with each file's own (untruncated) index, and shared with the
+    /// lint pass.
+    pub source_index_cache: jarl_semantic::SourceIndexCache,
 }
 
 impl AnalysisDb {
@@ -211,6 +215,7 @@ impl AnalysisDb {
         // throwaway work. Reading from disk here (rather than via the db's
         // `source_text`) is what lets the read run in parallel; in the one-shot
         // CLI the disk is the source of truth, so the two are equivalent.
+        let source_index_cache = jarl_semantic::SourceIndexCache::new();
         let built: Vec<(Arc<SemanticIndex>, FileUses)> = paths
             .par_iter()
             .filter_map(|(path, in_package)| {
@@ -221,12 +226,24 @@ impl AnalysisDb {
                 }
                 let index = oak_semantic::build_index(
                     &parsed.tree(),
-                    jarl_semantic::JarlImportsResolver::new(path.clone()),
+                    jarl_semantic::JarlImportsResolver::with_cache(
+                        path.clone(),
+                        source_index_cache.clone(),
+                    ),
                 );
                 let uses = collect_file_uses(path.clone(), &index, *in_package);
                 Some((Arc::new(index), uses))
             })
             .collect();
+
+        // Seed the memo with each file's own index. These are the untruncated
+        // builds, so they overwrite any cycle-truncated sub-build a resolver
+        // chain may have cached for the same file, and the lint pass resolves
+        // `source()` targets without re-indexing them.
+        for (index, file) in &built {
+            let key = std::path::absolute(&file.path).unwrap_or_else(|_| file.path.clone());
+            source_index_cache.insert(key, Arc::clone(index));
+        }
 
         // Only a name defined at top level somewhere in the package can be the
         // target of a cross-file read, so we ignore free uses of locals,
@@ -299,7 +316,7 @@ impl AnalysisDb {
             .iter()
             .map(|(index, file)| (file.path.clone(), Arc::clone(index)))
             .collect();
-        CrossFileAnalysis { used, indices }
+        CrossFileAnalysis { used, indices, source_index_cache }
     }
 }
 
