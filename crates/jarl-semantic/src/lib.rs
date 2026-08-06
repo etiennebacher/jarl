@@ -106,6 +106,12 @@ pub struct SemanticInfo<'a> {
     /// are modeled by oak itself (their quoted arguments produce no uses or
     /// definitions in the index), so they don't need ranges here.
     nse_ranges: Vec<TextRange>,
+    /// Packages this file can reach: attached with `library()`/`require()`,
+    /// listed in DESCRIPTION when linting package code, or named in a
+    /// `pkg::fn()` call. Package-specific idioms (`{x}` interpolation,
+    /// data.table's `..name`) are only honoured when their package is here,
+    /// so a file that never mentions cli doesn't get cli's markup rules.
+    available_packages: HashSet<String>,
     /// Ranges of formula RHSes (`~ rhs`).
     formula_ranges: Vec<TextRange>,
     /// Definitions reached by some non-NSE use anywhere in the file. Computed
@@ -124,7 +130,18 @@ impl<'a> SemanticInfo<'a> {
         index: &'a SemanticIndex,
         file: &'a std::path::Path,
         source_cache: &SourceIndexCache,
+        loaded_packages: &[String],
     ) -> Self {
+        // `pkg::fn()` reaches a package without attaching it, so namespaced
+        // accesses count alongside what the caller resolved from
+        // `library()` calls and DESCRIPTION.
+        let mut available_packages: HashSet<String> = loaded_packages.iter().cloned().collect();
+        available_packages.extend(
+            index
+                .namespace_accesses()
+                .iter()
+                .map(|access| access.package().to_string()),
+        );
         let mut this = Self {
             index,
             root: root.clone(),
@@ -133,6 +150,7 @@ impl<'a> SemanticInfo<'a> {
             synthetic_used_names: HashSet::new(),
             positional_uses: Vec::new(),
             nse_ranges: Vec::new(),
+            available_packages,
             formula_ranges: Vec::new(),
             reaching_used: HashSet::new(),
         };
@@ -185,6 +203,19 @@ impl<'a> SemanticInfo<'a> {
 
     pub fn has_synthetic_use(&self, name: &str) -> bool {
         self.synthetic_used_names.contains(name)
+    }
+
+    /// Whether `package` is reachable from this file, and so whether its
+    /// idioms should be recognised here.
+    pub fn package_available(&self, package: &str) -> bool {
+        self.available_packages.contains(package)
+    }
+
+    /// Whether any package that interpolates `{...}` in strings is reachable.
+    fn has_interpolation_package(&self) -> bool {
+        INTERPOLATION_PACKAGES
+            .iter()
+            .any(|package| self.package_available(package))
     }
 
     /// True when `range` sits in a quoted NSE context (`expression(...)`,
@@ -245,6 +276,12 @@ impl<'a> SemanticInfo<'a> {
     }
 
     fn collect_dotdot_identifier(&mut self, node: &RSyntaxNode) {
+        // `dt[, ..cols]` is data.table's "resolve this name in the calling
+        // frame" prefix. Anywhere else `..cols` is just an identifier, and
+        // reading it says nothing about a binding named `cols`.
+        if !self.package_available("data.table") {
+            return;
+        }
         let Some(token) = node.first_token() else {
             return;
         };
@@ -268,7 +305,7 @@ impl<'a> SemanticInfo<'a> {
         // cli's inline markup (`{.field {x}}`) interleaves styling with
         // interpolation, so strings inside a cli call need a markup-aware scan
         // rather than the plain glue scan.
-        if node_in_cli_markup_call(node) {
+        if self.package_available("cli") && node_in_cli_markup_call(node) {
             if let Some(content) = strings::get_string_literal_contents(&text) {
                 self.collect_cli_interpolation(&content, read_range);
             }
@@ -277,7 +314,12 @@ impl<'a> SemanticInfo<'a> {
         // Scanned with the default glue delimiters regardless of the wrapping
         // call: any `{x}` in any string keeps `x` alive. Calls that override
         // the delimiters via `.open`/`.close` are handled separately in
-        // `collect_custom_glue_interpolation`.
+        // `collect_custom_glue_interpolation`. Braces only mean interpolation
+        // when a package that interpolates them is in reach; elsewhere `"{x}"`
+        // is literal text.
+        if !self.has_interpolation_package() {
+            return;
+        }
         for segment in scan_interpolation_segments(&text, "{", "}") {
             self.collect_identifiers_in_interpolation(segment, read_range);
         }
@@ -311,6 +353,9 @@ impl<'a> SemanticInfo<'a> {
     /// custom delimiter like `(`/`)` would otherwise collide with the
     /// `r"(...)"` raw-string wrapper.
     fn collect_custom_glue_interpolation(&mut self, args: &[(Option<String>, RSyntaxNode)]) {
+        if !self.has_interpolation_package() {
+            return;
+        }
         let open = named_string_arg(args, ".open");
         let close = named_string_arg(args, ".close");
         // Nothing to do unless a delimiter is actually customised; the default
@@ -1089,6 +1134,13 @@ impl JarlImportsResolver {
 /// binding; S7 users still get it through an explicit `library(S7)` entering
 /// the attached set.
 const DEFAULT_EFFECT_PACKAGES: &[&str] = &["magrittr", "rlang", "testthat", "shiny", "base"];
+
+/// Packages whose functions interpolate `{...}` inside string literals:
+/// glue (`glue()`, `glue_sql()`), cli (`cli_abort()` and friends) and
+/// stringr (`str_glue()`). Unlike [`DEFAULT_EFFECT_PACKAGES`], reaching one of
+/// these is *not* assumed — a file that never mentions them gets no
+/// interpolation scan, so `"{x}"` there is literal text.
+const INTERPOLATION_PACKAGES: &[&str] = &["glue", "cli", "stringr"];
 
 impl oak_semantic::ImportsResolver for JarlImportsResolver {
     fn resolve_effects(
