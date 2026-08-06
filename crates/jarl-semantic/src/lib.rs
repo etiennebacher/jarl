@@ -45,7 +45,9 @@ use oak_semantic::semantic_index::{Definition, DefinitionKind, ScopeId, Semantic
 #[derive(Clone, Default)]
 pub struct SourceIndexCache {
     inner: std::sync::Arc<
-        std::sync::Mutex<std::collections::HashMap<std::path::PathBuf, std::sync::Arc<SemanticIndex>>>,
+        std::sync::Mutex<
+            std::collections::HashMap<std::path::PathBuf, std::sync::Arc<SemanticIndex>>,
+        >,
     >,
 }
 
@@ -88,9 +90,8 @@ pub struct SemanticInfo<'a> {
     /// Shared memo of `source()` target indices for this run.
     source_cache: SourceIndexCache,
     /// Names that have a synthetic use from AST passes (`do.call("f", …)`,
-    /// `..cols`, `on.exit` bodies, loop/short-circuit assignment LHSes,
-    /// custom infix operators). A definition whose symbol name is in this set
-    /// is treated as used.
+    /// `..cols`, loop/short-circuit assignment LHSes, custom infix operators).
+    /// A definition whose symbol name is in this set is treated as used.
     synthetic_used_names: HashSet<String>,
     /// Position-aware reads collected by the AST pass: string interpolation
     /// (`glue("{x}")`, cli markup, custom delimiters). Stored as
@@ -439,11 +440,6 @@ impl<'a> SemanticInfo<'a> {
                     self.synthetic_used_names.insert(s);
                 }
             }
-            "on.exit" => {
-                if let Some((_, body)) = arg_values.first() {
-                    self.collect_on_exit_uses(body);
-                }
-            }
             "source" => {
                 if let Some((_, first)) = arg_values.first()
                     && let Some(path) = string_literal_value(first)
@@ -506,17 +502,6 @@ impl<'a> SemanticInfo<'a> {
                     self.synthetic_used_names
                         .insert(symbols.symbol(use_site.symbol()).name().to_string());
                 }
-            }
-        }
-    }
-
-    fn collect_on_exit_uses(&mut self, body: &RSyntaxNode) {
-        for node in body.descendants() {
-            if node.kind() == RSyntaxKind::R_IDENTIFIER
-                && let Some(token) = node.first_token()
-            {
-                self.synthetic_used_names
-                    .insert(token.text_trimmed().to_string());
             }
         }
     }
@@ -869,7 +854,6 @@ fn string_literal_value(node: &RSyntaxNode) -> Option<String> {
     node.clone().cast::<RStringValue>()?.string_text()
 }
 
-
 /// True if the value assigned by this binary assignment is a function
 /// definition, following chained assignments (`x <- y <- function() {}`) down
 /// to the innermost value so every name in the chain is treated as a function
@@ -1043,7 +1027,10 @@ impl JarlImportsResolver {
 
     /// Resolver sharing `cache` with the rest of the run, so a helper sourced
     /// by many files is parsed and indexed once.
-    pub fn with_cache(current_file: impl Into<std::path::PathBuf>, cache: SourceIndexCache) -> Self {
+    pub fn with_cache(
+        current_file: impl Into<std::path::PathBuf>,
+        cache: SourceIndexCache,
+    ) -> Self {
         let current_file = current_file.into();
         let mut visited = HashSet::new();
         visited.insert(absolutize_path(&current_file));
@@ -1115,8 +1102,7 @@ impl oak_semantic::ImportsResolver for JarlImportsResolver {
                 };
                 let index =
                     std::sync::Arc::new(oak_semantic::build_index(&parsed.tree(), sub_resolver));
-                self.cache
-                    .insert(target_key, std::sync::Arc::clone(&index));
+                self.cache.insert(target_key, std::sync::Arc::clone(&index));
                 index
             }
         };
