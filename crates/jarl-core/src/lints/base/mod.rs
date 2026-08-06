@@ -30,6 +30,7 @@ pub(crate) mod length_levels;
 pub(crate) mod length_test;
 pub(crate) mod lengths;
 pub(crate) mod list2df;
+pub(crate) mod list_comparison;
 pub(crate) mod literal_coercion;
 pub(crate) mod matrix_apply;
 pub(crate) mod missing_argument;

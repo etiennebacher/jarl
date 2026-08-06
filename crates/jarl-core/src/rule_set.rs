@@ -468,6 +468,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: Some((4, 0, 0)),
     },
+    ListComparison => {
+        name: "list_comparison",
+        categories: [Susp],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     LiteralCoercion => {
         name: "literal_coercion",
         categories: [Read],
