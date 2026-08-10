@@ -320,7 +320,6 @@ fn argument_name(arg: &RArgument) -> Option<String> {
     }
 }
 
-
 /// True if the value assigned by this binary assignment is a function
 /// definition, following chained assignments (`x <- y <- function() {}`) down
 /// to the innermost value so every name in the chain is treated as a function
