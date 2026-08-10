@@ -43,8 +43,15 @@ tracing = "0.1.41"
 [profile.release]
 lto = true
 
-# The profile that 'dist' will build with
+# The profile that 'dist' will build with. Tuned for binary size.
 [profile.dist]
+inherits = "release"
+lto = true
+codegen-units = 1
+opt-level = "s"
+strip = "symbols"
+
+[profile.benchmark]
 inherits = "release"
 lto = "thin"
 

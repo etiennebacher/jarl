@@ -90,24 +90,22 @@ jobs:
         run: |
           R -e "install.packages(c('data.table', 'jsonlite', 'pandoc', 'tinytable'))"
 
-      # Use the profile that "dist" ships so that the timings below reflect the
-      # binary that users actually run.
       - name: Build jarl binary from PR
-        run: cargo build --profile dist --package jarl
+        run: cargo build --profile benchmark --package jarl
 
       - name: Save PR binary path
         run: |
-          cp target/dist/jarl target/dist/jarl-pr
-          echo "PR_JARL=$(pwd)/target/dist/jarl-pr" >> $GITHUB_ENV
+          cp target/benchmark/jarl target/benchmark/jarl-pr
+          echo "PR_JARL=$(pwd)/target/benchmark/jarl-pr" >> $GITHUB_ENV
 
       - name: Build jarl binary from base branch
         run: |
           git fetch origin $BASE_REF
           git checkout origin/$BASE_REF
-          cargo build --profile dist --package jarl
+          cargo build --profile benchmark --package jarl
 
       - name: Save base binary path
-        run: echo "BASE_JARL=$(pwd)/target/dist/jarl" >> $GITHUB_ENV
+        run: echo "BASE_JARL=$(pwd)/target/benchmark/jarl" >> $GITHUB_ENV
         
       - name: Clone all test repos
         run: |
