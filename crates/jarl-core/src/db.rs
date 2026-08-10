@@ -26,7 +26,7 @@ use std::sync::Arc;
 
 use aether_path::FilePath;
 use air_r_parser::RParserOptions;
-use oak_db::{Db, File, OakDatabase, Package, workspace_files};
+use oak_db::{Db, File, ImportLayer, OakDatabase, Package, workspace_files};
 use oak_scan::ScanScheduler;
 use oak_semantic::semantic_index::{DefinitionKind, SemanticIndex};
 use rayon::prelude::*;
@@ -52,8 +52,8 @@ pub struct AnalysisDb {
 }
 
 /// One file's contribution to cross-file resolution: the names it binds at
-/// top level, the names it reads *freely* — without binding them anywhere
-/// in the file, so they reference the package namespace — and the
+/// top level, the names it reads *freely* — without definitely binding them
+/// anywhere in the file, so they may reference another file — and the
 /// `source()` bindings it consumes (a read reaching a
 /// [`DefinitionKind::Import`] uses the target file's top-level binding).
 struct FileUses {
@@ -63,6 +63,49 @@ struct FileUses {
     /// `(target file, name)` per `Import`-kind definition reached by a use:
     /// this file reads `name` out of `target file` via `source()`.
     import_uses: HashSet<(PathBuf, String)>,
+}
+
+/// Which files a given file can read top-level bindings from.
+///
+/// Free-use name matching is only sound between files that share an
+/// environment; matching across unrelated scripts would count them as readers
+/// of each other. Two sources of visibility, unioned:
+///
+/// - **Same package.** A package's R files share one namespace, so each sees
+///   every sibling's top-level bindings whatever the load order. This also
+///   covers files a loader doesn't collate (`data-raw/`, `inst/`, `R/` files
+///   left out of `Collate:`), which oak treats as standalone but which still
+///   read the namespace they sit in.
+/// - **Oak's load context**, via [`File::imports`]: collation siblings of a
+///   non-package `R/` directory, a shiny app's support files, and files that
+///   `source()` this one. This is what extends matching beyond packages.
+///
+/// A flat directory of unrelated scripts yields neither, so its files stay
+/// invisible to each other — R gives no reason to believe they share an
+/// environment.
+#[derive(Default)]
+struct Visibility {
+    /// Package root per file, for files belonging to one.
+    package_of: HashMap<PathBuf, PathBuf>,
+    /// Extra readable files, for files belonging to no package. Package files
+    /// are already covered by `package_of`, and skipping them keeps this map
+    /// from growing quadratically with package size.
+    imports: HashMap<PathBuf, HashSet<PathBuf>>,
+}
+
+impl Visibility {
+    /// Whether `reader` can read top-level bindings defined in `definer`.
+    fn sees(&self, reader: &Path, definer: &Path) -> bool {
+        if let (Some(reader_pkg), Some(definer_pkg)) =
+            (self.package_of.get(reader), self.package_of.get(definer))
+            && reader_pkg == definer_pkg
+        {
+            return true;
+        }
+        self.imports
+            .get(reader)
+            .is_some_and(|files| files.contains(definer))
+    }
 }
 
 /// Result of the package-wide cross-file pass.
@@ -158,24 +201,26 @@ impl AnalysisDb {
     }
 
     /// For each analyzed file, the set of its top-level object names that are
-    /// read from *another* file — through the package namespace or through a
+    /// read from *another* file — through a shared environment or through a
     /// `source()` edge.
     ///
-    /// A package's R files share one namespace, so a top-level binding defined
-    /// in one file and read in another is used even when its own file never
-    /// reads it. For every file we collect, from its per-file index, the names
-    /// it defines at top level and the names it reads *freely* — uses the file
-    /// doesn't definitely bind, which therefore may reference the package
-    /// namespace (this is the same `use_is_bound()` test oak's `resolve_at`
-    /// uses to decide local-vs-cross-file). A top-level definition is
-    /// cross-file-used when another file reads its name freely.
+    /// Files that share an environment — a package's namespace, a collated
+    /// `R/` directory, a shiny app's support files — see each other's
+    /// top-level bindings, so a binding defined in one and read in another is
+    /// used even when its own file never reads it. For every file we collect,
+    /// from its per-file index, the names it defines at top level and the
+    /// names it reads *freely* — uses the file doesn't definitely bind, which
+    /// therefore may reference another file (this is the same
+    /// `use_is_bound()` test oak's `resolve_at` uses to decide
+    /// local-vs-cross-file). A top-level definition is cross-file-used when a
+    /// file that can see it reads its name freely; [`Visibility`] decides
+    /// which pairs qualify.
     ///
-    /// `script_paths` are the linted R files living outside any package. They
-    /// don't share a namespace with anything, so they skip the free-use
-    /// matching above and participate only through the `source()` edges below:
-    /// a read reaching a `DefinitionKind::Import` marks the *target* file's
-    /// binding used, chasing forwards when the target itself sources the real
-    /// definer.
+    /// `script_paths` are the linted R files outside every scanned root. They
+    /// have no database entry and so no visibility, and participate only
+    /// through the `source()` edges below: a read reaching a
+    /// `DefinitionKind::Import` marks the *target* file's binding used,
+    /// chasing forwards when the target itself sources the real definer.
     ///
     /// This avoids per-use `File::resolve_at`, which has to run on a single
     /// thread because the salsa db is `!Sync`. The index work here is db-free
@@ -191,28 +236,50 @@ impl AnalysisDb {
     pub fn cross_file_used_objects(&self, script_paths: &[PathBuf]) -> CrossFileAnalysis {
         let db = self.db();
 
-        // Collect just the paths up front. `path()` is a salsa query that needs
-        // the (`!Sync`) db, but it touches no disk, so this sequential loop is
-        // cheap. Reading the file contents — the part that scales with file
-        // count — is deferred to the parallel pass below. Package files take
-        // part in namespace-based matching; loose scripts (outside every
-        // scanned root) are appended as source-edge-only participants.
-        let mut paths: Vec<(PathBuf, bool)> = workspace_files(db)
-            .iter()
-            .filter_map(|&file| {
-                let path = file
-                    .path(db)
-                    .as_path()
-                    .map(|p| p.as_std_path().to_path_buf())?;
-                Some((PathBuf::from(crate::fs::relativize_path(&path)), true))
-            })
-            .collect();
-        let scanned: HashSet<&PathBuf> = paths.iter().map(|(path, _)| path).collect();
-        let scripts: Vec<(PathBuf, bool)> = script_paths
+        // Collect the paths and the visibility relation up front. Both need
+        // the (`!Sync`) db but touch no disk, so this sequential loop is cheap.
+        // Reading the file contents — the part that scales with file count —
+        // is deferred to the parallel pass below. Loose scripts (outside every
+        // scanned root) have no `File`, so they get no visibility entry and
+        // participate through `source()` edges alone.
+        let mut visibility = Visibility::default();
+        let mut paths: Vec<PathBuf> = Vec::new();
+        for &file in workspace_files(db) {
+            let Some(path) = relative_file_path(db, file) else {
+                continue;
+            };
+            match file.package(db) {
+                Some(package) => {
+                    if let Some(root) = package_root_path(db, package) {
+                        visibility.package_of.insert(path.clone(), root);
+                    }
+                }
+                // Only files outside a package need the load-context lookup;
+                // package siblings already see each other via `package_of`.
+                None => {
+                    let visible: HashSet<PathBuf> = file
+                        .imports(db)
+                        .iter()
+                        .filter_map(|layer| match layer {
+                            ImportLayer::File(f) => relative_file_path(db, *f),
+                            ImportLayer::SourcingFile { file, .. } => relative_file_path(db, *file),
+                            // Package layers resolve names through a namespace,
+                            // not through another analyzed file.
+                            _ => None,
+                        })
+                        .collect();
+                    if !visible.is_empty() {
+                        visibility.imports.insert(path.clone(), visible);
+                    }
+                }
+            }
+            paths.push(path);
+        }
+        let scanned: HashSet<&PathBuf> = paths.iter().collect();
+        let scripts: Vec<PathBuf> = script_paths
             .iter()
             .map(|path| PathBuf::from(crate::fs::relativize_path(path)))
             .filter(|path| !scanned.contains(path))
-            .map(|path| (path, false))
             .collect();
         paths.extend(scripts);
 
@@ -226,7 +293,7 @@ impl AnalysisDb {
         let source_index_cache = jarl_semantic::SourceIndexCache::new();
         let built: Vec<(Arc<SemanticIndex>, FileUses)> = paths
             .par_iter()
-            .filter_map(|(path, in_package)| {
+            .filter_map(|path| {
                 let source = std::fs::read_to_string(path).ok()?;
                 let parsed = air_r_parser::parse(&source, RParserOptions::default());
                 if parsed.has_error() {
@@ -239,7 +306,7 @@ impl AnalysisDb {
                         source_index_cache.clone(),
                     ),
                 );
-                let uses = collect_file_uses(path.clone(), &index, *in_package);
+                let uses = collect_file_uses(path.clone(), &index);
                 Some((Arc::new(index), uses))
             })
             .collect();
@@ -253,35 +320,35 @@ impl AnalysisDb {
             source_index_cache.insert(key, Arc::clone(index));
         }
 
-        // Only a name defined at top level somewhere in the package can be the
-        // target of a cross-file read, so we ignore free uses of locals,
-        // library symbols, and base functions.
-        let candidates: HashSet<&str> = built
-            .iter()
-            .flat_map(|(_, file)| file.top_defs.iter().map(String::as_str))
-            .collect();
-
-        // For each candidate name, the files that read it freely.
-        let mut readers_of: HashMap<&str, Vec<&PathBuf>> = HashMap::new();
+        // Only a name defined at top level somewhere can be the target of a
+        // cross-file read, so indexing by definer drops free uses of locals,
+        // library symbols and base functions on lookup. A name usually has a
+        // single definer, which keeps the match below linear in the free uses
+        // rather than quadratic in the file count.
+        let mut definers_of: HashMap<&str, Vec<&PathBuf>> = HashMap::new();
         for (_, file) in &built {
-            for name in &file.free_uses {
-                if candidates.contains(name.as_str()) {
-                    readers_of.entry(name).or_default().push(&file.path);
-                }
+            for name in &file.top_defs {
+                definers_of
+                    .entry(name.as_str())
+                    .or_default()
+                    .push(&file.path);
             }
         }
 
-        // A top-level definition is used when some *other* file reads its name.
+        // A top-level definition is used when some *other* file that can see
+        // it reads its name freely.
         let mut used: HashMap<PathBuf, HashSet<String>> = HashMap::new();
-        for (_, file) in &built {
-            for name in &file.top_defs {
-                let Some(readers) = readers_of.get(name.as_str()) else {
+        for (_, reader) in &built {
+            for name in &reader.free_uses {
+                let Some(definers) = definers_of.get(name.as_str()) else {
                     continue;
                 };
-                if readers.iter().any(|reader| **reader != file.path) {
-                    used.entry(file.path.clone())
-                        .or_default()
-                        .insert(name.clone());
+                for definer in definers {
+                    if **definer != reader.path && visibility.sees(&reader.path, definer) {
+                        used.entry((*definer).clone())
+                            .or_default()
+                            .insert(name.clone());
+                    }
                 }
             }
         }
@@ -346,19 +413,15 @@ impl AnalysisDb {
 /// `source()` injected from another file, so it's recorded as an import use
 /// of `(target file, name)`.
 ///
-/// `in_package` gates the namespace-based side (`top_defs` / `free_uses`):
-/// loose scripts share no namespace, so name matching would count unrelated
-/// scripts as readers of each other. They contribute import uses only.
-fn collect_file_uses(path: PathBuf, index: &SemanticIndex, in_package: bool) -> FileUses {
-    let top_defs: Vec<String> = if in_package {
-        index
-            .exports()
-            .keys()
-            .map(|name| name.to_string())
-            .collect()
-    } else {
-        Vec::new()
-    };
+/// Every file reports both sides unconditionally; which pairs may be matched
+/// against each other is [`Visibility`]'s job. A file no one can see simply
+/// never matches, and contributes through its import uses alone.
+fn collect_file_uses(path: PathBuf, index: &SemanticIndex) -> FileUses {
+    let top_defs: Vec<String> = index
+        .exports()
+        .keys()
+        .map(|name| name.to_string())
+        .collect();
 
     let mut free_uses: HashSet<String> = HashSet::new();
     let mut import_uses: HashSet<(PathBuf, String)> = HashSet::new();
@@ -375,7 +438,7 @@ fn collect_file_uses(path: PathBuf, index: &SemanticIndex, in_package: bool) -> 
                 };
                 import_uses.insert((target, name.clone()));
             }
-            if in_package && !index.use_is_bound(scope, use_id) {
+            if !index.use_is_bound(scope, use_id) {
                 free_uses.insert(symbols.symbol(use_site.symbol()).name().to_string());
             }
         }
@@ -391,6 +454,24 @@ fn collect_file_uses(path: PathBuf, index: &SemanticIndex, in_package: bool) -> 
 fn import_target_path(url: &url::Url) -> Option<PathBuf> {
     let path = url.to_file_path().ok()?;
     Some(PathBuf::from(crate::fs::relativize_path(path)))
+}
+
+/// The relativized path of a database [`File`], in the form that keys
+/// [`CrossFileAnalysis`]'s maps. `None` when the file's URL has no filesystem
+/// path (e.g. a virtual document).
+fn relative_file_path(db: &dyn Db, file: File) -> Option<PathBuf> {
+    let path = file.path(db).as_path()?.as_std_path().to_path_buf();
+    Some(PathBuf::from(crate::fs::relativize_path(&path)))
+}
+
+/// The root directory of a [`Package`], i.e. the directory holding its
+/// `DESCRIPTION`.
+fn package_root_path(db: &dyn Db, package: Package) -> Option<PathBuf> {
+    package
+        .description_path(db)
+        .as_path()
+        .and_then(|path| path.parent())
+        .map(|dir| dir.as_std_path().to_path_buf())
 }
 
 /// Resolve a list of database [`File`]s to their filesystem paths, dropping
