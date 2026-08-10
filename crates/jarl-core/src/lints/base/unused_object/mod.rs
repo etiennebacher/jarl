@@ -988,26 +988,27 @@ for (i in 1:2) {
     }
 
     #[test]
-    fn test_no_lint_string_interpolation() {
-        expect_no_lint("x <- 1\nmessage(\"value is {x}\")", "unused_object", None);
-    }
-
-    #[test]
-    fn test_no_lint_string_interpolation_expression() {
-        expect_no_lint(
-            "n <- 10\nmessage(\"{n} items found\")",
-            "unused_object",
-            None,
+    fn test_lint_braces_outside_interpolating_call() {
+        // Only glue, stringr and cli functions interpolate `{...}`; elsewhere
+        // the braces are literal text and don't read `x`.
+        assert_snapshot!(
+            snapshot_lint("x <- 1\nmessage(\"value is {x}\")"),
+            @r#"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "#
         );
     }
 
     #[test]
-    fn test_no_lint_string_interpolation_nested_call() {
+    fn test_no_lint_glue_interpolation() {
+        expect_no_lint("x <- 1\nglue(\"this is {x}\")", "unused_object", None);
         expect_no_lint("x <- 1\nglue::glue(\"{mean(x)}\")", "unused_object", None);
-    }
-
-    #[test]
-    fn test_no_lint_string_interpolation_dollar_access() {
         // `x` is referenced (used); `a` is a field name, not a binding.
         expect_no_lint(
             "x <- list(a = 1)\nglue::glue(\"{x$a}\")",
@@ -1017,8 +1018,16 @@ for (i in 1:2) {
     }
 
     #[test]
-    fn test_no_lint_glue_basic() {
-        expect_no_lint("x <- 1\nglue(\"this is {x}\")", "unused_object", None);
+    fn test_no_lint_glue_family_functions() {
+        expect_no_lint("x <- 1\nglue_data(d, \"{x}\")", "unused_object", None);
+        expect_no_lint(
+            "col <- 1\nglue_sql(\"SELECT {col}\", .con = con)",
+            "unused_object",
+            None,
+        );
+        // stringr's glue wrappers.
+        expect_no_lint("x <- 1\nstr_glue(\"{x}\")", "unused_object", None);
+        expect_no_lint("x <- 1\nstr_interp(\"${x}\")", "unused_object", None);
     }
 
     #[test]
@@ -1028,48 +1037,22 @@ for (i in 1:2) {
             "unused_object",
             None,
         );
-    }
-
-    #[test]
-    fn test_no_lint_glue_custom_multichar_delimiters() {
         expect_no_lint(
             "x <- 1\nglue(\"<<x>>\", .open = \"<<\", .close = \">>\")",
             "unused_object",
             None,
         );
-    }
-
-    #[test]
-    fn test_no_lint_glue_custom_delimiters_raw_string() {
+        // Delimiters that would collide with the raw-string wrapper if the
+        // scan ran on the token text rather than the string contents.
         expect_no_lint(
             "x <- 1\nglue(r\"([x])\", .open = \"[\", .close = \"]\")",
             "unused_object",
             None,
         );
-    }
-
-    #[test]
-    fn test_no_lint_str_glue_default_delimiters() {
-        expect_no_lint("x <- 1\nstr_glue(\"{x}\")", "unused_object", None);
-    }
-
-    #[test]
-    fn test_no_lint_glue_sql_default_delimiters() {
-        expect_no_lint(
-            "col <- 1\nglue_sql(\"SELECT {col}\", .con = con)",
-            "unused_object",
-            None,
-        );
-    }
-
-    #[test]
-    fn test_no_lint_glue_same_char_delimiters() {
         // `.open` and `.close` are the same character, so nesting is
         // impossible and the closing `|` must not be read as another opener.
         expect_no_lint(
-            "
-x <- 1
-glue(\"|x|\", .open = \"|\", .close = \"|\")",
+            "x <- 1\nglue(\"|x|\", .open = \"|\", .close = \"|\")",
             "unused_object",
             None,
         );

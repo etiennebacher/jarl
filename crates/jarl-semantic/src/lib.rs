@@ -149,25 +149,31 @@ impl<'a> SemanticInfo<'a> {
     }
 
     fn collect_string_interpolation(&mut self, node: &RSyntaxNode) {
-        let text = node.text_trimmed().to_string();
+        // Only strings passed to an interpolating call are code: `{x}` in
+        // `message("{x}")` is literal text and reads nothing.
+        let Some(flavor) = interpolation_flavor(node) else {
+            return;
+        };
+        let Some(content) = strings::get_string_literal_contents(&node.text_trimmed().to_string())
+        else {
+            return;
+        };
         // The read happens where the string sits, so identifiers inside it
         // resolve against the definitions live at this position.
         let read_range = node.text_trimmed_range();
-        // cli's inline markup (`{.field {x}}`) interleaves styling with
-        // interpolation, so strings inside a cli call need a markup-aware scan
-        // rather than the plain glue scan.
-        if node_in_cli_markup_call(node) {
-            if let Some(content) = strings::get_string_literal_contents(&text) {
-                self.collect_cli_interpolation(&content, read_range);
+        match flavor {
+            // cli's inline markup (`{.field {x}}`) interleaves styling with
+            // interpolation, so cli strings need a markup-aware scan rather
+            // than the plain glue scan.
+            InterpolationFlavor::CliMarkup => self.collect_cli_interpolation(&content, read_range),
+            // Scanned with the default glue delimiters; calls that override
+            // them via `.open`/`.close` are handled separately in
+            // `collect_custom_glue_interpolation`.
+            InterpolationFlavor::Glue => {
+                for segment in scan_interpolation_segments(&content, "{", "}") {
+                    self.collect_identifiers_in_interpolation(segment, read_range);
+                }
             }
-            return;
-        }
-        // Scanned with the default glue delimiters regardless of the wrapping
-        // call: any `{x}` in any string keeps `x` alive. Calls that override
-        // the delimiters via `.open`/`.close` are handled separately in
-        // `collect_custom_glue_interpolation`.
-        for segment in scan_interpolation_segments(&text, "{", "}") {
-            self.collect_identifiers_in_interpolation(segment, read_range);
         }
     }
 
@@ -198,7 +204,14 @@ impl<'a> SemanticInfo<'a> {
     /// Operates on the *unquoted* string contents, not the raw token text: a
     /// custom delimiter like `(`/`)` would otherwise collide with the
     /// `r"(...)"` raw-string wrapper.
-    fn collect_custom_glue_interpolation(&mut self, args: &[(Option<String>, RSyntaxNode)]) {
+    fn collect_custom_glue_interpolation(
+        &mut self,
+        call_name: &str,
+        args: &[(Option<String>, RSyntaxNode)],
+    ) {
+        if !is_glue_interpolating_function(call_name) {
+            return;
+        }
         let open = named_string_arg(args, ".open");
         let close = named_string_arg(args, ".close");
         // Nothing to do unless a delimiter is actually customised; the default
@@ -273,7 +286,7 @@ impl<'a> SemanticInfo<'a> {
 
         let arg_values: Vec<(Option<String>, RSyntaxNode)> = call_args(call);
 
-        self.collect_custom_glue_interpolation(&arg_values);
+        self.collect_custom_glue_interpolation(&name, &arg_values);
 
         match name.as_str() {
             // Quoting calls oak's effects registry doesn't cover. (`quote` and
@@ -504,17 +517,55 @@ fn named_string_arg(args: &[(Option<String>, RSyntaxNode)], name: &str) -> Optio
     strings::get_string_literal_contents(&value.text_trimmed().to_string())
 }
 
-/// True if `node` sits inside a cli call that glue-interpolates its arguments
-/// with inline markup support. Walks all ancestors (not just the immediate
-/// call) so message strings nested in a `c(...)` bullets vector still count.
-fn node_in_cli_markup_call(node: &RSyntaxNode) -> bool {
-    node.ancestors().any(|ancestor| {
-        ancestor.kind() == RSyntaxKind::R_CALL
-            && ancestor
-                .cast::<RCall>()
-                .and_then(|call| call_name(&call))
-                .is_some_and(|name| is_cli_markup_function(&name))
-    })
+/// The interpolation dialect a string literal is written in.
+#[derive(Clone, Copy)]
+enum InterpolationFlavor {
+    /// glue's plain `{...}` interpolation.
+    Glue,
+    /// glue interpolation plus cli's inline markup spans (`{.field {x}}`).
+    CliMarkup,
+}
+
+/// The interpolation dialect applying to `node`, or `None` when no enclosing
+/// call interpolates its arguments — a string is only code when it is handed
+/// to a glue, stringr or cli function. Walks all ancestors (not just the
+/// immediate call) so message strings nested in a `c(...)` bullets vector
+/// still count.
+fn interpolation_flavor(node: &RSyntaxNode) -> Option<InterpolationFlavor> {
+    node.ancestors()
+        .filter_map(|ancestor| ancestor.cast::<RCall>())
+        .find_map(|call| {
+            let name = call_name(&call)?;
+            if is_cli_markup_function(&name) {
+                Some(InterpolationFlavor::CliMarkup)
+            } else if is_glue_interpolating_function(&name) {
+                Some(InterpolationFlavor::Glue)
+            } else {
+                None
+            }
+        })
+}
+
+/// glue and stringr functions that glue-interpolate their string arguments.
+/// Excludes the non-interpolating helpers of both packages (`as_glue`,
+/// `glue_collapse`, `str_c`, …). `str_interp()` uses `${...}` rather than
+/// `{...}`, but scanning for `{`/`}` still finds its expressions.
+/// Namespaced calls (`glue::glue`) resolve to the bare name via [`call_name`].
+fn is_glue_interpolating_function(name: &str) -> bool {
+    matches!(
+        name,
+        "glue"
+            | "glue_data"
+            | "glue_col"
+            | "glue_data_col"
+            | "glue_safe"
+            | "glue_data_safe"
+            | "glue_sql"
+            | "glue_data_sql"
+            | "str_glue"
+            | "str_glue_data"
+            | "str_interp"
+    )
 }
 
 /// cli functions that glue-interpolate their text arguments with inline markup.
