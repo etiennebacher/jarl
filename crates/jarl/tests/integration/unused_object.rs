@@ -40,4 +40,3 @@ fn test_exported_alias_not_flagged() -> anyhow::Result<()> {
 
     Ok(())
 }
-
