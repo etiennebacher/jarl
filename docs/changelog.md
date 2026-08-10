@@ -22,6 +22,7 @@
   * `stopifnot_all` (#547, @Yousa-Mirage)
   * `strings_as_factors` (#546, @Yousa-Mirage)
   * `unnecessary_parentheses` (#510, @JosephBARBIERDARNAL)
+  * `unused_object` (#589)
 
 * Improved rules:
 
@@ -48,10 +49,10 @@
 * Passing `--statistics` in the CLI now indicates which violations have an automatic
   unsafe fix (#554).
 
-* Jarl now reports rule violations in files that contain syntax errors and provides 
+* Jarl now reports rule violations in files that contain syntax errors and provides
   clearer messages for syntax errors (#538, #569).
 
-* New `--output-format sarif` to export to [SARIF](https://sarifweb.azurewebsites.net/) 
+* New `--output-format sarif` to export to [SARIF](https://sarifweb.azurewebsites.net/)
   (#508, @dieghernan).
 
 * Clearer output for `jarl check --help` (#521).
@@ -85,7 +86,7 @@
 
 * `--statistics` now reports syntax errors and returns a non-zero status when
   parsing fails (#577, @Yousa-Mirage).
-  
+
 * `--fix-only` now implies `--fix` and no longer applies unsafe fixes by default
   (#579, @Yousa-Mirage).
 
