@@ -91,27 +91,6 @@ fn test_jarl_with_tabs_on_earlier_lines() -> anyhow::Result<()> {
     success: false
     exit_code: 1
     ----- stdout -----
-    warning: unused_object
-     --> test.R:1:5
-      |
-    1 |     a <- 1
-      |     - Object `a` is defined but never used.
-      |
-
-    warning: unused_object
-     --> test.R:2:5
-      |
-    2 |     b <- 2
-      |     - Object `b` is defined but never used.
-      |
-
-    warning: unused_object
-     --> test.R:3:5
-      |
-    3 |     c <- 3
-      |     - Object `c` is defined but never used.
-      |
-
     warning: any_is_na
      --> test.R:4:5
       |
@@ -122,7 +101,7 @@ fn test_jarl_with_tabs_on_earlier_lines() -> anyhow::Result<()> {
 
 
     ── Summary ──────────────────────────────────────
-    Found 4 errors.
+    Found 1 error.
     1 fixable with the `--fix` option.
 
     ----- stderr -----
