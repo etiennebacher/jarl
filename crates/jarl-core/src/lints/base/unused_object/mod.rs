@@ -1199,6 +1199,19 @@ f()",
     #[test]
     fn test_no_lint_used_in_while() {
         expect_no_lint("x <- TRUE\nwhile (x) { x <- FALSE }", "unused_object", None);
+        // The read in the inner loop sees the outer loop's assignment on the
+        // next outer iteration.
+        expect_no_lint(
+            "
+for (i in 1:3) {
+  while (cond) {
+    print(z)
+  }
+  z <- i
+}",
+            "unused_object",
+            None,
+        );
     }
 
     #[test]
@@ -1309,6 +1322,64 @@ x",
         do.call('f', list(x = 1:3))",
             "unused_object",
             None,
+        );
+    }
+
+    #[test]
+    fn test_lint_loop_assignment_readable_outside_loop() {
+        expect_no_lint(
+            "
+for (x in 1:3) {
+  y <- x + 1
+  1 + 1
+}
+y",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_loop_assignment_never_read_back() {
+        // Being assigned in a loop doesn't make an object used: `y` is never
+        // read, in this iteration or the next one.
+        assert_snapshot!(
+            snapshot_lint("
+for (x in 1:3) {
+  y <- x + 1
+  1 + 1
+}"),
+            @"
+        warning: unused_object
+         --> <test>:3:3
+          |
+        3 |   y <- x + 1
+          |   - Object `y` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+        // A read in a nested scope resolves to that scope's own binding, so it
+        // doesn't keep the loop-level assignment of the same name alive.
+        assert_snapshot!(
+            snapshot_lint("
+while (cond) {
+  h <- function() {
+    w <- 1
+    w
+  }
+  h()
+  w <- 2
+}"),
+            @"
+        warning: unused_object
+         --> <test>:8:3
+          |
+        8 |   w <- 2
+          |   - Object `w` is defined but never used.
+          |
+        Found 1 error.
+        "
         );
     }
 }

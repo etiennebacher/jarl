@@ -30,10 +30,13 @@ pub struct SemanticInfo<'a> {
     /// `AstPtr` references stored in [`DefinitionKind`] back to nodes.
     root: RSyntaxNode,
     /// Names that have a synthetic use from AST passes (`do.call("f", …)`,
-    /// `..cols`, `on.exit` bodies, loop/short-circuit assignment LHSes,
-    /// custom infix operators). A definition whose symbol name is in this set
-    /// is treated as used.
+    /// `..cols`, `on.exit` bodies, short-circuit assignment LHSes, custom
+    /// infix operators). A definition whose symbol name is in this set is
+    /// treated as used.
     synthetic_used_names: HashSet<String>,
+    /// Ranges of loop statements (`for`/`while`/`repeat`), used to model the
+    /// back edge in [`Self::precompute_loop_back_edges`].
+    loop_ranges: Vec<TextRange>,
     /// Position-aware reads collected by the AST pass: string interpolation
     /// (`glue("{x}")`, cli markup, custom delimiters). Stored as
     /// `(name, read range)` pairs and resolved in
@@ -70,6 +73,7 @@ impl<'a> SemanticInfo<'a> {
             index,
             root: root.clone(),
             synthetic_used_names: HashSet::new(),
+            loop_ranges: Vec::new(),
             positional_uses: Vec::new(),
             nse_ranges: Vec::new(),
             formula_ranges: Vec::new(),
@@ -78,6 +82,7 @@ impl<'a> SemanticInfo<'a> {
         this.collect_ast_passes(expressions);
         let scopes = this.scope_ids();
         this.precompute_reaching_uses(&scopes);
+        this.precompute_loop_back_edges(&scopes);
         this.precompute_positional_uses();
         this
     }
@@ -164,22 +169,9 @@ impl<'a> SemanticInfo<'a> {
             RSyntaxKind::R_WHILE_STATEMENT
             | RSyntaxKind::R_FOR_STATEMENT
             | RSyntaxKind::R_REPEAT_STATEMENT => {
-                self.collect_loop_assignment_names(node);
+                self.loop_ranges.push(node.text_trimmed_range());
             }
             _ => {}
-        }
-    }
-
-    /// Workaround for oak not retroactively connecting loop-body defs to
-    /// loop-condition uses. Coarse but matches the test contract.
-    fn collect_loop_assignment_names(&mut self, loop_node: &RSyntaxNode) {
-        for descendant in loop_node.descendants() {
-            if descendant.kind() != RSyntaxKind::R_BINARY_EXPRESSION {
-                continue;
-            }
-            if let Some(name) = assignment_lhs_name(&descendant) {
-                self.synthetic_used_names.insert(name);
-            }
         }
     }
 
@@ -478,6 +470,92 @@ impl<'a> SemanticInfo<'a> {
             }
         }
         best.map(|(id, _)| id)
+    }
+
+    /// Model the loop back edge: at the end of an iteration control jumps
+    /// back to the top of the loop, so an assignment inside a loop can be read
+    /// by a use sitting *earlier* in that loop — the condition (`while (x) { x
+    /// <- f() }`) or an earlier body statement (`for (i in is) { g(x); x <-
+    /// h(i) }`). Oak walks the file in textual order and only connects a
+    /// definition to later uses, so those reads are missed.
+    ///
+    /// For every use inside a loop, mark the definitions of the same name that
+    /// sit after it but still inside that loop: those are what the next
+    /// iteration reads. A definition the loop never reads back is left alone,
+    /// so `for (x in 1:3) { y <- x + 1 }` still reports `y`.
+    fn precompute_loop_back_edges(&mut self, scopes: &[ScopeId]) {
+        if self.loop_ranges.is_empty() {
+            return;
+        }
+        let index = self.index;
+        // Collect first: marking borrows `self` mutably.
+        let mut back_edges: Vec<(&str, ScopeId, TextSize, TextRange)> = Vec::new();
+        for &scope_id in scopes {
+            let symbols = index.symbols(scope_id);
+            for (_, u) in index.uses(scope_id).iter() {
+                if self.is_in_nse(u.range()) {
+                    continue;
+                }
+                // Nested loops: the back edge of every enclosing loop can feed
+                // this use, so consider all the loops it sits in.
+                for loop_range in self
+                    .loop_ranges
+                    .iter()
+                    .filter(|range| range.contains_range(u.range()))
+                {
+                    let name = symbols.symbol(u.symbol()).name();
+                    back_edges.push((name, scope_id, u.range().start(), *loop_range));
+                }
+            }
+        }
+        for (name, scope_id, pos, loop_range) in back_edges {
+            self.mark_loop_back_edge(name, scope_id, pos, loop_range);
+        }
+    }
+
+    /// Mark the definitions of `name` that the use at `pos` reads on a later
+    /// iteration of the loop spanning `loop_range`: those that follow the use
+    /// but stay inside the loop.
+    ///
+    /// Walks outward from the reading scope like an ordinary lookup and stops
+    /// at the first scope binding `name` — whether before the use (what the
+    /// first iteration reads) or later inside the loop (what the next ones
+    /// read).
+    fn mark_loop_back_edge(
+        &mut self,
+        name: &str,
+        use_scope: ScopeId,
+        pos: TextSize,
+        loop_range: TextRange,
+    ) {
+        let index = self.index;
+        for owner in index.ancestor_scope_ids(use_scope) {
+            let Some(symbol_id) = index.symbols(owner).id(name) else {
+                continue;
+            };
+            let mut binds = false;
+            let mut back_edge_defs = Vec::new();
+            for (def_id, def) in index.definitions(owner).iter() {
+                if def.symbol() != symbol_id || self.is_in_nse(def.range()) {
+                    continue;
+                }
+                if def.range().start() < pos {
+                    binds = true;
+                } else if loop_range.contains_range(def.range()) {
+                    binds = true;
+                    back_edge_defs.push(def_id);
+                }
+            }
+            // `name` may be referenced but not bound in this scope; if so, keep
+            // walking outward to the scope whose binding the read consumes.
+            if !binds {
+                continue;
+            }
+            for def_id in back_edge_defs {
+                self.reaching_used.insert((owner, def_id));
+            }
+            return;
+        }
     }
 
     /// Resolve each position-aware read (interpolation) to the definition(s)
