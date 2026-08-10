@@ -928,6 +928,56 @@ for (i in 1:2) {
     }
 
     #[test]
+    fn test_nse_assignment_in_expression_does_not_shadow_real_definition() {
+        // Same as above for `expression()`, which oak's registry doesn't
+        // model: the quoted `x <- 2` enters the index and shadows `x <- 1`,
+        // so the read has to be credited back to the real definition.
+        expect_no_lint(
+            "x <- 1\nexpression(x <- 2)\nprint(x)",
+            "unused_object",
+            None,
+        );
+        // Nothing to credit when the shadowed symbol has no real definition
+        // before it: the read resolves to quoted code only, and no phantom
+        // diagnostic comes out of it.
+        expect_no_lint("expression(x <- 2)\nprint(x)", "unused_object", None);
+        // Only the nearest real definition is credited; `x <- 1` stays dead.
+        assert_snapshot!(
+            snapshot_lint("x <- 1\nx <- 2\nexpression(x <- 3)\nprint(x)"),
+            @r"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_namespace_qualified_quoting_call_is_nse() {
+        // `methods::Quote(x)` quotes `x` just like a bare `Quote(x)`, so the
+        // mention doesn't keep the binding alive.
+        assert_snapshot!(
+            snapshot_lint("x <- 1\nmethods::Quote(x)"),
+            @r"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+        // A namespaced call that isn't a quoting call still reads its
+        // argument.
+        expect_no_lint("x <- 1\nbase::print(x)", "unused_object", None);
+    }
+
+    #[test]
     fn test_equal_in_formula_is_not_definition() {
         expect_no_lint(
             "
