@@ -1315,6 +1315,58 @@ x",
     }
 
     #[test]
+    fn test_lint_unread_assignment_in_condition() {
+        // Nothing reads `y`, so the short-circuit operand keeps no earlier
+        // definition alive and the assignment itself is still reported.
+        assert_snapshot!(
+            snapshot_lint("if (x && (y <- 1) > 2) {}"),
+            @"
+        warning: unused_object
+         --> <test>:1:11
+          |
+        1 | if (x && (y <- 1) > 2) {}
+          |           - Object `y` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+        // Also the case if y was defined before
+        assert_snapshot!(
+            snapshot_lint("
+y <- 2 
+if (x && (y <- 1) > 2) {}"),
+            @"
+        warning: unused_object
+         --> <test>:2:1
+          |
+        2 | y <- 2 
+          | - Object `y` is defined but never used.
+          |
+        warning: unused_object
+         --> <test>:3:11
+          |
+        3 | if (x && (y <- 1) > 2) {}
+          |           - Object `y` is defined but never used.
+          |
+        Found 2 errors.
+        "
+        );
+        // Also for || operator
+        assert_snapshot!(
+            snapshot_lint("if (x || (y <- 1) > 2) {}"),
+            @"
+        warning: unused_object
+         --> <test>:1:11
+          |
+        1 | if (x || (y <- 1) > 2) {}
+          |           - Object `y` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
     fn test_special_functions_use_quoted_objects() {
         expect_no_lint(
             "

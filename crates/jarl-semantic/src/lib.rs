@@ -30,10 +30,13 @@ pub struct SemanticInfo<'a> {
     /// `AstPtr` references stored in [`DefinitionKind`] back to nodes.
     root: RSyntaxNode,
     /// Names that have a synthetic use from AST passes (`do.call("f", …)`,
-    /// `..cols`, `on.exit` bodies, short-circuit assignment LHSes, custom
-    /// infix operators). A definition whose symbol name is in this set is
-    /// treated as used.
+    /// `..cols`, `on.exit` bodies, custom infix operators). A definition whose
+    /// symbol name is in this set is treated as used.
     synthetic_used_names: HashSet<String>,
+    /// Assignments sitting inside a short-circuit operand (`cond || (x <- 2)`),
+    /// stored as `(name, assignment range)` and resolved in
+    /// [`Self::precompute_short_circuit_defs`].
+    short_circuit_defs: Vec<(String, TextRange)>,
     /// Ranges of loop statements (`for`/`while`/`repeat`), used to model the
     /// back edge in [`Self::precompute_loop_back_edges`].
     loop_ranges: Vec<TextRange>,
@@ -73,6 +76,7 @@ impl<'a> SemanticInfo<'a> {
             index,
             root: root.clone(),
             synthetic_used_names: HashSet::new(),
+            short_circuit_defs: Vec::new(),
             loop_ranges: Vec::new(),
             positional_uses: Vec::new(),
             nse_ranges: Vec::new(),
@@ -84,6 +88,7 @@ impl<'a> SemanticInfo<'a> {
         this.precompute_reaching_uses(&scopes);
         this.precompute_loop_back_edges(&scopes);
         this.precompute_positional_uses();
+        this.precompute_short_circuit_defs();
         this
     }
 
@@ -331,16 +336,17 @@ impl<'a> SemanticInfo<'a> {
             self.synthetic_used_names.insert(op_text.to_string());
         }
 
-        // Short-circuit operators: `cond || (x <- 2)` may skip the
-        // assignment entirely, so prior defs of `x` should remain alive.
-        // Oak walks linearly and shadows them. Workaround: any LHS
-        // assigned inside a `||`/`&&` is considered synthetically used.
+        // Short-circuit operators: `cond || (x <- 2)` may skip the assignment
+        // entirely, so prior defs of `x` should remain alive. Record the
+        // assignment; `precompute_short_circuit_defs` resolves which earlier
+        // definitions it keeps alive.
         if op_text == "||" || op_text == "&&" || op_text == "|" || op_text == "&" {
             for descendant in bin.syntax().descendants() {
                 if descendant.kind() == RSyntaxKind::R_BINARY_EXPRESSION
                     && let Some(name) = assignment_lhs_name(&descendant)
                 {
-                    self.synthetic_used_names.insert(name);
+                    self.short_circuit_defs
+                        .push((name, descendant.text_trimmed_range()));
                 }
             }
         }
@@ -556,6 +562,41 @@ impl<'a> SemanticInfo<'a> {
             }
             return;
         }
+    }
+
+    /// Model a short-circuit operand not running: a read after `cond || (x <-
+    /// 2)` may still see whatever `x` was bound to before it. Oak walks
+    /// linearly and resolves that read to the conditional definition only, so
+    /// when the conditional definition turns out to be read, mark the earlier
+    /// definitions the read may reach instead — exactly the ones a position-
+    /// aware read sitting at the assignment would consume.
+    ///
+    /// A conditional definition nothing ever reads keeps no one alive, so
+    /// `if (cond && (y <- 1) > 2)` still reports `y`. Runs last: the read that
+    /// justifies it may itself be an interpolation resolved by
+    /// [`Self::precompute_positional_uses`].
+    fn precompute_short_circuit_defs(&mut self) {
+        let defs = std::mem::take(&mut self.short_circuit_defs);
+        for (name, range) in &defs {
+            if self.short_circuit_def_is_used(name, *range) {
+                self.mark_positional_use(name, range.start());
+            }
+        }
+    }
+
+    /// True when the assignment of `name` spanning `range` produces a
+    /// definition that some use reaches.
+    fn short_circuit_def_is_used(&self, name: &str, range: TextRange) -> bool {
+        let index = self.index;
+        let (scope, _) = index.scope_at(range.start());
+        let Some(symbol_id) = index.symbols(scope).id(name) else {
+            return false;
+        };
+        index.definitions(scope).iter().any(|(def_id, def)| {
+            def.symbol() == symbol_id
+                && range.contains_range(def.range())
+                && self.reaching_used.contains(&(scope, def_id))
+        })
     }
 
     /// Resolve each position-aware read (interpolation) to the definition(s)
