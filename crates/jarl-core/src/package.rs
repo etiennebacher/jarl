@@ -324,10 +324,7 @@ pub fn make_package_analysis(
         HashMap::new()
     };
 
-    PackageAnalysis {
-        duplicate_assignments,
-        unused_functions,
-    }
+    PackageAnalysis { duplicate_assignments, unused_functions }
 }
 
 /// Determine the `FileScope` for a non-R/ file based on its path.
