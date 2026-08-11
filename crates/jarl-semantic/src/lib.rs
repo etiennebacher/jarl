@@ -46,7 +46,9 @@ use oak_semantic::semantic_index::{Definition, DefinitionKind, ScopeId, Semantic
 #[derive(Clone, Default)]
 pub struct SourceIndexCache {
     inner: std::sync::Arc<
-        std::sync::Mutex<std::collections::HashMap<std::path::PathBuf, std::sync::Arc<SemanticIndex>>>,
+        std::sync::Mutex<
+            std::collections::HashMap<std::path::PathBuf, std::sync::Arc<SemanticIndex>>,
+        >,
     >,
 }
 
@@ -1225,7 +1227,10 @@ impl JarlImportsResolver {
 
     /// Resolver sharing `cache` with the rest of the run, so a helper sourced
     /// by many files is parsed and indexed once.
-    pub fn with_cache(current_file: impl Into<std::path::PathBuf>, cache: SourceIndexCache) -> Self {
+    pub fn with_cache(
+        current_file: impl Into<std::path::PathBuf>,
+        cache: SourceIndexCache,
+    ) -> Self {
         let current_file = current_file.into();
         let mut visited = HashSet::new();
         visited.insert(absolutize_path(&current_file));
@@ -1297,8 +1302,7 @@ impl oak_semantic::ImportsResolver for JarlImportsResolver {
                 };
                 let index =
                     std::sync::Arc::new(oak_semantic::build_index(&parsed.tree(), sub_resolver));
-                self.cache
-                    .insert(target_key, std::sync::Arc::clone(&index));
+                self.cache.insert(target_key, std::sync::Arc::clone(&index));
                 index
             }
         };
