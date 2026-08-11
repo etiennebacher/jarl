@@ -63,7 +63,8 @@ mod tests {
     /// Lints `main.R` inside a fresh tempdir after populating that directory
     /// with the named (filename, content) pairs, and renders diagnostics as
     /// a snapshot string. Used for `source()` resolution tests where the
-    /// sourced file lives next to the linted file.
+    /// sourced file lives next to the linted file. A name may contain
+    /// directories (`sub/helper.R`), which are created as needed.
     fn snapshot_lint_with_sourced_files(main: &str, files: &[(&str, &str)]) -> String {
         use std::fs;
 
@@ -71,7 +72,11 @@ mod tests {
         let main_path = dir.path().join("main.R");
         fs::write(&main_path, main).expect("write main.R");
         for (name, content) in files {
-            fs::write(dir.path().join(name), content).expect("write sourced file");
+            let path = dir.path().join(name);
+            if let Some(parent) = path.parent() {
+                fs::create_dir_all(parent).expect("create sourced file directory");
+            }
+            fs::write(path, content).expect("write sourced file");
         }
         snapshot_unused_object_at(&main_path, main)
     }
@@ -849,6 +854,50 @@ for (i in 1:3) {
     }
 
     #[test]
+    fn test_object_used_in_next_iteration_through_interpolation() {
+        expect_no_lint(
+            "
+library(glue)
+x <- 0
+for (i in 1:3) {
+  glue(\"{x}\")
+  x <- i
+}",
+            "unused_object",
+            None,
+        );
+        expect_no_lint(
+            "
+library(cli)
+x <- 0
+while (cond) {
+  cli_alert(\"{x}\")
+  x <- f()
+}",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_object_assigned_in_loop_but_never_interpolated_back() {
+        assert_snapshot!(
+            snapshot_lint(
+                "library(glue)\nx <- 0\nfor (i in 1:3) {\n  glue(\"{x}\")\n  y <- i\n}\n"
+            ),
+            @r"
+        warning: unused_object
+         --> <test>:5:3
+          |
+        5 |   y <- i
+          |   - Object `y` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
     fn test_function_def_default_arg_value() {
         expect_no_lint(
             "
@@ -1613,13 +1662,13 @@ x",
         // Also the case if y was defined before
         assert_snapshot!(
             snapshot_lint("
-y <- 2 
+y <- 2
 if (x && (y <- 1) > 2) {}"),
             @"
         warning: unused_object
          --> <test>:2:1
           |
-        2 | y <- 2 
+        2 | y <- 2
           | - Object `y` is defined but never used.
           |
         warning: unused_object
@@ -1926,6 +1975,94 @@ while (cond) {
             snapshot_lint_with_sourced_files(
                 "x <- 1\nsource(\"helper.R\")\n",
                 &[("helper.R", "print(x + 1)")],
+            ),
+            @"All checks passed!"
+        );
+    }
+
+    #[test]
+    fn test_no_lint_sourced_file_reached_through_parent_dir() {
+        // `sub/../helper.R` names the same file as `helper.R`; normalizing the
+        // path must not stop it from resolving.
+        assert_snapshot!(
+            snapshot_lint_with_sourced_files(
+                "x <- 1\nsource(\"sub/../helper.R\")\n",
+                &[("helper.R", "print(x + 1)"), ("sub/other.R", "print(1)")],
+            ),
+            @"All checks passed!"
+        );
+    }
+
+    #[test]
+    fn test_lint_shadowed_source_does_not_read_the_file() {
+        // `source` is a local function here, so the call runs that function,
+        // not R's `source()`, and the helper is never read.
+        assert_snapshot!(
+            snapshot_lint_with_sourced_files(
+                "source <- function(x) invisible(x)\nw <- 1\nsource(\"helper.R\")\n",
+                &[("helper.R", "print(w + 1)")],
+            ),
+            @r"
+        warning: unused_object
+         --> <test>:2:1
+          |
+        2 | w <- 1
+          | - Object `w` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_self_source_through_parent_dir_stops_at_the_cycle_guard() {
+        // Ensure that a file sourcing itself through `..`  doesn't stack overflow.
+        assert_snapshot!(
+            snapshot_lint_with_sourced_files(
+                "x <- 1\nsource(\"sub/../main.R\")\n",
+                &[("sub/other.R", "print(1)")]
+            ),
+            @r"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_lint_sourced_file_in_its_own_environment() {
+        // A non-literal `local =` runs the helper in an environment that
+        // can't see this file's bindings, so its reads consume nothing here.
+        assert_snapshot!(
+            snapshot_lint_with_sourced_files(
+                "w <- 1\nsource(\"helper.R\", local = new.env())\n",
+                &[("helper.R", "print(w + 1)")],
+            ),
+            @r"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | w <- 1
+          | - Object `w` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_no_lint_sourced_file_with_literal_local_argument() {
+        // `local = TRUE` evaluates the helper in the calling environment, so
+        // its reads still consume bindings from this file.
+        assert_snapshot!(
+            snapshot_lint_with_sourced_files(
+                "w <- 1\nsource(\"helper.R\", local = TRUE)\n",
+                &[("helper.R", "print(w + 1)")],
             ),
             @"All checks passed!"
         );

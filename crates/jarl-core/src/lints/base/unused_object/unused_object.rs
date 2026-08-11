@@ -40,7 +40,6 @@ pub fn unused_object(
         &root,
         expressions,
         semantic,
-        &checker.file_path,
         &checker.source_index_cache,
         &checker.loaded_packages,
     );

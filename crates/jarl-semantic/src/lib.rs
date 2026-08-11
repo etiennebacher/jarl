@@ -21,7 +21,9 @@ use air_r_syntax::{
 use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange, TextSize};
 use oak_core::syntax_ext::{RIdentifierExt, RStringValueExt};
 use oak_semantic::DefinitionId;
-use oak_semantic::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex};
+use oak_semantic::semantic_index::{
+    Definition, DefinitionKind, ScopeId, SemanticCallKind, SemanticIndex,
+};
 
 /// Run-wide memo of semantic indices built for `source()` targets, keyed by
 /// absolutized path.
@@ -85,9 +87,6 @@ pub struct SemanticInfo<'a> {
     /// Root syntax node of the analyzed file. Needed to resolve
     /// `AstPtr` references stored in [`DefinitionKind`] back to nodes.
     root: RSyntaxNode,
-    /// Path of the file being analyzed. Used to resolve `source("path")`
-    /// arguments against the current file's directory.
-    file: &'a std::path::Path,
     /// Shared memo of `source()` target indices for this run.
     source_cache: SourceIndexCache,
     /// Assignments sitting inside a short-circuit operand (`cond || (x <- 2)`),
@@ -140,7 +139,6 @@ impl<'a> SemanticInfo<'a> {
         root: &RSyntaxNode,
         expressions: &[RSyntaxNode],
         index: &'a SemanticIndex,
-        file: &'a std::path::Path,
         source_cache: &SourceIndexCache,
         loaded_packages: &[String],
     ) -> Self {
@@ -157,7 +155,6 @@ impl<'a> SemanticInfo<'a> {
         let mut this = Self {
             index,
             root: root.clone(),
-            file,
             source_cache: source_cache.clone(),
             short_circuit_defs: Vec::new(),
             branching_defs: Vec::new(),
@@ -169,8 +166,12 @@ impl<'a> SemanticInfo<'a> {
             reaching_used: HashSet::new(),
         };
         this.collect_ast_passes(expressions);
+        this.collect_sourced_file_uses();
         let scopes = this.scope_ids();
         this.precompute_reaching_uses(&scopes);
+        // Before `precompute_positional_uses`, which consumes
+        // `positional_uses`: the back-edge pass reads that list too, since an
+        // interpolation inside a loop is read again on the next iteration.
         this.precompute_loop_back_edges(&scopes);
         this.precompute_positional_uses();
         this.precompute_branching_defs();
@@ -549,24 +550,46 @@ impl<'a> SemanticInfo<'a> {
                     self.positional_uses.push((s, first.text_trimmed_range()));
                 }
             }
-            "source" => {
-                if let Some((_, first)) = arg_values.first()
-                    && let Some(path) = string_literal_value(first)
-                {
-                    self.import_uses_from_sourced_file(&path, call.syntax().text_trimmed_range());
-                }
-            }
             _ => {}
         }
     }
 
-    /// Resolves a `source("path")` argument against the current file, builds
-    /// the target's semantic index, and records its *free* uses — reads that
-    /// no definition inside the target reaches — as reads of this file's
-    /// bindings at `call_range`. R's `source()` runs its argument in the
-    /// caller's environment, so a name the sourced script reads without
-    /// binding it first consumes a binding in this file — the one live where
-    /// the `source()` call sits, which is where the script runs.
+    /// Record the *free* uses of every file this one `source()`s.
+    ///
+    /// The call sites come from oak, which already extracted each `source()`
+    /// path and resolved it to a URL while building the index. Re-detecting
+    /// them here by callee name would skip the gating oak applies: a locally
+    /// shadowed `source` (`source <- function(x) invisible(x)`) is not R's
+    /// `source()` and reads nothing, and a non-literal `local =` argument
+    /// (`source("helper.R", local = new.env())`) runs the target in an
+    /// environment this file's bindings never reach.
+    ///
+    /// `resolved` is `None` when oak could not pin the target down — a
+    /// computed path, a missing or unparseable file, a directory-sourcing
+    /// idiom this resolver doesn't handle, or a target the `source()` chain
+    /// already visited. Skipping those keeps the chain's cycle guard
+    /// authoritative instead of reading the file behind its back.
+    fn collect_sourced_file_uses(&mut self) {
+        let targets: Vec<std::path::PathBuf> = self
+            .index
+            .semantic_calls()
+            .iter()
+            .filter_map(|call| match call.kind() {
+                SemanticCallKind::Source { resolved, .. } => resolved.as_ref(),
+                _ => None,
+            })
+            .filter_map(|url| url.to_file_path().ok())
+            .collect();
+        for target in &targets {
+            self.import_uses_from_sourced_file(target);
+        }
+    }
+
+    /// Build (or reuse) the semantic index of a `source()` target and record
+    /// its *free* uses — reads that no definition inside the target reaches —
+    /// as synthetic uses. R's `source()` runs the target in the caller's
+    /// environment, so a name the sourced script reads without binding it
+    /// first consumes a binding in this file.
     ///
     /// Going through the index rather than harvesting raw identifiers keeps
     /// non-reads out: a member name (`df$x`, `pkg::x`) is never a use, and a
@@ -577,15 +600,14 @@ impl<'a> SemanticInfo<'a> {
     /// target that binds a name only conditionally (`if (cond) x <- 2; x`)
     /// still reads the caller's binding when the branch isn't taken, so it
     /// counts as free even though the conditional definition reaches the read.
-    fn import_uses_from_sourced_file(&mut self, path: &str, call_range: TextRange) {
-        let Some(target) = resolve_sourced_path(self.file, path) else {
-            return;
-        };
-        let target_key = absolutize_path(&target);
-        let index = match self.source_cache.get(&target_key) {
+    fn import_uses_from_sourced_file(&mut self, target: &std::path::Path) {
+        // The resolver built this index while indexing the current file, so
+        // this normally hits; the build is the fallback for an index that
+        // reached us some other way.
+        let index = match self.source_cache.get(target) {
             Some(index) => index,
             None => {
-                let Ok(contents) = std::fs::read_to_string(&target) else {
+                let Ok(contents) = std::fs::read_to_string(target) else {
                     return;
                 };
                 let parsed = air_r_parser::parse(&contents, RParserOptions::default());
@@ -598,10 +620,10 @@ impl<'a> SemanticInfo<'a> {
                 // file instead).
                 let index = std::sync::Arc::new(oak_semantic::build_index(
                     &parsed.tree(),
-                    JarlImportsResolver::with_cache(&target, self.source_cache.clone()),
+                    JarlImportsResolver::with_cache(target, self.source_cache.clone()),
                 ));
                 self.source_cache
-                    .insert(target_key, std::sync::Arc::clone(&index));
+                    .insert(target.to_path_buf(), std::sync::Arc::clone(&index));
                 index
             }
         };
@@ -697,33 +719,56 @@ impl<'a> SemanticInfo<'a> {
     /// sit after it but still inside that loop: those are what the next
     /// iteration reads. A definition the loop never reads back is left alone,
     /// so `for (x in 1:3) { y <- x + 1 }` still reports `y`.
+    ///
+    /// Covers both kinds of read: the ones oak indexes, and the position-aware
+    /// ones collected by the AST pass. An interpolation is a read like any
+    /// other, so `for (i in 1:3) { print(glue("{x}")); x <- i }` reads `x`
+    /// back on the next iteration too.
     fn precompute_loop_back_edges(&mut self, scopes: &[ScopeId]) {
         if self.loop_ranges.is_empty() {
             return;
         }
         let index = self.index;
         // Collect first: marking borrows `self` mutably.
-        let mut back_edges: Vec<(&str, ScopeId, TextSize, TextRange)> = Vec::new();
+        let mut back_edges: Vec<(String, ScopeId, TextSize, TextRange)> = Vec::new();
         for &scope_id in scopes {
             let symbols = index.symbols(scope_id);
             for (_, u) in index.uses(scope_id).iter() {
                 if self.is_in_nse(u.range()) {
                     continue;
                 }
-                // Nested loops: the back edge of every enclosing loop can feed
-                // this use, so consider all the loops it sits in.
-                for loop_range in self
-                    .loop_ranges
-                    .iter()
-                    .filter(|range| range.contains_range(u.range()))
-                {
-                    let name = symbols.symbol(u.symbol()).name();
-                    back_edges.push((name, scope_id, u.range().start(), *loop_range));
-                }
+                let name = symbols.symbol(u.symbol()).name();
+                self.queue_back_edges(&mut back_edges, name, scope_id, u.range());
             }
         }
+        // Interpolation reads never enter oak's use list — they're resolved
+        // from `positional_uses`, which only ever looks backwards from the
+        // read — so the back edge has to be queued for them here.
+        for (name, read_range) in &self.positional_uses {
+            let (read_scope, _) = index.scope_at(read_range.start());
+            self.queue_back_edges(&mut back_edges, name, read_scope, *read_range);
+        }
         for (name, scope_id, pos, loop_range) in back_edges {
-            self.mark_loop_back_edge(name, scope_id, pos, loop_range);
+            self.mark_loop_back_edge(&name, scope_id, pos, loop_range);
+        }
+    }
+
+    /// Queue one back edge per loop enclosing a read of `name` at `range`.
+    /// Nested loops: the back edge of every enclosing loop can feed the read,
+    /// so all the loops it sits in count.
+    fn queue_back_edges(
+        &self,
+        queue: &mut Vec<(String, ScopeId, TextSize, TextRange)>,
+        name: &str,
+        scope: ScopeId,
+        range: TextRange,
+    ) {
+        for loop_range in self
+            .loop_ranges
+            .iter()
+            .filter(|loop_range| loop_range.contains_range(range))
+        {
+            queue.push((name.to_string(), scope, range.start(), *loop_range));
         }
     }
 
@@ -1248,8 +1293,9 @@ pub fn assignment_lhs_name(node: &RSyntaxNode) -> Option<String> {
 /// invoked — trying every level catches layouts like `jarl check foo` where
 /// `foo/sub/a.R` sources a file at `foo/` (the same reason oak's salsa
 /// resolver anchors at the workspace root). Lint paths are CWD-relative, so
-/// walking their ancestors down to `""` is exactly that chain and never
-/// escapes the CWD.
+/// walking their ancestors down to `""` is exactly that chain of anchors. The
+/// `source()` argument itself is unconstrained: a `../` in it resolves above
+/// the CWD, the same as it would when R runs the script.
 fn resolve_sourced_path(current_file: &std::path::Path, path: &str) -> Option<std::path::PathBuf> {
     let candidate = std::path::Path::new(path);
     if candidate.is_absolute() {
@@ -1420,6 +1466,46 @@ impl oak_semantic::ImportsResolver for JarlImportsResolver {
 /// Absolutize `path` against the process CWD, without touching the
 /// filesystem. Gives `source()` targets a canonical key so cycle detection
 /// and URL construction agree regardless of how the path was spelled.
+///
+/// `std::path::absolute` drops `.` but keeps `..`, so `sub/../a.R` and `a.R`
+/// would key differently and a self-`source()` spelled with `..` would slip
+/// past the cycle guard, minting a fresh key at every level of the chain.
+/// Popping `..` lexically makes both spellings collapse to the same key.
+///
+/// Lexical, not `canonicalize`: the key doubles as the `file://` URL the
+/// cross-file pass round-trips back to a lint path, so it has to stay the
+/// path as spelled rather than a symlink-resolved one (and it must work for
+/// targets that don't exist on disk). The trade-off is that `..` crossing a
+/// symlinked directory normalises to a path the OS wouldn't — the file is
+/// still read through the un-normalised path, so this only affects keying.
 fn absolutize_path(path: &std::path::Path) -> std::path::PathBuf {
-    std::path::absolute(path).unwrap_or_else(|_| path.to_path_buf())
+    let absolute = std::path::absolute(path).unwrap_or_else(|_| path.to_path_buf());
+    normalize_parent_dirs(&absolute)
+}
+
+/// Resolve `.` and `..` components lexically, without consulting the
+/// filesystem. A `..` with nothing to pop is kept: it's either a relative path
+/// climbing above its own root, or the filesystem root, where `..` is a no-op
+/// R would resolve the same way.
+fn normalize_parent_dirs(path: &std::path::Path) -> std::path::PathBuf {
+    use std::path::Component;
+
+    let mut normalized = std::path::PathBuf::new();
+    for component in path.components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                if matches!(
+                    normalized.components().next_back(),
+                    Some(Component::Normal(_))
+                ) {
+                    normalized.pop();
+                } else if !normalized.has_root() {
+                    normalized.push(component);
+                }
+            }
+            other => normalized.push(other),
+        }
+    }
+    normalized
 }
