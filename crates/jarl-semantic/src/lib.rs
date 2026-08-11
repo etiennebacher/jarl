@@ -570,26 +570,30 @@ impl<'a> SemanticInfo<'a> {
     /// already visited. Skipping those keeps the chain's cycle guard
     /// authoritative instead of reading the file behind its back.
     fn collect_sourced_file_uses(&mut self) {
-        let targets: Vec<std::path::PathBuf> = self
+        let targets: Vec<(std::path::PathBuf, TextRange)> = self
             .index
             .semantic_calls()
             .iter()
             .filter_map(|call| match call.kind() {
-                SemanticCallKind::Source { resolved, .. } => resolved.as_ref(),
+                SemanticCallKind::Source { resolved, .. } => {
+                    resolved.as_ref().map(|url| (url, call.range()))
+                }
                 _ => None,
             })
-            .filter_map(|url| url.to_file_path().ok())
+            .filter_map(|(url, range)| Some((url.to_file_path().ok()?, range)))
             .collect();
-        for target in &targets {
-            self.import_uses_from_sourced_file(target);
+        for (target, call_range) in &targets {
+            self.import_uses_from_sourced_file(target, *call_range);
         }
     }
 
     /// Build (or reuse) the semantic index of a `source()` target and record
     /// its *free* uses — reads that no definition inside the target reaches —
-    /// as synthetic uses. R's `source()` runs the target in the caller's
-    /// environment, so a name the sourced script reads without binding it
-    /// first consumes a binding in this file.
+    /// as reads of this file's bindings at `call_range`. R's `source()` runs
+    /// the target in the caller's environment, so a name the sourced script
+    /// reads without binding it first consumes a binding in this file — the
+    /// one live where the `source()` call sits, which is where the script
+    /// runs.
     ///
     /// Going through the index rather than harvesting raw identifiers keeps
     /// non-reads out: a member name (`df$x`, `pkg::x`) is never a use, and a
@@ -600,7 +604,7 @@ impl<'a> SemanticInfo<'a> {
     /// target that binds a name only conditionally (`if (cond) x <- 2; x`)
     /// still reads the caller's binding when the branch isn't taken, so it
     /// counts as free even though the conditional definition reaches the read.
-    fn import_uses_from_sourced_file(&mut self, target: &std::path::Path) {
+    fn import_uses_from_sourced_file(&mut self, target: &std::path::Path, call_range: TextRange) {
         // The resolver built this index while indexing the current file, so
         // this normally hits; the build is the fallback for an index that
         // reached us some other way.
