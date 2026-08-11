@@ -1355,7 +1355,18 @@ impl oak_semantic::ImportsResolver for JarlImportsResolver {
             }
         };
         let names: Vec<String> = sub_index.exports().keys().map(|s| s.to_string()).collect();
-        Some(oak_semantic::SourceResolution { url, names, packages: Vec::new() })
+        // `library()` in a sourced file attaches to the global search path, so
+        // the sourcing file sees the package too. Oak turns these into `Attach`
+        // calls at the `source()` position, which puts them in the caller's
+        // `attached_packages()` and in the `attached` list effect resolution
+        // walks. Only the target's load-time attaches count, and they already
+        // include what it forwards from its own `source()` calls.
+        let packages: Vec<String> = sub_index
+            .attached_packages()
+            .into_iter()
+            .map(str::to_string)
+            .collect();
+        Some(oak_semantic::SourceResolution { url, names, packages })
     }
 }
 

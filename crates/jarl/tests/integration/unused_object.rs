@@ -586,3 +586,314 @@ fn test_unexported_alias_is_flagged() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_object_used_in_non_package_r_directory_not_flagged() -> anyhow::Result<()> {
+    // No DESCRIPTION, but an `R/` directory: R collates those files
+    // alphabetically into one environment, the same convention as a package
+    // without `Collate:`. So `R/b.R` reads `helper` out of `R/a.R`.
+    let case = CliTest::with_files([
+        ("R/a.R", "helper <- 1\n"),
+        ("R/b.R", "compute <- function() helper\n"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_interpolation_honoured_when_sourced_file_attaches_the_package() -> anyhow::Result<()> {
+    // `{x}` is only a read when glue is in reach. Here `main.R` never mentions
+    // glue itself: `setup.R` attaches it, and R's `source()` runs that
+    // `library()` on the global search path, so the caller sees it too.
+    let case = CliTest::with_files([
+        ("setup.R", "library(glue)\n"),
+        (
+            "main.R",
+            "source(\"setup.R\")\nx <- 1\nprint(glue(\"{x}\"))\n",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("main.R")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_interpolation_not_honoured_when_sourced_file_attaches_nothing() -> anyhow::Result<()> {
+    // Control for the test above: same shape, but the sourced file attaches no
+    // package. Nothing puts glue in reach, so `"{x}"` stays literal text and
+    // `x` is reported.
+    let case = CliTest::with_files([
+        ("setup.R", "options(digits = 3)\n"),
+        (
+            "main.R",
+            "source(\"setup.R\")\nx <- 1\nprint(glue(\"{x}\"))\n",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("main.R")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @r"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> main.R:2:1
+      |
+    2 | x <- 1
+      | - Object `x` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_interpolation_honoured_through_a_source_chain() -> anyhow::Result<()> {
+    // The attach travels the whole chain: `a.R` sources `b.R`, which sources
+    // `c.R`, which attaches glue. `b.R` forwards what it sees, so `a.R`
+    // reaches glue two hops away.
+    let case = CliTest::with_files([
+        ("c.R", "library(glue)\n"),
+        ("b.R", "source(\"c.R\")\n"),
+        ("a.R", "source(\"b.R\")\nx <- 1\nprint(glue(\"{x}\"))\n"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("a.R")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_interpolation_not_honoured_for_a_lazy_attach_in_a_sourced_file() -> anyhow::Result<()> {
+    // A `library()` inside a function body only attaches when that body runs,
+    // which sourcing the file does not do. So glue is not in reach and `x` is
+    // still reported.
+    let case = CliTest::with_files([
+        ("setup.R", "setup <- function() library(glue)\n"),
+        (
+            "main.R",
+            "source(\"setup.R\")\nx <- 1\nprint(glue(\"{x}\"))\n",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("main.R")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @r"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> main.R:2:1
+      |
+    2 | x <- 1
+      | - Object `x` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_cli_markup_honoured_when_sourced_file_attaches_cli() -> anyhow::Result<()> {
+    // Same reach rule for the other interpolation dialect: cli's inline markup
+    // in `cli_abort()` reads `x` only because `setup.R` attaches cli.
+    let case = CliTest::with_files([
+        ("setup.R", "library(cli)\n"),
+        (
+            "main.R",
+            "source(\"setup.R\")\nx <- 1\ncli_abort(\"bad value: {x}\")\n",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("main.R")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_data_table_prefix_honoured_when_sourced_file_attaches_data_table() -> anyhow::Result<()> {
+    // The package-in-reach gate applies to every package idiom, not just
+    // interpolation: `..cols` only reads `cols` because `setup.R` attaches
+    // data.table.
+    let case = CliTest::with_files([
+        ("setup.R", "library(data.table)\n"),
+        (
+            "main.R",
+            "source(\"setup.R\")\ncols <- c(\"a\")\nprint(dt[, ..cols])\n",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("main.R")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_non_package_r_directory_not_scanned_for_a_file_argument() -> anyhow::Result<()> {
+    // Same layout as above, but linting a single file declares no project, so
+    // the sibling that reads `helper` is never scanned and can't vouch for it.
+    // This is what keeps `jarl check /tmp/foo.R` from walking `/tmp`.
+    let case = CliTest::with_files([
+        ("R/a.R", "helper <- 1\n"),
+        ("R/b.R", "compute <- function() helper\n"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("R/a.R")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @r"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> R/a.R:1:1
+      |
+    1 | helper <- 1
+      | ------ Object `helper` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
