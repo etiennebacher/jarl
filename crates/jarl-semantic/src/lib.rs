@@ -89,24 +89,27 @@ pub struct SemanticInfo<'a> {
     root: RSyntaxNode,
     /// Shared memo of `source()` target indices for this run.
     source_cache: SourceIndexCache,
-    /// Names that have a synthetic use from AST passes (`do.call("f", …)`,
-    /// `..cols`, loop/short-circuit assignment LHSes, custom infix operators).
-    /// A definition whose symbol name is in this set is treated as used.
-    synthetic_used_names: HashSet<String>,
     /// Assignments sitting inside a short-circuit operand (`cond || (x <- 2)`),
     /// stored as `(name, assignment range)` and resolved in
     /// [`Self::precompute_short_circuit_defs`].
     short_circuit_defs: Vec<(String, TextRange)>,
+    /// Assignments of one name spread over sibling arguments of a call
+    /// (`ifelse(cond, w <- 1, w <- 2)`), stored as `(name, argument range)`
+    /// and resolved in [`Self::precompute_branching_defs`]. These are
+    /// alternatives rather than redefinitions, so none of them is dead.
+    branching_defs: Vec<(String, TextRange)>,
     /// Ranges re-entered by a loop's back edge, used in
     /// [`Self::precompute_loop_back_edges`]: the whole statement for
     /// `while`/`repeat`, only the body for `for`.
     loop_ranges: Vec<TextRange>,
-    /// Position-aware reads collected by the AST pass: string interpolation
-    /// (`glue("{x}")`, cli markup, custom delimiters). Stored as
-    /// `(name, read range)` pairs and resolved in
-    /// [`Self::precompute_positional_uses`]: a read resolves to the definition
-    /// it actually sees, so a *later* same-scope reassignment of the name is
-    /// not kept alive by it.
+    /// Position-aware reads collected by the AST pass — reads oak's index
+    /// doesn't record: string interpolation (`glue("{x}")`, cli markup,
+    /// custom delimiters), lookups by name (`do.call("f", …)`, data.table's
+    /// `..cols`), custom infix operators, and the names a `source()`d file
+    /// reads out of the caller's environment. Stored as `(name, read range)`
+    /// pairs and resolved in [`Self::precompute_positional_uses`]: a read
+    /// resolves to the definition it actually sees, so a *later* same-scope
+    /// reassignment of the name is not kept alive by it.
     positional_uses: Vec<(String, TextRange)>,
     /// Identifier `Use` ranges that should be ignored because they sit inside
     /// a quoting call oak's effects registry doesn't cover (`Quote(…)`,
@@ -153,8 +156,8 @@ impl<'a> SemanticInfo<'a> {
             index,
             root: root.clone(),
             source_cache: source_cache.clone(),
-            synthetic_used_names: HashSet::new(),
             short_circuit_defs: Vec::new(),
+            branching_defs: Vec::new(),
             loop_ranges: Vec::new(),
             positional_uses: Vec::new(),
             nse_ranges: Vec::new(),
@@ -171,6 +174,7 @@ impl<'a> SemanticInfo<'a> {
         // interpolation inside a loop is read again on the next iteration.
         this.precompute_loop_back_edges(&scopes);
         this.precompute_positional_uses();
+        this.precompute_branching_defs();
         this.precompute_short_circuit_defs();
         this
     }
@@ -190,33 +194,19 @@ impl<'a> SemanticInfo<'a> {
 
     // ── High-level queries ────────────────────────────────────────────
 
-    /// True if any of the supported "is used" conditions hold for this
-    /// definition: synthetic AST-derived use, or a reaching use (local or via
-    /// a nested closure).
-    pub fn is_definition_used(
-        &self,
-        scope_id: ScopeId,
-        def_id: DefinitionId,
-        def: &Definition,
-    ) -> bool {
-        let symbol_name = self.index.symbols(scope_id).symbol(def.symbol()).name();
-        if self.synthetic_used_names.contains(symbol_name) {
-            return true;
-        }
-        if self.reaching_used.contains(&(scope_id, def_id)) {
-            return true;
-        }
-        false
+    /// True when some use reaches this definition: a read oak's index
+    /// records, a position-aware read the AST pass collected, or a loop back
+    /// edge. Every one of them resolves through the scope chain, so a
+    /// definition is only ever kept alive by a read that could actually see
+    /// it.
+    pub fn is_definition_used(&self, scope_id: ScopeId, def_id: DefinitionId) -> bool {
+        self.reaching_used.contains(&(scope_id, def_id))
     }
 
     // ── Low-level predicates (compose for new rules) ──────────────────
 
     pub fn is_in_formula(&self, range: TextRange) -> bool {
         in_any_range(range, &self.formula_ranges)
-    }
-
-    pub fn has_synthetic_use(&self, name: &str) -> bool {
-        self.synthetic_used_names.contains(name)
     }
 
     /// Whether `package` is reachable from this file, and so whether its
@@ -297,7 +287,10 @@ impl<'a> SemanticInfo<'a> {
                 .next()
                 .is_some_and(|c| c.is_alphabetic() || c == '_' || c == '.')
         {
-            self.synthetic_used_names.insert(stripped.to_string());
+            // The lookup happens where `..cols` is written, so it reads the
+            // binding live at that position.
+            self.positional_uses
+                .push((stripped.to_string(), node.text_trimmed_range()));
         }
     }
 
@@ -443,10 +436,11 @@ impl<'a> SemanticInfo<'a> {
         // Custom infix operators (`a %op% b`): oak doesn't model the operator
         // as a use of the `%op%` binding, so an operator whose only reference
         // is at a call site would look unused. Record the operator name as a
-        // synthetic use. Only user-defined `%...%` bindings can match; R's
-        // built-in operators have no local definition to keep alive.
+        // read at the call site. Only user-defined `%...%` bindings can match;
+        // R's built-in operators have no local definition to keep alive.
         if op_text.starts_with('%') && op_text.ends_with('%') {
-            self.synthetic_used_names.insert(op_text.to_string());
+            self.positional_uses
+                .push((op_text.to_string(), op.text_trimmed_range()));
         }
 
         // Short-circuit operators: `cond || (x <- 2)` may skip the assignment
@@ -471,7 +465,9 @@ impl<'a> SemanticInfo<'a> {
     /// so the later assignment shadows the earlier one and a later read of `w`
     /// only keeps the last branch alive. Workaround: when the same symbol is
     /// assigned in two or more sibling arguments, they are alternatives rather
-    /// than redefinitions, so consider the name synthetically used.
+    /// than redefinitions, so none of them is dead. Recorded per argument
+    /// range so the exemption covers exactly those assignments and not every
+    /// binding of that name in the file.
     ///
     /// Keyed on the argument structure rather than on a list of callee names,
     /// so user-defined branching wrappers get the same treatment. Repeated
@@ -482,19 +478,31 @@ impl<'a> SemanticInfo<'a> {
             return;
         }
 
-        let mut seen_in_earlier_arg: HashSet<String> = HashSet::new();
+        let mut assigning_args: std::collections::HashMap<String, Vec<TextRange>> =
+            std::collections::HashMap::new();
         for (_, value) in args {
             let assigned: HashSet<String> = value
                 .descendants()
                 .filter(|d| d.kind() == RSyntaxKind::R_BINARY_EXPRESSION)
                 .filter_map(|d| assignment_lhs_name(&d))
                 .collect();
-            for name in &assigned {
-                if seen_in_earlier_arg.contains(name) {
-                    self.synthetic_used_names.insert(name.clone());
-                }
+            for name in assigned {
+                assigning_args
+                    .entry(name)
+                    .or_default()
+                    .push(value.text_trimmed_range());
             }
-            seen_in_earlier_arg.extend(assigned);
+        }
+        for (name, ranges) in assigning_args {
+            // One argument assigning the name is an ordinary definition; it
+            // takes a sibling argument assigning it too for them to be
+            // alternatives.
+            if ranges.len() < 2 {
+                continue;
+            }
+            for range in ranges {
+                self.branching_defs.push((name.clone(), range));
+            }
         }
     }
 
@@ -533,11 +541,13 @@ impl<'a> SemanticInfo<'a> {
                     self.nse_ranges.push(value.text_trimmed_range());
                 }
             }
+            // A name looked up at the call site, so it reads the binding live
+            // there just like an identifier would.
             "do.call" | "match.fun" | "Recall" | "getFunction" => {
                 if let Some((_, first)) = arg_values.first()
                     && let Some(s) = string_literal_value(first)
                 {
-                    self.synthetic_used_names.insert(s);
+                    self.positional_uses.push((s, first.text_trimmed_range()));
                 }
             }
             _ => {}
@@ -560,26 +570,30 @@ impl<'a> SemanticInfo<'a> {
     /// already visited. Skipping those keeps the chain's cycle guard
     /// authoritative instead of reading the file behind its back.
     fn collect_sourced_file_uses(&mut self) {
-        let targets: Vec<std::path::PathBuf> = self
+        let targets: Vec<(std::path::PathBuf, TextRange)> = self
             .index
             .semantic_calls()
             .iter()
             .filter_map(|call| match call.kind() {
-                SemanticCallKind::Source { resolved, .. } => resolved.as_ref(),
+                SemanticCallKind::Source { resolved, .. } => {
+                    resolved.as_ref().map(|url| (url, call.range()))
+                }
                 _ => None,
             })
-            .filter_map(|url| url.to_file_path().ok())
+            .filter_map(|(url, range)| Some((url.to_file_path().ok()?, range)))
             .collect();
-        for target in &targets {
-            self.import_uses_from_sourced_file(target);
+        for (target, call_range) in &targets {
+            self.import_uses_from_sourced_file(target, *call_range);
         }
     }
 
     /// Build (or reuse) the semantic index of a `source()` target and record
     /// its *free* uses — reads that no definition inside the target reaches —
-    /// as synthetic uses. R's `source()` runs the target in the caller's
-    /// environment, so a name the sourced script reads without binding it
-    /// first consumes a binding in this file.
+    /// as reads of this file's bindings at `call_range`. R's `source()` runs
+    /// the target in the caller's environment, so a name the sourced script
+    /// reads without binding it first consumes a binding in this file — the
+    /// one live where the `source()` call sits, which is where the script
+    /// runs.
     ///
     /// Going through the index rather than harvesting raw identifiers keeps
     /// non-reads out: a member name (`df$x`, `pkg::x`) is never a use, and a
@@ -590,7 +604,7 @@ impl<'a> SemanticInfo<'a> {
     /// target that binds a name only conditionally (`if (cond) x <- 2; x`)
     /// still reads the caller's binding when the branch isn't taken, so it
     /// counts as free even though the conditional definition reaches the read.
-    fn import_uses_from_sourced_file(&mut self, target: &std::path::Path) {
+    fn import_uses_from_sourced_file(&mut self, target: &std::path::Path, call_range: TextRange) {
         // The resolver built this index while indexing the current file, so
         // this normally hits; the build is the fallback for an index that
         // reached us some other way.
@@ -621,8 +635,10 @@ impl<'a> SemanticInfo<'a> {
             let symbols = index.symbols(scope);
             for (use_id, use_site) in index.uses(scope).iter() {
                 if !index.use_is_bound(scope, use_id) {
-                    self.synthetic_used_names
-                        .insert(symbols.symbol(use_site.symbol()).name().to_string());
+                    self.positional_uses.push((
+                        symbols.symbol(use_site.symbol()).name().to_string(),
+                        call_range,
+                    ));
                 }
             }
         }
@@ -803,6 +819,40 @@ impl<'a> SemanticInfo<'a> {
             }
             return;
         }
+    }
+
+    /// Keep the assignments a call spreads over sibling arguments alive (see
+    /// [`Self::collect_branching_argument_assignments`]). Only definitions
+    /// sitting inside one of those arguments are exempt, so an unrelated
+    /// binding of the same name elsewhere in the file is still reported.
+    fn precompute_branching_defs(&mut self) {
+        let defs = std::mem::take(&mut self.branching_defs);
+        for (name, range) in &defs {
+            self.mark_definitions_in_range(name, *range);
+        }
+    }
+
+    /// Mark every definition of `name` sitting inside `range` as used. The
+    /// range decides on its own which scope is meant, so an assignment nested
+    /// in a closure inside that range counts too.
+    fn mark_definitions_in_range(&mut self, name: &str, range: TextRange) {
+        let index = self.index;
+        let mut marked: Vec<(ScopeId, DefinitionId)> = Vec::new();
+        for scope in index.scope_ids() {
+            let Some(symbol_id) = index.symbols(scope).id(name) else {
+                continue;
+            };
+            marked.extend(
+                index
+                    .definitions(scope)
+                    .iter()
+                    .filter(|(_, def)| {
+                        def.symbol() == symbol_id && range.contains_range(def.range())
+                    })
+                    .map(|(def_id, _)| (scope, def_id)),
+            );
+        }
+        self.reaching_used.extend(marked);
     }
 
     /// Model a short-circuit operand not running: a read after `cond || (x <-

@@ -1762,6 +1762,104 @@ print(x)"
         );
     }
 
+    // ---------------------------------------------------------------
+    // Reads spelled as names resolve through the scope chain
+    // ---------------------------------------------------------------
+
+    #[test]
+    fn test_lint_do_call_name_does_not_reach_another_scope() {
+        // `do.call` looks the name up where it is called, so it can't see a
+        // local of an unrelated function.
+        assert_snapshot!(
+            snapshot_lint("f <- function() {\n  helper <- 1\n  2\n}\ndo.call(\"helper\", list())"),
+            @r"
+        warning: unused_object
+         --> <test>:2:3
+          |
+        2 |   helper <- 1
+          |   ------ Object `helper` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_lint_dot_dot_prefix_does_not_reach_another_scope() {
+        // Same for data.table's `..cols`: it resolves in the calling frame,
+        // not in every scope that happens to bind `cols`.
+        assert_snapshot!(
+            snapshot_lint(
+                "
+f <- function() {
+  cols <- 'a'
+  2
+}
+data.table::setDT(dt)
+dt[, ..cols]
+"
+            ),
+            @r"
+        warning: unused_object
+         --> <test>:3:3
+          |
+        3 |   cols <- 'a'
+          |   ---- Object `cols` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_lint_branching_arguments_do_not_exempt_other_scopes() {
+        // The branching-argument exemption covers the assignments inside those
+        // arguments, not every binding of the name in the file.
+        assert_snapshot!(
+            snapshot_lint(
+                "
+f <- function() {
+  x <- 1
+  2
+}
+ifelse(is.null(foo), x <- 1, x <- 2)
+print(x)
+"
+            ),
+            @r"
+        warning: unused_object
+         --> <test>:3:3
+          |
+        3 |   x <- 1
+          |   - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_lint_sourced_file_read_does_not_reach_another_scope() {
+        // The sourced script runs where the `source()` call sits, so its free
+        // reads consume bindings visible there — not a local of some other
+        // function.
+        assert_snapshot!(
+            snapshot_lint_with_sourced_files(
+                "f <- function() {\n  w <- 1\n  2\n}\nsource(\"helper.R\")\n",
+                &[("helper.R", "print(w + 1)")],
+            ),
+            @r"
+        warning: unused_object
+         --> <test>:2:3
+          |
+        2 |   w <- 1
+          |   - Object `w` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
     #[test]
     fn test_lint_loop_assignment_readable_outside_loop() {
         expect_no_lint(

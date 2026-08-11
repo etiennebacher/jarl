@@ -52,7 +52,7 @@ pub fn unused_object(
             if !should_lint_definition(&info, def) {
                 continue;
             }
-            if info.is_definition_used(scope_id, def_id, def) {
+            if info.is_definition_used(scope_id, def_id) {
                 continue;
             }
             // Top-level bindings are visible to other files — package
