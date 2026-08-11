@@ -1618,13 +1618,13 @@ x",
         // Also the case if y was defined before
         assert_snapshot!(
             snapshot_lint("
-y <- 2 
+y <- 2
 if (x && (y <- 1) > 2) {}"),
             @"
         warning: unused_object
          --> <test>:2:1
           |
-        2 | y <- 2 
+        2 | y <- 2
           | - Object `y` is defined but never used.
           |
         warning: unused_object
@@ -1853,9 +1853,7 @@ while (cond) {
 
     #[test]
     fn test_self_source_through_parent_dir_stops_at_the_cycle_guard() {
-        // A file sourcing itself through `..` used to mint a new cycle key at
-        // every level (`sub/..` appended again and again), so the chain only
-        // stopped at PATH_MAX after hundreds of redundant parses.
+        // Ensure that a file sourcing itself through `..`  doesn't stack overflow.
         assert_snapshot!(
             snapshot_lint_with_sourced_files(
                 "x <- 1\nsource(\"sub/../main.R\")\n",
