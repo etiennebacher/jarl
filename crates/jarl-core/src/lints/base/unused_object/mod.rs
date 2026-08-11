@@ -1850,7 +1850,7 @@ while (cond) {
             @"All checks passed!"
         );
     }
-  
+
     #[test]
     fn test_lint_shadowed_source_does_not_read_the_file() {
         // `source` is a local function here, so the call runs that function,
@@ -1878,7 +1878,8 @@ while (cond) {
         assert_snapshot!(
             snapshot_lint_with_sourced_files(
                 "x <- 1\nsource(\"sub/../main.R\")\n",
-                &[("sub/other.R", "print(1)")],
+                &[("sub/other.R", "print(1)")]
+            ),
             @r"
         warning: unused_object
          --> <test>:1:1
@@ -1890,7 +1891,7 @@ while (cond) {
         "
         );
     }
-    
+
     #[test]
     fn test_lint_sourced_file_in_its_own_environment() {
         // A non-literal `local =` runs the helper in an environment that
