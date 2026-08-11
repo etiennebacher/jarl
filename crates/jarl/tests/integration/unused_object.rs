@@ -622,6 +622,123 @@ fn test_object_used_in_non_package_r_directory_not_flagged() -> anyhow::Result<(
 }
 
 #[test]
+fn test_object_read_down_a_source_chain_not_flagged() -> anyhow::Result<()> {
+    // `source()` runs the target in the caller's environment, and that carries
+    // down a chain: `a.R` sources `b.R`, which sources `c.R`, so `c.R` still
+    // runs where `a.R`'s `y` is bound and reading it there is a real use.
+    let case = CliTest::with_files([
+        ("a.R", "y <- 1\nsource(\"b.R\")\n"),
+        ("b.R", "source(\"c.R\")\n"),
+        ("c.R", "print(y)\n"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_object_used_across_a_shiny_app_not_flagged() -> anyhow::Result<()> {
+    // `shiny::runApp()` evaluates `global.R` and the adjacent `R/` directory
+    // into the environment the app runs in, so the app's files resolve against
+    // each other: `R/mod.R` reads `cfg` out of `global.R`, and `app.R` reads
+    // `mod` out of `R/mod.R`.
+    let case = CliTest::with_files([
+        (
+            "app.R",
+            "shinyApp(ui = mod(), server = function(input, output) {})\n",
+        ),
+        ("global.R", "cfg <- 1\n"),
+        ("R/mod.R", "mod <- function() cfg\n"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_object_not_shared_between_unrelated_r_directories() -> anyhow::Result<()> {
+    // Two `R/` directories are two environments. `two/R/b.R` reading `shared`
+    // says nothing about `one/R/a.R`'s binding of that name, so it is still
+    // reported — matching names across unrelated projects would make every
+    // common name look used.
+    let case = CliTest::with_files([
+        ("one/R/a.R", "shared <- 1\n"),
+        ("two/R/b.R", "compute <- function() shared\n"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> one/R/a.R:1:1
+      |
+    1 | shared <- 1
+      | ------ Object `shared` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
 fn test_interpolation_honoured_when_sourced_file_attaches_the_package() -> anyhow::Result<()> {
     // `{x}` is only a read when glue is in reach. Here `main.R` never mentions
     // glue itself: `setup.R` attaches it, and R's `source()` runs that

@@ -26,9 +26,9 @@ use std::sync::Arc;
 
 use aether_path::FilePath;
 use air_r_parser::RParserOptions;
-use oak_db::{Db, File, ImportLayer, OakDatabase, Package, workspace_files};
+use oak_db::{Db, File, OakDatabase, Package, workspace_files};
 use oak_scan::ScanScheduler;
-use oak_semantic::semantic_index::{DefinitionKind, SemanticIndex};
+use oak_semantic::semantic_index::{DefinitionKind, SemanticCallKind, SemanticIndex};
 use rayon::prelude::*;
 
 use crate::package::find_package_root;
@@ -63,48 +63,94 @@ struct FileUses {
     /// `(target file, name)` per `Import`-kind definition reached by a use:
     /// this file reads `name` out of `target file` via `source()`.
     import_uses: HashSet<(PathBuf, String)>,
+    /// The files this one `source()`s, whatever it reads from them. These are
+    /// the edges [`Visibility`] walks to give a sourced file the environment
+    /// it runs in.
+    source_targets: Vec<PathBuf>,
 }
 
 /// Which files a given file can read top-level bindings from.
 ///
 /// Free-use name matching is only sound between files that share an
 /// environment; matching across unrelated scripts would count them as readers
-/// of each other. Two sources of visibility, unioned:
+/// of each other. Two relations grant it:
 ///
-/// - **Same package.** A package's R files share one namespace, so each sees
-///   every sibling's top-level bindings whatever the load order. This also
-///   covers files a loader doesn't collate (`data-raw/`, `inst/`, `R/` files
-///   left out of `Collate:`), which oak treats as standalone but which still
-///   read the namespace they sit in.
-/// - **Oak's load context**, via [`File::imports`]: collation siblings of a
-///   non-package `R/` directory, a shiny app's support files, and files that
-///   `source()` this one. This is what extends matching beyond packages.
+/// - **A shared environment**, keyed per file by [`Visibility::environment_of`]
+///   and decided from the file's path alone. Files with the same key see each
+///   other, whatever the load order.
+/// - **`source()` inheritance**: a sourced file runs in the environment of the
+///   file that sourced it, so it reads that file's top-level bindings. This one
+///   is directional, and transitive down a `source()` chain.
 ///
-/// A flat directory of unrelated scripts yields neither, so its files stay
+/// A flat directory of unrelated scripts has neither, so its files stay
 /// invisible to each other — R gives no reason to believe they share an
 /// environment.
+///
+/// This mirrors the load contexts of oak's [`File::imports`] without calling
+/// it. That query reads every workspace file's semantic index — including,
+/// through the reverse `source()` graph, files other than its own — so asking
+/// it here would rebuild the whole workspace's indices on this one thread,
+/// serializing work the pass below already does on the rayon pool. Everything
+/// this type needs is either a path or something the parallel pass already
+/// produced.
 #[derive(Default)]
 struct Visibility {
-    /// Package root per file, for files belonging to one.
-    package_of: HashMap<PathBuf, PathBuf>,
-    /// Extra readable files, for files belonging to no package. Package files
-    /// are already covered by `package_of`, and skipping them keeps this map
-    /// from growing quadratically with package size.
-    imports: HashMap<PathBuf, HashSet<PathBuf>>,
+    /// The environment a file's top-level bindings live in: its package
+    /// namespace, its shiny app, or the `R/` directory it is collated into.
+    /// Absent for a file in none of those.
+    environment_of: HashMap<PathBuf, PathBuf>,
+    /// Per file, the files that `source()` it, directly or through a chain.
+    sourced_by: HashMap<PathBuf, HashSet<PathBuf>>,
 }
 
 impl Visibility {
     /// Whether `reader` can read top-level bindings defined in `definer`.
     fn sees(&self, reader: &Path, definer: &Path) -> bool {
-        if let (Some(reader_pkg), Some(definer_pkg)) =
-            (self.package_of.get(reader), self.package_of.get(definer))
-            && reader_pkg == definer_pkg
+        if let (Some(reader_env), Some(definer_env)) = (
+            self.environment_of.get(reader),
+            self.environment_of.get(definer),
+        ) && reader_env == definer_env
         {
             return true;
         }
-        self.imports
+        self.sourced_by
             .get(reader)
-            .is_some_and(|files| files.contains(definer))
+            .is_some_and(|sourcing| sourcing.contains(definer))
+    }
+
+    /// Record, per file, every file that `source()`s it — directly, or through
+    /// a chain, since a file two hops down still runs in the environment the
+    /// chain started in.
+    fn add_source_inheritance(&mut self, built: &[(Arc<SemanticIndex>, FileUses)]) {
+        let mut targets_of: HashMap<&Path, &[PathBuf]> = HashMap::new();
+        for (_, file) in built {
+            if !file.source_targets.is_empty() {
+                targets_of.insert(file.path.as_path(), &file.source_targets);
+            }
+        }
+        if targets_of.is_empty() {
+            return;
+        }
+
+        // Depth-first from every sourcing file, carrying it down the chain.
+        // Revisiting a file under the same sourcer adds nothing, which both
+        // prunes diamonds and terminates `source()` cycles.
+        for &sourcer in targets_of.keys() {
+            let mut stack: Vec<&Path> = targets_of[sourcer].iter().map(PathBuf::as_path).collect();
+            while let Some(sourced) = stack.pop() {
+                if !self
+                    .sourced_by
+                    .entry(sourced.to_path_buf())
+                    .or_default()
+                    .insert(sourcer.to_path_buf())
+                {
+                    continue;
+                }
+                if let Some(deeper) = targets_of.get(sourced) {
+                    stack.extend(deeper.iter().map(PathBuf::as_path));
+                }
+            }
+        }
     }
 }
 
@@ -236,14 +282,15 @@ impl AnalysisDb {
     pub fn cross_file_used_objects(&self, script_paths: &[PathBuf]) -> CrossFileAnalysis {
         let db = self.db();
 
-        // Collect the paths and the visibility relation up front. Both need
-        // the (`!Sync`) db but touch no disk, so this sequential loop is cheap.
+        // Collect the paths and each file's environment up front. Both need the
+        // (`!Sync`) db but touch no disk, so this sequential loop is cheap.
         // Reading the file contents — the part that scales with file count —
         // is deferred to the parallel pass below. Loose scripts (outside every
-        // scanned root) have no `File`, so they get no visibility entry and
+        // scanned root) have no `File`, so they get no environment and
         // participate through `source()` edges alone.
-        let mut visibility = Visibility::default();
         let mut paths: Vec<PathBuf> = Vec::new();
+        let mut packaged: Vec<(PathBuf, PathBuf)> = Vec::new();
+        let mut app_dirs: HashSet<PathBuf> = HashSet::new();
         for &file in workspace_files(db) {
             let Some(path) = relative_file_path(db, file) else {
                 continue;
@@ -251,30 +298,34 @@ impl AnalysisDb {
             match file.package(db) {
                 Some(package) => {
                     if let Some(root) = package_root_path(db, package) {
-                        visibility.package_of.insert(path.clone(), root);
+                        packaged.push((path.clone(), root));
                     }
                 }
-                // Only files outside a package need the load-context lookup;
-                // package siblings already see each other via `package_of`.
                 None => {
-                    let visible: HashSet<PathBuf> = file
-                        .imports(db)
-                        .iter()
-                        .filter_map(|layer| match layer {
-                            ImportLayer::File(f) => relative_file_path(db, *f),
-                            ImportLayer::SourcingFile { file, .. } => relative_file_path(db, *file),
-                            // Package layers resolve names through a namespace,
-                            // not through another analyzed file.
-                            _ => None,
-                        })
-                        .collect();
-                    if !visible.is_empty() {
-                        visibility.imports.insert(path.clone(), visible);
+                    if let Some(dir) = shiny_app_dir(db, file, &path) {
+                        app_dirs.insert(dir);
                     }
                 }
             }
             paths.push(path);
         }
+
+        // Now that the app directories are known, every scanned file's
+        // environment can be settled. A package file's is its namespace; the
+        // rest go by directory layout.
+        let mut visibility = Visibility::default();
+        for (path, root) in packaged {
+            visibility.environment_of.insert(path, root);
+        }
+        for path in &paths {
+            if visibility.environment_of.contains_key(path) {
+                continue;
+            }
+            if let Some(environment) = script_environment(path, &app_dirs) {
+                visibility.environment_of.insert(path.clone(), environment);
+            }
+        }
+
         let scanned: HashSet<&PathBuf> = paths.iter().collect();
         let scripts: Vec<PathBuf> = script_paths
             .iter()
@@ -319,6 +370,11 @@ impl AnalysisDb {
             let key = std::path::absolute(&file.path).unwrap_or_else(|_| file.path.clone());
             source_index_cache.insert(key, Arc::clone(index));
         }
+
+        // The `source()` graph the parallel pass read off each index completes
+        // the visibility relation: a sourced file runs in its sourcer's
+        // environment and so reads its top-level bindings.
+        visibility.add_source_inheritance(&built);
 
         // Only a name defined at top level somewhere can be the target of a
         // cross-file read, so indexing by definer drops free uses of locals,
@@ -444,7 +500,26 @@ fn collect_file_uses(path: PathBuf, index: &SemanticIndex) -> FileUses {
         }
     }
 
-    FileUses { path, top_defs, free_uses, import_uses }
+    // `source()` calls oak resolved to a file. Only the annotated calls are
+    // here, so a shadowed `source` or a non-literal `local =` argument — which
+    // doesn't run the target in this file's environment — is already excluded.
+    let source_targets: Vec<PathBuf> = index
+        .semantic_calls()
+        .iter()
+        .filter_map(|call| match call.kind() {
+            SemanticCallKind::Source { resolved, .. } => resolved.as_ref(),
+            _ => None,
+        })
+        .filter_map(import_target_path)
+        .collect();
+
+    FileUses {
+        path,
+        top_defs,
+        free_uses,
+        import_uses,
+        source_targets,
+    }
 }
 
 /// Convert an `Import` definition's file URL back to the relativized path
@@ -462,6 +537,74 @@ fn import_target_path(url: &url::Url) -> Option<PathBuf> {
 fn relative_file_path(db: &dyn Db, file: File) -> Option<PathBuf> {
     let path = file.path(db).as_path()?.as_std_path().to_path_buf();
     Some(PathBuf::from(crate::fs::relativize_path(&path)))
+}
+
+/// The RStudio entry-point filenames a shiny app is recognized by, each with
+/// the call that has to appear in it. Shiny matches the filenames
+/// case-insensitively, unlike the exact `R/` convention.
+const SHINY_ENTRY_FILES: [(&str, &str); 3] = [
+    ("app.R", "shinyApp"),
+    ("ui.R", "shinyUI"),
+    ("server.R", "shinyServer"),
+];
+
+/// The directory `path` makes a shiny app root, i.e. its own directory when it
+/// is one of the app's entry points. `None` for every other file.
+///
+/// Text matching on the source, the same test oak applies: it accepts the
+/// occasional `shinyApp` written in a comment, which only ever widens an app's
+/// support set. Reads the file's text but not its semantic index, so it stays
+/// off the expensive path this module avoids.
+fn shiny_app_dir(db: &dyn Db, file: File, path: &Path) -> Option<PathBuf> {
+    let name = path.file_name()?.to_str()?;
+    let (_, marker) = SHINY_ENTRY_FILES
+        .iter()
+        .find(|(entry, _)| name.eq_ignore_ascii_case(entry))?;
+    file.source_text(db)
+        .contains(marker)
+        .then(|| path.parent())
+        .flatten()
+        .map(Path::to_path_buf)
+}
+
+/// The environment a file outside every package shares with its neighbours,
+/// from directory layout alone. `None` for a loose script, which has no reason
+/// to share one with anything.
+///
+/// Two layouts qualify, both mirroring the load contexts oak's [`File::imports`]
+/// derives:
+///
+/// - **An `R/` directory.** R sources its files alphabetically into one
+///   environment, the convention a package without `Collate:` follows. The
+///   directory name is case-sensitive, like R's package scanner.
+/// - **A shiny app.** `shiny::runApp()` evaluates `global.R` and the adjacent
+///   `R/` directory into the environment its entry point runs in, so the app's
+///   files all resolve against each other. A script the app doesn't load — one
+///   sitting next to `app.R` under some other name — is not part of it.
+fn script_environment(path: &Path, app_dirs: &HashSet<PathBuf>) -> Option<PathBuf> {
+    let dir = path.parent()?;
+    if dir.file_name() == Some(std::ffi::OsStr::new("R")) {
+        // An app's `R/` collates into the app rather than on its own, so that
+        // its files also reach `global.R` and the entry point.
+        return match dir.parent() {
+            Some(app) if app_dirs.contains(app) => Some(app.to_path_buf()),
+            _ => Some(dir.to_path_buf()),
+        };
+    }
+    (app_dirs.contains(dir) && is_shiny_app_file(path)).then(|| dir.to_path_buf())
+}
+
+/// Whether a file sitting directly in a shiny app directory is one the app
+/// loads: an entry point, or the `global.R` that `loadSupport()` evaluates
+/// before the app's own code.
+fn is_shiny_app_file(path: &Path) -> bool {
+    let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+        return false;
+    };
+    name.eq_ignore_ascii_case("global.R")
+        || SHINY_ENTRY_FILES
+            .iter()
+            .any(|(entry, _)| name.eq_ignore_ascii_case(entry))
 }
 
 /// The root directory of a [`Package`], i.e. the directory holding its
