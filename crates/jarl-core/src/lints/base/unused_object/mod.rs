@@ -1560,6 +1560,7 @@ while (cond) {
           |   - Object `w` is defined but never used.
           |
         Found 1 error.
-        ")
+        "
+        );
     }
 }
