@@ -15,7 +15,8 @@ use std::collections::HashSet;
 use air_r_parser::RParserOptions;
 use air_r_syntax::{
     AnyRArgumentName, AnyRExpression, RArgument, RArgumentList, RBinaryExpression, RCall,
-    RExtractExpression, RNamespaceExpression, RStringValue, RSyntaxKind, RSyntaxNode,
+    RExtractExpression, RForStatement, RNamespaceExpression, RStringValue, RSyntaxKind,
+    RSyntaxNode,
 };
 use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange, TextSize};
 use oak_core::syntax_ext::{RIdentifierExt, RStringValueExt};
@@ -37,8 +38,9 @@ pub struct SemanticInfo<'a> {
     /// stored as `(name, assignment range)` and resolved in
     /// [`Self::precompute_short_circuit_defs`].
     short_circuit_defs: Vec<(String, TextRange)>,
-    /// Ranges of loop statements (`for`/`while`/`repeat`), used to model the
-    /// back edge in [`Self::precompute_loop_back_edges`].
+    /// Ranges re-entered by a loop's back edge, used in
+    /// [`Self::precompute_loop_back_edges`]: the whole statement for
+    /// `while`/`repeat`, only the body for `for`.
     loop_ranges: Vec<TextRange>,
     /// Position-aware reads collected by the AST pass: string interpolation
     /// (`glue("{x}")`, cli markup, custom delimiters). Stored as
@@ -171,10 +173,20 @@ impl<'a> SemanticInfo<'a> {
                     self.visit_binary(&bin);
                 }
             }
-            RSyntaxKind::R_WHILE_STATEMENT
-            | RSyntaxKind::R_FOR_STATEMENT
-            | RSyntaxKind::R_REPEAT_STATEMENT => {
+            // A `while` condition is re-evaluated on every iteration, so it
+            // belongs to the back edge; a `for` sequence is evaluated once
+            // before the loop starts, so only its body does.
+            RSyntaxKind::R_WHILE_STATEMENT | RSyntaxKind::R_REPEAT_STATEMENT => {
                 self.loop_ranges.push(node.text_trimmed_range());
+            }
+            RSyntaxKind::R_FOR_STATEMENT => {
+                if let Some(body) = node
+                    .clone()
+                    .cast::<RForStatement>()
+                    .and_then(|stmt| stmt.body().ok())
+                {
+                    self.loop_ranges.push(body.syntax().text_trimmed_range());
+                }
             }
             _ => {}
         }

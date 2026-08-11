@@ -1392,6 +1392,27 @@ y",
     }
 
     #[test]
+    fn test_lint_assignment_not_read_back_by_for_sequence() {
+        // Reassigning `y` in the body doesn't influence the number of loop iterations.
+        assert_snapshot!(
+            snapshot_lint("
+y <- 1:3
+for (x in y) {
+  y <- 1
+}"),
+            @"
+        warning: unused_object
+         --> <test>:4:3
+          |
+        4 |   y <- 1
+          |   - Object `y` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
     fn test_lint_loop_assignment_never_read_back() {
         // Being assigned in a loop doesn't make an object used: `y` is never
         // read, in this iteration or the next one.
