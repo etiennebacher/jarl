@@ -1509,6 +1509,15 @@ x %<>% sum()"
         Found 1 error.
         "
         );
+
+        assert_snapshot!(
+            snapshot_lint("
+x <- 1:3
+x %<>% sum()
+x + 1"
+        ),
+            @"All checks passed!"
+        );
     }
 
     #[test]
@@ -1552,18 +1561,5 @@ while (cond) {
           |
         Found 1 error.
         ")
-    }
-
-    #[test]
-    fn test_lint_magrittr_assign() {
-        // shouldn't lint
-        assert_snapshot!(
-            snapshot_lint("
-x <- 1:3
-x %<>% sum()
-x + 1"
-        ),
-            @"All checks passed!"
-        );
     }
 }
