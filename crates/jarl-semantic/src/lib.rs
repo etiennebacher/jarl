@@ -1201,8 +1201,9 @@ pub fn assignment_lhs_name(node: &RSyntaxNode) -> Option<String> {
 /// invoked — trying every level catches layouts like `jarl check foo` where
 /// `foo/sub/a.R` sources a file at `foo/` (the same reason oak's salsa
 /// resolver anchors at the workspace root). Lint paths are CWD-relative, so
-/// walking their ancestors down to `""` is exactly that chain and never
-/// escapes the CWD.
+/// walking their ancestors down to `""` is exactly that chain of anchors. The
+/// `source()` argument itself is unconstrained: a `../` in it resolves above
+/// the CWD, the same as it would when R runs the script.
 fn resolve_sourced_path(current_file: &std::path::Path, path: &str) -> Option<std::path::PathBuf> {
     let candidate = std::path::Path::new(path);
     if candidate.is_absolute() {
@@ -1373,6 +1374,46 @@ impl oak_semantic::ImportsResolver for JarlImportsResolver {
 /// Absolutize `path` against the process CWD, without touching the
 /// filesystem. Gives `source()` targets a canonical key so cycle detection
 /// and URL construction agree regardless of how the path was spelled.
+///
+/// `std::path::absolute` drops `.` but keeps `..`, so `sub/../a.R` and `a.R`
+/// would key differently and a self-`source()` spelled with `..` would slip
+/// past the cycle guard, minting a fresh key at every level of the chain.
+/// Popping `..` lexically makes both spellings collapse to the same key.
+///
+/// Lexical, not `canonicalize`: the key doubles as the `file://` URL the
+/// cross-file pass round-trips back to a lint path, so it has to stay the
+/// path as spelled rather than a symlink-resolved one (and it must work for
+/// targets that don't exist on disk). The trade-off is that `..` crossing a
+/// symlinked directory normalises to a path the OS wouldn't — the file is
+/// still read through the un-normalised path, so this only affects keying.
 fn absolutize_path(path: &std::path::Path) -> std::path::PathBuf {
-    std::path::absolute(path).unwrap_or_else(|_| path.to_path_buf())
+    let absolute = std::path::absolute(path).unwrap_or_else(|_| path.to_path_buf());
+    normalize_parent_dirs(&absolute)
+}
+
+/// Resolve `.` and `..` components lexically, without consulting the
+/// filesystem. A `..` with nothing to pop is kept: it's either a relative path
+/// climbing above its own root, or the filesystem root, where `..` is a no-op
+/// R would resolve the same way.
+fn normalize_parent_dirs(path: &std::path::Path) -> std::path::PathBuf {
+    use std::path::Component;
+
+    let mut normalized = std::path::PathBuf::new();
+    for component in path.components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                if matches!(
+                    normalized.components().next_back(),
+                    Some(Component::Normal(_))
+                ) {
+                    normalized.pop();
+                } else if !normalized.has_root() {
+                    normalized.push(component);
+                }
+            }
+            other => normalized.push(other),
+        }
+    }
+    normalized
 }
