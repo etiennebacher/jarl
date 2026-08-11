@@ -1834,6 +1834,61 @@ while (cond) {
     }
 
     #[test]
+    fn test_lint_shadowed_source_does_not_read_the_file() {
+        // `source` is a local function here, so the call runs that function,
+        // not R's `source()`, and the helper is never read.
+        assert_snapshot!(
+            snapshot_lint_with_sourced_files(
+                "source <- function(x) invisible(x)\nw <- 1\nsource(\"helper.R\")\n",
+                &[("helper.R", "print(w + 1)")],
+            ),
+            @r"
+        warning: unused_object
+         --> <test>:2:1
+          |
+        2 | w <- 1
+          | - Object `w` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_lint_sourced_file_in_its_own_environment() {
+        // A non-literal `local =` runs the helper in an environment that
+        // can't see this file's bindings, so its reads consume nothing here.
+        assert_snapshot!(
+            snapshot_lint_with_sourced_files(
+                "w <- 1\nsource(\"helper.R\", local = new.env())\n",
+                &[("helper.R", "print(w + 1)")],
+            ),
+            @r"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | w <- 1
+          | - Object `w` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_no_lint_sourced_file_with_literal_local_argument() {
+        // `local = TRUE` evaluates the helper in the calling environment, so
+        // its reads still consume bindings from this file.
+        assert_snapshot!(
+            snapshot_lint_with_sourced_files(
+                "w <- 1\nsource(\"helper.R\", local = TRUE)\n",
+                &[("helper.R", "print(w + 1)")],
+            ),
+            @"All checks passed!"
+        );
+    }
+
+    #[test]
     fn test_no_lint_sourced_file_absolute_path_outside_project() {
         // The sourced file lives in a separate tempdir, referenced by an
         // absolute path. Resolution should follow the path verbatim rather
