@@ -168,6 +168,9 @@ impl<'a> SemanticInfo<'a> {
         this.collect_ast_passes(expressions);
         let scopes = this.scope_ids();
         this.precompute_reaching_uses(&scopes);
+        // Before `precompute_positional_uses`, which consumes
+        // `positional_uses`: the back-edge pass reads that list too, since an
+        // interpolation inside a loop is read again on the next iteration.
         this.precompute_loop_back_edges(&scopes);
         this.precompute_positional_uses();
         this.precompute_short_circuit_defs();
@@ -684,33 +687,56 @@ impl<'a> SemanticInfo<'a> {
     /// sit after it but still inside that loop: those are what the next
     /// iteration reads. A definition the loop never reads back is left alone,
     /// so `for (x in 1:3) { y <- x + 1 }` still reports `y`.
+    ///
+    /// Covers both kinds of read: the ones oak indexes, and the position-aware
+    /// ones collected by the AST pass. An interpolation is a read like any
+    /// other, so `for (i in 1:3) { print(glue("{x}")); x <- i }` reads `x`
+    /// back on the next iteration too.
     fn precompute_loop_back_edges(&mut self, scopes: &[ScopeId]) {
         if self.loop_ranges.is_empty() {
             return;
         }
         let index = self.index;
         // Collect first: marking borrows `self` mutably.
-        let mut back_edges: Vec<(&str, ScopeId, TextSize, TextRange)> = Vec::new();
+        let mut back_edges: Vec<(String, ScopeId, TextSize, TextRange)> = Vec::new();
         for &scope_id in scopes {
             let symbols = index.symbols(scope_id);
             for (_, u) in index.uses(scope_id).iter() {
                 if self.is_in_nse(u.range()) {
                     continue;
                 }
-                // Nested loops: the back edge of every enclosing loop can feed
-                // this use, so consider all the loops it sits in.
-                for loop_range in self
-                    .loop_ranges
-                    .iter()
-                    .filter(|range| range.contains_range(u.range()))
-                {
-                    let name = symbols.symbol(u.symbol()).name();
-                    back_edges.push((name, scope_id, u.range().start(), *loop_range));
-                }
+                let name = symbols.symbol(u.symbol()).name();
+                self.queue_back_edges(&mut back_edges, name, scope_id, u.range());
             }
         }
+        // Interpolation reads never enter oak's use list — they're resolved
+        // from `positional_uses`, which only ever looks backwards from the
+        // read — so the back edge has to be queued for them here.
+        for (name, read_range) in &self.positional_uses {
+            let (read_scope, _) = index.scope_at(read_range.start());
+            self.queue_back_edges(&mut back_edges, name, read_scope, *read_range);
+        }
         for (name, scope_id, pos, loop_range) in back_edges {
-            self.mark_loop_back_edge(name, scope_id, pos, loop_range);
+            self.mark_loop_back_edge(&name, scope_id, pos, loop_range);
+        }
+    }
+
+    /// Queue one back edge per loop enclosing a read of `name` at `range`.
+    /// Nested loops: the back edge of every enclosing loop can feed the read,
+    /// so all the loops it sits in count.
+    fn queue_back_edges(
+        &self,
+        queue: &mut Vec<(String, ScopeId, TextSize, TextRange)>,
+        name: &str,
+        scope: ScopeId,
+        range: TextRange,
+    ) {
+        for loop_range in self
+            .loop_ranges
+            .iter()
+            .filter(|loop_range| loop_range.contains_range(range))
+        {
+            queue.push((name.to_string(), scope, range.start(), *loop_range));
         }
     }
 

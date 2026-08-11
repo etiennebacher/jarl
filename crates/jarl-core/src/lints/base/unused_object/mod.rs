@@ -849,6 +849,50 @@ for (i in 1:3) {
     }
 
     #[test]
+    fn test_object_used_in_next_iteration_through_interpolation() {
+        expect_no_lint(
+            "
+library(glue)
+x <- 0
+for (i in 1:3) {
+  glue(\"{x}\")
+  x <- i
+}",
+            "unused_object",
+            None,
+        );
+        expect_no_lint(
+            "
+library(cli)
+x <- 0
+while (cond) {
+  cli_alert(\"{x}\")
+  x <- f()
+}",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_object_assigned_in_loop_but_never_interpolated_back() {
+        assert_snapshot!(
+            snapshot_lint(
+                "library(glue)\nx <- 0\nfor (i in 1:3) {\n  glue(\"{x}\")\n  y <- i\n}\n"
+            ),
+            @r"
+        warning: unused_object
+         --> <test>:5:3
+          |
+        5 |   y <- i
+          |   - Object `y` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
     fn test_function_def_default_arg_value() {
         expect_no_lint(
             "
@@ -1613,13 +1657,13 @@ x",
         // Also the case if y was defined before
         assert_snapshot!(
             snapshot_lint("
-y <- 2 
+y <- 2
 if (x && (y <- 1) > 2) {}"),
             @"
         warning: unused_object
          --> <test>:2:1
           |
-        2 | y <- 2 
+        2 | y <- 2
           | - Object `y` is defined but never used.
           |
         warning: unused_object
