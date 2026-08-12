@@ -1183,6 +1183,31 @@ for (i in 1:2) {
     }
 
     #[test]
+    fn test_lint_object_shadowed_inside_interpolation() {
+        // The `a` an interpolation binds for itself is not a read of the outer
+        // `a`, so the outer one is still reported. The snippet is indexed like
+        // any other code, so its own scopes count.
+        assert_snapshot!(
+            snapshot_lint("library(glue)\na <- 1\nglue(\"{sapply(v, function(a) a)}\")"),
+            @"
+        warning: unused_object
+         --> <test>:2:1
+          |
+        2 | a <- 1
+          | - Object `a` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+        // A name the snippet only reads still consumes the outer binding.
+        expect_no_lint(
+            "library(glue)\nv <- 1\nglue(\"{sapply(v, function(a) a)}\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
     fn test_no_lint_glue_family_functions() {
         expect_no_lint(
             "library(glue)\nx <- 1\nglue_data(d, \"{x}\")",

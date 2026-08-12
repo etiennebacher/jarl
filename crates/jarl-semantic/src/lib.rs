@@ -15,8 +15,7 @@ use std::collections::HashSet;
 use air_r_parser::RParserOptions;
 use air_r_syntax::{
     AnyRArgumentName, AnyRExpression, RArgument, RArgumentList, RBinaryExpression, RCall,
-    RExtractExpression, RForStatement, RNamespaceExpression, RStringValue, RSyntaxKind,
-    RSyntaxNode,
+    RForStatement, RStringValue, RSyntaxKind, RSyntaxNode,
 };
 use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange, TextSize};
 use oak_core::syntax_ext::{RIdentifierExt, RStringValueExt};
@@ -322,7 +321,7 @@ impl<'a> SemanticInfo<'a> {
             // `collect_custom_glue_interpolation`.
             InterpolationFlavor::Glue => {
                 for segment in scan_interpolation_segments(&content, "{", "}") {
-                    self.collect_identifiers_in_interpolation(segment, read_range);
+                    self.collect_interpolation_reads(segment, read_range);
                 }
             }
         }
@@ -341,7 +340,7 @@ impl<'a> SemanticInfo<'a> {
             if let Some(inner) = cli_markup_content(segment) {
                 self.collect_cli_interpolation(inner, read_range);
             } else {
-                self.collect_identifiers_in_interpolation(segment, read_range);
+                self.collect_interpolation_reads(segment, read_range);
             }
         }
     }
@@ -389,32 +388,28 @@ impl<'a> SemanticInfo<'a> {
             };
             let read_range = value.text_trimmed_range();
             for segment in scan_interpolation_segments(&content, &open, &close) {
-                self.collect_identifiers_in_interpolation(segment, read_range);
+                self.collect_interpolation_reads(segment, read_range);
             }
         }
     }
 
-    /// Parse a glue-style `{...}` interpolation as R code and collect every
-    /// identifier reference as an interpolation use at `read_range`. Skips the
-    /// field side of `x$a` / `x@a` and the namespace side of `pkg::name` —
-    /// those name members, not bindings.
-    fn collect_identifiers_in_interpolation(&mut self, src: &str, read_range: TextRange) {
+    /// Parse a glue-style `{...}` interpolation as R code and record what it
+    /// reads as position-aware reads at `read_range`.
+    ///
+    /// The snippet is indexed rather than scanned for identifiers, so it gets
+    /// the same treatment as any other code: a member name (`x$a`, `pkg::x`)
+    /// is not a read, and a name the snippet binds itself
+    /// (`{sapply(v, function(a) a)}`) consumes nothing outside it.
+    fn collect_interpolation_reads(&mut self, src: &str, read_range: TextRange) {
         let parsed = air_r_parser::parse(src, RParserOptions::default());
         if parsed.has_error() {
             return;
         }
-        for node in parsed.syntax().descendants() {
-            if node.kind() != RSyntaxKind::R_IDENTIFIER {
-                continue;
-            }
-            if is_member_name(&node) {
-                continue;
-            }
-            if let Some(token) = node.first_token() {
-                self.positional_uses
-                    .push((token.text_trimmed().to_string(), read_range));
-            }
-        }
+        // A snippet can't `source()` anything or attach a package, so it has
+        // nothing to resolve.
+        let index = oak_semantic::build_index(&parsed.tree(), oak_semantic::NoopImportsResolver);
+        self.positional_uses
+            .extend(free_uses(&index).map(|name| (name, read_range)));
     }
 
     fn visit_binary(&mut self, bin: &RBinaryExpression) {
@@ -631,17 +626,8 @@ impl<'a> SemanticInfo<'a> {
                 index
             }
         };
-        for scope in index.scope_ids() {
-            let symbols = index.symbols(scope);
-            for (use_id, use_site) in index.uses(scope).iter() {
-                if !index.use_is_bound(scope, use_id) {
-                    self.positional_uses.push((
-                        symbols.symbol(use_site.symbol()).name().to_string(),
-                        call_range,
-                    ));
-                }
-            }
-        }
+        self.positional_uses
+            .extend(free_uses(&index).map(|name| (name, call_range)));
     }
 
     // ── Internal: reach / closure analysis ────────────────────────────
@@ -947,6 +933,26 @@ impl<'a> SemanticInfo<'a> {
 
 // ── Free helpers (also used by rule policy) ──────────────────────────────
 
+/// The names `index` reads without binding them first — the reads that consume
+/// a binding from outside the indexed code.
+///
+/// "Free" means *not definitely bound*, not "unbound on every path": code that
+/// binds a name only conditionally (`if (cond) x <- 2; x`) still reads the
+/// outer binding when the branch isn't taken, so it counts as free even though
+/// the conditional definition reaches the read.
+fn free_uses(index: &SemanticIndex) -> impl Iterator<Item = String> {
+    let mut names = Vec::new();
+    for scope in index.scope_ids() {
+        let symbols = index.symbols(scope);
+        for (use_id, use_site) in index.uses(scope).iter() {
+            if !index.use_is_bound(scope, use_id) {
+                names.push(symbols.symbol(use_site.symbol()).name().to_string());
+            }
+        }
+    }
+    names.into_iter()
+}
+
 fn in_any_range(target: TextRange, ranges: &[TextRange]) -> bool {
     ranges.iter().any(|r| r.contains_range(target))
 }
@@ -1115,23 +1121,6 @@ fn cli_markup_content(segment: &str) -> Option<&str> {
     // A markup span separates the class from its content with whitespace.
     let after_class = rest[class_len..].strip_prefix(|c: char| c.is_whitespace())?;
     Some(after_class.trim_start())
-}
-
-fn is_member_name(node: &RSyntaxNode) -> bool {
-    let Some(parent) = node.parent() else {
-        return false;
-    };
-    match parent.kind() {
-        RSyntaxKind::R_EXTRACT_EXPRESSION => parent
-            .cast::<RExtractExpression>()
-            .and_then(|e| e.right().ok())
-            .is_some_and(|r| r.syntax() == node),
-        RSyntaxKind::R_NAMESPACE_EXPRESSION => parent
-            .cast::<RNamespaceExpression>()
-            .and_then(|e| e.right().ok())
-            .is_some_and(|r| r.syntax() == node),
-        _ => false,
-    }
 }
 
 /// The value node of the quoted-expression argument (`expr`) of a quote-like
