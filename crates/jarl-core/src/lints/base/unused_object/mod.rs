@@ -1138,6 +1138,32 @@ for (i in 1:2) {
     }
 
     #[test]
+    fn test_backtick_quoted_callee_names() {
+        // Backticks quote a name, they aren't part of it, so a backtick-quoted
+        // callee is the same function — written bare or behind `::`.
+        expect_no_lint(
+            "library(glue)\nx <- 1\n`glue`(\"{x}\")",
+            "unused_object",
+            None,
+        );
+        expect_no_lint("x <- 1\nglue::`glue`(\"{x}\")", "unused_object", None);
+        // And the other direction: a backtick-quoted quoting call still
+        // captures its argument rather than reading it.
+        assert_snapshot!(
+            snapshot_lint("x <- 1\nmethods::`Quote`(x)"),
+            @r"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
     fn test_equal_in_formula_is_not_definition() {
         expect_no_lint(
             "
@@ -1177,6 +1203,31 @@ for (i in 1:2) {
         // `x` is referenced (used); `a` is a field name, not a binding.
         expect_no_lint(
             "x <- list(a = 1)\nglue::glue(\"{x$a}\")",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_object_shadowed_inside_interpolation() {
+        // The `a` an interpolation binds for itself is not a read of the outer
+        // `a`, so the outer one is still reported. The snippet is indexed like
+        // any other code, so its own scopes count.
+        assert_snapshot!(
+            snapshot_lint("library(glue)\na <- 1\nglue(\"{sapply(v, function(a) a)}\")"),
+            @"
+        warning: unused_object
+         --> <test>:2:1
+          |
+        2 | a <- 1
+          | - Object `a` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+        // A name the snippet only reads still consumes the outer binding.
+        expect_no_lint(
+            "library(glue)\nv <- 1\nglue(\"{sapply(v, function(a) a)}\")",
             "unused_object",
             None,
         );
