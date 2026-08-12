@@ -14,13 +14,13 @@ use std::collections::HashSet;
 
 use air_r_parser::RParserOptions;
 use air_r_syntax::{
-    AnyRArgumentName, AnyRExpression, RArgument, RArgumentList, RBinaryExpression, RCall,
-    RExtractExpression, RForStatement, RNamespaceExpression, RStringValue, RSyntaxKind,
-    RSyntaxNode,
+    AnyRArgumentName, AnyRExpression, RArgument, RBinaryExpression, RCall, RExtractExpression,
+    RForStatement, RNamespaceExpression, RStringValue, RSyntaxKind, RSyntaxNode,
 };
 use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange, TextSize};
-use oak_core::syntax_ext::{RIdentifierExt, RStringValueExt};
+use oak_core::syntax_ext::{AnyRSelectorExt, RIdentifierExt, RStringValueExt};
 use oak_semantic::DefinitionId;
+use oak_semantic::effects::CallContext;
 use oak_semantic::semantic_index::{
     Definition, DefinitionKind, ScopeId, SemanticCallKind, SemanticIndex,
 };
@@ -355,11 +355,7 @@ impl<'a> SemanticInfo<'a> {
     /// Operates on the *unquoted* string contents, not the raw token text: a
     /// custom delimiter like `(`/`)` would otherwise collide with the
     /// `r"(...)"` raw-string wrapper.
-    fn collect_custom_glue_interpolation(
-        &mut self,
-        call_name: &str,
-        args: &[(Option<String>, RSyntaxNode)],
-    ) {
+    fn collect_custom_glue_interpolation(&mut self, call_name: &str, args: &[RArgument]) {
         let Some(package) = glue_interpolation_package(call_name) else {
             return;
         };
@@ -378,8 +374,15 @@ impl<'a> SemanticInfo<'a> {
         if open == "{" && close == "}" {
             return;
         }
-        for (name, value) in args {
-            if name.is_some() || value.kind() != RSyntaxKind::R_STRING_VALUE {
+        for arg in args {
+            if arg.name_clause().is_some() {
+                continue;
+            }
+            let Some(value) = arg.value() else {
+                continue;
+            };
+            let value = value.syntax();
+            if value.kind() != RSyntaxKind::R_STRING_VALUE {
                 continue;
             }
             let Some(content) =
@@ -473,14 +476,18 @@ impl<'a> SemanticInfo<'a> {
     /// so user-defined branching wrappers get the same treatment. Repeated
     /// assignments *within* one argument (`f({w <- 1; w <- 2})`) really are
     /// sequential and stay lintable.
-    fn collect_branching_argument_assignments(&mut self, args: &[(Option<String>, RSyntaxNode)]) {
+    fn collect_branching_argument_assignments(&mut self, args: &[RArgument]) {
         if args.len() < 2 {
             return;
         }
 
         let mut assigning_args: std::collections::HashMap<String, Vec<TextRange>> =
             std::collections::HashMap::new();
-        for (_, value) in args {
+        for arg in args {
+            let Some(value) = arg.value() else {
+                continue;
+            };
+            let value = value.syntax();
             let assigned: HashSet<String> = value
                 .descendants()
                 .filter(|d| d.kind() == RSyntaxKind::R_BINARY_EXPRESSION)
@@ -507,17 +514,15 @@ impl<'a> SemanticInfo<'a> {
     }
 
     fn visit_call(&mut self, call: &RCall) {
-        let all_args: Vec<(Option<String>, RSyntaxNode)> = call_args(call);
+        let args = call_args(call);
 
-        self.collect_branching_argument_assignments(&all_args);
+        self.collect_branching_argument_assignments(&args);
 
         let Some(name) = call_name(call) else {
             return;
         };
 
-        let arg_values = all_args;
-
-        self.collect_custom_glue_interpolation(&name, &arg_values);
+        self.collect_custom_glue_interpolation(&name, &args);
 
         match name.as_str() {
             // Quoting calls oak's effects registry doesn't cover. (`quote`,
@@ -529,25 +534,29 @@ impl<'a> SemanticInfo<'a> {
             // Only the quoted `expr` argument is NSE. Any other argument is
             // evaluated normally, so its identifiers stay real uses.
             "Quote" => {
-                if let Some(expr) = nse_expr_arg(&arg_values) {
-                    self.nse_ranges.push(expr.text_trimmed_range());
+                let bound = CallContext::default().bind_arguments(call, &["expr"]);
+                if let Some(expr) = bound.get("expr") {
+                    self.nse_ranges.push(expr.syntax().text_trimmed_range());
                 }
             }
             // `expression(...)` and `alist(...)` quote every argument: their
             // values are stored unevaluated, so an assignment like
             // `alist(x <- 1)` is captured code, not a real definition of `x`.
             "expression" | "alist" => {
-                for (_, value) in &arg_values {
-                    self.nse_ranges.push(value.text_trimmed_range());
+                for arg in &args {
+                    if let Some(value) = arg.value() {
+                        self.nse_ranges.push(value.syntax().text_trimmed_range());
+                    }
                 }
             }
             // A name looked up at the call site, so it reads the binding live
             // there just like an identifier would.
             "do.call" | "match.fun" | "Recall" | "getFunction" => {
-                if let Some((_, first)) = arg_values.first()
-                    && let Some(s) = string_literal_value(first)
+                if let Some(value) = args.first().and_then(|arg| arg.value())
+                    && let Some(s) = string_literal_value(value.syntax())
                 {
-                    self.positional_uses.push((s, first.text_trimmed_range()));
+                    self.positional_uses
+                        .push((s, value.syntax().text_trimmed_range()));
                 }
             }
             _ => {}
@@ -1017,12 +1026,20 @@ fn next_char_len(text: &str, i: usize) -> usize {
 
 /// Unquoted contents of a named string-literal argument (e.g. `.open = "<"`),
 /// or `None` if absent or not a string literal.
-fn named_string_arg(args: &[(Option<String>, RSyntaxNode)], name: &str) -> Option<String> {
-    let (_, value) = args.iter().find(|(n, _)| n.as_deref() == Some(name))?;
-    if value.kind() != RSyntaxKind::R_STRING_VALUE {
+///
+/// Matched by name only, rather than through oak's `bind_arguments`: the glue
+/// delimiters this reads sit *after* `...` in glue's signature, and oak's
+/// formals stop at the dots because R matches everything past them by name.
+fn named_string_arg(args: &[RArgument], name: &str) -> Option<String> {
+    let value = args
+        .iter()
+        .find(|arg| argument_name_is(arg, name))?
+        .value()?;
+    let node = value.syntax();
+    if node.kind() != RSyntaxKind::R_STRING_VALUE {
         return None;
     }
-    strings::get_string_literal_contents(&value.text_trimmed().to_string())
+    strings::get_string_literal_contents(&node.text_trimmed().to_string())
 }
 
 /// The interpolation dialect a string literal is written in.
@@ -1134,64 +1151,37 @@ fn is_member_name(node: &RSyntaxNode) -> bool {
     }
 }
 
-/// The value node of the quoted-expression argument (`expr`) of a quote-like
-/// call: the argument named `expr =` if present, otherwise the first
-/// positional (unnamed) argument. Any other argument is evaluated normally,
-/// so its reads must not be swallowed as NSE.
-fn nse_expr_arg(args: &[(Option<String>, RSyntaxNode)]) -> Option<&RSyntaxNode> {
-    if let Some((_, value)) = args
-        .iter()
-        .find(|(name, _)| name.as_deref() == Some("expr"))
-    {
-        return Some(value);
-    }
-    args.iter()
-        .find(|(name, _)| name.is_none())
-        .map(|(_, value)| value)
-}
-
+/// The name of the called function for a bare (`f()`) or namespaced
+/// (`pkg::f()`) callee, unquoted in both cases. `None` for a computed callee.
+///
+/// jarl-core has its own `get_function_name` doing the same job; the two can't
+/// share one, since jarl-core depends on this crate and not the reverse.
 fn call_name(call: &RCall) -> Option<String> {
-    let func = call.function().ok()?;
-    match func {
+    match call.function().ok()? {
         AnyRExpression::RIdentifier(ident) => Some(ident.name_text()),
-        AnyRExpression::RNamespaceExpression(ns) => ns
-            .right()
-            .ok()
-            .and_then(|r| r.syntax().first_token())
-            .map(|t| t.text_trimmed().to_string()),
+        AnyRExpression::RNamespaceExpression(ns) => ns.right().ok()?.identifier_text(),
         _ => None,
     }
 }
 
-fn call_args(call: &RCall) -> Vec<(Option<String>, RSyntaxNode)> {
+/// The call's arguments, in call order. Plain syntax handles: names and values
+/// are only materialised by the callers that look at them, which matters
+/// because this runs for every call node in the file.
+fn call_args(call: &RCall) -> Vec<RArgument> {
     let Ok(arguments) = call.arguments() else {
         return Vec::new();
     };
-    let items = arguments.items();
-    args_iter(&items)
+    arguments.items().iter().flatten().collect()
 }
 
-fn args_iter(list: &RArgumentList) -> Vec<(Option<String>, RSyntaxNode)> {
-    let mut out = Vec::new();
-    for item in list.iter() {
-        let Ok(arg) = item else { continue };
-        let name = argument_name(&arg);
-        let value = arg.value().map(|v| v.syntax().clone());
-        if let Some(value) = value {
-            out.push((name, value));
-        }
-    }
-    out
-}
-
-fn argument_name(arg: &RArgument) -> Option<String> {
-    let clause = arg.name_clause()?;
-    let name = clause.name().ok()?;
-    match name {
-        AnyRArgumentName::RIdentifier(ident) => Some(ident.name_text()),
-        AnyRArgumentName::RDots(_) => Some("...".to_string()),
-        _ => None,
-    }
+/// Whether `arg` is written as `name = value`.
+fn argument_name_is(arg: &RArgument, name: &str) -> bool {
+    arg.name_clause()
+        .and_then(|clause| clause.name().ok())
+        .is_some_and(|arg_name| match arg_name {
+            AnyRArgumentName::RIdentifier(ident) => ident.name_text() == name,
+            _ => false,
+        })
 }
 
 fn string_literal_value(node: &RSyntaxNode) -> Option<String> {
