@@ -1138,6 +1138,32 @@ for (i in 1:2) {
     }
 
     #[test]
+    fn test_backtick_quoted_callee_names() {
+        // Backticks quote a name, they aren't part of it, so a backtick-quoted
+        // callee is the same function — written bare or behind `::`.
+        expect_no_lint(
+            "library(glue)\nx <- 1\n`glue`(\"{x}\")",
+            "unused_object",
+            None,
+        );
+        expect_no_lint("x <- 1\nglue::`glue`(\"{x}\")", "unused_object", None);
+        // And the other direction: a backtick-quoted quoting call still
+        // captures its argument rather than reading it.
+        assert_snapshot!(
+            snapshot_lint("x <- 1\nmethods::`Quote`(x)"),
+            @r"
+        warning: unused_object
+         --> <test>:1:1
+          |
+        1 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
     fn test_equal_in_formula_is_not_definition() {
         expect_no_lint(
             "

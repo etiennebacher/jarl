@@ -14,12 +14,13 @@ use std::collections::HashSet;
 
 use air_r_parser::RParserOptions;
 use air_r_syntax::{
-    AnyRArgumentName, AnyRExpression, RArgument, RArgumentList, RBinaryExpression, RCall,
-    RForStatement, RStringValue, RSyntaxKind, RSyntaxNode,
+    AnyRArgumentName, AnyRExpression, RArgument, RBinaryExpression, RCall, RExtractExpression,
+    RForStatement, RNamespaceExpression, RStringValue, RSyntaxKind, RSyntaxNode,
 };
 use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange, TextSize};
-use oak_core::syntax_ext::{RIdentifierExt, RStringValueExt};
+use oak_core::syntax_ext::{AnyRSelectorExt, RIdentifierExt, RStringValueExt};
 use oak_semantic::DefinitionId;
+use oak_semantic::effects::CallContext;
 use oak_semantic::semantic_index::{
     Definition, DefinitionKind, ScopeId, SemanticCallKind, SemanticIndex,
 };
@@ -77,6 +78,36 @@ impl SourceIndexCache {
     pub fn insert(&self, key: std::path::PathBuf, index: std::sync::Arc<SemanticIndex>) {
         self.inner.lock().unwrap().insert(key, index);
     }
+}
+
+/// The semantic index of a `source()` target: the memoized one, or a fresh
+/// parse and build memoized on the way out. `key` is the absolutized cache
+/// key, `path` the target as spelled at the call site (what gets read), and
+/// `resolver` supplies the imports resolver the target's own `source()` calls
+/// are followed with.
+///
+/// Both sides of `source()` handling come through here, so a target is parsed
+/// and indexed once. Whether a target should be followed *at all* is not
+/// decided here: that stays with the per-chain visited set in
+/// [`JarlImportsResolver::resolve_source`], and this is only reached for
+/// targets it already let through.
+fn source_target_index(
+    cache: &SourceIndexCache,
+    key: &std::path::Path,
+    path: &std::path::Path,
+    resolver: impl FnOnce(&std::path::Path) -> JarlImportsResolver,
+) -> Option<std::sync::Arc<SemanticIndex>> {
+    if let Some(index) = cache.get(key) {
+        return Some(index);
+    }
+    let contents = std::fs::read_to_string(path).ok()?;
+    let parsed = air_r_parser::parse(&contents, RParserOptions::default());
+    if parsed.has_error() {
+        return None;
+    }
+    let index = std::sync::Arc::new(oak_semantic::build_index(&parsed.tree(), resolver(path)));
+    cache.insert(key.to_path_buf(), std::sync::Arc::clone(&index));
+    Some(index)
 }
 
 /// Per-file semantic info derived from oak's [`SemanticIndex`] plus AST
@@ -354,11 +385,7 @@ impl<'a> SemanticInfo<'a> {
     /// Operates on the *unquoted* string contents, not the raw token text: a
     /// custom delimiter like `(`/`)` would otherwise collide with the
     /// `r"(...)"` raw-string wrapper.
-    fn collect_custom_glue_interpolation(
-        &mut self,
-        call_name: &str,
-        args: &[(Option<String>, RSyntaxNode)],
-    ) {
+    fn collect_custom_glue_interpolation(&mut self, call_name: &str, args: &[RArgument]) {
         let Some(package) = glue_interpolation_package(call_name) else {
             return;
         };
@@ -377,8 +404,15 @@ impl<'a> SemanticInfo<'a> {
         if open == "{" && close == "}" {
             return;
         }
-        for (name, value) in args {
-            if name.is_some() || value.kind() != RSyntaxKind::R_STRING_VALUE {
+        for arg in args {
+            if arg.name_clause().is_some() {
+                continue;
+            }
+            let Some(value) = arg.value() else {
+                continue;
+            };
+            let value = value.syntax();
+            if value.kind() != RSyntaxKind::R_STRING_VALUE {
                 continue;
             }
             let Some(content) =
@@ -468,14 +502,18 @@ impl<'a> SemanticInfo<'a> {
     /// so user-defined branching wrappers get the same treatment. Repeated
     /// assignments *within* one argument (`f({w <- 1; w <- 2})`) really are
     /// sequential and stay lintable.
-    fn collect_branching_argument_assignments(&mut self, args: &[(Option<String>, RSyntaxNode)]) {
+    fn collect_branching_argument_assignments(&mut self, args: &[RArgument]) {
         if args.len() < 2 {
             return;
         }
 
         let mut assigning_args: std::collections::HashMap<String, Vec<TextRange>> =
             std::collections::HashMap::new();
-        for (_, value) in args {
+        for arg in args {
+            let Some(value) = arg.value() else {
+                continue;
+            };
+            let value = value.syntax();
             let assigned: HashSet<String> = value
                 .descendants()
                 .filter(|d| d.kind() == RSyntaxKind::R_BINARY_EXPRESSION)
@@ -502,17 +540,15 @@ impl<'a> SemanticInfo<'a> {
     }
 
     fn visit_call(&mut self, call: &RCall) {
-        let all_args: Vec<(Option<String>, RSyntaxNode)> = call_args(call);
+        let args = call_args(call);
 
-        self.collect_branching_argument_assignments(&all_args);
+        self.collect_branching_argument_assignments(&args);
 
         let Some(name) = call_name(call) else {
             return;
         };
 
-        let arg_values = all_args;
-
-        self.collect_custom_glue_interpolation(&name, &arg_values);
+        self.collect_custom_glue_interpolation(&name, &args);
 
         match name.as_str() {
             // Quoting calls oak's effects registry doesn't cover. (`quote`,
@@ -524,25 +560,29 @@ impl<'a> SemanticInfo<'a> {
             // Only the quoted `expr` argument is NSE. Any other argument is
             // evaluated normally, so its identifiers stay real uses.
             "Quote" => {
-                if let Some(expr) = nse_expr_arg(&arg_values) {
-                    self.nse_ranges.push(expr.text_trimmed_range());
+                let bound = CallContext::default().bind_arguments(call, &["expr"]);
+                if let Some(expr) = bound.get("expr") {
+                    self.nse_ranges.push(expr.syntax().text_trimmed_range());
                 }
             }
             // `expression(...)` and `alist(...)` quote every argument: their
             // values are stored unevaluated, so an assignment like
             // `alist(x <- 1)` is captured code, not a real definition of `x`.
             "expression" | "alist" => {
-                for (_, value) in &arg_values {
-                    self.nse_ranges.push(value.text_trimmed_range());
+                for arg in &args {
+                    if let Some(value) = arg.value() {
+                        self.nse_ranges.push(value.syntax().text_trimmed_range());
+                    }
                 }
             }
             // A name looked up at the call site, so it reads the binding live
             // there just like an identifier would.
             "do.call" | "match.fun" | "Recall" | "getFunction" => {
-                if let Some((_, first)) = arg_values.first()
-                    && let Some(s) = string_literal_value(first)
+                if let Some(value) = args.first().and_then(|arg| arg.value())
+                    && let Some(s) = string_literal_value(value.syntax())
                 {
-                    self.positional_uses.push((s, first.text_trimmed_range()));
+                    self.positional_uses
+                        .push((s, value.syntax().text_trimmed_range()));
                 }
             }
             _ => {}
@@ -601,30 +641,14 @@ impl<'a> SemanticInfo<'a> {
     /// counts as free even though the conditional definition reaches the read.
     fn import_uses_from_sourced_file(&mut self, target: &std::path::Path, call_range: TextRange) {
         // The resolver built this index while indexing the current file, so
-        // this normally hits; the build is the fallback for an index that
-        // reached us some other way.
-        let index = match self.source_cache.get(target) {
-            Some(index) => index,
-            None => {
-                let Ok(contents) = std::fs::read_to_string(target) else {
-                    return;
-                };
-                let parsed = air_r_parser::parse(&contents, RParserOptions::default());
-                if parsed.has_error() {
-                    return;
-                }
-                // The resolver lets the target's own `source()` chain inject
-                // Import definitions, so a read satisfied by a deeper file
-                // doesn't count as free here (the cross-file pass credits that
-                // file instead).
-                let index = std::sync::Arc::new(oak_semantic::build_index(
-                    &parsed.tree(),
-                    JarlImportsResolver::with_cache(target, self.source_cache.clone()),
-                ));
-                self.source_cache
-                    .insert(target.to_path_buf(), std::sync::Arc::clone(&index));
-                index
-            }
+        // this normally hits the memo; the build is the fallback for a target
+        // that reached us some other way. Its own `source()` chain injects
+        // Import definitions, so a read satisfied by a deeper file doesn't
+        // count as free here (the cross-file pass credits that file instead).
+        let Some(index) = source_target_index(&self.source_cache, target, target, |path| {
+            JarlImportsResolver::with_cache(path, self.source_cache.clone())
+        }) else {
+            return;
         };
         self.positional_uses
             .extend(free_uses(&index).map(|name| (name, call_range)));
@@ -739,7 +763,15 @@ impl<'a> SemanticInfo<'a> {
             self.queue_back_edges(&mut back_edges, name, read_scope, *read_range);
         }
         for (name, scope_id, pos, loop_range) in back_edges {
-            self.mark_loop_back_edge(&name, scope_id, pos, loop_range);
+            self.mark_lookup(&name, scope_id, |def, _| {
+                // What the next iteration reads: the definitions following the
+                // use but still inside the loop. Those preceding it are what
+                // the first iteration reads — they bind the name without the
+                // back edge marking them.
+                let back_edge =
+                    def.range().start() >= pos && loop_range.contains_range(def.range());
+                (back_edge || def.range().start() < pos, back_edge)
+            });
         }
     }
 
@@ -759,51 +791,6 @@ impl<'a> SemanticInfo<'a> {
             .filter(|loop_range| loop_range.contains_range(range))
         {
             queue.push((name.to_string(), scope, range.start(), *loop_range));
-        }
-    }
-
-    /// Mark the definitions of `name` that the use at `pos` reads on a later
-    /// iteration of the loop spanning `loop_range`: those that follow the use
-    /// but stay inside the loop.
-    ///
-    /// Walks outward from the reading scope like an ordinary lookup and stops
-    /// at the first scope binding `name` — whether before the use (what the
-    /// first iteration reads) or later inside the loop (what the next ones
-    /// read).
-    fn mark_loop_back_edge(
-        &mut self,
-        name: &str,
-        use_scope: ScopeId,
-        pos: TextSize,
-        loop_range: TextRange,
-    ) {
-        let index = self.index;
-        for owner in index.ancestor_scope_ids(use_scope) {
-            let Some(symbol_id) = index.symbols(owner).id(name) else {
-                continue;
-            };
-            let mut binds = false;
-            let mut back_edge_defs = Vec::new();
-            for (def_id, def) in index.definitions(owner).iter() {
-                if def.symbol() != symbol_id || self.is_in_nse(def.range()) {
-                    continue;
-                }
-                if def.range().start() < pos {
-                    binds = true;
-                } else if loop_range.contains_range(def.range()) {
-                    binds = true;
-                    back_edge_defs.push(def_id);
-                }
-            }
-            // `name` may be referenced but not bound in this scope; if so, keep
-            // walking outward to the scope whose binding the read consumes.
-            if !binds {
-                continue;
-            }
-            for def_id in back_edge_defs {
-                self.reaching_used.insert((owner, def_id));
-            }
-            return;
         }
     }
 
@@ -903,29 +890,55 @@ impl<'a> SemanticInfo<'a> {
     ///   later, so textual order is irrelevant and every definition of the
     ///   name there is kept alive.
     fn mark_positional_use(&mut self, name: &str, pos: TextSize) {
+        let (read_scope, _) = self.index.scope_at(pos);
+        self.mark_lookup(name, read_scope, |def, captured| {
+            let reaches = captured || def.range().start() < pos;
+            (reaches, reaches)
+        });
+    }
+
+    /// Walk outward from `scope` like an ordinary lookup and mark the
+    /// definitions of `name` that a read there consumes.
+    ///
+    /// `classify` sees every non-NSE definition of `name` in the scope being
+    /// examined, plus whether that scope encloses the reading one, and answers
+    /// two things: does the definition make this scope the one binding `name`,
+    /// and does the read reach it. The two come apart for a loop back edge,
+    /// where a definition preceding the read binds the name — it is what the
+    /// first iteration reads — without being read back on the next one. The
+    /// walk still stops at such a scope, since an outer definition of the same
+    /// name is shadowed either way; a scope that merely *mentions* `name`
+    /// without binding it doesn't stop it, so it continues to the scope whose
+    /// binding the read actually consumes.
+    fn mark_lookup(
+        &mut self,
+        name: &str,
+        scope: ScopeId,
+        classify: impl Fn(&Definition, bool) -> (bool, bool),
+    ) {
         let index = self.index;
-        let (read_scope, _) = index.scope_at(pos);
-        for owner in index.ancestor_scope_ids(read_scope) {
+        for owner in index.ancestor_scope_ids(scope) {
             let Some(symbol_id) = index.symbols(owner).id(name) else {
                 continue;
             };
-            let captured = owner != read_scope;
-            let reached: Vec<DefinitionId> = index
-                .definitions(owner)
-                .iter()
-                .filter(|(_, def)| def.symbol() == symbol_id && !self.is_in_nse(def.range()))
-                .filter(|(_, def)| captured || def.range().start() < pos)
-                .map(|(id, _)| id)
-                .collect();
-            // `name` may be referenced but not bound (before `pos`) in this
-            // scope; if so, keep walking outward to the scope whose binding
-            // the read actually consumes.
-            if reached.is_empty() {
+            let captured = owner != scope;
+            let mut binds = false;
+            let mut reached: Vec<DefinitionId> = Vec::new();
+            for (def_id, def) in index.definitions(owner).iter() {
+                if def.symbol() != symbol_id || self.is_in_nse(def.range()) {
+                    continue;
+                }
+                let (def_binds, def_reached) = classify(def, captured);
+                binds |= def_binds;
+                if def_reached {
+                    reached.push(def_id);
+                }
+            }
+            if !binds {
                 continue;
             }
-            for def_id in reached {
-                self.reaching_used.insert((owner, def_id));
-            }
+            self.reaching_used
+                .extend(reached.into_iter().map(|def_id| (owner, def_id)));
             return;
         }
     }
@@ -1023,12 +1036,20 @@ fn next_char_len(text: &str, i: usize) -> usize {
 
 /// Unquoted contents of a named string-literal argument (e.g. `.open = "<"`),
 /// or `None` if absent or not a string literal.
-fn named_string_arg(args: &[(Option<String>, RSyntaxNode)], name: &str) -> Option<String> {
-    let (_, value) = args.iter().find(|(n, _)| n.as_deref() == Some(name))?;
-    if value.kind() != RSyntaxKind::R_STRING_VALUE {
+///
+/// Matched by name only, rather than through oak's `bind_arguments`: the glue
+/// delimiters this reads sit *after* `...` in glue's signature, and oak's
+/// formals stop at the dots because R matches everything past them by name.
+fn named_string_arg(args: &[RArgument], name: &str) -> Option<String> {
+    let value = args
+        .iter()
+        .find(|arg| argument_name_is(arg, name))?
+        .value()?;
+    let node = value.syntax();
+    if node.kind() != RSyntaxKind::R_STRING_VALUE {
         return None;
     }
-    strings::get_string_literal_contents(&value.text_trimmed().to_string())
+    strings::get_string_literal_contents(&node.text_trimmed().to_string())
 }
 
 /// The interpolation dialect a string literal is written in.
@@ -1139,48 +1160,54 @@ fn nse_expr_arg(args: &[(Option<String>, RSyntaxNode)]) -> Option<&RSyntaxNode> 
         .map(|(_, value)| value)
 }
 
+fn is_member_name(node: &RSyntaxNode) -> bool {
+    let Some(parent) = node.parent() else {
+        return false;
+    };
+    match parent.kind() {
+        RSyntaxKind::R_EXTRACT_EXPRESSION => parent
+            .cast::<RExtractExpression>()
+            .and_then(|e| e.right().ok())
+            .is_some_and(|r| r.syntax() == node),
+        RSyntaxKind::R_NAMESPACE_EXPRESSION => parent
+            .cast::<RNamespaceExpression>()
+            .and_then(|e| e.right().ok())
+            .is_some_and(|r| r.syntax() == node),
+        _ => false,
+    }
+}
+
+/// The name of the called function for a bare (`f()`) or namespaced
+/// (`pkg::f()`) callee, unquoted in both cases. `None` for a computed callee.
+///
+/// jarl-core has its own `get_function_name` doing the same job; the two can't
+/// share one, since jarl-core depends on this crate and not the reverse.
 fn call_name(call: &RCall) -> Option<String> {
-    let func = call.function().ok()?;
-    match func {
+    match call.function().ok()? {
         AnyRExpression::RIdentifier(ident) => Some(ident.name_text()),
-        AnyRExpression::RNamespaceExpression(ns) => ns
-            .right()
-            .ok()
-            .and_then(|r| r.syntax().first_token())
-            .map(|t| t.text_trimmed().to_string()),
+        AnyRExpression::RNamespaceExpression(ns) => ns.right().ok()?.identifier_text(),
         _ => None,
     }
 }
 
-fn call_args(call: &RCall) -> Vec<(Option<String>, RSyntaxNode)> {
+/// The call's arguments, in call order. Plain syntax handles: names and values
+/// are only materialised by the callers that look at them, which matters
+/// because this runs for every call node in the file.
+fn call_args(call: &RCall) -> Vec<RArgument> {
     let Ok(arguments) = call.arguments() else {
         return Vec::new();
     };
-    let items = arguments.items();
-    args_iter(&items)
+    arguments.items().iter().flatten().collect()
 }
 
-fn args_iter(list: &RArgumentList) -> Vec<(Option<String>, RSyntaxNode)> {
-    let mut out = Vec::new();
-    for item in list.iter() {
-        let Ok(arg) = item else { continue };
-        let name = argument_name(&arg);
-        let value = arg.value().map(|v| v.syntax().clone());
-        if let Some(value) = value {
-            out.push((name, value));
-        }
-    }
-    out
-}
-
-fn argument_name(arg: &RArgument) -> Option<String> {
-    let clause = arg.name_clause()?;
-    let name = clause.name().ok()?;
-    match name {
-        AnyRArgumentName::RIdentifier(ident) => Some(ident.name_text()),
-        AnyRArgumentName::RDots(_) => Some("...".to_string()),
-        _ => None,
-    }
+/// Whether `arg` is written as `name = value`.
+fn argument_name_is(arg: &RArgument, name: &str) -> bool {
+    arg.name_clause()
+        .and_then(|clause| clause.name().ok())
+        .is_some_and(|arg_name| match arg_name {
+            AnyRArgumentName::RIdentifier(ident) => ident.name_text() == name,
+            _ => false,
+        })
 }
 
 fn string_literal_value(node: &RSyntaxNode) -> Option<String> {
@@ -1417,29 +1444,16 @@ impl oak_semantic::ImportsResolver for JarlImportsResolver {
         let url = url::Url::from_file_path(&target_key)
             .ok()
             .or_else(|| url::Url::parse(&format!("file:///{}", target_key.display())).ok())?;
-        let sub_index = match self.cache.get(&target_key) {
-            Some(index) => index,
-            None => {
-                let contents = std::fs::read_to_string(&target).ok()?;
-                let parsed = air_r_parser::parse(&contents, RParserOptions::default());
-                if parsed.has_error() {
-                    return None;
-                }
-                // Recurse with the chain's visited set: the target's own
-                // `source()` calls inject Import entries into its index, so
-                // its exports below include names it forwards from deeper
-                // files.
-                let sub_resolver = JarlImportsResolver {
-                    current_file: target,
-                    visited: std::rc::Rc::clone(&self.visited),
-                    cache: self.cache.clone(),
-                };
-                let index =
-                    std::sync::Arc::new(oak_semantic::build_index(&parsed.tree(), sub_resolver));
-                self.cache.insert(target_key, std::sync::Arc::clone(&index));
-                index
+        // Recurse with the chain's visited set: the target's own `source()`
+        // calls inject Import entries into its index, so its exports below
+        // include names it forwards from deeper files.
+        let sub_index = source_target_index(&self.cache, &target_key, &target, |path| {
+            JarlImportsResolver {
+                current_file: path.to_path_buf(),
+                visited: std::rc::Rc::clone(&self.visited),
+                cache: self.cache.clone(),
             }
-        };
+        })?;
         let names: Vec<String> = sub_index.exports().keys().map(|s| s.to_string()).collect();
         // `library()` in a sourced file attaches to the global search path, so
         // the sourcing file sees the package too. Oak turns these into `Attach`
