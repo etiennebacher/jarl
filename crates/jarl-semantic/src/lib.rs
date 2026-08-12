@@ -14,8 +14,8 @@ use std::collections::HashSet;
 
 use air_r_parser::RParserOptions;
 use air_r_syntax::{
-    AnyRArgumentName, AnyRExpression, RArgument, RBinaryExpression, RCall, RExtractExpression,
-    RForStatement, RNamespaceExpression, RStringValue, RSyntaxKind, RSyntaxNode,
+    AnyRArgumentName, AnyRExpression, RArgument, RBinaryExpression, RCall, RForStatement,
+    RStringValue, RSyntaxKind, RSyntaxNode,
 };
 use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange, TextSize};
 use oak_core::syntax_ext::{AnyRSelectorExt, RIdentifierExt, RStringValueExt};
@@ -1142,39 +1142,6 @@ fn cli_markup_content(segment: &str) -> Option<&str> {
     // A markup span separates the class from its content with whitespace.
     let after_class = rest[class_len..].strip_prefix(|c: char| c.is_whitespace())?;
     Some(after_class.trim_start())
-}
-
-/// The value node of the quoted-expression argument (`expr`) of a quote-like
-/// call: the argument named `expr =` if present, otherwise the first
-/// positional (unnamed) argument. Any other argument is evaluated normally,
-/// so its reads must not be swallowed as NSE.
-fn nse_expr_arg(args: &[(Option<String>, RSyntaxNode)]) -> Option<&RSyntaxNode> {
-    if let Some((_, value)) = args
-        .iter()
-        .find(|(name, _)| name.as_deref() == Some("expr"))
-    {
-        return Some(value);
-    }
-    args.iter()
-        .find(|(name, _)| name.is_none())
-        .map(|(_, value)| value)
-}
-
-fn is_member_name(node: &RSyntaxNode) -> bool {
-    let Some(parent) = node.parent() else {
-        return false;
-    };
-    match parent.kind() {
-        RSyntaxKind::R_EXTRACT_EXPRESSION => parent
-            .cast::<RExtractExpression>()
-            .and_then(|e| e.right().ok())
-            .is_some_and(|r| r.syntax() == node),
-        RSyntaxKind::R_NAMESPACE_EXPRESSION => parent
-            .cast::<RNamespaceExpression>()
-            .and_then(|e| e.right().ok())
-            .is_some_and(|r| r.syntax() == node),
-        _ => false,
-    }
 }
 
 /// The name of the called function for a bare (`f()`) or namespaced
