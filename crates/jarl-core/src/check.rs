@@ -13,7 +13,7 @@ use air_r_syntax::RSyntaxNode;
 use anyhow::{Context, Result};
 use biome_rowan::{TextRange, TextSize};
 use rayon::prelude::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
@@ -438,9 +438,16 @@ fn end_of_content(contents: &str) -> TextRange {
 
 /// Populate package context on the checker from pre-computed data.
 ///
-/// For files inside an R package, copies the pre-computed `PackageContext`
-/// fields. For scripts, harvests `library()`/`require()` calls from the
-/// semantic index.
+/// Assembles the file's search path in load order, so that a later attach
+/// masks an earlier one exactly as it does in R. Sources, in order: the
+/// packages R attaches at startup, the package's own `Depends` and NAMESPACE
+/// imports, whatever the file's test runner attaches, and finally the file's
+/// own `library()`/`require()` calls.
+///
+/// `pkg::` accesses stay out of this list: `::` reaches a package without
+/// attaching it, so a `dplyr::` call elsewhere in the file must not make a
+/// bare `filter()` resolve to dplyr. The `::`-inclusive view belongs to
+/// `SemanticInfo`, which derives it for idiom detection.
 fn get_package_info(
     checker: &mut Checker,
     file: &Path,
@@ -449,24 +456,60 @@ fn get_package_info(
     pkg_contexts: &HashMap<PathBuf, PackageContext>,
     file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
 ) {
-    match file_pkg_info.get(file) {
+    let mut packages: Vec<String> = match file_pkg_info.get(file) {
         Some(FilePackageInfo::InPackage { package_root, .. }) => {
-            if let Some(ctx) = pkg_contexts.get(package_root) {
-                checker.loaded_packages = ctx.loaded_packages.clone();
-                checker.import_from = ctx.import_from.clone();
-                checker.namespace_exports = ctx.namespace_exports.clone();
+            match pkg_contexts.get(package_root) {
+                Some(ctx) => {
+                    checker.import_from = ctx.import_from.clone();
+                    checker.namespace_exports = ctx.namespace_exports.clone();
+                    // Already seeded with `DEFAULT_PACKAGES`.
+                    ctx.loaded_packages.clone()
+                }
+                None => default_packages(),
             }
         }
-        _ => {
-            let mut packages: Vec<String> = crate::checker::DEFAULT_PACKAGES
-                .iter()
-                .map(|s| s.to_string())
-                .collect();
-            packages.extend(top_level_attached_packages(semantic));
-            checker.loaded_packages = packages;
-        }
+        _ => default_packages(),
+    };
+
+    // testthat runs `tests/testthat/` files with the package loaded and
+    // testthat attached, so nothing in those files ever names it. Same rule
+    // oak applies in `oak_db/src/load_context/contrib/testthat.rs`.
+    if in_testthat_dir(file) {
+        packages.push("testthat".to_string());
     }
+
+    // A file's own attaches come last: they happen while the file runs, so
+    // they mask everything the environment set up before it. This applies to
+    // package files too, not just scripts — `library(dplyr)` at the top of a
+    // test file is a real attach.
+    packages.extend(top_level_attached_packages(semantic));
+
+    let mut seen = HashSet::new();
+    packages.retain(|pkg| seen.insert(pkg.clone()));
+
+    checker.loaded_packages = packages;
     checker.package_cache = config.package_cache.clone();
+}
+
+fn default_packages() -> Vec<String> {
+    crate::checker::DEFAULT_PACKAGES
+        .iter()
+        .map(|s| s.to_string())
+        .collect()
+}
+
+/// True when `file` sits directly in a `tests/testthat/` directory, the layout
+/// testthat sources and runs files from. This is what separates a test file
+/// from an ordinary package script under e.g. `tests/` or `inst/`.
+fn in_testthat_dir(file: &Path) -> bool {
+    let Some(parent) = file.parent() else {
+        return false;
+    };
+    parent.file_name().is_some_and(|n| n == "testthat")
+        && parent
+            .parent()
+            .and_then(|p| p.file_name())
+            .is_some_and(|n| n == "tests")
 }
 
 /// Collect the packages a file attaches with `library()`/`require()`, in load
@@ -625,6 +668,237 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
 mod tests {
     use crate::utils_test::*;
     use insta::assert_snapshot;
+
+    #[test]
+    fn test_in_testthat_dir() {
+        use super::in_testthat_dir;
+        use std::path::Path;
+
+        assert!(in_testthat_dir(Path::new("pkg/tests/testthat/test-x.R")));
+        assert!(in_testthat_dir(Path::new("/abs/tests/testthat/helper.R")));
+        // A nested directory below `tests/testthat/` is not sourced by
+        // testthat, so it doesn't get the implicit attach.
+        assert!(!in_testthat_dir(Path::new(
+            "pkg/tests/testthat/sub/test-x.R"
+        )));
+        // `testthat/` has to sit under `tests/`.
+        assert!(!in_testthat_dir(Path::new("pkg/inst/testthat/test-x.R")));
+        assert!(!in_testthat_dir(Path::new("pkg/tests/test-x.R")));
+        assert!(!in_testthat_dir(Path::new("pkg/R/x.R")));
+    }
+
+    /// Lints one file of a fixture package written to a tempdir, with a fake
+    /// package cache standing in for an R installation. Returns the rendered
+    /// diagnostics.
+    fn lint_in_package(files: &[(&str, &str)], target: &str, rule: &str) -> String {
+        use crate::check::check;
+        use crate::config::ArgsConfig;
+        use crate::package_cache::PackageCache;
+        use std::sync::Arc;
+
+        let dir = tempfile::tempdir().expect("create tempdir");
+        for (name, content) in files {
+            let path = dir.path().join(name);
+            std::fs::create_dir_all(path.parent().unwrap()).expect("create dir");
+            std::fs::write(path, content).expect("write file");
+        }
+        let target_path = dir.path().join(target);
+
+        let args = ArgsConfig {
+            files: vec![target_path.clone()],
+            fix: false,
+            unsafe_fixes: false,
+            fix_only: false,
+            select: rule.to_string(),
+            extend_select: String::new(),
+            ignore: String::new(),
+            min_r_version: None,
+            allow_dirty: false,
+            allow_no_vcs: true,
+            assignment: None,
+        };
+        let mut config = crate::config::build_config(&args, None, vec![target_path.clone()])
+            .expect("build config");
+        config.package_cache = Some(Arc::new(PackageCache::from_exports(&[
+            ("stats", &["filter"]),
+            ("dplyr", &["filter"]),
+        ])));
+
+        let diagnostics: Vec<_> = check(config)
+            .into_iter()
+            .find_map(|(_, result)| result.ok())
+            .unwrap_or_default();
+
+        if diagnostics.is_empty() {
+            return "All checks passed!".to_string();
+        }
+        diagnostics
+            .iter()
+            .map(|d| d.message.name.clone())
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    const DESC_IMPORTS_DPLYR: &str = "Package: fixture\nVersion: 1.0.0\nImports: dplyr\n";
+    const COMPLEX_FILTER: &str = "x |> filter(a > 1 | is.na(a))\n";
+
+    #[test]
+    fn test_description_imports_does_not_attach() {
+        // `Imports: dplyr` alone doesn't put dplyr on the search path, so a
+        // bare `filter()` in `R/` is `stats::filter()` and must not lint.
+        assert_snapshot!(
+            lint_in_package(
+                &[
+                    ("DESCRIPTION", DESC_IMPORTS_DPLYR),
+                    ("R/x.R", COMPLEX_FILTER),
+                ],
+                "R/x.R",
+                "dplyr_filter_out",
+            ),
+            @"All checks passed!"
+        );
+    }
+
+    #[test]
+    fn test_namespace_import_from_attaches() {
+        // `importFrom(dplyr, filter)` is what actually binds `filter` in the
+        // package namespace, so now the bare call does resolve to dplyr.
+        assert_snapshot!(
+            lint_in_package(
+                &[
+                    ("DESCRIPTION", DESC_IMPORTS_DPLYR),
+                    ("NAMESPACE", "importFrom(dplyr, filter)\n"),
+                    ("R/x.R", COMPLEX_FILTER),
+                ],
+                "R/x.R",
+                "dplyr_filter_out",
+            ),
+            @"dplyr_filter_out"
+        );
+    }
+
+    #[test]
+    fn test_in_package_file_own_library_call_attaches() {
+        // A package file's own `library()` is a real attach and used to be
+        // dropped entirely for in-package files.
+        assert_snapshot!(
+            lint_in_package(
+                &[
+                    ("DESCRIPTION", "Package: fixture\nVersion: 1.0.0\n"),
+                    (
+                        "tests/testthat/test-x.R",
+                        "library(dplyr)\nx |> filter(a > 1 | is.na(a))\n"
+                    ),
+                ],
+                "tests/testthat/test-x.R",
+                "dplyr_filter_out",
+            ),
+            @"dplyr_filter_out"
+        );
+    }
+
+    /// Runs the real package-context assembly over a fixture package and
+    /// returns the resulting search path, in load order.
+    fn loaded_packages_for(files: &[(&str, &str)], target: &str) -> Vec<String> {
+        use crate::config::ArgsConfig;
+        use crate::package::summarize_package_info;
+
+        let dir = tempfile::tempdir().expect("create tempdir");
+        for (name, content) in files {
+            let path = dir.path().join(name);
+            std::fs::create_dir_all(path.parent().unwrap()).expect("create dir");
+            std::fs::write(path, content).expect("write file");
+        }
+        let target_path = dir.path().join(target);
+        let contents = std::fs::read_to_string(&target_path).expect("read target");
+
+        let parsed = air_r_parser::parse(&contents, air_r_parser::RParserOptions::default());
+        let index = oak_semantic::build_index(
+            &parsed.tree(),
+            jarl_semantic::JarlImportsResolver::new(&target_path),
+        );
+        let suppression =
+            crate::suppression::SuppressionManager::from_node(&parsed.syntax(), &contents);
+
+        let args = ArgsConfig {
+            files: vec![target_path.clone()],
+            fix: false,
+            unsafe_fixes: false,
+            fix_only: false,
+            select: "ALL".to_string(),
+            extend_select: String::new(),
+            ignore: String::new(),
+            min_r_version: None,
+            allow_dirty: false,
+            allow_no_vcs: true,
+            assignment: None,
+        };
+        let config = crate::config::build_config(&args, None, vec![target_path.clone()])
+            .expect("build config");
+        let mut checker = crate::checker::Checker::new(suppression, config.rule_options.clone());
+
+        let (pkg_contexts, file_pkg_info) =
+            summarize_package_info(std::slice::from_ref(&target_path));
+        super::get_package_info(
+            &mut checker,
+            &target_path,
+            &index,
+            &config,
+            &pkg_contexts,
+            &file_pkg_info,
+        );
+        checker.loaded_packages
+    }
+
+    #[test]
+    fn test_testthat_attached_in_testthat_dir() {
+        // The runner attaches testthat, so a test file never names it.
+        let packages = loaded_packages_for(
+            &[
+                ("DESCRIPTION", "Package: fixture\nVersion: 1.0.0\n"),
+                ("tests/testthat/test-x.R", "expect_equal(1, 1)\n"),
+            ],
+            "tests/testthat/test-x.R",
+        );
+        assert!(packages.contains(&"testthat".to_string()), "{packages:?}");
+
+        // An ordinary package file gets no such attach.
+        let packages = loaded_packages_for(
+            &[
+                ("DESCRIPTION", "Package: fixture\nVersion: 1.0.0\n"),
+                ("R/x.R", "f <- function() 1\n"),
+            ],
+            "R/x.R",
+        );
+        assert!(!packages.contains(&"testthat".to_string()), "{packages:?}");
+    }
+
+    #[test]
+    fn test_loaded_packages_order_and_dedup() {
+        let packages = loaded_packages_for(
+            &[
+                (
+                    "DESCRIPTION",
+                    "Package: fixture\nVersion: 1.0.0\nDepends: MASS\nImports: tibble\n",
+                ),
+                ("R/x.R", "library(dplyr)\nlibrary(MASS)\n"),
+            ],
+            "R/x.R",
+        );
+
+        // `Depends` attaches, `Imports` does not.
+        assert!(packages.contains(&"MASS".to_string()), "{packages:?}");
+        assert!(!packages.contains(&"tibble".to_string()), "{packages:?}");
+        // The file's own attach is picked up.
+        assert!(packages.contains(&"dplyr".to_string()), "{packages:?}");
+        // Attached twice, listed once.
+        assert_eq!(packages.iter().filter(|p| *p == "MASS").count(), 1);
+        // Startup packages come first, so a later attach masks them.
+        assert!(
+            packages.iter().position(|p| p == "base") < packages.iter().position(|p| p == "dplyr"),
+            "{packages:?}"
+        );
+    }
 
     #[test]
     fn test_fix_does_not_introduce_new_lints() {

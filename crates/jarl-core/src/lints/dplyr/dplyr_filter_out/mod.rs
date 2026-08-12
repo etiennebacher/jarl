@@ -274,6 +274,16 @@ mod tests {
     }
 
     #[test]
+    fn test_no_lint_namespaced_call_does_not_attach() {
+        // `dplyr::select()` reaches dplyr without attaching it, so the bare
+        // `filter()` further down is still `stats::filter()`.
+        assert_snapshot!(
+            snapshot_lint("y <- dplyr::select(x, a); y |> filter(a > 1 | is.na(a))"),
+            @"All checks passed!"
+        );
+    }
+
+    #[test]
     fn test_lint_library_call_but_not_in_pipe() {
         assert_snapshot!(
             snapshot_lint("library(dplyr); filter(x, a > 1 | is.na(a))"),
