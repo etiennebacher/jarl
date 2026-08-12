@@ -20,6 +20,15 @@ use crate::directive::{
 static OPEN_FENCE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[ \t]*(`{3,})\{[rR][^}]*\}").unwrap());
 
+/// Matches inline R code in prose: `` `r expr` ``.
+///
+/// Captures group 1: the R expression. The backtick-delimited span cannot
+/// itself contain a backtick, which also keeps the opening fence of a chunk
+/// (```` ```{r} ````) from matching — there the `r` is preceded by `{`, not by
+/// whitespace.
+static INLINE_CODE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"`[rR][ \t\r\n]([^`]*)`").unwrap());
+
 /// An R code chunk extracted from an Rmd/Qmd document.
 #[derive(Debug)]
 pub struct RCodeChunk {
@@ -73,6 +82,34 @@ pub fn extract_r_chunks(content: &str) -> Vec<RCodeChunk> {
     }
 
     chunks
+}
+
+/// Extract the R expressions of inline code spans (`` `r expr` ``) written in
+/// the document's prose.
+///
+/// Two kinds of match are left out:
+/// - spans inside a code chunk, where a backtick pair is part of an R string
+///   (`glue("`r x`")`) rather than something the document evaluates;
+/// - spans whose opening backtick is itself preceded by one, which is the
+///   fence of a display-only ` ```r ` block, not an inline span.
+///
+/// `chunks` must be the output of [`extract_r_chunks`] for the same content,
+/// whose spans are ordered and non-overlapping.
+pub fn extract_inline_r_code<'a>(content: &'a str, chunks: &[RCodeChunk]) -> Vec<&'a str> {
+    INLINE_CODE
+        .captures_iter(content)
+        .filter(|caps| {
+            let start = caps.get(0).unwrap().start();
+            !in_a_chunk(start, chunks) && !content[..start].ends_with('`')
+        })
+        .map(|caps| caps.get(1).unwrap().as_str())
+        .collect()
+}
+
+/// Whether `offset` falls within the code of one of `chunks`.
+fn in_a_chunk(offset: usize, chunks: &[RCodeChunk]) -> bool {
+    let idx = chunks.partition_point(|c| c.start_byte + c.code.len() <= offset);
+    chunks.get(idx).is_some_and(|c| offset >= c.start_byte)
 }
 
 /// A segment mapping virtual-string byte positions to original-file byte positions.
@@ -214,19 +251,30 @@ fn find_chunk_ignore_blocks(code: &str) -> Vec<ChunkIgnoreBlock> {
     blocks
 }
 
+/// The concatenated R code of a document, plus what it took to build it.
+pub struct VirtualSource {
+    /// The virtual R source: every valid chunk's code, in document order.
+    pub source: String,
+    /// Maps offsets in `source` back to the original Rmd/Qmd file.
+    pub offset_map: OffsetMap,
+    /// Indices into the input chunks of the chunks left out because they have
+    /// parse errors. Their code is absent from `source`, so anything they read
+    /// is invisible to the analysis unless the caller accounts for it.
+    pub skipped: Vec<usize>,
+}
+
 /// Build a virtual R source string by concatenating all valid R chunks,
 /// translating `#| jarl-ignore-chunk:` YAML blocks into
 /// `# jarl-ignore-start` / `# jarl-ignore-end` pairs.
 ///
-/// Chunks with parse errors are silently dropped.
-///
-/// Returns the virtual source and an `OffsetMap` for remapping diagnostic
-/// byte offsets back to the original Rmd file.
-pub fn build_virtual_r_source(chunks: &[RCodeChunk]) -> (String, OffsetMap) {
+/// Chunks with parse errors are dropped, and reported in
+/// [`VirtualSource::skipped`].
+pub fn build_virtual_r_source(chunks: &[RCodeChunk]) -> VirtualSource {
     let mut virtual_src = String::new();
     let mut segments: Vec<Segment> = Vec::new();
+    let mut skipped: Vec<usize> = Vec::new();
 
-    for chunk in chunks {
+    for (i, chunk) in chunks.iter().enumerate() {
         // Skip empty chunks.
         if chunk.code.trim().is_empty() {
             continue;
@@ -235,6 +283,7 @@ pub fn build_virtual_r_source(chunks: &[RCodeChunk]) -> (String, OffsetMap) {
         // Pre-validate: skip chunks with parse errors.
         let parsed = air_r_parser::parse(&chunk.code, RParserOptions::default());
         if parsed.has_error() {
+            skipped.push(i);
             continue;
         }
 
@@ -267,7 +316,11 @@ pub fn build_virtual_r_source(chunks: &[RCodeChunk]) -> (String, OffsetMap) {
         }
     }
 
-    (virtual_src, OffsetMap { segments })
+    VirtualSource {
+        source: virtual_src,
+        offset_map: OffsetMap { segments },
+        skipped,
+    }
 }
 
 /// Emit a single chunk with YAML ignore blocks translated to start/end comments.
@@ -519,6 +572,77 @@ mod tests {
         let chunks = extract_r_chunks(content);
         assert_eq!(chunks.len(), 1);
         assert_eq!(chunks[0].code, "  any(is.na(1))\n");
+    }
+
+    // --- Inline R code ---
+
+    /// Extract the inline spans of `content`, in document order.
+    fn inline(content: &str) -> Vec<&str> {
+        let chunks = extract_r_chunks(content);
+        extract_inline_r_code(content, &chunks)
+    }
+
+    #[test]
+    fn test_inline_code_in_prose() {
+        assert_eq!(inline("The mean is `r mean(x)`.\n"), vec!["mean(x)"]);
+    }
+
+    #[test]
+    fn test_several_inline_spans_on_one_line() {
+        assert_eq!(inline("`r a` and `r b`\n"), vec!["a", "b"]);
+    }
+
+    #[test]
+    fn test_inline_code_spanning_lines() {
+        assert_eq!(inline("Value: `r mean(\n  x\n)`\n"), vec!["mean(\n  x\n)"]);
+    }
+
+    #[test]
+    fn test_capital_r_inline_code() {
+        assert_eq!(inline("`R x`\n"), vec!["x"]);
+    }
+
+    #[test]
+    fn test_inline_code_inside_a_chunk_ignored() {
+        // A backtick pair in chunk code is an R string, not an inline span.
+        let content = "```{r}\nglue(\"`r x`\")\n```\n";
+        assert!(inline(content).is_empty());
+    }
+
+    #[test]
+    fn test_inline_code_around_a_chunk() {
+        // Spans before and after a chunk are kept; the fences themselves and
+        // the chunk body are not spans.
+        let content = "`r before`\n\n```{r}\ny <- 1\n```\n\n`r after`\n";
+        assert_eq!(inline(content), vec!["before", "after"]);
+    }
+
+    #[test]
+    fn test_chunk_fence_is_not_inline_code() {
+        assert!(inline("```{r}\nx <- 1\n```\n").is_empty());
+    }
+
+    #[test]
+    fn test_display_only_r_block_is_not_inline_code() {
+        // ```r opens a display block, so its fences are not an inline span.
+        assert!(inline("```r\nx\n```\n").is_empty());
+    }
+
+    // --- Skipped chunks ---
+
+    #[test]
+    fn test_chunk_with_parse_error_is_reported_as_skipped() {
+        let content = "```{r}\nx <- 1\n```\n\n```{r}\nif (y\n```\n";
+        let chunks = extract_r_chunks(content);
+        let virtual_source = build_virtual_r_source(&chunks);
+        assert_eq!(virtual_source.skipped, vec![1]);
+        assert_eq!(virtual_source.source, "x <- 1\n");
+    }
+
+    #[test]
+    fn test_valid_chunks_are_not_reported_as_skipped() {
+        let chunks = extract_r_chunks("```{r}\nx <- 1\n```\n\n```{r}\n```\n");
+        assert!(build_virtual_r_source(&chunks).skipped.is_empty());
     }
 
     #[test]

@@ -106,6 +106,12 @@ pub struct PackageAnalysis {
 pub struct PackageFileAnalysis {
     pub duplicate_assignments: Vec<(String, TextRange, String)>,
     pub unused_functions: Vec<(String, TextRange, String)>,
+    /// Top-level names read from outside the code being linted. For an R file
+    /// that is [`PackageAnalysis::cross_file_used`]; for an Rmd/Qmd document,
+    /// where only the R chunks are linted, it is instead the names read by the
+    /// rest of the document (see [`crate::check`]). Both are the same question
+    /// for `unused_object`: is this top-level binding read somewhere the file's
+    /// own analysis can't see?
     pub cross_file_used: HashSet<String>,
 }
 

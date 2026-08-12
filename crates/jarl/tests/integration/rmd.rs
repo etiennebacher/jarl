@@ -1059,3 +1059,366 @@ any(is.na(x))
 
     Ok(())
 }
+
+// ---------------------------------------------------------------------------
+// unused_object
+// ---------------------------------------------------------------------------
+
+/// Knitr runs every chunk in one session, so an object no chunk ever reads is
+/// unused. The diagnostic points at the line in the original document.
+#[test]
+fn test_rmd_unused_object_reported() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+---
+title: \"Test\"
+---
+
+```{r}
+x <- 1
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> test.Rmd:7:1
+      |
+    7 | x <- 1
+      | - Object `x` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Chunks share one environment, so a read in a later chunk uses the object.
+#[test]
+fn test_rmd_object_read_in_a_later_chunk_not_flagged() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+x <- 1
+```
+
+Some prose in between.
+
+```{r}
+print(x)
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Inline R code in the prose isn't linted, but it does run: an object it
+/// reads is used.
+#[test]
+fn test_rmd_object_read_by_inline_code_not_flagged() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+x <- 1
+```
+
+The value is `r mean(x)`.
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// A chunk that doesn't parse is dropped from the analysis, but it still runs
+/// when the document is knitted, so the objects it reads are not unused.
+#[test]
+fn test_rmd_object_read_in_a_chunk_with_syntax_error_not_flagged() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+x <- 1
+y <- 2
+```
+
+```{r}
+if (x
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> test.Rmd:4:1
+      |
+    4 | y <- 2
+      | - Object `y` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// `source()` in a chunk resolves next to the document: the helper's own
+/// definitions land in the document's environment, so reading one is not a
+/// read of an undefined object, and the helper's free reads consume the
+/// document's bindings.
+#[test]
+fn test_rmd_object_read_by_sourced_file_not_flagged() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        ("helper.R", "print(x)\n"),
+        (
+            "test.Rmd",
+            "
+```{r}
+x <- 1
+y <- 2
+source(\"helper.R\")
+```
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> test.Rmd:4:1
+      |
+    4 | y <- 2
+      | - Object `y` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// An object a sourced file defines is imported, not defined by the document,
+/// so it is never reported here.
+#[test]
+fn test_rmd_object_defined_by_sourced_file_not_flagged() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        ("helper.R", "from_helper <- 1\n"),
+        (
+            "test.Rmd",
+            "
+```{r}
+source(\"helper.R\")
+```
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Both suppression forms apply to the rule.
+#[test]
+fn test_rmd_unused_object_can_be_suppressed() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+#| jarl-ignore-chunk:
+#| - unused_object: kept for illustration
+x <- 1
+```
+
+```{r}
+# jarl-ignore unused_object: kept for illustration
+y <- 2
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Same as `test_rmd_unused_object_reported` but with a `.qmd` extension.
+#[test]
+fn test_qmd_unused_object_reported() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.qmd",
+        "
+```{r}
+x <- 1
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.qmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> test.qmd:3:1
+      |
+    3 | x <- 1
+      | - Object `x` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}

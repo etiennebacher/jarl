@@ -211,7 +211,14 @@ pub fn get_checks(
     use_cached_index: bool,
 ) -> Result<Vec<Diagnostic>> {
     if crate::fs::has_rmd_extension(file) {
-        return get_checks_rmd(contents, file, config);
+        // Same cache validity rule as the per-file indices below: shareable
+        // while the run's caches match the disk, fresh when they may drift.
+        let source_cache = if use_cached_index {
+            pkg.source_index_cache.clone()
+        } else {
+            jarl_semantic::SourceIndexCache::new()
+        };
+        return get_checks_rmd(contents, file, config, source_cache);
     }
 
     let parser_options = RParserOptions::default();
@@ -457,16 +464,20 @@ fn get_package_info(
                 checker.namespace_exports = ctx.namespace_exports.clone();
             }
         }
-        _ => {
-            let mut packages: Vec<String> = crate::checker::DEFAULT_PACKAGES
-                .iter()
-                .map(|s| s.to_string())
-                .collect();
-            packages.extend(top_level_attached_packages(semantic));
-            checker.loaded_packages = packages;
-        }
+        _ => checker.loaded_packages = script_packages(semantic),
     }
     checker.package_cache = config.package_cache.clone();
+}
+
+/// The packages a file outside an R package can reach: the always-available
+/// defaults plus whatever it attaches itself.
+fn script_packages(semantic: &oak_semantic::semantic_index::SemanticIndex) -> Vec<String> {
+    let mut packages: Vec<String> = crate::checker::DEFAULT_PACKAGES
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
+    packages.extend(top_level_attached_packages(semantic));
+    packages
 }
 
 /// Collect the packages a file attaches with `library()`/`require()`, in load
@@ -550,6 +561,32 @@ fn get_checks_roxygen(
     Ok(all_diagnostics)
 }
 
+/// Names read by R code that is part of the document but absent from the
+/// virtual source: inline spans in the prose (`` `r mean(x)` ``) and chunks
+/// dropped because they don't parse.
+///
+/// Neither is linted — inline code is never analyzed, and a chunk that doesn't
+/// parse has nothing to analyze — but both *run*, so an object they read is
+/// used. The scan deliberately over-collects (it is the same text scan
+/// `unused_function` uses): a name harvested here can only silence a
+/// diagnostic, never raise one.
+fn outside_chunk_reads(
+    contents: &str,
+    chunks: &[crate::rmd::RCodeChunk],
+    skipped: &[usize],
+) -> std::collections::HashSet<String> {
+    use crate::lints::base::unused_function::unused_function::scan_symbols;
+
+    let inline = crate::rmd::extract_inline_r_code(contents, chunks);
+    let dropped = skipped.iter().map(|i| chunks[*i].code.as_str());
+
+    inline
+        .into_iter()
+        .chain(dropped)
+        .flat_map(|code| scan_symbols(code).into_keys())
+        .collect()
+}
+
 /// Lint an Rmd/Qmd file by concatenating R code chunks into a virtual R
 /// string and running the normal linting pipeline on it.
 ///
@@ -557,11 +594,23 @@ fn get_checks_roxygen(
 /// - No autofix (Quarto code annotations make position-based edits unsafe)
 /// - `#| jarl-ignore-chunk:` YAML blocks are translated to `# jarl-ignore-start`
 ///   / `# jarl-ignore-end` pairs before linting
-/// - Chunks with parse errors are silently dropped
+/// - Chunks with parse errors are dropped, without a diagnostic of their own
 /// - Diagnostic ranges are remapped from virtual-string offsets to original file offsets
-fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Diagnostic>> {
+///
+/// Knitr evaluates every chunk of a document in one R session, in document
+/// order, which is exactly what the concatenation models — so use-def rules
+/// like `unused_object` see an object assigned in one chunk and read in a
+/// later one as used. Reads that happen outside the chunks are collected
+/// separately (see [`outside_chunk_reads`]).
+fn get_checks_rmd(
+    contents: &str,
+    file: &Path,
+    config: &Config,
+    source_cache: jarl_semantic::SourceIndexCache,
+) -> Result<Vec<Diagnostic>> {
     let chunks = crate::rmd::extract_r_chunks(contents);
-    let (virtual_source, offset_map) = crate::rmd::build_virtual_r_source(&chunks);
+    let crate::rmd::VirtualSource { source: virtual_source, offset_map, skipped } =
+        crate::rmd::build_virtual_r_source(&chunks);
 
     if virtual_source.trim().is_empty() {
         return Ok(Vec::new());
@@ -575,6 +624,19 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     let mut checker = Checker::new(suppression, config.rule_options.clone());
     checker.rule_set = effective_rules_for_file(config, file);
     checker.minimum_r_version = config.minimum_r_version;
+    checker.file_path = file.to_path_buf();
+    checker.source_index_cache = source_cache.clone();
+
+    // The document's own path anchors `source()` resolution, so a chunk
+    // sourcing a helper next to the document resolves it there.
+    let semantic = oak_semantic::build_index(
+        &parsed.tree(),
+        jarl_semantic::JarlImportsResolver::with_cache(file, source_cache),
+    );
+    // A document is never package code, so it reaches the same packages a
+    // script does: the defaults plus what its chunks attach.
+    checker.loaded_packages = script_packages(&semantic);
+    checker.package_cache = config.package_cache.clone();
 
     let expressions = &parsed.tree().expressions();
     for expr in expressions {
@@ -582,13 +644,19 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     }
     // check_document runs suppression filtering internally, so
     // checker.diagnostics is the post-suppression list after this call.
-    // Rmd chunks don't participate in package-level analysis.
+    // Rmd chunks don't participate in package-level analysis; the one
+    // package-level input that does apply is the set of names read outside the
+    // chunks, which keeps objects the prose uses from looking unused.
+    let package_file = PackageFileAnalysis {
+        cross_file_used: outside_chunk_reads(contents, &chunks, &skipped),
+        ..PackageFileAnalysis::default()
+    };
     check_document(
         expressions,
         &syntax,
         &mut checker,
-        &PackageFileAnalysis::default(),
-        None,
+        &package_file,
+        Some(&semantic),
     )?;
 
     // Remap ranges from virtual-string offsets to original Rmd file offsets.

@@ -9,6 +9,10 @@ This comes with a few limitations:
 * inline R code isn't analyzed, only code chunks;
 * features from the editor integration, such as highlighting diagnostics, are only available when the file is open in source mode, not in visual mode.
 
+All R code chunks of a document are analyzed together, in document order, since this is how they are evaluated when the document is rendered.
+Rules that need to know how objects flow through the document, such as `unused_object`, therefore work across chunks: an object created in one chunk and used in a later one is not reported.
+Inline R code isn't linted, but the objects it reads are taken into account, so `` `r x` `` in the prose keeps `x` from being reported as unused.
+
 Suppression comments such as `# jarl-ignore` are supported in R code chunks.
 In Quarto and R Markdown files, you can also use the comment `#| jarl-ignore-chunk` to ignore specific rules on entire chunks.
 Moreover, the comment `# jarl-ignore-file` must be located in the first R code chunk, before any R code.
