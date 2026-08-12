@@ -80,6 +80,36 @@ impl SourceIndexCache {
     }
 }
 
+/// The semantic index of a `source()` target: the memoized one, or a fresh
+/// parse and build memoized on the way out. `key` is the absolutized cache
+/// key, `path` the target as spelled at the call site (what gets read), and
+/// `resolver` supplies the imports resolver the target's own `source()` calls
+/// are followed with.
+///
+/// Both sides of `source()` handling come through here, so a target is parsed
+/// and indexed once. Whether a target should be followed *at all* is not
+/// decided here: that stays with the per-chain visited set in
+/// [`JarlImportsResolver::resolve_source`], and this is only reached for
+/// targets it already let through.
+fn source_target_index(
+    cache: &SourceIndexCache,
+    key: &std::path::Path,
+    path: &std::path::Path,
+    resolver: impl FnOnce(&std::path::Path) -> JarlImportsResolver,
+) -> Option<std::sync::Arc<SemanticIndex>> {
+    if let Some(index) = cache.get(key) {
+        return Some(index);
+    }
+    let contents = std::fs::read_to_string(path).ok()?;
+    let parsed = air_r_parser::parse(&contents, RParserOptions::default());
+    if parsed.has_error() {
+        return None;
+    }
+    let index = std::sync::Arc::new(oak_semantic::build_index(&parsed.tree(), resolver(path)));
+    cache.insert(key.to_path_buf(), std::sync::Arc::clone(&index));
+    Some(index)
+}
+
 /// Per-file semantic info derived from oak's [`SemanticIndex`] plus AST
 /// passes over the syntax tree. Computed once per file; consumed by lints.
 pub struct SemanticInfo<'a> {
@@ -606,30 +636,14 @@ impl<'a> SemanticInfo<'a> {
     /// counts as free even though the conditional definition reaches the read.
     fn import_uses_from_sourced_file(&mut self, target: &std::path::Path, call_range: TextRange) {
         // The resolver built this index while indexing the current file, so
-        // this normally hits; the build is the fallback for an index that
-        // reached us some other way.
-        let index = match self.source_cache.get(target) {
-            Some(index) => index,
-            None => {
-                let Ok(contents) = std::fs::read_to_string(target) else {
-                    return;
-                };
-                let parsed = air_r_parser::parse(&contents, RParserOptions::default());
-                if parsed.has_error() {
-                    return;
-                }
-                // The resolver lets the target's own `source()` chain inject
-                // Import definitions, so a read satisfied by a deeper file
-                // doesn't count as free here (the cross-file pass credits that
-                // file instead).
-                let index = std::sync::Arc::new(oak_semantic::build_index(
-                    &parsed.tree(),
-                    JarlImportsResolver::with_cache(target, self.source_cache.clone()),
-                ));
-                self.source_cache
-                    .insert(target.to_path_buf(), std::sync::Arc::clone(&index));
-                index
-            }
+        // this normally hits the memo; the build is the fallback for a target
+        // that reached us some other way. Its own `source()` chain injects
+        // Import definitions, so a read satisfied by a deeper file doesn't
+        // count as free here (the cross-file pass credits that file instead).
+        let Some(index) = source_target_index(&self.source_cache, target, target, |path| {
+            JarlImportsResolver::with_cache(path, self.source_cache.clone())
+        }) else {
+            return;
         };
         for scope in index.scope_ids() {
             let symbols = index.symbols(scope);
@@ -1428,29 +1442,16 @@ impl oak_semantic::ImportsResolver for JarlImportsResolver {
         let url = url::Url::from_file_path(&target_key)
             .ok()
             .or_else(|| url::Url::parse(&format!("file:///{}", target_key.display())).ok())?;
-        let sub_index = match self.cache.get(&target_key) {
-            Some(index) => index,
-            None => {
-                let contents = std::fs::read_to_string(&target).ok()?;
-                let parsed = air_r_parser::parse(&contents, RParserOptions::default());
-                if parsed.has_error() {
-                    return None;
-                }
-                // Recurse with the chain's visited set: the target's own
-                // `source()` calls inject Import entries into its index, so
-                // its exports below include names it forwards from deeper
-                // files.
-                let sub_resolver = JarlImportsResolver {
-                    current_file: target,
-                    visited: std::rc::Rc::clone(&self.visited),
-                    cache: self.cache.clone(),
-                };
-                let index =
-                    std::sync::Arc::new(oak_semantic::build_index(&parsed.tree(), sub_resolver));
-                self.cache.insert(target_key, std::sync::Arc::clone(&index));
-                index
+        // Recurse with the chain's visited set: the target's own `source()`
+        // calls inject Import entries into its index, so its exports below
+        // include names it forwards from deeper files.
+        let sub_index = source_target_index(&self.cache, &target_key, &target, |path| {
+            JarlImportsResolver {
+                current_file: path.to_path_buf(),
+                visited: std::rc::Rc::clone(&self.visited),
+                cache: self.cache.clone(),
             }
-        };
+        })?;
         let names: Vec<String> = sub_index.exports().keys().map(|s| s.to_string()).collect();
         // `library()` in a sourced file attaches to the global search path, so
         // the sourcing file sees the package too. Oak turns these into `Attach`
