@@ -1726,6 +1726,24 @@ print(x)",
             "unused_object",
             None,
         );
+        // Branching calls nested in branching calls: the outer argument holds
+        // the inner call's assignments as well as its own, and both levels are
+        // alternatives.
+        expect_no_lint(
+            "
+ifelse(c1, ifelse(c2, x <- 1, x <- 2), x <- 3)
+print(x)",
+            "unused_object",
+            None,
+        );
+        // A short-circuit nested inside two operators is seen by both.
+        expect_no_lint(
+            "
+a || (b && (x <- 2))
+print(x)",
+            "unused_object",
+            None,
+        );
     }
 
     #[test]

@@ -98,6 +98,20 @@ pub struct SemanticInfo<'a> {
     /// and resolved in [`Self::precompute_branching_defs`]. These are
     /// alternatives rather than redefinitions, so none of them is dead.
     branching_defs: Vec<(String, TextRange)>,
+    /// Every assignment in the file, as `(name, assignment range)`, collected
+    /// by the one descendant walk in [`Self::collect_ast_passes`]. The two
+    /// rules that ask "what does this subtree assign?" — branching arguments
+    /// and short-circuit operands — read this instead of re-walking the
+    /// subtree, which would cost a walk per nesting level. Pushed in
+    /// document order, so [`assignments_in`] can binary-search it.
+    assignments: Vec<(String, TextRange)>,
+    /// Argument ranges of each call taking two or more arguments, tagged with
+    /// a per-call group id. Resolved against `assignments` in
+    /// [`Self::resolve_assignment_groups`].
+    branching_args: Vec<(u32, TextRange)>,
+    /// Ranges of short-circuit expressions (`cond || (x <- 2)`), resolved
+    /// against `assignments` in [`Self::resolve_assignment_groups`].
+    short_circuit_ranges: Vec<TextRange>,
     /// Ranges re-entered by a loop's back edge, used in
     /// [`Self::precompute_loop_back_edges`]: the whole statement for
     /// `while`/`repeat`, only the body for `for`.
@@ -158,6 +172,9 @@ impl<'a> SemanticInfo<'a> {
             source_cache: source_cache.clone(),
             short_circuit_defs: Vec::new(),
             branching_defs: Vec::new(),
+            assignments: Vec::new(),
+            branching_args: Vec::new(),
+            short_circuit_ranges: Vec::new(),
             loop_ranges: Vec::new(),
             positional_uses: Vec::new(),
             nse_ranges: Vec::new(),
@@ -166,6 +183,7 @@ impl<'a> SemanticInfo<'a> {
             reaching_used: HashSet::new(),
         };
         this.collect_ast_passes(expressions);
+        this.resolve_assignment_groups();
         this.collect_sourced_file_uses();
         let scopes = this.scope_ids();
         this.precompute_reaching_uses(&scopes);
@@ -418,6 +436,15 @@ impl<'a> SemanticInfo<'a> {
     }
 
     fn visit_binary(&mut self, bin: &RBinaryExpression) {
+        // Every assignment is a binary expression, so this pass sees them all
+        // exactly once — no matter how many enclosing calls later ask what a
+        // subtree assigns. Recorded before the operator checks below, which
+        // return early for shapes an assignment can still sit inside.
+        let range = bin.syntax().text_trimmed_range();
+        if let Some(name) = assignment_lhs_name(bin.syntax()) {
+            self.assignments.push((name, range));
+        }
+
         let Ok(op) = bin.operator() else {
             return;
         };
@@ -448,68 +475,28 @@ impl<'a> SemanticInfo<'a> {
         // assignment; `precompute_short_circuit_defs` resolves which earlier
         // definitions it keeps alive.
         if op_text == "||" || op_text == "&&" || op_text == "|" || op_text == "&" {
-            for descendant in bin.syntax().descendants() {
-                if descendant.kind() == RSyntaxKind::R_BINARY_EXPRESSION
-                    && let Some(name) = assignment_lhs_name(&descendant)
-                {
-                    self.short_circuit_defs
-                        .push((name, descendant.text_trimmed_range()));
-                }
-            }
+            self.short_circuit_ranges.push(range);
         }
     }
 
-    /// Arguments are promises, so a call can evaluate one of them and not the
-    /// others: `ifelse(cond, w <- 1, w <- 2)` and `switch(x, a = w <- 1, b =
-    /// w <- 2)` are branches, not a sequence. Oak walks the arguments linearly,
-    /// so the later assignment shadows the earlier one and a later read of `w`
-    /// only keeps the last branch alive. Workaround: when the same symbol is
-    /// assigned in two or more sibling arguments, they are alternatives rather
-    /// than redefinitions, so none of them is dead. Recorded per argument
-    /// range so the exemption covers exactly those assignments and not every
-    /// binding of that name in the file.
-    ///
-    /// Keyed on the argument structure rather than on a list of callee names,
-    /// so user-defined branching wrappers get the same treatment. Repeated
-    /// assignments *within* one argument (`f({w <- 1; w <- 2})`) really are
-    /// sequential and stay lintable.
-    fn collect_branching_argument_assignments(&mut self, args: &[(Option<String>, RSyntaxNode)]) {
+    /// Record this call's argument ranges as one group, for
+    /// [`Self::resolve_assignment_groups`] to inspect. A call needs two
+    /// arguments before any of them can be an alternative to another.
+    fn collect_branching_argument_ranges(&mut self, args: &[(Option<String>, RSyntaxNode)]) {
         if args.len() < 2 {
             return;
         }
-
-        let mut assigning_args: std::collections::HashMap<String, Vec<TextRange>> =
-            std::collections::HashMap::new();
-        for (_, value) in args {
-            let assigned: HashSet<String> = value
-                .descendants()
-                .filter(|d| d.kind() == RSyntaxKind::R_BINARY_EXPRESSION)
-                .filter_map(|d| assignment_lhs_name(&d))
-                .collect();
-            for name in assigned {
-                assigning_args
-                    .entry(name)
-                    .or_default()
-                    .push(value.text_trimmed_range());
-            }
-        }
-        for (name, ranges) in assigning_args {
-            // One argument assigning the name is an ordinary definition; it
-            // takes a sibling argument assigning it too for them to be
-            // alternatives.
-            if ranges.len() < 2 {
-                continue;
-            }
-            for range in ranges {
-                self.branching_defs.push((name.clone(), range));
-            }
-        }
+        let group = self.branching_args.last().map_or(0, |(id, _)| id + 1);
+        self.branching_args.extend(
+            args.iter()
+                .map(|(_, value)| (group, value.text_trimmed_range())),
+        );
     }
 
     fn visit_call(&mut self, call: &RCall) {
         let all_args: Vec<(Option<String>, RSyntaxNode)> = call_args(call);
 
-        self.collect_branching_argument_assignments(&all_args);
+        self.collect_branching_argument_ranges(&all_args);
 
         let Some(name) = call_name(call) else {
             return;
@@ -821,6 +808,65 @@ impl<'a> SemanticInfo<'a> {
         }
     }
 
+    /// Turn the ranges the AST pass recorded into the `(name, range)` pairs
+    /// the precompute steps consume, by looking up what each range assigns
+    /// rather than walking it.
+    ///
+    /// Branching arguments: arguments are promises, so a call can evaluate one
+    /// and not the others — `ifelse(cond, w <- 1, w <- 2)` and `switch(x, a =
+    /// w <- 1, b = w <- 2)` are branches, not a sequence. Oak walks the
+    /// arguments linearly, so the later assignment shadows the earlier one and
+    /// a later read of `w` only keeps the last branch alive. Workaround: when
+    /// the same symbol is assigned in two or more sibling arguments, they are
+    /// alternatives rather than redefinitions, so none of them is dead. Kept
+    /// per argument range so the exemption covers exactly those assignments
+    /// and not every binding of that name in the file. Keyed on the argument
+    /// structure rather than on a list of callee names, so user-defined
+    /// branching wrappers get the same treatment. Repeated assignments
+    /// *within* one argument (`f({w <- 1; w <- 2})`) really are sequential and
+    /// stay lintable, which is why an argument counts at most once per name.
+    ///
+    /// Short-circuit operands: `cond || (x <- 2)` may skip the assignment
+    /// entirely, so every assignment inside the operand is recorded for
+    /// [`Self::precompute_short_circuit_defs`] to resolve.
+    fn resolve_assignment_groups(&mut self) {
+        let assignments = std::mem::take(&mut self.assignments);
+        for range in std::mem::take(&mut self.short_circuit_ranges) {
+            self.short_circuit_defs.extend(
+                assignments_in(&assignments, range)
+                    .map(|(name, assigned)| (name.clone(), *assigned)),
+            );
+        }
+
+        let branching_args = std::mem::take(&mut self.branching_args);
+        for group in branching_args.chunk_by(|(a, _), (b, _)| a == b) {
+            // The sibling argument ranges assigning each name. Borrowed from
+            // `assignments`, so matching a name costs no allocation.
+            let mut assigning_args: std::collections::HashMap<&str, Vec<TextRange>> =
+                std::collections::HashMap::new();
+            for (_, arg_range) in group {
+                for (name, _) in assignments_in(&assignments, *arg_range) {
+                    let ranges = assigning_args.entry(name.as_str()).or_default();
+                    // Arguments are visited in order, so a repeat of the same
+                    // range is this argument assigning the name twice.
+                    if ranges.last() != Some(arg_range) {
+                        ranges.push(*arg_range);
+                    }
+                }
+            }
+            for (name, ranges) in assigning_args {
+                // One argument assigning the name is an ordinary definition;
+                // it takes a sibling argument assigning it too for them to be
+                // alternatives.
+                if ranges.len() < 2 {
+                    continue;
+                }
+                self.branching_defs
+                    .extend(ranges.into_iter().map(|range| (name.to_string(), range)));
+            }
+        }
+    }
+
     /// Keep the assignments a call spreads over sibling arguments alive (see
     /// [`Self::collect_branching_argument_assignments`]). Only definitions
     /// sitting inside one of those arguments are exempt, so an unrelated
@@ -946,6 +992,22 @@ impl<'a> SemanticInfo<'a> {
 }
 
 // ── Free helpers (also used by rule policy) ──────────────────────────────
+
+/// The assignments sitting inside `range`.
+///
+/// `assignments` is in document order — the AST pass pushes them as it walks —
+/// so every candidate sits in one contiguous run and the start of that run can
+/// be found without scanning the whole list.
+fn assignments_in(
+    assignments: &[(String, TextRange)],
+    range: TextRange,
+) -> impl Iterator<Item = &(String, TextRange)> {
+    let first = assignments.partition_point(|(_, assigned)| assigned.start() < range.start());
+    assignments[first..]
+        .iter()
+        .take_while(move |(_, assigned)| assigned.start() < range.end())
+        .filter(move |(_, assigned)| range.contains_range(*assigned))
+}
 
 fn in_any_range(target: TextRange, ranges: &[TextRange]) -> bool {
     ranges.iter().any(|r| r.contains_range(target))
