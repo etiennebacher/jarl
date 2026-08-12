@@ -753,7 +753,15 @@ impl<'a> SemanticInfo<'a> {
             self.queue_back_edges(&mut back_edges, name, read_scope, *read_range);
         }
         for (name, scope_id, pos, loop_range) in back_edges {
-            self.mark_loop_back_edge(&name, scope_id, pos, loop_range);
+            self.mark_lookup(&name, scope_id, |def, _| {
+                // What the next iteration reads: the definitions following the
+                // use but still inside the loop. Those preceding it are what
+                // the first iteration reads — they bind the name without the
+                // back edge marking them.
+                let back_edge =
+                    def.range().start() >= pos && loop_range.contains_range(def.range());
+                (back_edge || def.range().start() < pos, back_edge)
+            });
         }
     }
 
@@ -773,51 +781,6 @@ impl<'a> SemanticInfo<'a> {
             .filter(|loop_range| loop_range.contains_range(range))
         {
             queue.push((name.to_string(), scope, range.start(), *loop_range));
-        }
-    }
-
-    /// Mark the definitions of `name` that the use at `pos` reads on a later
-    /// iteration of the loop spanning `loop_range`: those that follow the use
-    /// but stay inside the loop.
-    ///
-    /// Walks outward from the reading scope like an ordinary lookup and stops
-    /// at the first scope binding `name` — whether before the use (what the
-    /// first iteration reads) or later inside the loop (what the next ones
-    /// read).
-    fn mark_loop_back_edge(
-        &mut self,
-        name: &str,
-        use_scope: ScopeId,
-        pos: TextSize,
-        loop_range: TextRange,
-    ) {
-        let index = self.index;
-        for owner in index.ancestor_scope_ids(use_scope) {
-            let Some(symbol_id) = index.symbols(owner).id(name) else {
-                continue;
-            };
-            let mut binds = false;
-            let mut back_edge_defs = Vec::new();
-            for (def_id, def) in index.definitions(owner).iter() {
-                if def.symbol() != symbol_id || self.is_in_nse(def.range()) {
-                    continue;
-                }
-                if def.range().start() < pos {
-                    binds = true;
-                } else if loop_range.contains_range(def.range()) {
-                    binds = true;
-                    back_edge_defs.push(def_id);
-                }
-            }
-            // `name` may be referenced but not bound in this scope; if so, keep
-            // walking outward to the scope whose binding the read consumes.
-            if !binds {
-                continue;
-            }
-            for def_id in back_edge_defs {
-                self.reaching_used.insert((owner, def_id));
-            }
-            return;
         }
     }
 
@@ -917,29 +880,55 @@ impl<'a> SemanticInfo<'a> {
     ///   later, so textual order is irrelevant and every definition of the
     ///   name there is kept alive.
     fn mark_positional_use(&mut self, name: &str, pos: TextSize) {
+        let (read_scope, _) = self.index.scope_at(pos);
+        self.mark_lookup(name, read_scope, |def, captured| {
+            let reaches = captured || def.range().start() < pos;
+            (reaches, reaches)
+        });
+    }
+
+    /// Walk outward from `scope` like an ordinary lookup and mark the
+    /// definitions of `name` that a read there consumes.
+    ///
+    /// `classify` sees every non-NSE definition of `name` in the scope being
+    /// examined, plus whether that scope encloses the reading one, and answers
+    /// two things: does the definition make this scope the one binding `name`,
+    /// and does the read reach it. The two come apart for a loop back edge,
+    /// where a definition preceding the read binds the name — it is what the
+    /// first iteration reads — without being read back on the next one. The
+    /// walk still stops at such a scope, since an outer definition of the same
+    /// name is shadowed either way; a scope that merely *mentions* `name`
+    /// without binding it doesn't stop it, so it continues to the scope whose
+    /// binding the read actually consumes.
+    fn mark_lookup(
+        &mut self,
+        name: &str,
+        scope: ScopeId,
+        classify: impl Fn(&Definition, bool) -> (bool, bool),
+    ) {
         let index = self.index;
-        let (read_scope, _) = index.scope_at(pos);
-        for owner in index.ancestor_scope_ids(read_scope) {
+        for owner in index.ancestor_scope_ids(scope) {
             let Some(symbol_id) = index.symbols(owner).id(name) else {
                 continue;
             };
-            let captured = owner != read_scope;
-            let reached: Vec<DefinitionId> = index
-                .definitions(owner)
-                .iter()
-                .filter(|(_, def)| def.symbol() == symbol_id && !self.is_in_nse(def.range()))
-                .filter(|(_, def)| captured || def.range().start() < pos)
-                .map(|(id, _)| id)
-                .collect();
-            // `name` may be referenced but not bound (before `pos`) in this
-            // scope; if so, keep walking outward to the scope whose binding
-            // the read actually consumes.
-            if reached.is_empty() {
+            let captured = owner != scope;
+            let mut binds = false;
+            let mut reached: Vec<DefinitionId> = Vec::new();
+            for (def_id, def) in index.definitions(owner).iter() {
+                if def.symbol() != symbol_id || self.is_in_nse(def.range()) {
+                    continue;
+                }
+                let (def_binds, def_reached) = classify(def, captured);
+                binds |= def_binds;
+                if def_reached {
+                    reached.push(def_id);
+                }
+            }
+            if !binds {
                 continue;
             }
-            for def_id in reached {
-                self.reaching_used.insert((owner, def_id));
-            }
+            self.reaching_used
+                .extend(reached.into_iter().map(|def_id| (owner, def_id)));
             return;
         }
     }
