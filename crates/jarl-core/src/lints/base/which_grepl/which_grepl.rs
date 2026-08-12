@@ -1,10 +1,12 @@
 use crate::diagnostic::*;
 use crate::utils::{
-    get_arg_by_name, get_arg_by_name_then_position, get_function_name,
-    get_nested_functions_content, node_contains_comments,
+    Formals, get_arg, get_arg_by_name, get_function_name, get_nested_functions_content,
+    node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::AstNode;
+
+const FORMALS_WHICH: Formals = &["x", "arr.ind", "useNames"];
 
 pub struct WhichGrepl;
 
@@ -58,10 +60,8 @@ pub fn which_grepl(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
         return Ok(None);
     }
 
-    let arguments = ast.arguments()?.items();
-
     // Handle `which(grepl(...))`, including a named `x` argument to `which()`.
-    let direct_content = if let Some(argument) = get_arg_by_name_then_position(&arguments, "x", 1)
+    let direct_content = if let Some(argument) = get_arg(ast, FORMALS_WHICH, "x")
         && let Some(value) = argument.value()
         && let Some(inner_call) = value.as_r_call()
         && get_function_name(inner_call.function()?) == "grepl"

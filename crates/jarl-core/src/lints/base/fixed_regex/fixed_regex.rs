@@ -1,7 +1,36 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name_then_position, node_contains_comments};
+use crate::utils::{Formals, get_arg, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
+
+const FORMALS_GSUB: Formals = &[
+    "pattern",
+    "replacement",
+    "x",
+    "ignore.case",
+    "perl",
+    "fixed",
+    "useBytes",
+];
+const FORMALS_GREP: Formals = &[
+    "pattern",
+    "x",
+    "ignore.case",
+    "perl",
+    "value",
+    "fixed",
+    "useBytes",
+    "invert",
+];
+const FORMALS_GREPL: Formals = &["pattern", "x", "ignore.case", "perl", "fixed", "useBytes"];
+const FORMALS_REGEXPR: Formals = &[
+    "pattern",
+    "text",
+    "ignore.case",
+    "perl",
+    "fixed",
+    "useBytes",
+];
 
 pub struct FixedRegex;
 
@@ -52,32 +81,27 @@ impl Violation for FixedRegex {
 pub fn fixed_regex(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     let args = ast.arguments()?.items();
 
-    // Determine the position of the 'fixed' argument based on the function
-    let fixed_position = match fn_name {
-        "grep" | "gsub" | "sub" => 6,
-        "regexpr" | "gregexpr" | "regexec" | "grepl" => 5,
+    let formals = match fn_name {
+        "gsub" | "sub" => FORMALS_GSUB,
+        "grep" => FORMALS_GREP,
+        "grepl" => FORMALS_GREPL,
+        "regexpr" | "gregexpr" | "regexec" => FORMALS_REGEXPR,
         _ => return Ok(None),
     };
 
     // Check if `fixed` is already explicitly supplied (by name or position).
     // If the user wrote `fixed = TRUE`, `fixed = FALSE`, or `fixed = some_var`,
     // they are making a deliberate choice and we should not second-guess it.
-    if get_arg_by_name_then_position(&args, "fixed", fixed_position).is_some() {
+    if get_arg(ast, formals, "fixed").is_some() {
         return Ok(None);
     }
 
     // Check if ignore.case is explicitly supplied (implies regex interpretation)
-    let ignore_case_position = match fn_name {
-        "gsub" | "sub" => 4,
-        "regexpr" | "gregexpr" | "regexec" | "grep" | "grepl" => 3,
-        _ => return Ok(None),
-    };
-    if get_arg_by_name_then_position(&args, "ignore.case", ignore_case_position).is_some() {
+    if get_arg(ast, formals, "ignore.case").is_some() {
         return Ok(None);
     }
 
-    // Get the pattern argument (first argument for all functions)
-    let pattern_arg = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "pattern", 1));
+    let pattern_arg = unwrap_or_return_none!(get_arg(ast, formals, "pattern"));
     let pattern_value = unwrap_or_return_none!(pattern_arg.value());
 
     // Check if the pattern is a string literal

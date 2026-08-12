@@ -1,9 +1,9 @@
 use crate::diagnostic::*;
-use crate::utils::{
-    drop_arg_by_name_or_position, get_arg_by_name_then_position, node_contains_comments,
-};
+use crate::utils::{Formals, drop_arg, get_arg, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
+
+const FORMALS_SAMPLE: Formals = &["x", "size", "replace", "prob"];
 
 pub struct SampleInt;
 
@@ -52,9 +52,7 @@ pub fn sample_int(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnosti
         return Ok(None);
     }
 
-    let args = ast.arguments()?.items();
-
-    let n = get_arg_by_name_then_position(&args, "n", 1);
+    let n = get_arg(ast, FORMALS_SAMPLE, "x");
 
     // Is the `n` argument of the form `1:x`? If so, keep the `x` part so it
     // can be reused in the fix.
@@ -77,7 +75,7 @@ pub fn sample_int(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnosti
         return Ok(None);
     };
 
-    let other_args = drop_arg_by_name_or_position(&args, "n", 1);
+    let other_args = drop_arg(ast, FORMALS_SAMPLE, "x");
     let inner_content = match other_args {
         Some(x) => {
             let out = x

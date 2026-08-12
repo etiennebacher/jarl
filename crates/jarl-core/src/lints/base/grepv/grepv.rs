@@ -1,7 +1,18 @@
 use crate::diagnostic::*;
-use crate::utils::{drop_arg_by_name_or_position, is_argument_present, node_contains_comments};
+use crate::utils::{Formals, drop_arg, get_arg, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
+
+const FORMALS_GREP: Formals = &[
+    "pattern",
+    "x",
+    "ignore.case",
+    "perl",
+    "value",
+    "fixed",
+    "useBytes",
+    "invert",
+];
 pub struct Grepv;
 
 /// Version added: 0.0.16
@@ -51,15 +62,13 @@ pub fn grepv(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    let items = ast.arguments()?.items();
-
-    let arg_value_is_present = is_argument_present(&items, "value", 5);
+    let arg_value_is_present = get_arg(ast, FORMALS_GREP, "value").is_some();
 
     if !arg_value_is_present {
         return Ok(None);
     }
 
-    let other_args = drop_arg_by_name_or_position(&items, "value", 5);
+    let other_args = drop_arg(ast, FORMALS_GREP, "value");
 
     let inner_content = match other_args {
         Some(x) => x

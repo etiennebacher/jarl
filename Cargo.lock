@@ -1096,6 +1096,7 @@ dependencies = [
  "ignore",
  "insta",
  "jarl-semantic",
+ "oak_core",
  "oak_db",
  "oak_package_metadata",
  "oak_scan",
