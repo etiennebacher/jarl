@@ -13,8 +13,6 @@ use std::process::Command;
 use std::sync::{Arc, RwLock};
 use std::time::SystemTime;
 
-use crate::checker::PackageOrigin;
-
 /// Information about an installed R package.
 #[derive(Debug, Clone)]
 pub struct PackageInfo {
@@ -321,46 +319,6 @@ pub fn any_file_references_packages(paths: &[PathBuf], packages: &[&str]) -> boo
     false
 }
 
-/// Per-file package context for resolving bare function names to packages.
-///
-/// Built during the pre-pass from `library()`/`require()` calls found in
-/// the file. Holds a reference to the shared `PackageCache`.
-pub struct FilePackageContext<'a> {
-    /// Packages loaded in this file, in load order.
-    loaded_packages: Vec<String>,
-    /// Reference to the shared cache.
-    cache: &'a PackageCache,
-}
-
-impl<'a> FilePackageContext<'a> {
-    pub fn new(loaded_packages: Vec<String>, cache: &'a PackageCache) -> Self {
-        Self { loaded_packages, cache }
-    }
-
-    /// Resolve which package a bare function name comes from.
-    pub fn resolve_package(&self, fn_name: &str) -> PackageOrigin {
-        let mut candidates: Vec<String> = Vec::new();
-        for pkg_name in &self.loaded_packages {
-            if let Some(info) = self.cache.get(pkg_name)
-                && info.exports.contains(fn_name)
-            {
-                candidates.push(pkg_name.clone());
-            }
-        }
-
-        match candidates.len() {
-            0 => PackageOrigin::Unknown,
-            1 => PackageOrigin::Resolved(candidates.into_iter().next().unwrap()),
-            _ => PackageOrigin::Ambiguous(candidates),
-        }
-    }
-
-    /// Look up version info for a specific package.
-    pub fn package_version(&self, pkg_name: &str) -> Option<(u32, u32, u32)> {
-        self.cache.get(pkg_name).and_then(|info| info.version)
-    }
-}
-
 /// Result of a batch Rscript query for package metadata.
 struct PackageBatchResult {
     /// Link package name to info (`None` means looked up but not found).
@@ -472,6 +430,7 @@ fn parse_package_version(version: &str) -> Option<(u32, u32, u32)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::checker::PackageOrigin;
 
     #[test]
     fn test_from_exports() {
@@ -492,22 +451,38 @@ mod tests {
     }
 
     #[test]
-    fn test_file_package_context_resolve() {
+    fn test_checker_resolve_package() {
         let cache = PackageCache::from_exports(&[
             ("dplyr", &["filter", "mutate"]),
             ("stats", &["filter", "lag"]),
         ]);
 
-        let ctx = FilePackageContext::new(vec!["stats".to_string(), "dplyr".to_string()], &cache);
+        let parsed = air_r_parser::parse("", air_r_parser::RParserOptions::default());
+        let suppression = crate::suppression::SuppressionManager::from_node(&parsed.syntax(), "");
+        let mut checker = crate::checker::Checker::new(
+            suppression,
+            std::sync::Arc::new(crate::rule_options::ResolvedRuleOptions::default()),
+        );
+        checker.loaded_packages = vec!["stats".to_string(), "dplyr".to_string()];
+        checker.package_cache = Some(std::sync::Arc::new(cache));
+
         assert_eq!(
-            ctx.resolve_package("filter"),
+            checker.resolve_package("filter"),
             PackageOrigin::Ambiguous(vec!["stats".to_string(), "dplyr".to_string()])
         );
         assert_eq!(
-            ctx.resolve_package("lag"),
+            checker.resolve_package("lag"),
             PackageOrigin::Resolved("stats".to_string())
         );
-        assert_eq!(ctx.resolve_package("nonexistent"), PackageOrigin::Unknown);
+        assert_eq!(
+            checker.resolve_package("nonexistent"),
+            PackageOrigin::Unknown
+        );
+
+        // `package_available` asks only about the search path, so it answers
+        // for packages the cache has never heard of.
+        assert!(checker.package_available("dplyr"));
+        assert!(!checker.package_available("tidyr"));
     }
 
     #[test]

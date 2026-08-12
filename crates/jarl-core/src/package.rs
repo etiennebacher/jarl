@@ -219,12 +219,14 @@ pub fn summarize_package_info(
         let mut namespace_exports = HashSet::new();
         let mut namespace_content = None;
 
+        // Only `Depends`. Those packages are attached to the search path when
+        // the package is attached, so bare names from them really do resolve.
+        // `Imports` does not attach anything: code in `R/` reaches an imported
+        // package only through `::` or a NAMESPACE `import()`/`importFrom()`
+        // directive, both of which are picked up below.
         let desc_path = root.join("DESCRIPTION");
         if let Ok(desc) = std::fs::read_to_string(&desc_path) {
-            packages.extend(Description::get_package_deps(
-                &desc,
-                &["Depends", "Imports"],
-            ));
+            packages.extend(Description::get_package_deps(&desc, &["Depends"]));
         }
 
         let ns_path = root.join("NAMESPACE");

@@ -148,6 +148,16 @@ impl Checker {
         }
     }
 
+    /// Whether `pkg` is attached in this file, and so whether a bare call to
+    /// one of its functions could really be that function.
+    ///
+    /// Unlike [`Self::resolve_package`] this needs no `PackageCache`, hence no
+    /// `Rscript` call: it only asks what the search path contains, not what
+    /// each package exports.
+    pub fn package_available(&self, pkg: &str) -> bool {
+        self.loaded_packages.iter().any(|p| p == pkg)
+    }
+
     /// Look up the installed version of a package.
     pub fn package_version(&self, pkg_name: &str) -> Option<(u32, u32, u32)> {
         self.package_cache
