@@ -1,8 +1,15 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name_then_position, node_contains_comments};
+use crate::utils::{Formals, get_arg, node_contains_comments};
 use air_r_syntax::*;
 use anyhow::Context;
 use biome_rowan::AstNode;
+
+/// Omits `simplify` and `USE.NAMES`, which follow `...`.
+const FORMALS_SAPPLY: Formals = &["X", "FUN"];
+/// Omits `USE.NAMES`, which follows `...`.
+const FORMALS_VAPPLY: Formals = &["X", "FUN", "FUN.VALUE"];
+/// Omits `.progress`, which follows `...`.
+const FORMALS_MAP_DBL: Formals = &[".x", ".f"];
 
 pub struct Lengths;
 
@@ -53,9 +60,13 @@ pub fn lengths(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>>
         return Ok(None);
     }
 
-    let arguments = ast.arguments()?.items();
-    let arg_x = get_arg_by_name_then_position(&arguments, "x", 1);
-    let arg_fun = get_arg_by_name_then_position(&arguments, "FUN", 2);
+    let formals = match fn_name {
+        "map_dbl" | "map_int" => FORMALS_MAP_DBL,
+        "vapply" => FORMALS_VAPPLY,
+        _ => FORMALS_SAPPLY,
+    };
+    let arg_x = get_arg(ast, formals, formals[0]);
+    let arg_fun = get_arg(ast, formals, formals[1]);
 
     if let Some(arg_fun) = arg_fun
         && arg_fun

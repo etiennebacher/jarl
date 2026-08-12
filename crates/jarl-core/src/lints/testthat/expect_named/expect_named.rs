@@ -1,10 +1,14 @@
 use crate::diagnostic::*;
 use crate::utils::{
-    get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
-    node_contains_comments,
+    Formals, get_arg, get_function_name, get_function_namespace_prefix, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::AstNode;
+
+/// Omits `tolerance`, `info`, `label` and `expected.label`, which follow `...`.
+/// Shared with `expect_identical()`, whose first two formals are the same.
+const FORMALS_EXPECT_EQUAL: Formals = &["object", "expected"];
+const FORMALS_NAMES: Formals = &["x"];
 
 /// Version added: 0.2.0
 ///
@@ -39,10 +43,8 @@ pub fn expect_named(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnos
         return Ok(None);
     }
 
-    let args = ast.arguments()?.items();
-
-    let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
-    let expected = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "expected", 2));
+    let object = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_EQUAL, "object"));
+    let expected = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_EQUAL, "expected"));
 
     let object_value = unwrap_or_return_none!(object.value());
     let expected_value = unwrap_or_return_none!(expected.value());
@@ -75,8 +77,7 @@ pub fn expect_named(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnos
     }
 
     // Extract the argument to names()
-    let names_args = names_arg.arguments()?.items();
-    let names_x_arg = unwrap_or_return_none!(get_arg_by_name_then_position(&names_args, "x", 1));
+    let names_x_arg = unwrap_or_return_none!(get_arg(names_arg, FORMALS_NAMES, "x"));
     let names_x_value = unwrap_or_return_none!(names_x_arg.value());
 
     let x_text = names_x_value.to_trimmed_text();

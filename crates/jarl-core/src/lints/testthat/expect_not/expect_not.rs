@@ -1,9 +1,9 @@
 use crate::diagnostic::*;
-use crate::utils::{
-    get_arg_by_name_then_position, get_function_namespace_prefix, node_contains_comments,
-};
+use crate::utils::{Formals, get_arg, get_function_namespace_prefix, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
+
+const FORMALS_EXPECT_TRUE: Formals = &["object", "info", "label"];
 
 /// Version added: 0.2.0
 ///
@@ -48,7 +48,7 @@ pub fn expect_not(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnosti
     let args = ast.arguments()?.items();
 
     // Get the first argument (object)
-    let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
+    let object = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_TRUE, "object"));
 
     // Skip if there are multiple arguments (e.g., expect_true(!x, label = "test"))
     // Only lint when there's exactly one argument

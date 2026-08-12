@@ -1,8 +1,11 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name_then_position, get_unnamed_args, node_contains_comments};
+use crate::utils::{Formals, get_arg, get_unnamed_args, node_contains_comments};
+
 use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
+
+const FORMALS_SPRINTF: Formals = &["fmt"];
 
 /// Version added: 0.3.0
 ///
@@ -61,7 +64,7 @@ pub fn sprintf(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>>
 
     let args = ast.arguments()?.items();
 
-    let fmt = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "fmt", 1));
+    let fmt = unwrap_or_return_none!(get_arg(ast, FORMALS_SPRINTF, "fmt"));
     let fmt_value = unwrap_or_return_none!(fmt.value());
     let fmt_text = if let Some(x) = fmt_value.as_any_r_value()
         && let Some(x) = x.as_r_string_value()

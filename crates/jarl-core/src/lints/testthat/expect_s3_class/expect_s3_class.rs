@@ -1,10 +1,17 @@
 use crate::diagnostic::*;
 use crate::utils::{
-    get_arg_by_name_then_position, get_arg_by_position, get_function_name,
-    get_function_namespace_prefix, node_contains_comments,
+    Formals, get_arg, get_arg_by_position, get_function_name, get_function_namespace_prefix,
+    node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
+
+/// Omits `tolerance`, `info`, `label` and `expected.label`, which follow `...`.
+/// Shared with `expect_identical()`, whose first two formals are the same.
+const FORMALS_EXPECT_EQUAL: Formals = &["object", "expected"];
+const FORMALS_EXPECT_TRUE: Formals = &["object", "info", "label"];
+const FORMALS_CLASS: Formals = &["x"];
+const FORMALS_INHERITS: Formals = &["x", "what", "which"];
 
 /// Version added: 0.3.0
 ///
@@ -83,18 +90,8 @@ fn check_expect_class_comparison(
         return Ok(None);
     }
 
-    let object_argument =
-        unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "object", 1));
-    let expected_position = if object_argument.name_clause().is_some() {
-        1
-    } else {
-        2
-    };
-    let expected_argument = unwrap_or_return_none!(get_arg_by_name_then_position(
-        &arguments,
-        "expected",
-        expected_position,
-    ));
+    let object_argument = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_EQUAL, "object"));
+    let expected_argument = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_EQUAL, "expected"));
 
     let object_value = unwrap_or_return_none!(object_argument.value());
     let expected_value = unwrap_or_return_none!(expected_argument.value());
@@ -120,9 +117,7 @@ fn check_expect_class_comparison(
     };
 
     // Extract the argument of class()
-    let class_arguments = class_call.arguments()?.items();
-    let class_object_argument =
-        unwrap_or_return_none!(get_arg_by_name_then_position(&class_arguments, "x", 1));
+    let class_object_argument = unwrap_or_return_none!(get_arg(class_call, FORMALS_CLASS, "x"));
     let class_object = unwrap_or_return_none!(class_object_argument.value());
 
     let object_text = class_object.to_trimmed_text();
@@ -168,15 +163,14 @@ fn check_expect_true_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         return Ok(None);
     }
 
-    let object_argument =
-        unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "object", 1));
+    let object_argument = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_TRUE, "object"));
     let object_value = unwrap_or_return_none!(object_argument.value());
     let predicate_call = unwrap_or_return_none!(object_value.as_r_call());
     let predicate_name = get_function_name(predicate_call.function()?);
 
     let predicate_arguments = predicate_call.arguments()?.items();
     let class_check = match predicate_name.as_str() {
-        "inherits" => unwrap_or_return_none!(extract_inherits_check(&predicate_arguments)?),
+        "inherits" => unwrap_or_return_none!(extract_inherits_check(predicate_call)?),
         name if S3_CLASS_PREDICATES.contains(&name) => {
             unwrap_or_return_none!(extract_predicate_check(name, &predicate_arguments)?)
         }
@@ -221,22 +215,13 @@ struct ClassCheck {
 }
 
 /// Extracts the object and class from a call such as `inherits(x, "foo")`.
-fn extract_inherits_check(arguments: &RArgumentList) -> anyhow::Result<Option<ClassCheck>> {
-    if arguments.iter().count() != 2 {
+fn extract_inherits_check(call: &RCall) -> anyhow::Result<Option<ClassCheck>> {
+    if call.arguments()?.items().iter().count() != 2 {
         return Ok(None);
     }
 
-    let object_argument = unwrap_or_return_none!(get_arg_by_name_then_position(arguments, "x", 1));
-    let class_position = if object_argument.name_clause().is_some() {
-        1
-    } else {
-        2
-    };
-    let class_argument = unwrap_or_return_none!(get_arg_by_name_then_position(
-        arguments,
-        "what",
-        class_position,
-    ));
+    let object_argument = unwrap_or_return_none!(get_arg(call, FORMALS_INHERITS, "x"));
+    let class_argument = unwrap_or_return_none!(get_arg(call, FORMALS_INHERITS, "what"));
     let object = unwrap_or_return_none!(object_argument.value());
     let class = unwrap_or_return_none!(class_argument.value());
     let can_fix = match classify_class_expression(&class) {

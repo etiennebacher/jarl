@@ -26,6 +26,7 @@ biome_diagnostics.workspace = true
 
 # Semantic analysis (per-file scopes, definitions, uses, use-def map)
 aether_path.workspace = true
+oak_core.workspace = true
 oak_db.workspace = true
 oak_package_metadata.workspace = true
 oak_scan.workspace = true

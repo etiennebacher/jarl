@@ -35,6 +35,40 @@ mod tests {
     }
 
     #[test]
+    fn test_argument_matching_follows_r_rules() {
+        // A named argument claims its formal, so the remaining positional one
+        // falls through to the next free slot — here `"Matrix"` lands in
+        // `class2` even though it is the only unnamed argument.
+        assert_snapshot!(
+            snapshot_lint("expect_true(is(object = x, \"Matrix\"))"),
+            @r#"
+        warning: expect_s4_class
+         --> <test>:1:1
+          |
+        1 | expect_true(is(object = x, "Matrix"))
+          | ------------------------------------- `expect_s4_class(x, "Matrix")` is better than `expect_true(is(object = x, "Matrix"))`.
+          |
+          = help: Use `expect_s4_class(x, "Matrix")` instead.
+        Found 1 error.
+        "#
+        );
+        // Backticks and quotes quote an argument name, they are not part of it.
+        assert_snapshot!(
+            snapshot_lint("expect_true(is(x, `class2` = \"Matrix\"))"),
+            @r#"
+        warning: expect_s4_class
+         --> <test>:1:1
+          |
+        1 | expect_true(is(x, `class2` = "Matrix"))
+          | --------------------------------------- `expect_s4_class(x, "Matrix")` is better than `expect_true(is(x, `class2` = "Matrix"))`.
+          |
+          = help: Use `expect_s4_class(x, "Matrix")` instead.
+        Found 1 error.
+        "#
+        );
+    }
+
+    #[test]
     fn test_lint_expect_s4_class() {
         assert_snapshot!(
             snapshot_lint("expect_true(is(x, \"Matrix\"))"),
