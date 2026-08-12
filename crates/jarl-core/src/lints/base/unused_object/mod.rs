@@ -1695,6 +1695,44 @@ x",
     }
 
     #[test]
+    fn test_elementwise_operators_do_not_short_circuit() {
+        // `&` and `|` are elementwise: both operands always evaluate, so
+        // `x <- 2` always runs and `x <- 1` is dead.
+        assert_snapshot!(
+            snapshot_lint("
+x <- 1
+if (runif(1) < 0.5 & (x <- 2)) {
+  print(x)
+}"),
+            @"
+        warning: unused_object
+         --> <test>:2:1
+          |
+        2 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint("
+x <- 1
+if (runif(1) < 0.5 | (x <- 2)) {
+  print(x)
+}"),
+            @"
+        warning: unused_object
+         --> <test>:2:1
+          |
+        2 | x <- 1
+          | - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
     fn test_lint_unread_assignment_in_condition() {
         // Nothing reads `y`, so the short-circuit operand keeps no earlier
         // definition alive and the assignment itself is still reported.

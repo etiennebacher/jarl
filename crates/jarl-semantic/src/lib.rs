@@ -511,8 +511,10 @@ impl<'a> SemanticInfo<'a> {
         // Short-circuit operators: `cond || (x <- 2)` may skip the assignment
         // entirely, so prior defs of `x` should remain alive. Record the
         // assignment; `precompute_short_circuit_defs` resolves which earlier
-        // definitions it keeps alive.
-        if op_text == "||" || op_text == "&&" || op_text == "|" || op_text == "&" {
+        // definitions it keeps alive. Only `&&` and `||` short-circuit: the
+        // elementwise `&` and `|` always evaluate both operands, so an
+        // assignment inside one is unconditional and kills prior definitions.
+        if op_text == "||" || op_text == "&&" {
             self.short_circuit_ranges.push(range);
         }
     }
