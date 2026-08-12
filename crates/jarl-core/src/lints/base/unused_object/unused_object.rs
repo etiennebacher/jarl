@@ -47,7 +47,7 @@ pub fn unused_object(
 
     let mut diagnostics = Vec::new();
     let top_level = ScopeId::from(0);
-    for &scope_id in &info.scope_ids() {
+    for scope_id in info.scope_ids() {
         for (def_id, def) in semantic.definitions(scope_id).iter() {
             if !should_lint_definition(&info, def) {
                 continue;
