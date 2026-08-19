@@ -1,5 +1,6 @@
 use crate::diagnostic::*;
 use crate::utils::node_contains_comments;
+use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -53,6 +54,10 @@ pub fn redundant_equals(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagno
     let operator = operator?;
     let left = left?;
     let right = right?;
+
+    if ast.parent_is_bang_bang() || ast.parent_is_bang_bang_bang() {
+        return Ok(None);
+    }
 
     let left_is_true = &left.as_r_true_expression().is_some();
     let left_is_false = &left.as_r_false_expression().is_some();
