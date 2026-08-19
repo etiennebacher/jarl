@@ -42,6 +42,7 @@ pub fn unused_object(
         semantic,
         &checker.source_index_cache,
         &checker.loaded_packages,
+        &checker.unevaluated_ranges,
     );
     let exports = &checker.namespace_exports;
 

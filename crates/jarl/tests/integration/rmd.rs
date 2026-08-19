@@ -1422,3 +1422,178 @@ x <- 1
 
     Ok(())
 }
+
+/// A chunk marked `eval = FALSE` never runs, so nothing it assigns is a
+/// definition and nothing it mentions is a read.
+#[test]
+fn test_rmd_unevaluated_chunk_defines_and_reads_nothing() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+read_only_in_dead_chunk <- 1
+```
+
+```{r, eval = FALSE}
+defined_in_dead_chunk <- 2
+print(read_only_in_dead_chunk)
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> test.Rmd:3:1
+      |
+    3 | read_only_in_dead_chunk <- 1
+      | ----------------------- Object `read_only_in_dead_chunk` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Quarto's option form is honoured too.
+#[test]
+fn test_rmd_quarto_eval_false_chunk_defines_nothing() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+#| eval: false
+x <- 1
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// An `eval` option whose value is decided at render time is assumed to run:
+/// dropping its reads could invent a diagnostic, keeping them can only miss
+/// one.
+#[test]
+fn test_rmd_dynamic_eval_chunk_is_treated_as_evaluated() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+x <- 1
+```
+
+```{r, eval = run_it}
+print(x)
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// An unevaluated chunk is left out of the use-def analysis, but it is still
+/// code in the document and other rules still apply to it.
+#[test]
+fn test_rmd_unevaluated_chunk_is_still_linted() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r, eval = FALSE}
+any(is.na(x))
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("any_is_na")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> test.Rmd:3:1
+      |
+    3 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}

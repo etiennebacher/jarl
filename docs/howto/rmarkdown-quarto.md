@@ -13,6 +13,11 @@ All R code chunks of a document are analyzed together, in document order, since 
 Rules that need to know how objects flow through the document, such as `unused_object`, therefore work across chunks: an object created in one chunk and used in a later one is not reported.
 Inline R code isn't linted, but the objects it reads are taken into account, so `` `r x` `` in the prose keeps `x` from being reported as unused.
 
+Chunks that don't run when the document is rendered, i.e. those marked `eval = FALSE` or `#| eval: false`, are left out of this: they neither create objects nor use them.
+An object only used in such a chunk is therefore still reported as unused.
+Their code is checked by all the other rules, as usual.
+An `eval` option whose value is an expression, such as `eval = run_it`, is only known at render time, so the chunk is assumed to run.
+
 Suppression comments such as `# jarl-ignore` are supported in R code chunks.
 In Quarto and R Markdown files, you can also use the comment `#| jarl-ignore-chunk` to ignore specific rules on entire chunks.
 Moreover, the comment `# jarl-ignore-file` must be located in the first R code chunk, before any R code.

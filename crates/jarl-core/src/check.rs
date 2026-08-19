@@ -567,9 +567,10 @@ fn get_checks_roxygen(
 ///
 /// Neither is linted — inline code is never analyzed, and a chunk that doesn't
 /// parse has nothing to analyze — but both *run*, so an object they read is
-/// used. The scan deliberately over-collects (it is the same text scan
-/// `unused_function` uses): a name harvested here can only silence a
-/// diagnostic, never raise one.
+/// used. A dropped chunk that wouldn't have run either (`eval = FALSE`) is
+/// left out on both counts. The scan deliberately over-collects (it is the
+/// same text scan `unused_function` uses): a name harvested here can only
+/// silence a diagnostic, never raise one.
 fn outside_chunk_reads(
     contents: &str,
     chunks: &[crate::rmd::RCodeChunk],
@@ -578,7 +579,11 @@ fn outside_chunk_reads(
     use crate::lints::base::unused_function::unused_function::scan_symbols;
 
     let inline = crate::rmd::extract_inline_r_code(contents, chunks);
-    let dropped = skipped.iter().map(|i| chunks[*i].code.as_str());
+    let dropped = skipped
+        .iter()
+        .map(|i| &chunks[*i])
+        .filter(|chunk| chunk.evaluated)
+        .map(|chunk| chunk.code.as_str());
 
     inline
         .into_iter()
@@ -600,8 +605,11 @@ fn outside_chunk_reads(
 /// Knitr evaluates every chunk of a document in one R session, in document
 /// order, which is exactly what the concatenation models — so use-def rules
 /// like `unused_object` see an object assigned in one chunk and read in a
-/// later one as used. Reads that happen outside the chunks are collected
-/// separately (see [`outside_chunk_reads`]).
+/// later one as used. The two ways a document departs from that model are
+/// handled explicitly: code that runs but isn't in the virtual source
+/// contributes reads (see [`outside_chunk_reads`]), and code that is in the
+/// virtual source but doesn't run (`eval = FALSE` chunks) contributes
+/// neither reads nor definitions.
 fn get_checks_rmd(
     contents: &str,
     file: &Path,
@@ -609,8 +617,12 @@ fn get_checks_rmd(
     source_cache: jarl_semantic::SourceIndexCache,
 ) -> Result<Vec<Diagnostic>> {
     let chunks = crate::rmd::extract_r_chunks(contents);
-    let crate::rmd::VirtualSource { source: virtual_source, offset_map, skipped } =
-        crate::rmd::build_virtual_r_source(&chunks);
+    let crate::rmd::VirtualSource {
+        source: virtual_source,
+        offset_map,
+        skipped,
+        unevaluated,
+    } = crate::rmd::build_virtual_r_source(&chunks);
 
     if virtual_source.trim().is_empty() {
         return Ok(Vec::new());
@@ -626,6 +638,9 @@ fn get_checks_rmd(
     checker.minimum_r_version = config.minimum_r_version;
     checker.file_path = file.to_path_buf();
     checker.source_index_cache = source_cache.clone();
+    // A chunk marked `eval = FALSE` is still linted, but it never runs, so it
+    // defines nothing and reads nothing.
+    checker.unevaluated_ranges = unevaluated;
 
     // The document's own path anchors `source()` resolution, so a chunk
     // sourcing a helper next to the document resolves it there.

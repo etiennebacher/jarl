@@ -155,11 +155,15 @@ pub struct SemanticInfo<'a> {
     /// resolves to the definition it actually sees, so a *later* same-scope
     /// reassignment of the name is not kept alive by it.
     positional_uses: Vec<(String, TextRange)>,
-    /// Identifier `Use` ranges that should be ignored because they sit inside
-    /// a quoting call oak's effects registry doesn't cover (`Quote(…)`,
-    /// `expression(…)`, `alist(…)`). `quote()`, `bquote()` and `substitute()`
-    /// are modeled by oak itself (their quoted arguments produce no uses or
-    /// definitions in the index), so they don't need ranges here.
+    /// Ranges holding code that is parsed but never evaluated, so that an
+    /// identifier inside one is neither a definition nor a use.
+    ///
+    /// Two things land here. Quoting calls oak's effects registry doesn't
+    /// cover (`Quote(…)`, `expression(…)`, `alist(…)`) — `quote()`, `bquote()`
+    /// and `substitute()` are modeled by oak itself, so their arguments never
+    /// enter the index and need no range. And ranges the caller declares
+    /// unevaluated up front (see [`SemanticInfo::build`]), which is how an
+    /// Rmd/Qmd chunk marked `eval = FALSE` is kept out of the analysis.
     nse_ranges: Vec<TextRange>,
     /// Packages this file can reach: attached with `library()`/`require()`,
     /// listed in DESCRIPTION when linting package code, or named in a
@@ -183,12 +187,17 @@ impl<'a> SemanticInfo<'a> {
     /// Build the info table. Runs the AST pass (collecting synthetic uses,
     /// interpolation reads, NSE ranges, formula ranges) and then the
     /// reaching-use precomputation over oak's use-def maps.
+    ///
+    /// `unevaluated` names ranges the caller already knows never run, on top
+    /// of the ones the AST pass finds itself. Callers linting plain R code
+    /// pass nothing; the Rmd/Qmd path passes the chunks marked `eval = FALSE`.
     pub fn build(
         root: &RSyntaxNode,
         expressions: &[RSyntaxNode],
         index: &'a SemanticIndex,
         source_cache: &SourceIndexCache,
         loaded_packages: &[String],
+        unevaluated: &[TextRange],
     ) -> Self {
         // `pkg::fn()` reaches a package without attaching it, so namespaced
         // accesses count alongside what the caller resolved from
@@ -214,7 +223,7 @@ impl<'a> SemanticInfo<'a> {
             short_circuit_ranges: Vec::new(),
             loop_ranges: Vec::new(),
             positional_uses: Vec::new(),
-            nse_ranges: Vec::new(),
+            nse_ranges: unevaluated.to_vec(),
             available_packages,
             formula_ranges: Vec::new(),
             has_any_interpolation_package,
