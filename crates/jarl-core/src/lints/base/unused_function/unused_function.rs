@@ -57,109 +57,12 @@ use crate::package::{FileScope, SharedFileData};
 /// # `check_length()` isn't exported but and isn't used anywhere, so it is
 /// # reported.
 /// ```
-pub fn scan_symbols(content: &str) -> HashMap<String, usize> {
-    // Scan source text for all R-style identifiers (symbols).
-    //
-    // Returns a map from identifier name to occurrence count. This intentionally
-    // over-counts (e.g. it will match inside comments and strings) — that is fine
-    // because false negatives (failing to flag truly unused functions) are
-    // preferable to false positives. By collecting all symbols rather than just
-    // `name(` call patterns, we also cover indirect references like
-    // `do.call("name", ...)`, `lapply(xs, name)`, `match.fun(name)`, etc.
-    let mut symbols: HashMap<&str, usize> = HashMap::new();
-
-    for line in content.lines() {
-        let trimmed = line.trim_start();
-        // Skip regular comments but keep roxygen comments (#') since they
-        // may reference internal functions (e.g. via \Sexpr).
-        if trimmed.starts_with('#') && !trimmed.starts_with("#'") {
-            continue;
-        }
-
-        let bytes = line.as_bytes();
-        let len = bytes.len();
-        let mut i = 0;
-
-        while i < len {
-            let b = bytes[i];
-
-            // R identifiers start with a letter, `.`, or `_`
-            if b.is_ascii_alphabetic() || b == b'.' || b == b'_' {
-                let start = i;
-                i += 1;
-                while i < len
-                    && (bytes[i].is_ascii_alphanumeric() || bytes[i] == b'.' || bytes[i] == b'_')
-                {
-                    i += 1;
-                }
-                let name = &line[start..i];
-                *symbols.entry(name).or_insert(0) += 1;
-            } else {
-                i += 1;
-            }
-        }
-    }
-
-    symbols
-        .into_iter()
-        .map(|(k, v)| (k.to_string(), v))
-        .collect()
-}
-
-/// Recursively collect files under `dir` that match `predicate`.
-pub(crate) fn collect_files(dir: &Path, predicate: fn(&Path) -> bool) -> Vec<PathBuf> {
-    let mut files = Vec::new();
-    let mut stack = vec![dir.to_path_buf()];
-    while let Some(current) = stack.pop() {
-        let entries = match std::fs::read_dir(&current) {
-            Ok(entries) => entries,
-            Err(_) => continue,
-        };
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_dir() {
-                stack.push(path);
-            } else if predicate(&path) {
-                files.push(path);
-            }
-        }
-    }
-    files
-}
-
-pub(crate) fn has_cpp_extension(path: &Path) -> bool {
-    matches!(
-        path.extension().and_then(|e| e.to_str()),
-        Some("c" | "cpp" | "h" | "hpp")
-    )
-}
-
-/// Extract a human-readable scope directory from a file path, e.g.
-/// `"tests/"` or `"inst/tests/"`. Used in help messages.
-fn scope_dir_from_path(rel_path: &Path) -> String {
-    let components: Vec<_> = rel_path
-        .components()
-        .map(|c| c.as_os_str().to_string_lossy().to_string())
-        .collect();
-    for (i, comp) in components.iter().enumerate() {
-        if comp == "tests" {
-            return "tests/".to_string();
-        }
-        if comp == "inst"
-            && let Some(next) = components.get(i + 1)
-            && (next == "tinytest" || next == "tests")
-        {
-            return format!("inst/{next}/");
-        }
-    }
-    "tests/".to_string()
-}
-
-/// Compute unused functions from pre-scanned shared file data.
 ///
-/// This is the inner logic extracted from `compute_package_unused_functions`,
-/// operating on already-scanned `SharedFileData` to avoid redundant file reads.
-/// Uses O(1) cross-file symbol lookup via pre-computed frequency maps.
+/// ## Implementation
+///
+/// Operates on the already-scanned `SharedFileData` of a package rather than
+/// reading its files again, and looks symbols up across files in O(1) through
+/// the pre-computed frequency maps.
 ///
 /// `namespace_contents` maps package root paths to their NAMESPACE file
 /// contents. Packages without a NAMESPACE entry are skipped.
@@ -366,4 +269,53 @@ pub(crate) fn compute_unused_from_shared(
     }
 
     result
+}
+
+/// Recursively collect files under `dir` that match `predicate`.
+pub(crate) fn collect_files(dir: &Path, predicate: fn(&Path) -> bool) -> Vec<PathBuf> {
+    let mut files = Vec::new();
+    let mut stack = vec![dir.to_path_buf()];
+    while let Some(current) = stack.pop() {
+        let entries = match std::fs::read_dir(&current) {
+            Ok(entries) => entries,
+            Err(_) => continue,
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push(path);
+            } else if predicate(&path) {
+                files.push(path);
+            }
+        }
+    }
+    files
+}
+
+pub(crate) fn has_cpp_extension(path: &Path) -> bool {
+    matches!(
+        path.extension().and_then(|e| e.to_str()),
+        Some("c" | "cpp" | "h" | "hpp")
+    )
+}
+
+/// Extract a human-readable scope directory from a file path, e.g.
+/// `"tests/"` or `"inst/tests/"`. Used in help messages.
+fn scope_dir_from_path(rel_path: &Path) -> String {
+    let components: Vec<_> = rel_path
+        .components()
+        .map(|c| c.as_os_str().to_string_lossy().to_string())
+        .collect();
+    for (i, comp) in components.iter().enumerate() {
+        if comp == "tests" {
+            return "tests/".to_string();
+        }
+        if comp == "inst"
+            && let Some(next) = components.get(i + 1)
+            && (next == "tinytest" || next == "tests")
+        {
+            return format!("inst/{next}/");
+        }
+    }
+    "tests/".to_string()
 }

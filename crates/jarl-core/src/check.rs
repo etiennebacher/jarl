@@ -602,10 +602,10 @@ fn reads_outside_chunk_code(
     names
 }
 
-/// Every identifier-shaped word in `code`, whatever it stands for. The text
-/// scan `unused_function` uses, which over-collects by design.
+/// Every identifier-shaped word in `code`, whatever it stands for.
+/// [`scan_symbols`] over-collects by design; see there.
 fn all_symbols(code: &str) -> impl Iterator<Item = String> {
-    crate::lints::base::unused_function::unused_function::scan_symbols(code).into_keys()
+    scan_symbols(code).into_keys()
 }
 
 /// The names `code` *reads*, leaving out the names of named arguments — for

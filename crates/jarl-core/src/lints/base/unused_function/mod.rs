@@ -96,60 +96,6 @@ mod tests {
         assert!(exports.contains("sort_by"));
     }
 
-    // ── scan_symbols ─────────────────────────────────────────────────────
-
-    #[test]
-    fn test_scan_symbols_from_calls() {
-        let syms = scan_symbols("foo(1)\nbar(x, y)\n");
-        assert!(syms.contains_key("foo"));
-        assert!(syms.contains_key("bar"));
-        assert!(syms.contains_key("x"));
-        assert!(syms.contains_key("y"));
-    }
-
-    #[test]
-    fn test_scan_symbols_from_assignments() {
-        let syms = scan_symbols("x <- 1\ny + z\n");
-        assert!(syms.contains_key("x"));
-        assert!(syms.contains_key("y"));
-        assert!(syms.contains_key("z"));
-    }
-
-    #[test]
-    fn test_scan_symbols_nested() {
-        let syms = scan_symbols("outer(inner(x))\n");
-        assert!(syms.contains_key("outer"));
-        assert!(syms.contains_key("inner"));
-        assert!(syms.contains_key("x"));
-    }
-
-    #[test]
-    fn test_scan_symbols_ignores_comments() {
-        let syms = scan_symbols("# foo(bar)\nreal()\n");
-        assert!(!syms.contains_key("foo"));
-        assert!(!syms.contains_key("bar"));
-        assert!(syms.contains_key("real"));
-    }
-
-    #[test]
-    fn test_scan_symbols_ignores_indented_comments() {
-        let syms = scan_symbols("  # foo(bar)\n");
-        assert!(!syms.contains_key("foo"));
-    }
-
-    #[test]
-    fn test_scan_symbols_includes_roxygen_comments() {
-        let syms = scan_symbols("#' \\Sexpr[stage=render]{dplyr:::methods_rd(\"rows_insert\")}\n");
-        assert!(syms.contains_key("methods_rd"));
-    }
-
-    #[test]
-    fn test_scan_symbols_ignores_numbers() {
-        let syms = scan_symbols("123 + foo\n");
-        assert!(syms.contains_key("foo"));
-        assert!(!syms.contains_key("123"));
-    }
-
     // ── compute_unused_from_shared ──────────────────────────────────
 
     fn default_options() -> ResolvedUnusedFunctionOptions {

@@ -9,6 +9,7 @@ use biome_rowan::{AstNode, AstSeparatedList, Direction};
 use oak_core::syntax_ext::{RIdentifierExt, RStringValueExt};
 use oak_semantic::effects::CallContext;
 pub use oak_semantic::effects::Formals;
+use std::collections::HashMap;
 
 /// Macro to unwrap an Option or return Ok(None) early.
 ///
@@ -385,4 +386,116 @@ pub fn node_contains_comments(node: &RSyntaxNode) -> bool {
             token.has_trailing_comments() && last_token.as_ref() != Some(&token);
         has_internal_leading || has_internal_trailing
     })
+}
+
+/// Count every identifier-shaped word in R source text.
+///
+/// Returns a map from identifier name to occurrence count. A deliberately
+/// crude scan: it reads the text rather than the syntax tree, so it also
+/// matches inside strings, and it makes no distinction between a definition,
+/// a call, and a mention. Callers use it where over-counting is the safe
+/// direction — `unused_function` would rather miss a dead function than
+/// report a live one, and the Rmd/Qmd reader would rather keep an object
+/// alive than invent an `unused_object` report.
+///
+/// Reading the text is also what lets it catch the indirect references a
+/// syntax-directed pass would miss: `do.call("name", ...)`, `lapply(xs,
+/// name)`, `match.fun(name)`.
+///
+/// Regular comments are skipped, but roxygen comments (`#'`) are kept: they
+/// can reference internal functions, e.g. through `\Sexpr`.
+pub fn scan_symbols(content: &str) -> HashMap<String, usize> {
+    let mut symbols: HashMap<&str, usize> = HashMap::new();
+
+    for line in content.lines() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with('#') && !trimmed.starts_with("#'") {
+            continue;
+        }
+
+        let bytes = line.as_bytes();
+        let len = bytes.len();
+        let mut i = 0;
+
+        while i < len {
+            let b = bytes[i];
+
+            // R identifiers start with a letter, `.`, or `_`
+            if b.is_ascii_alphabetic() || b == b'.' || b == b'_' {
+                let start = i;
+                i += 1;
+                while i < len
+                    && (bytes[i].is_ascii_alphanumeric() || bytes[i] == b'.' || bytes[i] == b'_')
+                {
+                    i += 1;
+                }
+                let name = &line[start..i];
+                *symbols.entry(name).or_insert(0) += 1;
+            } else {
+                i += 1;
+            }
+        }
+    }
+
+    symbols
+        .into_iter()
+        .map(|(k, v)| (k.to_string(), v))
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::scan_symbols;
+
+    #[test]
+    fn test_scan_symbols_from_calls() {
+        let syms = scan_symbols("foo(1)\nbar(x, y)\n");
+        assert!(syms.contains_key("foo"));
+        assert!(syms.contains_key("bar"));
+        assert!(syms.contains_key("x"));
+        assert!(syms.contains_key("y"));
+    }
+
+    #[test]
+    fn test_scan_symbols_from_assignments() {
+        let syms = scan_symbols("x <- 1\ny + z\n");
+        assert!(syms.contains_key("x"));
+        assert!(syms.contains_key("y"));
+        assert!(syms.contains_key("z"));
+    }
+
+    #[test]
+    fn test_scan_symbols_nested() {
+        let syms = scan_symbols("outer(inner(x))\n");
+        assert!(syms.contains_key("outer"));
+        assert!(syms.contains_key("inner"));
+        assert!(syms.contains_key("x"));
+    }
+
+    #[test]
+    fn test_scan_symbols_ignores_comments() {
+        let syms = scan_symbols("# foo(bar)\nreal()\n");
+        assert!(!syms.contains_key("foo"));
+        assert!(!syms.contains_key("bar"));
+        assert!(syms.contains_key("real"));
+    }
+
+    #[test]
+    fn test_scan_symbols_ignores_indented_comments() {
+        let syms = scan_symbols("  # foo(bar)\n");
+        assert!(!syms.contains_key("foo"));
+    }
+
+    #[test]
+    fn test_scan_symbols_includes_roxygen_comments() {
+        let syms = scan_symbols("#' \\Sexpr[stage=render]{dplyr:::methods_rd(\"rows_insert\")}\n");
+        assert!(syms.contains_key("methods_rd"));
+    }
+
+    #[test]
+    fn test_scan_symbols_ignores_numbers() {
+        let syms = scan_symbols("123 + foo\n");
+        assert!(syms.contains_key("foo"));
+        assert!(!syms.contains_key("123"));
+    }
 }
