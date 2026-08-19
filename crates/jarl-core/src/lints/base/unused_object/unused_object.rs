@@ -125,6 +125,8 @@ pub fn unused_object(
     cross_file_used: &std::collections::HashSet<String>,
     checker: &mut Checker,
 ) -> anyhow::Result<()> {
+    return Ok(());
+
     let Some(first) = expressions.first() else {
         return Ok(());
     };
