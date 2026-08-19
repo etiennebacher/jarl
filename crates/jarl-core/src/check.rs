@@ -561,22 +561,27 @@ fn get_checks_roxygen(
     Ok(all_diagnostics)
 }
 
-/// Names read by R code that is part of the document but absent from the
-/// virtual source: inline spans in the prose (`` `r mean(x)` ``) and chunks
-/// dropped because they don't parse.
+/// Names read by R code that belongs to the document but isn't in the virtual
+/// source, and so is invisible to the use-def analysis:
 ///
-/// Neither is linted — inline code is never analyzed, and a chunk that doesn't
-/// parse has nothing to analyze — but both *run*, so an object they read is
-/// used. A dropped chunk that wouldn't have run either (`eval = FALSE`) is
-/// left out on both counts. The scan deliberately over-collects (it is the
-/// same text scan `unused_function` uses): a name harvested here can only
-/// silence a diagnostic, never raise one.
-fn outside_chunk_reads(
+/// - inline spans in the prose (`` `r mean(x)` ``), which aren't linted but do
+///   run when the document is rendered;
+/// - chunks dropped because they don't parse, which have nothing to analyze
+///   but still run — unless they wouldn't have run anyway (`eval = FALSE`),
+///   in which case they are left out here too;
+/// - chunk options (`{r, fig.cap = my_caption}`, `#| eval: !expr run_it`),
+///   which knitr evaluates for *every* chunk, including one whose own code
+///   never runs.
+///
+/// An object named in any of them is used. Erring towards collecting too many
+/// names is deliberate: a name harvested here can only silence a diagnostic,
+/// whereas a read missed here invents one.
+fn reads_outside_chunk_code(
     contents: &str,
     chunks: &[crate::rmd::RCodeChunk],
     skipped: &[usize],
 ) -> std::collections::HashSet<String> {
-    use crate::lints::base::unused_function::unused_function::scan_symbols;
+    let mut names: std::collections::HashSet<String> = std::collections::HashSet::new();
 
     let inline = crate::rmd::extract_inline_r_code(contents, chunks);
     let dropped = skipped
@@ -584,11 +589,46 @@ fn outside_chunk_reads(
         .map(|i| &chunks[*i])
         .filter(|chunk| chunk.evaluated)
         .map(|chunk| chunk.code.as_str());
+    for code in inline.into_iter().chain(dropped) {
+        names.extend(all_symbols(code));
+    }
 
-    inline
-        .into_iter()
-        .chain(dropped)
-        .flat_map(|code| scan_symbols(code).into_keys())
+    for chunk in chunks {
+        for snippet in crate::rmd::chunk_option_code(chunk) {
+            names.extend(read_symbols(&snippet));
+        }
+    }
+
+    names
+}
+
+/// Every identifier-shaped word in `code`, whatever it stands for. The text
+/// scan `unused_function` uses, which over-collects by design.
+fn all_symbols(code: &str) -> impl Iterator<Item = String> {
+    crate::lints::base::unused_function::unused_function::scan_symbols(code).into_keys()
+}
+
+/// The names `code` *reads*, leaving out the names of named arguments — for
+/// chunk options, the difference between the object `fig.cap = my_caption`
+/// reads and the option it sets. Falls back to [`all_symbols`] when the
+/// snippet doesn't parse, since then the two can't be told apart and missing a
+/// read is the more damaging error.
+fn read_symbols(code: &str) -> Vec<String> {
+    let parsed = air_r_parser::parse(code, RParserOptions::default());
+    if parsed.has_error() {
+        return all_symbols(code).collect();
+    }
+
+    parsed
+        .syntax()
+        .descendants()
+        .filter(|node| node.kind() == air_r_syntax::RSyntaxKind::R_IDENTIFIER)
+        .filter(|node| {
+            node.parent().is_none_or(|parent| {
+                parent.kind() != air_r_syntax::RSyntaxKind::R_ARGUMENT_NAME_CLAUSE
+            })
+        })
+        .map(|node| node.text_trimmed().to_string())
         .collect()
 }
 
@@ -607,7 +647,7 @@ fn outside_chunk_reads(
 /// like `unused_object` see an object assigned in one chunk and read in a
 /// later one as used. The two ways a document departs from that model are
 /// handled explicitly: code that runs but isn't in the virtual source
-/// contributes reads (see [`outside_chunk_reads`]), and code that is in the
+/// contributes reads (see [`reads_outside_chunk_code`]), and code that is in the
 /// virtual source but doesn't run (`eval = FALSE` chunks) contributes
 /// neither reads nor definitions.
 fn get_checks_rmd(
@@ -663,7 +703,7 @@ fn get_checks_rmd(
     // package-level input that does apply is the set of names read outside the
     // chunks, which keeps objects the prose uses from looking unused.
     let package_file = PackageFileAnalysis {
-        cross_file_used: outside_chunk_reads(contents, &chunks, &skipped),
+        cross_file_used: reads_outside_chunk_code(contents, &chunks, &skipped),
         ..PackageFileAnalysis::default()
     };
     check_document(

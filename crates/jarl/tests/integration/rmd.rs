@@ -1597,3 +1597,141 @@ any(is.na(x))
 
     Ok(())
 }
+
+/// Chunk options can name objects. Knitr evaluates a chunk's options when it
+/// renders the chunk, so those are reads — including for a chunk whose own
+/// code never runs.
+#[test]
+fn test_rmd_objects_used_in_chunk_options_not_flagged() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r setup}
+run_it <- TRUE
+my_caption <- \"a caption\"
+quarto_flag <- TRUE
+```
+
+```{r plot-one, eval = run_it, fig.cap = my_caption}
+plot(1)
+```
+
+```{r}
+#| eval: !expr quarto_flag
+plot(2)
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Only the *values* of chunk options are reads. An object whose name happens
+/// to match an option name is still reported.
+#[test]
+fn test_rmd_chunk_option_names_are_not_reads() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+results <- 1
+```
+
+```{r, results = 'asis', echo = FALSE}
+plot(1)
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> test.Rmd:3:1
+      |
+    3 | results <- 1
+      | ------- Object `results` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Options are evaluated even when the chunk they belong to is not.
+#[test]
+fn test_rmd_options_of_unevaluated_chunk_are_reads() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+my_caption <- \"a caption\"
+```
+
+```{r, eval = FALSE, fig.cap = my_caption}
+plot(1)
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}

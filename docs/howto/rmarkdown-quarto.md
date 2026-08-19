@@ -18,6 +18,10 @@ An object only used in such a chunk is therefore still reported as unused.
 Their code is checked by all the other rules, as usual.
 An `eval` option whose value is an expression, such as `eval = run_it`, is only known at render time, so the chunk is assumed to run.
 
+Chunk options can name objects, either in the chunk header (`` ```{r, fig.cap = my_caption} ``) or with Quarto's `!expr` (`#| eval: !expr run_it`).
+Those objects count as used, in every chunk: knitr evaluates a chunk's options even when the chunk itself doesn't run.
+Only the values are read, so an object that happens to be named like a chunk option is still reported.
+
 Suppression comments such as `# jarl-ignore` are supported in R code chunks.
 In Quarto and R Markdown files, you can also use the comment `#| jarl-ignore-chunk` to ignore specific rules on entire chunks.
 Moreover, the comment `# jarl-ignore-file` must be located in the first R code chunk, before any R code.

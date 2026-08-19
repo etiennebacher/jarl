@@ -38,6 +38,12 @@ static HEADER_EVAL_FALSE: LazyLock<Regex> =
 static YAML_EVAL_FALSE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?i)^[ \t]*#\|[ \t]*eval[ \t]*:[ \t]*false[ \t]*$").unwrap());
 
+/// Matches a Quarto chunk option whose value is R code: `#| key: !expr code`.
+///
+/// Captures group 1: the R code after `!expr`.
+static YAML_EXPR_OPTION: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^[ \t]*#\|[^:]*:[ \t]*!expr[ \t]+(.+?)[ \t]*$").unwrap());
+
 /// Matches inline R code in prose: `` `r expr` ``.
 ///
 /// Captures group 1: the R expression. The backtick-delimited span cannot
@@ -55,6 +61,9 @@ pub struct RCodeChunk {
     /// Byte offset in the original file where the chunk code starts.
     /// This is the byte immediately after the opening fence line's newline.
     pub start_byte: usize,
+    /// The chunk options as written in the opening fence, i.e. everything
+    /// between `{r` and `}` (`" my-chunk, echo = FALSE"`).
+    pub options: String,
     /// Whether the chunk runs when the document is rendered, i.e. whether it
     /// is *not* marked `eval = FALSE` (header form) or `#| eval: false`
     /// (Quarto form).
@@ -67,6 +76,14 @@ pub struct RCodeChunk {
     pub evaluated: bool,
 }
 
+/// A chunk being accumulated between its opening and closing fence.
+struct PendingChunk {
+    code: String,
+    start_byte: usize,
+    header_eval_false: bool,
+    options: String,
+}
+
 /// Extract all executable R code chunks from Rmd/Qmd content.
 ///
 /// Only fenced chunks whose opening line matches ` ```{r...} ` (any number of
@@ -77,33 +94,40 @@ pub fn extract_r_chunks(content: &str) -> Vec<RCodeChunk> {
     let mut chunks = Vec::new();
     let mut byte_offset: usize = 0;
 
-    // State: None = outside a chunk, Some((fence, code, start_byte,
-    // header_says_eval_false)) = inside.
-    let mut current: Option<(String, String, usize, bool)> = None;
+    // State: None = outside a chunk, Some(chunk being accumulated) = inside.
+    let mut current: Option<(String, PendingChunk)> = None;
 
     for line in content.split_inclusive('\n') {
         let mut finished = false;
 
-        if let Some((fence, code, start_byte, header_eval_false)) = current.as_mut() {
+        if let Some((fence, pending)) = current.as_mut() {
             if line.trim() == fence.as_str() {
                 // Closing fence found — emit the chunk.
-                let code = std::mem::take(code);
+                let code = std::mem::take(&mut pending.code);
                 chunks.push(RCodeChunk {
-                    evaluated: !*header_eval_false && !yaml_says_eval_false(&code),
+                    evaluated: !pending.header_eval_false && !yaml_says_eval_false(&code),
                     code,
-                    start_byte: *start_byte,
+                    start_byte: pending.start_byte,
+                    options: std::mem::take(&mut pending.options),
                 });
                 finished = true;
             } else {
-                code.push_str(line);
+                pending.code.push_str(line);
             }
         } else if let Some(caps) = OPEN_FENCE.captures(line) {
             // Opening fence found — start a new chunk.
             let fence = caps.get(1).unwrap().as_str().to_string();
-            let header_eval_false = HEADER_EVAL_FALSE.is_match(caps.get(2).unwrap().as_str());
-            // The chunk code starts immediately after this line.
-            let chunk_start_byte = byte_offset + line.len();
-            current = Some((fence, String::new(), chunk_start_byte, header_eval_false));
+            let options = caps.get(2).unwrap().as_str().to_string();
+            current = Some((
+                fence,
+                PendingChunk {
+                    code: String::new(),
+                    // The chunk code starts immediately after this line.
+                    start_byte: byte_offset + line.len(),
+                    header_eval_false: HEADER_EVAL_FALSE.is_match(&options),
+                    options,
+                },
+            ));
         }
 
         if finished {
@@ -125,6 +149,53 @@ fn yaml_says_eval_false(code: &str) -> bool {
     code.lines()
         .take_while(|line| line.trim_start().starts_with("#|"))
         .any(|line| YAML_EVAL_FALSE.is_match(line))
+}
+
+/// The R code found in a chunk's options, as snippets the caller can parse.
+///
+/// Both option forms can name an object: `{r, fig.cap = my_caption}` in the
+/// fence header, and `#| fig-cap: !expr my_caption` in Quarto's block. Knitr
+/// evaluates a chunk's options when it renders the chunk — that is how
+/// `eval = run_it` gets to decide anything — so this holds for every chunk,
+/// including one whose own code never runs.
+///
+/// The header snippet is wrapped as a call so that it parses as R, which lets
+/// the caller tell an option's *value* (`my_caption`, a read) from its *name*
+/// (`fig.cap`, not a read). Header options are R's named-argument syntax
+/// already, so the wrapping is all it takes. A leading chunk label is dropped:
+/// it is a bare word, often not even valid R (`{r my-chunk}`).
+pub fn chunk_option_code(chunk: &RCodeChunk) -> Vec<String> {
+    let mut snippets = Vec::new();
+
+    if let Some(options) = header_options_without_label(&chunk.options) {
+        snippets.push(format!("list({options})"));
+    }
+
+    snippets.extend(
+        chunk
+            .code
+            .lines()
+            .take_while(|line| line.trim_start().starts_with("#|"))
+            .filter_map(|line| YAML_EXPR_OPTION.captures(line))
+            .map(|caps| caps.get(1).unwrap().as_str().to_string()),
+    );
+
+    snippets
+}
+
+/// The chunk options with the leading label removed, or `None` when nothing
+/// but a label is left.
+fn header_options_without_label(options: &str) -> Option<&str> {
+    let rest = match options.split_once(',') {
+        // A first segment without `=` is the label, not an option.
+        Some((first, rest)) if !first.contains('=') => rest,
+        // A single segment without `=` is a label on its own.
+        None => return None,
+        _ => options,
+    };
+
+    let rest = rest.trim();
+    (!rest.is_empty()).then_some(rest)
 }
 
 /// Extract the R expressions of inline code spans (`` `r expr` ``) written in
@@ -804,6 +875,73 @@ mod tests {
         assert_eq!(
             &content[chunks[1].start_byte..chunks[1].start_byte + 6],
             "b <- 2"
+        );
+    }
+
+    // --- Chunk options ---
+
+    /// The option snippets of the single chunk in `content`.
+    fn option_code(content: &str) -> Vec<String> {
+        let chunks = extract_r_chunks(content);
+        assert_eq!(chunks.len(), 1, "expected exactly one chunk");
+        chunk_option_code(&chunks[0])
+    }
+
+    #[test]
+    fn test_header_options_are_wrapped_as_a_call() {
+        assert_eq!(
+            option_code("```{r, fig.cap = my_caption}\nx <- 1\n```\n"),
+            vec!["list(fig.cap = my_caption)"]
+        );
+    }
+
+    #[test]
+    fn test_header_label_is_dropped() {
+        // A label is a bare word, and `my-chunk` isn't even valid R.
+        assert_eq!(
+            option_code("```{r my-chunk, eval = run_it}\nx <- 1\n```\n"),
+            vec!["list(eval = run_it)"]
+        );
+    }
+
+    #[test]
+    fn test_header_with_only_a_label_has_no_option_code() {
+        assert!(option_code("```{r my-chunk}\nx <- 1\n```\n").is_empty());
+        assert!(option_code("```{r}\nx <- 1\n```\n").is_empty());
+    }
+
+    #[test]
+    fn test_header_option_value_may_contain_a_comma() {
+        assert_eq!(
+            option_code("```{r, fig.cap = paste(a, b)}\nx <- 1\n```\n"),
+            vec!["list(fig.cap = paste(a, b))"]
+        );
+    }
+
+    #[test]
+    fn test_quarto_expr_option_is_r_code() {
+        assert_eq!(
+            option_code("```{r}\n#| eval: !expr run_it\nx <- 1\n```\n"),
+            vec!["run_it"]
+        );
+    }
+
+    #[test]
+    fn test_quarto_plain_option_is_not_r_code() {
+        // Without `!expr` the value is data, not code.
+        assert!(option_code("```{r}\n#| fig-cap: my_caption\nx <- 1\n```\n").is_empty());
+    }
+
+    #[test]
+    fn test_quarto_expr_option_below_the_code_is_ignored() {
+        assert!(option_code("```{r}\nx <- 1\n#| eval: !expr run_it\n```\n").is_empty());
+    }
+
+    #[test]
+    fn test_both_option_forms_are_collected() {
+        assert_eq!(
+            option_code("```{r, fig.cap = cap}\n#| eval: !expr run_it\nx <- 1\n```\n"),
+            vec!["list(fig.cap = cap)", "run_it"]
         );
     }
 }
