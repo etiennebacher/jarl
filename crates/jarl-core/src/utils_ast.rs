@@ -85,6 +85,48 @@ pub trait AstNodeExt: AstNode<Language = RLanguage> {
         }
         false
     }
+
+    /// Returns true if parent is `!!`
+    fn parent_is_bang_bang(&self) -> bool {
+        if let Some(parent) = self.syntax().parent()
+            && parent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
+            && let Some(prev) = self.syntax().prev_sibling_or_token()
+            && prev.kind() == RSyntaxKind::BANG
+        {
+            // Check if parent's parent is also a unary bang (double negation)
+            if let Some(grandparent) = parent.parent()
+                && grandparent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
+            {
+                return true;
+            }
+            return false;
+        }
+        false
+    }
+
+    /// Returns true if parent is `!!!`
+    fn parent_is_bang_bang_bang(&self) -> bool {
+        if let Some(parent) = self.syntax().parent()
+            && parent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
+            && let Some(prev) = self.syntax().prev_sibling_or_token()
+            && prev.kind() == RSyntaxKind::BANG
+        {
+            // Check if parent's parent is also a unary bang
+            if let Some(grandparent) = parent.parent()
+                && grandparent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
+            {
+                // Check if parent's grandparent is also a unary bang (triple negation)
+                if let Some(greatgrandparent) = grandparent.parent()
+                    && greatgrandparent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
+                {
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+        false
+    }
 }
 
 // Blanket implementation for all R AST node types

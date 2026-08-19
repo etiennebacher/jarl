@@ -118,6 +118,9 @@
 
 * Jarl no longer fails to parse `...()` (#584, @Yousa-Mirage).
 
+* `redundant_equals` now skips cases that use `rlang`'s `!!` and `!!!` operators
+  (#625).
+
 ## 0.5.0
 
 ::: {.callout-note icon=false title="Released on 2026-03-24" .low-opacity}
