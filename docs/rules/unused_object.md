@@ -88,7 +88,7 @@ There are two other cases to handle:
   are not marked as "used". For instance, in the following example, the
   object `x` would be reported as unused:
 
-  ````
+  ````markdown
   ```{{r}}
   x <- 1
   ```
