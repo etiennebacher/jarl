@@ -1,13 +1,7 @@
 use air_r_syntax::RSyntaxNode;
-use oak_semantic::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex};
-
-use jarl_semantic::{
-    SemanticInfo, assignment_lhs_is_complex, assignment_rhs_is_function_def,
-    lhs_range_for_definition,
-};
+use oak_semantic::semantic_index::SemanticIndex;
 
 use crate::checker::Checker;
-use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 
 /// Version added: 0.6.0
 ///
