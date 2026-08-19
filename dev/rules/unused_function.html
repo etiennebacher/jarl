@@ -914,6 +914,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#why-is-this-bad" id="toc-why-is-this-bad" class="nav-link" data-scroll-target="#why-is-this-bad">Why is this bad?</a></li>
   <li><a href="#limitations" id="toc-limitations" class="nav-link" data-scroll-target="#limitations">Limitations</a></li>
   <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
+  <li><a href="#implementation" id="toc-implementation" class="nav-link" data-scroll-target="#implementation">Implementation</a></li>
   </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/unused_function.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
@@ -977,6 +978,207 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="co"># `check_character()` isn't exported but used in `public_fn`.</span></span>
 <span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co"># `check_length()` isn't exported but and isn't used anywhere, so it is</span></span>
 <span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="co"># reported.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="implementation" class="level2">
+<h2 class="anchored" data-anchor-id="implementation">Implementation</h2>
+<p>Operates on the already-scanned <code>SharedFileData</code> of a package rather than reading its files again, and looks symbols up across files in O(1) through the pre-computed frequency maps.</p>
+<p><code>namespace_contents</code> maps package root paths to their NAMESPACE file contents. Packages without a NAMESPACE entry are skipped. pub(crate) fn compute_unused_from_shared( shared_data: &amp;[SharedFileData], options: &amp;crate::lints::base::unused_function::options::ResolvedUnusedFunctionOptions, namespace_contents: &amp;HashMap&lt;PathBuf, String&gt;, ) -&gt; HashMap&lt;PathBuf, Vec&lt;(String, TextRange, String)&gt;&gt; { // Group by package root let mut packages: HashMap&lt;&amp;str, Vec&lt;&amp;SharedFileData&gt;&gt; = HashMap::new(); for fd in shared_data { packages.entry(&amp;fd.root_key).or_default().push(fd); }</p>
+<pre><code>let mut result: HashMap&lt;PathBuf, Vec&lt;(String, TextRange, String)&gt;&gt; = HashMap::new();
+
+for (_root_key, file_data) in packages {
+    // Separate files by scope.
+    let r_files: Vec&lt;&amp;&amp;SharedFileData&gt; = file_data
+        .iter()
+        .filter(|f| f.scope == FileScope::R)
+        .collect();
+    let extra_files: Vec&lt;&amp;&amp;SharedFileData&gt; = file_data
+        .iter()
+        .filter(|f| f.scope != FileScope::R)
+        .collect();
+    let tests_files: Vec&lt;&amp;&amp;SharedFileData&gt; = file_data
+        .iter()
+        .filter(|f| f.scope == FileScope::Tests)
+        .collect();
+    let inst_files: Vec&lt;&amp;&amp;SharedFileData&gt; = file_data
+        .iter()
+        .filter(|f| f.scope == FileScope::Inst)
+        .collect();
+
+    // ── R scope ────────────────────────────────
+
+    // Collect ALL defined function names across R/ (for exportPattern matching)
+    let all_defined_names: Vec&lt;String&gt; = r_files
+        .iter()
+        .flat_map(|f| f.assignments.iter().map(|(name, _, _, _)| name.clone()))
+        .collect();
+    let all_defined_name_refs: Vec&lt;&amp;str&gt; =
+        all_defined_names.iter().map(|s| s.as_str()).collect();
+
+    let Some(first) = r_files.first() else {
+        continue;
+    };
+    let Some(ns_content) = namespace_contents.get(&amp;first.package_root) else {
+        continue;
+    };
+    let namespace_exports = parse_namespace_exports(ns_content, &amp;all_defined_name_refs);
+
+    // Total occurrences of each symbol across all R/ files.
+    let mut total_occurrences: HashMap&lt;&amp;str, usize&gt; = HashMap::new();
+    for file in &amp;r_files {
+        for (name, count) in &amp;file.symbol_counts {
+            *total_occurrences.entry(name.as_str()).or_insert(0) += count;
+        }
+    }
+
+    // Total definitions of each symbol across all R/ files.
+    let mut total_definitions: HashMap&lt;&amp;str, usize&gt; = HashMap::new();
+    for file in &amp;r_files {
+        for (name, _, _, _) in &amp;file.assignments {
+            *total_definitions.entry(name.as_str()).or_insert(0) += 1;
+        }
+    }
+
+    // Symbols from extra files (tests/, inst/tinytest/, inst/tests/, src/).
+    let extra_symbol_set: HashSet&lt;&amp;str&gt; = extra_files
+        .iter()
+        .flat_map(|f| f.symbol_counts.keys().map(|s| s.as_str()))
+        .collect();
+
+    // R package hook functions that are called by the runtime, not by
+    // user code. These are typically defined in `zzz.R` and should never
+    // be flagged as unused.
+    let package_hooks: HashSet&lt;&amp;str&gt; = HashSet::from([
+        ".onLoad",
+        "on_load",
+        ".onAttach",
+        ".onDetach",
+        ".onUnload",
+        ".Last.lib",
+        ".First.lib",
+    ]);
+
+    // All symbols across R/ files (used for S3 method heuristic).
+    let all_symbols: HashSet&lt;&amp;str&gt; = total_occurrences.keys().copied().collect();
+
+    for file in &amp;r_files {
+        let mut unused: Vec&lt;(String, TextRange, String)&gt; = Vec::new();
+
+        for (name, range, line, col) in &amp;file.assignments {
+            // Skip exported functions
+            if namespace_exports.contains(name) {
+                continue;
+            }
+
+            // Skip R package hook functions (.onLoad, .onAttach, etc.)
+            if package_hooks.contains(name.as_str()) {
+                continue;
+            }
+
+            // Skip functions matching user-configured patterns
+            if options.is_skipped(name) {
+                continue;
+            }
+
+            // Skip probable internal S3 methods. If a function name
+            // contains a dot, it may be an S3 method dispatched implicitly
+            // (e.g. `print.myclass` is called when `print()` runs on an
+            // object of class "myclass"). Since class names can contain
+            // dots (e.g. `data.table`), we try every split point: for
+            // `sort_by.data.table` we check if `sort_by` or `sort_by.data`
+            // appears as a symbol in the package. If any prefix matches,
+            // assume it could be S3 dispatch and skip.
+            if name.contains('.') {
+                let is_probable_s3 = name
+                    .match_indices('.')
+                    .any(|(pos, _)| all_symbols.contains(&amp;name[..pos]));
+                if is_probable_s3 {
+                    continue;
+                }
+            }
+
+            // A definition contributes exactly one occurrence to
+            // total_occurrences. If that's all there is (and no extra
+            // file references it), the function is unused.
+            let occurrences = total_occurrences.get(name.as_str()).copied().unwrap_or(0);
+            let definitions = total_definitions.get(name.as_str()).copied().unwrap_or(0);
+
+            if occurrences &lt;= definitions &amp;&amp; !extra_symbol_set.contains(name.as_str()) {
+                let help = format!(
+                    "Defined at {path}:{line}:{col} but never called",
+                    path = file.rel_path.display()
+                );
+                unused.push((name.clone(), *range, help));
+            }
+        }
+
+        if !unused.is_empty() {
+            result.insert(file.rel_path.clone(), unused);
+        }
+    }
+
+    // ── Tests and Inst scopes ───────────────────────────────
+    // A function defined in one of these directories is unused if it
+    // doesn't appear in any other file within that same scope. No
+    // NAMESPACE export check is needed.
+
+    for scope_files in [&amp;tests_files, &amp;inst_files] {
+        if scope_files.is_empty() {
+            continue;
+        }
+
+        // Total symbol occurrences within this scope.
+        let mut scope_occurrences: HashMap&lt;&amp;str, usize&gt; = HashMap::new();
+        for file in scope_files {
+            for (name, count) in &amp;file.symbol_counts {
+                *scope_occurrences.entry(name.as_str()).or_insert(0) += count;
+            }
+        }
+
+        // Total definitions within this scope.
+        let mut scope_definitions: HashMap&lt;&amp;str, usize&gt; = HashMap::new();
+        for file in scope_files {
+            for (name, _, _, _) in &amp;file.assignments {
+                *scope_definitions.entry(name.as_str()).or_insert(0) += 1;
+            }
+        }
+
+        for file in scope_files {
+            let mut unused: Vec&lt;(String, TextRange, String)&gt; = Vec::new();
+
+            for (name, range, line, col) in &amp;file.assignments {
+                // Skip functions matching user-configured patterns
+                if options.is_skipped(name) {
+                    continue;
+                }
+
+                let occurrences = scope_occurrences.get(name.as_str()).copied().unwrap_or(0);
+                let definitions = scope_definitions.get(name.as_str()).copied().unwrap_or(0);
+
+                if occurrences &lt;= definitions {
+                    let scope_dir = scope_dir_from_path(&amp;file.rel_path);
+                    let help = format!(
+                        "Defined at {path}:{line}:{col} but never called in {scope_dir}",
+                        path = file.rel_path.display()
+                    );
+                    unused.push((name.clone(), *range, help));
+                }
+            }
+
+            if !unused.is_empty() {
+                result
+                    .entry(file.rel_path.clone())
+                    .or_default()
+                    .extend(unused);
+            }
+        }
+    }
+}
+
+result</code></pre>
+<p>}</p>
+<p>Recursively collect files under <code>dir</code> that match <code>predicate</code>. pub(crate) fn collect_files(dir: &amp;Path, predicate: fn(&amp;Path) -&gt; bool) -&gt; Vec<pathbuf> { let mut files = Vec::new(); let mut stack = vec![dir.to_path_buf()]; while let Some(current) = stack.pop() { let entries = match std::fs::read_dir(&amp;current) { Ok(entries) =&gt; entries, Err(_) =&gt; continue, }; for entry in entries.flatten() { let path = entry.path(); if path.is_dir() { stack.push(path); } else if predicate(&amp;path) { files.push(path); } } } files }</pathbuf></p>
+<p>pub(crate) fn has_cpp_extension(path: &amp;Path) -&gt; bool { matches!( path.extension().and_then(|e| e.to_str()), Some(“c” | “cpp” | “h” | “hpp”) ) }</p>
+<p>Extract a human-readable scope directory from a file path, e.g. <code>"tests/"</code> or <code>"inst/tests/"</code>. Used in help messages.</p>
 
 
 </section>
