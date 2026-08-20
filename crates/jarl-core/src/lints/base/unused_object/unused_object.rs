@@ -113,6 +113,11 @@ use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 /// - inline R code is taken into account, `` `r x` `` in the text would keep
 ///   `x` from being reported as unused.
 ///
+/// ## In roxygen examples
+///
+/// R code in `@examples` and `@examplesIf` sections is checked too, in files
+/// under `R/` in a package. This can be turned off with `check-roxygen`.
+///
 /// ## Examples
 ///
 /// ```r

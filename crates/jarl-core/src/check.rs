@@ -11,7 +11,7 @@ use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
 use air_r_syntax::RSyntaxNode;
 use anyhow::{Context, Result};
-use biome_rowan::{TextRange, TextSize};
+use biome_rowan::{AstNode, AstNodeList, TextRange, TextSize};
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fs;
@@ -311,7 +311,14 @@ pub fn get_checks(
             Some(FilePackageInfo::InPackage { scope: FileScope::R, .. })
         )
     {
-        let roxygen_diagnostics = get_checks_roxygen(syntax, file, config, contents)?;
+        let roxygen_diagnostics = get_checks_roxygen(
+            syntax,
+            file,
+            config,
+            contents,
+            &checker.loaded_packages,
+            &checker.source_index_cache,
+        )?;
         checker.diagnostics.extend(roxygen_diagnostics);
     }
 
@@ -504,11 +511,17 @@ fn top_level_attached_packages(
 /// Diagnostic byte ranges are remapped to point to the correct position in the
 /// original file. Autofixes are disabled because the `#'` prefix makes
 /// position-based edits unsafe.
+///
+/// `loaded_packages` and `source_cache` carry over the documented file's package
+/// context, which the use-def analysis needs: the packages an example can reach
+/// decide whether a bare `glue("{x}")` counts as reading `x`.
 fn get_checks_roxygen(
     syntax: &RSyntaxNode,
     file: &Path,
     config: &Config,
     contents: &str,
+    loaded_packages: &[String],
+    source_cache: &jarl_semantic::SourceIndexCache,
 ) -> Result<Vec<Diagnostic>> {
     let chunks = extract_roxygen_examples(syntax, contents);
     let mut all_diagnostics: Vec<Diagnostic> = Vec::new();
@@ -527,9 +540,42 @@ fn get_checks_roxygen(
         let mut checker = Checker::new(suppression, config.rule_options.clone());
         checker.rule_set = effective_rules_for_file(config, file);
         checker.minimum_r_version = config.minimum_r_version;
+        checker.file_path = file.to_path_buf();
+        checker.source_index_cache = source_cache.clone();
 
         for expr in expressions {
             check_expression(&expr, &mut checker)?;
+        }
+
+        // Objects created by an example live in the throwaway environment that
+        // `example()` runs it in, so each section is its own universe: nothing
+        // it binds can be exported or read by another file, which is why
+        // `namespace_exports` and `cross_file_used` stay empty here.
+        //
+        // Run before `check_document` so that suppression filtering there
+        // covers these diagnostics too.
+        if checker.is_rule_enabled(crate::rule_set::Rule::UnusedObject) {
+            let semantic = oak_semantic::build_index(
+                &parsed.tree(),
+                jarl_semantic::JarlImportsResolver::with_cache(
+                    file,
+                    checker.source_index_cache.clone(),
+                ),
+            );
+            // What the example inherits from the package, plus whatever it
+            // attaches itself (`library(glue)` on the first line is common).
+            checker.loaded_packages = loaded_packages.to_vec();
+            checker
+                .loaded_packages
+                .extend(top_level_attached_packages(&semantic));
+
+            let owned: Vec<RSyntaxNode> = expressions.iter().map(|e| e.syntax().clone()).collect();
+            crate::lints::base::unused_object::unused_object::unused_object(
+                &owned,
+                &semantic,
+                &std::collections::HashSet::new(),
+                &mut checker,
+            )?;
         }
 
         // Only run document-level checks if the examples code has inline
