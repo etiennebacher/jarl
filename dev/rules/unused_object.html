@@ -915,6 +915,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#features" id="toc-features" class="nav-link" data-scroll-target="#features">Features</a></li>
   <li><a href="#limitations" id="toc-limitations" class="nav-link" data-scroll-target="#limitations">Limitations</a></li>
   <li><a href="#in-r-markdown-and-quarto-files" id="toc-in-r-markdown-and-quarto-files" class="nav-link" data-scroll-target="#in-r-markdown-and-quarto-files">In R Markdown and Quarto files</a></li>
+  <li><a href="#in-roxygen-examples" id="toc-in-roxygen-examples" class="nav-link" data-scroll-target="#in-roxygen-examples">In roxygen examples</a></li>
   <li><a href="#examples" id="toc-examples" class="nav-link" data-scroll-target="#examples">Examples</a></li>
   </ul></li>
   </ul>
@@ -1000,6 +1001,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Note that if the option value is only available at runtime (e.g. <code>eval = my_r_object</code>) then Jarl assumes that the chunk is evaluated.</p></li>
 <li><p>inline R code is taken into account, <code>`r x`</code> in the text would keep <code>x</code> from being reported as unused.</p></li>
 </ul>
+</section>
+<section id="in-roxygen-examples" class="level2">
+<h2 class="anchored" data-anchor-id="in-roxygen-examples">In roxygen examples</h2>
+<p>R code in <code>@examples</code> and <code>@examplesIf</code> sections is checked too, in files under <code>R/</code> in a package. This can be turned off with <code>check-roxygen</code>.</p>
 </section>
 <section id="examples" class="level2">
 <h2 class="anchored" data-anchor-id="examples">Examples</h2>
