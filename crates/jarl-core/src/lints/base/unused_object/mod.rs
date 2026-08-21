@@ -1,11 +1,29 @@
+pub(crate) mod options;
 pub(crate) mod unused_object;
 #[cfg(test)]
 mod tests {
+    use crate::lints::base::unused_object::options::ResolvedUnusedObjectOptions;
+    use crate::lints::base::unused_object::options::UnusedObjectOptions;
+    use crate::rule_options::ResolvedRuleOptions;
+    use crate::settings::{LinterSettings, Settings};
     use crate::utils_test::*;
     use insta::assert_snapshot;
 
     fn snapshot_lint(code: &str) -> String {
         format_diagnostics(code, "unused_object", None)
+    }
+
+    /// Build a `Settings` with custom `UnusedObjectOptions`.
+    fn settings_with_options(options: UnusedObjectOptions) -> Settings {
+        Settings {
+            linter: LinterSettings {
+                rule_options: ResolvedRuleOptions {
+                    unused_object: ResolvedUnusedObjectOptions::resolve(Some(&options)).unwrap(),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+        }
     }
 
     /// Renders the `unused_object` diagnostics produced by linting `main_path`
@@ -2406,5 +2424,62 @@ expect_equal(x <- 1, 1)
         Found 1 error.
         "
         );
+    }
+
+    #[test]
+    fn test_skipped_functions_replaces_defaults() {
+        // `skipped-functions` is a full replacement: `my_expect()` is allowed
+        // and the built-in `expect_error()` no longer is.
+        let options = UnusedObjectOptions {
+            skipped_functions: Some(vec!["my_expect".to_string()]),
+            extend_skipped_functions: None,
+        };
+        expect_no_lint_with_settings(
+            "my_expect(x <- 1)",
+            "unused_object",
+            None,
+            settings_with_options(options.clone()),
+        );
+        assert_snapshot!(
+            format_diagnostics_with_settings(
+                "expect_error(x <- 1)",
+                "unused_object",
+                None,
+                Some(settings_with_options(options)),
+            ),
+            @"
+        warning: unused_object
+         --> <test>:1:14
+          |
+        1 | expect_error(x <- 1)
+          |              - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_extend_skipped_functions_keeps_defaults() {
+        let options = UnusedObjectOptions {
+            skipped_functions: None,
+            extend_skipped_functions: Some(vec!["my_expect".to_string()]),
+        };
+        expect_no_lint_with_settings(
+            "my_expect(x <- 1)\nexpect_error(y <- 1)",
+            "unused_object",
+            None,
+            settings_with_options(options),
+        );
+    }
+
+    #[test]
+    fn test_skipped_functions_and_extend_together_is_an_error() {
+        let options = UnusedObjectOptions {
+            skipped_functions: Some(vec!["my_expect".to_string()]),
+            extend_skipped_functions: Some(vec!["other_expect".to_string()]),
+        };
+        let error = ResolvedUnusedObjectOptions::resolve(Some(&options)).unwrap_err();
+        assert_snapshot!(error.to_string(), @"Cannot specify both `skipped-functions` and `extend-skipped-functions` in `[lint.unused_object]`.");
     }
 }

@@ -506,3 +506,31 @@ skipped-functions = ["^cs_", "^pl_", "my\\.function"]
 # (this is basically equivalent to never hiding unused functions).
 threshold-ignore = 10000
 ```
+
+### `unused_object`
+
+Use `skipped-functions` to fully replace the default list of calls whose
+directly-assigned arguments are allowed to be unused. Use
+`extend-skipped-functions` to add to the default list. Specifying both is an
+error.
+
+Function names in `skipped-functions` or `extend-skipped-functions` also match
+namespaced calls, e.g. `skipped-functions = ["expect_error"]` will allow
+`expect_error()` and `testthat::expect_error()`.
+
+Only the direct argument position counts: an assignment nested in a block or in
+a function defined inside the call is an ordinary local and is still reported.
+
+Default: `skipped-functions = ["expect_error", "expect_warning",
+"expect_message", "expect_silent", "expect_defunct", "expect_deprecated",
+"expect_snapshot", "expect_no_condition", "expect_no_warning",
+"expect_no_error", "expect_no_message"]`
+
+```toml
+[lint]
+...
+
+[lint.unused_object]
+# Also allow an unused assignment passed straight to `my_expect()`.
+extend-skipped-functions = ["my_expect"]
+```

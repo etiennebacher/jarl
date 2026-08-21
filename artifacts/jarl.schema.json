@@ -396,6 +396,18 @@
               "type": "null"
             }
           ]
+        },
+        "unused_object": {
+          "title": "Options for the `unused_object` rule",
+          "description": "Use `skipped-functions` to fully replace the default list of calls whose\ndirectly-assigned arguments are allowed to be unused. Use\n`extend-skipped-functions` to add to the default list.\nSpecifying both is an error.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UnusedObjectOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     },
@@ -561,6 +573,31 @@
           ],
           "format": "uint",
           "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "UnusedObjectOptions": {
+      "description": "TOML options for `[lint.unused_object]`.\n\nUse `skipped-functions` to fully replace the default list of calls whose\ndirectly-assigned arguments are allowed to be unused. Use\n`extend-skipped-functions` to add to the default list. Specifying both is an\nerror.",
+      "type": "object",
+      "properties": {
+        "extend-skipped-functions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "skipped-functions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
         }
       },
       "additionalProperties": false

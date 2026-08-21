@@ -24,6 +24,8 @@ use crate::lints::base::unreachable_code::options::ResolvedUnreachableCodeOption
 use crate::lints::base::unreachable_code::options::UnreachableCodeOptions;
 use crate::lints::base::unused_function::options::ResolvedUnusedFunctionOptions;
 use crate::lints::base::unused_function::options::UnusedFunctionOptions;
+use crate::lints::base::unused_object::options::ResolvedUnusedObjectOptions;
+use crate::lints::base::unused_object::options::UnusedObjectOptions;
 
 /// Resolve a pair of `field` / `extend-field` options against a set of defaults.
 ///
@@ -79,6 +81,7 @@ pub struct RuleOptions<'a> {
     pub undesirable_function: Option<&'a UndesirableFunctionOptions>,
     pub unreachable_code: Option<&'a UnreachableCodeOptions>,
     pub unused_function: Option<&'a UnusedFunctionOptions>,
+    pub unused_object: Option<&'a UnusedObjectOptions>,
 }
 
 /// Resolved per-rule options, ready for use during linting.
@@ -104,6 +107,7 @@ pub struct ResolvedRuleOptions {
     pub undesirable_function: ResolvedUndesirableFunctionOptions,
     pub unreachable_code: ResolvedUnreachableCodeOptions,
     pub unused_function: ResolvedUnusedFunctionOptions,
+    pub unused_object: ResolvedUnusedObjectOptions,
 }
 
 impl ResolvedRuleOptions {
@@ -127,6 +131,7 @@ impl ResolvedRuleOptions {
             )?,
             unreachable_code: ResolvedUnreachableCodeOptions::resolve(options.unreachable_code)?,
             unused_function: ResolvedUnusedFunctionOptions::resolve(options.unused_function)?,
+            unused_object: ResolvedUnusedObjectOptions::resolve(options.unused_object)?,
         })
     }
 }

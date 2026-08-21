@@ -28,6 +28,7 @@ use crate::lints::base::true_false_symbol::options::TrueFalseSymbolOptions;
 use crate::lints::base::undesirable_function::options::UndesirableFunctionOptions;
 use crate::lints::base::unreachable_code::options::UnreachableCodeOptions;
 use crate::lints::base::unused_function::options::UnusedFunctionOptions;
+use crate::lints::base::unused_object::options::UnusedObjectOptions;
 use crate::per_file_ignores::PerFileIgnores;
 use crate::rule_options::{ResolvedRuleOptions, RuleOptions};
 use crate::rule_set::Rule;
@@ -346,6 +347,15 @@ pub struct LinterTomlOptions {
     #[serde(rename = "unused_function")]
     pub unused_function: Option<UnusedFunctionOptions>,
 
+    /// # Options for the `unused_object` rule
+    ///
+    /// Use `skipped-functions` to fully replace the default list of calls whose
+    /// directly-assigned arguments are allowed to be unused. Use
+    /// `extend-skipped-functions` to add to the default list.
+    /// Specifying both is an error.
+    #[serde(rename = "unused_object")]
+    pub unused_object: Option<UnusedObjectOptions>,
+
     /// Catch any unknown fields so we can produce a clean error message that
     /// only lists the primary `[lint]` options (not every rule sub-table).
     #[serde(flatten)]
@@ -434,6 +444,7 @@ impl TomlOptions {
                 undesirable_function: linter.undesirable_function.as_ref(),
                 unreachable_code: linter.unreachable_code.as_ref(),
                 unused_function: linter.unused_function.as_ref(),
+                unused_object: linter.unused_object.as_ref(),
             })?,
             per_file_ignores,
         };

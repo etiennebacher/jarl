@@ -65,6 +65,9 @@ this rule handles the following cases:
   expect_error(x <- foo)
   ```
 
+You can provide a list of functions whose arguments can be assignments that
+shouldn't be reported in `jarl.toml`.
+
 ## Limitations
 
 Some cases are deliberately left aside or might be tackled in the future:

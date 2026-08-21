@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use air_r_syntax::{RArgument, RCall, RSyntaxNode};
 use biome_rowan::AstNode;
 use oak_semantic::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex};
@@ -10,24 +12,6 @@ use jarl_semantic::{
 use crate::checker::Checker;
 use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 use crate::utils::get_function_name;
-
-/// `testthat` expectations that run their argument for the condition it signals
-/// — or for a snapshot of its output — rather than for its value. An assignment
-/// handed straight to one of these exists so the expectation has something to
-/// evaluate, so never using it is the point rather than a dead store.
-const CONDITION_EXPECTATION_FUNCTIONS: &[&str] = &[
-    "expect_error",
-    "expect_warning",
-    "expect_message",
-    "expect_silent",
-    "expect_defunct",
-    "expect_deprecated",
-    "expect_snapshot",
-    "expect_no_condition",
-    "expect_no_warning",
-    "expect_no_error",
-    "expect_no_message",
-];
 
 /// Version added: 0.6.0
 ///
@@ -93,6 +77,9 @@ const CONDITION_EXPECTATION_FUNCTIONS: &[&str] = &[
 ///   ```r
 ///   expect_error(x <- foo)
 ///   ```
+///
+/// You can provide a list of functions whose arguments can be assignments that
+/// shouldn't be reported in `jarl.toml`.
 ///
 /// ## Limitations
 ///
@@ -174,12 +161,13 @@ pub fn unused_object(
         &checker.unevaluated_ranges,
     );
     let exports = &checker.namespace_exports;
+    let skipped = &checker.rule_options.unused_object.skipped_functions;
 
     let mut diagnostics = Vec::new();
     let top_level = ScopeId::from(0);
     for scope_id in info.scope_ids() {
         for (def_id, def) in semantic.definitions(scope_id).iter() {
-            if !should_lint_definition(&info, def) {
+            if !should_lint_definition(&info, def, skipped) {
                 continue;
             }
             if info.is_definition_used(scope_id, def_id) {
@@ -205,7 +193,11 @@ pub fn unused_object(
     Ok(())
 }
 
-fn should_lint_definition(info: &SemanticInfo<'_>, def: &Definition) -> bool {
+fn should_lint_definition(
+    info: &SemanticInfo<'_>,
+    def: &Definition,
+    skipped: &HashSet<String>,
+) -> bool {
     match def.kind() {
         DefinitionKind::Parameter(_)
         | DefinitionKind::ForVariable(_)
@@ -224,7 +216,7 @@ fn should_lint_definition(info: &SemanticInfo<'_>, def: &Definition) -> bool {
             }
             // `expect_error(x <- f())`: the binding exists so the expectation
             // has something to evaluate, so never using it is the point.
-            if is_condition_expectation_argument(bin.syntax()) {
+            if is_skipped_call_argument(bin.syntax(), skipped) {
                 return false;
             }
         }
@@ -256,11 +248,11 @@ fn should_lint_definition(info: &SemanticInfo<'_>, def: &Definition) -> bool {
     true
 }
 
-/// Whether `node` is passed directly as an argument to one of
-/// [`CONDITION_EXPECTATION_FUNCTIONS`]. Deliberately only the immediate
-/// argument position: an assignment nested in a block or in a function defined
-/// inside the expectation is an ordinary local and stays lintable.
-fn is_condition_expectation_argument(node: &RSyntaxNode) -> bool {
+/// Whether `node` is passed directly as an argument to one of `skipped`.
+/// Deliberately only the immediate argument position: an assignment nested in a
+/// block or in a function defined inside the call is an ordinary local and
+/// stays lintable.
+fn is_skipped_call_argument(node: &RSyntaxNode, skipped: &HashSet<String>) -> bool {
     let Some(argument) = node.parent().and_then(RArgument::cast) else {
         return false;
     };
@@ -270,7 +262,7 @@ fn is_condition_expectation_argument(node: &RSyntaxNode) -> bool {
     let Ok(function) = call.function() else {
         return false;
     };
-    CONDITION_EXPECTATION_FUNCTIONS.contains(&get_function_name(function).as_str())
+    skipped.contains(&get_function_name(function))
 }
 
 fn is_exported(
