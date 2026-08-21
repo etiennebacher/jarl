@@ -90,17 +90,50 @@ pub fn check_path(
 }
 
 /// Filter `config.rules_to_apply` down to the rules that apply to `path` after
-/// accounting for `[lint.per-file-ignores]`.
-fn effective_rules_for_file(config: &Config, path: &Path) -> RuleSet {
-    if config.per_file_ignores.is_empty() {
-        return config.rules_to_apply.clone();
+/// accounting for `[lint.per-file-ignores]` and the R version `path` can count
+/// on.
+///
+/// `minimum_r_version` is resolved per file because there might several packages
+/// to analyse, each with different `Depends: R`.
+fn effective_rules_for_file(
+    config: &Config,
+    path: &Path,
+    minimum_r_version: Option<(u32, u32, u32)>,
+) -> RuleSet {
+    let rules = if config.per_file_ignores.is_empty() {
+        config.rules_to_apply.clone()
+    } else {
+        let ignored = config.per_file_ignores.ignored_rules(path);
+        config
+            .rules_to_apply
+            .iter()
+            .filter(|rule| !ignored.contains(rule))
+            .collect()
+    };
+
+    crate::config::filter_rules_by_version(&rules, minimum_r_version)
+}
+
+/// The R version `file` can count on: the `--min-r-version` override when the
+/// user passed one, otherwise the `Depends: R` floor of the package `file`
+/// belongs to, otherwise nothing.
+fn file_minimum_r_version(
+    file: &Path,
+    config: &Config,
+    pkg_contexts: &HashMap<PathBuf, PackageContext>,
+    file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
+) -> Option<(u32, u32, u32)> {
+    if config.minimum_r_version.is_some() {
+        return config.minimum_r_version;
     }
-    let ignored = config.per_file_ignores.ignored_rules(path);
-    config
-        .rules_to_apply
-        .iter()
-        .filter(|rule| !ignored.contains(rule))
-        .collect()
+    // A file inside a package is bounded by its DESCRIPTION whether or not it
+    // is a loadable source: a script in `data-raw/` still runs under the R
+    // version the package declares.
+    let package_root = match file_pkg_info.get(file)? {
+        FilePackageInfo::InPackage { package_root, .. } => package_root,
+        FilePackageInfo::Script { package_root } => package_root.as_ref()?,
+    };
+    pkg_contexts.get(package_root)?.minimum_r_version
 }
 
 pub fn lint_only(
@@ -235,10 +268,13 @@ pub fn get_checks(
 
     let suppression = SuppressionManager::from_node(syntax, contents);
 
+    let minimum_r_version = file_minimum_r_version(file, config, pkg_contexts, file_pkg_info);
+
     let mut checker = Checker::new(suppression, config.rule_options.clone());
-    // Drop any rules ignored for this file via `[lint.per-file-ignores]`.
-    checker.rule_set = effective_rules_for_file(config, file);
-    checker.minimum_r_version = config.minimum_r_version;
+    // Drop any rules ignored for this file via `[lint.per-file-ignores]`, plus
+    // any the file's own package can't guarantee the R version for.
+    checker.rule_set = effective_rules_for_file(config, file, minimum_r_version);
+    checker.minimum_r_version = minimum_r_version;
 
     // Build the semantic index for use-def-based rules. `source("path")`
     // calls inject `DefinitionKind::Import` entries via JarlImportsResolver;
@@ -318,6 +354,7 @@ pub fn get_checks(
             contents,
             &checker.loaded_packages,
             &checker.source_index_cache,
+            minimum_r_version,
         )?;
         checker.diagnostics.extend(roxygen_diagnostics);
     }
@@ -523,6 +560,7 @@ fn get_checks_roxygen(
     contents: &str,
     loaded_packages: &[String],
     source_cache: &jarl_semantic::SourceIndexCache,
+    minimum_r_version: Option<(u32, u32, u32)>,
 ) -> Result<Vec<Diagnostic>> {
     let chunks = extract_roxygen_examples(syntax, contents);
     let mut all_diagnostics: Vec<Diagnostic> = Vec::new();
@@ -539,8 +577,8 @@ fn get_checks_roxygen(
         let suppression = SuppressionManager::from_node(&syntax, &chunk.code);
         let has_suppressions = suppression.has_any_suppressions;
         let mut checker = Checker::new(suppression, config.rule_options.clone());
-        checker.rule_set = effective_rules_for_file(config, file);
-        checker.minimum_r_version = config.minimum_r_version;
+        checker.rule_set = effective_rules_for_file(config, file, minimum_r_version);
+        checker.minimum_r_version = minimum_r_version;
         checker.file_path = file.to_path_buf();
         checker.source_index_cache = source_cache.clone();
 
@@ -722,7 +760,9 @@ fn get_checks_rmd(
     let syntax = parsed.syntax();
     let suppression = SuppressionManager::from_node(&syntax, &virtual_source);
     let mut checker = Checker::new(suppression, config.rule_options.clone());
-    checker.rule_set = effective_rules_for_file(config, file);
+    // An Rmd/Qmd document is never package code, so the only floor that can
+    // apply is the `--min-r-version` override.
+    checker.rule_set = effective_rules_for_file(config, file, config.minimum_r_version);
     checker.minimum_r_version = config.minimum_r_version;
     checker.file_path = file.to_path_buf();
     checker.source_index_cache = source_cache.clone();

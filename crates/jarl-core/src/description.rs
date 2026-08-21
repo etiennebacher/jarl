@@ -60,23 +60,23 @@ impl Description {
     }
 }
 
-/// Extract version number from an R dependency string like "R (>= 4.3.0)"
+/// Extract version number from an R dependency string like "R (>= 4.3.0)".
+///
+/// `None` when the dependency carries no usable version: no parentheses
+/// (`R`, `R >= 4.3.0`), an unbalanced or reversed pair (`R (>= 4.3`, `R )x(`),
+/// or empty parentheses (`R ()`).
 fn extract_version_from_dependency(dep: &str) -> Option<String> {
-    // Look for version requirement in parentheses
-    if let Some(start) = dep.find('(')
-        && let Some(end) = dep.find(')')
-    {
-        let version_part = &dep[start + 1..end];
-        // Remove >= operator and extract just the version number
-        let version = version_part.replace(">=", "").trim().to_string();
-
-        if !version.is_empty() {
-            return Some(version);
-        }
+    // Look for version requirement in parentheses.
+    let start = dep.find('(')?;
+    let end = dep.find(')')?;
+    if end <= start {
+        return None;
     }
 
-    // R dependency exists but no version specified
-    unreachable!("DESCRIPTION cannot have 'R' without version in Depends field.")
+    // Remove >= operator and extract just the version number
+    let version = dep[start + 1..end].replace(">=", "").trim().to_string();
+
+    (!version.is_empty()).then_some(version)
 }
 
 #[cfg(test)]
@@ -157,6 +157,35 @@ Depends: R ( >= 4.3.0 ), dplyr
 "#;
         let result = Description::get_depend_r_version(description).unwrap();
         assert_eq!(result, vec!["4.3.0"]);
+    }
+
+    #[test]
+    fn test_depends_r_without_usable_version() {
+        for depends in [
+            "R",          // no version at all
+            "R >= 4.3.0", // version, but no parentheses
+            "R ()",       // empty parentheses
+            "R (>= 4.3",  // unclosed
+            "R )x(",      // reversed pair
+        ] {
+            let description = format!("Package: mypackage\nVersion: 1.0.0\nDepends: {depends}\n");
+            let result = Description::get_depend_r_version(&description).unwrap();
+            assert!(
+                result.is_empty(),
+                "`Depends: {depends}` should yield no version, got {result:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_depends_rcpp_is_not_r() {
+        let description = r#"
+Package: mypackage
+Version: 1.0.0
+Depends: Rcpp (>= 1.0.0)
+"#;
+        let result = Description::get_depend_r_version(description).unwrap();
+        assert!(result.is_empty());
     }
 
     #[test]
