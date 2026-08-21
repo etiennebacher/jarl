@@ -14,7 +14,7 @@ use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 
-use crate::config::{get_invalid_rules, replace_group_rules, unknown_rules_error};
+use crate::config::resolve_rule_names;
 use crate::lints::base::assignment::options::AssignmentConfig;
 use crate::lints::base::assignment::options::AssignmentOptions;
 use crate::lints::base::duplicated_arguments::options::DuplicatedArgumentsOptions;
@@ -31,7 +31,6 @@ use crate::lints::base::unused_function::options::UnusedFunctionOptions;
 use crate::lints::base::unused_object::options::UnusedObjectOptions;
 use crate::per_file_ignores::PerFileIgnores;
 use crate::rule_options::{ResolvedRuleOptions, RuleOptions};
-use crate::rule_set::Rule;
 use crate::settings::LinterSettings;
 use crate::settings::Settings;
 
@@ -464,26 +463,13 @@ fn resolve_per_file_ignores(
         return Ok(PerFileIgnores::default());
     };
 
-    let all_rules = Rule::all();
     let mut entries = Vec::with_capacity(per_file_ignores.len());
 
     for (pattern, rule_names) in per_file_ignores {
-        let passed_by_user = rule_names.iter().map(|s| s.as_str()).collect();
-        let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
-        if let Some(invalid) = get_invalid_rules(all_rules, &expanded_rules) {
-            return Err(unknown_rules_error(
-                format!(
-                    "Unknown rules in `per-file-ignores` for pattern '{}': {}",
-                    pattern,
-                    invalid.names.join(", ")
-                ),
-                invalid.help,
-            ));
-        }
-        let rules: Vec<Rule> = expanded_rules
-            .iter()
-            .filter_map(|name| Rule::from_name(name))
-            .collect();
+        let rules = resolve_rule_names(
+            rule_names.iter().map(String::as_str),
+            &format!("`per-file-ignores` for pattern '{pattern}'"),
+        )?;
         entries.push((pattern.clone(), rules));
     }
 
