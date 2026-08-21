@@ -508,6 +508,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p><code>implicit_assignment</code> now includes <code>alist()</code> in the list of functions skipped by default (#527).</p></li>
 <li><p>Jarl no longer fails to parse <code>...()</code> (#584, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
 <li><p><code>redundant_equals</code> now skips cases that use <code>rlang</code>’s <code>!!</code> and <code>!!!</code> operators (#625).</p></li>
+<li><p>The fix for <code>comparison_negation</code> is now considered “unsafe” because it can produce different output depending on operator precedence around the comparison (#632).</p></li>
 </ul>
 </section>
 </section>
