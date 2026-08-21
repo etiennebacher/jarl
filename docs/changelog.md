@@ -131,6 +131,9 @@
 
 * Fix the detection of `Depends: R (>= x.y.z)` in some cases (#641).
 
+* Replace panic by a proper error if `jarl.toml` is unreadable, for instance
+  because of a permission error (#645).
+
 ## 0.5.0
 
 ::: {.callout-note icon=false title="Released on 2026-03-24" .low-opacity}
