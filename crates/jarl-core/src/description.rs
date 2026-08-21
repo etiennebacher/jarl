@@ -64,9 +64,7 @@ impl Description {
 ///
 /// `None` when the dependency carries no usable version: no parentheses
 /// (`R`, `R >= 4.3.0`), an unbalanced or reversed pair (`R (>= 4.3`, `R )x(`),
-/// or empty parentheses (`R ()`). A DESCRIPTION is user-authored data, so
-/// every one of those shapes is reachable and none of them is exceptional —
-/// they just mean "no minimum version stated here".
+/// or empty parentheses (`R ()`).
 fn extract_version_from_dependency(dep: &str) -> Option<String> {
     // Look for version requirement in parentheses.
     let start = dep.find('(')?;
@@ -163,9 +161,6 @@ Depends: R ( >= 4.3.0 ), dplyr
 
     #[test]
     fn test_depends_r_without_usable_version() {
-        // A DESCRIPTION is user-authored data: every one of these shapes is
-        // reachable, and each used to hit an `unreachable!()`. They all mean
-        // "no minimum version stated", not "impossible".
         for depends in [
             "R",          // no version at all
             "R >= 4.3.0", // version, but no parentheses

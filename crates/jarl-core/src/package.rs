@@ -61,9 +61,8 @@ pub enum FilePackageInfo {
     },
     /// A file that isn't part of a package's loadable sources, so its
     /// `library()` calls are scanned from the file itself rather than taken
-    /// from DESCRIPTION. It may still *sit* inside a package — the package
-    /// root, when there is one, so that the file is still checked against the
-    /// R version that package guarantees.
+    /// from DESCRIPTION. It may still exist inside a package (e.g. data-raw) so
+    /// we still need to check the R version.
     Script { package_root: Option<PathBuf> },
 }
 

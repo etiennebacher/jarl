@@ -75,10 +75,7 @@ pub struct Config {
     /// Did the user pass the --unsafe-fixes flag?
     pub apply_unsafe_fixes: bool,
     /// The minimum R version the user pinned with `--min-r-version`, which
-    /// applies to the whole run and overrides every package's own floor.
-    /// `None` when the flag wasn't passed, in which case each file is checked
-    /// against its package's `Depends: R` — see
-    /// [`crate::package::PackageContext::minimum_r_version`].
+    /// applies to the whole run and overrides every package's own `Depends`.
     pub minimum_r_version: Option<(u32, u32, u32)>,
     /// Apply fixes even if the Git branch still has uncommitted files?
     pub allow_dirty: bool,
@@ -119,10 +116,9 @@ pub fn build_config(
     let rules_toml = parse_rules_toml(toml_settings)?;
     let rules = reconcile_rules(rules_cli, rules_toml)?;
 
-    // Only the CLI override narrows the rule set here. Without one, every
-    // version-gated rule stays in and `check` drops the ones the file's own
-    // package can't guarantee — the same superset arrangement
-    // `[lint.per-file-ignores]` already relies on.
+    // We can only do this general filter if the user passed an explicity `--min-r-version`,
+    // otherwise we resolve the min R version of each path later on. This is
+    // necessary because not all paths necessarily get the same min R version.
     let rules = match minimum_r_version {
         Some(_) => filter_rules_by_version(&rules, minimum_r_version),
         None => rules,
@@ -688,14 +684,11 @@ fn reconcile_rules(rules_cli: RuleSelection, rules_toml: RuleSelection) -> Resul
     Ok(final_rules)
 }
 
-/// Determine the minimum R version from CLI args or DESCRIPTION file
 /// The R version the user pinned with `--min-r-version`, if any.
 ///
-/// A package's own floor is *not* resolved here: a single invocation can span
-/// several packages with different `Depends: R` values, so that lookup belongs
-/// per package root (see [`crate::package::PackageContext::minimum_r_version`])
-/// and is applied per file in [`crate::check`]. This flag stays global because
-/// the user asking for it is a statement about the whole run.
+/// We don't use a `Depends` field here. This is done later on, on a per-file
+/// basis and if the user didn't pass `--min-r-version` because one call could
+/// encompass several packages with different `Depends`.
 fn determine_minimum_r_version(check_config: &ArgsConfig) -> Result<Option<(u32, u32, u32)>> {
     check_config
         .min_r_version

@@ -156,11 +156,6 @@ Depends: R (>= 4.6.0), utils, stats"#,
     Ok(())
 }
 
-/// In a real package the linted files live in `R/`, so the `DESCRIPTION` sits a
-/// directory *above* them. The version lookup used to check only the file's
-/// immediate parent, so it never found the `DESCRIPTION` in this layout and
-/// every version-gated rule (`coalesce`, `grepv`, `list2df`, `notin`,
-/// `pipe_consistency`) stayed silently disabled for every package.
 #[test]
 fn test_min_r_version_from_description_in_package_layout() -> anyhow::Result<()> {
     let case = CliTest::with_files([
@@ -234,9 +229,7 @@ fn test_min_r_version_from_description_in_package_layout() -> anyhow::Result<()>
     Ok(())
 }
 
-/// A `Depends:` field that names R without a usable version must degrade to
-/// "unknown version" rather than panicking. Each of these shapes used to hit an
-/// `unreachable!()` in `extract_version_from_dependency`.
+/// Can't parse `Depends:` -> unknown version
 #[test]
 fn test_malformed_depends_r_does_not_panic() -> anyhow::Result<()> {
     for depends in ["R", "R >= 4.6.0", "R ()", "R (>= 4.6", "R )x("] {
@@ -265,10 +258,6 @@ fn test_malformed_depends_r_does_not_panic() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Paths are grouped by nearest `jarl.toml`, not by package root, so a tree
-/// holding several packages is checked under one `Config`. The R version must
-/// still be resolved per package: `pkgB` supports R 3.6, so it must never be
-/// told to use `grepv()`, which only exists in R 4.5.
 #[test]
 fn test_min_r_version_is_per_package_not_per_run() -> anyhow::Result<()> {
     let case = CliTest::with_files([
@@ -284,30 +273,74 @@ fn test_min_r_version_is_per_package_not_per_run() -> anyhow::Result<()> {
         ("pkgB/R/b.R", "grep('a.*', x, value = TRUE)"),
     ])?;
 
-    // Only pkgA guarantees an R new enough for grepv().
-    let both = format!("{}", case.command().arg("check").arg(".").run());
-    assert!(
-        both.contains("pkgA/R/a.R"),
-        "pkgA (R >= 4.6) should get grepv:\n{both}"
-    );
-    assert!(
-        !both.contains("pkgB/R/b.R"),
-        "pkgB (R >= 3.6) must not be told to use grepv():\n{both}"
+    // Only pkgA has the R version high enough
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: grepv
+     --> pkgA/R/a.R:1:1
+      |
+    1 | grep('a.*', x, value = TRUE)
+      | ---------------------------- `grep(..., value = TRUE)` can be simplified.
+      |
+      = help: Use `grepv(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+    1 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
-    // `--min-r-version` is a statement about the whole run and still wins.
-    let forced = format!(
-        "{}",
-        case.command()
+    // `--min-r-version` overrides all Depends.
+    insta::assert_snapshot!(
+        &mut case
+            .command()
             .arg("check")
             .arg(".")
             .arg("--min-r-version")
             .arg("4.6.0")
             .run()
-    );
-    assert!(
-        forced.contains("pkgA/R/a.R") && forced.contains("pkgB/R/b.R"),
-        "explicit --min-r-version should apply everywhere:\n{forced}"
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: grepv
+     --> pkgA/R/a.R:1:1
+      |
+    1 | grep('a.*', x, value = TRUE)
+      | ---------------------------- `grep(..., value = TRUE)` can be simplified.
+      |
+      = help: Use `grepv(...)` instead.
+
+    warning: grepv
+     --> pkgB/R/b.R:1:1
+      |
+    1 | grep('a.*', x, value = TRUE)
+      | ---------------------------- `grep(..., value = TRUE)` can be simplified.
+      |
+      = help: Use `grepv(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+    2 fixable with the `--fix` option.
+
+    ----- stderr -----
+    "
     );
 
     Ok(())
