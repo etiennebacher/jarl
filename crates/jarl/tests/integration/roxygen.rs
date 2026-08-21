@@ -6,22 +6,16 @@ use crate::helpers::{CliTest, CommandExt};
 
 #[test]
 fn test_roxygen_examples_lint() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
-        (
-            "R/test.R",
-            "\
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
 #' Title
 #' @param x A value
 #' @examples
 #' any(is.na(x))
 foo <- function(x) x
 ",
-        ),
-    ])?;
+    )])?;
 
     insta::assert_snapshot!(
         &mut case
@@ -56,21 +50,15 @@ foo <- function(x) x
 
 #[test]
 fn test_roxygen_examples_if_lint() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
-        (
-            "R/test.R",
-            "\
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
 #' Title
 #' @examplesIf interactive()
 #' any(is.na(x))
 foo <- function(x) x
 ",
-        ),
-    ])?;
+    )])?;
 
     insta::assert_snapshot!(
         &mut case
@@ -109,21 +97,15 @@ foo <- function(x) x
 
 #[test]
 fn test_roxygen_clean_examples() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
-        (
-            "R/test.R",
-            "\
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
 #' Title
 #' @examples
 #' x <- 1
 foo <- function(x) x
 ",
-        ),
-    ])?;
+    )])?;
 
     insta::assert_snapshot!(
         &mut case
@@ -153,21 +135,15 @@ foo <- function(x) x
 
 #[test]
 fn test_roxygen_parse_error_skipped() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
-        (
-            "R/test.R",
-            "\
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
 #' Title
 #' @examples
 #' 1 +
 foo <- function(x) x
 ",
-        ),
-    ])?;
+    )])?;
 
     insta::assert_snapshot!(
         &mut case
@@ -197,14 +173,9 @@ foo <- function(x) x
 
 #[test]
 fn test_roxygen_multiple_blocks() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
-        (
-            "R/test.R",
-            "\
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
 #' First function
 #' @examples
 #' any(is.na(x))
@@ -215,8 +186,7 @@ foo <- function(x) x
 #' any(is.na(y))
 bar <- function(y) y
 ",
-        ),
-    ])?;
+    )])?;
 
     insta::assert_snapshot!(
         &mut case
@@ -263,11 +233,7 @@ bar <- function(y) y
 
 #[test]
 fn test_roxygen_disabled_via_toml() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
+    let case = CliTest::package_with_files([
         (
             "R/test.R",
             "\
@@ -354,14 +320,9 @@ foo <- function(x) x
 /// Code inside `\dontrun{}` is linted — the wrapper is stripped.
 #[test]
 fn test_roxygen_dontrun_linted() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
-        (
-            "R/test.R",
-            "\
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
 #' Title
 #' @examples
 #' \\dontrun{
@@ -369,8 +330,7 @@ fn test_roxygen_dontrun_linted() -> anyhow::Result<()> {
 #' }
 foo <- function(x) x
 ",
-        ),
-    ])?;
+    )])?;
 
     insta::assert_snapshot!(
         &mut case
@@ -406,14 +366,9 @@ foo <- function(x) x
 /// Code inside `\donttest{}` is linted — the wrapper is stripped.
 #[test]
 fn test_roxygen_donttest_linted() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
-        (
-            "R/test.R",
-            "\
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
 #' Title
 #' @examples
 #' \\donttest{
@@ -421,8 +376,7 @@ fn test_roxygen_donttest_linted() -> anyhow::Result<()> {
 #' }
 foo <- function(x) x
 ",
-        ),
-    ])?;
+    )])?;
 
     insta::assert_snapshot!(
         &mut case
@@ -458,14 +412,9 @@ foo <- function(x) x
 /// Code both inside and outside `\dontrun{}` is linted.
 #[test]
 fn test_roxygen_dontrun_with_surrounding_code() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
-        (
-            "R/test.R",
-            "\
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
 #' Title
 #' @examples
 #' any(is.na(x))
@@ -474,8 +423,7 @@ fn test_roxygen_dontrun_with_surrounding_code() -> anyhow::Result<()> {
 #' }
 foo <- function(x) x
 ",
-        ),
-    ])?;
+    )])?;
 
     insta::assert_snapshot!(
         &mut case
@@ -523,14 +471,9 @@ foo <- function(x) x
 /// Code after `@return` (or any other tag) should NOT be linted as examples.
 #[test]
 fn test_roxygen_examples_stopped_by_tag() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
-        (
-            "R/test.R",
-            "\
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
 #' @title hi
 #' @description
 #' hello
@@ -540,8 +483,7 @@ fn test_roxygen_examples_stopped_by_tag() -> anyhow::Result<()> {
 #' any(is.na(x))
 f <- function() 1
 ",
-        ),
-    ])?;
+    )])?;
 
     // Only the first any(is.na(x)) (inside @examples) should be reported.
     // The second one is under @return and is not R code.
@@ -583,11 +525,7 @@ f <- function() 1
 /// Multi-line roxygen example is correctly fixed in place.
 #[test]
 fn test_roxygen_fix_multiline() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
+    let case = CliTest::package_with_files([
         (
             "R/test.R",
             "\
@@ -642,11 +580,7 @@ fix-roxygen = true
 /// Single-line roxygen example is correctly fixed in place.
 #[test]
 fn test_roxygen_fix_single_line() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
+    let case = CliTest::package_with_files([
         (
             "R/test.R",
             "\
@@ -696,21 +630,15 @@ fix-roxygen = true
 
 #[test]
 fn test_double_hash_is_roxygen() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
-        (
-            "R/test.R",
-            "\
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
 ##' Title
 ##' @examples
 ##' any(is.na(x))
 foo <- function(x) x
 ",
-        ),
-    ])?;
+    )])?;
 
     insta::assert_snapshot!(
         &mut case
@@ -749,14 +677,9 @@ foo <- function(x) x
 
 #[test]
 fn test_suppression_comments() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
-        (
-            "R/test.R",
-            "\
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
 #' Title
 #' @examples
 # jarl-ignore any_is_na: <reason>
@@ -770,8 +693,7 @@ foo <- function(x) x
 # jarl-ignore-end any_is_na
 foo2 <- function(x) x
 ",
-        ),
-    ])?;
+    )])?;
 
     insta::assert_snapshot!(
         &mut case
@@ -797,22 +719,16 @@ foo2 <- function(x) x
 
 #[test]
 fn test_unused_suppression_comments() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
-        (
-            "R/test.R",
-            "\
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
 #' Title
 #' @examples
 # jarl-ignore any_duplicated: <reason>
 #' any(is.na(x))
 foo <- function(x) x
 ",
-        ),
-    ])?;
+    )])?;
 
     insta::assert_snapshot!(
         &mut case
@@ -862,22 +778,16 @@ foo <- function(x) x
 /// runs in, so one that is never read is dead code just like in a script.
 #[test]
 fn test_roxygen_examples_unused_object() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
-        (
-            "R/test.R",
-            "\
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
 #' Title
 #' @examples
 #' d <- data.frame(a = 1)
 #' summary(mtcars)
 foo <- function() NULL
 ",
-        ),
-    ])?;
+    )])?;
 
     insta::assert_snapshot!(
         &mut case
@@ -914,22 +824,16 @@ foo <- function() NULL
 /// A binding read later in the same section is used.
 #[test]
 fn test_roxygen_examples_used_object_not_flagged() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
-        (
-            "R/test.R",
-            "\
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
 #' Title
 #' @examples
 #' d <- data.frame(a = 1)
 #' summary(d)
 foo <- function() NULL
 ",
-        ),
-    ])?;
+    )])?;
 
     insta::assert_snapshot!(
         &mut case
@@ -959,14 +863,9 @@ foo <- function() NULL
 /// example code.
 #[test]
 fn test_roxygen_examples_if_and_dontrun_unused_object() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
-        (
-            "R/test.R",
-            "\
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
 #' Title
 #' @examplesIf interactive()
 #' b <- 1
@@ -979,8 +878,7 @@ f2 <- function() NULL
 #' }
 f1 <- function() NULL
 ",
-        ),
-    ])?;
+    )])?;
 
     insta::assert_snapshot!(
         &mut case
@@ -1079,11 +977,7 @@ bar <- function() NULL
 /// used, and a sibling file reading `bar` does not either.
 #[test]
 fn test_roxygen_examples_exported_name_still_flagged() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
+    let case = CliTest::package_with_files([
         ("NAMESPACE", "export(bar)\n"),
         (
             "R/test.R",
@@ -1133,14 +1027,9 @@ baz <- function() NULL
 /// the next.
 #[test]
 fn test_roxygen_examples_blocks_are_independent() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
-        (
-            "R/test.R",
-            "\
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
 #' Title
 #' @examples
 #' shared <- 1
@@ -1151,8 +1040,7 @@ foo <- function() NULL
 #' print(shared)
 bar <- function() NULL
 ",
-        ),
-    ])?;
+    )])?;
 
     insta::assert_snapshot!(
         &mut case
@@ -1190,22 +1078,16 @@ bar <- function() NULL
 /// found inside the examples.
 #[test]
 fn test_roxygen_examples_unused_object_suppressed() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
-        (
-            "R/test.R",
-            "\
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
 #' Title
 #' @examples
 # jarl-ignore unused_object: illustrative
 #' zz <- 1
 qux <- function() NULL
 ",
-        ),
-    ])?;
+    )])?;
 
     insta::assert_snapshot!(
         &mut case
@@ -1234,21 +1116,15 @@ qux <- function() NULL
 /// An examples section with no code at all must not trip document-level rules.
 #[test]
 fn test_roxygen_examples_comment_only_section() -> anyhow::Result<()> {
-    let case = CliTest::with_files([
-        (
-            "DESCRIPTION",
-            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
-        ),
-        (
-            "R/test.R",
-            "\
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
 #' Title
 #' @examples
 #' # see the vignette
 quux <- function() NULL
 ",
-        ),
-    ])?;
+    )])?;
 
     insta::assert_snapshot!(
         &mut case
