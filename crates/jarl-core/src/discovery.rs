@@ -9,7 +9,6 @@ use rustc_hash::FxHashSet;
 use std::path::Path;
 use std::path::PathBuf;
 
-use crate::fs;
 use crate::fs::has_r_extension;
 use crate::fs::has_rmd_extension;
 use crate::settings::Settings;
@@ -54,7 +53,7 @@ fn get_user_config_dir() -> Option<PathBuf> {
 /// - If no config found in ancestors, fall back to checking the user config directory
 /// - If `path` is a directory, also walk down into it to find any nested `jarl.toml`s
 pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<DiscoveredSettings>> {
-    let paths: Vec<PathBuf> = paths.iter().map(fs::normalize_path).collect();
+    let paths: Vec<PathBuf> = paths.iter().map(air_fs::normalize_path).collect();
 
     let mut seen = FxHashSet::default();
     let mut discovered_settings = Vec::with_capacity(paths.len());
@@ -240,7 +239,7 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
     use_linter_settings: bool,
     no_default_exclude: bool,
 ) -> DiscoveredFiles {
-    let paths: Vec<PathBuf> = paths.iter().map(fs::normalize_path).collect();
+    let paths: Vec<PathBuf> = paths.iter().map(air_fs::normalize_path).collect();
 
     let Some((first_path, paths)) = paths.split_first() else {
         // No paths provided

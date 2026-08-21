@@ -1121,6 +1121,7 @@ version = "0.6.0-alpha.6"
 dependencies = [
  "anyhow",
  "crossbeam",
+ "fs",
  "insta",
  "jarl-core",
  "lsp-server",

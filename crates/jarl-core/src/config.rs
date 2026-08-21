@@ -1,5 +1,4 @@
 use crate::{
-    description::Description,
     error::UnknownRulesError,
     package_cache::PackageCache,
     per_file_ignores::PerFileIgnores,
@@ -9,7 +8,7 @@ use crate::{
 };
 use air_r_syntax::RSyntaxKind;
 use anyhow::Result;
-use std::{collections::HashSet, fs, path::PathBuf, sync::Arc};
+use std::{collections::HashSet, path::PathBuf, sync::Arc};
 
 use crate::lints::base::assignment::options::ResolvedAssignmentOptions;
 
@@ -76,9 +75,8 @@ pub struct Config {
     pub apply_fixes: bool,
     /// Did the user pass the --unsafe-fixes flag?
     pub apply_unsafe_fixes: bool,
-    /// The minimum R version used in the project. Used to disable some rules
-    /// that require functions that are not available in all R versions, e.g.
-    /// grepv() introduced in R 4.5.0.
+    /// The minimum R version the user pinned with `--min-r-version`, which
+    /// applies to the whole run and overrides every package's own `Depends`.
     pub minimum_r_version: Option<(u32, u32, u32)>,
     /// Apply fixes even if the Git branch still has uncommitted files?
     pub allow_dirty: bool,
@@ -107,10 +105,9 @@ pub fn build_config(
     toml_settings: Option<&Settings>,
     paths: Vec<PathBuf>,
 ) -> Result<Config> {
-    // Determining the minimum R version has to come first since if it is
-    // unknown then only rules that don't have a version restriction are
-    // selected.
-    let minimum_r_version = determine_minimum_r_version(check_config, &paths)?;
+    // The `--min-r-version` override, if the user passed one. A package's own
+    // floor is resolved later, per file.
+    let minimum_r_version = determine_minimum_r_version(check_config)?;
 
     let rules_cli = parse_rules_cli(
         &check_config.select,
@@ -120,7 +117,13 @@ pub fn build_config(
     let rules_toml = parse_rules_toml(toml_settings)?;
     let rules = reconcile_rules(rules_cli, rules_toml)?;
 
-    let rules = filter_rules_by_version(&rules, minimum_r_version);
+    // We can only do this general filter if the user passed an explicity `--min-r-version`,
+    // otherwise we resolve the min R version of each path later on. This is
+    // necessary because not all paths necessarily get the same min R version.
+    let rules = match minimum_r_version {
+        Some(_) => filter_rules_by_version(&rules, minimum_r_version),
+        None => rules,
+    };
 
     // Parse fixable/unfixable rules from TOML.
     // These will be stored in Config and checked when applying fixes.
@@ -542,38 +545,17 @@ fn reconcile_rules(rules_cli: RuleSelection, rules_toml: RuleSelection) -> Resul
         .collect())
 }
 
-/// Determine the minimum R version from CLI args or DESCRIPTION file
-fn determine_minimum_r_version(
-    check_config: &ArgsConfig,
-    paths: &[PathBuf],
-) -> Result<Option<(u32, u32, u32)>> {
-    if let Some(version_string) = &check_config.min_r_version {
-        return Ok(Some(parse_r_version(version_string.clone())?));
-    }
-
-    // Look for DESCRIPTION file in any of the project paths
-    // TODO: this seems wasteful but I don't have a good infrastructure for now
-    // for getting the common root of the paths.
-    for path in paths {
-        let desc_path = if path.is_dir() {
-            path.join("DESCRIPTION")
-        } else if let Some(parent) = path.parent() {
-            parent.join("DESCRIPTION")
-        } else {
-            continue;
-        };
-
-        if desc_path.exists() {
-            let desc = fs::read_to_string(&desc_path)?;
-            if let Ok(versions) = Description::get_depend_r_version(&desc)
-                && let Some(version_str) = versions.first()
-            {
-                return Ok(Some(parse_r_version(version_str.to_string())?));
-            }
-        }
-    }
-
-    Ok(None)
+/// The R version the user pinned with `--min-r-version`, if any.
+///
+/// We don't use a `Depends` field here. This is done later on, on a per-file
+/// basis and if the user didn't pass `--min-r-version` because one call could
+/// encompass several packages with different `Depends`.
+fn determine_minimum_r_version(check_config: &ArgsConfig) -> Result<Option<(u32, u32, u32)>> {
+    check_config
+        .min_r_version
+        .as_ref()
+        .map(|version| parse_r_version(version.clone()))
+        .transpose()
 }
 
 /// Parse R version string in format "x.y" or "x.y.z" and return (major, minor, patch)
@@ -604,7 +586,10 @@ pub fn parse_r_version(min_r_version: String) -> Result<(u32, u32, u32)> {
 }
 
 /// Filter rules based on minimum R version compatibility
-fn filter_rules_by_version(rules: &RuleSet, minimum_r_version: Option<(u32, u32, u32)>) -> RuleSet {
+pub(crate) fn filter_rules_by_version(
+    rules: &RuleSet,
+    minimum_r_version: Option<(u32, u32, u32)>,
+) -> RuleSet {
     match minimum_r_version {
         None => {
             // If we don't know the minimum R version, only include rules without version requirements

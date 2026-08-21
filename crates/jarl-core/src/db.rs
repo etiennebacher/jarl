@@ -329,7 +329,7 @@ impl AnalysisDb {
         let scanned: HashSet<&PathBuf> = paths.iter().collect();
         let scripts: Vec<PathBuf> = script_paths
             .iter()
-            .map(|path| PathBuf::from(crate::fs::relativize_path(path)))
+            .map(|path| PathBuf::from(air_fs::relativize_path(path)))
             .filter(|path| !scanned.contains(path))
             .collect();
         paths.extend(scripts);
@@ -528,7 +528,7 @@ fn collect_file_uses(path: PathBuf, index: &SemanticIndex) -> FileUses {
 /// `to_file_path` + relativize lands on the same key as the linted file's.
 fn import_target_path(url: &url::Url) -> Option<PathBuf> {
     let path = url.to_file_path().ok()?;
-    Some(PathBuf::from(crate::fs::relativize_path(path)))
+    Some(PathBuf::from(air_fs::relativize_path(path)))
 }
 
 /// The relativized path of a database [`File`], in the form that keys
@@ -536,7 +536,7 @@ fn import_target_path(url: &url::Url) -> Option<PathBuf> {
 /// path (e.g. a virtual document).
 fn relative_file_path(db: &dyn Db, file: File) -> Option<PathBuf> {
     let path = file.path(db).as_path()?.as_std_path().to_path_buf();
-    Some(PathBuf::from(crate::fs::relativize_path(&path)))
+    Some(PathBuf::from(air_fs::relativize_path(&path)))
 }
 
 /// The RStudio entry-point filenames a shiny app is recognized by, each with

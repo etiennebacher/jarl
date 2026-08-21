@@ -44,6 +44,11 @@ pub struct PackageContext {
     /// Raw NAMESPACE content, retained so `compute_unused_from_shared()` can
     /// call `parse_namespace_exports()` with the full `all_names` list.
     pub namespace_content: Option<String>,
+    /// The R version this package guarantees, from `Depends: R (>= x.y.z)`.
+    /// Resolved per package rather than per run: a tree can hold several
+    /// packages with different floors, and each one's files must be checked
+    /// against its own. `None` when DESCRIPTION states no usable version.
+    pub minimum_r_version: Option<(u32, u32, u32)>,
 }
 
 /// Per-file package classification, computed upfront by
@@ -54,7 +59,11 @@ pub enum FilePackageInfo {
         package_root: PathBuf,
         scope: FileScope,
     },
-    Script,
+    /// A file that isn't part of a package's loadable sources, so its
+    /// `library()` calls are scanned from the file itself rather than taken
+    /// from DESCRIPTION. It may still exist inside a package (e.g. data-raw) so
+    /// we still need to check the R version.
+    Script { package_root: Option<PathBuf> },
 }
 
 /// Shared per-file data collected during the single parallel scan.
@@ -168,7 +177,7 @@ pub fn summarize_package_info(
     // Insert file info under both the original path and its relativized form,
     // since downstream code may look up by either.
     let mut insert_info = |path: &PathBuf, info: FilePackageInfo| {
-        let rel = PathBuf::from(crate::fs::relativize_path(path));
+        let rel = PathBuf::from(air_fs::relativize_path(path));
         file_info.insert(path.clone(), info.clone());
         if rel != *path {
             file_info.insert(rel, info);
@@ -177,7 +186,9 @@ pub fn summarize_package_info(
 
     for path in paths {
         if !has_r_extension(path) {
-            insert_info(path, FilePackageInfo::Script);
+            // An Rmd/Qmd document is never package code (see `get_checks_rmd`),
+            // so no package root governs it.
+            insert_info(path, FilePackageInfo::Script { package_root: None });
             continue;
         }
 
@@ -211,10 +222,16 @@ pub fn summarize_package_info(
                     FilePackageInfo::InPackage { package_root: pkg_root, scope },
                 );
             } else {
-                insert_info(path, FilePackageInfo::Script);
+                // Not a loadable source, but still inside the package, so its
+                // DESCRIPTION is what bounds the R version it may use.
+                package_roots.insert(pkg_root.clone());
+                insert_info(
+                    path,
+                    FilePackageInfo::Script { package_root: Some(pkg_root) },
+                );
             }
         } else {
-            insert_info(path, FilePackageInfo::Script);
+            insert_info(path, FilePackageInfo::Script { package_root: None });
         }
     }
 
@@ -225,6 +242,7 @@ pub fn summarize_package_info(
         let mut import_from = HashMap::new();
         let mut namespace_exports = HashSet::new();
         let mut namespace_content = None;
+        let mut minimum_r_version = None;
 
         let desc_path = root.join("DESCRIPTION");
         if let Ok(desc) = std::fs::read_to_string(&desc_path) {
@@ -232,6 +250,11 @@ pub fn summarize_package_info(
                 &desc,
                 &["Depends", "Imports"],
             ));
+            // Same string, so the version costs no extra read or walk.
+            minimum_r_version = Description::get_depend_r_version(&desc)
+                .ok()
+                .and_then(|versions| versions.first().cloned())
+                .and_then(|version| crate::config::parse_r_version(version).ok());
         }
 
         let ns_path = root.join("NAMESPACE");
@@ -254,6 +277,7 @@ pub fn summarize_package_info(
                 import_from,
                 loaded_packages: packages,
                 namespace_content,
+                minimum_r_version,
             },
         );
     }
@@ -329,8 +353,8 @@ pub fn make_package_analysis(
             if *scope == FileScope::R {
                 let r_dir = path.parent()?;
                 let package_root = r_dir.parent()?.to_path_buf();
-                let rel_path = PathBuf::from(crate::fs::relativize_path(path));
-                let root_key = crate::fs::relativize_path(r_dir);
+                let rel_path = PathBuf::from(air_fs::relativize_path(path));
+                let root_key = air_fs::relativize_path(r_dir);
                 Some(SharedFileData {
                     root_key,
                     rel_path,
@@ -344,8 +368,8 @@ pub fn make_package_analysis(
                 // somewhere under root/tests/, root/inst/, or root/src/.
                 let package_root = find_package_root(path)?;
                 let r_dir = package_root.join("R");
-                let rel_path = PathBuf::from(crate::fs::relativize_path(path));
-                let root_key = crate::fs::relativize_path(&r_dir);
+                let rel_path = PathBuf::from(air_fs::relativize_path(path));
+                let root_key = air_fs::relativize_path(&r_dir);
                 Some(SharedFileData {
                     root_key,
                     rel_path,
@@ -470,7 +494,17 @@ fn is_known_package_scope(path: &Path, package_root: &Path) -> bool {
 
 /// Walk up from a file path to find the package root (directory containing DESCRIPTION).
 pub(crate) fn find_package_root(path: &Path) -> Option<PathBuf> {
-    let mut dir = path.parent()?;
+    package_root_from_dir(path.parent()?)
+}
+
+/// Walk up from a directory, `dir` included, to the nearest ancestor holding a
+/// `DESCRIPTION`.
+///
+/// Separate from [`find_package_root`] because a directory the user named
+/// directly (`jarl check .` from a package root) may *be* the package root,
+/// while a file path's own directory never is.
+pub(crate) fn package_root_from_dir(dir: &Path) -> Option<PathBuf> {
+    let mut dir = dir;
     loop {
         if dir.join("DESCRIPTION").exists() {
             return Some(dir.to_path_buf());
@@ -491,8 +525,8 @@ pub(crate) fn scan_r_package_paths(paths: &[PathBuf], with_symbols: bool) -> Vec
         .filter_map(|path| {
             let r_dir = path.parent()?;
             let package_root = r_dir.parent()?.to_path_buf();
-            let rel_path = PathBuf::from(crate::fs::relativize_path(path));
-            let root_key = crate::fs::relativize_path(r_dir);
+            let rel_path = PathBuf::from(air_fs::relativize_path(path));
+            let root_key = air_fs::relativize_path(r_dir);
             let content = std::fs::read_to_string(path).ok()?;
             let assignments = scan_top_level_assignments(&content);
             let symbol_counts = if with_symbols {
@@ -522,13 +556,13 @@ pub(crate) fn scan_extra_package_paths(
     package_root: &Path,
 ) -> Vec<SharedFileData> {
     let r_dir = package_root.join("R");
-    let root_key = crate::fs::relativize_path(&r_dir);
+    let root_key = air_fs::relativize_path(&r_dir);
     paths
         .iter()
         .filter_map(|path| {
             let content = std::fs::read_to_string(path).ok()?;
             let symbol_counts = scan_symbols(&content);
-            let rel_path = PathBuf::from(crate::fs::relativize_path(path));
+            let rel_path = PathBuf::from(air_fs::relativize_path(path));
             let scope = file_scope_from_path(path);
             let assignments = match scope {
                 FileScope::Src => Vec::new(),
