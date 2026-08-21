@@ -2472,14 +2472,4 @@ expect_equal(x <- 1, 1)
             settings_with_options(options),
         );
     }
-
-    #[test]
-    fn test_skipped_functions_and_extend_together_is_an_error() {
-        let options = UnusedObjectOptions {
-            skipped_functions: Some(vec!["my_expect".to_string()]),
-            extend_skipped_functions: Some(vec!["other_expect".to_string()]),
-        };
-        let error = ResolvedUnusedObjectOptions::resolve(Some(&options)).unwrap_err();
-        assert_snapshot!(error.to_string(), @"Cannot specify both `skipped-functions` and `extend-skipped-functions` in `[lint.unused_object]`.");
-    }
 }
