@@ -1,4 +1,5 @@
-use air_r_syntax::RSyntaxNode;
+use air_r_syntax::{RArgument, RCall, RSyntaxNode};
+use biome_rowan::AstNode;
 use oak_semantic::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex};
 
 use jarl_semantic::{
@@ -8,6 +9,25 @@ use jarl_semantic::{
 
 use crate::checker::Checker;
 use crate::diagnostic::{Diagnostic, Fix, ViolationData};
+use crate::utils::get_function_name;
+
+/// `testthat` expectations that run their argument for the condition it signals
+/// — or for a snapshot of its output — rather than for its value. An assignment
+/// handed straight to one of these exists so the expectation has something to
+/// evaluate, so never using it is the point rather than a dead store.
+const CONDITION_EXPECTATION_FUNCTIONS: &[&str] = &[
+    "expect_error",
+    "expect_warning",
+    "expect_message",
+    "expect_silent",
+    "expect_defunct",
+    "expect_deprecated",
+    "expect_snapshot",
+    "expect_no_condition",
+    "expect_no_warning",
+    "expect_no_error",
+    "expect_no_message",
+];
 
 /// Version added: 0.6.0
 ///
@@ -62,6 +82,17 @@ use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 ///
 /// - Some functions that can call other quoted functions (e.g. `do.call()`) are
 ///   supported.
+///
+/// - Assignments passed directly to a `testthat` expectation that runs its
+///   argument for the condition it signals (`expect_error()`,
+///   `expect_warning()`, `expect_message()`, `expect_silent()`,
+///   `expect_defunct()`, `expect_deprecated()`, `expect_snapshot()`,
+///   `expect_no_condition()`, `expect_no_warning()`, `expect_no_error()`,
+///   `expect_no_message()`) are not reported:
+///
+///   ```r
+///   expect_error(x <- foo)
+///   ```
 ///
 /// ## Limitations
 ///
@@ -191,6 +222,11 @@ fn should_lint_definition(info: &SemanticInfo<'_>, def: &Definition) -> bool {
             if assignment_lhs_is_complex(&bin) {
                 return false;
             }
+            // `expect_error(x <- f())`: the binding exists so the expectation
+            // has something to evaluate, so never using it is the point.
+            if is_condition_expectation_argument(bin.syntax()) {
+                return false;
+            }
         }
         // A call-created binding (`assign("x", 1)`, `x %<>% f()`). A call that
         // redirects its binding to another environment never reaches here:
@@ -218,6 +254,23 @@ fn should_lint_definition(info: &SemanticInfo<'_>, def: &Definition) -> bool {
     }
 
     true
+}
+
+/// Whether `node` is passed directly as an argument to one of
+/// [`CONDITION_EXPECTATION_FUNCTIONS`]. Deliberately only the immediate
+/// argument position: an assignment nested in a block or in a function defined
+/// inside the expectation is an ordinary local and stays lintable.
+fn is_condition_expectation_argument(node: &RSyntaxNode) -> bool {
+    let Some(argument) = node.parent().and_then(RArgument::cast) else {
+        return false;
+    };
+    let Some(call) = argument.syntax().ancestors().find_map(RCall::cast) else {
+        return false;
+    };
+    let Ok(function) = call.function() else {
+        return false;
+    };
+    CONDITION_EXPECTATION_FUNCTIONS.contains(&get_function_name(function).as_str())
 }
 
 fn is_exported(

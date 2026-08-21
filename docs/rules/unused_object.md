@@ -54,6 +54,17 @@ this rule handles the following cases:
 - Some functions that can call other quoted functions (e.g. `do.call()`) are
   supported.
 
+- Assignments passed directly to a `testthat` expectation that runs its
+  argument for the condition it signals (`expect_error()`,
+  `expect_warning()`, `expect_message()`, `expect_silent()`,
+  `expect_defunct()`, `expect_deprecated()`, `expect_snapshot()`,
+  `expect_no_condition()`, `expect_no_warning()`, `expect_no_error()`,
+  `expect_no_message()`) are not reported:
+
+  ```r
+  expect_error(x <- foo)
+  ```
+
 ## Limitations
 
 Some cases are deliberately left aside or might be tackled in the future:

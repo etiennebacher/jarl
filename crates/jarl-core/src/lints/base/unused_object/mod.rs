@@ -2318,4 +2318,93 @@ while (cond) {
             @"All checks passed!"
         );
     }
+
+    #[test]
+    fn test_no_lint_assignment_in_condition_expectation() {
+        // The assignment is what the expectation runs, so never reading the
+        // binding is the point of the test.
+        expect_no_lint(
+            "
+  expect_error(x <- stop(\"boom\"))
+",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_assignment_in_namespaced_condition_expectation() {
+        expect_no_lint(
+            "
+testthat::expect_no_error(x <- 1)
+",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_assignment_in_named_condition_expectation_argument() {
+        expect_no_lint(
+            "
+expect_error(object = x <- foo, regexp = \"boom\")
+",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_assignment_nested_in_condition_expectation() {
+        // Only the direct argument position is exempt: a block or a function
+        // defined inside the expectation holds ordinary locals.
+        assert_snapshot!(
+            snapshot_lint(
+                "
+expect_snapshot({
+  x <- 1
+  f()
+})
+expect_error(f <- function() y <- 1)
+"
+            ),
+            @"
+        warning: unused_object
+         --> <test>:3:3
+          |
+        3 |   x <- 1
+          |   - Object `x` is defined but never used.
+          |
+        warning: unused_object
+         --> <test>:6:30
+          |
+        6 | expect_error(f <- function() y <- 1)
+          |                              - Object `y` is defined but never used.
+          |
+        Found 2 errors.
+        "
+        );
+    }
+
+    #[test]
+    fn test_lint_assignment_in_non_listed_expectation() {
+        // `expect_equal()` compares a value, so its argument is an ordinary
+        // expression and the binding is a dead store.
+        assert_snapshot!(
+            snapshot_lint(
+                "
+expect_equal(x <- 1, 1)
+"
+            ),
+            @"
+        warning: unused_object
+         --> <test>:2:14
+          |
+        2 | expect_equal(x <- 1, 1)
+          |              - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
 }
