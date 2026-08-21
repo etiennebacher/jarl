@@ -129,6 +129,8 @@
   produce different output depending on operator precedence around the
   comparison (#632).
 
+* Fix the detection of `Depends: R (>= x.y.z)` in some cases (#641).
+
 ## 0.5.0
 
 ::: {.callout-note icon=false title="Released on 2026-03-24" .low-opacity}
