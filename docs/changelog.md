@@ -121,6 +121,10 @@
 * `redundant_equals` now skips cases that use `rlang`'s `!!` and `!!!` operators
   (#625).
 
+* The fix for `comparison_negation` is now considered "unsafe" because it can
+  produce different output depending on operator precedence around the
+  comparison (#632).
+
 ## 0.5.0
 
 ::: {.callout-note icon=false title="Released on 2026-03-24" .low-opacity}
