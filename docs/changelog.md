@@ -116,8 +116,9 @@
 * Fixed false positives in `assignment` rule. Jarl could recommend replacing `<-`
   by `=` in places where this would change the meaning of the code (#515).
 
-* `implicit_assignment` now includes `alist()` in the list of functions skipped
-  by default (#527).
+* `implicit_assignment` now includes `alist()`, `expect_no_condition()`,
+  `expect_no_warning()`, `expect_no_error()`, `expect_no_message()`, and
+  `expect_no_match()` in the list of functions skipped by default (#527, #639).
 
 * Jarl no longer fails to parse `...()` (#584, @Yousa-Mirage).
 
