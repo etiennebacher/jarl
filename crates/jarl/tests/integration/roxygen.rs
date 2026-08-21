@@ -845,6 +845,7 @@ foo <- function(x) x
 
     ── Summary ──────────────────────────────────────
     Found 2 errors.
+    1 fixable with the `--fix` option.
 
     ----- stderr -----
     "

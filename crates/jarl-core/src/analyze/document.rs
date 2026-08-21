@@ -23,6 +23,7 @@ use crate::rule_set::Rule;
 pub(crate) fn check_document(
     expressions: &RExpressionList,
     syntax: &RSyntaxNode,
+    contents: &str,
     checker: &mut Checker,
     package: &PackageFileAnalysis,
     semantic: Option<&SemanticIndex>,
@@ -155,7 +156,7 @@ pub(crate) fn check_document(
     // Report outdated suppressions (suppressions that didn't suppress anything).
     if checker.is_rule_enabled(Rule::OutdatedSuppression) {
         let unused = checker.suppression.get_unused_suppressions();
-        let outdated_diagnostics = outdated_suppression(&unused);
+        let outdated_diagnostics = outdated_suppression(&unused, contents);
         for diag in outdated_diagnostics {
             checker.report_diagnostic(Some(diag));
         }

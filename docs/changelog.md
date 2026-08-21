@@ -34,6 +34,9 @@
   * Three more functions skipped by default from `implicit_assignment`: `expect_silent` (from
     `testthat`), `expect_defunct` (from lifecycle) and `expect_deprecated` (from `lifecycle`)
     (#543, @maelle).
+  * `outdated_suppression` now has a safe fix that removes the unused
+    suppression comment (or comments if `# jarl-ignore-start` and `# jarl-ignore-end`
+    are used) (#638).
   * `which_grepl` now supports named `which(x = ...)` arguments and native pipe
     chains such as `x |> grepl(pattern = ...) |> which()`. Calls with additional
     `which()` arguments are reported without an automatic fix (#560, @Yousa-Mirage).
