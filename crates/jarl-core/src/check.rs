@@ -1,17 +1,17 @@
 use crate::error::{ParseError, SyntaxError};
 use crate::location::Location;
 use crate::package::{
-    FilePackageInfo, FileScope, PackageAnalysis, PackageContext, make_package_analysis,
-    summarize_package_info,
+    FilePackageInfo, FileScope, PackageAnalysis, PackageContext, PackageFileAnalysis,
+    make_package_analysis, summarize_package_info,
 };
 use crate::roxygen::{extract_roxygen_examples, remap_roxygen_fix, remap_roxygen_range};
 use crate::suppression::SuppressionManager;
 use crate::vcs::check_version_control;
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
-use air_r_syntax::{RExpressionList, RSyntaxNode};
+use air_r_syntax::RSyntaxNode;
 use anyhow::{Context, Result};
-use biome_rowan::{TextRange, TextSize};
+use biome_rowan::{AstNode, AstNodeList, TextRange, TextSize};
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fs;
@@ -128,6 +128,8 @@ pub fn lint_only(
         &pkg,
         &pkg_contexts,
         &file_pkg_info,
+        // lint-only: on-disk contents match the cached index, so reuse it.
+        true,
     )
     .with_context(|| format!("Failed to get checks for file: {path}"))?;
 
@@ -166,6 +168,10 @@ pub fn lint_fix(
             &pkg,
             &pkg_contexts,
             &file_pkg_info,
+            // Fix mode rewrites the file between iterations, so the on-disk
+            // contents (and the index the pre-pass cached from them) drift from
+            // the in-memory `contents`; rebuild the index rather than reuse it.
+            false,
         )
         .with_context(|| format!("Failed to get checks for file: {path}",))?;
 
@@ -202,9 +208,17 @@ pub fn get_checks(
     pkg: &PackageAnalysis,
     pkg_contexts: &HashMap<PathBuf, PackageContext>,
     file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
+    use_cached_index: bool,
 ) -> Result<Vec<Diagnostic>> {
     if crate::fs::has_rmd_extension(file) {
-        return get_checks_rmd(contents, file, config);
+        // Same cache validity rule as the per-file indices below: shareable
+        // while the run's caches match the disk, fresh when they may drift.
+        let source_cache = if use_cached_index {
+            pkg.source_index_cache.clone()
+        } else {
+            jarl_semantic::SourceIndexCache::new()
+        };
+        return get_checks_rmd(contents, file, config, source_cache);
     }
 
     let parser_options = RParserOptions::default();
@@ -226,23 +240,57 @@ pub fn get_checks(
     checker.rule_set = effective_rules_for_file(config, file);
     checker.minimum_r_version = config.minimum_r_version;
 
+    // Build the semantic index for use-def-based rules. `source("path")`
+    // calls inject `DefinitionKind::Import` entries via JarlImportsResolver;
+    // the complementary "names read by sourced files" path is still handled
+    // inside `SemanticInfo`.
+    //
+    // When `unused_object` runs, the cross-file pre-pass already built this
+    // file's index (with the same resolver) and stored it in `pkg.file_indices`;
+    // reuse it rather than rebuilding. The pre-pass reads from disk, so the
+    // cache is only valid in lint-only mode — fix mode rewrites the file
+    // between passes, so it always rebuilds from the in-memory contents.
+    //
+    // Building (when not cached) happens here, in the parallel per-file pass,
+    // rather than via the shared `AnalysisDb`: oak's salsa database is `Send`
+    // but not `Sync`, so it can't be borrowed across rayon worker threads.
+    // The source-target memo follows the same validity rule as the per-file
+    // index cache: sharable while the run's caches match the disk, fresh when
+    // they may drift (fix mode, LSP buffers).
+    if use_cached_index {
+        checker.source_index_cache = pkg.source_index_cache.clone();
+    }
+    let owned_semantic;
+    let semantic: &oak_semantic::semantic_index::SemanticIndex = match use_cached_index
+        .then(|| pkg.file_indices.get(file))
+        .flatten()
+    {
+        Some(cached) => cached,
+        None => {
+            owned_semantic = oak_semantic::build_index(
+                &parsed.tree(),
+                jarl_semantic::JarlImportsResolver::with_cache(
+                    file,
+                    checker.source_index_cache.clone(),
+                ),
+            );
+            &owned_semantic
+        }
+    };
+    checker.file_path = file.to_path_buf();
+
     // Wire up package context for package-specific rules.
     get_package_info(
         &mut checker,
         file,
-        expressions,
+        semantic,
         config,
         pkg_contexts,
         file_pkg_info,
     );
 
     // Look up per-file data from PackageAnalysis
-    let duplicate_assignments = pkg
-        .duplicate_assignments
-        .get(file)
-        .cloned()
-        .unwrap_or_default();
-    let unused_functions = pkg.unused_functions.get(file).cloned().unwrap_or_default();
+    let package_file = PackageFileAnalysis::for_file(pkg, file);
 
     // We run checks at expression-level. This gathers all violations, no matter
     // whether they are suppressed or not. They are filtered out in the next
@@ -263,7 +311,14 @@ pub fn get_checks(
             Some(FilePackageInfo::InPackage { scope: FileScope::R, .. })
         )
     {
-        let roxygen_diagnostics = get_checks_roxygen(syntax, file, config, contents)?;
+        let roxygen_diagnostics = get_checks_roxygen(
+            syntax,
+            file,
+            config,
+            contents,
+            &checker.loaded_packages,
+            &checker.source_index_cache,
+        )?;
         checker.diagnostics.extend(roxygen_diagnostics);
     }
 
@@ -276,8 +331,8 @@ pub fn get_checks(
         expressions,
         syntax,
         &mut checker,
-        &duplicate_assignments,
-        &unused_functions,
+        &package_file,
+        Some(semantic),
     )?;
 
     // Some rules have a fix available in their implementation but do not have
@@ -398,11 +453,12 @@ fn end_of_content(contents: &str) -> TextRange {
 /// Populate package context on the checker from pre-computed data.
 ///
 /// For files inside an R package, copies the pre-computed `PackageContext`
-/// fields. For scripts, scans for `library()`/`require()` calls.
+/// fields. For scripts, harvests `library()`/`require()` calls from the
+/// semantic index.
 fn get_package_info(
     checker: &mut Checker,
     file: &Path,
-    expressions: &RExpressionList,
+    semantic: &oak_semantic::semantic_index::SemanticIndex,
     config: &Config,
     pkg_contexts: &HashMap<PathBuf, PackageContext>,
     file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
@@ -415,16 +471,38 @@ fn get_package_info(
                 checker.namespace_exports = ctx.namespace_exports.clone();
             }
         }
-        _ => {
-            let mut packages: Vec<String> = crate::checker::DEFAULT_PACKAGES
-                .iter()
-                .map(|s| s.to_string())
-                .collect();
-            packages.extend(crate::library_calls::extract_library_calls(expressions));
-            checker.loaded_packages = packages;
-        }
+        _ => checker.loaded_packages = script_packages(semantic),
     }
     checker.package_cache = config.package_cache.clone();
+}
+
+/// The packages a file outside an R package can reach: the always-available
+/// defaults plus whatever it attaches itself.
+fn script_packages(semantic: &oak_semantic::semantic_index::SemanticIndex) -> Vec<String> {
+    let mut packages: Vec<String> = crate::checker::DEFAULT_PACKAGES
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
+    packages.extend(top_level_attached_packages(semantic));
+    packages
+}
+
+/// Collect the packages a file attaches with `library()`/`require()`, in load
+/// order, deduplicated. Oak counts a call only when it runs as the file loads,
+/// so calls inside a function body are excluded (their attachment isn't
+/// statically guaranteed) while calls inside a top-level `if`/loop are kept (R
+/// runs top-level code sequentially, so the attach is visible to later code if
+/// the branch runs).
+fn top_level_attached_packages(
+    semantic: &oak_semantic::semantic_index::SemanticIndex,
+) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for package in semantic.attached_packages() {
+        if !out.iter().any(|p| p == package) {
+            out.push(package.to_string());
+        }
+    }
+    out
 }
 
 /// Lint R code inside roxygen `@examples` and `@examplesIf` sections.
@@ -433,11 +511,17 @@ fn get_package_info(
 /// Diagnostic byte ranges are remapped to point to the correct position in the
 /// original file. Autofixes are disabled because the `#'` prefix makes
 /// position-based edits unsafe.
+///
+/// `loaded_packages` and `source_cache` carry over the documented file's package
+/// context, which the use-def analysis needs: the packages an example can reach
+/// decide whether a bare `glue("{x}")` counts as reading `x`.
 fn get_checks_roxygen(
     syntax: &RSyntaxNode,
     file: &Path,
     config: &Config,
     contents: &str,
+    loaded_packages: &[String],
+    source_cache: &jarl_semantic::SourceIndexCache,
 ) -> Result<Vec<Diagnostic>> {
     let chunks = extract_roxygen_examples(syntax, contents);
     let mut all_diagnostics: Vec<Diagnostic> = Vec::new();
@@ -456,9 +540,42 @@ fn get_checks_roxygen(
         let mut checker = Checker::new(suppression, config.rule_options.clone());
         checker.rule_set = effective_rules_for_file(config, file);
         checker.minimum_r_version = config.minimum_r_version;
+        checker.file_path = file.to_path_buf();
+        checker.source_index_cache = source_cache.clone();
 
         for expr in expressions {
             check_expression(&expr, &mut checker)?;
+        }
+
+        // Objects created by an example live in the throwaway environment that
+        // `example()` runs it in, so each section is its own universe: nothing
+        // it binds can be exported or read by another file, which is why
+        // `namespace_exports` and `cross_file_used` stay empty here.
+        //
+        // Run before `check_document` so that suppression filtering there
+        // covers these diagnostics too.
+        if checker.is_rule_enabled(crate::rule_set::Rule::UnusedObject) {
+            let semantic = oak_semantic::build_index(
+                &parsed.tree(),
+                jarl_semantic::JarlImportsResolver::with_cache(
+                    file,
+                    checker.source_index_cache.clone(),
+                ),
+            );
+            // What the example inherits from the package, plus whatever it
+            // attaches itself (`library(glue)` on the first line is common).
+            checker.loaded_packages = loaded_packages.to_vec();
+            checker
+                .loaded_packages
+                .extend(top_level_attached_packages(&semantic));
+
+            let owned: Vec<RSyntaxNode> = expressions.iter().map(|e| e.syntax().clone()).collect();
+            crate::lints::base::unused_object::unused_object::unused_object(
+                &owned,
+                &semantic,
+                &std::collections::HashSet::new(),
+                &mut checker,
+            )?;
         }
 
         // Only run document-level checks if the examples code has inline
@@ -466,7 +583,13 @@ fn get_checks_roxygen(
         // otherwise unnecessary here (no package-level analysis, no
         // suppression-related diagnostics to report).
         if has_suppressions {
-            check_document(expressions, &syntax, &mut checker, &[], &[])?;
+            check_document(
+                expressions,
+                &syntax,
+                &mut checker,
+                &PackageFileAnalysis::default(),
+                None,
+            )?;
         }
 
         for mut d in checker.diagnostics {
@@ -484,6 +607,77 @@ fn get_checks_roxygen(
     Ok(all_diagnostics)
 }
 
+/// Names read by R code that belongs to the document but isn't in the virtual
+/// source, and so is invisible to the use-def analysis:
+///
+/// - inline spans in the prose (`` `r mean(x)` ``), which aren't linted but do
+///   run when the document is rendered;
+/// - chunks dropped because they don't parse, which have nothing to analyze
+///   but still run — unless they wouldn't have run anyway (`eval = FALSE`),
+///   in which case they are left out here too;
+/// - chunk options (`{r, fig.cap = my_caption}`, `#| eval: !expr run_it`),
+///   which knitr evaluates for *every* chunk, including one whose own code
+///   never runs.
+///
+/// An object named in any of them is used. Erring towards collecting too many
+/// names is deliberate: a name harvested here can only silence a diagnostic,
+/// whereas a read missed here invents one.
+fn reads_outside_chunk_code(
+    contents: &str,
+    chunks: &[crate::rmd::RCodeChunk],
+    skipped: &[usize],
+) -> std::collections::HashSet<String> {
+    let mut names: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+    let inline = crate::rmd::extract_inline_r_code(contents, chunks);
+    let dropped = skipped
+        .iter()
+        .map(|i| &chunks[*i])
+        .filter(|chunk| chunk.evaluated)
+        .map(|chunk| chunk.code.as_str());
+    for code in inline.into_iter().chain(dropped) {
+        names.extend(all_symbols(code));
+    }
+
+    for chunk in chunks {
+        for snippet in crate::rmd::chunk_option_code(chunk) {
+            names.extend(read_symbols(&snippet));
+        }
+    }
+
+    names
+}
+
+/// Every identifier-shaped word in `code`, whatever it stands for.
+/// [`scan_symbols`] over-collects by design; see there.
+fn all_symbols(code: &str) -> impl Iterator<Item = String> {
+    scan_symbols(code).into_keys()
+}
+
+/// The names `code` *reads*, leaving out the names of named arguments — for
+/// chunk options, the difference between the object `fig.cap = my_caption`
+/// reads and the option it sets. Falls back to [`all_symbols`] when the
+/// snippet doesn't parse, since then the two can't be told apart and missing a
+/// read is the more damaging error.
+fn read_symbols(code: &str) -> Vec<String> {
+    let parsed = air_r_parser::parse(code, RParserOptions::default());
+    if parsed.has_error() {
+        return all_symbols(code).collect();
+    }
+
+    parsed
+        .syntax()
+        .descendants()
+        .filter(|node| node.kind() == air_r_syntax::RSyntaxKind::R_IDENTIFIER)
+        .filter(|node| {
+            node.parent().is_none_or(|parent| {
+                parent.kind() != air_r_syntax::RSyntaxKind::R_ARGUMENT_NAME_CLAUSE
+            })
+        })
+        .map(|node| node.text_trimmed().to_string())
+        .collect()
+}
+
 /// Lint an Rmd/Qmd file by concatenating R code chunks into a virtual R
 /// string and running the normal linting pipeline on it.
 ///
@@ -491,11 +685,30 @@ fn get_checks_roxygen(
 /// - No autofix (Quarto code annotations make position-based edits unsafe)
 /// - `#| jarl-ignore-chunk:` YAML blocks are translated to `# jarl-ignore-start`
 ///   / `# jarl-ignore-end` pairs before linting
-/// - Chunks with parse errors are silently dropped
+/// - Chunks with parse errors are dropped, without a diagnostic of their own
 /// - Diagnostic ranges are remapped from virtual-string offsets to original file offsets
-fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Diagnostic>> {
+///
+/// Knitr evaluates every chunk of a document in one R session, in document
+/// order, which is exactly what the concatenation models — so use-def rules
+/// like `unused_object` see an object assigned in one chunk and read in a
+/// later one as used. The two ways a document departs from that model are
+/// handled explicitly: code that runs but isn't in the virtual source
+/// contributes reads (see [`reads_outside_chunk_code`]), and code that is in the
+/// virtual source but doesn't run (`eval = FALSE` chunks) contributes
+/// neither reads nor definitions.
+fn get_checks_rmd(
+    contents: &str,
+    file: &Path,
+    config: &Config,
+    source_cache: jarl_semantic::SourceIndexCache,
+) -> Result<Vec<Diagnostic>> {
     let chunks = crate::rmd::extract_r_chunks(contents);
-    let (virtual_source, offset_map) = crate::rmd::build_virtual_r_source(&chunks);
+    let crate::rmd::VirtualSource {
+        source: virtual_source,
+        offset_map,
+        skipped,
+        unevaluated,
+    } = crate::rmd::build_virtual_r_source(&chunks);
 
     if virtual_source.trim().is_empty() {
         return Ok(Vec::new());
@@ -509,6 +722,22 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     let mut checker = Checker::new(suppression, config.rule_options.clone());
     checker.rule_set = effective_rules_for_file(config, file);
     checker.minimum_r_version = config.minimum_r_version;
+    checker.file_path = file.to_path_buf();
+    checker.source_index_cache = source_cache.clone();
+    // A chunk marked `eval = FALSE` is still linted, but it never runs, so it
+    // defines nothing and reads nothing.
+    checker.unevaluated_ranges = unevaluated;
+
+    // The document's own path anchors `source()` resolution, so a chunk
+    // sourcing a helper next to the document resolves it there.
+    let semantic = oak_semantic::build_index(
+        &parsed.tree(),
+        jarl_semantic::JarlImportsResolver::with_cache(file, source_cache),
+    );
+    // A document is never package code, so it reaches the same packages a
+    // script does: the defaults plus what its chunks attach.
+    checker.loaded_packages = script_packages(&semantic);
+    checker.package_cache = config.package_cache.clone();
 
     let expressions = &parsed.tree().expressions();
     for expr in expressions {
@@ -516,8 +745,20 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     }
     // check_document runs suppression filtering internally, so
     // checker.diagnostics is the post-suppression list after this call.
-    // Rmd chunks don't participate in package-level analysis, so pass empty slices.
-    check_document(expressions, &syntax, &mut checker, &[], &[])?;
+    // Rmd chunks don't participate in package-level analysis; the one
+    // package-level input that does apply is the set of names read outside the
+    // chunks, which keeps objects the prose uses from looking unused.
+    let package_file = PackageFileAnalysis {
+        cross_file_used: reads_outside_chunk_code(contents, &chunks, &skipped),
+        ..PackageFileAnalysis::default()
+    };
+    check_document(
+        expressions,
+        &syntax,
+        &mut checker,
+        &package_file,
+        Some(&semantic),
+    )?;
 
     // Remap ranges from virtual-string offsets to original Rmd file offsets.
     let diagnostics: Vec<Diagnostic> = checker

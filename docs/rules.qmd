@@ -58,7 +58,7 @@ dat <- as.data.frame(
     c("browser", "correctness", "❌", ""),
     c("class_equals", "suspicious", "❗", ""),
     c("coalesce", "readability", "✅", "R >= 4.4"),
-    c("comparison_negation", "readability", "✅", ""),
+    c("comparison_negation", "readability", "❗", ""),
     c("condition_call", "readability", "❗", "Disabled by default"),
     c("condition_message", "readability", "✅", "Disabled by default"),
     c("dplyr_filter_out", "dplyr", "✅", "Disabled by default"),
@@ -141,6 +141,7 @@ dat <- as.data.frame(
     c("unnecessary_parentheses", "readability", "✅", ""),
     c("unreachable_code", "readability, suspicious", "❌", ""),
     c("unused_function", "correctness", "❌", ""),
+    c("unused_object", "correctness", "❌", "Disabled by default"),
     c("unused_suppression", "comments", "❌", ""),
     c("vector_logic", "performance", "❌", ""),
     c("which_grepl", "performance, readability", "✅", "")

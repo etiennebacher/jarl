@@ -1,11 +1,15 @@
 use crate::diagnostic::Diagnostic;
 use crate::location::Location;
 use air_r_syntax::{
-    AnyRExpression, RArgument, RArgumentList, RBinaryExpression, RBinaryExpressionFields, RCall,
-    RExtractExpressionFields, RSyntaxKind, RSyntaxNode,
+    AnyRArgumentName, AnyRExpression, RArgument, RArgumentList, RBinaryExpression,
+    RBinaryExpressionFields, RCall, RExtractExpressionFields, RSyntaxKind, RSyntaxNode,
 };
 use anyhow::{Result, anyhow};
 use biome_rowan::{AstNode, AstSeparatedList, Direction};
+use oak_core::syntax_ext::{RIdentifierExt, RStringValueExt};
+use oak_semantic::effects::CallContext;
+pub use oak_semantic::effects::Formals;
+use std::collections::HashMap;
 
 /// Macro to unwrap an Option or return Ok(None) early.
 ///
@@ -125,12 +129,47 @@ pub fn get_named_args(args: &RArgumentList) -> Vec<RArgument> {
 }
 
 /// Takes a list of arguments and tries to extract the one named `name`.
+///
+/// Backticks and quotes are the quoting syntax around a name, not part of it,
+/// so `` `sep` = "," `` and `"sep" = ","` both match `sep`.
 pub fn get_arg_by_name(args: &RArgumentList, name: &str) -> Option<RArgument> {
-    args.into_iter().filter_map(|x| x.ok()).find(|arg| {
-        arg.name_clause()
-            .and_then(|nc| nc.name().ok())
-            .is_some_and(|n| n.to_string().trim() == name)
-    })
+    args.into_iter()
+        .filter_map(|x| x.ok())
+        .find(|arg| argument_name(arg).as_deref() == Some(name))
+}
+
+/// The name an argument is written with (`name = value`), unquoted, or `None`
+/// for a positional argument.
+fn argument_name(arg: &RArgument) -> Option<String> {
+    match arg.name_clause()?.name().ok()? {
+        AnyRArgumentName::RIdentifier(ident) => Some(ident.name_text()),
+        AnyRArgumentName::RStringValue(s) => s.string_text(),
+        _ => None,
+    }
+}
+
+/// Takes a call and extracts the argument matching the formal `name`, applying
+/// R's matching rules: named arguments claim their formal first, then the
+/// unnamed ones fill whatever slots are left, in signature order.
+///
+/// `formals` is the call's signature up to and including the formal wanted,
+/// which is what makes the match position-aware: knowing only that `class2` is
+/// the 2nd formal isn't enough to resolve `is(object = x, "cls")`, because the
+/// lone unnamed argument only lands in slot 2 once `object =` is known to have
+/// claimed slot 1. Every preceding formal must be listed for that reason.
+///
+/// Stop the list at `...`: R matches anything past the dots by name only, so
+/// those take [`get_arg_by_name`] instead.
+pub fn get_arg(call: &RCall, formals: Formals, name: &str) -> Option<RArgument> {
+    let bound = CallContext::default().bind_arguments(call, formals);
+    // `bind_arguments` yields one entry per argument in call order, the same
+    // order the list iterates in, so zipping recovers the argument node oak's
+    // matching picked.
+    bound
+        .arguments()
+        .zip(call.arguments().ok()?.items().iter())
+        .find(|((formal, _), _)| *formal == Some(name))
+        .and_then(|(_, arg)| arg.ok())
 }
 
 /// Takes a list of arguments and tries to extract the one in position `pos`.
@@ -139,78 +178,20 @@ pub fn get_arg_by_position(args: &RArgumentList, pos: usize) -> Option<RArgument
     args.iter().nth(pos - 1).and_then(|x| x.ok())
 }
 
-/// Takes a list of arguments and tries to extract the unnamed one in position `pos`.
-/// Argument `pos` is 1-indexed.
-pub fn get_unnamed_arg_by_position(args: &RArgumentList, pos: usize) -> Option<RArgument> {
-    get_unnamed_args(args).into_iter().nth(pos - 1)
-}
-
-/// Takes a list of arguments and first tries to extract the one named `name`.
-/// If it doesn't find any argument with this name, it tries to get the
-/// unnamed argument in position `pos`.
-/// Returns None if this second attempt also fails.
-/// Argument `pos` is 1-indexed.
-pub fn get_arg_by_name_then_position(
-    args: &RArgumentList,
-    name: &str,
-    pos: usize,
-) -> Option<RArgument> {
-    match get_arg_by_name(args, name) {
-        Some(by_name) => Some(by_name),
-        _ => get_unnamed_arg_by_position(args, pos),
-    }
-}
-
-/// Checks whether an argument named `name` or in position `pos` exist in the
-/// argument list passed as input.
-pub fn is_argument_present(args: &RArgumentList, name: &str, position: usize) -> bool {
-    get_arg_by_name_then_position(args, name, position).is_some()
-}
-
-/// Takes a list of arguments and removes the one that is named `name` or the
-/// one in position `pos` if no argument was found in the first step.
-pub fn drop_arg_by_name_or_position(
-    args: &RArgumentList,
-    name: &str,
-    pos: usize,
-) -> Option<Vec<RArgument>> {
-    let mut dropped_by_name = false;
-
-    let by_name: Vec<RArgument> = args
-        .iter()
-        .filter_map(|arg| {
-            let arg = arg.ok()?;
-            if let Some(name_clause) = arg.name_clause()
-                && let Ok(n) = name_clause.name()
-                && n.to_string().trim() == name
-            {
-                dropped_by_name = true;
-                return None;
-            }
-            Some(arg)
-        })
-        .collect();
-
-    if dropped_by_name {
-        return Some(by_name);
-    }
-
-    let by_pos: Vec<RArgument> = args
-        .iter()
-        .enumerate()
-        .filter_map(|(i, arg)| {
-            if i == pos - 1 {
-                return None;
-            }
-            arg.ok()
-        })
-        .collect();
-
-    if by_pos.len() != args.len() {
-        Some(by_pos)
-    } else {
-        None
-    }
+/// Every argument of `call` except the one matching the formal `name`.
+/// `None` when the call passes no such argument, so callers can tell "nothing
+/// to drop" from "dropped, nothing left".
+pub fn drop_arg(call: &RCall, formals: Formals, name: &str) -> Option<Vec<RArgument>> {
+    let dropped = get_arg(call, formals, name)?;
+    Some(
+        call.arguments()
+            .ok()?
+            .items()
+            .iter()
+            .flatten()
+            .filter(|arg| arg.syntax() != dropped.syntax())
+            .collect(),
+    )
 }
 
 /// Return the function name of an expression. This takes AnyRExpression because
@@ -405,4 +386,116 @@ pub fn node_contains_comments(node: &RSyntaxNode) -> bool {
             token.has_trailing_comments() && last_token.as_ref() != Some(&token);
         has_internal_leading || has_internal_trailing
     })
+}
+
+/// Count every identifier-shaped word in R source text.
+///
+/// Returns a map from identifier name to occurrence count. A deliberately
+/// crude scan: it reads the text rather than the syntax tree, so it also
+/// matches inside strings, and it makes no distinction between a definition,
+/// a call, and a mention. Callers use it where over-counting is the safe
+/// direction — `unused_function` would rather miss a dead function than
+/// report a live one, and the Rmd/Qmd reader would rather keep an object
+/// alive than invent an `unused_object` report.
+///
+/// Reading the text is also what lets it catch the indirect references a
+/// syntax-directed pass would miss: `do.call("name", ...)`, `lapply(xs,
+/// name)`, `match.fun(name)`.
+///
+/// Regular comments are skipped, but roxygen comments (`#'`) are kept: they
+/// can reference internal functions, e.g. through `\Sexpr`.
+pub fn scan_symbols(content: &str) -> HashMap<String, usize> {
+    let mut symbols: HashMap<&str, usize> = HashMap::new();
+
+    for line in content.lines() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with('#') && !trimmed.starts_with("#'") {
+            continue;
+        }
+
+        let bytes = line.as_bytes();
+        let len = bytes.len();
+        let mut i = 0;
+
+        while i < len {
+            let b = bytes[i];
+
+            // R identifiers start with a letter, `.`, or `_`
+            if b.is_ascii_alphabetic() || b == b'.' || b == b'_' {
+                let start = i;
+                i += 1;
+                while i < len
+                    && (bytes[i].is_ascii_alphanumeric() || bytes[i] == b'.' || bytes[i] == b'_')
+                {
+                    i += 1;
+                }
+                let name = &line[start..i];
+                *symbols.entry(name).or_insert(0) += 1;
+            } else {
+                i += 1;
+            }
+        }
+    }
+
+    symbols
+        .into_iter()
+        .map(|(k, v)| (k.to_string(), v))
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::scan_symbols;
+
+    #[test]
+    fn test_scan_symbols_from_calls() {
+        let syms = scan_symbols("foo(1)\nbar(x, y)\n");
+        assert!(syms.contains_key("foo"));
+        assert!(syms.contains_key("bar"));
+        assert!(syms.contains_key("x"));
+        assert!(syms.contains_key("y"));
+    }
+
+    #[test]
+    fn test_scan_symbols_from_assignments() {
+        let syms = scan_symbols("x <- 1\ny + z\n");
+        assert!(syms.contains_key("x"));
+        assert!(syms.contains_key("y"));
+        assert!(syms.contains_key("z"));
+    }
+
+    #[test]
+    fn test_scan_symbols_nested() {
+        let syms = scan_symbols("outer(inner(x))\n");
+        assert!(syms.contains_key("outer"));
+        assert!(syms.contains_key("inner"));
+        assert!(syms.contains_key("x"));
+    }
+
+    #[test]
+    fn test_scan_symbols_ignores_comments() {
+        let syms = scan_symbols("# foo(bar)\nreal()\n");
+        assert!(!syms.contains_key("foo"));
+        assert!(!syms.contains_key("bar"));
+        assert!(syms.contains_key("real"));
+    }
+
+    #[test]
+    fn test_scan_symbols_ignores_indented_comments() {
+        let syms = scan_symbols("  # foo(bar)\n");
+        assert!(!syms.contains_key("foo"));
+    }
+
+    #[test]
+    fn test_scan_symbols_includes_roxygen_comments() {
+        let syms = scan_symbols("#' \\Sexpr[stage=render]{dplyr:::methods_rd(\"rows_insert\")}\n");
+        assert!(syms.contains_key("methods_rd"));
+    }
+
+    #[test]
+    fn test_scan_symbols_ignores_numbers() {
+        let syms = scan_symbols("123 + foo\n");
+        assert!(syms.contains_key("foo"));
+        assert!(!syms.contains_key("123"));
+    }
 }

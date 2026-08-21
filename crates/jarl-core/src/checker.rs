@@ -74,6 +74,19 @@ pub struct Checker {
     // `S3method()`, etc.).  Used to suppress false positives in rules
     // like `unused_object` — exported names are "used" by definition.
     pub namespace_exports: HashSet<String>,
+    // Path of the file being checked. Used by rules that need to resolve
+    // paths relative to the current file (e.g. `unused_object` resolving
+    // `source("...")` arguments).
+    pub file_path: std::path::PathBuf,
+    // Run-wide memo of `source()` target indices, so a helper sourced by
+    // many files is parsed and indexed once per run rather than once per
+    // consumer. Fresh (empty) when the on-disk contents may drift from the
+    // run's caches (fix mode, LSP buffers).
+    pub source_index_cache: jarl_semantic::SourceIndexCache,
+    // Ranges of the file that are parsed but never evaluated, so use-def
+    // rules must not read a definition or a use out of them. Only Rmd/Qmd
+    // documents have any: the chunks marked `eval = FALSE`.
+    pub unevaluated_ranges: Vec<biome_rowan::TextRange>,
 }
 
 impl Checker {
@@ -91,6 +104,9 @@ impl Checker {
             package_cache: None,
             import_from: HashMap::new(),
             namespace_exports: HashSet::new(),
+            file_path: std::path::PathBuf::new(),
+            source_index_cache: jarl_semantic::SourceIndexCache::new(),
+            unevaluated_ranges: Vec::new(),
         }
     }
 

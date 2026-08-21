@@ -852,3 +852,423 @@ foo <- function(x) x
 
     Ok(())
 }
+
+// ---------------------------------------------------------------------------
+// unused_object in examples
+// ---------------------------------------------------------------------------
+
+/// Objects bound in an example live in the throwaway environment the example
+/// runs in, so one that is never read is dead code just like in a script.
+#[test]
+fn test_roxygen_examples_unused_object() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+#' d <- data.frame(a = 1)
+#' summary(mtcars)
+foo <- function() NULL
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> R/test.R:3:4
+      |
+    3 | #' d <- data.frame(a = 1)
+      |    - Object `d` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// A binding read later in the same section is used.
+#[test]
+fn test_roxygen_examples_used_object_not_flagged() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+#' d <- data.frame(a = 1)
+#' summary(d)
+foo <- function() NULL
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// `@examplesIf` sections and `\dontrun{}` bodies are analysed like any other
+/// example code.
+#[test]
+fn test_roxygen_examples_if_and_dontrun_unused_object() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examplesIf interactive()
+#' b <- 1
+f2 <- function() NULL
+
+#' Title
+#' @examples
+#' \\dontrun{
+#' a <- 1
+#' }
+f1 <- function() NULL
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> R/test.R:3:4
+      |
+    3 | #' b <- 1
+      |    - Object `b` is defined but never used.
+      |
+
+    warning: unused_object
+     --> R/test.R:9:4
+      |
+    9 | #' a <- 1
+      |    - Object `a` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// String interpolation counts as a read, which requires the documented file's
+/// package context to reach the roxygen analysis: `glue` from DESCRIPTION for
+/// the first block, `library(glue)` in the example itself for the second.
+#[test]
+fn test_roxygen_examples_interpolation_is_a_read() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\nImports: glue\n",
+        ),
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+#' nm <- \"world\"
+#' glue(\"hello {nm}\")
+foo <- function() NULL
+
+#' Title
+#' @examples
+#' library(glue)
+#' other <- \"world\"
+#' glue(\"hello {other}\")
+bar <- function() NULL
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// An example binds into a throwaway environment, so it is never the package
+/// object of the same name: exporting `bar` does not make the example's `bar`
+/// used, and a sibling file reading `bar` does not either.
+#[test]
+fn test_roxygen_examples_exported_name_still_flagged() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        ("NAMESPACE", "export(bar)\n"),
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+#' bar <- 1
+baz <- function() NULL
+",
+        ),
+        ("R/other.R", "bar <- 1\nuse_it <- function() bar\n"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> R/test.R:3:4
+      |
+    3 | #' bar <- 1
+      |    --- Object `bar` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Each roxygen block is its own example, so a binding in one is not read by
+/// the next.
+#[test]
+fn test_roxygen_examples_blocks_are_independent() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+#' shared <- 1
+foo <- function() NULL
+
+#' Title
+#' @examples
+#' print(shared)
+bar <- function() NULL
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unused_object
+     --> R/test.R:3:4
+      |
+    3 | #' shared <- 1
+      |    ------ Object `shared` is defined but never used.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// A `# jarl-ignore` comment in the documented file suppresses a violation
+/// found inside the examples.
+#[test]
+fn test_roxygen_examples_unused_object_suppressed() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+# jarl-ignore unused_object: illustrative
+#' zz <- 1
+qux <- function() NULL
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// An examples section with no code at all must not trip document-level rules.
+#[test]
+fn test_roxygen_examples_comment_only_section() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        ),
+        (
+            "R/test.R",
+            "\
+#' Title
+#' @examples
+#' # see the vignette
+quux <- function() NULL
+",
+        ),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--select")
+            .arg("unused_object,empty_file")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}

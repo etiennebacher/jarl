@@ -1,7 +1,9 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name_then_position, get_arg_by_position, node_contains_comments};
+use crate::utils::{Formals, get_arg, get_arg_by_position, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
+
+const FORMALS_DO_CALL: Formals = &["what", "args", "quote", "envir"];
 
 pub struct List2Df;
 
@@ -57,8 +59,8 @@ pub fn list2df(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>>
 
     let arguments = ast.arguments()?.items();
 
-    let what = unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "what", 1));
-    let args = unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "args", 2));
+    let what = unwrap_or_return_none!(get_arg(ast, FORMALS_DO_CALL, "what"));
+    let args = unwrap_or_return_none!(get_arg(ast, FORMALS_DO_CALL, "args"));
 
     // Ensure there's not more than two arguments, don't know how to handle
     // `quote` and `envir` in `do.call()`.

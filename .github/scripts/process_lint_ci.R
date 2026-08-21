@@ -138,81 +138,76 @@ for (i in seq_along(repo_names)) {
 
   msg_new_violations <- if (nrow(new_lints) > 0) {
     new_lints <- head(new_lints, 50)
-    paste(
-      c(
-        "<br>\nNew violations (first 50):<pre>",
-        paste0(
-          "<a href=\"https://github.com/",
-          repos,
-          "/tree/",
-          repos_sha,
-          "/",
-          new_lints$filename,
-          "#L",
-          new_lints$row,
-          "\">",
-          new_lints$filename,
-          "[",
-          new_lints$row,
-          ":",
-          new_lints$column,
-          "]",
-          "</a>: ",
-          new_lints$name,
-          " -- ",
-          new_lints$body,
-          collapse = "\n"
-        )
+    paste0(
+      "<br>\nNew violations (first 50):<pre>",
+      paste0(
+        "<a href=\"https://github.com/",
+        repos,
+        "/tree/",
+        repos_sha,
+        "/",
+        new_lints$filename,
+        "#L",
+        new_lints$row,
+        "\">",
+        new_lints$filename,
+        "[",
+        new_lints$row,
+        ":",
+        new_lints$column,
+        "]",
+        "</a>: ",
+        new_lints$name,
+        " -- ",
+        new_lints$body,
+        collapse = "\n"
       ),
-      collapse = ""
+      "</pre>"
     )
   } else {
     ""
   }
   msg_old_violations <- if (nrow(deleted_lints) > 0) {
     deleted_lints <- head(deleted_lints, 50)
-    paste(
-      c(
-        "<br>\nViolations removed (first 50):<pre>",
-        paste0(
-          "<a href=\"https://github.com/",
-          repos,
-          "/tree/",
-          repos_sha,
-          "/",
-          deleted_lints$filename,
-          "#L",
-          deleted_lints$row,
-          "\">",
-          deleted_lints$filename,
-          "[",
-          deleted_lints$row,
-          ":",
-          deleted_lints$column,
-          "]",
-          "</a>: ",
-          deleted_lints$name,
-          " -- ",
-          deleted_lints$body,
-          collapse = "\n"
-        )
+    paste0(
+      "<br>\nViolations removed (first 50):<pre>",
+      paste0(
+        "<a href=\"https://github.com/",
+        repos,
+        "/tree/",
+        repos_sha,
+        "/",
+        deleted_lints$filename,
+        "#L",
+        deleted_lints$row,
+        "\">",
+        deleted_lints$filename,
+        "[",
+        deleted_lints$row,
+        ":",
+        deleted_lints$column,
+        "]",
+        "</a>: ",
+        deleted_lints$name,
+        " -- ",
+        deleted_lints$body,
+        collapse = "\n"
       ),
-      collapse = ""
+      "</pre>"
     )
   } else {
     ""
   }
 
-  msg_bottom <- "</pre></details>\n\n"
+  msg_bottom <- "</details>\n\n"
 
   body <- c(
     body,
-    paste(
+    paste0(
       msg_header,
       msg_new_violations,
       msg_old_violations,
-      msg_bottom,
-      collapse = ""
+      msg_bottom
     )
   )
 }

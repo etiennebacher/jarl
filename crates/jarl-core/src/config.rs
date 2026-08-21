@@ -56,6 +56,13 @@ pub struct ArgsConfig {
 pub struct Config {
     /// Paths to files to lint.
     pub paths: Vec<PathBuf>,
+    /// Directories the user declared as the project being checked: a directory
+    /// argument (`jarl check .`) or the directory holding the `jarl.toml` that
+    /// governs it. Scanned in full so files can see each other even outside a
+    /// package; see [`crate::db::AnalysisDb::build`]. Empty when only file
+    /// arguments were given, which keeps `jarl check /tmp/foo.R` from walking
+    /// `/tmp`.
+    pub project_roots: Vec<PathBuf>,
     /// List of rules and whether they have an associated safe fix, passed by
     /// the user and/or recovered from the config file. Those will
     /// not necessarily all be used, for instance if we disable unsafe fixes.
@@ -169,6 +176,7 @@ pub fn build_config(
         .unwrap_or_default();
 
     Ok(Config {
+        project_roots: project_roots(&check_config.files),
         paths,
         rules,
         rules_to_apply,
@@ -185,6 +193,44 @@ pub fn build_config(
         package_cache: None,
         per_file_ignores,
     })
+}
+
+/// The project directories implied by the user's arguments.
+///
+/// A directory argument declares that directory as the project. A file
+/// argument declares nothing on its own, but a `jarl.toml` / `.jarl.toml`
+/// sitting next to it marks the project it belongs to, so that directory
+/// counts too. Passing a bare file in a directory with no config therefore
+/// contributes no root, which is what keeps `jarl check /tmp/foo.R` from
+/// declaring `/tmp` a project.
+///
+/// Nested roots are collapsed to their outermost ancestor so a tree is only
+/// ever declared once.
+fn project_roots(args: &[PathBuf]) -> Vec<PathBuf> {
+    let mut roots: Vec<PathBuf> = args
+        .iter()
+        .filter_map(|arg| {
+            if arg.is_dir() {
+                return Some(arg.clone());
+            }
+            // A file argument only pulls in its directory when that directory
+            // is configured, i.e. the user has told us where the project is.
+            let dir = arg.parent()?;
+            crate::toml::find_jarl_toml_in_directory(dir)?;
+            Some(dir.to_path_buf())
+        })
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect();
+    roots.sort();
+
+    let mut outermost: Vec<PathBuf> = Vec::new();
+    for root in roots {
+        if !outermost.iter().any(|ancestor| root.starts_with(ancestor)) {
+            outermost.push(root);
+        }
+    }
+    outermost
 }
 
 /// Parse CLI rule arguments and return (selected_rules, ignored_rules).

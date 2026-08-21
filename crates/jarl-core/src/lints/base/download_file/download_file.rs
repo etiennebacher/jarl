@@ -1,7 +1,11 @@
 use crate::diagnostic::*;
-use crate::utils::get_arg_by_name_then_position;
+use crate::utils::{Formals, get_arg};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
+
+const FORMALS_DOWNLOAD_FILE: Formals = &[
+    "url", "destfile", "method", "quiet", "mode", "cacheOK", "extra", "headers",
+];
 
 /// Version added: 0.0.24
 ///
@@ -36,9 +40,8 @@ pub fn download_file(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagno
         return Ok(None);
     }
 
-    let args = ast.arguments()?.items();
-    let method = get_arg_by_name_then_position(&args, "method", 3);
-    let mode_arg = get_arg_by_name_then_position(&args, "mode", 5);
+    let method = get_arg(ast, FORMALS_DOWNLOAD_FILE, "method");
+    let mode_arg = get_arg(ast, FORMALS_DOWNLOAD_FILE, "mode");
 
     // Check if method is wget or curl - if so, mode is ignored anyway
     if let Some(method) = method.and_then(|arg| arg.value())

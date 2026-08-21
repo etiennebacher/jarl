@@ -1,7 +1,12 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name_then_position, node_contains_comments};
+use crate::utils::{Formals, get_arg, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
+
+const FORMALS_IFELSE: Formals = &["test", "yes", "no"];
+/// Omits `ptype` and `size`, which follow `...`.
+const FORMALS_IF_ELSE: Formals = &["condition", "true", "false", "missing"];
+const FORMALS_FIFELSE: Formals = &["test", "yes", "no", "na"];
 
 /// Version added: 0.4.0
 ///
@@ -52,24 +57,16 @@ pub fn redundant_ifelse(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Dia
         return Ok(None);
     }
 
-    let (arg_cond, arg_true, arg_false) = match fn_name {
-        "ifelse" => (
-            unwrap_or_return_none!(get_arg_by_name_then_position(&args, "test", 1)),
-            unwrap_or_return_none!(get_arg_by_name_then_position(&args, "yes", 2)),
-            unwrap_or_return_none!(get_arg_by_name_then_position(&args, "no", 3)),
-        ),
-        "if_else" => (
-            unwrap_or_return_none!(get_arg_by_name_then_position(&args, "condition", 1)),
-            unwrap_or_return_none!(get_arg_by_name_then_position(&args, "true", 2)),
-            unwrap_or_return_none!(get_arg_by_name_then_position(&args, "false", 3)),
-        ),
-        "fifelse" => (
-            unwrap_or_return_none!(get_arg_by_name_then_position(&args, "test", 1)),
-            unwrap_or_return_none!(get_arg_by_name_then_position(&args, "yes", 2)),
-            unwrap_or_return_none!(get_arg_by_name_then_position(&args, "no", 3)),
-        ),
-        _ => unreachable!(),
+    let formals = match fn_name {
+        "if_else" => FORMALS_IF_ELSE,
+        "fifelse" => FORMALS_FIFELSE,
+        _ => FORMALS_IFELSE,
     };
+    let (arg_cond, arg_true, arg_false) = (
+        unwrap_or_return_none!(get_arg(ast, formals, formals[0])),
+        unwrap_or_return_none!(get_arg(ast, formals, formals[1])),
+        unwrap_or_return_none!(get_arg(ast, formals, formals[2])),
+    );
 
     let arg_cond = unwrap_or_return_none!(arg_cond.value());
     let arg_true = unwrap_or_return_none!(arg_true.value());

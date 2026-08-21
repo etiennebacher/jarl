@@ -1,10 +1,14 @@
 use crate::diagnostic::*;
 use crate::utils::{
-    get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
-    node_contains_comments,
+    Formals, get_arg, get_function_name, get_function_namespace_prefix, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
+
+/// Omits `tolerance`, `info`, `label` and `expected.label`, which follow `...`.
+/// Shared with `expect_identical()`, whose first two formals are the same.
+const FORMALS_EXPECT_EQUAL: Formals = &["object", "expected"];
+const FORMALS_LENGTH: Formals = &["x"];
 
 /// Version added: 0.2.0
 ///
@@ -43,8 +47,8 @@ pub fn expect_length(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagno
 
     let args = ast.arguments()?.items();
 
-    let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
-    let expected = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "expected", 2));
+    let object = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_EQUAL, "object"));
+    let expected = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_EQUAL, "expected"));
 
     let object_value = unwrap_or_return_none!(object.value());
     let expected_value = unwrap_or_return_none!(expected.value());
@@ -108,11 +112,7 @@ pub fn expect_length(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagno
     }
 
     // Extract the argument to length()
-    let length_x_arg = unwrap_or_return_none!(get_arg_by_name_then_position(
-        &length_arg.arguments()?.items(),
-        "x",
-        1
-    ));
+    let length_x_arg = unwrap_or_return_none!(get_arg(length_arg, FORMALS_LENGTH, "x"));
     let length_x_value = unwrap_or_return_none!(length_x_arg.value());
 
     let x_text = length_x_value.to_trimmed_text();

@@ -14,7 +14,18 @@ use biome_rowan::AstNode;
 /// This pattern may be hard to read and could be simplified by removing the `!`
 /// operator and inverting the operator (e.g. `<` would become `>=`).
 ///
-/// This rule has a safe fix.
+/// This rule has an unsafe fix because of operator precedence around the
+/// comparison:
+///
+/// ```r
+/// x <- 1
+/// y <- 2
+///
+/// 2 * !(x < y)
+/// #> [1] 0
+/// 2 * x >= y
+/// #> [1] TRUE
+/// ```
 ///
 /// ## Example
 ///

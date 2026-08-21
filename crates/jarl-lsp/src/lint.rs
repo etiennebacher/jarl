@@ -185,6 +185,9 @@ fn run_jarl_linting(
         &pkg,
         &pkg_contexts,
         &file_pkg_info,
+        // The buffer being linted is the in-memory editor content, which can
+        // differ from the on-disk content the cached index was built from.
+        false,
     )?;
 
     // Hide unused_function diagnostics when the package-wide count exceeds

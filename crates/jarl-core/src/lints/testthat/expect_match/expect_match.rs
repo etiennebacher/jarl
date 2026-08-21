@@ -1,10 +1,13 @@
 use crate::diagnostic::*;
 use crate::utils::{
-    get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
+    Formals, get_arg, get_function_name, get_function_namespace_prefix,
     get_nested_functions_content, get_unnamed_args, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
+
+const FORMALS_EXPECT_TRUE: Formals = &["object", "info", "label"];
+const FORMALS_GREPL: Formals = &["pattern", "x", "ignore.case", "perl", "fixed", "useBytes"];
 
 pub struct ExpectMatch;
 
@@ -81,7 +84,7 @@ pub fn expect_match(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnos
     let args = ast.arguments()?.items();
 
     // Get first argument
-    let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
+    let object = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_TRUE, "object"));
 
     let object_value = unwrap_or_return_none!(object.value());
 
@@ -94,9 +97,8 @@ pub fn expect_match(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnos
 
     // All grepl args can be passed to expect_match, so keep them all for fix
     let grepl_args = grepl_call.arguments()?.items();
-    let pattern_arg =
-        unwrap_or_return_none!(get_arg_by_name_then_position(&grepl_args, "pattern", 1));
-    let x_arg = unwrap_or_return_none!(get_arg_by_name_then_position(&grepl_args, "x", 2));
+    let pattern_arg = unwrap_or_return_none!(get_arg(grepl_call, FORMALS_GREPL, "pattern"));
+    let x_arg = unwrap_or_return_none!(get_arg(grepl_call, FORMALS_GREPL, "x"));
 
     let x_text = unwrap_or_return_none!(x_arg.value())
         .to_trimmed_text()

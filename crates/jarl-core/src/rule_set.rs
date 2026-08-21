@@ -297,7 +297,7 @@ declare_rules! {
         name: "comparison_negation",
         categories: [Read],
         default: Enabled,
-        fix: Safe,
+        fix: Unsafe,
         min_r_version: None,
     },
     ConditionCall => {
@@ -675,6 +675,13 @@ declare_rules! {
         name: "unused_function",
         categories: [Corr],
         default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    UnusedObject => {
+        name: "unused_object",
+        categories: [Corr],
+        default: Disabled,
         fix: None,
         min_r_version: None,
     },
