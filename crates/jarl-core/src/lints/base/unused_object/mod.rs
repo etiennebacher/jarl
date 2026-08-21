@@ -1121,9 +1121,9 @@ within(dat, {
 "),
             @"
         warning: unused_object
-         --> <test>:4:5
+         --> <test>:5:5
           |
-        4 |     tmp <- 1
+        5 |     tmp <- 1
           |     --- Object `tmp` is defined but never used.
           |
         Found 1 error.
