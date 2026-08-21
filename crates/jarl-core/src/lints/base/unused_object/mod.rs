@@ -1077,6 +1077,61 @@ for (i in 1:2) {
     }
 
     #[test]
+    fn test_no_lint_assignment_in_within() {
+        // `within()` returns the environment it evaluated the block in, so
+        // every binding the block creates comes back as a column of the result.
+        expect_no_lint(
+            "
+dat <- data.frame(x = 1)
+within(dat, {
+  x <- x + 1
+  y <- 2
+})
+",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_assignment_in_namespaced_within() {
+        expect_no_lint(
+            "
+dat <- data.frame(x = 1)
+base::within(dat, expr = { y <- 2 })
+",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_unused_object_in_function_defined_inside_within() {
+        // A function defined in the block has its own frame, so its locals are
+        // ordinary temporaries.
+        assert_snapshot!(
+            snapshot_lint("
+dat <- data.frame(x = 1)
+within(dat, {
+  y <- (function() {
+    tmp <- 1
+    2
+  })()
+})
+"),
+            @"
+        warning: unused_object
+         --> <test>:4:5
+          |
+        4 |     tmp <- 1
+          |     --- Object `tmp` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
     fn test_nse_assignment_does_not_shadow_real_definition() {
         // The quoted `x <- 2` must not kill the real `x <- 1`; `print(x)`
         // reads the live binding (which is still `1`).

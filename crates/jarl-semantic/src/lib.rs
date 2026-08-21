@@ -173,6 +173,14 @@ pub struct SemanticInfo<'a> {
     available_packages: HashSet<String>,
     /// Ranges of formula RHSes (`~ rhs`).
     formula_ranges: Vec<TextRange>,
+    /// Ranges of expressions evaluated against an environment the call then
+    /// hands back (`within(data, expr)`): a binding created there is part of
+    /// the call's result, not a local temporary.
+    returned_env_ranges: Vec<TextRange>,
+    /// Function definitions nested inside a [`Self::returned_env_ranges`]
+    /// entry. Such a function has its own frame, so its locals are ordinary
+    /// temporaries again and stay lintable.
+    returned_env_functions: Vec<TextRange>,
     /// Whether any package providing `{...}` interpolation is in reach.
     /// Computed once so a file that uses none of them skips the ancestor walk
     /// [`interpolation_flavor`] does for every string literal.
@@ -226,6 +234,8 @@ impl<'a> SemanticInfo<'a> {
             nse_ranges: unevaluated.to_vec(),
             available_packages,
             formula_ranges: Vec::new(),
+            returned_env_ranges: Vec::new(),
+            returned_env_functions: Vec::new(),
             has_any_interpolation_package,
             reaching_used: HashSet::new(),
         };
@@ -285,6 +295,18 @@ impl<'a> SemanticInfo<'a> {
     /// the first place.
     pub fn is_in_nse(&self, range: TextRange) -> bool {
         in_any_range(range, &self.nse_ranges)
+    }
+
+    /// True when `range` sits in an expression whose assignments *are* the
+    /// enclosing call's return value. `within(data, expr)` evaluates `expr`
+    /// against an environment built from `data` and returns that environment's
+    /// contents, so every binding it creates comes back as a column — the
+    /// point of the call rather than a dead store. `if`/`for` bodies share
+    /// that environment, but a function defined there gets its own frame, so
+    /// its locals are excluded.
+    pub fn is_in_returned_env(&self, range: TextRange) -> bool {
+        in_any_range(range, &self.returned_env_ranges)
+            && !in_any_range(range, &self.returned_env_functions)
     }
 
     // ── Internal: AST pass ────────────────────────────────────────────
@@ -577,6 +599,22 @@ impl<'a> SemanticInfo<'a> {
                     if let Some(value) = arg.value() {
                         self.nse_ranges.push(value.syntax().text_trimmed_range());
                     }
+                }
+            }
+            // `within(data, expr)` evaluates `expr` against an environment
+            // made from `data` and returns what that environment holds, so an
+            // assignment there is the call's output. Only the quoted `expr`
+            // argument gets that treatment; `data` is evaluated normally.
+            "within" => {
+                let bound = CallContext::default().bind_arguments(call, &["data", "expr"]);
+                if let Some(expr) = bound.get("expr") {
+                    let node = expr.syntax();
+                    self.returned_env_ranges.push(node.text_trimmed_range());
+                    self.returned_env_functions.extend(
+                        node.descendants()
+                            .filter(|d| d.kind() == RSyntaxKind::R_FUNCTION_DEFINITION)
+                            .map(|d| d.text_trimmed_range()),
+                    );
                 }
             }
             // A name looked up at the call site, so it reads the binding live

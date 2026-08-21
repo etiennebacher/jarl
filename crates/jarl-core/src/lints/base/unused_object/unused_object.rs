@@ -211,6 +211,12 @@ fn should_lint_definition(info: &SemanticInfo<'_>, def: &Definition) -> bool {
         return false;
     }
 
+    // An assignment in `within(data, { … })` mutates the environment the call
+    // returns, so the binding is the result rather than a dead store.
+    if info.is_in_returned_env(def.range()) {
+        return false;
+    }
+
     true
 }
 
