@@ -93,9 +93,8 @@ pub fn check_path(
 /// accounting for `[lint.per-file-ignores]` and the R version `path` can count
 /// on.
 ///
-/// `minimum_r_version` is resolved per file rather than per run because one
-/// invocation can span several packages with different `Depends: R` floors;
-/// see [`file_minimum_r_version`].
+/// `minimum_r_version` is resolved per file because there might several packages
+/// to analyse, each with different `Depends: R`.
 fn effective_rules_for_file(
     config: &Config,
     path: &Path,
@@ -112,18 +111,12 @@ fn effective_rules_for_file(
             .collect()
     };
 
-    // A `--min-r-version` override already narrowed `rules_to_apply` in
-    // `build_config`, so filtering again is a no-op in that case.
     crate::config::filter_rules_by_version(&rules, minimum_r_version)
 }
 
 /// The R version `file` can count on: the `--min-r-version` override when the
 /// user passed one, otherwise the `Depends: R` floor of the package `file`
 /// belongs to, otherwise nothing.
-///
-/// Resolving this per file is what keeps one package's floor from governing
-/// another's in a tree that holds several — a script or an Rmd document
-/// belongs to no package and so falls through to the override alone.
 fn file_minimum_r_version(
     file: &Path,
     config: &Config,
