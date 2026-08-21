@@ -109,7 +109,7 @@ impl Diagnostic {
     // TODO: in these three functions, the first condition should be removed
     // once comments in nodes are better handled, #95.
     pub fn has_safe_fix(&self) -> bool {
-        if self.fix.to_skip || self.fix.content.is_empty() {
+        if self.fix.to_skip {
             return false;
         }
         Rule::from_name(&self.message.name)
@@ -117,7 +117,7 @@ impl Diagnostic {
             .unwrap_or(false)
     }
     pub fn has_unsafe_fix(&self) -> bool {
-        if self.fix.to_skip || self.fix.content.is_empty() {
+        if self.fix.to_skip {
             return false;
         }
         Rule::from_name(&self.message.name)

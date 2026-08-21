@@ -742,7 +742,7 @@ declare_rules! {
         name: "outdated_suppression",
         categories: [Comm],
         default: Enabled,
-        fix: None,
+        fix: Safe,
         min_r_version: None,
     },
     UnexplainedSuppression => {

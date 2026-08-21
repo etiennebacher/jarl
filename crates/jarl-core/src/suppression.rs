@@ -77,6 +77,29 @@ impl CommentStyle for RCommentStyle {
     }
 }
 
+/// A suppression comment that didn't suppress anything.
+///
+/// Carries what `outdated_suppression` needs to remove the suppression: the
+/// comment to report, and — for a `jarl-ignore-start`/`jarl-ignore-end` pair —
+/// the span of the region, because dropping the start comment alone would leave
+/// a dangling end comment behind.
+#[derive(Debug, Clone, Copy)]
+pub struct UnusedSuppression {
+    /// The range of the suppression comment
+    pub comment_range: TextRange,
+    /// For a start/end pair, the range from the start of the opening comment to
+    /// the end of the closing one. `None` for suppressions made of a single
+    /// comment.
+    pub region_range: Option<TextRange>,
+}
+
+impl UnusedSuppression {
+    /// A suppression made of a single comment (file, chunk or node level).
+    fn single(comment_range: TextRange) -> Self {
+        Self { comment_range, region_range: None }
+    }
+}
+
 /// Represents a region where a specific rule should be skipped
 #[derive(Debug, Clone)]
 pub struct SkipRegion {
@@ -673,36 +696,39 @@ impl SuppressionManager {
         false
     }
 
-    /// Get all suppression comment ranges that were never used.
+    /// Get all suppressions that were never used.
     /// This is used to report outdated suppressions.
-    pub fn get_unused_suppressions(&self) -> Vec<TextRange> {
+    pub fn get_unused_suppressions(&self) -> Vec<UnusedSuppression> {
         let mut unused = Vec::new();
 
         // Check file-level suppressions
         for sup in &self.file_suppressions {
             if !self.used_suppressions.contains(&sup.comment_range) {
-                unused.push(sup.comment_range);
+                unused.push(UnusedSuppression::single(sup.comment_range));
             }
         }
 
         // Check chunk-level suppressions
         for sup in &self.chunk_suppressions {
             if !self.used_suppressions.contains(&sup.comment_range) {
-                unused.push(sup.comment_range);
+                unused.push(UnusedSuppression::single(sup.comment_range));
             }
         }
 
         // Check region-level suppressions
         for region in &self.skip_regions {
             if !self.used_suppressions.contains(&region.comment_range) {
-                unused.push(region.comment_range);
+                unused.push(UnusedSuppression {
+                    comment_range: region.comment_range,
+                    region_range: Some(region.range),
+                });
             }
         }
 
         // Check node-level suppressions
         for sup in &self.node_suppressions {
             if !self.used_suppressions.contains(&sup.comment_range) {
-                unused.push(sup.comment_range);
+                unused.push(UnusedSuppression::single(sup.comment_range));
             }
         }
 

@@ -330,6 +330,7 @@ pub fn get_checks(
     check_document(
         expressions,
         syntax,
+        contents,
         &mut checker,
         &package_file,
         Some(semantic),
@@ -586,6 +587,7 @@ fn get_checks_roxygen(
             check_document(
                 expressions,
                 &syntax,
+                &chunk.code,
                 &mut checker,
                 &PackageFileAnalysis::default(),
                 None,
@@ -755,6 +757,7 @@ fn get_checks_rmd(
     check_document(
         expressions,
         &syntax,
+        &virtual_source,
         &mut checker,
         &package_file,
         Some(&semantic),

@@ -1,0 +1,123 @@
+---
+source: crates/jarl-core/src/lints/comments/outdated_suppression/mod.rs
+expression: "get_fixed_text(vec![\"\n# jarl-ignore any_is_na: <reason>\nf <- function(x) {\n  1 + 1\n}\",\n\"\n# jarl-ignore-start any_is_na: <reason>\nx <- 1\n# jarl-ignore-end any_is_na\ny <- 2\",\n\"\n# jarl-ignore-start any_is_na: <reason>\n  foo( bar\n + 1 )\n      1 + 1\n# jarl-ignore-end any_is_na\",\n\"\n    # jarl-ignore-start any_is_na: <reason>\n  foo( bar\n + 1 )\n      1 + 1\n      # jarl-ignore-end any_is_na\",\n\"\nf <- function(x) {\n  # jarl-ignore any_is_na: <reason>\n  x <- 1\n}\",\n\"\n# jarl-ignore any_is_na: <reason>\nany(is.na(x))\n# jarl-ignore any_is_na: <reason>\ny <- 2\",\n\"\n# jarl-ignore-file any_is_na: <reason>\nx <- 1\n# jarl-ignore any_is_na: <reason>\ny <- 2\",\n\"x <- 1\n# jarl-ignore any_is_na: <reason>\",\n\"\n# jarl-ignore-start any_is_na: <reason>\n# jarl-ignore-end any_is_na\nx <- 1\",],\n\"outdated_suppression,any_is_na\", None)"
+---
+OLD:
+====
+
+# jarl-ignore any_is_na: <reason>
+f <- function(x) {
+  1 + 1
+}
+NEW:
+====
+
+f <- function(x) {
+  1 + 1
+}
+
+OLD:
+====
+
+# jarl-ignore-start any_is_na: <reason>
+x <- 1
+# jarl-ignore-end any_is_na
+y <- 2
+NEW:
+====
+
+x <- 1
+y <- 2
+
+OLD:
+====
+
+# jarl-ignore-start any_is_na: <reason>
+  foo( bar
+ + 1 )
+      1 + 1
+# jarl-ignore-end any_is_na
+NEW:
+====
+
+  foo( bar
+ + 1 )
+      1 + 1
+
+
+OLD:
+====
+
+    # jarl-ignore-start any_is_na: <reason>
+  foo( bar
+ + 1 )
+      1 + 1
+      # jarl-ignore-end any_is_na
+NEW:
+====
+
+  foo( bar
+ + 1 )
+      1 + 1
+
+
+OLD:
+====
+
+f <- function(x) {
+  # jarl-ignore any_is_na: <reason>
+  x <- 1
+}
+NEW:
+====
+
+f <- function(x) {
+  x <- 1
+}
+
+OLD:
+====
+
+# jarl-ignore any_is_na: <reason>
+any(is.na(x))
+# jarl-ignore any_is_na: <reason>
+y <- 2
+NEW:
+====
+
+# jarl-ignore any_is_na: <reason>
+any(is.na(x))
+y <- 2
+
+OLD:
+====
+
+# jarl-ignore-file any_is_na: <reason>
+x <- 1
+# jarl-ignore any_is_na: <reason>
+y <- 2
+NEW:
+====
+
+x <- 1
+y <- 2
+
+OLD:
+====
+x <- 1
+# jarl-ignore any_is_na: <reason>
+NEW:
+====
+x <- 1
+
+
+OLD:
+====
+
+# jarl-ignore-start any_is_na: <reason>
+# jarl-ignore-end any_is_na
+x <- 1
+NEW:
+====
+
+x <- 1
