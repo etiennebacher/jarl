@@ -16,7 +16,6 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
     "expect_no_warning",
     "expect_no_error",
     "expect_no_message",
-    "expect_no_match",
     "quote",
     "suppressMessages",
     "suppressWarnings",
