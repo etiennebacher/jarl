@@ -11,6 +11,7 @@ readme.workspace = true
 [dependencies]
 jarl-core = { path = "../jarl-core" }
 
+air_fs.workspace = true
 air_workspace.workspace = true
 
 # LSP dependencies

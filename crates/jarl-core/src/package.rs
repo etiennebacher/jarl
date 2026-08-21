@@ -168,7 +168,7 @@ pub fn summarize_package_info(
     // Insert file info under both the original path and its relativized form,
     // since downstream code may look up by either.
     let mut insert_info = |path: &PathBuf, info: FilePackageInfo| {
-        let rel = PathBuf::from(crate::fs::relativize_path(path));
+        let rel = PathBuf::from(air_fs::relativize_path(path));
         file_info.insert(path.clone(), info.clone());
         if rel != *path {
             file_info.insert(rel, info);
@@ -329,8 +329,8 @@ pub fn make_package_analysis(
             if *scope == FileScope::R {
                 let r_dir = path.parent()?;
                 let package_root = r_dir.parent()?.to_path_buf();
-                let rel_path = PathBuf::from(crate::fs::relativize_path(path));
-                let root_key = crate::fs::relativize_path(r_dir);
+                let rel_path = PathBuf::from(air_fs::relativize_path(path));
+                let root_key = air_fs::relativize_path(r_dir);
                 Some(SharedFileData {
                     root_key,
                     rel_path,
@@ -344,8 +344,8 @@ pub fn make_package_analysis(
                 // somewhere under root/tests/, root/inst/, or root/src/.
                 let package_root = find_package_root(path)?;
                 let r_dir = package_root.join("R");
-                let rel_path = PathBuf::from(crate::fs::relativize_path(path));
-                let root_key = crate::fs::relativize_path(&r_dir);
+                let rel_path = PathBuf::from(air_fs::relativize_path(path));
+                let root_key = air_fs::relativize_path(&r_dir);
                 Some(SharedFileData {
                     root_key,
                     rel_path,
@@ -491,8 +491,8 @@ pub(crate) fn scan_r_package_paths(paths: &[PathBuf], with_symbols: bool) -> Vec
         .filter_map(|path| {
             let r_dir = path.parent()?;
             let package_root = r_dir.parent()?.to_path_buf();
-            let rel_path = PathBuf::from(crate::fs::relativize_path(path));
-            let root_key = crate::fs::relativize_path(r_dir);
+            let rel_path = PathBuf::from(air_fs::relativize_path(path));
+            let root_key = air_fs::relativize_path(r_dir);
             let content = std::fs::read_to_string(path).ok()?;
             let assignments = scan_top_level_assignments(&content);
             let symbol_counts = if with_symbols {
@@ -522,13 +522,13 @@ pub(crate) fn scan_extra_package_paths(
     package_root: &Path,
 ) -> Vec<SharedFileData> {
     let r_dir = package_root.join("R");
-    let root_key = crate::fs::relativize_path(&r_dir);
+    let root_key = air_fs::relativize_path(&r_dir);
     paths
         .iter()
         .filter_map(|path| {
             let content = std::fs::read_to_string(path).ok()?;
             let symbol_counts = scan_symbols(&content);
-            let rel_path = PathBuf::from(crate::fs::relativize_path(path));
+            let rel_path = PathBuf::from(air_fs::relativize_path(path));
             let scope = file_scope_from_path(path);
             let assignments = match scope {
                 FileScope::Src => Vec::new(),

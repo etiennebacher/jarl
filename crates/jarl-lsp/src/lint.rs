@@ -14,12 +14,13 @@ use crate::document::PositionEncoding;
 use crate::session::DocumentSnapshot;
 use crate::utils::should_exclude_file_based_on_settings;
 
+use air_fs::relativize_path;
 use air_workspace::resolve::PathResolver;
 use jarl_core::check::get_checks;
 use jarl_core::config::{ArgsConfig, build_config};
 use jarl_core::diagnostic::Diagnostic as JarlDiagnostic;
 use jarl_core::discovery::{DiscoveredSettings, discover_settings};
-use jarl_core::fs::{has_r_extension, relativize_path};
+use jarl_core::fs::has_r_extension;
 use jarl_core::package::{is_in_r_package, make_package_analysis, summarize_package_info};
 use jarl_core::settings::Settings;
 
