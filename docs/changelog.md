@@ -65,6 +65,7 @@
   information (#567).
 
 
+
 ### TOML improvements
 
 * New argument `[lint.per-file-ignores]` in `jarl.toml` to deactivate rules on
