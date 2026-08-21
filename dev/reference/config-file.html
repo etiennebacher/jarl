@@ -394,6 +394,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#true_false_symbol" id="toc-true_false_symbol" class="nav-link" data-scroll-target="#true_false_symbol"><code>true_false_symbol</code></a></li>
   <li><a href="#unreachable_code" id="toc-unreachable_code" class="nav-link" data-scroll-target="#unreachable_code"><code>unreachable_code</code></a></li>
   <li><a href="#unused_function" id="toc-unused_function" class="nav-link" data-scroll-target="#unused_function"><code>unused_function</code></a></li>
+  <li><a href="#unused_object" id="toc-unused_object" class="nav-link" data-scroll-target="#unused_object"><code>unused_object</code></a></li>
   </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/reference/config-file.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
@@ -720,6 +721,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Set a custom threshold above which diagnostics for this rule aren't reported</span></span>
 <span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a><span class="co"># (this is basically equivalent to never hiding unused functions).</span></span>
 <span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a><span class="dt">threshold-ignore</span> <span class="op">=</span> <span class="dv">10000</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="unused_object" class="level3">
+<h3 class="anchored" data-anchor-id="unused_object"><code>unused_object</code></h3>
+<p>Use <code>skipped-functions</code> to fully replace the default list of calls whose directly-assigned arguments are allowed to be unused. Use <code>extend-skipped-functions</code> to add to the default list. Specifying both is an error.</p>
+<p>Function names in <code>skipped-functions</code> or <code>extend-skipped-functions</code> also match namespaced calls, e.g.&nbsp;<code>skipped-functions = ["expect_error"]</code> will allow <code>expect_error()</code> and <code>testthat::expect_error()</code>.</p>
+<p>Only the direct argument position counts: an assignment nested in a block or in a function defined inside the call is an ordinary local and is still reported.</p>
+<p>Default: <code>skipped-functions = ["expect_error", "expect_warning", "expect_message", "expect_silent", "expect_defunct", "expect_deprecated", "expect_snapshot", "expect_no_condition", "expect_no_warning", "expect_no_error", "expect_no_message"]</code></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="dt">...</span></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.unused_object]</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Also allow an unused assignment passed straight to `my_expect()`.</span></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a><span class="dt">extend-skipped-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"my_expect"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>
