@@ -13,6 +13,7 @@
   * `glue` (#484, @novica)
   * `if_not_else` (#551)
   * `literal_coercion` (#504)
+  * `list_comparison` (#572, @Yousa-Mirage)
   * `missing_argument` (#506)
   * `nested_pipe` (#516)
   * `notin` (#459, @Yousa-Mirage)
