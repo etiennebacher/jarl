@@ -188,6 +188,56 @@ fn parse_settings(toml: &Path, root_directory: &Path) -> anyhow::Result<Settings
 
 type DiscoveredFiles = Vec<Result<PathBuf, ignore::Error>>;
 
+/// Build a matcher reporting [`ignore::Match::Ignore`] for paths matching any
+/// of `patterns`, relative to `root`.
+///
+/// `Override` spells "exclude" as a negated pattern, hence the `!` prefix.
+/// Invalid patterns are warned about and skipped. Returns `None` when there is
+/// nothing to match against.
+pub fn exclude_matcher<S: AsRef<str>>(
+    root: &Path,
+    patterns: &[S],
+) -> Option<ignore::overrides::Override> {
+    if patterns.is_empty() {
+        return None;
+    }
+    let mut builder = ignore::overrides::OverrideBuilder::new(root);
+    for pattern in patterns {
+        let pattern = pattern.as_ref();
+        if let Err(e) = builder.add(&format!("!{pattern}")) {
+            tracing::warn!("Failed to add exclude pattern '{}': {}", pattern, e);
+        }
+    }
+    builder.build().ok()
+}
+
+/// Build a matcher reporting [`ignore::Match::Whitelist`] for paths matching
+/// any of `patterns`, relative to `root`.
+///
+/// A trailing `/` means "this directory", which as a file pattern has to be
+/// spelled `dir/**`.
+pub fn include_matcher<S: AsRef<str>>(
+    root: &Path,
+    patterns: &[S],
+) -> Option<ignore::overrides::Override> {
+    if patterns.is_empty() {
+        return None;
+    }
+    let mut builder = ignore::overrides::OverrideBuilder::new(root);
+    for pattern in patterns {
+        let pattern = pattern.as_ref();
+        let file_pattern = if pattern.ends_with('/') {
+            format!("{pattern}**")
+        } else {
+            pattern.to_string()
+        };
+        if let Err(e) = builder.add(&file_pattern) {
+            tracing::warn!("Failed to add include pattern '{}': {}", pattern, e);
+        }
+    }
+    builder.build().ok()
+}
+
 /// Whether `relative` is excluded by `overrides`, considering the path itself
 /// and all of its parent directories.
 ///
@@ -197,7 +247,7 @@ type DiscoveredFiles = Vec<Result<PathBuf, ignore::Error>>;
 /// but the exclude post-filters run over already-collected files where no
 /// pruning happens, so each ancestor directory must be tested too. This mirrors
 /// `Gitignore::matched_path_or_any_parents`, which `Override` does not expose.
-fn excluded_with_parents(overrides: &ignore::overrides::Override, relative: &Path) -> bool {
+pub fn excluded_with_parents(overrides: &ignore::overrides::Override, relative: &Path) -> bool {
     if matches!(overrides.matched(relative, false), ignore::Match::Ignore(_)) {
         return true;
     }
@@ -295,18 +345,8 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
             patterns.extend_from_slice(DEFAULT_EXCLUDE_PATTERNS);
         }
 
-        // If we have patterns, create an override and add it to the builder
-        if !patterns.is_empty() {
-            let mut override_builder = ignore::overrides::OverrideBuilder::new(root);
-            for pattern in patterns {
-                // Add as negation pattern (exclude)
-                if let Err(e) = override_builder.add(&format!("!{pattern}")) {
-                    tracing::warn!("Failed to add exclude pattern '{}': {}", pattern, e);
-                }
-            }
-            if let Ok(overrides) = override_builder.build() {
-                builder.overrides(overrides);
-            }
+        if let Some(overrides) = exclude_matcher(root, &patterns) {
+            builder.overrides(overrides);
         }
     }
 
@@ -333,13 +373,7 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
     // cannot be matched relative to the `R` directory.
     if !cli_exclude.is_empty() {
         let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-        let mut override_builder = ignore::overrides::OverrideBuilder::new(&cwd);
-        for pattern in cli_exclude {
-            if let Err(e) = override_builder.add(&format!("!{pattern}")) {
-                tracing::warn!("Failed to add exclude pattern '{}': {}", pattern, e);
-            }
-        }
-        if let Ok(overrides) = override_builder.build() {
+        if let Some(overrides) = exclude_matcher(&cwd, cli_exclude) {
             files.retain(|result| {
                 let Ok(path) = result else {
                     return true;
@@ -371,45 +405,24 @@ pub fn discover_r_file_paths<P: AsRef<Path>>(
 
             // Exclude filter: remove files matching any exclude pattern
             if let Some(exclude_patterns) = &settings.linter.exclude
-                && !exclude_patterns.is_empty()
+                && let Some(overrides) = exclude_matcher(root, exclude_patterns)
             {
-                let mut override_builder = ignore::overrides::OverrideBuilder::new(root);
-                for pattern in exclude_patterns {
-                    if let Err(e) = override_builder.add(&format!("!{pattern}")) {
-                        tracing::warn!("Failed to add exclude pattern '{}': {}", pattern, e);
-                    }
-                }
-                if let Ok(overrides) = override_builder.build() {
-                    let relative = path.strip_prefix(root).unwrap_or(path.as_path());
-                    if excluded_with_parents(&overrides, relative) {
-                        return false;
-                    }
+                let relative = path.strip_prefix(root).unwrap_or(path.as_path());
+                if excluded_with_parents(&overrides, relative) {
+                    return false;
                 }
             }
 
             // Include filter: if set, only keep files matching at least one pattern
             if let Some(include_patterns) = &settings.linter.include
-                && !include_patterns.is_empty()
+                && let Some(overrides) = include_matcher(root, include_patterns)
             {
-                let mut override_builder = ignore::overrides::OverrideBuilder::new(root);
-                for pattern in include_patterns {
-                    let file_pattern = if pattern.ends_with('/') {
-                        format!("{}**", pattern)
-                    } else {
-                        pattern.clone()
-                    };
-                    if let Err(e) = override_builder.add(&file_pattern) {
-                        tracing::warn!("Failed to add include pattern '{}': {}", pattern, e);
-                    }
-                }
-                if let Ok(overrides) = override_builder.build() {
-                    let relative = path.strip_prefix(root).unwrap_or(path.as_path());
-                    if !matches!(
-                        overrides.matched(relative, false),
-                        ignore::Match::Whitelist(_)
-                    ) {
-                        return false;
-                    }
+                let relative = path.strip_prefix(root).unwrap_or(path.as_path());
+                if !matches!(
+                    overrides.matched(relative, false),
+                    ignore::Match::Whitelist(_)
+                ) {
+                    return false;
                 }
             }
 

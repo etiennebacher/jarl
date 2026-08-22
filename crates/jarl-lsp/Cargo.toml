@@ -13,6 +13,7 @@ jarl-core = { path = "../jarl-core" }
 
 air_fs.workspace = true
 air_workspace.workspace = true
+ignore.workspace = true
 
 # LSP dependencies
 lsp-server = "0.8"

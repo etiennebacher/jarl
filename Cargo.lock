@@ -1122,6 +1122,7 @@ dependencies = [
  "anyhow",
  "crossbeam",
  "fs",
+ "ignore",
  "insta",
  "jarl-core",
  "lsp-server",
