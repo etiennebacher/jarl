@@ -2,6 +2,12 @@
 
 ## Development version
 
+### Breaking changes
+
+* The JSON output produced with `--output-format json` has changed. In `fix`, the
+  fields `start` and `end` are replaced by a field `range` that contains the
+  two values (#650).
+
 ### New and improved rules
 
 * New rules:
