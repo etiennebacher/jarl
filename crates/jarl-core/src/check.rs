@@ -386,8 +386,11 @@ pub fn get_checks(
             x.filename = file.to_path_buf();
             let rule = x.message.rule;
             // The rule has no fix at all, the user excluded it via
-            // `unfixable` / `fixable`, the node carries a comment (#95), or the
-            // file didn't parse cleanly: in all of those the fix must not apply.
+            // `unfixable` / `fixable`, the node carries a comment, or the file
+            // didn't parse cleanly: in all of those the fix must not apply.
+            //
+            // TODO: the `to_skip` term should be removed once comments in nodes
+            // are better handled, #95.
             if rule.has_no_fix()
                 || config.unfixable.contains(&rule)
                 || config
