@@ -623,17 +623,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> diagnostic <span class="op">=</span> <span class="pp">Diagnostic::</span>new(</span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    List2Df<span class="op">,</span></span>
 <span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    range<span class="op">,</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    Fix <span class="op">{</span></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>        content<span class="op">:</span> <span class="pp">format!</span>(<span class="st">"list2DF({})"</span><span class="op">,</span> fix_content<span class="op">.</span>to_trimmed_text())<span class="op">,</span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>        start<span class="op">:</span> range<span class="op">.</span>start()<span class="op">.</span>into()<span class="op">,</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>        end<span class="op">:</span> range<span class="op">.</span>end()<span class="op">.</span>into()<span class="op">,</span></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>        to_skip<span class="op">:</span> node_contains_comments(ast<span class="op">.</span>syntax())<span class="op">,</span></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">},</span></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>)<span class="op">;</span></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="cn">Ok</span>(<span class="cn">Some</span>(diagnostic))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>All diagnostics contain a <code>Violation</code> (we defined the one for <code>List2Df</code> just below the documentation), a range indicating where it is located in the code, and a <code>Fix</code> (which may be <code>Fix::Empty()</code> if there is no automatic fix).</p>
-<p>Finally, note that <code>Fix</code> has a field <code>to_skip: node_contains_comments(ast.syntax())</code>. This tells Jarl not to apply the automatic fix if the node in question contains a comment. Handling comments positions in automatic fixes is quite complicated so, for now, fixes are not applied if the node contains a comment, e.g.:</p>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="pp">Fix::</span>new(</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>        range<span class="op">,</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>        <span class="pp">format!</span>(<span class="st">"list2DF({})"</span><span class="op">,</span> fix_content<span class="op">.</span>to_trimmed_text())<span class="op">,</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>        node_contains_comments(ast<span class="op">.</span>syntax())<span class="op">,</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    )<span class="op">,</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>)<span class="op">;</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="cn">Ok</span>(<span class="cn">Some</span>(diagnostic))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>All diagnostics contain a <code>Violation</code> (we defined the one for <code>List2Df</code> just below the documentation), a range indicating where it is located in the code, and <code>Fix::new()</code> (or <code>Fix::empty()</code> if there is no automatic fix).</p>
+<p>Finally, note that <code>Fix::new()</code> has an argument <code>to_skip: node_contains_comments(ast.syntax())</code>. This tells Jarl not to apply the automatic fix if the node in question contains a comment. Handling comments positions in automatic fixes is quite complicated so, for now, fixes are not applied if the node contains a comment, e.g.:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># This code wouldn't be automatically fixed because we don't know where the</span></span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co"># comment inside should go.</span></span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">do.call</span>(</span>
