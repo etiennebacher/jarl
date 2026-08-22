@@ -336,7 +336,11 @@ For example, one could list some functions that will not be checked by the rule 
 skipped-functions = ["list"]
 ```
 
-Adding options for a rule takes three steps.
+Not all rules need TOML options.
+
+::: {.callout-note title = "Click to see how to add TOML options for a rule" collapse = true}
+
+Adding options for a rule takes three steps. The example below uses the rule `duplicated_arguments` since `list2df` doesn't have TOML options.
 
 1. Create `src/lints/<group>/<rule_name>/options.rs` and declare `pub(crate) mod options;` in the rule's `mod.rs`. This file contains two types: the TOML options (deserialized as-is from `[lint.<rule_name>]`) and the resolved options (what the rule reads while linting). The resolved type must expose `resolve()`, which takes the TOML options and fills in the defaults:
 
@@ -398,6 +402,8 @@ Finally:
 * run `just gen-schema` to update `artifacts/jarl.schema.json`;
 * document the option for users in `docs/reference/config-file.md` (this page is written by hand, it is not generated from the Rust code);
 * add integration tests in `crates/jarl/tests/integration/toml_rule_args.rs`, covering invalid values, unknown fields in the rule table, and the option actually changing what is reported.
+
+:::
 
 ### Add tests
 
