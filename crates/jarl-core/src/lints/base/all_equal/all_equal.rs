@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_nested_functions_content, node_contains_comments};
 use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
@@ -60,7 +61,7 @@ pub fn all_equal(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic
         let range = outer_syntax.text_trimmed_range();
         return Ok(Some(Diagnostic::new(
             ViolationData::new(
-                "all_equal".to_string(),
+                Rule::AllEqual,
                 "`isFALSE(all.equal())` always returns `FALSE`".to_string(),
                 Some("Use `!isTRUE()` to check for differences instead.".to_string()),
             ),
@@ -100,7 +101,7 @@ pub fn all_equal(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic
 
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "all_equal".to_string(),
+            Rule::AllEqual,
             msg,
             Some("Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.".to_string()),
         ),

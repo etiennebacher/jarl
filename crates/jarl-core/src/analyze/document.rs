@@ -118,7 +118,7 @@ pub(crate) fn check_document(
         for (name, range, help) in &package.duplicate_assignments {
             checker.report_diagnostic(Some(Diagnostic::new(
                 ViolationData::new(
-                    "duplicated_function_definition".to_string(),
+                    Rule::DuplicatedFunctionDefinition,
                     format!("`{name}` is defined more than once in this package."),
                     Some(help.clone()),
                 ),
@@ -132,7 +132,7 @@ pub(crate) fn check_document(
         for (name, range, help) in &package.unused_functions {
             checker.report_diagnostic(Some(Diagnostic::new(
                 ViolationData::new(
-                    "unused_function".to_string(),
+                    Rule::UnusedFunction,
                     format!("`{name}` is defined but never called in this package."),
                     Some(help.clone()),
                 ),

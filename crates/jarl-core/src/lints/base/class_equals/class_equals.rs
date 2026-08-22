@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_arg_by_position, get_function_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -113,7 +114,7 @@ pub fn class_equals(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "class_equals".to_string(),
+            Rule::ClassEquals,
             "Comparing `class(x)` with `==` or `%in%` can be problematic.".to_string(),
             Some("Use `inherits(x, 'a')` instead.".to_string()),
         ),
@@ -153,7 +154,7 @@ pub fn class_identical(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diag
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "class_equals".to_string(),
+            Rule::ClassEquals,
             "Using `identical(class(x), 'a')` can be problematic.".to_string(),
             Some("Use `inherits(x, 'a')` instead.".to_string()),
         ),

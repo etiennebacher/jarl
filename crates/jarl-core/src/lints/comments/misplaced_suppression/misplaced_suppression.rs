@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use biome_rowan::TextRange;
 
 /// Version added: 0.4.0
@@ -36,7 +37,7 @@ pub fn misplaced_suppression(ranges: &[TextRange]) -> Vec<Diagnostic> {
 fn create_diagnostic(range: TextRange) -> Diagnostic {
     Diagnostic::new(
         ViolationData::new(
-            "misplaced_suppression".to_string(),
+            Rule::MisplacedSuppression,
             "This comment isn't used by Jarl because end-of-line suppressions are not supported."
                 .to_string(),
             Some(

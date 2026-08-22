@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{
     Formals, get_arg, get_arg_by_position, get_function_name, get_function_namespace_prefix,
     node_contains_comments,
@@ -132,7 +133,7 @@ fn check_expect_class_comparison(
 
     Ok(Some(Diagnostic::new(
         ViolationData::new(
-            "expect_s3_class".to_string(),
+            Rule::TestthatExpectS3Class,
             format!("`{linted_text}` may fail if `{object_text}` gets more classes in the future."),
             Some(format!("Use `{replacement}` instead.")),
         ),
@@ -187,7 +188,7 @@ fn check_expect_true_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 
     Ok(Some(Diagnostic::new(
         ViolationData::new(
-            "expect_s3_class".to_string(),
+            Rule::TestthatExpectS3Class,
             format!("`{replacement}` is better than `{linted_text}`."),
             Some(format!("Use `{replacement}` instead.")),
         ),

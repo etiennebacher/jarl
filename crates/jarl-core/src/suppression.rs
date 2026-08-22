@@ -650,9 +650,7 @@ impl SuppressionManager {
 
     /// Check if a diagnostic should be suppressed, and if so, mark the suppression as used.
     fn is_diagnostic_suppressed(&mut self, diag: &Diagnostic) -> bool {
-        let Some(rule) = Rule::from_name(&diag.message.name) else {
-            return false;
-        };
+        let rule = diag.message.rule;
 
         // Check file-level suppressions
         for sup in &self.file_suppressions {

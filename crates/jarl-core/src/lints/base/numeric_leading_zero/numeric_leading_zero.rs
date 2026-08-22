@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use air_r_syntax::*;
 use biome_rowan::{AstNode, SyntaxToken};
 
@@ -27,8 +28,8 @@ pub struct NumericLeadingZero;
 /// x <- 0.1
 /// ```
 impl Violation for NumericLeadingZero {
-    fn name(&self) -> String {
-        "numeric_leading_zero".to_string()
+    fn rule(&self) -> Rule {
+        Rule::NumericLeadingZero
     }
     fn body(&self) -> String {
         "Include the leading zero for fractional numeric constants.".to_string()

@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_function_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -98,7 +99,7 @@ pub fn string_boundary(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnos
 
         let diagnostic = Diagnostic::new(
             ViolationData::new(
-                "string_boundary".to_string(),
+                Rule::StringBoundary,
                 format!(
                     "Using `{func_name}()` to detect an initial substring is hard to read and inefficient."
                 ),
@@ -128,7 +129,7 @@ pub fn string_boundary(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnos
 
         let diagnostic = Diagnostic::new(
             ViolationData::new(
-                "string_boundary".to_string(),
+                Rule::StringBoundary,
                 format!(
                     "Using `{func_name}()` to detect a terminal substring is hard to read and inefficient."
                 ),

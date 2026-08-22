@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{Formals, get_arg, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
@@ -123,7 +124,7 @@ pub fn redundant_ifelse(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Dia
     };
 
     let diagnostic = Diagnostic::new(
-        ViolationData::new("redundant_ifelse".to_string(), msg, Some(suggestion)),
+        ViolationData::new(Rule::RedundantIfelse, msg, Some(suggestion)),
         range,
         fix,
     );

@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -35,8 +36,8 @@ pub struct EqualsNaN;
 /// is.nan(x)
 /// ```
 impl Violation for EqualsNaN {
-    fn name(&self) -> String {
-        "equals_nan".to_string()
+    fn rule(&self) -> Rule {
+        Rule::EqualsNaN
     }
     fn body(&self) -> String {
         "Comparing to NaN with `==`, `!=` or `%in%` is problematic.".to_string()

@@ -83,10 +83,10 @@ pub struct Config {
     /// Apply fixes even if there is no version control system?
     pub allow_no_vcs: bool,
     /// Rules that should not have their fixes applied (from unfixable setting)
-    pub unfixable: HashSet<String>,
+    pub unfixable: HashSet<Rule>,
     /// Rules that are allowed to have fixes applied (from fixable setting)
     /// None means all rules with fixes can be applied
-    pub fixable: Option<HashSet<String>>,
+    pub fixable: Option<HashSet<Rule>>,
     /// Whether to lint R code inside roxygen `@examples` sections
     pub check_roxygen: bool,
     /// Whether to apply autofixes to roxygen examples
@@ -267,16 +267,13 @@ pub(crate) fn resolve_rule_names<'a>(
         .collect())
 }
 
-/// [`resolve_rule_names`] for the settings still carried as rule-name strings
-/// (`fixable` / `unfixable`, which are matched against `Diagnostic`'s name).
+/// [`resolve_rule_names`] collected into a set, for the settings matched
+/// against a `Diagnostic`'s rule (`fixable` / `unfixable`).
 fn resolve_rule_name_set<'a>(
     names: impl IntoIterator<Item = &'a str>,
     field: &str,
-) -> Result<HashSet<String>> {
-    Ok(resolve_rule_names(names, field)?
-        .into_iter()
-        .map(|rule| rule.name().to_string())
-        .collect())
+) -> Result<HashSet<Rule>> {
+    Ok(resolve_rule_names(names, field)?.into_iter().collect())
 }
 
 /// Parse CLI rule arguments into a [`RuleSelection`].
@@ -333,7 +330,7 @@ fn resolve_optional(names: Option<&[String]>, field: &str) -> Result<Option<Hash
 /// `fixable` is `None` when unset, meaning every rule with a fix may apply it.
 pub fn parse_fixable_toml(
     toml_settings: Option<&Settings>,
-) -> Result<(Option<HashSet<String>>, HashSet<String>)> {
+) -> Result<(Option<HashSet<Rule>>, HashSet<Rule>)> {
     let Some(settings) = toml_settings else {
         return Ok((None, HashSet::new()));
     };

@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -37,8 +38,8 @@ pub struct Browser;
 ///
 /// See `?browser`
 impl Violation for Browser {
-    fn name(&self) -> String {
-        "browser".to_string()
+    fn rule(&self) -> Rule {
+        Rule::Browser
     }
     fn body(&self) -> String {
         "Calls to `browser()` should be removed.".to_string()

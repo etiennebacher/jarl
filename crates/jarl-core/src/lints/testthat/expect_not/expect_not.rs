@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{Formals, get_arg, get_function_namespace_prefix, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
@@ -103,7 +104,7 @@ pub fn expect_not(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnosti
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "expect_not".to_string(),
+            Rule::TestthatExpectNot,
             format!(
                 "`{}(!x)` is not as clear as `{}(x)`.",
                 current_fn, replacement_fn

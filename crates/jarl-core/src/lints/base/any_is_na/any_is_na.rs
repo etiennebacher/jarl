@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_nested_functions_content, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -40,7 +41,7 @@ pub fn any_is_na(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic
     let range = outer_syntax.text_trimmed_range();
     Ok(Some(Diagnostic::new(
         ViolationData::new(
-            "any_is_na".to_string(),
+            Rule::AnyIsNa,
             "`any(is.na(...))` is inefficient.".to_string(),
             Some("Use `anyNA(...)` instead.".to_string()),
         ),
@@ -102,7 +103,7 @@ pub fn any_is_na_2(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>
 
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "any_is_na".to_string(),
+            Rule::AnyIsNa,
             body.to_string(),
             Some(suggestion.to_string()),
         ),

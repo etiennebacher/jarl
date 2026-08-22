@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -41,8 +42,8 @@ pub struct EqualsNull;
 /// is.null(y)
 /// ```
 impl Violation for EqualsNull {
-    fn name(&self) -> String {
-        "equals_null".to_string()
+    fn rule(&self) -> Rule {
+        Rule::EqualsNull
     }
     fn body(&self) -> String {
         "Comparing to NULL with `==`, `!=` or `%in%` is problematic.".to_string()

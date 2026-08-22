@@ -151,6 +151,7 @@ Let's start with a skeleton of this file:
 
 ```rust
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_arg_by_name_then_position, get_arg_by_position, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -165,8 +166,8 @@ pub struct List2Df;
 ///
 /// [...]
 impl Violation for List2Df {
-    fn name(&self) -> String {
-        "list2df".to_string()
+    fn rule(&self) -> Rule {
+        Rule::List2df
     }
     fn body(&self) -> String {
         "`do.call(cbind.data.frame, x)` is inefficient and can be hard to read.".to_string()
@@ -185,7 +186,7 @@ Let's analyze this by blocks:
 
 * the first lines import required crates and functions, and define a struct using the rule name (in TitleCase);
 * then there is some documentation (truncated here for conciseness). The version number corresponds to the next version, not the current one.
-* the `impl` block is where we define the name and the main message (`body`) that will be used in the output of Jarl. Note that there is also a `suggestion()` function which is not always necessary.
+* the `impl` block is where we link the violation to its `Rule` variant (the one declared in `rule_set.rs`) and define the main message (`body`) that will be used in the output of Jarl. Note that there is also a `suggestion()` function which is not always necessary.
 * finally, we define the function where we parse the AST.
 
 ::: {.callout-note collapse="true"}
@@ -195,7 +196,7 @@ If you explore other rules implementation, you might notice that the `impl Viola
 This is because in some cases, the message and/or the suggestion depend on the AST itself.
 For example, for the `assignment` rule, the message will recommend the use of `<-` or `=` depending on the user settings.
 
-In this scenario, the name, body, and suggestion are defined at the very end, when we build the `Diagnostic`.
+In this scenario, the rule, body, and suggestion are defined at the very end, when we build the `Diagnostic`.
 :::
 
 

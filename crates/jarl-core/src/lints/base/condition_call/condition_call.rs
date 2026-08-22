@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_arg_by_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -136,7 +137,7 @@ pub fn condition_call(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagn
 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
-        ViolationData::new("condition_call".to_string(), body, Some(suggestion)),
+        ViolationData::new(Rule::ConditionCall, body, Some(suggestion)),
         range,
         fix,
     );

@@ -1,5 +1,6 @@
 use crate::checker::Checker;
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -43,8 +44,8 @@ pub struct UndesirableFunction {
 /// }
 /// ```
 impl Violation for UndesirableFunction {
-    fn name(&self) -> String {
-        "undesirable_function".to_string()
+    fn rule(&self) -> Rule {
+        Rule::UndesirableFunction
     }
     fn body(&self) -> String {
         format!("`{}()` is listed as an undesirable function.", self.fn_name)

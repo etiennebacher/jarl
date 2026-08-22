@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_named_args, get_unnamed_args, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
@@ -32,8 +33,8 @@ pub struct SystemFile;
 ///
 /// See `?system.file`
 impl Violation for SystemFile {
-    fn name(&self) -> String {
-        "system_file".to_string()
+    fn rule(&self) -> Rule {
+        Rule::SystemFile
     }
     fn body(&self) -> String {
         "`system.file(file.path(...))` is redundant.".to_string()

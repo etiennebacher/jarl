@@ -1,5 +1,6 @@
 use crate::checker::{Checker, PackageOrigin};
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_function_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -159,7 +160,7 @@ pub fn dplyr_filter_out(
 
     Ok(Some(Diagnostic::new(
         ViolationData::new(
-            "dplyr_filter_out".to_string(),
+            Rule::DplyrFilterOut,
             "This `filter()` contains complex condition(s).".to_string(),
             Some(
                 "It can be simplified by using `filter_out()`, which keeps `NA` rows.".to_string(),

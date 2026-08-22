@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::node_contains_comments;
 use air_r_syntax::RSyntaxKind::*;
 use air_r_syntax::*;
@@ -32,8 +33,8 @@ pub struct LengthTest;
 /// length(x) == 1
 /// ```
 impl Violation for LengthTest {
-    fn name(&self) -> String {
-        "length_test".to_string()
+    fn rule(&self) -> Rule {
+        Rule::LengthTest
     }
     fn body(&self) -> String {
         "Checking the length of a logical vector is likely a mistake".to_string()

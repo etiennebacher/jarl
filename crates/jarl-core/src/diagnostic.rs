@@ -31,8 +31,8 @@ impl Fix {
 
 /// Details on the violated rule.
 pub trait Violation {
-    /// Name of the rule.
-    fn name(&self) -> String;
+    /// The violated rule.
+    fn rule(&self) -> Rule;
     /// Explanation of the rule.
     fn body(&self) -> String;
     /// Optional suggestion for how to fix the violation.
@@ -43,7 +43,9 @@ pub trait Violation {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct ViolationData {
-    pub name: String,
+    // Serialized as "name" so the JSON output keeps the key it always had.
+    #[serde(rename = "name")]
+    pub rule: Rule,
     pub body: String,
     pub suggestion: Option<String>,
 }
@@ -64,7 +66,7 @@ pub struct Diagnostic {
 impl<T: Violation> From<T> for ViolationData {
     fn from(value: T) -> Self {
         Self {
-            name: Violation::name(&value),
+            rule: Violation::rule(&value),
             body: Violation::body(&value),
             suggestion: Violation::suggestion(&value),
         }
@@ -72,16 +74,8 @@ impl<T: Violation> From<T> for ViolationData {
 }
 
 impl ViolationData {
-    pub fn new(name: String, body: String, suggestion: Option<String>) -> Self {
-        Self { name, body, suggestion }
-    }
-
-    pub fn empty() -> Self {
-        Self {
-            name: "".to_string(),
-            body: "".to_string(),
-            suggestion: None,
-        }
+    pub fn new(rule: Rule, body: String, suggestion: Option<String>) -> Self {
+        Self { rule, body, suggestion }
     }
 }
 
@@ -96,41 +90,16 @@ impl Diagnostic {
         }
     }
 
-    pub fn empty() -> Self {
-        Self {
-            message: ViolationData::empty(),
-            range: TextRange::empty(0.into()),
-            location: None,
-            fix: Fix::empty(),
-            filename: "".into(),
-        }
-    }
-
     // TODO: in these three functions, the first condition should be removed
     // once comments in nodes are better handled, #95.
     pub fn has_safe_fix(&self) -> bool {
-        if self.fix.to_skip {
-            return false;
-        }
-        Rule::from_name(&self.message.name)
-            .map(|r| r.fix_status() == FixStatus::Safe)
-            .unwrap_or(false)
+        !self.fix.to_skip && self.message.rule.fix_status() == FixStatus::Safe
     }
     pub fn has_unsafe_fix(&self) -> bool {
-        if self.fix.to_skip {
-            return false;
-        }
-        Rule::from_name(&self.message.name)
-            .map(|r| r.fix_status() == FixStatus::Unsafe)
-            .unwrap_or(false)
+        !self.fix.to_skip && self.message.rule.fix_status() == FixStatus::Unsafe
     }
     pub fn has_no_fix(&self) -> bool {
-        if self.fix.to_skip {
-            return true;
-        }
-        Rule::from_name(&self.message.name)
-            .map(|r| r.fix_status() == FixStatus::None)
-            .unwrap_or(true)
+        self.fix.to_skip || self.message.rule.fix_status() == FixStatus::None
     }
 }
 

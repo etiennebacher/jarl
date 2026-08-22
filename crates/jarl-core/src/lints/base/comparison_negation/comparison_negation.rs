@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -81,7 +82,7 @@ pub fn comparison_negation(ast: &RUnaryExpression) -> anyhow::Result<Option<Diag
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "comparison_negation".to_string(),
+            Rule::ComparisonNegation,
             format!("`!(x {} y)` can be simplified.", operator.text_trimmed()),
             Some(format!("Use `x {} y` instead.", replacement_operator)),
         ),

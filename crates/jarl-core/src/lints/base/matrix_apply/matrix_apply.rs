@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{Formals, get_arg, get_arg_by_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -137,7 +138,7 @@ pub fn matrix_apply(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnos
 
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "matrix_apply".to_string(),
+            Rule::MatrixApply,
             msg.to_string(),
             Some(suggestion.to_string()),
         ),

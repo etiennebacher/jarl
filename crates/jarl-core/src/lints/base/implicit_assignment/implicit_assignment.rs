@@ -1,5 +1,6 @@
 use crate::check::Checker;
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::get_function_name;
 use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
@@ -204,7 +205,7 @@ pub fn implicit_assignment(
 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
-        ViolationData::new("implicit_assignment".to_string(), msg.to_string(), None),
+        ViolationData::new(Rule::ImplicitAssignment, msg.to_string(), None),
         range,
         Fix::empty(),
     );

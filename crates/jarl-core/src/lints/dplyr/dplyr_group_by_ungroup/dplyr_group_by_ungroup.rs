@@ -1,6 +1,7 @@
 use crate::check::Checker;
 use crate::checker::PackageOrigin;
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_function_name, get_function_namespace_prefix, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, TextRange};
@@ -230,7 +231,7 @@ pub fn dplyr_group_by_ungroup(
     };
 
     Ok(Some(Diagnostic::new(
-        ViolationData::new("dplyr_group_by_ungroup".to_string(), body, Some(suggestion)),
+        ViolationData::new(Rule::DplyrGroupByUngroup, body, Some(suggestion)),
         range,
         fix,
     )))

@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -78,7 +79,7 @@ pub fn nzchar(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let diagnostic = match operator.kind() {
         RSyntaxKind::EQUAL2 => Diagnostic::new(
             ViolationData::new(
-                "nzchar".to_string(),
+                Rule::NzChar,
                 "`x == \"\"` is inefficient.".to_string(),
                 Some("Use `!nzchar(x)` instead.".to_string()),
             ),
@@ -92,7 +93,7 @@ pub fn nzchar(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
         ),
         RSyntaxKind::NOT_EQUAL => Diagnostic::new(
             ViolationData::new(
-                "nzchar".to_string(),
+                Rule::NzChar,
                 "`x != \"\"` is inefficient.".to_string(),
                 Some("Use `nzchar(x)` instead.".to_string()),
             ),

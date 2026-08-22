@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{Formals, get_arg};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -95,7 +96,7 @@ pub fn download_file(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagno
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "download_file".to_string(),
+            Rule::DownloadFile,
             msg.to_string(),
             Some(suggestion.to_string()),
         ),

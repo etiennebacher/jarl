@@ -1,5 +1,6 @@
 use crate::checker::Checker;
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::get_function_name;
 use air_r_syntax::*;
 use biome_rowan::{AstNode, SyntaxResult};
@@ -38,8 +39,8 @@ pub struct NestedPipe;
 /// print(out)
 /// ```
 impl Violation for NestedPipe {
-    fn name(&self) -> String {
-        "nested_pipe".to_string()
+    fn rule(&self) -> Rule {
+        Rule::NestedPipe
     }
     fn body(&self) -> String {
         "Don't nest pipes inside other calls.".to_string()

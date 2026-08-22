@@ -546,7 +546,8 @@ mod tests {
             if let Ok(diagnostics) = result {
                 for d in diagnostics {
                     let content = fs::read_to_string(&d.filename).unwrap();
-                    let rendered = render_diagnostic(&content, path, &d.message.name, d, &renderer);
+                    let rendered =
+                        render_diagnostic(&content, path, d.message.rule.name(), d, &renderer);
                     all_diagnostics.push((d, rendered));
                 }
             }

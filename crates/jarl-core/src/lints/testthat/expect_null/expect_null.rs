@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{
     Formals, get_arg, get_function_name, get_function_namespace_prefix, node_contains_comments,
 };
@@ -80,7 +81,7 @@ fn check_expect_equal_null(ast: &RCall, function_name: &str) -> anyhow::Result<O
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "expect_null".to_string(),
+            Rule::TestthatExpectNull,
             format!(
                 "`{}(x, NULL)` is not as clear as `expect_null(x)`.",
                 function_name
@@ -123,7 +124,7 @@ fn check_expect_true_is_null(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "expect_null".to_string(),
+            Rule::TestthatExpectNull,
             "`expect_true(is.null(x))` is not as clear as `expect_null(x)`.".to_string(),
             Some("Use `expect_null(x)` instead.".to_string()),
         ),

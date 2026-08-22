@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -79,7 +80,7 @@ pub fn notin(ast: &RUnaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "notin".to_string(),
+            Rule::NotIn,
             format!("`{linted_expression}` can be simplified."),
             Some("Use `x %notin% y` instead.".to_string()),
         ),

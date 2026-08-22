@@ -242,9 +242,9 @@ impl Emitter for ConciseEmitter {
             };
             let use_colors = std::env::var("NO_COLOR").is_err();
             let rule_name = if use_colors {
-                &make_hyperlink(&diagnostic.message.name)
+                &make_hyperlink(diagnostic.message.rule.name())
             } else {
-                &diagnostic.message.name
+                diagnostic.message.rule.name()
             };
             writeln!(
                 writer,
@@ -320,7 +320,7 @@ impl Emitter for GithubEmitter {
             write!(
                 writer,
                 "::warning title=Jarl ({}),file={file},line={row},col={col}::{file}:{row}:{col} ",
-                diagnostic.message.name,
+                diagnostic.message.rule,
                 file = diagnostic.filename.to_string_lossy()
             )?;
 
@@ -329,7 +329,7 @@ impl Emitter for GithubEmitter {
             } else {
                 diagnostic.message.body.clone()
             };
-            writeln!(writer, "[{}] {}", diagnostic.message.name, message)?;
+            writeln!(writer, "[{}] {}", diagnostic.message.rule, message)?;
         }
 
         writer.flush()?;
@@ -522,7 +522,7 @@ impl Emitter for SarifEmitter {
             std::collections::BTreeMap::new();
         for diagnostic in diagnostics {
             rule_bodies
-                .entry(&diagnostic.message.name)
+                .entry(diagnostic.message.rule.name())
                 .or_insert(&diagnostic.message.body);
         }
         let rules: Vec<SarifRule> = rule_bodies
@@ -592,8 +592,8 @@ impl Emitter for SarifEmitter {
             };
 
             results.push(SarifResult {
-                rule_id: &diagnostic.message.name,
-                rule_index: rule_indices[diagnostic.message.name.as_str()],
+                rule_id: diagnostic.message.rule.name(),
+                rule_index: rule_indices[diagnostic.message.rule.name()],
                 level: "warning",
                 message: SarifMessage { text: Cow::Owned(message) },
                 locations: [SarifLocation {
@@ -721,9 +721,9 @@ impl Emitter for FullEmitter {
 
             // Create the main message with clickable rule name
             let title = if use_colors {
-                make_hyperlink(&diagnostic.message.name)
+                make_hyperlink(diagnostic.message.rule.name())
             } else {
-                diagnostic.message.name.clone()
+                diagnostic.message.rule.name().to_string()
             };
 
             let rendered = render_diagnostic(source, file_path, &title, diagnostic, &renderer);
