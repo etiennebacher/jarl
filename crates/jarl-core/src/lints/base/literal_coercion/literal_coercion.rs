@@ -110,12 +110,7 @@ pub fn literal_coercion(
             Some(format!("Use `{}` instead of `{}`.", result, call_text)),
         ),
         range,
-        Fix {
-            content: result,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(range, result, node_contains_comments(ast.syntax())),
     );
     Ok(Some(diagnostic))
 }

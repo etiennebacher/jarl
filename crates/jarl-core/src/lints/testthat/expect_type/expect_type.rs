@@ -100,15 +100,14 @@ fn check_expect_equal_typeof(
             Some("Use `expect_type(x, t)` instead.".to_string()),
         ),
         range,
-        Fix {
-            content: format!(
+        Fix::new(
+            range,
+            format!(
                 "{}expect_type({}, {})",
                 namespace_prefix, inner_text, type_text
             ),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))
@@ -166,15 +165,14 @@ fn check_expect_true_is_type(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> 
             Some("Use `expect_type(x, t)` instead.".to_string()),
         ),
         range,
-        Fix {
-            content: format!(
+        Fix::new(
+            range,
+            format!(
                 "{}expect_type({}, {})",
                 namespace_prefix, inner_text, type_str
             ),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

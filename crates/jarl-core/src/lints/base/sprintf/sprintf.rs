@@ -102,12 +102,11 @@ pub fn sprintf(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>>
                 Some("Use directly the input of `sprintf()` instead.".to_string()),
             ),
             range,
-            Fix {
-                content: parse_result.output_string,
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                parse_result.output_string,
+                node_contains_comments(ast.syntax()),
+            ),
         );
         return Ok(Some(diagnostic));
     }

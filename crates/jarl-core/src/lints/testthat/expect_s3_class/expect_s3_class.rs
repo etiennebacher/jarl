@@ -138,15 +138,14 @@ fn check_expect_class_comparison(
         ),
         range,
         if can_fix {
-            Fix {
-                content: format!(
+            Fix::new(
+                range,
+                format!(
                     "{}expect_s3_class({}, {})",
                     namespace_prefix, object_text, class_text
                 ),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            }
+                node_contains_comments(ast.syntax()),
+            )
         } else {
             Fix::empty()
         },
@@ -193,12 +192,11 @@ fn check_expect_true_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         ),
         range,
         if can_fix {
-            Fix {
-                content: format!("{namespace_prefix}{replacement}"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            }
+            Fix::new(
+                range,
+                format!("{namespace_prefix}{replacement}"),
+                node_contains_comments(ast.syntax()),
+            )
         } else {
             Fix::empty()
         },

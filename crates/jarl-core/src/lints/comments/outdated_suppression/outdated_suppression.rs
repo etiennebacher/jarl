@@ -69,12 +69,12 @@ fn create_fix(suppression: &UnusedSuppression, source: &str) -> Fix {
         None => String::new(),
     };
 
-    Fix {
+    Fix::new_with_offsets(
+        line_start(source, comment.start().into()),
+        next_line_start(source, last_comment_end),
         content,
-        start: line_start(source, comment.start().into()),
-        end: next_line_start(source, last_comment_end),
-        to_skip: false,
-    }
+        false,
+    )
 }
 
 /// Offset of the first character of the line containing `offset`.

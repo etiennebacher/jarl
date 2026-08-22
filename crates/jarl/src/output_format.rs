@@ -573,8 +573,8 @@ impl Emitter for SarifEmitter {
             // A fix is only emitted when it edits the source (not skipped, and
             // it either inserts content or deletes a non-empty range).
             let fix = &diagnostic.fix;
-            let fixes = if !fix.to_skip && (fix.start != fix.end || !fix.content.is_empty()) {
-                let deleted_region = range_to_region(content, fix.start, fix.end);
+            let fixes = if !fix.to_skip && (fix.start() != fix.end() || !fix.content.is_empty()) {
+                let deleted_region = range_to_region(content, fix.start(), fix.end());
                 let inserted_content = (!fix.content.is_empty())
                     .then(|| SarifMessage { text: Cow::Owned(fix.content.clone()) });
                 vec![SarifFix {

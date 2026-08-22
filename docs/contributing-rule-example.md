@@ -294,20 +294,19 @@ let range = ast.syntax().text_trimmed_range();
 let diagnostic = Diagnostic::new(
     List2Df,
     range,
-    Fix {
-        content: format!("list2DF({})", fix_content.to_trimmed_text()),
-        start: range.start().into(),
-        end: range.end().into(),
-        to_skip: node_contains_comments(ast.syntax()),
-    },
+    Fix::new(
+        range,
+        format!("list2DF({})", fix_content.to_trimmed_text()),
+        node_contains_comments(ast.syntax()),
+    ),
 );
 
 Ok(Some(diagnostic))
 ```
 
-All diagnostics contain a `Violation` (we defined the one for `List2Df` just below the documentation), a range indicating where it is located in the code, and a `Fix` (which may be `Fix::Empty()` if there is no automatic fix).
+All diagnostics contain a `Violation` (we defined the one for `List2Df` just below the documentation), a range indicating where it is located in the code, and `Fix::new()` (or `Fix::empty()` if there is no automatic fix).
 
-Finally, note that `Fix` has a field `to_skip: node_contains_comments(ast.syntax())`. This tells Jarl not to apply the automatic fix if the node in question contains a comment. Handling comments positions in automatic fixes is quite complicated so, for now, fixes are not applied if the node contains a comment, e.g.:
+Finally, note that `Fix::new()` has an argument `to_skip: node_contains_comments(ast.syntax())`. This tells Jarl not to apply the automatic fix if the node in question contains a comment. Handling comments positions in automatic fixes is quite complicated so, for now, fixes are not applied if the node contains a comment, e.g.:
 
 ```r
 # This code wouldn't be automatically fixed because we don't know where the

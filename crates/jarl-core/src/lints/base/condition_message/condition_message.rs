@@ -76,11 +76,10 @@ pub fn condition_message(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Di
             Some(format!("Use `{}(...)` instead.", fn_name)),
         ),
         range,
-        Fix {
-            content: format!("{}({})", fn_name, new_content),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(&outer_syntax),
-        },
+        Fix::new(
+            range,
+            format!("{}({})", fn_name, new_content),
+            node_contains_comments(&outer_syntax),
+        ),
     )))
 }

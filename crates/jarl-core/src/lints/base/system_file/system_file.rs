@@ -104,12 +104,11 @@ pub fn system_file(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
     let diagnostic = Diagnostic::new(
         SystemFile,
         range,
-        Fix {
-            content: format!("system.file({}, {})", file_path_inner_content, other_args),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("system.file({}, {})", file_path_inner_content, other_args),
+            node_contains_comments(ast.syntax()),
+        ),
     );
     Ok(Some(diagnostic))
 }

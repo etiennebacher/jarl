@@ -131,12 +131,7 @@ pub fn fixed_regex(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
     let diagnostic = Diagnostic::new(
         FixedRegex,
         range,
-        Fix {
-            content: fixed_content,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(range, fixed_content, node_contains_comments(ast.syntax())),
     );
 
     Ok(Some(diagnostic))

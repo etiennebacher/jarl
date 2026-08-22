@@ -1,5 +1,5 @@
 use annotate_snippets::{Level, Renderer, Snippet};
-use biome_rowan::TextRange;
+use biome_rowan::{TextRange, TextSize};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::path::PathBuf;
@@ -11,21 +11,43 @@ use crate::rule_set::{FixStatus, Rule};
 // The fix to apply to the violation.
 pub struct Fix {
     pub content: String,
-    pub start: usize,
-    pub end: usize,
+    // Portion of the source replaced by `content`.
+    pub range: TextRange,
     // TODO: This is used only to not add a Fix when the node contains a comment
     // because I don't know how to handle them for now, #95.
     pub to_skip: bool,
 }
 
 impl Fix {
+    /// Replace the source covered by `range` with `content`.
+    pub fn new(range: TextRange, content: String, to_skip: bool) -> Self {
+        Self { content, range, to_skip }
+    }
+
+    /// Same as [`Fix::replace`] for callers that compute byte offsets outside
+    /// of the syntax tree (e.g. from the raw source).
+    pub fn new_with_offsets(start: usize, end: usize, content: String, to_skip: bool) -> Self {
+        Self::new(
+            TextRange::new(TextSize::from(start as u32), TextSize::from(end as u32)),
+            content,
+            to_skip,
+        )
+    }
+
     pub fn empty() -> Self {
         Self {
             content: "".to_string(),
-            start: 0usize,
-            end: 0usize,
+            range: TextRange::default(),
             to_skip: true,
         }
+    }
+
+    pub fn start(&self) -> usize {
+        self.range.start().into()
+    }
+
+    pub fn end(&self) -> usize {
+        self.range.end().into()
     }
 }
 

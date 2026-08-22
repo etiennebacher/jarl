@@ -80,12 +80,11 @@ pub fn lengths(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>>
         let diagnostic = Diagnostic::new(
             Lengths,
             range,
-            Fix {
-                content: format!("lengths({})", arg_x.unwrap().into_syntax().text_trimmed()),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                format!("lengths({})", arg_x.unwrap().into_syntax().text_trimmed()),
+                node_contains_comments(ast.syntax()),
+            ),
         );
         return Ok(Some(diagnostic));
     };

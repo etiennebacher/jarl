@@ -107,12 +107,7 @@ pub fn seq(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
             Some(format!("Use `{suggestion}` instead.").to_string()),
         ),
         range,
-        Fix {
-            content: replacement,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(range, replacement, node_contains_comments(ast.syntax())),
     );
 
     Ok(Some(diagnostic))

@@ -53,12 +53,7 @@ pub fn numeric_leading_zero(ast: &AnyRValue) -> anyhow::Result<Option<Diagnostic
         let diagnostic = Diagnostic::new(
             NumericLeadingZero,
             range,
-            Fix {
-                content: format!("0{value_text}"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: false,
-            },
+            Fix::new(range, format!("0{value_text}"), false),
         );
         return Ok(Some(diagnostic));
     }

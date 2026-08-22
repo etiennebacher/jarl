@@ -88,12 +88,11 @@ fn check_expect_equal_null(ast: &RCall, function_name: &str) -> anyhow::Result<O
             Some("Use `expect_null(x)` instead.".to_string()),
         ),
         range,
-        Fix {
-            content: format!("{}expect_null({})", namespace_prefix, other_arg_text),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("{}expect_null({})", namespace_prefix, other_arg_text),
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))
@@ -128,12 +127,11 @@ fn check_expect_true_is_null(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> 
             Some("Use `expect_null(x)` instead.".to_string()),
         ),
         range,
-        Fix {
-            content: format!("{}expect_null({})", namespace_prefix, inner_text),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("{}expect_null({})", namespace_prefix, inner_text),
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

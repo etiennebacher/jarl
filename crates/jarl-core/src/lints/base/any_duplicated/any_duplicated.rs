@@ -61,11 +61,10 @@ pub fn any_duplicated(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagn
     Ok(Some(Diagnostic::new(
         AnyDuplicated,
         range,
-        Fix {
-            content: format!("anyDuplicated({inner_content}) > 0"),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(&outer_syntax),
-        },
+        Fix::new(
+            range,
+            format!("anyDuplicated({inner_content}) > 0"),
+            node_contains_comments(&outer_syntax),
+        ),
     )))
 }

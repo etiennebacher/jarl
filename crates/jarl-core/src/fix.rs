@@ -25,17 +25,17 @@ pub fn apply_fixes(fixes: &[Diagnostic], contents: &str) -> String {
 
     for fix in fixes {
         // Skip overlapping fixes; they'll be handled in the next iteration.
-        if fix.start < last_original_end {
+        if fix.start() < last_original_end {
             continue;
         }
 
         let diff_length = new_length - old_length;
-        let start = (fix.start as i32 + diff_length) as usize;
-        let end = (fix.end as i32 + diff_length) as usize;
+        let start = (fix.start() as i32 + diff_length) as usize;
+        let end = (fix.end() as i32 + diff_length) as usize;
 
         new_content.replace_range(start..end, &fix.content);
         new_length = new_content.chars().count() as i32;
-        last_original_end = fix.end;
+        last_original_end = fix.end();
     }
 
     new_content

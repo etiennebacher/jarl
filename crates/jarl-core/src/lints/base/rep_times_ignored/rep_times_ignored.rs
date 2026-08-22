@@ -117,11 +117,6 @@ pub fn rep_times_ignored(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             Some(format!("Use `{replacement}` instead.")),
         ),
         range,
-        Fix {
-            content: replacement,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(range, replacement, node_contains_comments(ast.syntax())),
     )))
 }

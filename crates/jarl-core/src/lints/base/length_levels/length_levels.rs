@@ -49,11 +49,10 @@ pub fn length_levels(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagno
     Ok(Some(Diagnostic::new(
         LengthLevels,
         range,
-        Fix {
-            content: format!("nlevels({inner_content})"),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(&outer_syntax),
-        },
+        Fix::new(
+            range,
+            format!("nlevels({inner_content})"),
+            node_contains_comments(&outer_syntax),
+        ),
     )))
 }

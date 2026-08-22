@@ -82,14 +82,13 @@ pub fn expect_s4_class(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diag
             Some(format!("Use `{replacement}` instead.")),
         ),
         range,
-        Fix {
-            content: format!(
+        Fix::new(
+            range,
+            format!(
                 "{}expect_s4_class({}, {})",
                 namespace_prefix, object_text, class_text
             ),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+            node_contains_comments(ast.syntax()),
+        ),
     )))
 }

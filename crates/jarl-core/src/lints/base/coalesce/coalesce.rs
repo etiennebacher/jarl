@@ -182,12 +182,11 @@ pub fn coalesce(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
             Some("Use `x %||% y` instead.".to_string()),
         ),
         range,
-        Fix {
-            content: fix_content.clone(),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()) || skip_fix,
-        },
+        Fix::new(
+            range,
+            fix_content.clone(),
+            node_contains_comments(ast.syntax()) || skip_fix,
+        ),
     );
 
     Ok(Some(diagnostic))

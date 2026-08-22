@@ -104,12 +104,7 @@ pub fn outer_negation(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
             Some(suggestion.to_string()),
         ),
         range,
-        Fix {
-            content: fix,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(range, fix, node_contains_comments(ast.syntax())),
     );
 
     Ok(Some(diagnostic))

@@ -250,15 +250,16 @@ pub fn remap_roxygen_range(
 
 /// Remap a fix from chunk-local byte offsets to original file positions.
 ///
-/// This remaps `fix.start` and `fix.end`, and also inserts the roxygen comment
+/// This remaps the fix range, and also inserts the roxygen comment
 /// prefix (e.g. `#' `) before each new line in the fix content so that the
 /// replacement text is valid roxygen when applied to the original file.
 pub fn remap_roxygen_fix(fix: &Fix, chunk: &RoxygenExamplesChunk, contents: &str) -> Fix {
-    let new_start = remap_byte_offset(fix.start, chunk);
-    let new_end = remap_byte_offset(fix.end, chunk);
+    let start = fix.start();
+    let new_start = remap_byte_offset(start, chunk);
+    let new_end = remap_byte_offset(fix.end(), chunk);
 
     // Determine the roxygen prefix from the line where the fix starts.
-    let start_line_idx = match chunk.code_line_starts.binary_search(&fix.start) {
+    let start_line_idx = match chunk.code_line_starts.binary_search(&start) {
         Ok(i) => i,
         Err(i) => i.saturating_sub(1),
     };
@@ -269,12 +270,7 @@ pub fn remap_roxygen_fix(fix: &Fix, chunk: &RoxygenExamplesChunk, contents: &str
     // Insert the roxygen prefix before each new line in the fix content.
     let content = fix.content.replace('\n', &format!("\n{prefix}"));
 
-    Fix {
-        content,
-        start: new_start,
-        end: new_end,
-        to_skip: fix.to_skip,
-    }
+    Fix::new_with_offsets(new_start, new_end, content, fix.to_skip)
 }
 
 /// Pre-compute the byte offset of each line within a `code` string (lines

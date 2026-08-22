@@ -66,12 +66,11 @@ pub fn repeat(ast: &RWhileStatement) -> anyhow::Result<Option<Diagnostic>> {
         let diagnostic = Diagnostic::new(
             Repeat,
             range_to_report,
-            Fix {
-                content: format!("repeat {fix_content}"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                format!("repeat {fix_content}"),
+                node_contains_comments(ast.syntax()),
+            ),
         );
         return Ok(Some(diagnostic));
     }

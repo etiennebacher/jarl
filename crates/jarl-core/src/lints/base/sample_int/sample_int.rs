@@ -92,12 +92,11 @@ pub fn sample_int(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnosti
     let diagnostic = Diagnostic::new(
         SampleInt,
         range,
-        Fix {
-            content: format!("sample.int({inner_content})"),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("sample.int({inner_content})"),
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

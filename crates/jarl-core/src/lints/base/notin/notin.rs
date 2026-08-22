@@ -84,16 +84,15 @@ pub fn notin(ast: &RUnaryExpression) -> anyhow::Result<Option<Diagnostic>> {
             Some("Use `x %notin% y` instead.".to_string()),
         ),
         range,
-        Fix {
-            content: format!(
+        Fix::new(
+            range,
+            format!(
                 "{} %notin% {}",
                 left.to_trimmed_text(),
                 right.to_trimmed_text()
             ),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

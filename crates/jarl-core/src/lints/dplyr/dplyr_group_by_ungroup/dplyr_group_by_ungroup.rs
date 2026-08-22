@@ -221,12 +221,11 @@ pub fn dplyr_group_by_ungroup(
             Some(pos) => format!("{}, {by_arg} = {grouping_args})", &verb_text[..pos]),
             None => return Ok(None),
         };
-        Fix {
-            content: fix_content,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(pipe_expr.syntax()),
-        }
+        Fix::new(
+            range,
+            fix_content,
+            node_contains_comments(pipe_expr.syntax()),
+        )
     };
 
     Ok(Some(Diagnostic::new(

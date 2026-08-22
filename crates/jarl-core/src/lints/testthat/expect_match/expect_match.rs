@@ -148,16 +148,15 @@ pub fn expect_match(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnos
     let diagnostic = Diagnostic::new(
         ExpectMatch,
         range,
-        Fix {
-            content: format!(
+        Fix::new(
+            range,
+            format!(
                 "{}expect_match({})",
                 namespace_prefix,
                 inner_content.join(", ")
             ),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

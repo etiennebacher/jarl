@@ -171,8 +171,10 @@ fn test_output_json() -> anyhow::Result<()> {
           },
           "fix": {
             "content": "anyNA(x)",
-            "start": 0,
-            "end": 13,
+            "range": [
+              0,
+              13
+            ],
             "to_skip": false
           }
         },
@@ -193,8 +195,10 @@ fn test_output_json() -> anyhow::Result<()> {
           },
           "fix": {
             "content": "anyDuplicated(x) > 0",
-            "start": 0,
-            "end": 18,
+            "range": [
+              0,
+              18
+            ],
             "to_skip": false
           }
         }
@@ -240,8 +244,10 @@ fn test_output_json() -> anyhow::Result<()> {
           },
           "fix": {
             "content": "anyNA(x)",
-            "start": 0,
-            "end": 13,
+            "range": [
+              0,
+              13
+            ],
             "to_skip": false
           }
         },
@@ -262,8 +268,10 @@ fn test_output_json() -> anyhow::Result<()> {
           },
           "fix": {
             "content": "anyDuplicated(x) > 0",
-            "start": 0,
-            "end": 18,
+            "range": [
+              0,
+              18
+            ],
             "to_skip": false
           }
         }
@@ -622,8 +630,10 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
           },
           "fix": {
             "content": "anyNA(x)",
-            "start": 0,
-            "end": 13,
+            "range": [
+              0,
+              13
+            ],
             "to_skip": false
           }
         }

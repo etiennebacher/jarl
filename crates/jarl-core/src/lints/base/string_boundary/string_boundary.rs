@@ -105,12 +105,7 @@ pub fn string_boundary(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnos
                 Some("Use `startsWith()` instead.".to_string()),
             ),
             range,
-            Fix {
-                content: replacement,
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(range, replacement, node_contains_comments(ast.syntax())),
         );
         return Ok(Some(diagnostic));
     }
@@ -135,12 +130,7 @@ pub fn string_boundary(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnos
                 Some("Use `endsWith()` instead.".to_string()),
             ),
             range,
-            Fix {
-                content: replacement,
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(range, replacement, node_contains_comments(ast.syntax())),
         );
         return Ok(Some(diagnostic));
     }

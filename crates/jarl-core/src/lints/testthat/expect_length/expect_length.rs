@@ -132,12 +132,11 @@ pub fn expect_length(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagno
             Some("Use `expect_length(x, n)` instead.".to_string()),
         ),
         range,
-        Fix {
-            content: format!("{}expect_length({}, {})", namespace_prefix, x_text, n_text),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("{}expect_length({}, {})", namespace_prefix, x_text, n_text),
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

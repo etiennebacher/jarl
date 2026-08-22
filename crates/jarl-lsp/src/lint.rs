@@ -279,8 +279,8 @@ fn convert_to_lsp_diagnostic(
     // Always include fix_data even if there's no actual fix, so we can access the rule_name
     let diagnostic_fix = DiagnosticFix {
         content: jarl_diag.fix.content.clone(),
-        start: jarl_diag.fix.start,
-        end: jarl_diag.fix.end,
+        start: jarl_diag.fix.start(),
+        end: jarl_diag.fix.end(),
         is_safe: jarl_diag.has_safe_fix(),
         rule_name: jarl_diag.message.name.clone(),
         diagnostic_start: start_offset,

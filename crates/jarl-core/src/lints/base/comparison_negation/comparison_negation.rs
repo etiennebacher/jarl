@@ -86,17 +86,16 @@ pub fn comparison_negation(ast: &RUnaryExpression) -> anyhow::Result<Option<Diag
             Some(format!("Use `x {} y` instead.", replacement_operator)),
         ),
         range,
-        Fix {
-            content: format!(
+        Fix::new(
+            range,
+            format!(
                 "{} {} {}",
                 left.to_trimmed_text(),
                 replacement_operator,
                 right.to_trimmed_text()
             ),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

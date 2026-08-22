@@ -110,11 +110,10 @@ pub fn which_grepl(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
     Ok(Some(Diagnostic::new(
         WhichGrepl,
         range,
-        Fix {
-            content: replacement.clone(),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(&outer_syntax),
-        },
+        Fix::new(
+            range,
+            replacement.clone(),
+            node_contains_comments(&outer_syntax),
+        ),
     )))
 }

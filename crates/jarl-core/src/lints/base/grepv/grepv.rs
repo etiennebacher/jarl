@@ -83,12 +83,11 @@ pub fn grepv(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     let diagnostic = Diagnostic::new(
         Grepv,
         range,
-        Fix {
-            content: format!("grepv({inner_content})"),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("grepv({inner_content})"),
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

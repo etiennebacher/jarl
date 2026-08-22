@@ -88,12 +88,11 @@ pub fn is_numeric(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>>
     let diagnostic = Diagnostic::new(
         IsNumeric,
         range,
-        Fix {
-            content: format!("is.numeric{left_arg}"),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("is.numeric{left_arg}"),
+            node_contains_comments(ast.syntax()),
+        ),
     );
     Ok(Some(diagnostic))
 }

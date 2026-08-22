@@ -97,12 +97,11 @@ pub fn expect_named(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnos
             Some("Use `expect_named(x, n)` instead.".to_string()),
         ),
         range,
-        Fix {
-            content: format!("{}expect_named({}, {})", namespace_prefix, x_text, n_text),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("{}expect_named({}, {})", namespace_prefix, x_text, n_text),
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

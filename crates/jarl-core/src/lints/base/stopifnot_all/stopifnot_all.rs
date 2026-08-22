@@ -78,11 +78,10 @@ pub fn stopifnot_all(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagno
     Ok(Some(Diagnostic::new(
         StopifnotAll,
         range,
-        Fix {
-            content: arguments.into_syntax().to_string(),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            arguments.into_syntax().to_string(),
+            node_contains_comments(ast.syntax()),
+        ),
     )))
 }

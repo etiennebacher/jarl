@@ -89,12 +89,7 @@ pub fn unnecessary_nesting(ast: &RIfStatement) -> anyhow::Result<Option<Diagnost
             Some("Gather the two conditions with `&&` instead.".to_string()),
         ),
         range,
-        Fix {
-            content: replacement,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(range, replacement, node_contains_comments(ast.syntax())),
     );
 
     Ok(Some(diagnostic))

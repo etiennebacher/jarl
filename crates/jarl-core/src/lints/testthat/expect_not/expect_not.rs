@@ -111,12 +111,11 @@ pub fn expect_not(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnosti
             Some(format!("Use `{}(x)` instead.", replacement_fn)),
         ),
         range,
-        Fix {
-            content: format!("{}{}({})", namespace_prefix, replacement_fn, inner_text),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("{}{}({})", namespace_prefix, replacement_fn, inner_text),
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

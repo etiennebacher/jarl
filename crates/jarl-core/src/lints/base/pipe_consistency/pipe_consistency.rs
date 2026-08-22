@@ -138,12 +138,7 @@ pub fn pipe_consistency(
             Some(suggestion.to_string()),
         ),
         op_range,
-        Fix {
-            content,
-            start: bin_range.start().into(),
-            end: bin_range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(bin_range, content, node_contains_comments(ast.syntax())),
     );
 
     Ok(Some(diagnostic))

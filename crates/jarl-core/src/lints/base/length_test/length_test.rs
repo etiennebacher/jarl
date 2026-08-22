@@ -83,12 +83,11 @@ pub fn length_test(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
         let diagnostic = Diagnostic::new(
             LengthTest,
             range,
-            Fix {
-                content: format!("length({lhs}) {operator_text} {rhs}"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                format!("length({lhs}) {operator_text} {rhs}"),
+                node_contains_comments(ast.syntax()),
+            ),
         );
         return Ok(Some(diagnostic));
     }

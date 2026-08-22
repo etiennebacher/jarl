@@ -82,12 +82,7 @@ pub fn redundant_equals(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagno
             Diagnostic::new(
                 RedundantEquals,
                 range,
-                Fix {
-                    content: fix,
-                    start: range.start().into(),
-                    end: range.end().into(),
-                    to_skip: node_contains_comments(ast.syntax()),
-                },
+                Fix::new(range, fix, node_contains_comments(ast.syntax())),
             )
         }
         RSyntaxKind::NOT_EQUAL => {
@@ -106,12 +101,7 @@ pub fn redundant_equals(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagno
             Diagnostic::new(
                 RedundantEquals,
                 range,
-                Fix {
-                    content: fix,
-                    start: range.start().into(),
-                    end: range.end().into(),
-                    to_skip: node_contains_comments(ast.syntax()),
-                },
+                Fix::new(range, fix, node_contains_comments(ast.syntax())),
             )
         }
         _ => return Ok(None),

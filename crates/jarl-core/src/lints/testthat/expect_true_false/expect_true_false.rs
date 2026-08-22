@@ -99,12 +99,11 @@ pub fn expect_true_false(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Di
             Some(suggestion.to_string()),
         ),
         range,
-        Fix {
-            content: format!("{}{}({})", namespace_prefix, new_function, other_arg_text),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("{}{}({})", namespace_prefix, new_function, other_arg_text),
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

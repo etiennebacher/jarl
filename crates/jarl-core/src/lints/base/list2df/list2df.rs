@@ -82,12 +82,11 @@ pub fn list2df(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>>
     let diagnostic = Diagnostic::new(
         List2Df,
         range,
-        Fix {
-            content: format!("list2DF({})", fix_content.to_trimmed_text()),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("list2DF({})", fix_content.to_trimmed_text()),
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

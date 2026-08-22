@@ -88,32 +88,29 @@ pub fn equals_nan(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>>
         RSyntaxKind::EQUAL2 => Diagnostic::new(
             EqualsNaN,
             range,
-            Fix {
-                content: format!("is.nan({replacement})"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                format!("is.nan({replacement})"),
+                node_contains_comments(ast.syntax()),
+            ),
         ),
         RSyntaxKind::NOT_EQUAL => Diagnostic::new(
             EqualsNaN,
             range,
-            Fix {
-                content: format!("!is.nan({replacement})"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                format!("!is.nan({replacement})"),
+                node_contains_comments(ast.syntax()),
+            ),
         ),
         RSyntaxKind::SPECIAL if operator.text_trimmed() == "%in%" => Diagnostic::new(
             EqualsNaN,
             range,
-            Fix {
-                content: format!("is.nan({replacement})"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                format!("is.nan({replacement})"),
+                node_contains_comments(ast.syntax()),
+            ),
         ),
         _ => unreachable!("This case is an early return"),
     };

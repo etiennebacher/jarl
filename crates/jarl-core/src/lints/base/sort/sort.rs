@@ -122,12 +122,7 @@ pub fn sort(ast: &RSubset) -> anyhow::Result<Option<Diagnostic>> {
     let diagnostic = Diagnostic::new(
         Sort,
         range,
-        Fix {
-            content: fix,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(range, fix, node_contains_comments(ast.syntax())),
     );
 
     Ok(Some(diagnostic))

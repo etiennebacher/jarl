@@ -166,12 +166,7 @@ pub fn dplyr_filter_out(
             ),
         ),
         range,
-        Fix {
-            content: replacement,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(range, replacement, node_contains_comments(ast.syntax())),
     )))
 }
 

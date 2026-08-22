@@ -65,12 +65,11 @@ pub fn all_equal(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic
                 Some("Use `!isTRUE()` to check for differences instead.".to_string()),
             ),
             range,
-            Fix {
-                content: format!("!isTRUE(all.equal({inner_content}))"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(&outer_syntax),
-            },
+            Fix::new(
+                range,
+                format!("!isTRUE(all.equal({inner_content}))"),
+                node_contains_comments(&outer_syntax),
+            ),
         )));
     }
 
@@ -105,12 +104,7 @@ pub fn all_equal(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic
             Some("Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.".to_string()),
         ),
         range,
-        Fix {
-            content: fix_content,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(range, fix_content, node_contains_comments(ast.syntax())),
     );
 
     Ok(Some(diagnostic))

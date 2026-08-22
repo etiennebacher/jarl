@@ -75,11 +75,10 @@ pub fn unnecessary_parentheses(
             Some(suggestion),
         ),
         range,
-        Fix {
-            content: format!("({})", current.to_trimmed_string()),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("({})", current.to_trimmed_string()),
+            node_contains_comments(ast.syntax()),
+        ),
     )))
 }
