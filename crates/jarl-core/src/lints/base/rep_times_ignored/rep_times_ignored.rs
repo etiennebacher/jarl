@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_function_name, get_function_namespace_prefix, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
@@ -112,7 +113,7 @@ pub fn rep_times_ignored(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 
     Ok(Some(Diagnostic::new(
         ViolationData::new(
-            "rep_times_ignored".to_string(),
+            Rule::RepTimesIgnored,
             "`times` is ignored when `length.out` is supplied.".to_string(),
             Some(format!("Use `{replacement}` instead.")),
         ),

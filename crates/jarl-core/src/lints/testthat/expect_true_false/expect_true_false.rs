@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{Formals, get_arg, get_function_namespace_prefix, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -94,7 +95,7 @@ pub fn expect_true_false(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Di
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "expect_true_false".to_string(),
+            Rule::TestthatExpectTrueFalse,
             msg,
             Some(suggestion.to_string()),
         ),

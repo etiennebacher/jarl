@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{Formals, get_arg, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -67,8 +68,8 @@ pub struct FixedRegex;
 ///
 /// See `?grep` and `?fixed`
 impl Violation for FixedRegex {
-    fn name(&self) -> String {
-        "fixed_regex".to_string()
+    fn rule(&self) -> Rule {
+        Rule::FixedRegex
     }
     fn body(&self) -> String {
         "Pattern contains no regex special characters but `fixed = TRUE` is not set.".to_string()

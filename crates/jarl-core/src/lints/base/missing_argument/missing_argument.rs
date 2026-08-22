@@ -1,5 +1,6 @@
 use crate::check::Checker;
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 use biome_rowan::AstSeparatedList;
@@ -84,7 +85,7 @@ pub fn missing_argument(
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "missing_argument".to_string(),
+            Rule::MissingArgument,
             msg.to_string(),
             Some("Consider removing or filling them.".to_string()),
         ),

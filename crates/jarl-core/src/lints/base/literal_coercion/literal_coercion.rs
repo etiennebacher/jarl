@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_arg_by_position, get_unnamed_args, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, Direction};
@@ -105,7 +106,7 @@ pub fn literal_coercion(
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "literal_coercion".to_string(),
+            Rule::LiteralCoercion,
             "This coercion can be simplified.".to_string(),
             Some(format!("Use `{}` instead of `{}`.", result, call_text)),
         ),

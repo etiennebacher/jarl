@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::node_contains_comments;
 use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
@@ -40,8 +41,8 @@ pub struct RedundantEquals;
 /// }
 /// ```
 impl Violation for RedundantEquals {
-    fn name(&self) -> String {
-        "redundant_equals".to_string()
+    fn rule(&self) -> Rule {
+        Rule::RedundantEquals
     }
     fn body(&self) -> String {
         "Using == on a logical vector is redundant.".to_string()

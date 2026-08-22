@@ -1,5 +1,6 @@
 use crate::diagnostic::*;
 use crate::lints::base::quotes::options::PreferredQuote;
+use crate::rule_set::Rule;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -150,7 +151,7 @@ pub fn quotes(
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "quotes".to_string(),
+            Rule::Quotes,
             quote_message(preferred_quote).to_string(),
             None,
         ),

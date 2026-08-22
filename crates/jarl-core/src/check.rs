@@ -379,38 +379,27 @@ pub fn get_checks(
     // When we get all the diagnostics with check_expression() above, we don't
     // pay attention to whether the user wants to fix them or not. Adding this
     // step here is a way to filter those fixes out before calling apply_fixes().
-    let rules_without_fix = checker
-        .rule_set
-        .iter()
-        .filter(|x| x.has_no_fix())
-        .map(|x| x.name().to_string())
-        .collect::<Vec<String>>();
-
     let diagnostics: Vec<Diagnostic> = checker
         .diagnostics
         .into_iter()
         .map(|mut x| {
             x.filename = file.to_path_buf();
-            // Check if fix should be skipped based on fixable/unfixable settings
-            if rules_without_fix.contains(&x.message.name) {
-                x.fix = Fix::empty();
-            }
-            // Also check against unfixable set from config
-            if config.unfixable.contains(&x.message.name) {
-                x.fix = Fix::empty();
-            }
-            // If fixable is specified, only allow those rules to have fixes
-            if let Some(ref fixable_set) = config.fixable
-                && !fixable_set.contains(&x.message.name)
+            let rule = x.message.rule;
+            // The rule has no fix at all, the user excluded it via
+            // `unfixable` / `fixable`, the node carries a comment, or the file
+            // didn't parse cleanly: in all of those the fix must not apply.
+            //
+            // TODO: the `to_skip` term should be removed once comments in nodes
+            // are better handled, #95.
+            if rule.has_no_fix()
+                || config.unfixable.contains(&rule)
+                || config
+                    .fixable
+                    .as_ref()
+                    .is_some_and(|set| !set.contains(&rule))
+                || x.fix.to_skip
+                || has_parse_errors
             {
-                x.fix = Fix::empty();
-            }
-            // TODO: this should be removed once comments in nodes are better
-            // handled, #95
-            if x.fix.to_skip {
-                x.fix = Fix::empty();
-            }
-            if has_parse_errors {
                 x.fix = Fix::empty();
             }
             x

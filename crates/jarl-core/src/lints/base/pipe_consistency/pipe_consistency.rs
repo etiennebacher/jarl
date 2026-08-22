@@ -1,5 +1,6 @@
 use crate::diagnostic::*;
 use crate::lints::base::pipe_consistency::options::PreferredPipe;
+use crate::rule_set::Rule;
 use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::{AstNode, Direction, TextRange};
@@ -133,7 +134,7 @@ pub fn pipe_consistency(
 
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "pipe_consistency".to_string(),
+            Rule::PipeConsistency,
             body.to_string(),
             Some(suggestion.to_string()),
         ),

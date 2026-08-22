@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{
     get_arg_by_name, get_function_name, get_nested_functions_content, node_contains_comments,
 };
@@ -71,7 +72,7 @@ pub fn condition_message(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Di
     let range = outer_syntax.text_trimmed_range();
     Ok(Some(Diagnostic::new(
         ViolationData::new(
-            "condition_message".to_string(),
+            Rule::ConditionMessage,
             format!("`{}(paste0(...))` can be simplified.", fn_name),
             Some(format!("Use `{}(...)` instead.", fn_name)),
         ),

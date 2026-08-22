@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{
     Formals, get_arg, get_function_name, get_function_namespace_prefix, node_contains_comments,
 };
@@ -89,7 +90,7 @@ pub fn expect_named(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnos
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "expect_named".to_string(),
+            Rule::TestthatExpectNamed,
             format!(
                 "`expect_named(x, n)` is better than `{}(names(x), n)`.",
                 fn_name

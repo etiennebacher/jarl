@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::checker::Checker;
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use air_r_syntax::*;
 use anyhow::anyhow;
 use biome_rowan::AstNode;
@@ -100,7 +101,7 @@ pub fn duplicated_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Op
         let range = ast.syntax().text_trimmed_range();
         let diagnostic = Diagnostic::new(
             ViolationData::new(
-                "duplicated_arguments".to_string(),
+                Rule::DuplicatedArguments,
                 [
                     "Avoid duplicated arguments in function calls. Duplicated argument(s): ",
                     &duplicated_arg_names

@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -33,8 +34,8 @@ pub struct IsNumeric;
 ///
 /// See `?is.numeric`
 impl Violation for IsNumeric {
-    fn name(&self) -> String {
-        "is_numeric".to_string()
+    fn rule(&self) -> Rule {
+        Rule::IsNumeric
     }
     fn body(&self) -> String {
         "`is.numeric(x) || is.integer(x)` is redundant.".to_string()

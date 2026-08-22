@@ -11,6 +11,7 @@ use jarl_semantic::{
 
 use crate::checker::Checker;
 use crate::diagnostic::{Diagnostic, Fix, ViolationData};
+use crate::rule_set::Rule;
 use crate::utils::get_function_name;
 
 /// Version added: 0.6.0
@@ -309,7 +310,7 @@ fn make_diagnostic(
     let range = lhs_range_for_definition(def, root).unwrap_or_else(|| def.range());
     Diagnostic::new(
         ViolationData::new(
-            "unused_object".to_string(),
+            Rule::UnusedObject,
             format!("Object `{name}` is defined but never used."),
             None,
         ),

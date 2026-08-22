@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::suppression::UnusedSuppression;
 
 /// Version added: 0.4.0
@@ -38,7 +39,7 @@ pub fn outdated_suppression(unused: &[UnusedSuppression], source: &str) -> Vec<D
 fn create_diagnostic(suppression: &UnusedSuppression, source: &str) -> Diagnostic {
     Diagnostic::new(
         ViolationData::new(
-            "outdated_suppression".to_string(),
+            Rule::OutdatedSuppression,
             "This suppression comment is unused, no violation would be reported without it."
                 .to_string(),
             Some("Remove this suppression comment or verify that it's still needed.".to_string()),

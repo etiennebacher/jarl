@@ -1,3 +1,4 @@
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::str::FromStr;
 
@@ -852,6 +853,22 @@ declare_rules! {
         min_r_version: None,
     },
 
+}
+
+/// Serialized as the rule's string name, so a `Diagnostic` round-trips through
+/// the same identifier users write in `jarl.toml`.
+impl Serialize for Rule {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.name())
+    }
+}
+
+impl<'de> Deserialize<'de> for Rule {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let name = String::deserialize(deserializer)?;
+        Rule::from_name(&name)
+            .ok_or_else(|| serde::de::Error::custom(format!("unknown rule: {name}")))
+    }
 }
 
 /// A collection of rules

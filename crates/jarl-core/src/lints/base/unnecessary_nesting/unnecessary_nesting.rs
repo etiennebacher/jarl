@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstNodeList};
@@ -84,7 +85,7 @@ pub fn unnecessary_nesting(ast: &RIfStatement) -> anyhow::Result<Option<Diagnost
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "unnecessary_nesting".to_string(),
+            Rule::UnnecessaryNesting,
             "There is no need for nested if conditions here.".to_string(),
             Some("Gather the two conditions with `&&` instead.".to_string()),
         ),

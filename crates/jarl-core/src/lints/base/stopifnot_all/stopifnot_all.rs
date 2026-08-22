@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_arg_by_name, get_function_name, node_contains_comments};
 use air_r_syntax::{RArgument, RCall};
 use biome_rowan::AstNode;
@@ -37,8 +38,8 @@ pub struct StopifnotAll;
 ///
 /// See `?stopifnot`.
 impl Violation for StopifnotAll {
-    fn name(&self) -> String {
-        "stopifnot_all".to_string()
+    fn rule(&self) -> Rule {
+        Rule::StopifnotAll
     }
 
     fn body(&self) -> String {

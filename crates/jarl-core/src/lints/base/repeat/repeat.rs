@@ -1,3 +1,4 @@
+use crate::rule_set::Rule;
 use crate::{diagnostic::*, utils::node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -32,8 +33,8 @@ pub struct Repeat;
 /// }
 /// ```
 impl Violation for Repeat {
-    fn name(&self) -> String {
-        "repeat".to_string()
+    fn rule(&self) -> Rule {
+        Rule::Repeat
     }
     fn body(&self) -> String {
         "`while (TRUE)` is less clear than `repeat` for infinite loops.".to_string()

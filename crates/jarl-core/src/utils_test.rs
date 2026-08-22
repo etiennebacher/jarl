@@ -353,7 +353,7 @@ fn render_diagnostics(
         let rendered = render_diagnostic(
             text,
             "<test>",
-            &diagnostic.message.name,
+            diagnostic.message.rule.name(),
             diagnostic,
             &renderer,
         );

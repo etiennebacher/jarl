@@ -426,7 +426,7 @@ fn add_jarl_ignore_comments(
         for diagnostic in &diagnostics {
             let start: usize = diagnostic.range.start().into();
             let end: usize = diagnostic.range.end().into();
-            let rule_name = &diagnostic.message.name;
+            let rule_name = diagnostic.message.rule.name();
 
             let edit = if is_rmd {
                 create_suppression_edit_in_rmd(&content, start, end, rule_name, reason)
@@ -439,7 +439,7 @@ fn add_jarl_ignore_comments(
                     edit.insert_point.offset,
                     edit.insert_point.indent,
                     edit.insert_point.needs_leading_newline,
-                    rule_name.clone(),
+                    rule_name.to_string(),
                 ));
             }
         }
@@ -570,13 +570,13 @@ fn hide_unused_function_if_needed(
     let unused_fn_count = all_diagnostics
         .iter()
         .flat_map(|(_path, diagnostics)| diagnostics.iter())
-        .filter(|d| d.message.name == "unused_function")
+        .filter(|d| d.message.rule == Rule::UnusedFunction)
         .count();
 
     let hidden = !explicitly_selected && unused_fn_count > threshold_ignore;
     if hidden {
         for (_path, diagnostics) in all_diagnostics.iter_mut() {
-            diagnostics.retain(|d| d.message.name != "unused_function");
+            diagnostics.retain(|d| d.message.rule != Rule::UnusedFunction);
         }
         all_diagnostics.retain(|(_path, diagnostics)| !diagnostics.is_empty());
     }

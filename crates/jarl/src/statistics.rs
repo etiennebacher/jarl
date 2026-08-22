@@ -1,5 +1,6 @@
 use colored::Colorize;
 use jarl_core::diagnostic::Diagnostic;
+use jarl_core::rule_set::Rule;
 use std::{collections::HashMap, path::PathBuf};
 
 use crate::status::ExitStatus;
@@ -21,11 +22,10 @@ pub fn print_statistics(
 
     // Hashmap with rule name as key, and (number of occurrences, has_fix, has_unsafe_fix) as
     // value.
-    let mut hm: HashMap<&String, (usize, bool, bool)> = HashMap::new();
+    let mut hm: HashMap<Rule, (usize, bool, bool)> = HashMap::new();
 
     for diagnostic in diagnostics {
-        let rule_name = &diagnostic.message.name;
-        let entry = hm.entry(rule_name).or_default();
+        let entry = hm.entry(diagnostic.message.rule).or_default();
         entry.0 += 1;
         if diagnostic.has_safe_fix() {
             entry.1 = true;
@@ -51,7 +51,7 @@ pub fn print_statistics(
             "{:>5} [{}] {}",
             value.0.to_string().bold(),
             star,
-            key.bold().red()
+            key.name().bold().red()
         );
     }
 

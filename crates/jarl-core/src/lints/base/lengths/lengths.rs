@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{Formals, get_arg, node_contains_comments};
 use air_r_syntax::*;
 use anyhow::Context;
@@ -43,8 +44,8 @@ pub struct Lengths;
 ///
 /// See `?lengths`
 impl Violation for Lengths {
-    fn name(&self) -> String {
-        "lengths".to_string()
+    fn rule(&self) -> Rule {
+        Rule::Lengths
     }
     fn body(&self) -> String {
         "Using `length()` on each element of a list is inefficient.".to_string()

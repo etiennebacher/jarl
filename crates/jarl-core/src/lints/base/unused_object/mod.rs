@@ -64,7 +64,7 @@ mod tests {
             let rendered = render_diagnostic(
                 main,
                 "<test>",
-                &diagnostic.message.name,
+                diagnostic.message.rule.name(),
                 diagnostic,
                 &renderer,
             );

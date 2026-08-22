@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{Formals, drop_arg, get_arg, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -46,8 +47,8 @@ pub struct Grepv;
 ///
 /// See `?grepv`
 impl Violation for Grepv {
-    fn name(&self) -> String {
-        "grepv".to_string()
+    fn rule(&self) -> Rule {
+        Rule::Grepv
     }
     fn body(&self) -> String {
         "`grep(..., value = TRUE)` can be simplified.".to_string()

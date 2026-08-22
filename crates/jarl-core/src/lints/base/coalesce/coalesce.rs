@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_function_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstNodeList};
@@ -177,7 +178,7 @@ pub fn coalesce(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "coalesce".to_string(),
+            Rule::Coalesce,
             msg,
             Some("Use `x %||% y` instead.".to_string()),
         ),
