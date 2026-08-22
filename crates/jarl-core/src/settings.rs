@@ -13,7 +13,8 @@ pub struct Settings {
     pub linter: LinterSettings,
 }
 
-#[derive(Clone, Debug)]
+/// Uses `None` to indicate no rules specified, rather than empty vectors.
+#[derive(Clone, Debug, Default)]
 pub struct LinterSettings {
     pub select: Option<Vec<String>>,
     pub extend_select: Option<Vec<String>>,
@@ -31,27 +32,4 @@ pub struct LinterSettings {
     pub rule_options: ResolvedRuleOptions,
     /// Per-file rule ignores resolved from `[lint.per-file-ignores]`.
     pub per_file_ignores: PerFileIgnores,
-}
-
-impl Default for LinterSettings {
-    /// [Default] handler for [LinterSettings]
-    ///
-    /// Uses `None` to indicate no rules specified, rather than empty vectors.
-    fn default() -> Self {
-        Self {
-            select: None,
-            extend_select: None,
-            ignore: None,
-            include: None,
-            exclude: None,
-            default_exclude: None,
-            check_roxygen: None,
-            fix_roxygen: None,
-            fixable: None,
-            unfixable: None,
-            deprecated_assignment_syntax: false,
-            rule_options: ResolvedRuleOptions::default(),
-            per_file_ignores: PerFileIgnores::default(),
-        }
-    }
 }

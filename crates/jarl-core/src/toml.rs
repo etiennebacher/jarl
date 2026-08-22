@@ -16,7 +16,6 @@ use std::path::PathBuf;
 
 use crate::config::resolve_rule_names;
 use crate::lints::base::assignment::options::AssignmentConfig;
-use crate::lints::base::assignment::options::AssignmentOptions;
 use crate::lints::base::duplicated_arguments::options::DuplicatedArgumentsOptions;
 use crate::lints::base::if_not_else::options::IfNotElseOptions;
 use crate::lints::base::implicit_assignment::options::ImplicitAssignmentOptions;
@@ -30,7 +29,7 @@ use crate::lints::base::unreachable_code::options::UnreachableCodeOptions;
 use crate::lints::base::unused_function::options::UnusedFunctionOptions;
 use crate::lints::base::unused_object::options::UnusedObjectOptions;
 use crate::per_file_ignores::PerFileIgnores;
-use crate::rule_options::{ResolvedRuleOptions, RuleOptions};
+use crate::rule_options::ResolvedRuleOptions;
 use crate::settings::LinterSettings;
 use crate::settings::Settings;
 
@@ -408,16 +407,7 @@ impl TomlOptions {
 
         let per_file_ignores = resolve_per_file_ignores(linter.per_file_ignores.as_ref(), root)?;
 
-        // Resolve the assignment config: extract the AssignmentOptions and
-        // track whether the deprecated top-level string form was used.
-        let (assignment_options, deprecated_assignment_syntax) = match &linter.assignment {
-            Some(AssignmentConfig::Legacy(value)) => (
-                Some(AssignmentOptions { operator: Some(value.clone()) }),
-                true,
-            ),
-            Some(AssignmentConfig::Options(opts)) => (Some(opts.clone()), false),
-            None => (None, false),
-        };
+        let rule_options = ResolvedRuleOptions::resolve(&linter)?;
 
         let linter = LinterSettings {
             select: linter.select,
@@ -430,22 +420,11 @@ impl TomlOptions {
             fix_roxygen: linter.fix_roxygen,
             fixable: linter.fixable,
             unfixable: linter.unfixable,
-            deprecated_assignment_syntax,
-            rule_options: ResolvedRuleOptions::resolve(&RuleOptions {
-                assignment: assignment_options.as_ref(),
-                duplicated_arguments: linter.duplicated_arguments.as_ref(),
-                if_not_else: linter.if_not_else.as_ref(),
-                implicit_assignment: linter.implicit_assignment.as_ref(),
-                missing_argument: linter.missing_argument.as_ref(),
-                nested_pipe: linter.nested_pipe.as_ref(),
-                pipe_consistency: linter.pipe_consistency.as_ref(),
-                quotes: linter.quotes.as_ref(),
-                true_false_symbol: linter.true_false_symbol.as_ref(),
-                undesirable_function: linter.undesirable_function.as_ref(),
-                unreachable_code: linter.unreachable_code.as_ref(),
-                unused_function: linter.unused_function.as_ref(),
-                unused_object: linter.unused_object.as_ref(),
-            })?,
+            deprecated_assignment_syntax: linter
+                .assignment
+                .as_ref()
+                .is_some_and(AssignmentConfig::is_legacy),
+            rule_options,
             per_file_ignores,
         };
 

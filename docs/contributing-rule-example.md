@@ -336,7 +336,68 @@ For example, one could list some functions that will not be checked by the rule 
 skipped-functions = ["list"]
 ```
 
-This adds some work and therefore will not be detailed here, but you can refer to [PR #372](https://github.com/etiennebacher/jarl/pull/372) for inspiration (it adds support for TOML arguments to the `implicit_assignment` rule).
+Adding options for a rule takes three steps.
+
+1. Create `src/lints/<group>/<rule_name>/options.rs` and declare `pub(crate) mod options;` in the rule's `mod.rs`. This file contains two types: the TOML options (deserialized as-is from `[lint.<rule_name>]`) and the resolved options (what the rule reads while linting). The resolved type must expose `resolve()`, which takes the TOML options and fills in the defaults:
+
+    ```rust
+    /// Default functions that are allowed to have duplicated arguments.
+    const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &["c", "mutate", "summarize", "transmute"];
+
+    #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
+    #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+    #[serde(deny_unknown_fields, rename_all = "kebab-case")]
+    pub struct DuplicatedArgumentsOptions {
+        pub skipped_functions: Option<Vec<String>>,
+        pub extend_skipped_functions: Option<Vec<String>>,
+    }
+
+    #[derive(Clone, Debug)]
+    pub struct ResolvedDuplicatedArgumentsOptions {
+        pub skipped_functions: HashSet<String>,
+    }
+
+    impl ResolvedDuplicatedArgumentsOptions {
+        pub fn resolve(options: Option<&DuplicatedArgumentsOptions>) -> anyhow::Result<Self> {
+            [...]
+        }
+    }
+    ```
+
+    If the option is a list of functions that can be either replaced or extended by the user (the `<field>` / `extend-<field>` pattern), use the helper `resolve_with_extend()` from `src/rule_options.rs` instead of writing that logic again.
+
+1. Add the TOML field to `LinterTomlOptions` in `src/toml.rs`. The field must be named after the rule, and its documentation ends up in `artifacts/jarl.schema.json`, which editors use to describe the option:
+
+    ```rust
+    /// # Options for the `duplicated_arguments` rule
+    ///
+    /// Use `skipped-functions` to fully replace the default list of functions
+    /// that are allowed to have duplicated arguments. Use
+    /// `extend-skipped-functions` to add to the default list.
+    /// Specifying both is an error.
+    #[serde(rename = "duplicated_arguments")]
+    pub duplicated_arguments: Option<DuplicatedArgumentsOptions>,
+    ```
+
+1. Add one line to `declare_rule_options!` in `src/rule_options.rs`, naming the rule's folder and its resolved type:
+
+    ```rust
+    declare_rule_options! {
+        [...]
+        base::duplicated_arguments => ResolvedDuplicatedArgumentsOptions,
+        [...]
+    }
+    ```
+
+    This generates the field on `ResolvedRuleOptions`, its resolution from the TOML file, and the default value. Forgetting step 2 is a compile error.
+
+The rule can then read its options from the checker, e.g. `checker.rule_options.duplicated_arguments.skipped_functions`.
+
+Finally:
+
+* run `just gen-schema` to update `artifacts/jarl.schema.json`;
+* document the option for users in `docs/reference/config-file.md` (this page is written by hand, it is not generated from the Rust code);
+* add integration tests in `crates/jarl/tests/integration/toml_rule_args.rs`, covering invalid values, unknown fields in the rule table, and the option actually changing what is reported.
 
 ### Add tests
 

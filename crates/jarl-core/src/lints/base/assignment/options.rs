@@ -27,6 +27,21 @@ pub enum AssignmentConfig {
     Options(AssignmentOptions),
 }
 
+impl AssignmentConfig {
+    /// The operator requested by the user, whichever form was used.
+    pub fn operator(&self) -> Option<&str> {
+        match self {
+            Self::Legacy(value) => Some(value),
+            Self::Options(opts) => opts.operator.as_deref(),
+        }
+    }
+
+    /// Whether the deprecated top-level string form was used.
+    pub fn is_legacy(&self) -> bool {
+        matches!(self, Self::Legacy(_))
+    }
+}
+
 impl<'de> serde::Deserialize<'de> for AssignmentConfig {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -69,9 +84,9 @@ pub struct ResolvedAssignmentOptions {
 }
 
 impl ResolvedAssignmentOptions {
-    pub fn resolve(options: Option<&AssignmentOptions>) -> anyhow::Result<Self> {
-        let operator = match options {
-            Some(opts) => match opts.operator.as_deref() {
+    pub fn resolve(options: Option<&AssignmentConfig>) -> anyhow::Result<Self> {
+        let operator = match options.map(AssignmentConfig::operator) {
+            Some(operator) => match operator {
                 Some("<-") | None => RSyntaxKind::ASSIGN,
                 Some("=") => RSyntaxKind::EQUAL,
                 Some(other) => {
