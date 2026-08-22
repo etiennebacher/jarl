@@ -37,9 +37,9 @@
   * `expect_s3_class` now also reports `expect_true(is.<class>(x))`,
     `expect_true(inherits(x, class))`, and dynamic class expressions. Dynamic
     class expressions are reported without an automatic fix (#555, @Yousa-Mirage).
-  * Three more functions skipped by default from `implicit_assignment`: `expect_silent` (from
-    `testthat`), `expect_defunct` (from lifecycle) and `expect_deprecated` (from `lifecycle`)
-    (#543, @maelle).
+  * Four more functions skipped by default from `implicit_assignment`: `expect_silent()`
+    (from `testthat`), `expect_defunct()` and `expect_deprecated()` (from `lifecycle`),
+    and `try()` (#543, @maelle, #654).
   * `outdated_suppression` now has a safe fix that removes the unused
     suppression comment (or comments if `# jarl-ignore-start` and `# jarl-ignore-end`
     are used) (#638).

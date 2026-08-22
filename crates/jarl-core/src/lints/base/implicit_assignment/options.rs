@@ -19,6 +19,8 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
     "quote",
     "suppressMessages",
     "suppressWarnings",
+    // https://github.com/etiennebacher/jarl/issues/653
+    "try",
 ];
 
 /// TOML options for `[lint.implicit_assignment]`.

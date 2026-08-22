@@ -363,7 +363,7 @@ namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
 Default: `skipped-functions = ["alist", "expect_error", "expect_warning", "expect_message",
 "expect_silent", "expect_defunct", "expect_deprecated", "expect_snapshot",
 "expect_no_condition", "expect_no_warning", "expect_no_error", "expect_no_message",
-"quote", "suppressMessages", "suppressWarnings"]`
+"quote", "suppressMessages", "suppressWarnings", "try"]`
 (`expect_`functions come from the `testthat` package, except `expect_defunct` and
 `expect_deprecated` which come from the `lifecycle` package)
 
