@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.36">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,10 +12,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -74,10 +77,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-91252c94a8c29af6a11c1f9076f09451.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-9ad4a8038d6fc6fa1ff54a4bf65b5188.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -272,6 +275,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="dropdown-item" href="./howto/precommit.html">
  <span class="dropdown-text">Pre-commit tools</span></a>
   </li>  
+        <li>
+    <a class="dropdown-item" href="./howto/shell-completions.html">
+ <span class="dropdown-text">Shell completions</span></a>
+  </li>  
     </ul>
   </li>
   <li class="nav-item dropdown ">
@@ -324,13 +331,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text"></span></a>
   </li>  
   <li class="nav-item dropdown ">
-    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-stable-(0.5.0" role="link" data-bs-toggle="dropdown" aria-expanded="false">
- <span class="menu-text">stable (0.5.0)</span>
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-stable-(0.6.0" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">stable (0.6.0)</span>
     </a>
-    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-stable-(0.5.0">    
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-stable-(0.6.0">    
         <li>
     <a class="dropdown-item" href="https://jarl.etiennebacher.com/">
- <span class="dropdown-text">stable (0.5.0)</span></a>
+ <span class="dropdown-text">stable (0.6.0)</span></a>
   </li>  
         <li>
     <a class="dropdown-item" href="https://jarl.etiennebacher.com/dev/">
@@ -421,13 +428,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>In this section, all paths refer to files in <code>crates/jarl-core</code>.</p>
 <section id="list-of-existing-rules" class="level3">
 <h3 class="anchored" data-anchor-id="list-of-existing-rules">List of existing rules</h3>
-<p><code>src/lints/mod.rs</code> contains the existing list of rules. Each rule must have a name, belong to one or several categories (<code>PERF</code>, <code>READ</code>, etc.), a <code>FixStatus</code> indicating whether it has a fix and, if so, whether this fix is safe or unsafe, and an optional minimum required R version.</p>
+<p><code>src/rule_set.rs</code> contains the existing list of rules. Each rule must have a name, belong to one or several categories (<code>PERF</code>, <code>READ</code>, etc.), a <code>FixStatus</code> indicating whether it has a fix and, if so, whether this fix is safe or unsafe, and an optional minimum required R version.</p>
 </section>
 <section id="lint-definition" class="level3">
 <h3 class="anchored" data-anchor-id="lint-definition">Lint definition</h3>
-<p><code>src/lints</code> contains the definition of the rules, along with their associated documentation and tests. It has one subfolder per rule and two mandatory files: <code>&lt;rule_name&gt;.rs</code> (which contains the definition and documentation) and <code>mod.rs</code> (which contains the tests).</p>
+<p><code>src/lints</code> contains the definition of the rules, along with their associated documentation and tests. Rules are grouped into subfolders such as <code>base</code>, with one subfolder per rule. Each rule has two mandatory files: <code>&lt;rule_name&gt;.rs</code> (which contains the definition and documentation) and <code>mod.rs</code> (which contains the tests).</p>
 <p>If there are snapshot tests for this rule, then a subfolder <code>snapshots</code> will also be created. For example, the folder for the rule <code>any_duplicated</code> looks like this:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">src/lints/any_duplicated/</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">src/lints/base/any_duplicated/</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">├──</span> any_duplicated.rs</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">├──</span> mod.rs</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ex">└──</span> snapshots</span>
@@ -437,9 +444,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="adding-a-new-rule">Adding a new rule</h3>
 <p>Adding a new rule requires four main steps:</p>
 <ol type="1">
-<li>Add the new rule to the list in <code>src/lints/mod.rs</code>. In the same file, also add <code>pub(crate) mod &lt;rulename&gt;;</code></li>
-<li>Add a subfolder with the rule name in <code>src/lints</code>. Add the documentation and the code for the rule.</li>
-<li>Add tests in <code>src/lints/&lt;rulename&gt;/mod.rs</code></li>
+<li>Add the new rule to the list in <code>src/rule_set.rs</code>, and add <code>pub(crate) mod &lt;rulename&gt;;</code> to the relevant lint-group module, such as <code>src/lints/base/mod.rs</code>.</li>
+<li>Add a subfolder with the rule name in <code>src/lints/&lt;group&gt;</code>. Add the documentation and the code for the rule.</li>
+<li>Add tests in <code>src/lints/&lt;group&gt;/&lt;rulename&gt;/mod.rs</code></li>
 <li>Add the rule in the <code>src/analyze</code> folder. This depends on the initial node in the AST. For instance, for the rule <code>equals_na</code>, we check the presence of code such as <code>x == NA</code>. Since the top node for this expression is a <code>R_BINARY_EXPRESSION</code>, this rule is ran in <code>src/analyze/binary_expression.rs</code>.</li>
 </ol>
 </section>
@@ -455,9 +462,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="integration-tests" class="level2">
 <h2 class="anchored" data-anchor-id="integration-tests">Integration tests</h2>
-<p>When you add a new rule, it is usually sufficient to add tests in the directory of this rule only, e.g.&nbsp;in <code>crates/jarl-core/src/lints/any_duplicated</code>.</p>
+<p>When you add a new rule, it is usually sufficient to add tests in the directory of this rule only, e.g.&nbsp;in <code>crates/jarl-core/src/lints/base/any_duplicated</code>.</p>
 <p>However, in some cases you may affect the way users interact with Jarl as a whole, for instance by adding new command line arguments or arguments that can be set in <code>jarl.toml</code>. For those changes, it is important to check that the general behavior of Jarl is correct (check what happens when there are no R files, how TOML and CLI arguments interact, etc.).</p>
-<p>Tests for this are stored in <code>crates/jarl-cli/tests/integration</code>. It is likely that you will need to edit one of the files instead of creating a new one. For example, adding an extra argument in <code>crates/jarl-core/toml.rs</code> would require adding tests in <code>crates/jarl-cli/tests/integration/toml.rs</code>.</p>
+<p>Tests for this are stored in <code>crates/jarl/tests/integration</code>. It is likely that you will need to edit one of the files instead of creating a new one. For example, adding an extra argument in <code>crates/jarl-core/src/toml.rs</code> would require adding tests in <code>crates/jarl/tests/integration/toml_rule_args.rs</code>.</p>
 </section>
 <section id="pr-title" class="level2">
 <h2 class="anchored" data-anchor-id="pr-title">PR title</h2>

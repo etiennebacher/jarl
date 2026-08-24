@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.36">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,10 +12,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -74,10 +77,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-91252c94a8c29af6a11c1f9076f09451.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-9ad4a8038d6fc6fa1ff54a4bf65b5188.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -272,6 +275,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="dropdown-item" href="../howto/precommit.html">
  <span class="dropdown-text">Pre-commit tools</span></a>
   </li>  
+        <li>
+    <a class="dropdown-item" href="../howto/shell-completions.html">
+ <span class="dropdown-text">Shell completions</span></a>
+  </li>  
     </ul>
   </li>
   <li class="nav-item dropdown ">
@@ -324,13 +331,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text"></span></a>
   </li>  
   <li class="nav-item dropdown ">
-    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-stable-(0.5.0" role="link" data-bs-toggle="dropdown" aria-expanded="false">
- <span class="menu-text">stable (0.5.0)</span>
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-stable-(0.6.0" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">stable (0.6.0)</span>
     </a>
-    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-stable-(0.5.0">    
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-stable-(0.6.0">    
         <li>
     <a class="dropdown-item" href="https://jarl.etiennebacher.com/">
- <span class="dropdown-text">stable (0.5.0)</span></a>
+ <span class="dropdown-text">stable (0.6.0)</span></a>
   </li>  
         <li>
     <a class="dropdown-item" href="https://jarl.etiennebacher.com/dev/">
@@ -432,6 +439,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../rules/condition_call.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">condition_call</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../rules/condition_message.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">condition_message</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../rules/download_file.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">download_file</span></a>
   </div>
@@ -464,6 +483,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="../rules/empty_assignment.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">empty_assignment</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../rules/empty_file.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">empty_file</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -528,6 +553,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../rules/expect_s4_class.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">expect_s4_class</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../rules/expect_true_false.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">expect_true_false</span></a>
   </div>
@@ -558,6 +589,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../rules/glue.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">glue</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../rules/grepv.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">grepv</span></a>
   </div>
@@ -566,6 +603,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="../rules/if_always_true.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">if_always_true</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../rules/if_not_else.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">if_not_else</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -618,6 +661,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../rules/literal_coercion.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">literal_coercion</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../rules/matrix_apply.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">matrix_apply</span></a>
   </div>
@@ -638,6 +687,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="../rules/misplaced_suppression.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">misplaced_suppression</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../rules/missing_argument.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">missing_argument</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../rules/nested_pipe.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">nested_pipe</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../rules/notin.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">notin</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -666,6 +733,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../rules/pipe_consistency.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">pipe_consistency</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../rules/pipe_return.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">pipe_return</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../rules/quotes.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">quotes</span></a>
   </div>
@@ -680,6 +759,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="../rules/redundant_ifelse.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">redundant_ifelse</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../rules/rep_times_ignored.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">rep_times_ignored</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -720,8 +805,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../rules/stopifnot_all.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">stopifnot_all</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../rules/string_boundary.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">string_boundary</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../rules/strings_as_factors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">strings_as_factors</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -762,6 +859,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../rules/unnecessary_parentheses.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">unnecessary_parentheses</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../rules/unreachable_code.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">unreachable_code</span></a>
   </div>
@@ -770,6 +873,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <div class="sidebar-item-container"> 
   <a href="../rules/unused_function.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">unused_function</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../rules/unused_object.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">unused_object</span></a>
   </div>
 </li>
           <li class="sidebar-item">

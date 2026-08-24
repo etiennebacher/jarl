@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.36">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,10 +12,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -39,10 +42,10 @@ ul.task-list li input[type="checkbox"] {
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-91252c94a8c29af6a11c1f9076f09451.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-9ad4a8038d6fc6fa1ff54a4bf65b5188.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -237,6 +240,10 @@ ul.task-list li input[type="checkbox"] {
     <a class="dropdown-item" href="../howto/precommit.html">
  <span class="dropdown-text">Pre-commit tools</span></a>
   </li>  
+        <li>
+    <a class="dropdown-item" href="../howto/shell-completions.html">
+ <span class="dropdown-text">Shell completions</span></a>
+  </li>  
     </ul>
   </li>
   <li class="nav-item dropdown ">
@@ -289,13 +296,13 @@ ul.task-list li input[type="checkbox"] {
 <span class="menu-text"></span></a>
   </li>  
   <li class="nav-item dropdown ">
-    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-stable-(0.5.0" role="link" data-bs-toggle="dropdown" aria-expanded="false">
- <span class="menu-text">stable (0.5.0)</span>
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-stable-(0.6.0" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">stable (0.6.0)</span>
     </a>
-    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-stable-(0.5.0">    
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-stable-(0.6.0">    
         <li>
     <a class="dropdown-item" href="https://jarl.etiennebacher.com/">
- <span class="dropdown-text">stable (0.5.0)</span></a>
+ <span class="dropdown-text">stable (0.6.0)</span></a>
   </li>  
         <li>
     <a class="dropdown-item" href="https://jarl.etiennebacher.com/dev/">
@@ -314,8 +321,15 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#suppression-comments" id="toc-suppression-comments" class="nav-link active" data-scroll-target="#suppression-comments">Suppression comments</a></li>
+  <li><a href="#keeping-or-ignoring-r-markdown-and-quarto-files" id="toc-keeping-or-ignoring-r-markdown-and-quarto-files" class="nav-link" data-scroll-target="#keeping-or-ignoring-r-markdown-and-quarto-files">Keeping or ignoring R Markdown and Quarto files</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/howto/rmarkdown-quarto.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -345,7 +359,12 @@ ul.task-list li input[type="checkbox"] {
 <li>inline R code isn’t analyzed, only code chunks;</li>
 <li>features from the editor integration, such as highlighting diagnostics, are only available when the file is open in source mode, not in visual mode.</li>
 </ul>
+<section id="suppression-comments" class="level2">
+<h2 class="anchored" data-anchor-id="suppression-comments">Suppression comments</h2>
 <p>Suppression comments such as <code># jarl-ignore</code> are supported in R code chunks. In Quarto and R Markdown files, you can also use the comment <code>#| jarl-ignore-chunk</code> to ignore specific rules on entire chunks. Moreover, the comment <code># jarl-ignore-file</code> must be located in the first R code chunk, before any R code. See <a href="../howto/suppression-comments.html" target="_blank">Suppression comments</a> for more details.</p>
+</section>
+<section id="keeping-or-ignoring-r-markdown-and-quarto-files" class="level2">
+<h2 class="anchored" data-anchor-id="keeping-or-ignoring-r-markdown-and-quarto-files">Keeping or ignoring R Markdown and Quarto files</h2>
 <p>By default, Jarl checks R code chunks in R Markdown and Quarto documents. To select or ignore particular file extensions, you can use glob patterns in the command line or in <code>jarl.toml</code>:</p>
 <ul>
 <li><p>in the command line:</p>
@@ -366,6 +385,7 @@ include = ["**/*.{Rmd,rmd,qmd}"]</code></pre></li>
 </ul>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -773,4 +793,4 @@ include = ["**/*.{Rmd,rmd,qmd}"]</code></pre></li>
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/howto/rmarkdown-quarto.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/howto/rmarkdown-quarto.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

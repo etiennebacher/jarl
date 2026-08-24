@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.36">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,10 +12,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -74,10 +77,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-91252c94a8c29af6a11c1f9076f09451.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-9ad4a8038d6fc6fa1ff54a4bf65b5188.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -272,6 +275,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="dropdown-item" href="./howto/precommit.html">
  <span class="dropdown-text">Pre-commit tools</span></a>
   </li>  
+        <li>
+    <a class="dropdown-item" href="./howto/shell-completions.html">
+ <span class="dropdown-text">Shell completions</span></a>
+  </li>  
     </ul>
   </li>
   <li class="nav-item dropdown ">
@@ -324,13 +331,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text"></span></a>
   </li>  
   <li class="nav-item dropdown ">
-    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-stable-(0.5.0" role="link" data-bs-toggle="dropdown" aria-expanded="false">
- <span class="menu-text">stable (0.5.0)</span>
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-stable-(0.6.0" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">stable (0.6.0)</span>
     </a>
-    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-stable-(0.5.0">    
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-stable-(0.6.0">    
         <li>
     <a class="dropdown-item" href="https://jarl.etiennebacher.com/">
- <span class="dropdown-text">stable (0.5.0)</span></a>
+ <span class="dropdown-text">stable (0.6.0)</span></a>
   </li>  
         <li>
     <a class="dropdown-item" href="https://jarl.etiennebacher.com/dev/">
@@ -356,50 +363,59 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#changelog" id="toc-changelog" class="nav-link active" data-scroll-target="#changelog">Changelog</a>
   <ul>
-  <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section">0.5.0</a>
+  <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section">0.6.0</a>
+  <ul class="collapse">
+  <li><a href="#breaking-changes" id="toc-breaking-changes" class="nav-link" data-scroll-target="#breaking-changes">Breaking changes</a></li>
+  <li><a href="#new-and-improved-rules" id="toc-new-and-improved-rules" class="nav-link" data-scroll-target="#new-and-improved-rules">New and improved rules</a></li>
+  <li><a href="#cli-improvements" id="toc-cli-improvements" class="nav-link" data-scroll-target="#cli-improvements">CLI improvements</a></li>
+  <li><a href="#toml-improvements" id="toc-toml-improvements" class="nav-link" data-scroll-target="#toml-improvements">TOML improvements</a></li>
+  <li><a href="#other-improvements" id="toc-other-improvements" class="nav-link" data-scroll-target="#other-improvements">Other improvements</a></li>
+  <li><a href="#bug-fixes" id="toc-bug-fixes" class="nav-link" data-scroll-target="#bug-fixes">Bug fixes</a></li>
+  </ul></li>
+  <li><a href="#section-1" id="toc-section-1" class="nav-link" data-scroll-target="#section-1">0.5.0</a>
   <ul class="collapse">
   <li><a href="#deprecations" id="toc-deprecations" class="nav-link" data-scroll-target="#deprecations">Deprecations</a></li>
   <li><a href="#features" id="toc-features" class="nav-link" data-scroll-target="#features">Features</a></li>
-  <li><a href="#bug-fixes" id="toc-bug-fixes" class="nav-link" data-scroll-target="#bug-fixes">Bug fixes</a></li>
-  </ul></li>
-  <li><a href="#section-1" id="toc-section-1" class="nav-link" data-scroll-target="#section-1">0.4.0</a>
-  <ul class="collapse">
-  <li><a href="#breaking-changes" id="toc-breaking-changes" class="nav-link" data-scroll-target="#breaking-changes">Breaking changes</a></li>
-  <li><a href="#features-1" id="toc-features-1" class="nav-link" data-scroll-target="#features-1">Features</a></li>
-  <li><a href="#other-changes" id="toc-other-changes" class="nav-link" data-scroll-target="#other-changes">Other changes</a></li>
   <li><a href="#bug-fixes-1" id="toc-bug-fixes-1" class="nav-link" data-scroll-target="#bug-fixes-1">Bug fixes</a></li>
-  <li><a href="#documentation" id="toc-documentation" class="nav-link" data-scroll-target="#documentation">Documentation</a></li>
   </ul></li>
-  <li><a href="#section-2" id="toc-section-2" class="nav-link" data-scroll-target="#section-2">0.3.0</a>
+  <li><a href="#section-2" id="toc-section-2" class="nav-link" data-scroll-target="#section-2">0.4.0</a>
   <ul class="collapse">
   <li><a href="#breaking-changes-1" id="toc-breaking-changes-1" class="nav-link" data-scroll-target="#breaking-changes-1">Breaking changes</a></li>
+  <li><a href="#features-1" id="toc-features-1" class="nav-link" data-scroll-target="#features-1">Features</a></li>
+  <li><a href="#other-changes" id="toc-other-changes" class="nav-link" data-scroll-target="#other-changes">Other changes</a></li>
+  <li><a href="#bug-fixes-2" id="toc-bug-fixes-2" class="nav-link" data-scroll-target="#bug-fixes-2">Bug fixes</a></li>
+  <li><a href="#documentation" id="toc-documentation" class="nav-link" data-scroll-target="#documentation">Documentation</a></li>
+  </ul></li>
+  <li><a href="#section-3" id="toc-section-3" class="nav-link" data-scroll-target="#section-3">0.3.0</a>
+  <ul class="collapse">
+  <li><a href="#breaking-changes-2" id="toc-breaking-changes-2" class="nav-link" data-scroll-target="#breaking-changes-2">Breaking changes</a></li>
   <li><a href="#features-2" id="toc-features-2" class="nav-link" data-scroll-target="#features-2">Features</a></li>
   <li><a href="#fixes" id="toc-fixes" class="nav-link" data-scroll-target="#fixes">Fixes</a></li>
   <li><a href="#other-changes-1" id="toc-other-changes-1" class="nav-link" data-scroll-target="#other-changes-1">Other changes</a></li>
   </ul></li>
-  <li><a href="#section-3" id="toc-section-3" class="nav-link" data-scroll-target="#section-3">0.2.1</a>
+  <li><a href="#section-4" id="toc-section-4" class="nav-link" data-scroll-target="#section-4">0.2.1</a>
   <ul class="collapse">
   <li><a href="#other" id="toc-other" class="nav-link" data-scroll-target="#other">Other</a></li>
   </ul></li>
-  <li><a href="#section-4" id="toc-section-4" class="nav-link" data-scroll-target="#section-4">0.2.0</a>
+  <li><a href="#section-5" id="toc-section-5" class="nav-link" data-scroll-target="#section-5">0.2.0</a>
   <ul class="collapse">
-  <li><a href="#breaking-changes-2" id="toc-breaking-changes-2" class="nav-link" data-scroll-target="#breaking-changes-2">Breaking changes</a></li>
+  <li><a href="#breaking-changes-3" id="toc-breaking-changes-3" class="nav-link" data-scroll-target="#breaking-changes-3">Breaking changes</a></li>
   <li><a href="#features-3" id="toc-features-3" class="nav-link" data-scroll-target="#features-3">Features</a></li>
   <li><a href="#fixes-1" id="toc-fixes-1" class="nav-link" data-scroll-target="#fixes-1">Fixes</a></li>
   <li><a href="#documentation-1" id="toc-documentation-1" class="nav-link" data-scroll-target="#documentation-1">Documentation</a></li>
   </ul></li>
-  <li><a href="#section-5" id="toc-section-5" class="nav-link" data-scroll-target="#section-5">0.1.2</a>
+  <li><a href="#section-6" id="toc-section-6" class="nav-link" data-scroll-target="#section-6">0.1.2</a>
   <ul class="collapse">
   <li><a href="#features-4" id="toc-features-4" class="nav-link" data-scroll-target="#features-4">Features</a></li>
   <li><a href="#fixes-2" id="toc-fixes-2" class="nav-link" data-scroll-target="#fixes-2">Fixes</a></li>
   <li><a href="#documentation-2" id="toc-documentation-2" class="nav-link" data-scroll-target="#documentation-2">Documentation</a></li>
   </ul></li>
-  <li><a href="#section-6" id="toc-section-6" class="nav-link" data-scroll-target="#section-6">0.1.1</a>
+  <li><a href="#section-7" id="toc-section-7" class="nav-link" data-scroll-target="#section-7">0.1.1</a>
   <ul class="collapse">
   <li><a href="#fixes-3" id="toc-fixes-3" class="nav-link" data-scroll-target="#fixes-3">Fixes</a></li>
   <li><a href="#documentation-3" id="toc-documentation-3" class="nav-link" data-scroll-target="#documentation-3">Documentation</a></li>
   </ul></li>
-  <li><a href="#section-7" id="toc-section-7" class="nav-link" data-scroll-target="#section-7">0.1.0</a></li>
+  <li><a href="#section-8" id="toc-section-8" class="nav-link" data-scroll-target="#section-8">0.1.0</a></li>
   </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/changelog.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
@@ -413,7 +429,131 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="changelog" class="level1">
 <h1>Changelog</h1>
 <section id="section" class="level2">
-<h2 class="anchored" data-anchor-id="section">0.5.0</h2>
+<h2 class="anchored" data-anchor-id="section">0.6.0</h2>
+<div class="low-opacity callout callout-style-default callout-note no-icon callout-empty-content callout-titled" title="Released on 2026-08-24">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Released on 2026-08-24
+</div>
+</div>
+<div class="callout-body-container callout-body">
+
+</div>
+</div>
+<section id="breaking-changes" class="level3">
+<h3 class="anchored" data-anchor-id="breaking-changes">Breaking changes</h3>
+<ul>
+<li>The JSON output produced with <code>--output-format json</code> has changed. In <code>fix</code>, the fields <code>start</code> and <code>end</code> are replaced by a field <code>range</code> that contains the two values (#650).</li>
+</ul>
+</section>
+<section id="new-and-improved-rules" class="level3">
+<h3 class="anchored" data-anchor-id="new-and-improved-rules">New and improved rules</h3>
+<ul>
+<li><p>New rules:</p>
+<ul>
+<li><code>condition_call</code> (#503)</li>
+<li><code>condition_message</code> (#545)</li>
+<li><code>empty_file</code> (#477, <span class="citation" data-cites="JosephBARBIERDARNAL">@JosephBARBIERDARNAL</span>)</li>
+<li><code>expect_s4_class</code> (#553, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
+<li><code>glue</code> (#484, <span class="citation" data-cites="novica">@novica</span>)</li>
+<li><code>if_not_else</code> (#551)</li>
+<li><code>literal_coercion</code> (#504)</li>
+<li><code>missing_argument</code> (#506)</li>
+<li><code>nested_pipe</code> (#516)</li>
+<li><code>notin</code> (#459, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
+<li><code>pipe_consistency</code> (#482)</li>
+<li><code>pipe_return</code> (#502)</li>
+<li><code>rep_times_ignored</code> (#556, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
+<li><code>stopifnot_all</code> (#547, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
+<li><code>strings_as_factors</code> (#546, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
+<li><code>unnecessary_parentheses</code> (#510, <span class="citation" data-cites="JosephBARBIERDARNAL">@JosephBARBIERDARNAL</span>)</li>
+<li><code>unused_object</code> (#589)</li>
+</ul></li>
+<li><p>Improved rules:</p>
+<ul>
+<li><code>any_is_na</code> now also reports <code>NA %notin% x</code> cases (#470, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
+<li><code>equals_na</code> now also reports <code>x %notin% NA</code> cases (#469, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
+<li><code>expect_s3_class</code> now also reports <code>expect_true(is.&lt;class&gt;(x))</code>, <code>expect_true(inherits(x, class))</code>, and dynamic class expressions. Dynamic class expressions are reported without an automatic fix (#555, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</li>
+<li>Four more functions skipped by default from <code>implicit_assignment</code>: <code>expect_silent()</code> (from <code>testthat</code>), <code>expect_defunct()</code> and <code>expect_deprecated()</code> (from <code>lifecycle</code>), and <code>try()</code> (#543, <span class="citation" data-cites="maelle">@maelle</span>, #654).</li>
+<li><code>outdated_suppression</code> now has a safe fix that removes the unused suppression comment (or comments if <code># jarl-ignore-start</code> and <code># jarl-ignore-end</code> are used) (#638).</li>
+<li><code>which_grepl</code> now supports named <code>which(x = ...)</code> arguments and native pipe chains such as <code>x |&gt; grepl(pattern = ...) |&gt; which()</code>. Calls with additional <code>which()</code> arguments are reported without an automatic fix (#560, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</li>
+</ul></li>
+</ul>
+</section>
+<section id="cli-improvements" class="level3">
+<h3 class="anchored" data-anchor-id="cli-improvements">CLI improvements</h3>
+<ul>
+<li><p>The CLI now gives suggestions when some rule names don’t exist (#501).</p></li>
+<li><p>New CLI argument <code>--exclude</code> to exclude files or directories from the checks, mirroring the <code>exclude</code> argument in <code>jarl.toml</code> (#520).</p></li>
+<li><p>Passing <code>--statistics</code> in the CLI now indicates which violations have an automatic unsafe fix (#554).</p></li>
+<li><p>Jarl now reports rule violations in files that contain syntax errors and provides clearer messages for syntax errors (#538, #569).</p></li>
+<li><p>New <code>--output-format sarif</code> to export to <a href="https://sarifweb.azurewebsites.net/" target="_blank">SARIF</a> (#508, <span class="citation" data-cites="dieghernan">@dieghernan</span>).</p></li>
+<li><p>Clearer output for <code>jarl check --help</code> (#521).</p></li>
+<li><p>New command <code>jarl rule &lt;rule_name&gt;</code> to print a rule’s documentation in the terminal, for example <code>jarl rule any_is_na</code> (#566).</p></li>
+<li><p>Jarl now provides shell completions for <code>bash</code>, <code>zsh</code>, <code>fish</code>, <code>powershell</code>, and <code>elvish</code>. See <a href="./howto/shell-completions.html" target="_blank">Shell completions</a> for more information (#567).</p></li>
+</ul>
+</section>
+<section id="toml-improvements" class="level3">
+<h3 class="anchored" data-anchor-id="toml-improvements">TOML improvements</h3>
+<ul>
+<li><p>New argument <code>[lint.per-file-ignores]</code> in <code>jarl.toml</code> to deactivate rules on specific files (#500).</p></li>
+<li><p>New argument <code>skipped-functions</code> for the <code>true_false_symbol</code> rule in <code>jarl.toml</code> to list functions whose arguments are allowed to contain the <code>T</code> and <code>F</code> symbols (#542).</p></li>
+</ul>
+</section>
+<section id="other-improvements" class="level3">
+<h3 class="anchored" data-anchor-id="other-improvements">Other improvements</h3>
+<ul>
+<li><p>Several new ways to install Jarl:</p>
+<ul>
+<li>it is available on PyPI under the name <code>jarl-linter</code>, enabling its installation via <code>uv</code>, <code>pipx</code>, and other tools (#466).</li>
+<li>it is available on <code>conda-forge</code>, enabling its installation via <code>mise</code> and <code>pixi</code> (<span class="citation" data-cites="salim-b">@salim-b</span>).</li>
+<li>it is available on Homebrew, enabling its installation via <code>brew</code>.</li>
+</ul></li>
+<li><p>Fixed outdated paths in the contributing guide (#658, <span class="citation" data-cites="christopherkenny">@christopherkenny</span>).</p></li>
+</ul>
+</section>
+<section id="bug-fixes" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h3>
+<ul>
+<li><p><code>--statistics</code> now reports syntax errors and returns a non-zero status when parsing fails (#577, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
+<li><p><code>--fix-only</code> now implies <code>--fix</code> and no longer applies unsafe fixes by default (#579, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
+<li><p>Jarl now checks rule violations inside expressions on the left-hand side of <code>[</code>, <code>[[</code>, <code>$</code>, and <code>@</code> (#581, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
+<li><p><code>true_false_symbol</code> no longer reports <code>T</code> and <code>F</code> when they are used as objects in subset expressions, such as <code>T[1:2]</code> (#582, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
+<li><p><code>implicit_assignment</code> no longer flags chained assignments like <code>if (TRUE) a &lt;- b &lt;- 1</code>, aligning with <code>lintr</code> behavior (#480, <span class="citation" data-cites="atsyplenkov">@atsyplenkov</span>).</p></li>
+<li><p>Automatic fixes now skip rewrites when comments are inside the rewritten expression, while still allowing leading and trailing comments (#461, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
+<li><p>Suppression comments in <code>@examples</code> and <code>@examplesIf</code> now work correctly (#443).</p></li>
+<li><p>Fix alignment of diagnostic in console when source uses tabs (#445, #559).</p></li>
+<li><p>Files that have “Generated by” in their first comment are ignored by Jarl (#486).</p></li>
+<li><p>Fixed <code>unreachable_code</code> that was not running on braced expressions (#512).</p></li>
+<li><p>Fixed false positives in <code>assignment</code> rule. Jarl could recommend replacing <code>&lt;-</code> by <code>=</code> in places where this would change the meaning of the code (#515).</p></li>
+<li><p><code>implicit_assignment</code> now includes <code>alist()</code>, <code>expect_no_condition()</code>, <code>expect_no_warning()</code>, <code>expect_no_error()</code>, <code>expect_no_message()</code>, and <code>expect_no_match()</code> in the list of functions skipped by default (#527, #639).</p></li>
+<li><p>Jarl no longer fails to parse <code>...()</code> (#584, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
+<li><p><code>redundant_equals</code> now skips cases that use <code>rlang</code>’s <code>!!</code> and <code>!!!</code> operators (#625).</p></li>
+<li><p>The fix for <code>comparison_negation</code> is now considered “unsafe” because it can produce different output depending on operator precedence around the comparison (#632).</p></li>
+<li><p>Fix the detection of <code>Depends: R (&gt;= x.y.z)</code> in some cases (#641).</p></li>
+<li><p>Replace panic by a proper error if <code>jarl.toml</code> is unreadable, for instance because of a permission error (#645).</p></li>
+<li><p>Ensure the LSP has the same file selections and exclusions capabilities as the CLI (#647).</p></li>
+</ul>
+</section>
+</section>
+<section id="section-1" class="level2">
+<h2 class="anchored" data-anchor-id="section-1">0.5.0</h2>
+<div class="low-opacity callout callout-style-default callout-note no-icon callout-empty-content callout-titled" title="Released on 2026-03-24">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Released on 2026-03-24
+</div>
+</div>
+<div class="callout-body-container callout-body">
+
+</div>
+</div>
 <section id="deprecations" class="level3">
 <h3 class="anchored" data-anchor-id="deprecations">Deprecations</h3>
 <ul>
@@ -467,8 +607,8 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <li><p>The CLI now errors early when some incompatible arguments are used (#437).</p></li>
 </ul>
 </section>
-<section id="bug-fixes" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h3>
+<section id="bug-fixes-1" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-1">Bug fixes</h3>
 <ul>
 <li><p><code>fixed_regex</code> could loop infinitely trying to add <code>fixed = TRUE</code>. This is fixed (#388).</p></li>
 <li><p>Some fixes to ensure that automatic fixes don’t introduce new violations or new parsing errors (#389).</p></li>
@@ -477,10 +617,23 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 </ul>
 </section>
 </section>
-<section id="section-1" class="level2">
-<h2 class="anchored" data-anchor-id="section-1">0.4.0</h2>
-<section id="breaking-changes" class="level3">
-<h3 class="anchored" data-anchor-id="breaking-changes">Breaking changes</h3>
+<section id="section-2" class="level2">
+<h2 class="anchored" data-anchor-id="section-2">0.4.0</h2>
+<div class="low-opacity callout callout-style-default callout-note no-icon callout-empty-content callout-titled" title="Released on 2026-02-05">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Released on 2026-02-05
+</div>
+</div>
+<div class="callout-body-container callout-body">
+
+</div>
+</div>
+<section id="breaking-changes-1" class="level3">
+<h3 class="anchored" data-anchor-id="breaking-changes-1">Breaking changes</h3>
 <ul>
 <li><p>The support for comments to hide violations (aka <em>suppression comments</em>, aka <code># nolint</code> comments in <code>lintr</code>) has been entirely reworked (#218). It is no longer compatible with <code>lintr</code>’s comments. Instead, Jarl now uses <code># jarl-ignore</code> comments and follows different rules regarding the syntax and location of those comments. Detailed documentation is available in the section <a href="https://jarl.etiennebacher.com/howto/suppression-comments" target="_blank">“Suppression comments”</a> on the website. As part of this rewrite, the following rules have been added:</p>
 <ul>
@@ -527,8 +680,8 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <li><p>There are now binaries available for <code>linux-musl</code> (<code>x64</code> and <code>arm64</code>) (#287).</p></li>
 </ul>
 </section>
-<section id="bug-fixes-1" class="level3">
-<h3 class="anchored" data-anchor-id="bug-fixes-1">Bug fixes</h3>
+<section id="bug-fixes-2" class="level3">
+<h3 class="anchored" data-anchor-id="bug-fixes-2">Bug fixes</h3>
 <ul>
 <li><p>When <code>output-format</code> is <code>json</code> or <code>github</code>, additional information displayed in the terminal (e.g.&nbsp;timing) isn’t included anymore to avoid parsing errors (#254).</p></li>
 <li><p>Fixed a bug in the number of “fixable diagnostics” reported when the arg <code>fixable</code> is present in <code>jarl.toml</code> but <code>--fix</code> is not passed (#255).</p></li>
@@ -546,10 +699,23 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 </ul>
 </section>
 </section>
-<section id="section-2" class="level2">
-<h2 class="anchored" data-anchor-id="section-2">0.3.0</h2>
-<section id="breaking-changes-1" class="level3">
-<h3 class="anchored" data-anchor-id="breaking-changes-1">Breaking changes</h3>
+<section id="section-3" class="level2">
+<h2 class="anchored" data-anchor-id="section-3">0.3.0</h2>
+<div class="low-opacity callout callout-style-default callout-note no-icon callout-empty-content callout-titled" title="Released on 2025-12-17">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Released on 2025-12-17
+</div>
+</div>
+<div class="callout-body-container callout-body">
+
+</div>
+</div>
+<section id="breaking-changes-2" class="level3">
+<h3 class="anchored" data-anchor-id="breaking-changes-2">Breaking changes</h3>
 <ul>
 <li><p>Jarl now excludes by default file paths matching the following patterns: <code>.git/</code>, <code>renv/</code>, <code>revdep/</code>, <code>cpp11.R</code>, <code>RcppExports.R</code>, <code>extendr-wrappers.R</code>, and <code>import-standalone-*.R</code>.</p>
 <p>A new CLI argument <code>--no-default-exclude</code> can be used to check those files as well. This argument overrides the <code>default-exclude = true</code> option when set in <code>jarl.toml</code> (#178, <span class="citation" data-cites="novica">@novica</span>).</p></li>
@@ -590,8 +756,21 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 </ul>
 </section>
 </section>
-<section id="section-3" class="level2">
-<h2 class="anchored" data-anchor-id="section-3">0.2.1</h2>
+<section id="section-4" class="level2">
+<h2 class="anchored" data-anchor-id="section-4">0.2.1</h2>
+<div class="low-opacity callout callout-style-default callout-note no-icon callout-empty-content callout-titled" title="Released on 2025-11-29">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Released on 2025-11-29
+</div>
+</div>
+<div class="callout-body-container callout-body">
+
+</div>
+</div>
 <section id="other" class="level3">
 <h3 class="anchored" data-anchor-id="other">Other</h3>
 <ul>
@@ -599,10 +778,23 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 </ul>
 </section>
 </section>
-<section id="section-4" class="level2">
-<h2 class="anchored" data-anchor-id="section-4">0.2.0</h2>
-<section id="breaking-changes-2" class="level3">
-<h3 class="anchored" data-anchor-id="breaking-changes-2">Breaking changes</h3>
+<section id="section-5" class="level2">
+<h2 class="anchored" data-anchor-id="section-5">0.2.0</h2>
+<div class="low-opacity callout callout-style-default callout-note no-icon callout-empty-content callout-titled" title="Released on 2025-11-28">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Released on 2025-11-28
+</div>
+</div>
+<div class="callout-body-container callout-body">
+
+</div>
+</div>
+<section id="breaking-changes-3" class="level3">
+<h3 class="anchored" data-anchor-id="breaking-changes-3">Breaking changes</h3>
 <ul>
 <li>For consistency between CLI arguments and <code>jarl.toml</code> arguments, the following CLI arguments are renamed (#199):
 <ul>
@@ -641,8 +833,21 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 </ul>
 </section>
 </section>
-<section id="section-5" class="level2">
-<h2 class="anchored" data-anchor-id="section-5">0.1.2</h2>
+<section id="section-6" class="level2">
+<h2 class="anchored" data-anchor-id="section-6">0.1.2</h2>
+<div class="low-opacity callout callout-style-default callout-note no-icon callout-empty-content callout-titled" title="Released on 2025-11-23">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Released on 2025-11-23
+</div>
+</div>
+<div class="callout-body-container callout-body">
+
+</div>
+</div>
 <section id="features-4" class="level3">
 <h3 class="anchored" data-anchor-id="features-4">Features</h3>
 <ul>
@@ -665,8 +870,21 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 </ul>
 </section>
 </section>
-<section id="section-6" class="level2">
-<h2 class="anchored" data-anchor-id="section-6">0.1.1</h2>
+<section id="section-7" class="level2">
+<h2 class="anchored" data-anchor-id="section-7">0.1.1</h2>
+<div class="low-opacity callout callout-style-default callout-note no-icon callout-empty-content callout-titled" title="Released on 2025-11-20">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Released on 2025-11-20
+</div>
+</div>
+<div class="callout-body-container callout-body">
+
+</div>
+</div>
 <section id="fixes-3" class="level3">
 <h3 class="anchored" data-anchor-id="fixes-3">Fixes</h3>
 <ul>
@@ -681,8 +899,21 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 </ul>
 </section>
 </section>
-<section id="section-7" class="level2">
-<h2 class="anchored" data-anchor-id="section-7">0.1.0</h2>
+<section id="section-8" class="level2">
+<h2 class="anchored" data-anchor-id="section-8">0.1.0</h2>
+<div class="low-opacity callout callout-style-default callout-note no-icon callout-empty-content callout-titled" title="Released on 2025-11-19">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Released on 2025-11-19
+</div>
+</div>
+<div class="callout-body-container callout-body">
+
+</div>
+</div>
 <p>First release (announced)</p>
 
 
