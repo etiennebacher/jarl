@@ -535,7 +535,7 @@ The rule is implemented, all tests pass, perfect!
 We now need to document this change:
 
 * update `docs/changelog.md`
-* update `docs/rules.md`
+* add or update the rule page in `docs/rules/<rule_name>.md`
 
 If you have installed `just` as [recommended](contributing.md#tools), you can now run `just document` to update the website.
 

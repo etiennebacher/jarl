@@ -39,18 +39,18 @@ In this section, all paths refer to files in `crates/jarl-core`.
 
 ### List of existing rules
 
-`src/lints/mod.rs` contains the existing list of rules.
+`src/rule_set.rs` contains the existing list of rules.
 Each rule must have a name, belong to one or several categories (`PERF`, `READ`, etc.), a `FixStatus` indicating whether it has a fix and, if so, whether this fix is safe or unsafe, and an optional minimum required R version.
 
 ### Lint definition
 
-`src/lints` contains the definition of the rules, along with their associated documentation and tests. It has one subfolder per rule and two mandatory files: `<rule_name>.rs` (which contains the definition and documentation) and `mod.rs` (which contains the tests).
+`src/lints` contains the definition of the rules, along with their associated documentation and tests. Rules are grouped into subfolders such as `base`, with one subfolder per rule. Each rule has two mandatory files: `<rule_name>.rs` (which contains the definition and documentation) and `mod.rs` (which contains the tests).
 
 If there are snapshot tests for this rule, then a subfolder `snapshots` will also be created.
 For example, the folder for the rule `any_duplicated` looks like this:
 
 ```sh
-src/lints/any_duplicated/
+src/lints/base/any_duplicated/
 ├── any_duplicated.rs
 ├── mod.rs
 └── snapshots
@@ -61,9 +61,9 @@ src/lints/any_duplicated/
 
 Adding a new rule requires four main steps:
 
-1. Add the new rule to the list in `src/lints/mod.rs`. In the same file, also add `pub(crate) mod <rulename>;`
-1. Add a subfolder with the rule name in `src/lints`. Add the documentation and the code for the rule.
-1. Add tests in `src/lints/<rulename>/mod.rs`
+1. Add the new rule to the list in `src/rule_set.rs`, and add `pub(crate) mod <rulename>;` to the relevant lint-group module, such as `src/lints/base/mod.rs`.
+1. Add a subfolder with the rule name in `src/lints/<group>`. Add the documentation and the code for the rule.
+1. Add tests in `src/lints/<group>/<rulename>/mod.rs`
 1. Add the rule in the `src/analyze` folder. This depends on the initial node in the AST. For instance, for the rule `equals_na`, we check the presence of code such as `x == NA`. Since the top node for this expression is a `R_BINARY_EXPRESSION`, this rule is ran in `src/analyze/binary_expression.rs`.
 
 ### Useful commands
@@ -76,13 +76,13 @@ Adding a new rule requires four main steps:
 
 ## Integration tests
 
-When you add a new rule, it is usually sufficient to add tests in the directory of this rule only, e.g. in `crates/jarl-core/src/lints/any_duplicated`.
+When you add a new rule, it is usually sufficient to add tests in the directory of this rule only, e.g. in `crates/jarl-core/src/lints/base/any_duplicated`.
 
 However, in some cases you may affect the way users interact with Jarl as a whole, for instance by adding new command line arguments or arguments that can be set in `jarl.toml`. For those changes, it is important to check that the general behavior of Jarl is correct (check what happens when there are no R files, how TOML and CLI arguments interact, etc.).
 
-Tests for this are stored in `crates/jarl-cli/tests/integration`.
+Tests for this are stored in `crates/jarl/tests/integration`.
 It is likely that you will need to edit one of the files instead of creating a new one.
-For example, adding an extra argument in `crates/jarl-core/toml.rs` would require adding tests in `crates/jarl-cli/tests/integration/toml.rs`.
+For example, adding an extra argument in `crates/jarl-core/src/toml.rs` would require adding tests in `crates/jarl/tests/integration/toml_rule_args.rs`.
 
 
 ## PR title
