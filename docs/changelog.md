@@ -94,9 +94,7 @@
     `pixi` (@salim-b).
   - it is available on Homebrew, enabling its installation via `brew`.
 
-### Documentation
-
-* Update the contributing documentation to fix out-of-date paths (#658).
+* Fixed stale links in the contributing guide (#658, @christopherkenny).
 
 
 ### Bug fixes
