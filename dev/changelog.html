@@ -337,7 +337,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-dev">    
         <li>
     <a class="dropdown-item" href="https://jarl.etiennebacher.com/">
- <span class="dropdown-text">stable (0.5.0)</span></a>
+ <span class="dropdown-text">stable (0.6.0)</span></a>
   </li>  
         <li>
     <a class="dropdown-item" href="https://jarl.etiennebacher.com/dev/">
@@ -366,9 +366,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#changelog" id="toc-changelog" class="nav-link active" data-scroll-target="#changelog">Changelog</a>
   <ul>
-  <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section">0.6.0</a>
+  <li><a href="#development-version" id="toc-development-version" class="nav-link" data-scroll-target="#development-version">Development version</a>
   <ul class="collapse">
   <li><a href="#breaking-changes" id="toc-breaking-changes" class="nav-link" data-scroll-target="#breaking-changes">Breaking changes</a></li>
+  </ul></li>
+  <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section">0.6.0</a>
+  <ul class="collapse">
+  <li><a href="#breaking-changes-1" id="toc-breaking-changes-1" class="nav-link" data-scroll-target="#breaking-changes-1">Breaking changes</a></li>
   <li><a href="#new-and-improved-rules" id="toc-new-and-improved-rules" class="nav-link" data-scroll-target="#new-and-improved-rules">New and improved rules</a></li>
   <li><a href="#cli-improvements" id="toc-cli-improvements" class="nav-link" data-scroll-target="#cli-improvements">CLI improvements</a></li>
   <li><a href="#toml-improvements" id="toc-toml-improvements" class="nav-link" data-scroll-target="#toml-improvements">TOML improvements</a></li>
@@ -383,7 +387,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#section-2" id="toc-section-2" class="nav-link" data-scroll-target="#section-2">0.4.0</a>
   <ul class="collapse">
-  <li><a href="#breaking-changes-1" id="toc-breaking-changes-1" class="nav-link" data-scroll-target="#breaking-changes-1">Breaking changes</a></li>
+  <li><a href="#breaking-changes-2" id="toc-breaking-changes-2" class="nav-link" data-scroll-target="#breaking-changes-2">Breaking changes</a></li>
   <li><a href="#features-1" id="toc-features-1" class="nav-link" data-scroll-target="#features-1">Features</a></li>
   <li><a href="#other-changes" id="toc-other-changes" class="nav-link" data-scroll-target="#other-changes">Other changes</a></li>
   <li><a href="#bug-fixes-2" id="toc-bug-fixes-2" class="nav-link" data-scroll-target="#bug-fixes-2">Bug fixes</a></li>
@@ -391,7 +395,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#section-3" id="toc-section-3" class="nav-link" data-scroll-target="#section-3">0.3.0</a>
   <ul class="collapse">
-  <li><a href="#breaking-changes-2" id="toc-breaking-changes-2" class="nav-link" data-scroll-target="#breaking-changes-2">Breaking changes</a></li>
+  <li><a href="#breaking-changes-3" id="toc-breaking-changes-3" class="nav-link" data-scroll-target="#breaking-changes-3">Breaking changes</a></li>
   <li><a href="#features-2" id="toc-features-2" class="nav-link" data-scroll-target="#features-2">Features</a></li>
   <li><a href="#fixes" id="toc-fixes" class="nav-link" data-scroll-target="#fixes">Fixes</a></li>
   <li><a href="#other-changes-1" id="toc-other-changes-1" class="nav-link" data-scroll-target="#other-changes-1">Other changes</a></li>
@@ -402,7 +406,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#section-5" id="toc-section-5" class="nav-link" data-scroll-target="#section-5">0.2.0</a>
   <ul class="collapse">
-  <li><a href="#breaking-changes-3" id="toc-breaking-changes-3" class="nav-link" data-scroll-target="#breaking-changes-3">Breaking changes</a></li>
+  <li><a href="#breaking-changes-4" id="toc-breaking-changes-4" class="nav-link" data-scroll-target="#breaking-changes-4">Breaking changes</a></li>
   <li><a href="#features-3" id="toc-features-3" class="nav-link" data-scroll-target="#features-3">Features</a></li>
   <li><a href="#fixes-1" id="toc-fixes-1" class="nav-link" data-scroll-target="#fixes-1">Fixes</a></li>
   <li><a href="#documentation-1" id="toc-documentation-1" class="nav-link" data-scroll-target="#documentation-1">Documentation</a></li>
@@ -431,6 +435,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="changelog" class="level1">
 <h1>Changelog</h1>
+<section id="development-version" class="level2">
+<h2 class="anchored" data-anchor-id="development-version">Development version</h2>
+<section id="breaking-changes" class="level3">
+<h3 class="anchored" data-anchor-id="breaking-changes">Breaking changes</h3>
+<ul>
+<li>The <code>jarl.toml</code> argument <code>assignment</code> (deprecated since 0.5.0) is removed. Use the rule-specific option <code>[lint.assignment]</code> instead (#663).</li>
+</ul>
+</section>
+</section>
 <section id="section" class="level2">
 <h2 class="anchored" data-anchor-id="section">0.6.0</h2>
 <div class="low-opacity callout callout-style-default callout-note no-icon callout-empty-content callout-titled" title="Released on 2026-08-24">
@@ -446,8 +459,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </div>
 </div>
-<section id="breaking-changes" class="level3">
-<h3 class="anchored" data-anchor-id="breaking-changes">Breaking changes</h3>
+<section id="breaking-changes-1" class="level3">
+<h3 class="anchored" data-anchor-id="breaking-changes-1">Breaking changes</h3>
 <ul>
 <li>The JSON output produced with <code>--output-format json</code> has changed. In <code>fix</code>, the fields <code>start</code> and <code>end</code> are replaced by a field <code>range</code> that contains the two values (#650).</li>
 </ul>
@@ -635,8 +648,8 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 
 </div>
 </div>
-<section id="breaking-changes-1" class="level3">
-<h3 class="anchored" data-anchor-id="breaking-changes-1">Breaking changes</h3>
+<section id="breaking-changes-2" class="level3">
+<h3 class="anchored" data-anchor-id="breaking-changes-2">Breaking changes</h3>
 <ul>
 <li><p>The support for comments to hide violations (aka <em>suppression comments</em>, aka <code># nolint</code> comments in <code>lintr</code>) has been entirely reworked (#218). It is no longer compatible with <code>lintr</code>’s comments. Instead, Jarl now uses <code># jarl-ignore</code> comments and follows different rules regarding the syntax and location of those comments. Detailed documentation is available in the section <a href="https://jarl.etiennebacher.com/howto/suppression-comments" target="_blank">“Suppression comments”</a> on the website. As part of this rewrite, the following rules have been added:</p>
 <ul>
@@ -717,8 +730,8 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 
 </div>
 </div>
-<section id="breaking-changes-2" class="level3">
-<h3 class="anchored" data-anchor-id="breaking-changes-2">Breaking changes</h3>
+<section id="breaking-changes-3" class="level3">
+<h3 class="anchored" data-anchor-id="breaking-changes-3">Breaking changes</h3>
 <ul>
 <li><p>Jarl now excludes by default file paths matching the following patterns: <code>.git/</code>, <code>renv/</code>, <code>revdep/</code>, <code>cpp11.R</code>, <code>RcppExports.R</code>, <code>extendr-wrappers.R</code>, and <code>import-standalone-*.R</code>.</p>
 <p>A new CLI argument <code>--no-default-exclude</code> can be used to check those files as well. This argument overrides the <code>default-exclude = true</code> option when set in <code>jarl.toml</code> (#178, <span class="citation" data-cites="novica">@novica</span>).</p></li>
@@ -796,8 +809,8 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 
 </div>
 </div>
-<section id="breaking-changes-3" class="level3">
-<h3 class="anchored" data-anchor-id="breaking-changes-3">Breaking changes</h3>
+<section id="breaking-changes-4" class="level3">
+<h3 class="anchored" data-anchor-id="breaking-changes-4">Breaking changes</h3>
 <ul>
 <li>For consistency between CLI arguments and <code>jarl.toml</code> arguments, the following CLI arguments are renamed (#199):
 <ul>
