@@ -1,5 +1,13 @@
 # Changelog
 
+## Development version
+
+### New and improved rules
+
+* New rules:
+
+  * `cyclomatic_complexity`
+
 ## 0.6.0
 
 ::: {.callout-note icon=false title="Released on 2026-08-24" .low-opacity}

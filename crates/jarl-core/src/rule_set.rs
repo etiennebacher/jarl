@@ -315,6 +315,13 @@ declare_rules! {
         fix: Safe,
         min_r_version: None,
     },
+    CyclomaticComplexity => {
+        name: "cyclomatic_complexity",
+        categories: [Read],
+        default: Disabled,
+        fix: None,
+        min_r_version: None,
+    },
     DownloadFile => {
         name: "download_file",
         categories: [Susp],

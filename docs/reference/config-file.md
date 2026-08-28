@@ -307,6 +307,22 @@ This option doesn't have a default value.
 operator = "<-" # or "="
 ```
 
+### `cyclomatic_complexity`
+
+Use `max-complexity` to set the highest score a function (or the top-level code
+of a file) is allowed to reach before it is reported. It must be at least 1.
+
+Default: `max-complexity = 15`
+
+```toml
+[lint]
+...
+
+[lint.cyclomatic_complexity]
+# Only report the functions that are really tangled.
+max-complexity = 25
+```
+
 ### `duplicated_arguments`
 
 Use `skipped-functions` to fully replace the default list of functions that are
