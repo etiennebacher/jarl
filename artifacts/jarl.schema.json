@@ -16,37 +16,6 @@
   },
   "additionalProperties": false,
   "$defs": {
-    "AssignmentConfig": {
-      "description": "Accepts either the legacy top-level string (`assignment = \"<-\"`) or the new\ntable form (`[lint.assignment]` with an `operator` field).\n\nTOML doesn't allow a key to be both a string and a table, but by trying the\ntable form first we can surface clear errors (like \"unknown field\") while\nstill falling back to the legacy string form.",
-      "oneOf": [
-        {
-          "description": "Legacy: `assignment = \"<-\"` (deprecated)",
-          "type": "object",
-          "properties": {
-            "Legacy": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false,
-          "required": [
-            "Legacy"
-          ]
-        },
-        {
-          "description": "New: `[lint.assignment]` table with fields",
-          "type": "object",
-          "properties": {
-            "Options": {
-              "$ref": "#/$defs/AssignmentOptions"
-            }
-          },
-          "additionalProperties": false,
-          "required": [
-            "Options"
-          ]
-        }
-      ]
-    },
     "AssignmentOptions": {
       "description": "TOML options for `[lint.assignment]`.\n\nUse `operator` to specify which assignment operator to enforce.\nValid values are `\"<-\"` (the default) and `\"=\"`.",
       "type": "object",
@@ -139,11 +108,11 @@
       "type": "object",
       "properties": {
         "assignment": {
-          "title": "Assignment operator to use",
-          "description": "Accepts either the legacy form `assignment = \"<-\"` (deprecated) or the\nnew table form `[lint.assignment]` with an `operator` field.",
+          "title": "Options for the `assignment` rule",
+          "description": "Use `operator` to specify which assignment operator to enforce.\nValid values are `\"<-\"` (the default) and `\"=\"`.",
           "anyOf": [
             {
-              "$ref": "#/$defs/AssignmentConfig"
+              "$ref": "#/$defs/AssignmentOptions"
             },
             {
               "type": "null"

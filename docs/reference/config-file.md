@@ -212,11 +212,6 @@ default-exclude = false
 default-exclude = false
 ```
 
-### `assignment`
-
-**This argument is deprecated. Use the rule-specific argument `[lint.assignment]`
-instead (see below).**
-
 ### `fixable`
 
 This determines which rule violations will be fixed if `--fix` is passed.
@@ -293,7 +288,7 @@ fix-roxygen = false
 ### `assignment`
 
 This takes a single value (`"<-"` or `"="`) indicating the preferred assignment
-operator in the files to check. If `assignment = "<-"` and if the `"assignment"`
+operator in the files to check. If `operator = "<-"` and if the `"assignment"`
 rule is enabled, then any use of the `"="` operator to assign values will be
 reported, and vice-versa.
 

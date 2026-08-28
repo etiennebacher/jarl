@@ -302,16 +302,6 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
             ));
         }
 
-        for item in resolver.items() {
-            if item.value().linter.deprecated_assignment_syntax {
-                warnings.push(
-                    "Argument `assignment` in `[lint]` is deprecated. \
-                     Use `[lint.assignment]` with `operator` instead."
-                        .to_string(),
-                );
-            }
-        }
-
         // Deprecation warnings for explicitly-used deprecated rules.
         let mut explicit_rule_names: BTreeSet<String> = BTreeSet::new();
 
