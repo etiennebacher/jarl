@@ -7,6 +7,13 @@
 * The `jarl.toml` argument `assignment` (deprecated since 0.5.0) is removed. Use
   the rule-specific option `[lint.assignment]` instead (#663).
 
+### Bug fixes
+
+* The `lengths` rule no longer crashes on calls where `X` is missing from the
+  syntax tree, e.g. `sapply(FUN = length)` or `x |> sapply(FUN = length)`. The
+  autofix now also produces `lengths(x)` instead of the invalid
+  `lengths(X = x)` when `X` is passed by name.
+
 ## 0.6.0
 
 ::: {.callout-note icon=false title="Released on 2026-08-24" .low-opacity}
