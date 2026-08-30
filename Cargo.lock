@@ -752,7 +752,7 @@ name = "fs"
 version = "0.0.0"
 source = "git+https://github.com/etiennebacher/air_pratt#83d98702b163479c9cafb383bed6c62796a67e07"
 dependencies = [
- "path-absolutize",
+ "path-absolutize 3.1.1",
 ]
 
 [[package]]
@@ -1077,7 +1077,7 @@ dependencies = [
  "oak_package_metadata",
  "oak_scan",
  "oak_semantic",
- "path-absolutize",
+ "path-absolutize 4.0.1",
  "rayon",
  "regex",
  "rustc-hash",
@@ -1180,9 +1180,9 @@ checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
 name = "lsp-server"
-version = "0.8.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ad8be6fe0ca81b8298bfbbe8a77e9fcd8895ad6c84cd7794d5ebadcbb09ae43"
+checksum = "3ee25a31f2e571e426eef2896179450cafc7e2f5be00d8a93b1c2d21c0ff7656"
 dependencies = [
  "crossbeam-channel",
  "log",
@@ -1387,7 +1387,16 @@ version = "3.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4af381fe79fa195b4909485d99f73a80792331df0625188e707854f0b3383f5"
 dependencies = [
- "path-dedot",
+ "path-dedot 3.1.1",
+]
+
+[[package]]
+name = "path-absolutize"
+version = "4.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f808742975794703469f67a28dd14b1d1009a1743c18b0353b4b951dbb0068ad"
+dependencies = [
+ "path-dedot 4.0.1",
 ]
 
 [[package]]
@@ -1398,6 +1407,12 @@ checksum = "07ba0ad7e047712414213ff67533e6dd477af0a4e1d14fb52343e53d30ea9397"
 dependencies = [
  "once_cell",
 ]
+
+[[package]]
+name = "path-dedot"
+version = "4.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03351d0f1c066c114015408dc6a3e101f080fc03ef9d8d799aa58ec760cac5a6"
 
 [[package]]
 name = "percent-encoding"
