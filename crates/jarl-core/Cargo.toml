@@ -63,7 +63,7 @@ insta.workspace = true
 tempfile.workspace = true
 
 [lints.clippy]
-module-inception = "allow"
+module_inception = "allow"
 
 [features]
 schemars = ["dep:schemars"]
