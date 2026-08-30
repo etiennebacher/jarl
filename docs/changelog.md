@@ -7,6 +7,10 @@
 * The `jarl.toml` argument `assignment` (deprecated since 0.5.0) is removed. Use
   the rule-specific option `[lint.assignment]` instead (#663).
 
+### Bug fixes
+
+* Fix `--fix` corrupting files containing multi-byte characters (#672, @Yousa-Mirage).
+
 ## 0.6.0
 
 ::: {.callout-note icon=false title="Released on 2026-08-24" .low-opacity}
