@@ -1077,7 +1077,6 @@ dependencies = [
  "oak_package_metadata",
  "oak_scan",
  "oak_semantic",
- "path-absolutize",
  "rayon",
  "regex",
  "rustc-hash",
