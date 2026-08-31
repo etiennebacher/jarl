@@ -17,7 +17,7 @@ ignore.workspace = true
 
 # LSP dependencies
 lsp-server = "0.8"
-lsp-types = "0.95"
+gen-lsp-types = { version = "0.11", features = ["url"] }
 
 # Async and concurrency
 crossbeam = "0.8"

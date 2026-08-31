@@ -5,8 +5,8 @@
 
 use anyhow::Result;
 use crossbeam::channel;
+use gen_lsp_types::{self as types};
 use lsp_server::{Message, Notification, Request, RequestId, Response, ResponseError};
-use lsp_types::{self as types};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -44,10 +44,7 @@ impl Client {
     }
 
     /// Send a notification to the client
-    pub fn send_notification<N: types::notification::Notification>(
-        &self,
-        params: N::Params,
-    ) -> Result<()>
+    pub fn send_notification<N: types::Notification>(&self, params: N::Params) -> Result<()>
     where
         N::Params: Serialize,
     {
@@ -62,7 +59,7 @@ impl Client {
     }
 
     /// Send a request to the client and register a response handler
-    pub fn send_request<R: types::request::Request>(
+    pub fn send_request<R: types::Request>(
         &self,
         params: R::Params,
         _handler: impl FnOnce(R::Result) + Send + 'static,
@@ -123,19 +120,19 @@ impl Client {
     /// Convenience method to publish diagnostics
     pub fn publish_diagnostics(
         &self,
-        uri: types::Url,
+        uri: types::Uri,
         diagnostics: Vec<types::Diagnostic>,
         version: Option<i32>,
     ) -> Result<()> {
-        self.send_notification::<types::notification::PublishDiagnostics>(
+        self.send_notification::<types::PublishDiagnosticsNotification>(
             types::PublishDiagnosticsParams { uri, diagnostics, version },
         )
     }
 
     /// Convenience method to show a message to the user
     pub fn show_message(&self, message: &str, message_type: types::MessageType) -> Result<()> {
-        self.send_notification::<types::notification::ShowMessage>(types::ShowMessageParams {
-            typ: message_type,
+        self.send_notification::<types::ShowMessageNotification>(types::ShowMessageParams {
+            kind: message_type,
             message: message.to_string(),
         })
     }
@@ -156,14 +153,14 @@ impl Client {
              This message is shown once per session.",
             s = if hidden_count == 1 { "" } else { "s" },
         );
-        self.show_message(&message, types::MessageType::INFO)?;
+        self.show_message(&message, types::MessageType::Info)?;
         Ok(true)
     }
 
     /// Convenience method to log a message
     pub fn log_message(&self, message: &str, message_type: types::MessageType) -> Result<()> {
-        self.send_notification::<types::notification::LogMessage>(types::LogMessageParams {
-            typ: message_type,
+        self.send_notification::<types::LogMessageNotification>(types::LogMessageParams {
+            kind: message_type,
             message: message.to_string(),
         })
     }

@@ -4,11 +4,11 @@
 //! document management, client capabilities, and workspace configuration.
 
 use anyhow::{Result, anyhow};
-use lsp_types::{
-    ClientCapabilities, CodeActionKind, CodeActionOptions, CodeActionProviderCapability,
-    InitializeParams, InitializeResult, SaveOptions, ServerCapabilities, ServerInfo,
-    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Url,
-    WorkDoneProgressOptions,
+use gen_lsp_types::{
+    ClientCapabilities, CodeActionKind, CodeActionOptions, CodeActionProvider, InitializeParams,
+    InitializeResult, MessageType, Position, Range, RootPath, SaveOptions, ServerCapabilities,
+    ServerInfo, TextDocumentContentChangeEvent, TextDocumentSync, TextDocumentSyncKind,
+    TextDocumentSyncOptions, Uri, WorkDoneProgressOptions, WorkspaceFolders,
 };
 use rustc_hash::FxHashMap;
 use serde::Deserialize;
@@ -92,7 +92,9 @@ impl Session {
     #[allow(deprecated)]
     pub fn initialize(&mut self, params: InitializeParams) -> LspResult<InitializeResult> {
         // Update workspace roots if provided
-        if let Some(workspace_folders) = params.workspace_folders {
+        if let Some(WorkspaceFolders::WorkspaceFolderList(workspace_folders)) =
+            params.workspace_folders_initialize_params.workspace_folders
+        {
             self.workspace_roots.clear();
             for folder in workspace_folders {
                 if let Ok(path) = folder.uri.to_file_path() {
@@ -103,7 +105,7 @@ impl Session {
             if let Ok(path) = root_uri.to_file_path() {
                 self.workspace_roots = vec![path];
             }
-        } else if let Some(root_path) = params.root_path {
+        } else if let Some(RootPath::String(root_path)) = params.root_path {
             self.workspace_roots = vec![PathBuf::from(root_path)];
         }
 
@@ -125,21 +127,20 @@ impl Session {
     pub fn server_capabilities(&self) -> ServerCapabilities {
         ServerCapabilities {
             position_encoding: Some(self.position_encoding.into()),
-            text_document_sync: Some(TextDocumentSyncCapability::Options(
-                TextDocumentSyncOptions {
-                    open_close: Some(true),
-                    change: Some(TextDocumentSyncKind::INCREMENTAL),
-                    will_save: Some(false),
-                    will_save_wait_until: Some(false),
-                    save: Some(SaveOptions { include_text: Some(false) }.into()),
-                },
-            )),
+            text_document_sync: Some(TextDocumentSync::Options(TextDocumentSyncOptions {
+                open_close: Some(true),
+                change: Some(TextDocumentSyncKind::Incremental),
+                will_save: Some(false),
+                will_save_wait_until: Some(false),
+                save: Some(SaveOptions { include_text: Some(false) }.into()),
+            })),
             diagnostic_provider: None, // Use push diagnostics only
             // Add code action support for quick fixes
             hover_provider: None,
             completion_provider: None,
-            code_action_provider: Some(CodeActionProviderCapability::Options(CodeActionOptions {
-                code_action_kinds: Some(vec![CodeActionKind::QUICKFIX]),
+            code_action_provider: Some(CodeActionProvider::CodeActionOptions(CodeActionOptions {
+                code_action_kinds: Some(vec![CodeActionKind::QuickFix]),
+                documentation: None,
                 resolve_provider: Some(false),
                 work_done_progress_options: WorkDoneProgressOptions::default(),
             })),
@@ -149,7 +150,7 @@ impl Session {
     }
 
     /// Open a new text document
-    pub fn open_document(&mut self, uri: Url, document: TextDocument) {
+    pub fn open_document(&mut self, uri: Uri, document: TextDocument) {
         let key = DocumentKey::from(uri);
         tracing::debug!("Opening document: {}", key.uri());
         self.documents.insert(key, document);
@@ -158,8 +159,8 @@ impl Session {
     /// Update an existing document with changes
     pub fn update_document(
         &mut self,
-        uri: Url,
-        changes: Vec<lsp_types::TextDocumentContentChangeEvent>,
+        uri: Uri,
+        changes: Vec<TextDocumentContentChangeEvent>,
         version: DocumentVersion,
     ) -> LspResult<()> {
         let key = DocumentKey::from(uri);
@@ -183,7 +184,7 @@ impl Session {
     }
 
     /// Close a document
-    pub fn close_document(&mut self, uri: Url) -> LspResult<()> {
+    pub fn close_document(&mut self, uri: Uri) -> LspResult<()> {
         let key = DocumentKey::from(uri);
 
         if self.documents.remove(&key).is_some() {
@@ -195,13 +196,13 @@ impl Session {
     }
 
     /// Get a document by URI
-    pub fn get_document(&self, uri: &Url) -> Option<&TextDocument> {
+    pub fn get_document(&self, uri: &Uri) -> Option<&TextDocument> {
         let key = DocumentKey::from(uri.clone());
         self.documents.get(&key)
     }
 
     /// Take a snapshot of a document
-    pub fn take_snapshot(&self, uri: Url) -> Option<DocumentSnapshot> {
+    pub fn take_snapshot(&self, uri: Uri) -> Option<DocumentSnapshot> {
         let key = DocumentKey::from(uri);
         let document = self.documents.get(&key)?;
 
@@ -220,7 +221,7 @@ impl Session {
     }
 
     /// Get all open document URIs
-    pub fn open_documents(&self) -> impl Iterator<Item = &Url> {
+    pub fn open_documents(&self) -> impl Iterator<Item = &Uri> {
         self.documents.keys().map(|key| key.uri())
     }
 
@@ -316,7 +317,7 @@ impl Session {
                             "Jarl uses the configuration from '{}'",
                             config_path.display()
                         ),
-                        lsp_types::MessageType::INFO,
+                        MessageType::Info,
                     ) {
                         tracing::error!("Failed to show config notification: {}", e);
                     } else {
@@ -364,7 +365,7 @@ impl DocumentSnapshot {
     }
 
     /// Get the document URI
-    pub fn uri(&self) -> &Url {
+    pub fn uri(&self) -> &Uri {
         self.key.uri()
     }
 
@@ -404,19 +405,19 @@ impl DocumentSnapshot {
     }
 
     /// Convert a position to byte offset
-    pub fn position_to_offset(&self, position: lsp_types::Position) -> Result<usize> {
+    pub fn position_to_offset(&self, position: Position) -> Result<usize> {
         self.document
             .position_to_offset(position, self.position_encoding)
     }
 
     /// Convert a byte offset to position
-    pub fn offset_to_position(&self, offset: usize) -> Result<lsp_types::Position> {
+    pub fn offset_to_position(&self, offset: usize) -> Result<Position> {
         self.document
             .offset_to_position(offset, self.position_encoding)
     }
 
     /// Get a range as a Range
-    pub fn range_of_span(&self, start: usize, end: usize) -> Result<lsp_types::Range> {
+    pub fn range_of_span(&self, start: usize, end: usize) -> Result<Range> {
         self.document
             .range_of_text(start, end, self.position_encoding)
     }
@@ -459,7 +460,7 @@ pub fn negotiate_position_encoding(client_capabilities: &ClientCapabilities) -> 
 mod tests {
     use super::*;
 
-    use lsp_types::{ClientCapabilities, GeneralClientCapabilities, PositionEncodingKind};
+    use gen_lsp_types::{GeneralClientCapabilities, PositionEncodingKind};
 
     fn create_test_session() -> Session {
         let (sender, _receiver) = crossbeam::channel::unbounded();
@@ -482,7 +483,7 @@ mod tests {
     #[test]
     fn test_document_lifecycle() {
         let mut session = create_test_session();
-        let uri = Url::parse("file:///test.py").unwrap();
+        let uri = Uri::parse("file:///test.py").unwrap();
         let document = TextDocument::new("hello world".to_string(), 1);
 
         // Open document
@@ -543,9 +544,9 @@ mod tests {
         assert!(caps.text_document_sync.is_some());
         assert!(caps.diagnostic_provider.is_none());
 
-        if let Some(TextDocumentSyncCapability::Options(options)) = caps.text_document_sync {
+        if let Some(TextDocumentSync::Options(options)) = caps.text_document_sync {
             assert_eq!(options.open_close, Some(true));
-            assert_eq!(options.change, Some(TextDocumentSyncKind::INCREMENTAL));
+            assert_eq!(options.change, Some(TextDocumentSyncKind::Incremental));
         }
     }
 
