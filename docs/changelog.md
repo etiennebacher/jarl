@@ -9,7 +9,7 @@
 
 ### Bug fixes
 
-* Fix `--fix` corrupting files containing multi-byte characters (#672, @Yousa-Mirage).
+* Ensure that `--fix` works with multi-byte characters (#672, @Yousa-Mirage).
 
 ## 0.6.0
 

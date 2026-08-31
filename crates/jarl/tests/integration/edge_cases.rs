@@ -148,6 +148,7 @@ fn test_jarl_with_tabs() -> anyhow::Result<()> {
     Ok(())
 }
 
+// https://github.com/etiennebacher/jarl/pull/672
 #[test]
 fn test_multibyte_fix_offsets() -> anyhow::Result<()> {
     // The suppression fixes remove complete comment lines containing
