@@ -101,8 +101,7 @@ impl Client {
     pub fn send_response(&self, id: RequestId, result: impl Serialize) -> Result<()> {
         let response = Response {
             id,
-            result: Some(serde_json::to_value(result)?),
-            error: None,
+            response_result: Ok(serde_json::to_value(result)?),
         };
 
         self.sender.send(Message::Response(response))?;
@@ -111,7 +110,7 @@ impl Client {
 
     /// Send an error response to a client request
     pub fn send_error_response(&self, id: RequestId, error: ResponseError) -> Result<()> {
-        let response = Response { id, result: None, error: Some(error) };
+        let response = Response { id, response_result: Err(error) };
 
         self.sender.send(Message::Response(response))?;
         Ok(())
@@ -185,7 +184,7 @@ impl Client {
                 elapsed
             );
 
-            if let Some(error) = &response.error {
+            if let Err(error) = &response.response_result {
                 error!(
                     "Request {} failed: {} - {}",
                     pending_request.method, error.code, error.message
