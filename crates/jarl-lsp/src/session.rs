@@ -482,8 +482,19 @@ mod tests {
         session.workspace_roots.clone()
     }
 
+    /// The `file://` URI for an absolute path. Built from a real path rather
+    /// than hardcoded, because a URI like `file:///project/a` carries no drive
+    /// letter and `to_file_path` rejects it on Windows.
+    fn file_uri(path: &std::path::Path) -> String {
+        Uri::from_file_path(path).unwrap().to_string()
+    }
+
     #[test]
     fn test_initialize_reads_workspace_folders() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let first = temp_dir.path().join("a");
+        let second = temp_dir.path().join("b");
+
         // `workspaceFolders` is flattened into a nested params struct, so it
         // still has to be picked up from the top level of the payload.
         let roots = workspace_roots_from(serde_json::json!({
@@ -491,48 +502,52 @@ mod tests {
             "rootUri": null,
             "capabilities": {},
             "workspaceFolders": [
-                { "uri": "file:///project/a", "name": "a" },
-                { "uri": "file:///project/b", "name": "b" }
+                { "uri": file_uri(&first), "name": "a" },
+                { "uri": file_uri(&second), "name": "b" }
             ]
         }));
 
-        assert_eq!(
-            roots,
-            vec![PathBuf::from("/project/a"), PathBuf::from("/project/b")]
-        );
+        assert_eq!(roots, vec![first, second]);
     }
 
     #[test]
     fn test_initialize_falls_back_to_root_uri() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let root = temp_dir.path().join("c");
+
         // A client that supports workspace folders but has none configured sends
         // an explicit `null`, which is a distinct value from the absent field —
         // both fall through to `rootUri`.
         let with_explicit_null = workspace_roots_from(serde_json::json!({
             "processId": null,
-            "rootUri": "file:///project/c",
+            "rootUri": file_uri(&root),
             "capabilities": {},
             "workspaceFolders": null,
         }));
-        assert_eq!(with_explicit_null, vec![PathBuf::from("/project/c")]);
+        assert_eq!(with_explicit_null, vec![root.clone()]);
 
         let with_absent_field = workspace_roots_from(serde_json::json!({
             "processId": null,
-            "rootUri": "file:///project/c",
+            "rootUri": file_uri(&root),
             "capabilities": {},
         }));
-        assert_eq!(with_absent_field, vec![PathBuf::from("/project/c")]);
+        assert_eq!(with_absent_field, vec![root]);
     }
 
     #[test]
     fn test_initialize_falls_back_to_root_path() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let root = temp_dir.path().join("d");
+
+        // `rootPath` is a plain string, not a URI, so it is taken as-is.
         let roots = workspace_roots_from(serde_json::json!({
             "processId": null,
             "rootUri": null,
-            "rootPath": "/project/d",
+            "rootPath": root.to_str().unwrap(),
             "capabilities": {},
         }));
 
-        assert_eq!(roots, vec![PathBuf::from("/project/d")]);
+        assert_eq!(roots, vec![root]);
     }
 
     #[test]
