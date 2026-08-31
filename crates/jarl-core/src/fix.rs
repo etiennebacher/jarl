@@ -20,7 +20,7 @@ pub fn apply_fixes(fixes: &[Diagnostic], contents: &str) -> String {
     // length.
     let mut last_original_end: usize = 0;
 
-    let old_length = old_content.chars().count() as i32;
+    let old_length = old_content.len() as i32;
     let mut new_length = old_length;
 
     for fix in fixes {
@@ -34,7 +34,7 @@ pub fn apply_fixes(fixes: &[Diagnostic], contents: &str) -> String {
         let end = (fix.end() as i32 + diff_length) as usize;
 
         new_content.replace_range(start..end, &fix.content);
-        new_length = new_content.chars().count() as i32;
+        new_length = new_content.len() as i32;
         last_original_end = fix.end();
     }
 
