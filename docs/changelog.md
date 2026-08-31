@@ -16,6 +16,9 @@
   autofix now also produces `lengths(x)` instead of the invalid
   `lengths(X = x)` when `X` is passed by name (#671, @Yousa-Mirage).
 
+* Fix language server suppression quickfix positions for non-ASCII text
+  (#675, @Yousa-Mirage).
+
 ## 0.6.0
 
 ::: {.callout-note icon=false title="Released on 2026-08-24" .low-opacity}
