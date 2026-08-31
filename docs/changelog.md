@@ -9,6 +9,8 @@
 
 ### Bug fixes
 
+* Ensure that `--fix` works with multi-byte characters (#672, @Yousa-Mirage).
+
 * The `lengths` rule no longer crashes on calls where `X` is missing from the
   syntax tree, e.g. `sapply(FUN = length)` or `x |> sapply(FUN = length)`. The
   autofix now also produces `lengths(x)` instead of the invalid

@@ -147,3 +147,38 @@ fn test_jarl_with_tabs() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+// https://github.com/etiennebacher/jarl/pull/672
+#[test]
+fn test_multibyte_fix_offsets() -> anyhow::Result<()> {
+    // The suppression fixes remove complete comment lines containing
+    // multi-byte characters, while the later fixes must still use their
+    // original byte offsets correctly.
+    let case = CliTest::with_file(
+        "test.R",
+        r#"# jarl-ignore seq: 原因一
+x <- 1
+# jarl-ignore browser: 原因二
+y <- 2
+
+排序 <- 分数[order(分数)]
+any(is.na("数据"))
+"#,
+    )?;
+
+    let output = case
+        .command()
+        .arg("check")
+        .arg(".")
+        .arg("--fix")
+        .arg("--allow-no-vcs")
+        .run();
+
+    assert!(output.status.success(), "jarl failed:\n{output}");
+    assert_eq!(
+        case.read_file("test.R")?,
+        "x <- 1\ny <- 2\n\n排序 <- sort(分数)\nanyNA(\"数据\")\n"
+    );
+
+    Ok(())
+}
