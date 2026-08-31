@@ -767,6 +767,124 @@ select = ["ALL"]
         }
     }
 
+    /// The dispatch in `handle_request`/`handle_notification` matches the
+    /// method string a client sent against these constants, so a wrong mapping
+    /// would silently route every message to the catch-all arm.
+    #[test]
+    fn test_dispatched_methods_match_their_protocol_strings() {
+        assert_eq!(types::ShutdownRequest::METHOD.as_str(), "shutdown");
+        assert_eq!(
+            types::CodeActionRequest::METHOD.as_str(),
+            "textDocument/codeAction"
+        );
+        assert_eq!(types::ExitNotification::METHOD.as_str(), "exit");
+        assert_eq!(
+            types::DidOpenTextDocumentNotification::METHOD.as_str(),
+            "textDocument/didOpen"
+        );
+        assert_eq!(
+            types::DidChangeTextDocumentNotification::METHOD.as_str(),
+            "textDocument/didChange"
+        );
+        assert_eq!(
+            types::DidCloseTextDocumentNotification::METHOD.as_str(),
+            "textDocument/didClose"
+        );
+        assert_eq!(
+            types::DidSaveTextDocumentNotification::METHOD.as_str(),
+            "textDocument/didSave"
+        );
+
+        // The scrutinee is built with `from`, so it has to round-trip back to
+        // the same variant the arms are written against.
+        assert_eq!(
+            LspRequestMethod::from("textDocument/codeAction"),
+            types::CodeActionRequest::METHOD
+        );
+        assert_eq!(
+            LspNotificationMethod::from("textDocument/didSave"),
+            types::DidSaveTextDocumentNotification::METHOD
+        );
+        assert!(matches!(
+            LspRequestMethod::from("textDocument/hover"),
+            LspRequestMethod::TextDocumentHover
+        ));
+    }
+
+    #[test]
+    fn test_code_action_kinds_serialize_to_protocol_strings() {
+        // The unsafe kind is a custom value, and code actions go out wrapped in
+        // an untagged response enum.
+        assert_eq!(
+            serde_json::to_value(types::CodeActionKind::QuickFix).unwrap(),
+            "quickfix"
+        );
+        assert_eq!(
+            serde_json::to_value(types::CodeActionKind::new("quickfix.unsafe")).unwrap(),
+            "quickfix.unsafe"
+        );
+
+        let action = types::CodeActionResponse::CodeAction(types::CodeAction {
+            title: "Fix: something".to_string(),
+            kind: Some(types::CodeActionKind::QuickFix),
+            diagnostics: None,
+            is_preferred: Some(true),
+            disabled: None,
+            edit: None,
+            command: None,
+            data: None,
+            tags: None,
+        });
+        let json = serde_json::to_value(action).unwrap();
+        assert_eq!(json["title"], "Fix: something");
+        assert_eq!(json["kind"], "quickfix");
+    }
+
+    #[test]
+    fn test_did_change_params_carry_uri_and_version() {
+        // `uri` lives on a flattened identifier struct, and the content changes
+        // are an untagged enum.
+        let params: types::DidChangeTextDocumentParams =
+            serde_json::from_value(serde_json::json!({
+                "textDocument": { "uri": "file:///test.R", "version": 4 },
+                "contentChanges": [{
+                    "range": {
+                        "start": { "line": 0, "character": 0 },
+                        "end": { "line": 0, "character": 1 }
+                    },
+                    "text": "x"
+                }]
+            }))
+            .unwrap();
+
+        assert_eq!(
+            params.text_document.text_document_identifier.uri.as_str(),
+            "file:///test.R"
+        );
+        assert_eq!(params.text_document.version, 4);
+        assert_eq!(params.content_changes.len(), 1);
+    }
+
+    #[test]
+    fn test_did_open_params_carry_language_id() {
+        // `language_id` is a `LanguageKind` enum now, and the document stores
+        // its string form.
+        let params: types::DidOpenTextDocumentParams = serde_json::from_value(serde_json::json!({
+            "textDocument": {
+                "uri": "file:///test.R",
+                "languageId": "r",
+                "version": 1,
+                "text": "x <- 1\n"
+            }
+        }))
+        .unwrap();
+
+        let document = TextDocument::new(params.text_document.text, params.text_document.version)
+            .with_language_id(&params.text_document.language_id.to_string());
+
+        assert_eq!(document.language_id(), Some("r"));
+    }
+
     fn create_test_snapshot(content: &str) -> DocumentSnapshot {
         let uri = Uri::parse("file:///test.R").unwrap();
         let key = DocumentKey::from(uri);

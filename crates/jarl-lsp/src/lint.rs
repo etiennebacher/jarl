@@ -408,7 +408,7 @@ mod tests {
     use super::*;
     use crate::document::{DocumentKey, TextDocument};
     use crate::session::DocumentSnapshot;
-    use gen_lsp_types::{ClientCapabilities, Uri};
+    use gen_lsp_types::{ClientCapabilities, MarkupContent, MarkupKind, Uri};
 
     fn create_test_snapshot(file_path: &std::path::Path, content: &str) -> DocumentSnapshot {
         let uri = Uri::from_file_path(file_path).unwrap();
@@ -434,6 +434,39 @@ mod tests {
         assert_eq!(output.diagnostics.len(), 1);
         assert_eq!(
             message_text(&output.diagnostics[0].message),
+            "This file is empty or only contains comments. Consider deleting the file."
+        );
+    }
+
+    #[test]
+    fn test_message_text_reads_both_variants() {
+        assert_eq!(message_text(&Message::String("plain".to_string())), "plain");
+        assert_eq!(
+            message_text(&Message::MarkupContent(MarkupContent {
+                kind: MarkupKind::Markdown,
+                value: "**bold**".to_string(),
+            })),
+            "**bold**"
+        );
+    }
+
+    #[test]
+    fn test_diagnostic_wire_format() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.R");
+        std::fs::write(&file_path, "").unwrap();
+
+        let snapshot = create_test_snapshot(&file_path, "");
+        let output = lint_document(&snapshot).unwrap();
+        let diagnostic = serde_json::to_value(&output.diagnostics[0]).unwrap();
+
+        assert_eq!(diagnostic["severity"], 2);
+        assert_eq!(diagnostic["source"], DIAGNOSTIC_SOURCE);
+        // `code` and `message` are untagged enums, so they must serialize as
+        // bare values rather than as tagged objects.
+        assert_eq!(diagnostic["code"], "empty_file");
+        assert_eq!(
+            diagnostic["message"],
             "This file is empty or only contains comments. Consider deleting the file."
         );
     }

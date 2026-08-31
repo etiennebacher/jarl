@@ -473,6 +473,87 @@ mod tests {
         )
     }
 
+    /// Initialize a session from a raw `initialize` payload and return the
+    /// workspace roots it derived.
+    fn workspace_roots_from(params_json: serde_json::Value) -> Vec<PathBuf> {
+        let params: InitializeParams = serde_json::from_value(params_json).unwrap();
+        let mut session = create_test_session();
+        session.initialize(params).unwrap();
+        session.workspace_roots.clone()
+    }
+
+    #[test]
+    fn test_initialize_reads_workspace_folders() {
+        // `workspaceFolders` is flattened into a nested params struct, so it
+        // still has to be picked up from the top level of the payload.
+        let roots = workspace_roots_from(serde_json::json!({
+            "processId": null,
+            "rootUri": null,
+            "capabilities": {},
+            "workspaceFolders": [
+                { "uri": "file:///project/a", "name": "a" },
+                { "uri": "file:///project/b", "name": "b" }
+            ]
+        }));
+
+        assert_eq!(
+            roots,
+            vec![PathBuf::from("/project/a"), PathBuf::from("/project/b")]
+        );
+    }
+
+    #[test]
+    fn test_initialize_falls_back_to_root_uri() {
+        // A client that supports workspace folders but has none configured sends
+        // an explicit `null`, which is a distinct value from the absent field —
+        // both fall through to `rootUri`.
+        let with_explicit_null = workspace_roots_from(serde_json::json!({
+            "processId": null,
+            "rootUri": "file:///project/c",
+            "capabilities": {},
+            "workspaceFolders": null,
+        }));
+        assert_eq!(with_explicit_null, vec![PathBuf::from("/project/c")]);
+
+        let with_absent_field = workspace_roots_from(serde_json::json!({
+            "processId": null,
+            "rootUri": "file:///project/c",
+            "capabilities": {},
+        }));
+        assert_eq!(with_absent_field, vec![PathBuf::from("/project/c")]);
+    }
+
+    #[test]
+    fn test_initialize_falls_back_to_root_path() {
+        let roots = workspace_roots_from(serde_json::json!({
+            "processId": null,
+            "rootUri": null,
+            "rootPath": "/project/d",
+            "capabilities": {},
+        }));
+
+        assert_eq!(roots, vec![PathBuf::from("/project/d")]);
+    }
+
+    #[test]
+    fn test_server_capabilities_wire_format() {
+        let session = create_test_session();
+        let capabilities = serde_json::to_value(session.server_capabilities()).unwrap();
+
+        assert_eq!(capabilities["positionEncoding"], "utf-16");
+        assert_eq!(capabilities["textDocumentSync"]["openClose"], true);
+        assert_eq!(capabilities["textDocumentSync"]["change"], 2);
+        assert_eq!(
+            capabilities["textDocumentSync"]["save"]["includeText"],
+            false
+        );
+        assert_eq!(
+            capabilities["codeActionProvider"]["codeActionKinds"][0],
+            "quickfix"
+        );
+        assert_eq!(capabilities["codeActionProvider"]["resolveProvider"], false);
+    }
+
     #[test]
     fn test_session_creation() {
         let session = create_test_session();
