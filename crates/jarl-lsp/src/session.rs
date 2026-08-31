@@ -600,6 +600,126 @@ mod tests {
         assert!(session.get_document(&uri).is_none());
     }
 
+    /// The `contentChanges` array exactly as a client sends it.
+    fn content_changes(json: serde_json::Value) -> Vec<TextDocumentContentChangeEvent> {
+        serde_json::from_value(json).unwrap()
+    }
+
+    #[test]
+    fn test_update_document_applies_content_changes() {
+        let mut session = create_test_session();
+        let uri = Uri::parse("file:///test.R").unwrap();
+        session.open_document(uri.clone(), TextDocument::new("hello world".to_string(), 1));
+
+        session
+            .update_document(
+                uri.clone(),
+                content_changes(serde_json::json!([{
+                    "range": {
+                        "start": { "line": 0, "character": 0 },
+                        "end": { "line": 0, "character": 5 }
+                    },
+                    "text": "hi"
+                }])),
+                2,
+            )
+            .unwrap();
+
+        let document = session.get_document(&uri).unwrap();
+        assert_eq!(document.content(), "hi world");
+        assert_eq!(document.version(), 2);
+    }
+
+    #[test]
+    fn test_update_document_uses_session_position_encoding() {
+        // The session negotiated UTF-16, so the character offsets in the change
+        // are UTF-16 code units: the emoji is two of them but four bytes.
+        let mut session = create_test_session();
+        assert_eq!(session.position_encoding(), PositionEncoding::UTF16);
+
+        let uri = Uri::parse("file:///test.R").unwrap();
+        session.open_document(uri.clone(), TextDocument::new("🌍 world".to_string(), 1));
+
+        session
+            .update_document(
+                uri.clone(),
+                content_changes(serde_json::json!([{
+                    "range": {
+                        "start": { "line": 0, "character": 0 },
+                        "end": { "line": 0, "character": 2 }
+                    },
+                    "text": "hi"
+                }])),
+                2,
+            )
+            .unwrap();
+
+        assert_eq!(session.get_document(&uri).unwrap().content(), "hi world");
+    }
+
+    #[test]
+    fn test_update_document_rejects_whole_document_replacement() {
+        let mut session = create_test_session();
+        let uri = Uri::parse("file:///test.R").unwrap();
+        session.open_document(uri.clone(), TextDocument::new("hello world".to_string(), 1));
+
+        let error = session
+            .update_document(
+                uri.clone(),
+                content_changes(serde_json::json!([{ "text": "replaced" }])),
+                2,
+            )
+            .unwrap_err();
+
+        assert!(
+            error.to_string().contains("Full document replacement"),
+            "unexpected error: {error}"
+        );
+        let document = session.get_document(&uri).unwrap();
+        assert_eq!(document.content(), "hello world");
+        assert_eq!(document.version(), 1);
+    }
+
+    #[test]
+    fn test_update_and_close_unknown_document_fail() {
+        let mut session = create_test_session();
+        let uri = Uri::parse("file:///missing.R").unwrap();
+
+        let error = session.update_document(uri.clone(), vec![], 2).unwrap_err();
+        assert!(
+            error.to_string().contains("Document not found"),
+            "unexpected error: {error}"
+        );
+
+        let error = session.close_document(uri.clone()).unwrap_err();
+        assert!(
+            error.to_string().contains("Document not found"),
+            "unexpected error: {error}"
+        );
+
+        assert!(session.take_snapshot(uri).is_none());
+    }
+
+    #[test]
+    fn test_snapshot_position_conversions() {
+        let mut session = create_test_session();
+        let uri = Uri::parse("file:///test.R").unwrap();
+        session.open_document(
+            uri.clone(),
+            TextDocument::new("hello\nworld".to_string(), 1),
+        );
+
+        let snapshot = session.take_snapshot(uri.clone()).unwrap();
+        assert_eq!(snapshot.uri(), &uri);
+
+        assert_eq!(snapshot.position_to_offset(Position::new(1, 0)).unwrap(), 6);
+        assert_eq!(snapshot.offset_to_position(6).unwrap(), Position::new(1, 0));
+        assert_eq!(
+            snapshot.range_of_span(0, 5).unwrap(),
+            Range::new(Position::new(0, 0), Position::new(0, 5))
+        );
+    }
+
     #[test]
     fn test_position_encoding_negotiation() {
         // Test UTF-8 preference

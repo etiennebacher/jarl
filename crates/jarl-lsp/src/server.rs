@@ -1123,6 +1123,47 @@ select = ["ALL"]
         assert!(result.is_none());
     }
 
+    #[test]
+    fn test_code_action_edit_wire_format() {
+        let snapshot = create_test_snapshot("any(duplicated(x))\n");
+
+        let fix = lint::DiagnosticFix {
+            content: "anyDuplicated(x) > 0".to_string(),
+            start: 0,
+            end: 18,
+            is_safe: false,
+            rule_name: "any_duplicated".to_string(),
+            diagnostic_start: 0,
+            diagnostic_end: 18,
+        };
+
+        let diagnostic = types::Diagnostic {
+            range: Range::new(Position::new(0, 0), Position::new(0, 18)),
+            severity: Some(types::DiagnosticSeverity::Warning),
+            code: Some(types::Code::String("any_duplicated".to_string())),
+            code_description: None,
+            source: Some(crate::DIAGNOSTIC_SOURCE.to_string()),
+            message: types::Message::String("Use anyDuplicated()".to_string()),
+            related_information: None,
+            tags: None,
+            data: Some(serde_json::to_value(fix).unwrap()),
+        };
+
+        let action = Server::diagnostic_to_code_action(&diagnostic, &snapshot).unwrap();
+        let json = serde_json::to_value(action).unwrap();
+
+        // An unsafe fix is offered under a custom kind.
+        assert_eq!(json["kind"], "quickfix.unsafe");
+        assert_eq!(json["isPreferred"], false);
+
+        // `changes` is a map keyed by `Uri`, which has to become a JSON object
+        // keyed by the URI string.
+        let edits = &json["edit"]["changes"]["file:///test.R"];
+        assert_eq!(edits[0]["newText"], "anyDuplicated(x) > 0");
+        assert_eq!(edits[0]["range"]["start"]["character"], 0);
+        assert_eq!(edits[0]["range"]["end"]["character"], 18);
+    }
+
     // =========================================================================
     // Nolint rule snapshot tests (using real linter)
     // =========================================================================

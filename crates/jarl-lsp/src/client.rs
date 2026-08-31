@@ -305,6 +305,74 @@ mod tests {
     }
 
     #[test]
+    fn test_send_request_uses_protocol_method_and_tracks_it() {
+        let (client, receiver) = create_test_client();
+
+        client
+            .send_request::<types::WorkspaceFoldersRequest>((), |_| {})
+            .unwrap();
+
+        let request = match receiver.try_recv().expect("no message was sent") {
+            Message::Request(request) => request,
+            other => panic!("expected a request, got {other:?}"),
+        };
+        assert_eq!(request.method, "workspace/workspaceFolders");
+        assert_eq!(request.id, RequestId::from(1));
+        assert_eq!(client.pending_requests.lock().unwrap().len(), 1);
+
+        // Receiving the response retires the pending entry.
+        client.handle_response(Response::new_ok(
+            RequestId::from(1),
+            serde_json::Value::Null,
+        ));
+        assert!(client.pending_requests.lock().unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_send_response_wire_format() {
+        let (client, receiver) = create_test_client();
+
+        client
+            .send_response(RequestId::from(1), serde_json::json!({ "ok": true }))
+            .unwrap();
+        client
+            .send_error_response(RequestId::from(2), anyhow::anyhow!("boom").to_lsp_error())
+            .unwrap();
+
+        let success = match receiver.try_recv().expect("no message was sent") {
+            Message::Response(response) => serde_json::to_value(response).unwrap(),
+            other => panic!("expected a response, got {other:?}"),
+        };
+        assert_eq!(success["id"], 1);
+        assert_eq!(success["result"]["ok"], true);
+
+        let failure = match receiver.try_recv().expect("no message was sent") {
+            Message::Response(response) => serde_json::to_value(response).unwrap(),
+            other => panic!("expected a response, got {other:?}"),
+        };
+        assert_eq!(failure["id"], 2);
+        assert_eq!(failure["error"]["code"], error_codes::INTERNAL_ERROR);
+        assert_eq!(failure["error"]["message"], "boom");
+    }
+
+    #[test]
+    fn test_cleanup_pending_requests_drops_timed_out_entries() {
+        let (client, _receiver) = create_test_client();
+
+        client
+            .send_request::<types::WorkspaceFoldersRequest>((), |_| {})
+            .unwrap();
+        assert_eq!(client.pending_requests.lock().unwrap().len(), 1);
+
+        client.cleanup_pending_requests(std::time::Duration::from_secs(60));
+        assert_eq!(client.pending_requests.lock().unwrap().len(), 1);
+
+        std::thread::sleep(std::time::Duration::from_millis(1));
+        client.cleanup_pending_requests(std::time::Duration::ZERO);
+        assert!(client.pending_requests.lock().unwrap().is_empty());
+    }
+
+    #[test]
     fn test_publish_diagnostics_wire_format() {
         let (client, receiver) = create_test_client();
         let uri = types::Uri::parse("file:///test.R").unwrap();
