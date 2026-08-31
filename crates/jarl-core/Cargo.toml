@@ -45,7 +45,6 @@ strsim.workspace = true
 # Error handling and utilities
 anyhow.workspace = true
 tracing.workspace = true
-path-absolutize.workspace = true
 ignore.workspace = true
 etcetera.workspace = true
 
