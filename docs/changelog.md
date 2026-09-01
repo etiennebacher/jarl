@@ -16,6 +16,9 @@
   autofix now also produces `lengths(x)` instead of the invalid
   `lengths(X = x)` when `X` is passed by name (#671, @Yousa-Mirage).
 
+* Avoid invalid `literal_coercion` fixes for strings containing quotes
+  (#678, @Yousa-Mirage).
+
 ## 0.6.0
 
 ::: {.callout-note icon=false title="Released on 2026-08-24" .low-opacity}
