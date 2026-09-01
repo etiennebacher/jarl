@@ -15,6 +15,9 @@
   syntax tree, e.g. `sapply(FUN = length)` or `x |> sapply(FUN = length)`. The
   autofix now also produces `lengths(x)` instead of the invalid
   `lengths(X = x)` when `X` is passed by name (#671, @Yousa-Mirage).
+  
+* Fix language server suppression quickfix positions for non-ASCII text
+  (#676, @Yousa-Mirage).
 
 * Avoid invalid `literal_coercion` fixes for strings containing quotes
   (#678, @Yousa-Mirage).
