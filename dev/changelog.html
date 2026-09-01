@@ -449,6 +449,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ul>
 <li><p>Ensure that <code>--fix</code> works with multi-byte characters (#672, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
 <li><p>The <code>lengths</code> rule no longer crashes on calls where <code>X</code> is missing from the syntax tree, e.g.&nbsp;<code>sapply(FUN = length)</code> or <code>x |&gt; sapply(FUN = length)</code>. The autofix now also produces <code>lengths(x)</code> instead of the invalid <code>lengths(X = x)</code> when <code>X</code> is passed by name (#671, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
+<li><p>Fix language server suppression quickfix positions for non-ASCII text (#676, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
 </ul>
 </section>
 </section>
