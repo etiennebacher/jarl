@@ -17,7 +17,7 @@
   `lengths(X = x)` when `X` is passed by name (#671, @Yousa-Mirage).
 
 * Fix language server suppression quickfix positions for non-ASCII text
-  (#675, @Yousa-Mirage).
+  (#676, @Yousa-Mirage).
 
 ## 0.6.0
 
