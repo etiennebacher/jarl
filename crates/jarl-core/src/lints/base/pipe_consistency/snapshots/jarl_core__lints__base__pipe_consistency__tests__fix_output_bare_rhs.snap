@@ -7,11 +7,11 @@ OLD:
 x %>% sum
 NEW:
 ====
-x %>% sum
+x |> sum()
 
 OLD:
 ====
 x %>% sum %>% plot()
 NEW:
 ====
-x %>% sum |> plot()
+x |> sum() |> plot()
