@@ -452,6 +452,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p>The <code>lengths</code> rule no longer crashes on calls where <code>X</code> is missing from the syntax tree, e.g.&nbsp;<code>sapply(FUN = length)</code> or <code>x |&gt; sapply(FUN = length)</code>. The autofix now also produces <code>lengths(x)</code> instead of the invalid <code>lengths(X = x)</code> when <code>X</code> is passed by name (#671, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
 <li><p>Fix language server suppression quickfix positions for non-ASCII text (#676, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
 <li><p>Avoid invalid <code>literal_coercion</code> fixes for strings containing quotes (#678, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
+<li><p>Prevent incorrect <code>dplyr_filter_out</code> fixes caused by matching <code>is.na()</code> guard arguments as substrings of other identifiers (#681, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
 </ul>
 </section>
 </section>
