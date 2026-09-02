@@ -109,10 +109,23 @@ pub fn pipe_consistency(
     };
 
     let bin_range = ast.syntax().text_trimmed_range();
+    let op_range = operator.text_trimmed_range();
+
+    if preferred_is_base && right.as_r_call().is_none() {
+        return Ok(Some(Diagnostic::new(
+            ViolationData::new(
+                Rule::PipeConsistency,
+                body.to_string(),
+                Some(suggestion.to_string()),
+            ),
+            op_range,
+            Fix::empty(),
+        )));
+    }
+
     let bin_start: u32 = bin_range.start().into();
     let mut content = ast.to_trimmed_string();
 
-    let op_range = operator.text_trimmed_range();
     let mut edits: Vec<(usize, usize, &str)> = Vec::with_capacity(2);
     edits.push((
         (u32::from(op_range.start()) - bin_start) as usize,
