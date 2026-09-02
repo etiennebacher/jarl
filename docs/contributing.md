@@ -71,7 +71,7 @@ Adding a new rule requires four main steps:
 * `cargo run --bin jarl -- check file.R` (or any other paths to check). The `--` in the middle is required to use the CLI in development mode (i.e. without installing it with `cargo install`)
 * `cargo insta test` and `cargo insta review` (if necessary) for snapshot tests only.
 * `cargo test` to run all tests, including snapshot tests.
-* `cargo install --path crates/jarl --profile=release` (or `--profile=dev`) to have a system-wide install and test the crate in other R projects.
+* `cargo install --path crates/jarl --profile=release` (or `--profile=dev`) to have a system-wide install and test the crate in other R projects. Note that you might need to use the full path to this binary (e.g. `/home/etienne/.cargo/bin/jarl`) if you have previously installed Jarl in another way.
 
 
 ## Integration tests
@@ -81,7 +81,7 @@ When you add a new rule, it is usually sufficient to add tests in the directory 
 However, in some cases you may affect the way users interact with Jarl as a whole, for instance by adding new command line arguments or arguments that can be set in `jarl.toml`. For those changes, it is important to check that the general behavior of Jarl is correct (check what happens when there are no R files, how TOML and CLI arguments interact, etc.).
 
 Tests for this are stored in `crates/jarl/tests/integration`.
-It is likely that you will need to edit one of the files instead of creating a new one.
+You will likely need to edit one of the files instead of creating a new one.
 For example, adding an extra argument in `crates/jarl-core/src/toml.rs` would require adding tests in `crates/jarl/tests/integration/toml_rule_args.rs`.
 
 

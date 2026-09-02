@@ -574,7 +574,12 @@ impl Server {
         // Always insert a new comment line (each rule gets its own comment with its own explanation)
         let (insert_range, new_comment) = if insert_point.needs_leading_newline {
             // Inline insertion: insert right at the expression with a leading newline
-            let insert_pos = Self::offset_to_position(content, insert_point.offset);
+            let insert_pos = crate::lint::byte_offset_to_lsp_position(
+                insert_point.offset,
+                content,
+                snapshot.position_encoding(),
+            )
+            .ok()?;
             let comment = suppression_edit::format_suppression_comments(
                 &[rule_name],
                 "<reason>",
@@ -660,7 +665,12 @@ impl Server {
 
         // Insert at the very first byte of the chunk code (top of the chunk).
         // Use the Quarto-idiomatic YAML array form so the comment is valid YAML.
-        let insert_pos = Self::offset_to_position(content, chunk.start_byte);
+        let insert_pos = crate::lint::byte_offset_to_lsp_position(
+            chunk.start_byte,
+            content,
+            snapshot.position_encoding(),
+        )
+        .ok()?;
         let new_comment = format!("#| jarl-ignore-chunk:\n#|   - {rule_name}: <reason>\n");
         let insert_range = types::Range::new(insert_pos, insert_pos);
 
@@ -682,15 +692,6 @@ impl Server {
             data: None,
             tags: None,
         })
-    }
-
-    /// Convert a byte offset to an LSP Position
-    fn offset_to_position(content: &str, offset: usize) -> types::Position {
-        let before = &content[..offset.min(content.len())];
-        let line = before.matches('\n').count() as u32;
-        let line_start = before.rfind('\n').map(|p| p + 1).unwrap_or(0);
-        let character = (offset - line_start) as u32;
-        types::Position::new(line, character)
     }
 
     /// Get the text of a specific line
@@ -754,6 +755,14 @@ select = ["ALL"]
         }
 
         fn create_snapshot(&self, content: &str) -> DocumentSnapshot {
+            self.create_snapshot_with_encoding(content, PositionEncoding::UTF8)
+        }
+
+        fn create_snapshot_with_encoding(
+            &self,
+            content: &str,
+            encoding: PositionEncoding,
+        ) -> DocumentSnapshot {
             let uri = Uri::from_file_path(&self.file_path).unwrap();
             let key = DocumentKey::from(uri);
             let document = TextDocument::new(content.to_string(), 1);
@@ -761,7 +770,7 @@ select = ["ALL"]
             DocumentSnapshot::new(
                 document,
                 key,
-                PositionEncoding::UTF8,
+                encoding,
                 types::ClientCapabilities::default(),
             )
         }
@@ -986,17 +995,25 @@ select = ["ALL"]
 
     /// Apply a jarl-ignore action at the cursor position by running the actual linter.
     fn apply_jarl_ignore_at_cursor(source_with_cursor: &str) -> Option<String> {
+        apply_jarl_ignore_at_cursor_with_encoding(source_with_cursor, PositionEncoding::UTF8)
+    }
+
+    /// Apply a jarl-ignore action using the given LSP position encoding.
+    fn apply_jarl_ignore_at_cursor_with_encoding(
+        source_with_cursor: &str,
+        encoding: PositionEncoding,
+    ) -> Option<String> {
         let cursor_pos = source_with_cursor.find(CURSOR)?;
         let content = source_with_cursor.replace(CURSOR, "");
 
         let env = TestEnv::new(&content);
-        let snapshot = env.create_snapshot(&content);
+        let snapshot = env.create_snapshot_with_encoding(&content, encoding);
 
         // Run the linter to get real diagnostics
         let diagnostics = lint::lint_document(&snapshot).ok()?.diagnostics;
 
         // Find the diagnostic at cursor position
-        let cursor_lsp_pos = offset_to_position(&content, cursor_pos);
+        let cursor_lsp_pos = snapshot.offset_to_position(cursor_pos).ok()?;
         let diagnostic = diagnostics
             .iter()
             .find(|d| position_in_range(cursor_lsp_pos, &d.range))?;
@@ -1010,8 +1027,8 @@ select = ["ALL"]
         // Apply edits
         let mut result = content.clone();
         for text_edit in text_edits.iter().rev() {
-            let start = position_to_offset(&result, text_edit.range.start);
-            let end = position_to_offset(&result, text_edit.range.end);
+            let start = snapshot.position_to_offset(text_edit.range.start).ok()?;
+            let end = snapshot.position_to_offset(text_edit.range.end).ok()?;
             result.replace_range(start..end, &text_edit.new_text);
         }
 
@@ -1568,6 +1585,25 @@ x |>
         # jarl-ignore
         # jarl-ignore assignment: <reason>
         x = 1
+        ");
+    }
+
+    // =========================================================================
+    // Unicode suppression action tests
+    // =========================================================================
+
+    #[test]
+    fn test_suppression_quickfix_applies_at_utf16_position() {
+        let result = apply_jarl_ignore_at_cursor_with_encoding(
+            "赋值 <- 1;<CURS>any(is.na(y))\n",
+            PositionEncoding::UTF16,
+        )
+        .expect("suppress quickfix");
+
+        insta::assert_snapshot!(result, @"
+        赋值 <- 1;
+                    # jarl-ignore any_is_na: <reason>
+                    any(is.na(y))
         ");
     }
 

@@ -53,6 +53,19 @@ mod tests {
         "
         );
         assert_snapshot!(
+            snapshot_lint("stop(paste0('hello ', 'there'), call. = FALSE, ' again')"),
+            @"
+        warning: condition_message
+         --> <test>:1:1
+          |
+        1 | stop(paste0('hello ', 'there'), call. = FALSE, ' again')
+          | -------------------------------------------------------- `stop(paste0(...))` can be simplified.
+          |
+          = help: Use `stop(...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
             snapshot_lint("stop(paste0('hello ', 'there'), call. = FALSE)"),
             @"
         warning: condition_message
@@ -73,19 +86,6 @@ mod tests {
           |
         1 | stop(call. = FALSE, paste0('hello ', 'there'))
           | ---------------------------------------------- `stop(paste0(...))` can be simplified.
-          |
-          = help: Use `stop(...)` instead.
-        Found 1 error.
-        "
-        );
-        assert_snapshot!(
-            snapshot_lint("stop(paste0('hello ', 'there'), call. = FALSE, ' again')"),
-            @"
-        warning: condition_message
-         --> <test>:1:1
-          |
-        1 | stop(paste0('hello ', 'there'), call. = FALSE, ' again')
-          | -------------------------------------------------------- `stop(paste0(...))` can be simplified.
           |
           = help: Use `stop(...)` instead.
         Found 1 error.
@@ -134,6 +134,19 @@ mod tests {
         "
         );
         assert_snapshot!(
+            snapshot_lint("warning(paste0('hello ', 'there'), call. = FALSE, ' again')"),
+            @"
+        warning: condition_message
+         --> <test>:1:1
+          |
+        1 | warning(paste0('hello ', 'there'), call. = FALSE, ' again')
+          | ----------------------------------------------------------- `warning(paste0(...))` can be simplified.
+          |
+          = help: Use `warning(...)` instead.
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
             snapshot_lint("warning(paste0('hello ', 'there'), call. = FALSE)"),
             @"
         warning: condition_message
@@ -154,19 +167,6 @@ mod tests {
           |
         1 | warning(call. = FALSE, paste0('hello ', 'there'))
           | ------------------------------------------------- `warning(paste0(...))` can be simplified.
-          |
-          = help: Use `warning(...)` instead.
-        Found 1 error.
-        "
-        );
-        assert_snapshot!(
-            snapshot_lint("warning(paste0('hello ', 'there'), call. = FALSE, ' again')"),
-            @"
-        warning: condition_message
-         --> <test>:1:1
-          |
-        1 | warning(paste0('hello ', 'there'), call. = FALSE, ' again')
-          | ----------------------------------------------------------- `warning(paste0(...))` can be simplified.
           |
           = help: Use `warning(...)` instead.
         Found 1 error.
@@ -234,14 +234,18 @@ mod tests {
                 vec![
                     "stop(paste0('hello ', 'there'))",
                     "stop(paste0('hello ', 'there'), call. = FALSE)",
+                    "stop(paste0('hello ', 'there'), call. = FALSE, ' again')",
                     "stop(paste0('hello ', 'there'), domain = foo)",
                     "stop(call. = FALSE, paste0('hello ', 'there'), domain = foo)",
                     "warning(paste0('hello ', 'there'))",
                     "warning(paste0('hello ', 'there'), call. = FALSE)",
+                    "warning(paste0('hello ', 'there'), call. = FALSE, ' again')",
                     "warning(paste0('hello ', 'there'), domain = foo)",
                     "warning(paste0('hello ', 'there'), immediate. = FALSE)",
                     "warning(paste0('hello ', 'there'), noBreaks. = FALSE)",
                     "warning(call. = FALSE, paste0('hello ', 'there'), domain = foo)",
+                    "paste0('hello ', 'there') |> stop()",
+                    "'hello ' |> paste0() |> warning(domain = foo)",
                 ],
                 "condition_message",
             )
