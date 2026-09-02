@@ -258,6 +258,8 @@ mod tests {
                 "as.integer(1)",
                 "as.numeric(1)",
                 "as.character(1)",
+                r#"as.character('say "hi"')"#,
+                r#"chr('say "hi"')"#,
                 "as.logical(\"true\")",
                 "as.integer(NA)",
                 "as.character(NA)",

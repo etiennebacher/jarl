@@ -259,14 +259,32 @@ pub mod error_codes {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::mpsc;
 
-    fn create_test_client() -> (Client, mpsc::Receiver<Message>) {
-        let (sender, _receiver) = channel::unbounded();
-        let client = Client::new(sender);
-        // Convert crossbeam receiver to mpsc for compatibility
-        let (_mpsc_sender, mpsc_receiver) = mpsc::channel();
-        (client, mpsc_receiver)
+    fn create_test_client() -> (Client, channel::Receiver<Message>) {
+        let (sender, receiver) = channel::unbounded();
+        (Client::new(sender), receiver)
+    }
+
+    /// Method and params of the next message the client sent
+    fn next_notification(receiver: &channel::Receiver<Message>) -> (String, serde_json::Value) {
+        match receiver.try_recv().expect("no message was sent") {
+            Message::Notification(notification) => (notification.method, notification.params),
+            other => panic!("expected a notification, got {other:?}"),
+        }
+    }
+
+    fn test_diagnostic() -> types::Diagnostic {
+        types::Diagnostic {
+            range: types::Range::new(types::Position::new(0, 0), types::Position::new(0, 3)),
+            severity: Some(types::DiagnosticSeverity::Warning),
+            code: Some(types::Code::String("any_duplicated".to_string())),
+            code_description: None,
+            source: Some(crate::DIAGNOSTIC_SOURCE.to_string()),
+            message: types::Message::String("Use anyDuplicated()".to_string()),
+            tags: None,
+            related_information: None,
+            data: None,
+        }
     }
 
     #[test]
@@ -283,5 +301,142 @@ mod tests {
         let lsp_error = error.to_lsp_error();
         assert_eq!(lsp_error.code, lsp_server::ErrorCode::InternalError as i32);
         assert_eq!(lsp_error.message, "Test error");
+    }
+
+    #[test]
+    fn test_send_request_uses_protocol_method_and_tracks_it() {
+        let (client, receiver) = create_test_client();
+
+        client
+            .send_request::<types::WorkspaceFoldersRequest>((), |_| {})
+            .unwrap();
+
+        let request = match receiver.try_recv().expect("no message was sent") {
+            Message::Request(request) => request,
+            other => panic!("expected a request, got {other:?}"),
+        };
+        assert_eq!(request.method, "workspace/workspaceFolders");
+        assert_eq!(request.id, RequestId::from(1));
+        assert_eq!(client.pending_requests.lock().unwrap().len(), 1);
+
+        // Receiving the response retires the pending entry.
+        client.handle_response(Response::new_ok(
+            RequestId::from(1),
+            serde_json::Value::Null,
+        ));
+        assert!(client.pending_requests.lock().unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_send_response_wire_format() {
+        let (client, receiver) = create_test_client();
+
+        client
+            .send_response(RequestId::from(1), serde_json::json!({ "ok": true }))
+            .unwrap();
+        client
+            .send_error_response(RequestId::from(2), anyhow::anyhow!("boom").to_lsp_error())
+            .unwrap();
+
+        let success = match receiver.try_recv().expect("no message was sent") {
+            Message::Response(response) => serde_json::to_value(response).unwrap(),
+            other => panic!("expected a response, got {other:?}"),
+        };
+        assert_eq!(success["id"], 1);
+        assert_eq!(success["result"]["ok"], true);
+
+        let failure = match receiver.try_recv().expect("no message was sent") {
+            Message::Response(response) => serde_json::to_value(response).unwrap(),
+            other => panic!("expected a response, got {other:?}"),
+        };
+        assert_eq!(failure["id"], 2);
+        assert_eq!(failure["error"]["code"], error_codes::INTERNAL_ERROR);
+        assert_eq!(failure["error"]["message"], "boom");
+    }
+
+    #[test]
+    fn test_cleanup_pending_requests_drops_timed_out_entries() {
+        let (client, _receiver) = create_test_client();
+
+        client
+            .send_request::<types::WorkspaceFoldersRequest>((), |_| {})
+            .unwrap();
+        assert_eq!(client.pending_requests.lock().unwrap().len(), 1);
+
+        client.cleanup_pending_requests(std::time::Duration::from_secs(60));
+        assert_eq!(client.pending_requests.lock().unwrap().len(), 1);
+
+        std::thread::sleep(std::time::Duration::from_millis(1));
+        client.cleanup_pending_requests(std::time::Duration::ZERO);
+        assert!(client.pending_requests.lock().unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_publish_diagnostics_wire_format() {
+        let (client, receiver) = create_test_client();
+        let uri = types::Uri::parse("file:///test.R").unwrap();
+
+        client
+            .publish_diagnostics(uri, vec![test_diagnostic()], Some(7))
+            .unwrap();
+
+        let (method, params) = next_notification(&receiver);
+        assert_eq!(method, "textDocument/publishDiagnostics");
+        assert_eq!(params["uri"], "file:///test.R");
+        assert_eq!(params["version"], 7);
+
+        let diagnostic = &params["diagnostics"][0];
+        assert_eq!(diagnostic["severity"], 2);
+        assert_eq!(diagnostic["source"], "Jarl");
+        assert_eq!(diagnostic["range"]["end"]["character"], 3);
+        // `code` and `message` are untagged enums, so they have to reach the
+        // client as bare values rather than as tagged objects.
+        assert_eq!(diagnostic["code"], "any_duplicated");
+        assert_eq!(diagnostic["message"], "Use anyDuplicated()");
+    }
+
+    #[test]
+    fn test_show_message_wire_format() {
+        let (client, receiver) = create_test_client();
+
+        client
+            .show_message("hello", types::MessageType::Info)
+            .unwrap();
+
+        let (method, params) = next_notification(&receiver);
+        assert_eq!(method, "window/showMessage");
+        // The field is `kind` in Rust but the protocol calls it `type`.
+        assert_eq!(params["type"], 3);
+        assert_eq!(params["message"], "hello");
+    }
+
+    #[test]
+    fn test_log_message_wire_format() {
+        let (client, receiver) = create_test_client();
+
+        client
+            .log_message("logged", types::MessageType::Log)
+            .unwrap();
+
+        let (method, params) = next_notification(&receiver);
+        assert_eq!(method, "window/logMessage");
+        assert_eq!(params["type"], 4);
+        assert_eq!(params["message"], "logged");
+    }
+
+    #[test]
+    fn test_unused_fn_threshold_notified_once() {
+        let (client, receiver) = create_test_client();
+
+        assert!(client.notify_unused_fn_threshold_once(3).unwrap());
+        assert!(!client.notify_unused_fn_threshold_once(3).unwrap());
+
+        let (method, params) = next_notification(&receiver);
+        assert_eq!(method, "window/showMessage");
+        assert_eq!(params["type"], 3);
+        assert!(
+            receiver.try_recv().is_err(),
+            "the notification should only be sent once per session"
+        );
     }
 }

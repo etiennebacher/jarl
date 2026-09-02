@@ -574,7 +574,12 @@ impl Server {
         // Always insert a new comment line (each rule gets its own comment with its own explanation)
         let (insert_range, new_comment) = if insert_point.needs_leading_newline {
             // Inline insertion: insert right at the expression with a leading newline
-            let insert_pos = Self::offset_to_position(content, insert_point.offset);
+            let insert_pos = crate::lint::byte_offset_to_lsp_position(
+                insert_point.offset,
+                content,
+                snapshot.position_encoding(),
+            )
+            .ok()?;
             let comment = suppression_edit::format_suppression_comments(
                 &[rule_name],
                 "<reason>",
@@ -660,7 +665,12 @@ impl Server {
 
         // Insert at the very first byte of the chunk code (top of the chunk).
         // Use the Quarto-idiomatic YAML array form so the comment is valid YAML.
-        let insert_pos = Self::offset_to_position(content, chunk.start_byte);
+        let insert_pos = crate::lint::byte_offset_to_lsp_position(
+            chunk.start_byte,
+            content,
+            snapshot.position_encoding(),
+        )
+        .ok()?;
         let new_comment = format!("#| jarl-ignore-chunk:\n#|   - {rule_name}: <reason>\n");
         let insert_range = types::Range::new(insert_pos, insert_pos);
 
@@ -682,15 +692,6 @@ impl Server {
             data: None,
             tags: None,
         })
-    }
-
-    /// Convert a byte offset to an LSP Position
-    fn offset_to_position(content: &str, offset: usize) -> types::Position {
-        let before = &content[..offset.min(content.len())];
-        let line = before.matches('\n').count() as u32;
-        let line_start = before.rfind('\n').map(|p| p + 1).unwrap_or(0);
-        let character = (offset - line_start) as u32;
-        types::Position::new(line, character)
     }
 
     /// Get the text of a specific line
@@ -754,6 +755,14 @@ select = ["ALL"]
         }
 
         fn create_snapshot(&self, content: &str) -> DocumentSnapshot {
+            self.create_snapshot_with_encoding(content, PositionEncoding::UTF8)
+        }
+
+        fn create_snapshot_with_encoding(
+            &self,
+            content: &str,
+            encoding: PositionEncoding,
+        ) -> DocumentSnapshot {
             let uri = Uri::from_file_path(&self.file_path).unwrap();
             let key = DocumentKey::from(uri);
             let document = TextDocument::new(content.to_string(), 1);
@@ -761,10 +770,128 @@ select = ["ALL"]
             DocumentSnapshot::new(
                 document,
                 key,
-                PositionEncoding::UTF8,
+                encoding,
                 types::ClientCapabilities::default(),
             )
         }
+    }
+
+    /// The dispatch in `handle_request`/`handle_notification` matches the
+    /// method string a client sent against these constants, so a wrong mapping
+    /// would silently route every message to the catch-all arm.
+    #[test]
+    fn test_dispatched_methods_match_their_protocol_strings() {
+        assert_eq!(types::ShutdownRequest::METHOD.as_str(), "shutdown");
+        assert_eq!(
+            types::CodeActionRequest::METHOD.as_str(),
+            "textDocument/codeAction"
+        );
+        assert_eq!(types::ExitNotification::METHOD.as_str(), "exit");
+        assert_eq!(
+            types::DidOpenTextDocumentNotification::METHOD.as_str(),
+            "textDocument/didOpen"
+        );
+        assert_eq!(
+            types::DidChangeTextDocumentNotification::METHOD.as_str(),
+            "textDocument/didChange"
+        );
+        assert_eq!(
+            types::DidCloseTextDocumentNotification::METHOD.as_str(),
+            "textDocument/didClose"
+        );
+        assert_eq!(
+            types::DidSaveTextDocumentNotification::METHOD.as_str(),
+            "textDocument/didSave"
+        );
+
+        // The scrutinee is built with `from`, so it has to round-trip back to
+        // the same variant the arms are written against.
+        assert_eq!(
+            LspRequestMethod::from("textDocument/codeAction"),
+            types::CodeActionRequest::METHOD
+        );
+        assert_eq!(
+            LspNotificationMethod::from("textDocument/didSave"),
+            types::DidSaveTextDocumentNotification::METHOD
+        );
+        assert!(matches!(
+            LspRequestMethod::from("textDocument/hover"),
+            LspRequestMethod::TextDocumentHover
+        ));
+    }
+
+    #[test]
+    fn test_code_action_kinds_serialize_to_protocol_strings() {
+        // The unsafe kind is a custom value, and code actions go out wrapped in
+        // an untagged response enum.
+        assert_eq!(
+            serde_json::to_value(types::CodeActionKind::QuickFix).unwrap(),
+            "quickfix"
+        );
+        assert_eq!(
+            serde_json::to_value(types::CodeActionKind::new("quickfix.unsafe")).unwrap(),
+            "quickfix.unsafe"
+        );
+
+        let action = types::CodeActionResponse::CodeAction(types::CodeAction {
+            title: "Fix: something".to_string(),
+            kind: Some(types::CodeActionKind::QuickFix),
+            diagnostics: None,
+            is_preferred: Some(true),
+            disabled: None,
+            edit: None,
+            command: None,
+            data: None,
+            tags: None,
+        });
+        let json = serde_json::to_value(action).unwrap();
+        assert_eq!(json["title"], "Fix: something");
+        assert_eq!(json["kind"], "quickfix");
+    }
+
+    #[test]
+    fn test_did_change_params_carry_uri_and_version() {
+        // `uri` lives on a flattened identifier struct, and the content changes
+        // are an untagged enum.
+        let params: types::DidChangeTextDocumentParams =
+            serde_json::from_value(serde_json::json!({
+                "textDocument": { "uri": "file:///test.R", "version": 4 },
+                "contentChanges": [{
+                    "range": {
+                        "start": { "line": 0, "character": 0 },
+                        "end": { "line": 0, "character": 1 }
+                    },
+                    "text": "x"
+                }]
+            }))
+            .unwrap();
+
+        assert_eq!(
+            params.text_document.text_document_identifier.uri.as_str(),
+            "file:///test.R"
+        );
+        assert_eq!(params.text_document.version, 4);
+        assert_eq!(params.content_changes.len(), 1);
+    }
+
+    #[test]
+    fn test_did_open_params_carry_language_id() {
+        // `language_id` is a `LanguageKind` enum now, and the document stores
+        // its string form.
+        let params: types::DidOpenTextDocumentParams = serde_json::from_value(serde_json::json!({
+            "textDocument": {
+                "uri": "file:///test.R",
+                "languageId": "r",
+                "version": 1,
+                "text": "x <- 1\n"
+            }
+        }))
+        .unwrap();
+
+        let document = TextDocument::new(params.text_document.text, params.text_document.version)
+            .with_language_id(&params.text_document.language_id.to_string());
+
+        assert_eq!(document.language_id(), Some("r"));
     }
 
     fn create_test_snapshot(content: &str) -> DocumentSnapshot {
@@ -868,17 +995,25 @@ select = ["ALL"]
 
     /// Apply a jarl-ignore action at the cursor position by running the actual linter.
     fn apply_jarl_ignore_at_cursor(source_with_cursor: &str) -> Option<String> {
+        apply_jarl_ignore_at_cursor_with_encoding(source_with_cursor, PositionEncoding::UTF8)
+    }
+
+    /// Apply a jarl-ignore action using the given LSP position encoding.
+    fn apply_jarl_ignore_at_cursor_with_encoding(
+        source_with_cursor: &str,
+        encoding: PositionEncoding,
+    ) -> Option<String> {
         let cursor_pos = source_with_cursor.find(CURSOR)?;
         let content = source_with_cursor.replace(CURSOR, "");
 
         let env = TestEnv::new(&content);
-        let snapshot = env.create_snapshot(&content);
+        let snapshot = env.create_snapshot_with_encoding(&content, encoding);
 
         // Run the linter to get real diagnostics
         let diagnostics = lint::lint_document(&snapshot).ok()?.diagnostics;
 
         // Find the diagnostic at cursor position
-        let cursor_lsp_pos = offset_to_position(&content, cursor_pos);
+        let cursor_lsp_pos = snapshot.offset_to_position(cursor_pos).ok()?;
         let diagnostic = diagnostics
             .iter()
             .find(|d| position_in_range(cursor_lsp_pos, &d.range))?;
@@ -892,8 +1027,8 @@ select = ["ALL"]
         // Apply edits
         let mut result = content.clone();
         for text_edit in text_edits.iter().rev() {
-            let start = position_to_offset(&result, text_edit.range.start);
-            let end = position_to_offset(&result, text_edit.range.end);
+            let start = snapshot.position_to_offset(text_edit.range.start).ok()?;
+            let end = snapshot.position_to_offset(text_edit.range.end).ok()?;
             result.replace_range(start..end, &text_edit.new_text);
         }
 
@@ -1003,6 +1138,47 @@ select = ["ALL"]
 
         let result = Server::diagnostic_to_code_action(&diagnostic, &snapshot);
         assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_code_action_edit_wire_format() {
+        let snapshot = create_test_snapshot("any(duplicated(x))\n");
+
+        let fix = lint::DiagnosticFix {
+            content: "anyDuplicated(x) > 0".to_string(),
+            start: 0,
+            end: 18,
+            is_safe: false,
+            rule_name: "any_duplicated".to_string(),
+            diagnostic_start: 0,
+            diagnostic_end: 18,
+        };
+
+        let diagnostic = types::Diagnostic {
+            range: Range::new(Position::new(0, 0), Position::new(0, 18)),
+            severity: Some(types::DiagnosticSeverity::Warning),
+            code: Some(types::Code::String("any_duplicated".to_string())),
+            code_description: None,
+            source: Some(crate::DIAGNOSTIC_SOURCE.to_string()),
+            message: types::Message::String("Use anyDuplicated()".to_string()),
+            related_information: None,
+            tags: None,
+            data: Some(serde_json::to_value(fix).unwrap()),
+        };
+
+        let action = Server::diagnostic_to_code_action(&diagnostic, &snapshot).unwrap();
+        let json = serde_json::to_value(action).unwrap();
+
+        // An unsafe fix is offered under a custom kind.
+        assert_eq!(json["kind"], "quickfix.unsafe");
+        assert_eq!(json["isPreferred"], false);
+
+        // `changes` is a map keyed by `Uri`, which has to become a JSON object
+        // keyed by the URI string.
+        let edits = &json["edit"]["changes"]["file:///test.R"];
+        assert_eq!(edits[0]["newText"], "anyDuplicated(x) > 0");
+        assert_eq!(edits[0]["range"]["start"]["character"], 0);
+        assert_eq!(edits[0]["range"]["end"]["character"], 18);
     }
 
     // =========================================================================
@@ -1409,6 +1585,25 @@ x |>
         # jarl-ignore
         # jarl-ignore assignment: <reason>
         x = 1
+        ");
+    }
+
+    // =========================================================================
+    // Unicode suppression action tests
+    // =========================================================================
+
+    #[test]
+    fn test_suppression_quickfix_applies_at_utf16_position() {
+        let result = apply_jarl_ignore_at_cursor_with_encoding(
+            "赋值 <- 1;<CURS>any(is.na(y))\n",
+            PositionEncoding::UTF16,
+        )
+        .expect("suppress quickfix");
+
+        insta::assert_snapshot!(result, @"
+        赋值 <- 1;
+                    # jarl-ignore any_is_na: <reason>
+                    any(is.na(y))
         ");
     }
 

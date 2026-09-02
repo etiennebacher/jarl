@@ -12,6 +12,7 @@ mod tests {
     #[test]
     fn test_no_lint_any_duplicated() {
         expect_no_lint("any(x)", "any_duplicated", None);
+        expect_no_lint("any(duplicated(x), duplicated(y))", "any_duplicated", None);
         expect_no_lint("duplicated(x)", "any_duplicated", None);
         expect_no_lint("any(!duplicated(x))", "any_duplicated", None);
         expect_no_lint("any(!duplicated(foo(x)))", "any_duplicated", None);

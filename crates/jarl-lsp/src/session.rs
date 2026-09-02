@@ -473,6 +473,102 @@ mod tests {
         )
     }
 
+    /// Initialize a session from a raw `initialize` payload and return the
+    /// workspace roots it derived.
+    fn workspace_roots_from(params_json: serde_json::Value) -> Vec<PathBuf> {
+        let params: InitializeParams = serde_json::from_value(params_json).unwrap();
+        let mut session = create_test_session();
+        session.initialize(params).unwrap();
+        session.workspace_roots.clone()
+    }
+
+    /// The `file://` URI for an absolute path. Built from a real path rather
+    /// than hardcoded, because a URI like `file:///project/a` carries no drive
+    /// letter and `to_file_path` rejects it on Windows.
+    fn file_uri(path: &std::path::Path) -> String {
+        Uri::from_file_path(path).unwrap().to_string()
+    }
+
+    #[test]
+    fn test_initialize_reads_workspace_folders() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let first = temp_dir.path().join("a");
+        let second = temp_dir.path().join("b");
+
+        // `workspaceFolders` is flattened into a nested params struct, so it
+        // still has to be picked up from the top level of the payload.
+        let roots = workspace_roots_from(serde_json::json!({
+            "processId": null,
+            "rootUri": null,
+            "capabilities": {},
+            "workspaceFolders": [
+                { "uri": file_uri(&first), "name": "a" },
+                { "uri": file_uri(&second), "name": "b" }
+            ]
+        }));
+
+        assert_eq!(roots, vec![first, second]);
+    }
+
+    #[test]
+    fn test_initialize_falls_back_to_root_uri() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let root = temp_dir.path().join("c");
+
+        // A client that supports workspace folders but has none configured sends
+        // an explicit `null`, which is a distinct value from the absent field —
+        // both fall through to `rootUri`.
+        let with_explicit_null = workspace_roots_from(serde_json::json!({
+            "processId": null,
+            "rootUri": file_uri(&root),
+            "capabilities": {},
+            "workspaceFolders": null,
+        }));
+        assert_eq!(with_explicit_null, vec![root.clone()]);
+
+        let with_absent_field = workspace_roots_from(serde_json::json!({
+            "processId": null,
+            "rootUri": file_uri(&root),
+            "capabilities": {},
+        }));
+        assert_eq!(with_absent_field, vec![root]);
+    }
+
+    #[test]
+    fn test_initialize_falls_back_to_root_path() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let root = temp_dir.path().join("d");
+
+        // `rootPath` is a plain string, not a URI, so it is taken as-is.
+        let roots = workspace_roots_from(serde_json::json!({
+            "processId": null,
+            "rootUri": null,
+            "rootPath": root.to_str().unwrap(),
+            "capabilities": {},
+        }));
+
+        assert_eq!(roots, vec![root]);
+    }
+
+    #[test]
+    fn test_server_capabilities_wire_format() {
+        let session = create_test_session();
+        let capabilities = serde_json::to_value(session.server_capabilities()).unwrap();
+
+        assert_eq!(capabilities["positionEncoding"], "utf-16");
+        assert_eq!(capabilities["textDocumentSync"]["openClose"], true);
+        assert_eq!(capabilities["textDocumentSync"]["change"], 2);
+        assert_eq!(
+            capabilities["textDocumentSync"]["save"]["includeText"],
+            false
+        );
+        assert_eq!(
+            capabilities["codeActionProvider"]["codeActionKinds"][0],
+            "quickfix"
+        );
+        assert_eq!(capabilities["codeActionProvider"]["resolveProvider"], false);
+    }
+
     #[test]
     fn test_session_creation() {
         let session = create_test_session();
@@ -502,6 +598,126 @@ mod tests {
         session.close_document(uri.clone()).unwrap();
         assert_eq!(session.document_count(), 0);
         assert!(session.get_document(&uri).is_none());
+    }
+
+    /// The `contentChanges` array exactly as a client sends it.
+    fn content_changes(json: serde_json::Value) -> Vec<TextDocumentContentChangeEvent> {
+        serde_json::from_value(json).unwrap()
+    }
+
+    #[test]
+    fn test_update_document_applies_content_changes() {
+        let mut session = create_test_session();
+        let uri = Uri::parse("file:///test.R").unwrap();
+        session.open_document(uri.clone(), TextDocument::new("hello world".to_string(), 1));
+
+        session
+            .update_document(
+                uri.clone(),
+                content_changes(serde_json::json!([{
+                    "range": {
+                        "start": { "line": 0, "character": 0 },
+                        "end": { "line": 0, "character": 5 }
+                    },
+                    "text": "hi"
+                }])),
+                2,
+            )
+            .unwrap();
+
+        let document = session.get_document(&uri).unwrap();
+        assert_eq!(document.content(), "hi world");
+        assert_eq!(document.version(), 2);
+    }
+
+    #[test]
+    fn test_update_document_uses_session_position_encoding() {
+        // The session negotiated UTF-16, so the character offsets in the change
+        // are UTF-16 code units: the emoji is two of them but four bytes.
+        let mut session = create_test_session();
+        assert_eq!(session.position_encoding(), PositionEncoding::UTF16);
+
+        let uri = Uri::parse("file:///test.R").unwrap();
+        session.open_document(uri.clone(), TextDocument::new("🌍 world".to_string(), 1));
+
+        session
+            .update_document(
+                uri.clone(),
+                content_changes(serde_json::json!([{
+                    "range": {
+                        "start": { "line": 0, "character": 0 },
+                        "end": { "line": 0, "character": 2 }
+                    },
+                    "text": "hi"
+                }])),
+                2,
+            )
+            .unwrap();
+
+        assert_eq!(session.get_document(&uri).unwrap().content(), "hi world");
+    }
+
+    #[test]
+    fn test_update_document_rejects_whole_document_replacement() {
+        let mut session = create_test_session();
+        let uri = Uri::parse("file:///test.R").unwrap();
+        session.open_document(uri.clone(), TextDocument::new("hello world".to_string(), 1));
+
+        let error = session
+            .update_document(
+                uri.clone(),
+                content_changes(serde_json::json!([{ "text": "replaced" }])),
+                2,
+            )
+            .unwrap_err();
+
+        assert!(
+            error.to_string().contains("Full document replacement"),
+            "unexpected error: {error}"
+        );
+        let document = session.get_document(&uri).unwrap();
+        assert_eq!(document.content(), "hello world");
+        assert_eq!(document.version(), 1);
+    }
+
+    #[test]
+    fn test_update_and_close_unknown_document_fail() {
+        let mut session = create_test_session();
+        let uri = Uri::parse("file:///missing.R").unwrap();
+
+        let error = session.update_document(uri.clone(), vec![], 2).unwrap_err();
+        assert!(
+            error.to_string().contains("Document not found"),
+            "unexpected error: {error}"
+        );
+
+        let error = session.close_document(uri.clone()).unwrap_err();
+        assert!(
+            error.to_string().contains("Document not found"),
+            "unexpected error: {error}"
+        );
+
+        assert!(session.take_snapshot(uri).is_none());
+    }
+
+    #[test]
+    fn test_snapshot_position_conversions() {
+        let mut session = create_test_session();
+        let uri = Uri::parse("file:///test.R").unwrap();
+        session.open_document(
+            uri.clone(),
+            TextDocument::new("hello\nworld".to_string(), 1),
+        );
+
+        let snapshot = session.take_snapshot(uri.clone()).unwrap();
+        assert_eq!(snapshot.uri(), &uri);
+
+        assert_eq!(snapshot.position_to_offset(Position::new(1, 0)).unwrap(), 6);
+        assert_eq!(snapshot.offset_to_position(6).unwrap(), Position::new(1, 0));
+        assert_eq!(
+            snapshot.range_of_span(0, 5).unwrap(),
+            Range::new(Position::new(0, 0), Position::new(0, 5))
+        );
     }
 
     #[test]

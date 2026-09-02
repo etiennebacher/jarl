@@ -92,7 +92,7 @@ fn test_jarl_with_tabs_on_earlier_lines() -> anyhow::Result<()> {
     exit_code: 1
     ----- stdout -----
     warning: any_is_na
-     --> test.R:4:5
+     --> test.R:4:2
       |
     4 |     any(is.na(x))
       |     ------------- `any(is.na(...))` is inefficient.
@@ -129,7 +129,7 @@ fn test_jarl_with_tabs() -> anyhow::Result<()> {
     exit_code: 1
     ----- stdout -----
     warning: any_is_na
-     --> test.R:1:9
+     --> test.R:1:3
       |
     1 |         any(is.na(x))
       |         ------------- `any(is.na(...))` is inefficient.

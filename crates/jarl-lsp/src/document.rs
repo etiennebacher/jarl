@@ -334,7 +334,32 @@ impl TextDocument {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gen_lsp_types::{Position, TextDocumentContentChangePartial};
+    use gen_lsp_types::{
+        Position, TextDocumentContentChangePartial, TextDocumentContentChangeWholeDocument,
+    };
+
+    #[test]
+    fn test_position_encoding_kind_round_trip() {
+        for encoding in [
+            PositionEncoding::UTF8,
+            PositionEncoding::UTF16,
+            PositionEncoding::UTF32,
+        ] {
+            let kind = PositionEncodingKind::from(encoding);
+            assert_eq!(PositionEncoding::try_from(&kind).unwrap(), encoding);
+        }
+
+        assert_eq!(
+            serde_json::to_value(PositionEncodingKind::from(PositionEncoding::UTF8)).unwrap(),
+            "utf-8"
+        );
+    }
+
+    #[test]
+    fn test_unsupported_position_encoding_is_rejected() {
+        let kind = PositionEncodingKind::new("utf-7");
+        assert!(PositionEncoding::try_from(&kind).is_err());
+    }
 
     #[test]
     fn test_document_creation() {
@@ -405,6 +430,54 @@ mod tests {
             doc.offset_to_position(6, PositionEncoding::UTF8).unwrap(),
             Position::new(1, 0)
         );
+    }
+
+    #[test]
+    fn test_apply_changes_from_did_change_payload() {
+        // The change event is an untagged enum, so a real `textDocument/didChange`
+        // payload has to land on the partial variant.
+        let changes: Vec<TextDocumentContentChangeEvent> = serde_json::from_str(
+            r#"[{
+                "range": {
+                    "start": { "line": 0, "character": 0 },
+                    "end": { "line": 0, "character": 5 }
+                },
+                "text": "hi"
+            }]"#,
+        )
+        .unwrap();
+
+        assert!(matches!(
+            changes[0],
+            TextDocumentContentChangeEvent::TextDocumentContentChangePartial(_)
+        ));
+
+        let mut doc = TextDocument::new("hello world".to_string(), 1);
+        doc.apply_changes(changes, 2, PositionEncoding::UTF8)
+            .unwrap();
+        assert_eq!(doc.content(), "hi world");
+    }
+
+    #[test]
+    fn test_apply_changes_rejects_whole_document_replacement() {
+        let mut doc = TextDocument::new("hello world".to_string(), 1);
+
+        let changes = vec![
+            TextDocumentContentChangeEvent::TextDocumentContentChangeWholeDocument(
+                TextDocumentContentChangeWholeDocument { text: "replaced".to_string() },
+            ),
+        ];
+
+        let error = doc
+            .apply_changes(changes, 2, PositionEncoding::UTF8)
+            .unwrap_err();
+
+        assert!(
+            error.to_string().contains("Full document replacement"),
+            "unexpected error: {error}"
+        );
+        assert_eq!(doc.content(), "hello world");
+        assert_eq!(doc.version(), 1);
     }
 
     #[test]
