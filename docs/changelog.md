@@ -12,6 +12,8 @@
 * `expect_length` no longer reports cases where `length()` is in the `expected`
   argument, e.g. `expect_equal(nrow(x), length(y))` (#684).
 
+* The LSP now also publishes diagnostics when opening a file (#685).
+
 ### Bug fixes
 
 * Prevent fixes for `any_is_na`, `any_duplicated`, and `condition_message`
