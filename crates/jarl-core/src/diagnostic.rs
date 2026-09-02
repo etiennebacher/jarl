@@ -158,14 +158,11 @@ pub fn render_diagnostic(
     let start_offset: usize = diagnostic.range.start().into();
     let end_offset: usize = diagnostic.range.end().into();
 
-    // annotate-snippets replaces each tab with 4 spaces for display but
-    // validates span bounds against the original source length, so we must
-    // expand tabs in the source we pass. We only expand tabs on the lines
-    // that contain the annotation span to avoid scanning the entire file.
-    let (expanded, adj_start, adj_end) = expand_span_line_tabs(source, start_offset, end_offset);
+    let (window, adj_start, adj_end, first_line) = snippet_window(source, start_offset, end_offset);
 
-    let snippet = Snippet::source(expanded.as_str())
+    let snippet = Snippet::source(window)
         .path(origin)
+        .line_start(first_line)
         .fold(true)
         .annotation(
             AnnotationKind::Context
@@ -199,12 +196,11 @@ pub fn render_syntax_error(
     let start_offset: usize = error.range.start().into();
     let end_offset: usize = error.range.end().into();
 
-    // See `render_diagnostic`: annotate-snippets expands tabs for display but
-    // validates spans against the original length, so expand the span's lines.
-    let (expanded, adj_start, adj_end) = expand_span_line_tabs(source, start_offset, end_offset);
+    let (window, adj_start, adj_end, first_line) = snippet_window(source, start_offset, end_offset);
 
-    let snippet = Snippet::source(expanded.as_str())
+    let snippet = Snippet::source(window)
         .path(origin)
+        .line_start(first_line)
         .fold(true)
         .annotation(AnnotationKind::Primary.span(adj_start..adj_end));
 
@@ -216,50 +212,34 @@ pub fn render_syntax_error(
     renderer.render(&[group]).to_string()
 }
 
-/// Expand tabs only on the lines that overlap with `start..end` and adjust
-/// offsets accordingly. Returns the modified source and adjusted span bounds.
-fn expand_span_line_tabs(source: &str, start: usize, end: usize) -> (String, usize, usize) {
-    const TAB: u8 = b'\t';
-    const EXTRA_PER_TAB: usize = 3; // 4 spaces - 1 byte
-
+/// Narrow `source` down to the lines the annotation actually covers.
+///
+/// `annotate_snippets` indexes every line of the source it is handed, once per
+/// rendered diagnostic, so passing whole files makes rendering cost scale with
+/// file size times diagnostic count. Folding hides the surrounding lines but
+/// does not skip that indexing, so the trimming has to happen here.
+///
+/// The line number is counted from `source` rather than taken from the
+/// diagnostic's `location`, so the gutter always agrees with the lines actually
+/// shown.
+///
+/// Returns the window, the span rebased into it, and the 1-based number of the
+/// window's first line.
+fn snippet_window(source: &str, start: usize, end: usize) -> (&str, usize, usize, usize) {
     // Find the line range covering the span: from the newline before `start`
     // to the newline after `end`.
     let line_start = source[..start].rfind('\n').map_or(0, |p| p + 1);
     let line_end = source[end..].find('\n').map_or(source.len(), |p| end + p);
 
-    // If no tabs on the span lines, return the source as-is.
-    if !source[line_start..line_end].contains('\t') {
-        return (source.to_string(), start, end);
-    }
-
-    // Count tabs on the span lines: before the span start, within the span,
-    // and after it. Lines before the span lines are copied unexpanded, so
-    // their tabs must not shift the adjusted offsets.
-    let source_bytes = source.as_bytes();
-    let tabs_line_to_start = source_bytes[line_start..start]
+    let first_line = 1 + source.as_bytes()[..line_start]
         .iter()
-        .filter(|&&b| b == TAB)
-        .count();
-    let tabs_in_span = source_bytes[start..end]
-        .iter()
-        .filter(|&&b| b == TAB)
-        .count();
-    let tabs_after_span = source_bytes[end..line_end]
-        .iter()
-        .filter(|&&b| b == TAB)
+        .filter(|&&b| b == b'\n')
         .count();
 
-    let extra_on_lines = (tabs_line_to_start + tabs_in_span + tabs_after_span) * EXTRA_PER_TAB;
-
-    // Build the result: copy before + expanded span lines + copy after.
-    let expanded_lines = source[line_start..line_end].replace('\t', "    ");
-    let mut result = String::with_capacity(source.len() + extra_on_lines);
-    result.push_str(&source[..line_start]);
-    result.push_str(&expanded_lines);
-    result.push_str(&source[line_end..]);
-
-    let adj_start = start + tabs_line_to_start * EXTRA_PER_TAB;
-    let adj_end = end + (tabs_line_to_start + tabs_in_span) * EXTRA_PER_TAB;
-
-    (result, adj_start, adj_end)
+    (
+        &source[line_start..line_end],
+        start - line_start,
+        end - line_start,
+        first_line,
+    )
 }
