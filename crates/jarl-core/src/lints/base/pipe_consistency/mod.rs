@@ -136,9 +136,6 @@ mod tests {
 
     #[test]
     fn test_lint_pipe_consistency_bare_rhs_no_fix() {
-        // The native pipe requires a call on the RHS, so `x %>% sum` can't be
-        // fixed by swapping the operator alone (`x |> sum` doesn't parse).
-        // The lint is still reported but without a fix.
         assert_snapshot!(
             format_diagnostics("x %>% sum", "pipe_consistency", Some("4.2")),
             @r"
