@@ -369,6 +369,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#development-version" id="toc-development-version" class="nav-link" data-scroll-target="#development-version">Development version</a>
   <ul class="collapse">
   <li><a href="#breaking-changes" id="toc-breaking-changes" class="nav-link" data-scroll-target="#breaking-changes">Breaking changes</a></li>
+  <li><a href="#changes" id="toc-changes" class="nav-link" data-scroll-target="#changes">Changes</a></li>
   <li><a href="#bug-fixes" id="toc-bug-fixes" class="nav-link" data-scroll-target="#bug-fixes">Bug fixes</a></li>
   </ul></li>
   <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section">0.6.0</a>
@@ -442,6 +443,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="breaking-changes">Breaking changes</h3>
 <ul>
 <li>The <code>jarl.toml</code> argument <code>assignment</code> (deprecated since 0.5.0) is removed. Use the rule-specific option <code>[lint.assignment]</code> instead (#663).</li>
+</ul>
+</section>
+<section id="changes" class="level3">
+<h3 class="anchored" data-anchor-id="changes">Changes</h3>
+<ul>
+<li><code>expect_length</code> no longer reports cases where <code>length()</code> is in the <code>expected</code> argument, e.g.&nbsp;<code>expect_equal(nrow(x), length(y))</code> (#684).</li>
 </ul>
 </section>
 <section id="bug-fixes" class="level3">
