@@ -16,7 +16,7 @@ air_workspace.workspace = true
 ignore.workspace = true
 
 # LSP dependencies
-lsp-server = "0.8"
+lsp-server = "0.10"
 gen-lsp-types = { version = "0.11", features = ["url"] }
 
 # Async and concurrency
