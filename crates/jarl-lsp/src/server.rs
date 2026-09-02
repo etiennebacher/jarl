@@ -294,7 +294,13 @@ impl Server {
                     session.check_and_notify_config(&file_path);
                 }
 
-                // Don't trigger linting on open, only on save
+                // Lint
+                if let Some(snapshot) = session.take_snapshot(params.text_document.uri) {
+                    task_sender.send(Task::LintDocument {
+                        snapshot: Box::new(snapshot),
+                        client: session.client().clone(),
+                    })?;
+                }
                 Ok(())
             }
             types::DidChangeTextDocumentNotification::METHOD => {
