@@ -148,6 +148,9 @@ impl PartialOrd for Diagnostic {
 ///
 /// The `title` parameter allows callers to customize the message title
 /// (e.g. the CLI uses a hyperlinked rule name, while tests use the plain name).
+/// It is passed as a `secondary_title` because that is the only title
+/// constructor that leaves the text untouched: `primary_title` normalizes
+/// control characters, which would mangle the OSC 8 escapes of the hyperlink.
 pub fn render_diagnostic(
     source: &str,
     origin: &str,
@@ -170,7 +173,7 @@ pub fn render_diagnostic(
                 .label(&diagnostic.message.body),
         );
 
-    let mut group = Level::WARNING.primary_title(title).element(snippet);
+    let mut group = Level::WARNING.secondary_title(title).element(snippet);
 
     // Close the snippet with a blank gutter line. When a suggestion follows,
     // the renderer already separates it from the snippet.
