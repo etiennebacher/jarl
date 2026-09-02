@@ -900,6 +900,248 @@ select = ["ALL"]
         assert_eq!(document.language_id(), Some("r"));
     }
 
+    // =========================================================================
+    // Notification handling: linting on open
+    // =========================================================================
+
+    /// A session wired to the two channels `handle_notification` writes to: the
+    /// task queue holding background lint work, and the messages going out to
+    /// the client.
+    struct NotificationEnv {
+        env: TestEnv,
+        session: Session,
+        task_sender: channel::Sender<Task>,
+        tasks: channel::Receiver<Task>,
+        messages: channel::Receiver<Message>,
+    }
+
+    impl NotificationEnv {
+        /// Set up a session for a file whose on-disk content is `content`.
+        fn new(content: &str) -> Self {
+            let env = TestEnv::new(content);
+            let (message_sender, messages) = channel::unbounded();
+            let client = Client::new(message_sender);
+            let session = Session::new(
+                types::ClientCapabilities::default(),
+                PositionEncoding::UTF8,
+                vec![],
+                client,
+            );
+            let (task_sender, tasks) = channel::unbounded();
+
+            Self { env, session, task_sender, tasks, messages }
+        }
+
+        fn uri(&self) -> Uri {
+            Uri::from_file_path(&self.env.file_path).unwrap()
+        }
+
+        fn notify(&mut self, method: &str, params: serde_json::Value) {
+            let notification = Notification { method: method.to_string(), params };
+            Server::handle_notification(notification, &mut self.session, &self.task_sender)
+                .unwrap();
+        }
+
+        /// Open the document with `text` as the editor buffer, which may differ
+        /// from what is on disk.
+        fn did_open(&mut self, text: &str, version: i32) {
+            let uri = self.uri();
+            self.notify(
+                types::DidOpenTextDocumentNotification::METHOD.as_str(),
+                serde_json::json!({
+                    "textDocument": {
+                        "uri": uri.as_str(),
+                        "languageId": "r",
+                        "version": version,
+                        "text": text,
+                    }
+                }),
+            );
+        }
+
+        /// Replace the whole buffer. The server only accepts incremental
+        /// changes, so this is sent as one edit spanning the current content.
+        fn did_change(&mut self, text: &str, version: i32) {
+            let uri = self.uri();
+            let content = self
+                .session
+                .get_document(&uri)
+                .expect("document is open")
+                .content()
+                .to_string();
+            let end = offset_to_position(&content, content.len());
+
+            self.notify(
+                types::DidChangeTextDocumentNotification::METHOD.as_str(),
+                serde_json::json!({
+                    "textDocument": { "uri": uri.as_str(), "version": version },
+                    "contentChanges": [{
+                        "range": {
+                            "start": { "line": 0, "character": 0 },
+                            "end": { "line": end.line, "character": end.character },
+                        },
+                        "text": text,
+                    }],
+                }),
+            );
+        }
+
+        fn did_save(&mut self) {
+            let uri = self.uri();
+            self.notify(
+                types::DidSaveTextDocumentNotification::METHOD.as_str(),
+                serde_json::json!({ "textDocument": { "uri": uri.as_str() } }),
+            );
+        }
+
+        /// The single lint task that was queued, panicking if there is none or
+        /// if more than one was queued.
+        fn only_lint_task(&self) -> DocumentSnapshot {
+            let snapshot = match self.tasks.try_recv() {
+                Ok(Task::LintDocument { snapshot, .. }) => *snapshot,
+                Ok(_) => panic!("expected a lint task"),
+                Err(_) => panic!("no task was queued"),
+            };
+            assert!(
+                self.tasks.try_recv().is_err(),
+                "expected exactly one queued task"
+            );
+            snapshot
+        }
+
+        /// Run the queued lint task the way a worker thread would, and return
+        /// the diagnostics it published.
+        fn run_only_lint_task(&self) -> types::PublishDiagnosticsParams {
+            let snapshot = self.only_lint_task();
+            Server::handle_lint_task(snapshot, self.session.client().clone()).unwrap();
+            self.published_diagnostics()
+        }
+
+        /// The next `publishDiagnostics` the client received. Other messages
+        /// (e.g. the config-location notice) are skipped.
+        fn published_diagnostics(&self) -> types::PublishDiagnosticsParams {
+            while let Ok(message) = self.messages.try_recv() {
+                if let Message::Notification(notification) = message
+                    && notification.method == types::PublishDiagnosticsNotification::METHOD.as_str()
+                {
+                    return serde_json::from_value(notification.params).unwrap();
+                }
+            }
+            panic!("no diagnostics were published");
+        }
+    }
+
+    #[test]
+    fn test_did_open_queues_a_lint_of_the_opened_document() {
+        let mut env = NotificationEnv::new("any(is.na(x))\n");
+        env.did_open("any(is.na(x))\n", 1);
+
+        let snapshot = env.only_lint_task();
+        assert_eq!(snapshot.uri(), &env.uri());
+        assert_eq!(snapshot.content(), "any(is.na(x))\n");
+        assert_eq!(snapshot.version(), 1);
+    }
+
+    #[test]
+    fn test_did_open_publishes_diagnostics_for_the_opened_document() {
+        let mut env = NotificationEnv::new("any(is.na(x))\n");
+        env.did_open("any(is.na(x))\n", 1);
+
+        let published = env.run_only_lint_task();
+        assert_eq!(published.uri, env.uri());
+        assert_eq!(published.version, Some(1));
+        assert!(
+            published
+                .diagnostics
+                .iter()
+                .any(|d| d.code == Some(types::Code::String("any_is_na".to_string()))),
+            "expected an any_is_na diagnostic, got {:?}",
+            published.diagnostics
+        );
+    }
+
+    #[test]
+    fn test_did_open_publishes_empty_diagnostics_for_a_clean_document() {
+        // A clean file still gets a publish, otherwise a client holding stale
+        // diagnostics from a previous session would keep showing them.
+        let mut env = NotificationEnv::new("anyNA(x)\n");
+        env.did_open("anyNA(x)\n", 1);
+
+        let published = env.run_only_lint_task();
+        assert_eq!(published.uri, env.uri());
+        assert!(
+            published.diagnostics.is_empty(),
+            "expected no diagnostics, got {:?}",
+            published.diagnostics
+        );
+    }
+
+    #[test]
+    fn test_did_open_lints_the_editor_buffer_not_the_file_on_disk() {
+        // The buffer can already be dirty when the document is opened (e.g. an
+        // editor restoring unsaved changes).
+        let mut env = NotificationEnv::new("anyNA(x)\n");
+        env.did_open("any(is.na(x))\n", 3);
+
+        let published = env.run_only_lint_task();
+        assert_eq!(published.version, Some(3));
+        assert!(
+            !published.diagnostics.is_empty(),
+            "the dirty buffer should be linted, not the clean file on disk"
+        );
+    }
+
+    #[test]
+    fn test_did_change_does_not_queue_a_lint() {
+        // Linting happens on open and on save only, so that diagnostics don't
+        // flicker on partial code while typing.
+        let mut env = NotificationEnv::new("anyNA(x)\n");
+        env.did_open("anyNA(x)\n", 1);
+        let _ = env.only_lint_task();
+
+        env.did_change("any(is.na(x))\n", 2);
+
+        assert!(
+            env.tasks.try_recv().is_err(),
+            "a change should not queue a lint"
+        );
+    }
+
+    #[test]
+    fn test_did_save_queues_a_lint_of_the_current_buffer() {
+        let mut env = NotificationEnv::new("anyNA(x)\n");
+        env.did_open("anyNA(x)\n", 1);
+        let _ = env.only_lint_task();
+
+        env.did_change("any(is.na(x))\n", 2);
+        env.did_save();
+
+        let snapshot = env.only_lint_task();
+        assert_eq!(snapshot.content(), "any(is.na(x))\n");
+        assert_eq!(snapshot.version(), 2);
+    }
+
+    #[test]
+    fn test_did_close_clears_diagnostics_without_queueing_a_lint() {
+        let mut env = NotificationEnv::new("any(is.na(x))\n");
+        env.did_open("any(is.na(x))\n", 1);
+        let _ = env.only_lint_task();
+
+        let uri = env.uri();
+        env.notify(
+            types::DidCloseTextDocumentNotification::METHOD.as_str(),
+            serde_json::json!({ "textDocument": { "uri": uri.as_str() } }),
+        );
+
+        assert!(
+            env.tasks.try_recv().is_err(),
+            "closing a document should not queue a lint"
+        );
+        let published = env.published_diagnostics();
+        assert_eq!(published.uri, uri);
+        assert!(published.diagnostics.is_empty());
+    }
+
     fn create_test_snapshot(content: &str) -> DocumentSnapshot {
         let uri = Uri::parse("file:///test.R").unwrap();
         let key = DocumentKey::from(uri);
