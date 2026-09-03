@@ -157,6 +157,9 @@ fn test_help_check() -> anyhow::Result<()> {
           --fix-only
               Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
 
+          --interactive
+              Preview each fix and choose whether to apply it. Implies `--fix`.
+
           --allow-dirty
               Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
 
@@ -235,6 +238,7 @@ fn test_help_check() -> anyhow::Result<()> {
       -f, --fix           Automatically fix issues detected by the linter.
       -u, --unsafe-fixes  Include fixes that may not retain the original intent of the  code.
           --fix-only      Apply fixes to resolve lint violations, but don't report on leftover violations. Implies `--fix`.
+          --interactive   Preview each fix and choose whether to apply it. Implies `--fix`.
           --allow-dirty   Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.
           --allow-no-vcs  Apply fixes even if there is no version control system.
 

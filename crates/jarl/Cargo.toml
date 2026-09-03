@@ -28,6 +28,7 @@ jarl-lsp.workspace = true
 clap.workspace = true
 clap_complete.workspace = true
 colored.workspace = true
+console.workspace = true
 anyhow.workspace = true
 serde.workspace = true
 serde_json.workspace = true

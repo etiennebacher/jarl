@@ -80,6 +80,43 @@ Apply fixes to resolve lint violations, but don't report on leftover violations.
 
 ---
 
+**`--interactive`**
+
+Preview each fix and choose whether to apply it. Implies `--fix`.
+
+Each fix is shown as a diff, with a few lines of surrounding code for
+context, followed by the choices:
+
+```
+R/foo.R:3:6  any_is_na
+`any(is.na(...))` is inefficient.
+
+────────────┬───────────────────────────────────────────────────────
+    2     2 │ f <- function(y) {
+    3       │-  x <- any(is.na(y))
+          3 │+  x <- anyNA(y)
+    4     4 │   x
+    5     5 │ }
+────────────┴───────────────────────────────────────────────────────
+
+  y accept      apply this fix
+  n reject      leave this code as it is
+  a accept all  apply this fix and all the remaining ones
+  q quit        stop here, keeping the fixes already applied
+
+Apply this fix?
+```
+
+Each fix is drawn over the previous one, so the terminal shows a single fix at
+a time.
+
+Fixes are offered one file at a time, in path order. Violations you did not fix
+are reported at the end, as usual.
+
+This option needs a human-readable `--output-format` (`full` or `concise`).
+
+---
+
 **`--allow-dirty`**
 
 Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files.

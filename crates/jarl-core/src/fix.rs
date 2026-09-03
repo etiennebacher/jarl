@@ -40,3 +40,30 @@ pub fn apply_fixes(fixes: &[Diagnostic], contents: &str) -> String {
 
     new_content
 }
+
+/// What the user decided about a single fix in interactive mode.
+pub enum FixDecision {
+    Accept,
+    Skip,
+    Quit,
+}
+
+/// Asks the user whether to apply each fix. Implemented by the CLI, which owns
+/// all terminal I/O; the core only calls back into it.
+pub trait FixPrompt {
+    fn ask(
+        &mut self,
+        path: &str,
+        contents: &str,
+        diagnostic: &Diagnostic,
+    ) -> anyhow::Result<FixDecision>;
+
+    /// Asked once when the working tree is dirty or untracked. `false` means
+    /// no fix is offered for the rest of the run.
+    fn confirm_vcs(&mut self, status: &crate::vcs::VcsStatus) -> anyhow::Result<bool>;
+
+    /// True once the user quit, so remaining files fall back to lint-only.
+    fn aborted(&self) -> bool {
+        false
+    }
+}

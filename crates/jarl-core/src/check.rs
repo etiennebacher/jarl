@@ -6,7 +6,7 @@ use crate::package::{
 };
 use crate::roxygen::{extract_roxygen_examples, remap_roxygen_fix, remap_roxygen_range};
 use crate::suppression::SuppressionManager;
-use crate::vcs::check_version_control;
+use crate::vcs::{VcsStatus, check_version_control, version_control_status};
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
 use air_r_syntax::RSyntaxNode;
@@ -28,7 +28,17 @@ use crate::fix::*;
 use crate::rule_set::RuleSet;
 use crate::utils::*;
 
-pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
+/// The per-run analysis shared by every file: package contexts, the
+/// cross-file analysis, and the config itself, all wrapped in `Arc` to avoid
+/// expensive clones in parallel execution.
+type Analysis = (
+    Arc<Config>,
+    Arc<PackageAnalysis>,
+    Arc<HashMap<PathBuf, PackageContext>>,
+    Arc<HashMap<PathBuf, FilePackageInfo>>,
+);
+
+fn analyse(config: Config) -> Analysis {
     let (pkg_contexts, file_pkg_info) = summarize_package_info(&config.paths);
 
     let namespace_contents: HashMap<PathBuf, String> = pkg_contexts
@@ -40,9 +50,16 @@ pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Err
         })
         .collect();
     let pkg = make_package_analysis(&config.paths, &config, &namespace_contents);
-    let pkg_contexts = Arc::new(pkg_contexts);
-    let file_pkg_info = Arc::new(file_pkg_info);
 
+    (
+        Arc::new(config),
+        Arc::new(pkg),
+        Arc::new(pkg_contexts),
+        Arc::new(file_pkg_info),
+    )
+}
+
+pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
     // Ensure that all paths are covered by VCS. This is conservative because
     // technically we could apply fixes on those that are covered by VCS and
     // error for the others, but I'd rather be on the safe side and force the
@@ -55,9 +72,7 @@ pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Err
         }
     }
 
-    // Wrap config and package analysis in Arc to avoid expensive clones in parallel execution
-    let config = Arc::new(config);
-    let pkg = Arc::new(pkg);
+    let (config, pkg, pkg_contexts, file_pkg_info) = analyse(config);
 
     config
         .paths
@@ -70,6 +85,64 @@ pub fn check(config: Config) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Err
                 Arc::clone(&pkg_contexts),
                 Arc::clone(&file_pkg_info),
             );
+            (relativize_path(file), res)
+        })
+        .collect()
+}
+
+/// Like [`check`], but every fix is shown to the user before it is applied.
+///
+/// Runs serially: the prompt owns the terminal, and the user works through one
+/// fix at a time anyway. A dirty (or untracked) working directory is a question
+/// here rather than the hard error [`check`] reports; answering no leaves the
+/// run as a plain lint.
+pub fn check_interactive(
+    mut config: Config,
+    prompt: &mut dyn FixPrompt,
+) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
+    let mut offer_fixes = true;
+
+    // Discovery order is good enough when the results are collected and sorted
+    // before printing, but here the user walks the files one at a time, so they
+    // should come in an order that makes sense to them.
+    config.paths.sort();
+
+    if !config.paths.is_empty() {
+        let path_strings: Vec<String> = config.paths.iter().map(relativize_path).collect();
+        match version_control_status(&path_strings, &config) {
+            Ok(VcsStatus::Clean) => {}
+            Ok(status) => match prompt.confirm_vcs(&status) {
+                Ok(confirmed) => offer_fixes = confirmed,
+                Err(e) => return vec![(path_strings[0].clone(), Err(e))],
+            },
+            Err(e) => return vec![(path_strings[0].clone(), Err(e))],
+        }
+    }
+
+    let (config, pkg, pkg_contexts, file_pkg_info) = analyse(config);
+
+    config
+        .paths
+        .iter()
+        .map(|file| {
+            let res = if offer_fixes && !prompt.aborted() {
+                lint_fix_interactive(
+                    file,
+                    Arc::clone(&config),
+                    Arc::clone(&pkg),
+                    Arc::clone(&pkg_contexts),
+                    Arc::clone(&file_pkg_info),
+                    prompt,
+                )
+            } else {
+                lint_only(
+                    file,
+                    Arc::clone(&config),
+                    Arc::clone(&pkg),
+                    Arc::clone(&pkg_contexts),
+                    Arc::clone(&file_pkg_info),
+                )
+            };
             (relativize_path(file), res)
         })
         .collect()
@@ -222,6 +295,154 @@ pub fn lint_fix(
         if fixed_text == contents {
             break;
         }
+
+        fs::write(&path, fixed_text).with_context(|| format!("Failed to write file: {path}",))?;
+    }
+
+    Ok(checks)
+}
+
+/// A fix the user turned down, in the coordinates of the file as it stands.
+///
+/// Every accepted fix rewrites the file and the diagnostics are recomputed from
+/// scratch, so a declined fix has to be recognisable in the next pass; that is
+/// what [`Declined::shift`] maintains. Without it, either the same fix gets
+/// asked about again and again, or a cursor has to be moved past it — and a
+/// cursor also hides the fixes that only become available *earlier* in the file
+/// once an inner one is applied.
+struct Declined {
+    rule: crate::rule_set::Rule,
+    start: usize,
+    end: usize,
+    content: String,
+}
+
+impl Declined {
+    fn of(diagnostic: &Diagnostic) -> Self {
+        Self {
+            rule: diagnostic.message.rule,
+            start: diagnostic.fix.start(),
+            end: diagnostic.fix.end(),
+            content: diagnostic.fix.content.clone(),
+        }
+    }
+
+    fn matches(&self, diagnostic: &Diagnostic) -> bool {
+        self.rule == diagnostic.message.rule
+            && self.start == diagnostic.fix.start()
+            && self.end == diagnostic.fix.end()
+            && self.content == diagnostic.fix.content
+    }
+
+    /// Move this fix to where it sits after `start..end` was replaced by
+    /// `len` bytes. Returns `None` when the edit landed inside it, which makes
+    /// whatever the next pass reports there a different fix, to be asked about
+    /// afresh.
+    fn shift(mut self, start: usize, end: usize, len: usize) -> Option<Self> {
+        if self.start >= end {
+            let delta = len as isize - (end - start) as isize;
+            self.start = self.start.saturating_add_signed(delta);
+            self.end = self.end.saturating_add_signed(delta);
+            Some(self)
+        } else if self.end <= start {
+            Some(self)
+        } else {
+            None
+        }
+    }
+}
+
+/// Fix mode, one fix at a time, each shown to the user before it is applied.
+///
+/// Unlike [`lint_fix`], which applies every non-overlapping fix per pass, this
+/// applies one fix and re-lints, so that each preview reflects the file as it
+/// stands. Accepting every fix converges on the same result as [`lint_fix`];
+/// the only difference is that declined fixes stay put.
+pub fn lint_fix_interactive(
+    path: &PathBuf,
+    config: Arc<Config>,
+    pkg: Arc<PackageAnalysis>,
+    pkg_contexts: Arc<HashMap<PathBuf, PackageContext>>,
+    file_pkg_info: Arc<HashMap<PathBuf, FilePackageInfo>>,
+    prompt: &mut dyn FixPrompt,
+) -> Result<Vec<Diagnostic>, anyhow::Error> {
+    // Rmd/Qmd files never get autofixes applied.
+    if crate::fs::has_rmd_extension(path) {
+        return lint_only(path, config, pkg, pkg_contexts, file_pkg_info);
+    }
+
+    let path = relativize_path(path);
+
+    let mut checks: Vec<Diagnostic>;
+    let mut declined: Vec<Declined> = Vec::new();
+
+    loop {
+        let contents = fs::read_to_string(Path::new(&path))
+            .with_context(|| format!("Failed to read file: {path}",))?;
+
+        // Skip auto-generated files: no diagnostics, no fixes.
+        if crate::fs::looks_generated(&contents) {
+            return Ok(Vec::new());
+        }
+
+        checks = get_checks(
+            &contents,
+            &PathBuf::from(&path),
+            &config,
+            &pkg,
+            &pkg_contexts,
+            &file_pkg_info,
+            // Each accepted fix rewrites the file, so the on-disk contents (and
+            // the index the pre-pass cached from them) drift from the in-memory
+            // `contents`; rebuild the index rather than reuse it.
+            false,
+        )
+        .with_context(|| format!("Failed to get checks for file: {path}",))?;
+
+        // `get_checks` returns diagnostics in traversal order, and `Diagnostic`
+        // sorts on `range`, which is not always where the fix applies.
+        let mut fixable: Vec<&Diagnostic> = checks
+            .iter()
+            .filter(|d| d.has_safe_fix() || d.has_unsafe_fix())
+            .collect();
+        fixable.sort_by_key(|d| d.fix.start());
+
+        let mut accepted = None;
+
+        for diagnostic in fixable {
+            if declined.iter().any(|d| d.matches(diagnostic)) {
+                continue;
+            }
+            match prompt.ask(&path, &contents, diagnostic)? {
+                // The content is unchanged, so the rest of the list is still
+                // valid: move on without re-linting.
+                FixDecision::Skip => declined.push(Declined::of(diagnostic)),
+                FixDecision::Accept => {
+                    accepted = Some((
+                        apply_fixes(std::slice::from_ref(diagnostic), &contents),
+                        diagnostic.fix.start(),
+                        diagnostic.fix.end(),
+                        diagnostic.fix.content.len(),
+                    ));
+                    break;
+                }
+                FixDecision::Quit => return Ok(checks),
+            }
+        }
+
+        let Some((fixed_text, start, end, len)) = accepted else {
+            break;
+        };
+
+        // No progress was made, stop to avoid an infinite loop.
+        if fixed_text == contents {
+            break;
+        }
+
+        declined = declined
+            .into_iter()
+            .filter_map(|d| d.shift(start, end, len))
+            .collect();
 
         fs::write(&path, fixed_text).with_context(|| format!("Failed to write file: {path}",))?;
     }
