@@ -455,6 +455,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="bug-fixes" class="level3">
 <h3 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h3>
 <ul>
+<li><p>Prevent the <code>sample_int</code> rule from panicking on calls with missing arguments (#687, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
 <li><p>Prevent the <code>outer_negation</code> rule from rewriting unary <code>+</code> and <code>-</code> expressions as logical negations (#688, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
 <li><p>Prevent fixes for <code>any_is_na</code>, <code>any_duplicated</code>, and <code>condition_message</code> from dropping extra unnamed arguments (#677, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
 <li><p>Ensure that <code>--fix</code> works with multi-byte characters (#672, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
