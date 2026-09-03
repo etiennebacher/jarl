@@ -101,6 +101,7 @@ R/foo.R:3:6  any_is_na
 
   y accept      apply this fix
   n reject      leave this code as it is
+  i ignore      leave this code as it is and add a `# jarl-ignore` comment
   a accept all  apply this fix and all the remaining ones
   q quit        stop here, keeping the fixes already applied
 
@@ -109,6 +110,11 @@ Apply this fix?
 
 Each fix is drawn over the previous one, so the terminal shows a single fix at
 a time.
+
+Answering `i` leaves the code untouched and inserts a
+[suppression comment](../howto/suppression-comments.md) above it instead. Jarl
+then asks for the reason to write in the comment; leaving it empty writes the
+placeholder `<reason>`, like `--add-jarl-ignore` does.
 
 Fixes are offered one file at a time, in path order. Violations you did not fix
 are reported at the end, as usual.

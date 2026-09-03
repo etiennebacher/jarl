@@ -42,6 +42,7 @@ fn test_accept_single_fix() -> anyhow::Result<()> {
 
       y accept      apply this fix
       n reject      leave this code as it is
+      i ignore      leave this code as it is and add a `# jarl-ignore` comment
       a accept all  apply this fix and all the remaining ones
       q quit        stop here, keeping the fixes already applied
 
@@ -115,6 +116,113 @@ fn test_skip_single_fix() -> anyhow::Result<()> {
 
     assert!(output.stdout.contains("Applied 0 fix(es), skipped 1."));
     insta::assert_snapshot!(case.read_file("test.R")?, @"x <- any(is.na(y))");
+
+    Ok(())
+}
+
+#[test]
+fn test_ignore_adds_a_suppression_comment() -> anyhow::Result<()> {
+    let case = clean_repo([(
+        "test.R",
+        "f <- function(y) {\n  x <- any(is.na(y))\n  x\n}\n",
+    )])?;
+
+    let output = case
+        .command()
+        .arg("check")
+        .arg(".")
+        .arg("--interactive")
+        .run_with_stdin("i\nknown false positive\n");
+
+    assert!(output.stdout.contains("Added 1 suppression comment(s)."));
+    // The code is left alone and the violation is silenced, so nothing is
+    // reported at the end.
+    assert!(output.stdout.contains("All checks passed!"));
+
+    insta::assert_snapshot!(
+        case.read_file("test.R")?,
+        @r"
+    f <- function(y) {
+      # jarl-ignore any_is_na: known false positive
+      x <- any(is.na(y))
+      x
+    }
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_ignore_without_a_reason_leaves_a_placeholder() -> anyhow::Result<()> {
+    let case = clean_repo([("test.R", "x <- any(is.na(y))\n")])?;
+
+    let output = case
+        .command()
+        .arg("check")
+        .arg(".")
+        .arg("--interactive")
+        .run_with_stdin("i\n\n");
+
+    assert!(
+        output
+            .stdout
+            .contains("Reason (leave empty for `<reason>`)")
+    );
+
+    insta::assert_snapshot!(
+        case.read_file("test.R")?,
+        @r"
+    # jarl-ignore any_is_na: <reason>
+    x <- any(is.na(y))
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_ignore_then_accept() -> anyhow::Result<()> {
+    let case = clean_repo([("test.R", "a <- any(is.na(x))\nb <- any(is.na(yyyy))\n")])?;
+
+    let output = case
+        .command()
+        .arg("check")
+        .arg(".")
+        .arg("--interactive")
+        .run_with_stdin("i\nfirst\ny\n");
+
+    // The suppressed fix must not be asked about again after its own comment
+    // shifted the offsets of what follows.
+    assert_eq!(output.stdout.matches("Apply this fix?").count(), 2);
+    assert!(output.stdout.contains("Applied 1 fix(es), skipped 0."));
+    assert!(output.stdout.contains("Added 1 suppression comment(s)."));
+
+    insta::assert_snapshot!(
+        case.read_file("test.R")?,
+        @r"
+    # jarl-ignore any_is_na: first
+    a <- any(is.na(x))
+    b <- anyNA(yyyy)
+    "
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_accept_all_ignores_nothing() -> anyhow::Result<()> {
+    let case = clean_repo([("test.R", "a <- any(is.na(x))\nb <- any(is.na(yyyy))\n")])?;
+
+    let output = case
+        .command()
+        .arg("check")
+        .arg(".")
+        .arg("--interactive")
+        .run_with_stdin("a\n");
+
+    // No suppression was asked for, so the summary stays a two-number one.
+    assert!(!output.stdout.contains("suppression comment(s)"));
 
     Ok(())
 }

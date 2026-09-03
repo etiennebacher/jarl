@@ -45,6 +45,9 @@ pub fn apply_fixes(fixes: &[Diagnostic], contents: &str) -> String {
 pub enum FixDecision {
     Accept,
     Skip,
+    /// Leave the code alone and silence the diagnostic instead, with a
+    /// `# jarl-ignore` comment carrying this reason.
+    Ignore(String),
     Quit,
 }
 

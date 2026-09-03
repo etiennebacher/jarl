@@ -319,6 +319,9 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
             "Applied {} fix(es), skipped {}.",
             prompt.applied, prompt.skipped
         );
+        if prompt.suppressed > 0 {
+            println!("Added {} suppression comment(s).", prompt.suppressed);
+        }
     }
 
     if is_human_format(args.output_format) {

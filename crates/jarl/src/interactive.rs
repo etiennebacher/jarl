@@ -21,9 +21,15 @@ const GUTTER: usize = 12;
 /// key, the colour it is printed in, what it is called, and what it does. The
 /// name carries its own padding, since `{:<width$}` would count the colour
 /// escapes of the key next to it.
-const CHOICES: [(&str, Color, &str, &str); 4] = [
+const CHOICES: [(&str, Color, &str, &str); 5] = [
     ("y", Color::Green, "accept    ", "apply this fix"),
     ("n", Color::Red, "reject    ", "leave this code as it is"),
+    (
+        "i",
+        Color::Blue,
+        "ignore    ",
+        "leave this code as it is and add a `# jarl-ignore` comment",
+    ),
     (
         "a",
         Color::Green,
@@ -37,6 +43,11 @@ const CHOICES: [(&str, Color, &str, &str); 4] = [
         "stop here, keeping the fixes already applied",
     ),
 ];
+
+/// What a suppression comment says when the user doesn't give a reason. It is
+/// the placeholder `--add-jarl-ignore` uses, so the two features leave the same
+/// thing behind to fill in.
+const DEFAULT_REASON: &str = "<reason>";
 
 /// Drives `--interactive`: previews each fix and reads the user's decision.
 ///
@@ -54,6 +65,7 @@ pub struct TerminalPrompt {
     quit: bool,
     pub applied: usize,
     pub skipped: usize,
+    pub suppressed: usize,
 }
 
 impl Default for TerminalPrompt {
@@ -71,6 +83,7 @@ impl Default for TerminalPrompt {
             quit: false,
             applied: 0,
             skipped: 0,
+            suppressed: 0,
         }
     }
 }
@@ -140,6 +153,32 @@ impl TerminalPrompt {
         }
     }
 
+    /// Ask what the suppression comment should say. Jarl requires a reason, so
+    /// an empty answer leaves the same placeholder `--add-jarl-ignore` does,
+    /// for the user to fill in later.
+    fn ask_reason(&mut self) -> Result<String> {
+        print!("Reason (leave empty for `{DEFAULT_REASON}`): ");
+        std::io::stdout().flush()?;
+        self.drawn += 1;
+
+        let reason = if self.term.is_term() {
+            self.term.read_line()?
+        } else {
+            let mut line = String::new();
+            std::io::stdin().lock().read_line(&mut line)?;
+            // A piped answer is not echoed, so close the line ourselves.
+            println!("{}", line.trim_end());
+            line
+        };
+
+        let reason = reason.trim();
+        Ok(if reason.is_empty() {
+            DEFAULT_REASON.to_string()
+        } else {
+            reason.to_string()
+        })
+    }
+
     /// Erase the preview on screen so the next one can take its place. Piped
     /// output has no cursor to move, and a preview taller than the screen has
     /// scrolled past the point where its first row can still be reached, so
@@ -197,10 +236,14 @@ impl FixPrompt for TerminalPrompt {
         }
         self.draw("");
 
-        match self.ask_key("Apply this fix?", "ynaq", 'q')? {
+        match self.ask_key("Apply this fix?", "yniaq", 'q')? {
             'y' => {
                 self.applied += 1;
                 Ok(FixDecision::Accept)
+            }
+            'i' => {
+                self.suppressed += 1;
+                Ok(FixDecision::Ignore(self.ask_reason()?))
             }
             'a' => {
                 self.accept_all = true;

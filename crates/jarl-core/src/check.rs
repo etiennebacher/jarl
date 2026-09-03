@@ -6,6 +6,7 @@ use crate::package::{
 };
 use crate::roxygen::{extract_roxygen_examples, remap_roxygen_fix, remap_roxygen_range};
 use crate::suppression::SuppressionManager;
+use crate::suppression_edit::create_suppression_edit;
 use crate::vcs::{VcsStatus, check_version_control, version_control_status};
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
@@ -407,7 +408,10 @@ pub fn lint_fix_interactive(
             .collect();
         fixable.sort_by_key(|d| d.fix.start());
 
-        let mut accepted = None;
+        // The edit the user asked for, in the coordinates of `contents`: the
+        // rewritten file, the range it replaced, and the length of what took
+        // its place.
+        let mut edit = None;
 
         for diagnostic in fixable {
             if declined.iter().any(|d| d.matches(diagnostic)) {
@@ -418,7 +422,7 @@ pub fn lint_fix_interactive(
                 // valid: move on without re-linting.
                 FixDecision::Skip => declined.push(Declined::of(diagnostic)),
                 FixDecision::Accept => {
-                    accepted = Some((
+                    edit = Some((
                         apply_fixes(std::slice::from_ref(diagnostic), &contents),
                         diagnostic.fix.start(),
                         diagnostic.fix.end(),
@@ -426,11 +430,33 @@ pub fn lint_fix_interactive(
                     ));
                     break;
                 }
+                FixDecision::Ignore(reason) => {
+                    // A suppression comment doesn't always take: there may be
+                    // nowhere to attach it, or it may end up on a node the
+                    // diagnostic doesn't belong to. Either way the fix comes
+                    // back on the next pass, so record it as declined and ask
+                    // about it no more.
+                    declined.push(Declined::of(diagnostic));
+                    let Some(suppression) = create_suppression_edit(
+                        &contents,
+                        diagnostic.range.start().into(),
+                        diagnostic.range.end().into(),
+                        diagnostic.message.rule.name(),
+                        &reason,
+                    ) else {
+                        continue;
+                    };
+                    let offset = suppression.insert_point.offset;
+                    let mut suppressed = contents.clone();
+                    suppressed.insert_str(offset, &suppression.comment_text);
+                    edit = Some((suppressed, offset, offset, suppression.comment_text.len()));
+                    break;
+                }
                 FixDecision::Quit => return Ok(checks),
             }
         }
 
-        let Some((fixed_text, start, end, len)) = accepted else {
+        let Some((fixed_text, start, end, len)) = edit else {
             break;
         };
 

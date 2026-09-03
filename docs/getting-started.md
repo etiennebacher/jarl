@@ -62,11 +62,15 @@ R/foo.R:3:6  any_is_na
 
   y accept      apply this fix
   n reject      leave this code as it is
+  i ignore      leave this code as it is and add a `# jarl-ignore` comment
   a accept all  apply this fix and all the remaining ones
   q quit        stop here, keeping the fixes already applied
 
 Apply this fix?
 ```
+
+Answering `i` leaves the code as it is and adds a `# jarl-ignore` comment above it, so the violation is not reported again.
+Jarl asks for the reason to write in that comment.
 
 Not all rules have an automatic fix.
 For example, the rule `unreachable_code` detects code that would never run, for example because it is after a `return()` in a function.
