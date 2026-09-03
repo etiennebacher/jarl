@@ -88,8 +88,8 @@ fn test_diagnostic_fix_serialization() {
 
 #[test]
 fn test_server_capabilities_advertise_code_actions() {
+    use gen_lsp_types::{ClientCapabilities, CodeActionKind};
     use jarl_lsp::{Client, PositionEncoding, session::Session};
-    use lsp_types::{ClientCapabilities, CodeActionKind};
 
     // Create minimal session to test capabilities
     let client_caps = ClientCapabilities::default();
@@ -104,14 +104,14 @@ fn test_server_capabilities_advertise_code_actions() {
     // Verify that code actions are properly advertised
     assert!(capabilities.code_action_provider.is_some());
 
-    if let Some(lsp_types::CodeActionProviderCapability::Options(options)) =
+    if let Some(gen_lsp_types::CodeActionProvider::CodeActionOptions(options)) =
         capabilities.code_action_provider
     {
         assert!(options.code_action_kinds.is_some());
         let kinds = options.code_action_kinds.unwrap();
 
         // Should advertise quick fix support
-        assert!(kinds.contains(&CodeActionKind::QUICKFIX));
+        assert!(kinds.contains(&CodeActionKind::QuickFix));
     }
 }
 

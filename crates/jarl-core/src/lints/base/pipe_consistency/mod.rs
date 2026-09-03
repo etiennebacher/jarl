@@ -135,6 +135,46 @@ mod tests {
     }
 
     #[test]
+    fn test_lint_pipe_consistency_bare_identifier_rhs() {
+        assert_snapshot!(
+            format_diagnostics("x %>% sum", "pipe_consistency", Some("4.2")),
+            @r"
+        warning: pipe_consistency
+         --> <test>:1:3
+          |
+        1 | x %>% sum
+          |   --- `%>%` is inconsistent with the preferred pipe `|>`.
+          |
+          = help: Use `|>` instead.
+        Found 1 error.
+        "
+        );
+
+        assert_snapshot!(
+            "fix_output_bare_rhs",
+            get_unsafe_fixed_text_with_settings(
+                vec!["x %>% sum", "x %>% sum %>% plot()"],
+                "pipe_consistency",
+                Some("4.2"),
+                None,
+            )
+        );
+    }
+
+    #[test]
+    fn test_lint_pipe_consistency_non_call_rhs_no_fix() {
+        assert_snapshot!(
+            "fix_output_non_call_rhs",
+            get_unsafe_fixed_text_with_settings(
+                vec!["x %>% { 1 }", "x %>% (sum + 1)", "x %>% 1"],
+                "pipe_consistency",
+                Some("4.2"),
+                None,
+            )
+        );
+    }
+
+    #[test]
     fn test_pipe_consistency_with_comments_no_fix() {
         // Detect the lint but skip the fix when comments are present.
         assert_snapshot!(

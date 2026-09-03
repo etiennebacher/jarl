@@ -4,7 +4,7 @@
 //! It handles diagnostics, code actions, and fixes for automatic issue resolution.
 
 use anyhow::{Result, anyhow};
-use lsp_types::{Diagnostic, DiagnosticSeverity, NumberOrString, Position, Range};
+use gen_lsp_types::{Code, Diagnostic, DiagnosticSeverity, Message, Position, Range};
 use serde::{Deserialize, Serialize};
 
 use std::path::{Path, PathBuf};
@@ -274,7 +274,7 @@ fn convert_to_lsp_diagnostic(
 
     // TODO-etienne: don't have that
     // let severity = convert_severity(jarl_diag.severity);
-    let severity = DiagnosticSeverity::WARNING;
+    let severity = DiagnosticSeverity::Warning;
 
     // Extract fix information if available
     // Always include fix_data even if there's no actual fix, so we can access the rule_name
@@ -300,18 +300,24 @@ fn convert_to_lsp_diagnostic(
     let diagnostic = Diagnostic {
         range,
         severity: Some(severity),
-        code: Some(NumberOrString::String(
-            jarl_diag.message.rule.name().to_string(),
-        )),
+        code: Some(Code::String(jarl_diag.message.rule.name().to_string())),
         code_description: None,
         source: Some(DIAGNOSTIC_SOURCE.to_string()),
-        message,
+        message: Message::String(message),
         related_information: None,
         tags: None,
         data: fix_data, // Include fix information for code actions when available
     };
 
     Ok(diagnostic)
+}
+
+/// Plain text of a diagnostic message
+pub fn message_text(message: &Message) -> &str {
+    match message {
+        Message::String(text) => text,
+        Message::MarkupContent(content) => &content.value,
+    }
 }
 
 /// Convert byte offset to LSP Position (made public for code actions)
@@ -389,7 +395,7 @@ pub fn byte_offset_to_lsp_position(
 // fn convert_severity(severity: JarlSeverity) -> DiagnosticSeverity {
 //     match severity {
 //         JarlSeverity::Error => DiagnosticSeverity::ERROR,
-//         JarlSeverity::Warning => DiagnosticSeverity::WARNING,
+//         JarlSeverity::Warning => DiagnosticSeverity::Warning,
 //         JarlSeverity::Info => DiagnosticSeverity::INFORMATION,
 //         JarlSeverity::Hint => DiagnosticSeverity::HINT,
 //     }
@@ -402,10 +408,10 @@ mod tests {
     use super::*;
     use crate::document::{DocumentKey, TextDocument};
     use crate::session::DocumentSnapshot;
-    use lsp_types::{ClientCapabilities, Url};
+    use gen_lsp_types::{ClientCapabilities, MarkupContent, MarkupKind, Uri};
 
     fn create_test_snapshot(file_path: &std::path::Path, content: &str) -> DocumentSnapshot {
-        let uri = Url::from_file_path(file_path).unwrap();
+        let uri = Uri::from_file_path(file_path).unwrap();
         let key = DocumentKey::from(uri);
         let document = TextDocument::new(content.to_string(), 1);
 
@@ -427,7 +433,40 @@ mod tests {
         let output = lint_document(&snapshot).unwrap();
         assert_eq!(output.diagnostics.len(), 1);
         assert_eq!(
-            output.diagnostics[0].message,
+            message_text(&output.diagnostics[0].message),
+            "This file is empty or only contains comments. Consider deleting the file."
+        );
+    }
+
+    #[test]
+    fn test_message_text_reads_both_variants() {
+        assert_eq!(message_text(&Message::String("plain".to_string())), "plain");
+        assert_eq!(
+            message_text(&Message::MarkupContent(MarkupContent {
+                kind: MarkupKind::Markdown,
+                value: "**bold**".to_string(),
+            })),
+            "**bold**"
+        );
+    }
+
+    #[test]
+    fn test_diagnostic_wire_format() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.R");
+        std::fs::write(&file_path, "").unwrap();
+
+        let snapshot = create_test_snapshot(&file_path, "");
+        let output = lint_document(&snapshot).unwrap();
+        let diagnostic = serde_json::to_value(&output.diagnostics[0]).unwrap();
+
+        assert_eq!(diagnostic["severity"], 2);
+        assert_eq!(diagnostic["source"], DIAGNOSTIC_SOURCE);
+        // `code` and `message` are untagged enums, so they must serialize as
+        // bare values rather than as tagged objects.
+        assert_eq!(diagnostic["code"], "empty_file");
+        assert_eq!(
+            diagnostic["message"],
             "This file is empty or only contains comments. Consider deleting the file."
         );
     }
@@ -526,14 +565,14 @@ mod tests {
         std::fs::write(&file_path, content).unwrap();
 
         // Create snapshot for the renv file
-        let uri = lsp_types::Url::from_file_path(&file_path).unwrap();
+        let uri = Uri::from_file_path(&file_path).unwrap();
         let key = crate::document::DocumentKey::from(uri);
         let document = crate::document::TextDocument::new(content.to_string(), 1);
         let snapshot = DocumentSnapshot::new(
             document,
             key,
             PositionEncoding::UTF8,
-            lsp_types::ClientCapabilities::default(),
+            ClientCapabilities::default(),
         );
 
         // Should return no diagnostics because file is excluded
@@ -569,14 +608,14 @@ mod tests {
         std::fs::write(&file_path, content).unwrap();
 
         // Create snapshot for the renv file
-        let uri = lsp_types::Url::from_file_path(&file_path).unwrap();
+        let uri = Uri::from_file_path(&file_path).unwrap();
         let key = crate::document::DocumentKey::from(uri);
         let document = crate::document::TextDocument::new(content.to_string(), 1);
         let snapshot = DocumentSnapshot::new(
             document,
             key,
             PositionEncoding::UTF8,
-            lsp_types::ClientCapabilities::default(),
+            ClientCapabilities::default(),
         );
 
         // Should return diagnostics because file is not excluded
@@ -593,16 +632,16 @@ mod tests {
 
     /// Lint Rmd/Qmd content and return the LSP diagnostics.
     ///
-    /// Writes the content to a real temporary file so that `Url::from_file_path`
+    /// Writes the content to a real temporary file so that `Uri::from_file_path`
     /// produces a valid URI on all platforms (including Windows, where a fake
     /// `file:///test.Rmd` path would cause `to_file_path()` to fail and return
     /// no diagnostics).
-    fn lint_rmd_content(content: &str, ext: &str) -> Vec<lsp_types::Diagnostic> {
+    fn lint_rmd_content(content: &str, ext: &str) -> Vec<Diagnostic> {
         let temp_dir = TempDir::new().unwrap();
         let file_path = temp_dir.path().join(format!("test.{ext}"));
         std::fs::write(&file_path, content).unwrap();
 
-        let uri = lsp_types::Url::from_file_path(&file_path).unwrap();
+        let uri = Uri::from_file_path(&file_path).unwrap();
         let key = DocumentKey::from(uri);
         let document = TextDocument::new(content.to_string(), 1);
         let snapshot = DocumentSnapshot::new(
@@ -615,10 +654,7 @@ mod tests {
     }
 
     /// Filter diagnostics by rule name stored in the `data` field.
-    fn diagnostics_for_rule<'a>(
-        diagnostics: &'a [lsp_types::Diagnostic],
-        rule: &str,
-    ) -> Vec<&'a lsp_types::Diagnostic> {
+    fn diagnostics_for_rule<'a>(diagnostics: &'a [Diagnostic], rule: &str) -> Vec<&'a Diagnostic> {
         diagnostics
             .iter()
             .filter(|d| {
@@ -764,7 +800,7 @@ mod tests {
 
     /// Create a snapshot backed by a real file on disk.
     fn create_snapshot_for_file(file_path: &std::path::Path, content: &str) -> DocumentSnapshot {
-        let uri = Url::from_file_path(file_path).unwrap();
+        let uri = Uri::from_file_path(file_path).unwrap();
         let key = DocumentKey::from(uri);
         let document = TextDocument::new(content.to_string(), 1);
         DocumentSnapshot::new(
@@ -793,9 +829,9 @@ mod tests {
             "expected one duplicate diagnostic, got: {hits:?}"
         );
         assert!(
-            hits[0].message.contains("`foo` is defined more than once"),
+            message_text(&hits[0].message).contains("`foo` is defined more than once"),
             "message should mention `foo`, got: {}",
-            hits[0].message
+            message_text(&hits[0].message)
         );
     }
 
@@ -880,14 +916,14 @@ mod tests {
         std::fs::write(&file_path, content).unwrap();
 
         // Create snapshot for the generated file
-        let uri = lsp_types::Url::from_file_path(&file_path).unwrap();
+        let uri = Uri::from_file_path(&file_path).unwrap();
         let key = crate::document::DocumentKey::from(uri);
         let document = crate::document::TextDocument::new(content.to_string(), 1);
         let snapshot = DocumentSnapshot::new(
             document,
             key,
             PositionEncoding::UTF8,
-            lsp_types::ClientCapabilities::default(),
+            ClientCapabilities::default(),
         );
 
         // Should return no diagnostics because file matches exclude pattern

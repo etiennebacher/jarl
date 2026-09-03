@@ -1,0 +1,17 @@
+---
+source: crates/jarl-core/src/lints/base/pipe_consistency/mod.rs
+expression: "get_unsafe_fixed_text_with_settings(vec![\"x %>% sum\", \"x %>% sum %>% plot()\"],\n\"pipe_consistency\", Some(\"4.2\"), None,)"
+---
+OLD:
+====
+x %>% sum
+NEW:
+====
+x |> sum()
+
+OLD:
+====
+x %>% sum %>% plot()
+NEW:
+====
+x |> sum() |> plot()

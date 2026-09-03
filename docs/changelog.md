@@ -14,7 +14,23 @@
 * The `jarl.toml` argument `assignment` (deprecated since 0.5.0) is removed. Use
   the rule-specific option `[lint.assignment]` instead (#663).
 
+### Changes
+
+* `expect_length` no longer reports cases where `length()` is in the `expected`
+  argument, e.g. `expect_equal(nrow(x), length(y))` (#684).
+
+* The LSP now also publishes diagnostics when opening a file (#685).
+
 ### Bug fixes
+
+* Prevent the `sample_int` rule from panicking on calls with missing arguments
+  (#687, @Yousa-Mirage).
+
+* Prevent the `outer_negation` rule from rewriting unary `+` and `-` expressions
+  as logical negations (#688, @Yousa-Mirage).
+
+* Prevent fixes for `any_is_na`, `any_duplicated`, and `condition_message`
+  from dropping extra unnamed arguments (#677, @Yousa-Mirage).
 
 * Ensure that `--fix` works with multi-byte characters (#672, @Yousa-Mirage).
 
@@ -22,6 +38,18 @@
   syntax tree, e.g. `sapply(FUN = length)` or `x |> sapply(FUN = length)`. The
   autofix now also produces `lengths(x)` instead of the invalid
   `lengths(X = x)` when `X` is passed by name (#671, @Yousa-Mirage).
+
+* Fix language server suppression quickfix positions for non-ASCII text
+  (#676, @Yousa-Mirage).
+
+* Avoid invalid `literal_coercion` fixes for strings containing quotes
+  (#678, @Yousa-Mirage).
+
+* The `pipe_consistency` rule no longer emits invalid fixes when converting
+  `magrittr` pipes with a non-call RHS, such as `x %>% sum` (#683, @Yousa-Mirage).
+
+* Prevent incorrect `dplyr_filter_out` fixes caused by matching `is.na()` guard
+  arguments as substrings of other identifiers (#681, @Yousa-Mirage).
 
 ## 0.6.0
 
