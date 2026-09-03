@@ -16,6 +16,9 @@
 
 ### Bug fixes
 
+* Prevent the `outer_negation` rule from rewriting unary `+` and `-` expressions
+  as logical negations.
+
 * Prevent fixes for `any_is_na`, `any_duplicated`, and `condition_message`
   from dropping extra unnamed arguments (#677, @Yousa-Mirage).
 
