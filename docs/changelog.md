@@ -16,7 +16,7 @@
 
 ### Bug fixes
 
-* Prevent the `sample_int` rule from crashing on calls with missing arguments
+* Prevent the `sample_int` rule from panicking on calls with missing arguments
   (#687, @Yousa-Mirage).
 
 * Prevent fixes for `any_is_na`, `any_duplicated`, and `condition_message`
