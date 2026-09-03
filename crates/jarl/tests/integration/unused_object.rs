@@ -422,7 +422,7 @@ fn test_object_unused_across_package_files_is_flagged() -> anyhow::Result<()> {
             .arg("unused_object")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
 
     success: false
     exit_code: 1
@@ -463,7 +463,7 @@ fn test_object_not_read_by_sourcing_script_is_flagged() -> anyhow::Result<()> {
             .arg("unused_object")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
 
     success: false
     exit_code: 1
@@ -501,7 +501,7 @@ fn test_free_name_in_unrelated_script_does_not_suppress() -> anyhow::Result<()> 
             .arg("unused_object")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
 
     success: false
     exit_code: 1
@@ -544,7 +544,7 @@ fn test_unexported_alias_is_flagged() -> anyhow::Result<()> {
             .arg("unused_object")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
 
     success: false
     exit_code: 1
@@ -777,7 +777,7 @@ fn test_interpolation_not_honoured_when_sourced_file_attaches_nothing() -> anyho
             .arg("unused_object")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
 
     success: false
     exit_code: 1
@@ -857,7 +857,7 @@ fn test_interpolation_not_honoured_for_a_lazy_attach_in_a_sourced_file() -> anyh
             .arg("unused_object")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
 
     success: false
     exit_code: 1
@@ -972,7 +972,7 @@ fn test_non_package_r_directory_not_scanned_for_a_file_argument() -> anyhow::Res
             .arg("unused_object")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
 
     success: false
     exit_code: 1

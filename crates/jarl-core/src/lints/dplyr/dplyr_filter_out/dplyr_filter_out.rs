@@ -181,12 +181,14 @@ fn convert_conditions(args: &[AnyRExpression]) -> Option<Vec<String>> {
     for value in args {
         let (cond, is_na_call) = extract_is_na_guard(value)?;
 
-        // Verify the is.na() argument appears in the condition.
-        // This avoids matching `a > 1 | is.na(b)` where the guard is for
-        // a different variable.
         let is_na_arg = extract_is_na_arg(&is_na_call)?;
-        let cond_text = cond.syntax().text_trimmed().to_string();
-        if !cond_text.contains(&is_na_arg) {
+        let contains_identifier = cond
+            .as_r_identifier()
+            .cloned()
+            .into_iter()
+            .chain(cond.syntax().descendants().filter_map(RIdentifier::cast))
+            .any(|ident| ident.to_trimmed_text() == is_na_arg.as_str());
+        if !contains_identifier {
             return None;
         }
 

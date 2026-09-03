@@ -719,9 +719,14 @@ impl Emitter for FullEmitter {
                 .entry(&diagnostic.filename)
                 .or_insert_with(|| relativize_path(diagnostic.filename.clone()));
 
-            // Create the main message with clickable rule name
+            // Create the main message with clickable rule name. The title is
+            // handed to the renderer as pre-styled text, so the bold has to be
+            // applied here.
             let title = if use_colors {
-                make_hyperlink(diagnostic.message.rule.name())
+                format!(
+                    "\x1b[1m{}\x1b[0m",
+                    make_hyperlink(diagnostic.message.rule.name())
+                )
             } else {
                 diagnostic.message.rule.name().to_string()
             };
