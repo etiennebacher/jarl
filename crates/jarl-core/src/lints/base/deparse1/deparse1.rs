@@ -26,8 +26,9 @@ impl Violation for Deparse1 {
 }
 
 pub fn deparse1(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
-    let (inner_content, outer_syntax) =
-        unwrap_or_return_none!(get_nested_functions_content(ast, fn_name, "paste", "deparse")?);
+    let (inner_content, outer_syntax) = unwrap_or_return_none!(get_nested_functions_content(
+        ast, fn_name, "paste", "deparse"
+    )?);
 
     let collapse = unwrap_or_return_none!(get_arg_by_name(&ast.arguments()?.items(), "collapse"));
     let collapse_value = unwrap_or_return_none!(collapse.value());
