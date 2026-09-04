@@ -564,6 +564,7 @@ checksum = "4fe5f465a4f6fee88fad41b85d990f84c835335e85b5d9e6e63e0d06d28cba7c"
 dependencies = [
  "encode_unicode",
  "libc",
+ "unicode-width 0.2.2",
  "windows-sys",
 ]
 
@@ -1048,6 +1049,7 @@ dependencies = [
  "clap",
  "clap_complete",
  "colored",
+ "console",
  "fs",
  "insta",
  "jarl-core",

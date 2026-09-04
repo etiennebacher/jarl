@@ -43,6 +43,13 @@ fn dirty_files(repo_root: &str) -> Result<Vec<String>> {
     Ok(files)
 }
 
+/// What the version control check found for the paths being fixed.
+pub enum VcsStatus {
+    Clean,
+    NoVcs,
+    Dirty(Vec<String>),
+}
+
 /// Check version control status once for multiple paths.
 ///
 /// The ideal case would be that we know that all paths are either not tracked
@@ -56,9 +63,9 @@ fn dirty_files(repo_root: &str) -> Result<Vec<String>> {
 /// time is to get the statuses of the paths, so we limit the calls to statuses
 /// by grouping files per repo first. Then, we go through the repos to get the
 /// statuses (only once per repo).
-pub fn check_version_control(paths: &[String], config: &Config) -> Result<()> {
+pub fn version_control_status(paths: &[String], config: &Config) -> Result<VcsStatus> {
     if config.allow_no_vcs {
-        return Ok(());
+        return Ok(VcsStatus::Clean);
     }
 
     // Group paths by their repository root
@@ -81,16 +88,11 @@ pub fn check_version_control(paths: &[String], config: &Config) -> Result<()> {
 
     // Check if any paths are not in a repo
     if !paths_without_repo.is_empty() {
-        bail!(
-            "`jarl check --fix` can potentially perform destructive changes but no \
-            Version Control System (e.g. Git) was found on this project, so no fixes \
-            were applied.\n\
-            Add `--allow-no-vcs` to the call to apply the fixes."
-        )
+        return Ok(VcsStatus::NoVcs);
     }
 
     if config.allow_dirty {
-        return Ok(());
+        return Ok(VcsStatus::Clean);
     }
 
     // Check each repository once
@@ -100,25 +102,42 @@ pub fn check_version_control(paths: &[String], config: &Config) -> Result<()> {
         all_dirty_files.extend(dirty_files(repo_root)?);
     }
 
-    if !all_dirty_files.is_empty() {
-        let mut files_list = String::new();
-        for file in &all_dirty_files {
-            files_list.push_str("  * ");
-            files_list.push_str(file);
-            files_list.push_str(" (dirty)\n");
-        }
-
-        bail!(
-            "`jarl check --fix` can potentially perform destructive changes but the working \
-            directory of this project has uncommitted changes, so no fixes were applied.\n\
-            To apply the fixes, either add `--allow-dirty` to the call, or commit the changes \
-            to these files:\n\
-             \n\
-             {}\n\
-             ",
-            files_list
-        );
+    if all_dirty_files.is_empty() {
+        Ok(VcsStatus::Clean)
+    } else {
+        Ok(VcsStatus::Dirty(all_dirty_files))
     }
+}
 
-    Ok(())
+/// [`version_control_status`], turned into the hard error that `--fix` reports
+/// when the working tree can't absorb the changes.
+pub fn check_version_control(paths: &[String], config: &Config) -> Result<()> {
+    match version_control_status(paths, config)? {
+        VcsStatus::Clean => Ok(()),
+        VcsStatus::NoVcs => bail!(
+            "`jarl check --fix` can potentially perform destructive changes but no \
+            Version Control System (e.g. Git) was found on this project, so no fixes \
+            were applied.\n\
+            Add `--allow-no-vcs` to the call to apply the fixes."
+        ),
+        VcsStatus::Dirty(all_dirty_files) => {
+            let mut files_list = String::new();
+            for file in &all_dirty_files {
+                files_list.push_str("  * ");
+                files_list.push_str(file);
+                files_list.push_str(" (dirty)\n");
+            }
+
+            bail!(
+                "`jarl check --fix` can potentially perform destructive changes but the working \
+                directory of this project has uncommitted changes, so no fixes were applied.\n\
+                To apply the fixes, either add `--allow-dirty` to the call, or commit the changes \
+                to these files:\n\
+                 \n\
+                 {}\n\
+                 ",
+                files_list
+            )
+        }
+    }
 }

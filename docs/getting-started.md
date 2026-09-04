@@ -45,6 +45,33 @@ Jarl could fix this to be `!isTRUE(all.equal(x, y))` instead, but this would cha
 By default, only safe fixes are applied.
 To also apply the unsafe fixes, use `--unsafe-fixes`, e.g. `jarl check . --fix --unsafe-fixes`.
 
+To review each fix before it is applied, add `--interactive`, e.g. `jarl check . --interactive`.
+Jarl then shows one fix at a time as a diff, with the surrounding code for context, and asks whether to apply it:
+
+```
+R/foo.R:3:6  any_is_na
+`any(is.na(...))` is inefficient.
+
+────────────┬───────────────────────────────────────────────────────
+    2     2 │ f <- function(y) {
+    3       │-  x <- any(is.na(y))
+          3 │+  x <- anyNA(y)
+    4     4 │   x
+    5     5 │ }
+────────────┴───────────────────────────────────────────────────────
+
+  y accept      apply this fix
+  n reject      leave this code as it is
+  i ignore      leave this code as it is and add a `# jarl-ignore` comment
+  a accept all  apply this fix and all the remaining ones
+  q quit        stop here, keeping the fixes already applied
+
+Apply this fix?
+```
+
+Answering `i` leaves the code as it is and adds a `# jarl-ignore` comment above it, so the violation is not reported again.
+Jarl asks for the reason to write in that comment.
+
 Not all rules have an automatic fix.
 For example, the rule `unreachable_code` detects code that would never run, for example because it is after a `return()` in a function.
 This requires user intervention to determine if the code needs to be removed, or if there is a bug to fix.
@@ -57,6 +84,8 @@ It can be hard to inspect the changes or to revert a large number of changes, so
 
 1. if the file isn't tracked by a Version Control System (VCS, such as Git), then fixes are not applied and you need to specify `--allow-no-vcs` to apply them;
 2. if the file is tracked by a VCS but the status isn't clean (meaning that some files aren't committed), then fixes are not applied and you need to specify `--allow-dirty` to apply them. This is to prevent cases where fixes would be mixed together with other unrelated changes and therefore hard to inspect.
+
+With `--interactive`, these two situations are a question rather than an error: Jarl reports what it found and asks whether to go through the fixes anyway.
 :::
 
 Note that Jarl is not a code formatter, so automatic fixes may not match your expected code style.
