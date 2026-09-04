@@ -347,15 +347,13 @@ pub fn get_checks(
             Some(FilePackageInfo::InPackage { scope: FileScope::R, .. })
         )
     {
-        let roxygen_diagnostics = get_checks_roxygen(
-            syntax,
-            file,
-            config,
-            contents,
-            &checker.loaded_packages,
-            &checker.source_index_cache,
-            minimum_r_version,
-        )?;
+        let context = RoxygenContext {
+            loaded_packages: &checker.loaded_packages,
+            import_from: &checker.import_from,
+            source_cache: &checker.source_index_cache,
+        };
+        let roxygen_diagnostics =
+            get_checks_roxygen(syntax, file, config, contents, context, minimum_r_version)?;
         checker.diagnostics.extend(roxygen_diagnostics);
     }
 
@@ -579,6 +577,14 @@ fn top_level_attached_packages(
     out
 }
 
+/// What an `@examples` section inherits from the file it documents: the
+/// packages its code can reach, and the `source()` index cache to reuse.
+struct RoxygenContext<'a> {
+    loaded_packages: &'a [String],
+    import_from: &'a HashMap<String, String>,
+    source_cache: &'a jarl_semantic::SourceIndexCache,
+}
+
 /// Lint R code inside roxygen `@examples` and `@examplesIf` sections.
 ///
 /// Each examples section is extracted, parsed as standalone R code, and linted.
@@ -586,16 +592,15 @@ fn top_level_attached_packages(
 /// original file. Autofixes are disabled because the `#'` prefix makes
 /// position-based edits unsafe.
 ///
-/// `loaded_packages` and `source_cache` carry over the documented file's package
-/// context, which the use-def analysis needs: the packages an example can reach
-/// decide whether a bare `glue("{x}")` counts as reading `x`.
+/// `context` carries over the documented file's package context, which the
+/// use-def analysis needs: the packages an example can reach decide whether a
+/// bare `glue("{x}")` counts as reading `x`.
 fn get_checks_roxygen(
     syntax: &RSyntaxNode,
     file: &Path,
     config: &Config,
     contents: &str,
-    loaded_packages: &[String],
-    source_cache: &jarl_semantic::SourceIndexCache,
+    context: RoxygenContext<'_>,
     minimum_r_version: Option<(u32, u32, u32)>,
 ) -> Result<Vec<Diagnostic>> {
     let chunks = extract_roxygen_examples(syntax, contents);
@@ -616,7 +621,8 @@ fn get_checks_roxygen(
         checker.rule_set = effective_rules_for_file(config, file, minimum_r_version);
         checker.minimum_r_version = minimum_r_version;
         checker.file_path = file.to_path_buf();
-        checker.source_index_cache = source_cache.clone();
+        checker.source_index_cache = context.source_cache.clone();
+        checker.import_from = context.import_from.clone();
 
         for expr in expressions {
             check_expression(&expr, &mut checker)?;
@@ -639,7 +645,7 @@ fn get_checks_roxygen(
             );
             // What the example inherits from the package, plus whatever it
             // attaches itself (`library(glue)` on the first line is common).
-            checker.loaded_packages = loaded_packages.to_vec();
+            checker.loaded_packages = context.loaded_packages.to_vec();
             checker
                 .loaded_packages
                 .extend(top_level_attached_packages(&semantic));
