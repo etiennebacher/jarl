@@ -136,10 +136,12 @@ use crate::lints::list2df::list2df::list2df;
 
 ...
 if checker.is_rule_enabled(Rule::List2df) {
-    checker.report_diagnostic(list2df(r_expr)?);
+    checker.report_diagnostic(list2df(r_expr, fn_name)?);
 }
 ...
 ```
+
+Note that `analyze/call.rs` computes the function name once per call and passes it to every rule as `fn_name`, so rules dispatched from there don't have to extract it themselves.
 
 ### Implement the rule
 
@@ -151,9 +153,13 @@ Let's start with a skeleton of this file:
 
 ```rust
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name_then_position, get_arg_by_position, node_contains_comments};
+use crate::rule_set::Rule;
+use crate::utils::{Formals, get_arg, get_arg_by_position, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
+
+/// Signature of the function the rule targets, used to match its arguments.
+const FORMALS_DO_CALL: Formals = &["what", "args", "quote", "envir"];
 
 pub struct List2Df;
 
@@ -165,8 +171,8 @@ pub struct List2Df;
 ///
 /// [...]
 impl Violation for List2Df {
-    fn name(&self) -> String {
-        "list2df".to_string()
+    fn rule(&self) -> Rule {
+        Rule::List2df
     }
     fn body(&self) -> String {
         "`do.call(cbind.data.frame, x)` is inefficient and can be hard to read.".to_string()
@@ -176,16 +182,16 @@ impl Violation for List2Df {
     }
 }
 
-pub fn list2df(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
+pub fn list2df(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
 
 }
 ```
 
 Let's analyze this by blocks:
 
-* the first lines import required crates and functions, and define a struct using the rule name (in TitleCase);
+* the first lines import required crates and functions, declare the signature of the function we target (more on this below), and define a struct using the rule name (in TitleCase);
 * then there is some documentation (truncated here for conciseness). The version number corresponds to the next version, not the current one.
-* the `impl` block is where we define the name and the main message (`body`) that will be used in the output of Jarl. Note that there is also a `suggestion()` function which is not always necessary.
+* the `impl` block is where we link the violation to its `Rule` variant (the one declared in `rule_set.rs`) and define the main message (`body`) that will be used in the output of Jarl. Note that there is also a `suggestion()` function which is not always necessary.
 * finally, we define the function where we parse the AST.
 
 ::: {.callout-note collapse="true"}
@@ -195,67 +201,57 @@ If you explore other rules implementation, you might notice that the `impl Viola
 This is because in some cases, the message and/or the suggestion depend on the AST itself.
 For example, for the `assignment` rule, the message will recommend the use of `<-` or `=` depending on the user settings.
 
-In this scenario, the name, body, and suggestion are defined at the very end, when we build the `Diagnostic`.
+In this scenario, the rule, body, and suggestion are defined at the very end, when we build the `Diagnostic`.
 :::
 
 
 Writing this function is the hard part, so let's focus on this.
-We start by extracting the important information from the `RCall` object.
-In this example, we need both the function name and the arguments:
-
-```rust
-let function = ast.function()?;
-let arguments = ast.arguments()?;
-```
-
-Note that it is sometimes shorter to use the destructuring syntax, as follows:
-
-```rust
-let RCallFields { function, arguments } = ast.as_fields();
-let function = function?;
-let arguments = arguments?.items();
-```
-
 Usually, a rule implementation contains a lot of early returns, such as "if the function name is not 'xyz' then stop here".
 In this example, we want to focus on calls to `do.call()`, so we can stop early if this is not the function name:
 
 ```rust
-let fn_name = get_function_name(function);
-
 if fn_name != "do.call" {
     return Ok(None);
 }
 ```
 
-`get_function_name()` is a helper function to extract the function name of `AnyRExpression`.
-Indeed, `function` could be `foo()`, but it could also be `bar::foo()`, or `bar$foo()` if we were working with `R6` for instance.
+The name comes from the caller here, but it is computed by the helper `get_function_name()`, which extracts the function name of an `AnyRExpression`.
+Indeed, the called function could be `foo()`, but it could also be `bar::foo()`, or `bar$foo()` if we were working with `R6` for instance.
 `get_function_name()` helps us by returning `"foo"` in all those cases.
+Rules that are not dispatched from `analyze/call.rs` can call it directly on `ast.function()?`.
 
-::: {.callout-note collapse="true"}
-## About helper functions
-
-We used `get_function_name()` above, but there exist other helper functions located in `utils.rs`.
-Below, we use `get_arg_by_name_then_position()` for instance.
-:::
-
-Past that point, the next step is to check that the arguments correspond to what we want to analyze.
-`do.call` has four arguments: `what`, `args`, `quote`, and `envir`.
-We are looking for patterns such as `do.call(cbind.data.frame, x)` so we want information on the first two arguments.
-We can use another helper function called `get_arg_by_name_then_position()`, combined with the macro `unwrap_or_return_none!`:
+We then extract the arguments from the `RCall` object:
 
 ```rust
-// Note that the arguments position is 1-indexed and not 0-indexed as is usually
-// the case in Rust.
-let what = unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "what", 1));
-let args = unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "args", 2));
+let arguments = ast.arguments()?.items();
 ```
 
-`get_arg_by_name_then_position()` returns an `Option` since the arguments we want to extract maybe do not exist in the code we parsed.
+Past that point, the next step is to check that the arguments correspond to what we want to analyze.
+`do.call()` has four arguments: `what`, `args`, `quote`, and `envir`, and we are looking for patterns such as `do.call(cbind.data.frame, x)`, so we want information on the first two.
+
+Reading them by position alone would be wrong, since R lets the user write `do.call(args = x, cbind.data.frame)`.
+This is why we hardcoded the signature of `do.call()` as a `Formals` constant at the top of the file:
+
+```rust
+const FORMALS_DO_CALL: Formals = &["what", "args", "quote", "envir"];
+```
+
+The helper `get_arg()` uses it to apply R's own matching rules: we look for named arguments first, and then use the unnamed ones to fill whatever slots are left.
+Combined with the macro `unwrap_or_return_none!`, this gives:
+
+```rust
+let what = unwrap_or_return_none!(get_arg(ast, FORMALS_DO_CALL, "what"));
+let args = unwrap_or_return_none!(get_arg(ast, FORMALS_DO_CALL, "args"));
+```
+
+`do.call(cbind.data.frame, x)`, `do.call(what = cbind.data.frame, args = x)` and `do.call(args = x, cbind.data.frame)` are all matched identically.
+
+`get_arg()` returns an `Option` since the arguments we want to extract maybe do not exist in the code we parsed.
 The macro `unwrap_or_return_none!()` makes the code slightly more readable.
 It replaces the more verbose `let-some` pattern:
 
 ```rust
-let Some(what) = get_arg_by_name_then_position(&arguments, "what", 1) else {
+let Some(what) = get_arg(ast, FORMALS_DO_CALL, "what") else {
     return Ok(None);
 };
 ```
@@ -294,20 +290,19 @@ let range = ast.syntax().text_trimmed_range();
 let diagnostic = Diagnostic::new(
     List2Df,
     range,
-    Fix {
-        content: format!("list2DF({})", fix_content.to_trimmed_text()),
-        start: range.start().into(),
-        end: range.end().into(),
-        to_skip: node_contains_comments(ast.syntax()),
-    },
+    Fix::new(
+        range,
+        format!("list2DF({})", fix_content.to_trimmed_text()),
+        node_contains_comments(ast.syntax()),
+    ),
 );
 
 Ok(Some(diagnostic))
 ```
 
-All diagnostics contain a `Violation` (we defined the one for `List2Df` just below the documentation), a range indicating where it is located in the code, and a `Fix` (which may be `Fix::Empty()` if there is no automatic fix).
+All diagnostics contain a `Violation` (we defined the one for `List2Df` just below the documentation), a range indicating where it is located in the code, and `Fix::new()` (or `Fix::empty()` if there is no automatic fix).
 
-Finally, note that `Fix` has a field `to_skip: node_contains_comments(ast.syntax())`. This tells Jarl not to apply the automatic fix if the node in question contains a comment. Handling comments positions in automatic fixes is quite complicated so, for now, fixes are not applied if the node contains a comment, e.g.:
+Finally, note that `Fix::new()` has an argument `to_skip: node_contains_comments(ast.syntax())`. This tells Jarl not to apply the automatic fix if the node in question contains a comment. Handling comments positions in automatic fixes is quite complicated so, for now, fixes are not applied if the node contains a comment, e.g.:
 
 ```r
 # This code wouldn't be automatically fixed because we don't know where the
@@ -336,7 +331,74 @@ For example, one could list some functions that will not be checked by the rule 
 skipped-functions = ["list"]
 ```
 
-This adds some work and therefore will not be detailed here, but you can refer to [PR #372](https://github.com/etiennebacher/jarl/pull/372) for inspiration (it adds support for TOML arguments to the `implicit_assignment` rule).
+Not all rules need TOML options.
+
+::: {.callout-note title = "Click to see how to add TOML options for a rule" collapse = true}
+
+Adding options for a rule takes three steps. The example below uses the rule `duplicated_arguments` since `list2df` doesn't have TOML options.
+
+1. Create `src/lints/<group>/<rule_name>/options.rs` and declare `pub(crate) mod options;` in the rule's `mod.rs`. This file contains two types: the TOML options (deserialized as-is from `[lint.<rule_name>]`) and the resolved options (what the rule reads while linting). The resolved type must expose `resolve()`, which takes the TOML options and fills in the defaults:
+
+    ```rust
+    /// Default functions that are allowed to have duplicated arguments.
+    const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &["c", "mutate", "summarize", "transmute"];
+
+    #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
+    #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+    #[serde(deny_unknown_fields, rename_all = "kebab-case")]
+    pub struct DuplicatedArgumentsOptions {
+        pub skipped_functions: Option<Vec<String>>,
+        pub extend_skipped_functions: Option<Vec<String>>,
+    }
+
+    #[derive(Clone, Debug)]
+    pub struct ResolvedDuplicatedArgumentsOptions {
+        pub skipped_functions: HashSet<String>,
+    }
+
+    impl ResolvedDuplicatedArgumentsOptions {
+        pub fn resolve(options: Option<&DuplicatedArgumentsOptions>) -> anyhow::Result<Self> {
+            [...]
+        }
+    }
+    ```
+
+    If the option is a list of functions that can be either replaced or extended by the user (the `<field>` / `extend-<field>` pattern), use the helper `resolve_with_extend()` from `src/rule_options.rs` instead of writing that logic again.
+
+1. Add the TOML field to `LinterTomlOptions` in `src/toml.rs`. The field must be named after the rule, and its documentation ends up in `artifacts/jarl.schema.json`, which editors use to describe the option:
+
+    ```rust
+    /// # Options for the `duplicated_arguments` rule
+    ///
+    /// Use `skipped-functions` to fully replace the default list of functions
+    /// that are allowed to have duplicated arguments. Use
+    /// `extend-skipped-functions` to add to the default list.
+    /// Specifying both is an error.
+    #[serde(rename = "duplicated_arguments")]
+    pub duplicated_arguments: Option<DuplicatedArgumentsOptions>,
+    ```
+
+1. Add one line to `declare_rule_options!` in `src/rule_options.rs`, naming the rule's folder and its resolved type:
+
+    ```rust
+    declare_rule_options! {
+        [...]
+        base::duplicated_arguments => ResolvedDuplicatedArgumentsOptions,
+        [...]
+    }
+    ```
+
+    This generates the field on `ResolvedRuleOptions`, its resolution from the TOML file, and the default value. Forgetting step 2 is a compile error.
+
+The rule can then read its options from the checker, e.g. `checker.rule_options.duplicated_arguments.skipped_functions`.
+
+Finally:
+
+* run `just gen-schema` to update `artifacts/jarl.schema.json`;
+* document the option for users in `docs/reference/config-file.md` (this page is written by hand, it is not generated from the Rust code);
+* add integration tests in `crates/jarl/tests/integration/toml_rule_args.rs`, covering invalid values, unknown fields in the rule table, and the option actually changing what is reported.
+
+:::
 
 ### Add tests
 
@@ -468,7 +530,7 @@ The rule is implemented, all tests pass, perfect!
 We now need to document this change:
 
 * update `docs/changelog.md`
-* update `docs/rules.md`
+* add or update the rule page in `docs/rules/<rule_name>.md`
 
 If you have installed `just` as [recommended](contributing.md#tools), you can now run `just document` to update the website.
 

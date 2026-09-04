@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_arg_by_name, get_function_name, get_unnamed_args, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -37,8 +38,8 @@ pub struct Sort;
 ///
 /// See `?sort`
 impl Violation for Sort {
-    fn name(&self) -> String {
-        "sort".to_string()
+    fn rule(&self) -> Rule {
+        Rule::Sort
     }
     fn body(&self) -> String {
         "`x[order(x)]` is inefficient.".to_string()
@@ -122,12 +123,7 @@ pub fn sort(ast: &RSubset) -> anyhow::Result<Option<Diagnostic>> {
     let diagnostic = Diagnostic::new(
         Sort,
         range,
-        Fix {
-            content: fix,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(range, fix, node_contains_comments(ast.syntax())),
     );
 
     Ok(Some(diagnostic))

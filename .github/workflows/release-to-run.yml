@@ -114,3 +114,23 @@ jobs:
           gh api repos/etiennebacher/jarl-pre-commit/dispatches \
             -f event_type=jarl-release \
             -f "client_payload[version]=${{ inputs.tag }}"
+
+  pypi:
+    needs: release
+    # Do not trigger on alpha binaries release
+    if: ${{ !contains(inputs.tag, '-') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            // `release-pypi.yml` expects a version without a leading `v`
+            const version = '${{ inputs.tag }}'.replace(/^v/, '');
+
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'release-pypi.yml',
+              ref: context.ref,
+              inputs: { version, dry_run: 'false' }
+            });

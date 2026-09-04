@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use biome_rowan::TextRange;
 
 /// Version added: 0.4.0
@@ -51,7 +52,7 @@ pub fn unmatched_range_suppression_end(ranges: &[TextRange]) -> Vec<Diagnostic> 
 fn create_start_diagnostic(range: TextRange) -> Diagnostic {
     Diagnostic::new(
         ViolationData::new(
-            "unmatched_range_suppression".to_string(),
+            Rule::UnmatchedRangeSuppression,
             "This `jarl-ignore-start` has no matching `jarl-ignore-end` at the same nesting level."
                 .to_string(),
             Some("Add a matching `jarl-ignore-end` comment at the same nesting level.".to_string()),
@@ -64,7 +65,7 @@ fn create_start_diagnostic(range: TextRange) -> Diagnostic {
 fn create_end_diagnostic(range: TextRange) -> Diagnostic {
     Diagnostic::new(
         ViolationData::new(
-            "unmatched_range_suppression".to_string(),
+            Rule::UnmatchedRangeSuppression,
             "This `jarl-ignore-end` has no matching `jarl-ignore-start` at the same nesting level."
                 .to_string(),
             Some(

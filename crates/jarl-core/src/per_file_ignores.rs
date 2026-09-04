@@ -1,9 +1,8 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-use ignore::gitignore::{Gitignore, GitignoreBuilder};
-
 use crate::rule_set::Rule;
+use ignore::gitignore::{Gitignore, GitignoreBuilder};
 
 /// A single `per-file-ignores` entry: a glob pattern paired with the rules to
 /// ignore in the files it matches.

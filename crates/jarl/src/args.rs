@@ -232,6 +232,7 @@ pub struct CheckCommand {
 pub struct RuleCommand {
     #[arg(
         required = true,
+        add = ArgValueCompleter::new(complete_rule_names),
         help = "Name of the rule to explain, for example `jarl rule all_equal`."
     )]
     pub name: String,

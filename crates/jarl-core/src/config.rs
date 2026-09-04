@@ -1,26 +1,26 @@
 use crate::{
-    description::Description,
     error::UnknownRulesError,
-    lints::all_rules_enabled_by_default,
     package_cache::PackageCache,
     per_file_ignores::PerFileIgnores,
     rule_options::ResolvedRuleOptions,
-    rule_set::{Category, Rule, RuleSet},
+    rule_set::{ALL_RULES, Category, Rule, RuleSet},
     settings::Settings,
 };
 use air_r_syntax::RSyntaxKind;
 use anyhow::Result;
-use std::{collections::HashSet, fs, path::PathBuf, sync::Arc};
+use std::{collections::HashSet, path::PathBuf, sync::Arc};
 
 use crate::lints::base::assignment::options::ResolvedAssignmentOptions;
 
 /// Parsed rule selection from CLI or TOML configuration.
-/// Contains selected rules, extended rules, and ignored rules.
+///
+/// `selected` / `extended` are `None` when the setting was not given at all,
+/// which `reconcile_rules` treats differently from an empty selection.
 #[derive(Debug)]
 pub struct RuleSelection {
-    pub selected: Option<HashSet<String>>,
-    pub extended: Option<HashSet<String>>,
-    pub ignored: HashSet<String>,
+    pub selected: Option<HashSet<Rule>>,
+    pub extended: Option<HashSet<Rule>>,
+    pub ignored: HashSet<Rule>,
 }
 
 #[derive(Clone, Debug)]
@@ -75,19 +75,18 @@ pub struct Config {
     pub apply_fixes: bool,
     /// Did the user pass the --unsafe-fixes flag?
     pub apply_unsafe_fixes: bool,
-    /// The minimum R version used in the project. Used to disable some rules
-    /// that require functions that are not available in all R versions, e.g.
-    /// grepv() introduced in R 4.5.0.
+    /// The minimum R version the user pinned with `--min-r-version`, which
+    /// applies to the whole run and overrides every package's own `Depends`.
     pub minimum_r_version: Option<(u32, u32, u32)>,
     /// Apply fixes even if the Git branch still has uncommitted files?
     pub allow_dirty: bool,
     /// Apply fixes even if there is no version control system?
     pub allow_no_vcs: bool,
     /// Rules that should not have their fixes applied (from unfixable setting)
-    pub unfixable: HashSet<String>,
+    pub unfixable: HashSet<Rule>,
     /// Rules that are allowed to have fixes applied (from fixable setting)
     /// None means all rules with fixes can be applied
-    pub fixable: Option<HashSet<String>>,
+    pub fixable: Option<HashSet<Rule>>,
     /// Whether to lint R code inside roxygen `@examples` sections
     pub check_roxygen: bool,
     /// Whether to apply autofixes to roxygen examples
@@ -106,10 +105,9 @@ pub fn build_config(
     toml_settings: Option<&Settings>,
     paths: Vec<PathBuf>,
 ) -> Result<Config> {
-    // Determining the minimum R version has to come first since if it is
-    // unknown then only rules that don't have a version restriction are
-    // selected.
-    let minimum_r_version = determine_minimum_r_version(check_config, &paths)?;
+    // The `--min-r-version` override, if the user passed one. A package's own
+    // floor is resolved later, per file.
+    let minimum_r_version = determine_minimum_r_version(check_config)?;
 
     let rules_cli = parse_rules_cli(
         &check_config.select,
@@ -119,7 +117,13 @@ pub fn build_config(
     let rules_toml = parse_rules_toml(toml_settings)?;
     let rules = reconcile_rules(rules_cli, rules_toml)?;
 
-    let rules = filter_rules_by_version(&rules, minimum_r_version);
+    // We can only do this general filter if the user passed an explicity `--min-r-version`,
+    // otherwise we resolve the min R version of each path later on. This is
+    // necessary because not all paths necessarily get the same min R version.
+    let rules = match minimum_r_version {
+        Some(_) => filter_rules_by_version(&rules, minimum_r_version),
+        None => rules,
+    };
 
     // Parse fixable/unfixable rules from TOML.
     // These will be stored in Config and checked when applying fixes.
@@ -233,262 +237,136 @@ fn project_roots(args: &[PathBuf]) -> Vec<PathBuf> {
     outermost
 }
 
-/// Parse CLI rule arguments and return (selected_rules, ignored_rules).
+/// Expand rule groups (`PERF`, `ALL`) and reject anything that isn't a rule.
 ///
-/// Returns None for selected_rules if no --select was specified.
-/// Returns empty set for ignored_rules if no --ignore was specified.
-pub fn parse_rules_cli(select: &str, extend_select: &str, ignore: &str) -> Result<RuleSelection> {
+/// This is the one validation path for every place a user can name rules:
+/// `--select` / `--extend-select` / `--ignore`, the matching `jarl.toml`
+/// fields, `fixable` / `unfixable`, and `[lint.per-file-ignores]`. `field`
+/// names the setting in the error message, e.g. `` "`--select`" `` or
+/// `` "field `select` in 'jarl.toml'" ``.
+pub(crate) fn resolve_rule_names<'a>(
+    names: impl IntoIterator<Item = &'a str>,
+    field: &str,
+) -> Result<Vec<Rule>> {
     let all_rules = Rule::all();
+    let passed_by_user: Vec<&str> = names.into_iter().collect();
+    let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
 
-    let selected_rules: Option<HashSet<String>> = if select.is_empty() {
-        None
-    } else {
-        let passed_by_user = select.split(",").collect::<Vec<&str>>();
-        let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
-        let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
-        if let Some(invalid) = invalid_rules {
-            return Err(unknown_rules_error(
-                format!("Unknown rules in `--select`: {}", invalid.names.join(", ")),
-                invalid.help,
-            ));
-        }
+    if let Some(invalid) = get_invalid_rules(all_rules, &expanded_rules) {
+        return Err(unknown_rules_error(
+            format!("Unknown rules in {field}: {}", invalid.names.join(", ")),
+            invalid.help,
+        ));
+    }
 
-        Some(HashSet::from_iter(
-            all_rules
-                .iter()
-                .filter(|r| expanded_rules.iter().any(|name| name == r.name()))
-                .map(|x| x.name().to_string()),
-        ))
-    };
+    // `get_invalid_rules` just proved every name resolves, and
+    // `replace_group_rules` already trimmed them.
+    Ok(expanded_rules
+        .iter()
+        .filter_map(|name| Rule::from_name(name))
+        .collect())
+}
 
-    let extended_rules: Option<HashSet<String>> = if extend_select.is_empty() {
-        None
-    } else {
-        let passed_by_user = extend_select.split(",").collect::<Vec<&str>>();
-        let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
-        let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
-        if let Some(invalid) = invalid_rules {
-            return Err(unknown_rules_error(
-                format!(
-                    "Unknown rules in `--extend-select`: {}",
-                    invalid.names.join(", ")
-                ),
-                invalid.help,
-            ));
-        }
+/// [`resolve_rule_names`] collected into a set, for the settings matched
+/// against a `Diagnostic`'s rule (`fixable` / `unfixable`).
+fn resolve_rule_name_set<'a>(
+    names: impl IntoIterator<Item = &'a str>,
+    field: &str,
+) -> Result<HashSet<Rule>> {
+    Ok(resolve_rule_names(names, field)?.into_iter().collect())
+}
 
-        Some(HashSet::from_iter(
-            all_rules
-                .iter()
-                .filter(|r| expanded_rules.iter().any(|name| name == r.name()))
-                .map(|x| x.name().to_string()),
-        ))
-    };
-
-    let ignored_rules: HashSet<String> = if ignore.is_empty() {
-        HashSet::new()
-    } else {
-        let passed_by_user = ignore.split(",").collect::<Vec<&str>>();
-        let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
-        let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
-        if let Some(invalid) = invalid_rules {
-            return Err(unknown_rules_error(
-                format!("Unknown rules in `--ignore`: {}", invalid.names.join(", ")),
-                invalid.help,
-            ));
-        }
-
-        HashSet::from_iter(
-            all_rules
-                .iter()
-                .filter(|r| expanded_rules.iter().any(|name| name == r.name()))
-                .map(|x| x.name().to_string()),
-        )
+/// Parse CLI rule arguments into a [`RuleSelection`].
+///
+/// `selected` / `extended` are `None` when the corresponding flag was not
+/// passed, which is different from being passed an empty selection.
+pub fn parse_rules_cli(select: &str, extend_select: &str, ignore: &str) -> Result<RuleSelection> {
+    let split = |value: &str| -> Option<Vec<String>> {
+        (!value.is_empty()).then(|| value.split(',').map(str::to_string).collect())
     };
 
     Ok(RuleSelection {
-        selected: selected_rules,
-        extended: extended_rules,
-        ignored: ignored_rules,
+        selected: resolve_optional(split(select).as_deref(), "`--select`")?,
+        extended: resolve_optional(split(extend_select).as_deref(), "`--extend-select`")?,
+        ignored: resolve_optional(split(ignore).as_deref(), "`--ignore`")?.unwrap_or_default(),
     })
 }
 
-/// Parse TOML configuration and return (selected_rules, ignored_rules).
-///
-/// Returns None for selected_rules if no TOML select was specified (meaning use all rules).
-/// Returns empty set for ignored_rules if no TOML ignore was specified.
+/// Parse the rule selection from `jarl.toml`.
 pub fn parse_rules_toml(toml_settings: Option<&Settings>) -> Result<RuleSelection> {
-    let all_rules = Rule::all();
-
     let Some(settings) = toml_settings else {
-        // No TOML configuration found
         return Ok(RuleSelection {
             selected: None,
             extended: None,
             ignored: HashSet::new(),
         });
     };
-
-    let linter_settings = &settings.linter;
-
-    // Handle select rules from TOML
-    let selected_rules: Option<HashSet<String>> = if let Some(select) = &linter_settings.select {
-        let passed_by_user = select.iter().map(|s| s.as_str()).collect();
-        let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
-        let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
-        if let Some(invalid) = invalid_rules {
-            return Err(unknown_rules_error(
-                format!(
-                    "Unknown rules in field `select` in 'jarl.toml': {}",
-                    invalid.names.join(", ")
-                ),
-                invalid.help,
-            ));
-        }
-        Some(HashSet::from_iter(
-            all_rules
-                .iter()
-                .filter(|r| expanded_rules.iter().any(|name| name == r.name()))
-                .map(|x| x.name().to_string()),
-        ))
-    } else {
-        None
-    };
-
-    // Handle extend-select rules from TOML
-    let extended_rules: Option<HashSet<String>> =
-        if let Some(extend_select) = &linter_settings.extend_select {
-            let passed_by_user = extend_select.iter().map(|s| s.as_str()).collect();
-            let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
-            let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
-            if let Some(invalid) = invalid_rules {
-                return Err(unknown_rules_error(
-                    format!(
-                        "Unknown rules in field `extend-select` in 'jarl.toml': {}",
-                        invalid.names.join(", ")
-                    ),
-                    invalid.help,
-                ));
-            }
-            Some(HashSet::from_iter(
-                all_rules
-                    .iter()
-                    .filter(|r| expanded_rules.iter().any(|name| name == r.name()))
-                    .map(|x| x.name().to_string()),
-            ))
-        } else {
-            None
-        };
-
-    // Handle ignore rules from TOML
-    let ignored_rules: HashSet<String> = if let Some(ignore) = &linter_settings.ignore {
-        let passed_by_user = ignore.iter().map(|s| s.as_str()).collect();
-        let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
-        let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
-        if let Some(invalid) = invalid_rules {
-            return Err(unknown_rules_error(
-                format!(
-                    "Unknown rules in field `ignore` in 'jarl.toml': {}",
-                    invalid.names.join(", ")
-                ),
-                invalid.help,
-            ));
-        }
-        HashSet::from_iter(
-            all_rules
-                .iter()
-                .filter(|r| expanded_rules.iter().any(|name| name == r.name()))
-                .map(|x| x.name().to_string()),
-        )
-    } else {
-        HashSet::new()
-    };
+    let linter = &settings.linter;
 
     Ok(RuleSelection {
-        selected: selected_rules,
-        extended: extended_rules,
-        ignored: ignored_rules,
+        selected: resolve_optional(linter.select.as_deref(), "field `select` in 'jarl.toml'")?,
+        extended: resolve_optional(
+            linter.extend_select.as_deref(),
+            "field `extend-select` in 'jarl.toml'",
+        )?,
+        ignored: resolve_optional(linter.ignore.as_deref(), "field `ignore` in 'jarl.toml'")?
+            .unwrap_or_default(),
     })
 }
 
-/// Parse fixable and unfixable rules from TOML configuration.
+/// Resolve an optional list of rule names, keeping "absent" distinct from
+/// "empty".
+fn resolve_optional(names: Option<&[String]>, field: &str) -> Result<Option<HashSet<Rule>>> {
+    names
+        .map(|names| {
+            resolve_rule_names(names.iter().map(String::as_str), field)
+                .map(|rules| rules.into_iter().collect())
+        })
+        .transpose()
+}
+
+/// Parse `fixable` / `unfixable` from `jarl.toml`.
 ///
-/// Returns (fixable_rules, unfixable_rules).
-/// Returns None for fixable_rules if no fixable was specified in TOML.
-/// Returns empty set for unfixable_rules if no unfixable was specified in TOML.
+/// `fixable` is `None` when unset, meaning every rule with a fix may apply it.
 pub fn parse_fixable_toml(
     toml_settings: Option<&Settings>,
-) -> Result<(Option<HashSet<String>>, HashSet<String>)> {
-    let all_rules = Rule::all();
-
+) -> Result<(Option<HashSet<Rule>>, HashSet<Rule>)> {
     let Some(settings) = toml_settings else {
-        // No TOML configuration found
         return Ok((None, HashSet::new()));
     };
+    let linter = &settings.linter;
 
-    let linter_settings = &settings.linter;
+    let fixable = linter
+        .fixable
+        .as_ref()
+        .map(|names| {
+            resolve_rule_name_set(
+                names.iter().map(String::as_str),
+                "field `fixable` in 'jarl.toml'",
+            )
+        })
+        .transpose()?;
 
-    // Handle fixable rules from TOML
-    let fixable_rules: Option<HashSet<String>> =
-        if let Some(fixable_rules) = &linter_settings.fixable {
-            let passed_by_user = fixable_rules.iter().map(|s| s.as_str()).collect();
-            let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
-            let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
-            if let Some(invalid) = invalid_rules {
-                return Err(unknown_rules_error(
-                    format!(
-                        "Unknown rules in field `fixable` in 'jarl.toml': {}",
-                        invalid.names.join(", ")
-                    ),
-                    invalid.help,
-                ));
-            }
-            Some(HashSet::from_iter(
-                all_rules
-                    .iter()
-                    .filter(|r| expanded_rules.iter().any(|name| name == r.name()))
-                    .map(|x| x.name().to_string()),
-            ))
-        } else {
-            None
-        };
+    let unfixable = linter
+        .unfixable
+        .as_ref()
+        .map(|names| {
+            resolve_rule_name_set(
+                names.iter().map(String::as_str),
+                "field `unfixable` in 'jarl.toml'",
+            )
+        })
+        .transpose()?
+        .unwrap_or_default();
 
-    // Handle unfixable rules from TOML
-    let unfixable_rules: HashSet<String> = if let Some(unfixable_rules) = &linter_settings.unfixable
-    {
-        let passed_by_user = unfixable_rules.iter().map(|s| s.as_str()).collect();
-        let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
-        let invalid_rules = get_invalid_rules(all_rules, &expanded_rules);
-        if let Some(invalid) = invalid_rules {
-            return Err(unknown_rules_error(
-                format!(
-                    "Unknown rules in field `unfixable` in 'jarl.toml': {}",
-                    invalid.names.join(", ")
-                ),
-                invalid.help,
-            ));
-        }
-        HashSet::from_iter(
-            all_rules
-                .iter()
-                .filter(|r| expanded_rules.iter().any(|name| name == r.name()))
-                .map(|x| x.name().to_string()),
-        )
-    } else {
-        HashSet::new()
-    };
-
-    Ok((fixable_rules, unfixable_rules))
+    Ok((fixable, unfixable))
 }
 
 // This takes rules that refer to groups (e.g. "PERF", "READ") and replaces them
 // with the rule names.
 // Returns a vector with the original rule names left unmodified and the expanded
 // group names.
-pub(crate) fn replace_group_rules(
-    rules_passed_by_user: &Vec<&str>,
-    all_rules: &[Rule],
-) -> Vec<String> {
+fn replace_group_rules(rules_passed_by_user: &Vec<&str>, all_rules: &[Rule]) -> Vec<String> {
     let rule_groups_set: HashSet<&str> = Category::ALL.iter().map(|c| c.as_str()).collect();
     let mut expanded_rules = Vec::new();
 
@@ -524,15 +402,15 @@ pub(crate) fn replace_group_rules(
 // individual rule names.
 /// Invalid rule names found in a configuration field, plus "did you mean"
 /// help lines for the ones close to a real rule name.
-pub(crate) struct InvalidRules {
+struct InvalidRules {
     /// Invalid names as they should appear in the "Unknown rules: ..." message.
-    pub names: Vec<String>,
+    names: Vec<String>,
     /// One help line per invalid name that has a suggestion, e.g.
     /// `Did you mean "glue"?`.
-    pub help: Vec<String>,
+    help: Vec<String>,
 }
 
-pub(crate) fn get_invalid_rules(
+fn get_invalid_rules(
     all_rule_names: &[Rule],
     rules_passed_by_user: &[String],
 ) -> Option<InvalidRules> {
@@ -587,7 +465,7 @@ pub(crate) fn get_invalid_rules(
 }
 
 /// Build an `Unknown rules` error carrying optional "did you mean" help lines.
-pub(crate) fn unknown_rules_error(message: String, help: Vec<String>) -> anyhow::Error {
+fn unknown_rules_error(message: String, help: Vec<String>) -> anyhow::Error {
     anyhow::Error::new(UnknownRulesError { message, help })
 }
 
@@ -638,81 +516,43 @@ fn suggest_rule_names(input: &str, candidates: &[&str]) -> Vec<String> {
 /// - CLI ignore and TOML ignore are combined (both applied)
 /// - If neither CLI nor TOML specify select, start with all rules
 fn reconcile_rules(rules_cli: RuleSelection, rules_toml: RuleSelection) -> Result<RuleSet> {
-    let all_rules = Rule::all();
-    let cli_selected = rules_cli.selected;
-    let cli_extended = rules_cli.extended;
-    let cli_ignored = rules_cli.ignored;
-    let toml_selected = rules_toml.selected;
-    let toml_extended = rules_toml.extended;
-    let toml_ignored = rules_toml.ignored;
+    // CLI select wins over TOML select; with neither, start from the defaults.
+    let mut selected = rules_cli
+        .selected
+        .or(rules_toml.selected)
+        .unwrap_or_else(|| Rule::enabled_by_default().collect());
 
-    // Step 1: Determine base selection (CLI select takes precedence over TOML select)
-    let base_selected: HashSet<String> = if let Some(cli_selected) = cli_selected {
-        // CLI select specified, use it
-        cli_selected
-    } else if let Some(toml_selected) = toml_selected {
-        // No CLI select, but TOML select exists, use TOML
-        toml_selected
-    } else {
-        // Neither CLI nor TOML specified select rules, use the default set of rules
-        HashSet::from_iter(all_rules_enabled_by_default())
-    };
-
-    // Step 2: Add extended rules (CLI extend-select takes precedence over TOML extend-select)
-    let mut final_selected = base_selected;
-    if let Some(cli_extended) = cli_extended {
-        final_selected = final_selected.union(&cli_extended).cloned().collect();
-    } else if let Some(toml_extended) = toml_extended {
-        final_selected = final_selected.union(&toml_extended).cloned().collect();
+    // Same precedence for extend-select, but it adds to the base instead of
+    // replacing it.
+    if let Some(extended) = rules_cli.extended.or(rules_toml.extended) {
+        selected.extend(extended);
     }
 
-    // Step 3: Combine all ignore rules (TOML + CLI)
-    let all_ignored: HashSet<String> = cli_ignored.union(&toml_ignored).cloned().collect();
+    // Both ignore lists apply.
+    for rule in rules_cli.ignored.iter().chain(rules_toml.ignored.iter()) {
+        selected.remove(rule);
+    }
 
-    // Step 4: Apply ignore rules to final selection
-    let final_rule_names: HashSet<String> =
-        final_selected.difference(&all_ignored).cloned().collect();
-
-    let final_rules: RuleSet = all_rules
+    // Emit in declaration order rather than the set's, so anything downstream
+    // that reports rules in order (e.g. package-specific categories) stays
+    // deterministic.
+    Ok(ALL_RULES
         .iter()
-        .filter(|r| final_rule_names.iter().any(|name| name == r.name()))
-        .collect();
-
-    Ok(final_rules)
+        .filter(|rule| selected.contains(rule))
+        .collect())
 }
 
-/// Determine the minimum R version from CLI args or DESCRIPTION file
-fn determine_minimum_r_version(
-    check_config: &ArgsConfig,
-    paths: &[PathBuf],
-) -> Result<Option<(u32, u32, u32)>> {
-    if let Some(version_string) = &check_config.min_r_version {
-        return Ok(Some(parse_r_version(version_string.clone())?));
-    }
-
-    // Look for DESCRIPTION file in any of the project paths
-    // TODO: this seems wasteful but I don't have a good infrastructure for now
-    // for getting the common root of the paths.
-    for path in paths {
-        let desc_path = if path.is_dir() {
-            path.join("DESCRIPTION")
-        } else if let Some(parent) = path.parent() {
-            parent.join("DESCRIPTION")
-        } else {
-            continue;
-        };
-
-        if desc_path.exists() {
-            let desc = fs::read_to_string(&desc_path)?;
-            if let Ok(versions) = Description::get_depend_r_version(&desc)
-                && let Some(version_str) = versions.first()
-            {
-                return Ok(Some(parse_r_version(version_str.to_string())?));
-            }
-        }
-    }
-
-    Ok(None)
+/// The R version the user pinned with `--min-r-version`, if any.
+///
+/// We don't use a `Depends` field here. This is done later on, on a per-file
+/// basis and if the user didn't pass `--min-r-version` because one call could
+/// encompass several packages with different `Depends`.
+fn determine_minimum_r_version(check_config: &ArgsConfig) -> Result<Option<(u32, u32, u32)>> {
+    check_config
+        .min_r_version
+        .as_ref()
+        .map(|version| parse_r_version(version.clone()))
+        .transpose()
 }
 
 /// Parse R version string in format "x.y" or "x.y.z" and return (major, minor, patch)
@@ -743,7 +583,10 @@ pub fn parse_r_version(min_r_version: String) -> Result<(u32, u32, u32)> {
 }
 
 /// Filter rules based on minimum R version compatibility
-fn filter_rules_by_version(rules: &RuleSet, minimum_r_version: Option<(u32, u32, u32)>) -> RuleSet {
+pub(crate) fn filter_rules_by_version(
+    rules: &RuleSet,
+    minimum_r_version: Option<(u32, u32, u32)>,
+) -> RuleSet {
     match minimum_r_version {
         None => {
             // If we don't know the minimum R version, only include rules without version requirements

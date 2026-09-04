@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -78,31 +79,29 @@ pub fn nzchar(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let diagnostic = match operator.kind() {
         RSyntaxKind::EQUAL2 => Diagnostic::new(
             ViolationData::new(
-                "nzchar".to_string(),
+                Rule::NzChar,
                 "`x == \"\"` is inefficient.".to_string(),
                 Some("Use `!nzchar(x)` instead.".to_string()),
             ),
             range,
-            Fix {
-                content: format!("!nzchar({replacement})"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                format!("!nzchar({replacement})"),
+                node_contains_comments(ast.syntax()),
+            ),
         ),
         RSyntaxKind::NOT_EQUAL => Diagnostic::new(
             ViolationData::new(
-                "nzchar".to_string(),
+                Rule::NzChar,
                 "`x != \"\"` is inefficient.".to_string(),
                 Some("Use `nzchar(x)` instead.".to_string()),
             ),
             range,
-            Fix {
-                content: format!("nzchar({replacement})"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                format!("nzchar({replacement})"),
+                node_contains_comments(ast.syntax()),
+            ),
         ),
         _ => unreachable!("This case is an early return"),
     };

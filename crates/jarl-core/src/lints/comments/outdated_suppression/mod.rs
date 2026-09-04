@@ -134,4 +134,68 @@ x == NA", "outdated_suppression,any_is_na,equals_na"), @"
         "
         );
     }
+
+    #[test]
+    fn test_fix_outdated_suppression() {
+        insta::assert_snapshot!(
+            "fix_output",
+            get_fixed_text(
+                vec![
+                    "
+# jarl-ignore any_is_na: <reason>
+f <- function(x) {
+  1 + 1
+}",
+                    // With start and end
+                    "
+# jarl-ignore-start any_is_na: <reason>
+x <- 1
+# jarl-ignore-end any_is_na
+y <- 2",
+                    // With start and end, maintain indentation
+                    "
+# jarl-ignore-start any_is_na: <reason>
+  foo( bar
+ + 1 )
+      1 + 1
+# jarl-ignore-end any_is_na",
+                    // With start and end, comments are indented
+                    "
+    # jarl-ignore-start any_is_na: <reason>
+  foo( bar
+ + 1 )
+      1 + 1
+      # jarl-ignore-end any_is_na",
+                    // Indented suppression: the indentation goes with the comment.
+                    "
+f <- function(x) {
+  # jarl-ignore any_is_na: <reason>
+  x <- 1
+}",
+                    // Only the unused suppression is removed.
+                    "
+# jarl-ignore any_is_na: <reason>
+any(is.na(x))
+# jarl-ignore any_is_na: <reason>
+y <- 2",
+                    // Several unused suppressions in the same file.
+                    "
+# jarl-ignore-file any_is_na: <reason>
+x <- 1
+# jarl-ignore any_is_na: <reason>
+y <- 2",
+                    // Last line of the file, without a trailing line break.
+                    "x <- 1
+# jarl-ignore any_is_na: <reason>",
+                    // Empty region.
+                    "
+# jarl-ignore-start any_is_na: <reason>
+# jarl-ignore-end any_is_na
+x <- 1",
+                ],
+                "outdated_suppression,any_is_na",
+                None
+            )
+        );
+    }
 }

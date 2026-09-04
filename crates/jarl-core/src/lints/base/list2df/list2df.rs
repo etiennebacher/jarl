@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{Formals, get_arg, get_arg_by_position, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -41,8 +42,8 @@ pub struct List2Df;
 ///
 /// See `?list2DF`
 impl Violation for List2Df {
-    fn name(&self) -> String {
-        "list2df".to_string()
+    fn rule(&self) -> Rule {
+        Rule::List2df
     }
     fn body(&self) -> String {
         "`do.call(cbind.data.frame, x)` is inefficient and can be hard to read.".to_string()
@@ -82,12 +83,11 @@ pub fn list2df(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>>
     let diagnostic = Diagnostic::new(
         List2Df,
         range,
-        Fix {
-            content: format!("list2DF({})", fix_content.to_trimmed_text()),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("list2DF({})", fix_content.to_trimmed_text()),
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{Formals, get_arg, node_contains_comments};
 use air_r_syntax::*;
 use anyhow::Context;
@@ -43,8 +44,8 @@ pub struct Lengths;
 ///
 /// See `?lengths`
 impl Violation for Lengths {
-    fn name(&self) -> String {
-        "lengths".to_string()
+    fn rule(&self) -> Rule {
+        Rule::Lengths
     }
     fn body(&self) -> String {
         "Using `length()` on each element of a list is inefficient.".to_string()
@@ -76,16 +77,16 @@ pub fn lengths(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>>
             .text_trimmed()
             == "length"
     {
+        let arg_x = unwrap_or_return_none!(arg_x.and_then(|arg| arg.value()));
         let range = ast.syntax().text_trimmed_range();
         let diagnostic = Diagnostic::new(
             Lengths,
             range,
-            Fix {
-                content: format!("lengths({})", arg_x.unwrap().into_syntax().text_trimmed()),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                format!("lengths({})", arg_x.into_syntax().text_trimmed()),
+                node_contains_comments(ast.syntax()),
+            ),
         );
         return Ok(Some(diagnostic));
     };

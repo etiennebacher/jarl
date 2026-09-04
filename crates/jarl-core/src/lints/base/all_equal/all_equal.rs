@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_nested_functions_content, node_contains_comments};
 use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
@@ -60,17 +61,16 @@ pub fn all_equal(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic
         let range = outer_syntax.text_trimmed_range();
         return Ok(Some(Diagnostic::new(
             ViolationData::new(
-                "all_equal".to_string(),
+                Rule::AllEqual,
                 "`isFALSE(all.equal())` always returns `FALSE`".to_string(),
                 Some("Use `!isTRUE()` to check for differences instead.".to_string()),
             ),
             range,
-            Fix {
-                content: format!("!isTRUE(all.equal({inner_content}))"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(&outer_syntax),
-            },
+            Fix::new(
+                range,
+                format!("!isTRUE(all.equal({inner_content}))"),
+                node_contains_comments(&outer_syntax),
+            ),
         )));
     }
 
@@ -100,17 +100,12 @@ pub fn all_equal(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic
 
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "all_equal".to_string(),
+            Rule::AllEqual,
             msg,
             Some("Wrap `all.equal()` in `isTRUE()`, or replace it by `identical()` if no tolerance is required.".to_string()),
         ),
         range,
-        Fix {
-            content: fix_content,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(range, fix_content, node_contains_comments(ast.syntax())),
     );
 
     Ok(Some(diagnostic))

@@ -75,6 +75,7 @@ mod tests {
                 vec![
                     "sapply(x, length)",
                     "sapply(x, FUN = length)",
+                    "sapply(X = x, FUN = length)",
                     "vapply(mtcars, length, integer(1))",
                 ],
                 "lengths",
@@ -91,6 +92,15 @@ mod tests {
         expect_no_lint("sapply(x, sqrt, simplify = length(x))", "lengths", None);
         expect_no_lint("lapply(x, length)", "lengths", None);
         expect_no_lint("map(x, length)", "lengths", None);
+        expect_no_lint("sapply(FUN = length)", "lengths", None);
+        expect_no_lint(
+            "vapply(FUN = length, FUN.VALUE = integer(1))",
+            "lengths",
+            None,
+        );
+        expect_no_lint("map_dbl(.f = length)", "lengths", None);
+        expect_no_lint("x |> sapply(FUN = length)", "lengths", None);
+        expect_no_lint("sapply(, length)", "lengths", None);
     }
 
     #[test]

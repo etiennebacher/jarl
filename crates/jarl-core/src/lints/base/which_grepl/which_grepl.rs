@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{
     Formals, get_arg, get_arg_by_name, get_function_name, get_nested_functions_content,
     node_contains_comments,
@@ -44,8 +45,8 @@ pub struct WhichGrepl;
 ///
 /// See `?grep`
 impl Violation for WhichGrepl {
-    fn name(&self) -> String {
-        "which_grepl".to_string()
+    fn rule(&self) -> Rule {
+        Rule::WhichGrepl
     }
     fn body(&self) -> String {
         "`which(grepl(pattern, x))` is less efficient than `grep(pattern, x)`.".to_string()
@@ -110,11 +111,10 @@ pub fn which_grepl(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
     Ok(Some(Diagnostic::new(
         WhichGrepl,
         range,
-        Fix {
-            content: replacement.clone(),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(&outer_syntax),
-        },
+        Fix::new(
+            range,
+            replacement.clone(),
+            node_contains_comments(&outer_syntax),
+        ),
     )))
 }

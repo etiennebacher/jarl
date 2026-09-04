@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{
     Formals, get_arg, get_function_name, get_function_namespace_prefix, node_contains_comments,
 };
@@ -77,19 +78,18 @@ pub fn expect_s4_class(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diag
 
     Ok(Some(Diagnostic::new(
         ViolationData::new(
-            "expect_s4_class".to_string(),
+            Rule::TestthatExpectS4Class,
             format!("`{replacement}` is better than `{linted_text}`."),
             Some(format!("Use `{replacement}` instead.")),
         ),
         range,
-        Fix {
-            content: format!(
+        Fix::new(
+            range,
+            format!(
                 "{}expect_s4_class({}, {})",
                 namespace_prefix, object_text, class_text
             ),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+            node_contains_comments(ast.syntax()),
+        ),
     )))
 }

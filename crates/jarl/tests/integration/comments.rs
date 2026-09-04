@@ -337,7 +337,7 @@ any(is.na(z))
 
 #[test]
 fn test_fix_skips_internal_comments_with_outer_comments_460() -> anyhow::Result<()> {
-    let original = "# leading comment\n!(x \n # hello there \n >= y)\n";
+    let original = "# leading comment\nany(\n # hello there \n is.na(x))\n";
     let case = CliTest::with_file("test.R", original)?;
 
     insta::assert_snapshot!(
@@ -354,15 +354,15 @@ fn test_fix_skips_internal_comments_with_outer_comments_460() -> anyhow::Result<
     success: false
     exit_code: 1
     ----- stdout -----
-    warning: comparison_negation
+    warning: any_is_na
      --> test.R:2:1
       |
-    2 | / !(x 
+    2 | / any(
     3 | |  # hello there 
-    4 | |  >= y)
-      | |______- `!(x >= y)` can be simplified.
+    4 | |  is.na(x))
+      | |__________- `any(is.na(...))` is inefficient.
       |
-      = help: Use `x < y` instead.
+      = help: Use `anyNA(...)` instead.
 
 
     ── Summary ──────────────────────────────────────

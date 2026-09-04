@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -41,8 +42,8 @@ pub struct EqualsNull;
 /// is.null(y)
 /// ```
 impl Violation for EqualsNull {
-    fn name(&self) -> String {
-        "equals_null".to_string()
+    fn rule(&self) -> Rule {
+        Rule::EqualsNull
     }
     fn body(&self) -> String {
         "Comparing to NULL with `==`, `!=` or `%in%` is problematic.".to_string()
@@ -84,32 +85,29 @@ pub fn equals_null(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>
         RSyntaxKind::EQUAL2 => Diagnostic::new(
             EqualsNull,
             range,
-            Fix {
-                content: format!("is.null({replacement})"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                format!("is.null({replacement})"),
+                node_contains_comments(ast.syntax()),
+            ),
         ),
         RSyntaxKind::NOT_EQUAL => Diagnostic::new(
             EqualsNull,
             range,
-            Fix {
-                content: format!("!is.null({replacement})"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                format!("!is.null({replacement})"),
+                node_contains_comments(ast.syntax()),
+            ),
         ),
         RSyntaxKind::SPECIAL if operator.text_trimmed() == "%in%" => Diagnostic::new(
             EqualsNull,
             range,
-            Fix {
-                content: format!("is.null({replacement})"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                format!("is.null({replacement})"),
+                node_contains_comments(ast.syntax()),
+            ),
         ),
         _ => unreachable!("This case is an early return"),
     };

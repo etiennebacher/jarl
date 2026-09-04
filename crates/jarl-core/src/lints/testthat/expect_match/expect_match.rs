@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{
     Formals, get_arg, get_function_name, get_function_namespace_prefix,
     get_nested_functions_content, get_unnamed_args, node_contains_comments,
@@ -42,8 +43,8 @@ pub struct ExpectMatch;
 /// expect_match(x, "bar", perl = FALSE, fixed = FALSE)
 /// ```
 impl Violation for ExpectMatch {
-    fn name(&self) -> String {
-        "expect_match".to_string()
+    fn rule(&self) -> Rule {
+        Rule::TestthatExpectMatch
     }
 
     fn body(&self) -> String {
@@ -148,16 +149,15 @@ pub fn expect_match(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnos
     let diagnostic = Diagnostic::new(
         ExpectMatch,
         range,
-        Fix {
-            content: format!(
+        Fix::new(
+            range,
+            format!(
                 "{}expect_match({})",
                 namespace_prefix,
                 inner_content.join(", ")
             ),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

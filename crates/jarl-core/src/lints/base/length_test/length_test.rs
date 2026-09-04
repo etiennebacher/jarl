@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::node_contains_comments;
 use air_r_syntax::RSyntaxKind::*;
 use air_r_syntax::*;
@@ -32,8 +33,8 @@ pub struct LengthTest;
 /// length(x) == 1
 /// ```
 impl Violation for LengthTest {
-    fn name(&self) -> String {
-        "length_test".to_string()
+    fn rule(&self) -> Rule {
+        Rule::LengthTest
     }
     fn body(&self) -> String {
         "Checking the length of a logical vector is likely a mistake".to_string()
@@ -83,12 +84,11 @@ pub fn length_test(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnost
         let diagnostic = Diagnostic::new(
             LengthTest,
             range,
-            Fix {
-                content: format!("length({lhs}) {operator_text} {rhs}"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                format!("length({lhs}) {operator_text} {rhs}"),
+                node_contains_comments(ast.syntax()),
+            ),
         );
         return Ok(Some(diagnostic));
     }

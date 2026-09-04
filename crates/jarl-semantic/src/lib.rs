@@ -155,11 +155,15 @@ pub struct SemanticInfo<'a> {
     /// resolves to the definition it actually sees, so a *later* same-scope
     /// reassignment of the name is not kept alive by it.
     positional_uses: Vec<(String, TextRange)>,
-    /// Identifier `Use` ranges that should be ignored because they sit inside
-    /// a quoting call oak's effects registry doesn't cover (`Quote(…)`,
-    /// `expression(…)`, `alist(…)`). `quote()`, `bquote()` and `substitute()`
-    /// are modeled by oak itself (their quoted arguments produce no uses or
-    /// definitions in the index), so they don't need ranges here.
+    /// Ranges holding code that is parsed but never evaluated, so that an
+    /// identifier inside one is neither a definition nor a use.
+    ///
+    /// Two things land here. Quoting calls oak's effects registry doesn't
+    /// cover (`Quote(…)`, `expression(…)`, `alist(…)`) — `quote()`, `bquote()`
+    /// and `substitute()` are modeled by oak itself, so their arguments never
+    /// enter the index and need no range. And ranges the caller declares
+    /// unevaluated up front (see [`SemanticInfo::build`]), which is how an
+    /// Rmd/Qmd chunk marked `eval = FALSE` is kept out of the analysis.
     nse_ranges: Vec<TextRange>,
     /// Packages this file can reach: attached with `library()`/`require()`,
     /// listed in DESCRIPTION when linting package code, or named in a
@@ -169,6 +173,14 @@ pub struct SemanticInfo<'a> {
     available_packages: HashSet<String>,
     /// Ranges of formula RHSes (`~ rhs`).
     formula_ranges: Vec<TextRange>,
+    /// Ranges of expressions evaluated against an environment the call then
+    /// hands back (`within(data, expr)`): a binding created there is part of
+    /// the call's result, not a local temporary.
+    returned_env_ranges: Vec<TextRange>,
+    /// Function definitions nested inside a [`Self::returned_env_ranges`]
+    /// entry. Such a function has its own frame, so its locals are ordinary
+    /// temporaries again and stay lintable.
+    returned_env_functions: Vec<TextRange>,
     /// Whether any package providing `{...}` interpolation is in reach.
     /// Computed once so a file that uses none of them skips the ancestor walk
     /// [`interpolation_flavor`] does for every string literal.
@@ -183,12 +195,17 @@ impl<'a> SemanticInfo<'a> {
     /// Build the info table. Runs the AST pass (collecting synthetic uses,
     /// interpolation reads, NSE ranges, formula ranges) and then the
     /// reaching-use precomputation over oak's use-def maps.
+    ///
+    /// `unevaluated` names ranges the caller already knows never run, on top
+    /// of the ones the AST pass finds itself. Callers linting plain R code
+    /// pass nothing; the Rmd/Qmd path passes the chunks marked `eval = FALSE`.
     pub fn build(
         root: &RSyntaxNode,
         expressions: &[RSyntaxNode],
         index: &'a SemanticIndex,
         source_cache: &SourceIndexCache,
         loaded_packages: &[String],
+        unevaluated: &[TextRange],
     ) -> Self {
         // `pkg::fn()` reaches a package without attaching it, so namespaced
         // accesses count alongside what the caller resolved from
@@ -214,9 +231,11 @@ impl<'a> SemanticInfo<'a> {
             short_circuit_ranges: Vec::new(),
             loop_ranges: Vec::new(),
             positional_uses: Vec::new(),
-            nse_ranges: Vec::new(),
+            nse_ranges: unevaluated.to_vec(),
             available_packages,
             formula_ranges: Vec::new(),
+            returned_env_ranges: Vec::new(),
+            returned_env_functions: Vec::new(),
             has_any_interpolation_package,
             reaching_used: HashSet::new(),
         };
@@ -276,6 +295,18 @@ impl<'a> SemanticInfo<'a> {
     /// the first place.
     pub fn is_in_nse(&self, range: TextRange) -> bool {
         in_any_range(range, &self.nse_ranges)
+    }
+
+    /// True when `range` sits in an expression whose assignments *are* the
+    /// enclosing call's return value. `within(data, expr)` evaluates `expr`
+    /// against an environment built from `data` and returns that environment's
+    /// contents, so every binding it creates comes back as a column — the
+    /// point of the call rather than a dead store. `if`/`for` bodies share
+    /// that environment, but a function defined there gets its own frame, so
+    /// its locals are excluded.
+    pub fn is_in_returned_env(&self, range: TextRange) -> bool {
+        in_any_range(range, &self.returned_env_ranges)
+            && !in_any_range(range, &self.returned_env_functions)
     }
 
     // ── Internal: AST pass ────────────────────────────────────────────
@@ -568,6 +599,22 @@ impl<'a> SemanticInfo<'a> {
                     if let Some(value) = arg.value() {
                         self.nse_ranges.push(value.syntax().text_trimmed_range());
                     }
+                }
+            }
+            // `within(data, expr)` evaluates `expr` against an environment
+            // made from `data` and returns what that environment holds, so an
+            // assignment there is the call's output. Only the quoted `expr`
+            // argument gets that treatment; `data` is evaluated normally.
+            "within" => {
+                let bound = CallContext::default().bind_arguments(call, &["data", "expr"]);
+                if let Some(expr) = bound.get("expr") {
+                    let node = expr.syntax();
+                    self.returned_env_ranges.push(node.text_trimmed_range());
+                    self.returned_env_functions.extend(
+                        node.descendants()
+                            .filter(|d| d.kind() == RSyntaxKind::R_FUNCTION_DEFINITION)
+                            .map(|d| d.text_trimmed_range()),
+                    );
                 }
             }
             // A name looked up at the call site, so it reads the binding live

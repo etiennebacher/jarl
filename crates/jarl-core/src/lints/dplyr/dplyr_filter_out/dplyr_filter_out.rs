@@ -1,5 +1,6 @@
 use crate::checker::{Checker, PackageOrigin};
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_function_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -159,19 +160,14 @@ pub fn dplyr_filter_out(
 
     Ok(Some(Diagnostic::new(
         ViolationData::new(
-            "dplyr_filter_out".to_string(),
+            Rule::DplyrFilterOut,
             "This `filter()` contains complex condition(s).".to_string(),
             Some(
                 "It can be simplified by using `filter_out()`, which keeps `NA` rows.".to_string(),
             ),
         ),
         range,
-        Fix {
-            content: replacement,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(range, replacement, node_contains_comments(ast.syntax())),
     )))
 }
 
@@ -185,12 +181,14 @@ fn convert_conditions(args: &[AnyRExpression]) -> Option<Vec<String>> {
     for value in args {
         let (cond, is_na_call) = extract_is_na_guard(value)?;
 
-        // Verify the is.na() argument appears in the condition.
-        // This avoids matching `a > 1 | is.na(b)` where the guard is for
-        // a different variable.
         let is_na_arg = extract_is_na_arg(&is_na_call)?;
-        let cond_text = cond.syntax().text_trimmed().to_string();
-        if !cond_text.contains(&is_na_arg) {
+        let contains_identifier = cond
+            .as_r_identifier()
+            .cloned()
+            .into_iter()
+            .chain(cond.syntax().descendants().filter_map(RIdentifier::cast))
+            .any(|ident| ident.to_trimmed_text() == is_na_arg.as_str());
+        if !contains_identifier {
             return None;
         }
 

@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -101,17 +102,12 @@ pub fn equals_na(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> 
 
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "equals_na".to_string(),
+            Rule::EqualsNa,
             format!("Comparing to NA with `{operator_text}` is problematic."),
             Some(suggestion.to_string()),
         ),
         range,
-        Fix {
-            content: replacement,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(range, replacement, node_contains_comments(ast.syntax())),
     );
 
     Ok(Some(diagnostic))

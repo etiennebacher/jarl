@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_arg_by_name, get_unnamed_args};
 use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
@@ -100,7 +101,7 @@ pub fn glue(
     let diagnostic = if has_incomplete_delimiters(&dot_text, open, close) {
         Some(Diagnostic::new(
             ViolationData::new(
-                "glue".to_string(),
+                Rule::Glue,
                 "This `glue()` call contains incomplete delimiters and would error when evaluated."
                     .to_string(),
                 None,
@@ -111,7 +112,7 @@ pub fn glue(
     } else if !dot_text.contains(open) && !dot_text.contains(close) {
         Some(Diagnostic::new(
             ViolationData::new(
-                "glue".to_string(),
+                Rule::Glue,
                 "This `glue()` call isn't necessary because it performs no interpolation."
                     .to_string(),
                 None,

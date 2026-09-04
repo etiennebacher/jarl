@@ -46,7 +46,7 @@ pub(crate) fn check_expression(
             }
 
             for arg in children.arguments()?.items() {
-                if let Some(expr) = arg.unwrap().as_fields().value {
+                if let Some(expr) = arg?.as_fields().value {
                     check_expression(&expr, checker)?;
                 }
             }

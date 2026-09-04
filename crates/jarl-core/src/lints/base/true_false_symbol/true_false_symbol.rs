@@ -1,5 +1,6 @@
 use crate::check::Checker;
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::get_function_name;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -37,8 +38,8 @@ pub struct TrueFalseSymbol;
 /// y <- FALSE
 /// ```
 impl Violation for TrueFalseSymbol {
-    fn name(&self) -> String {
-        "true_false_symbol".to_string()
+    fn rule(&self) -> Rule {
+        Rule::TrueFalseSymbol
     }
     fn body(&self) -> String {
         "`T` and `F` can be confused with variable names. Spell `TRUE` and `FALSE` entirely instead.".to_string()
@@ -99,16 +100,15 @@ pub fn true_false_symbol(
     let diagnostic = Diagnostic::new(
         TrueFalseSymbol,
         range,
-        Fix {
-            content: if ast.syntax().text_trimmed() == "T" {
+        Fix::new(
+            range,
+            if ast.syntax().text_trimmed() == "T" {
                 "TRUE".to_string()
             } else {
                 "FALSE".to_string()
             },
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: false,
-        },
+            false,
+        ),
     );
 
     Ok(Some(diagnostic))

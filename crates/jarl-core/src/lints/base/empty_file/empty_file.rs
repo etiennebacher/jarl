@@ -1,4 +1,5 @@
 use crate::diagnostic::{Diagnostic, Fix, Violation};
+use crate::rule_set::Rule;
 use air_r_syntax::RSyntaxNode;
 use biome_rowan::TextRange;
 
@@ -29,8 +30,8 @@ pub struct EmptyFile;
 ///
 /// Instead, delete the file or add the intended code.
 impl Violation for EmptyFile {
-    fn name(&self) -> String {
-        "empty_file".to_string()
+    fn rule(&self) -> Rule {
+        Rule::EmptyFile
     }
     fn body(&self) -> String {
         "This file is empty or only contains comments.".to_string()

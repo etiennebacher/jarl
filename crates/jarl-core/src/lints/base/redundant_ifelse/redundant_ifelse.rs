@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{Formals, get_arg, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
@@ -87,24 +88,21 @@ pub fn redundant_ifelse(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Dia
         (
             format!("This `{}()` is redundant.", fn_name),
             "Use `condition` directly.".to_string(),
-            Fix {
-                content: arg_cond.to_string(),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                arg_cond.to_string(),
+                node_contains_comments(ast.syntax()),
+            ),
         )
     } else if arg_true_is_false && arg_false_is_true {
         (
             format!("This `{}()` is redundant.", fn_name),
             "Use `!condition` directly.".to_string(),
-            Fix {
-                content: format!("!({})", arg_cond),
-
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                format!("!({})", arg_cond),
+                node_contains_comments(ast.syntax()),
+            ),
         )
     } else if arg_true_is_true && arg_false_is_true {
         (
@@ -123,7 +121,7 @@ pub fn redundant_ifelse(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Dia
     };
 
     let diagnostic = Diagnostic::new(
-        ViolationData::new("redundant_ifelse".to_string(), msg, Some(suggestion)),
+        ViolationData::new(Rule::RedundantIfelse, msg, Some(suggestion)),
         range,
         fix,
     );

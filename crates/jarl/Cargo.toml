@@ -1,7 +1,7 @@
 [package]
 name = "jarl"
 description = "Command-line interface for the jarl R linter"
-version = "0.6.0-alpha.4"
+version = "0.6.0"
 authors.workspace = true
 edition.workspace = true
 license-file.workspace = true
@@ -45,7 +45,7 @@ air_fs.workspace = true
 regex.workspace = true
 tracing-subscriber = "0.3.20"
 
-annotate-snippets = "0.11"
+annotate-snippets = "0.12"
 
 [dev-dependencies]
 insta.workspace = true

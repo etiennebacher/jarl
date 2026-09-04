@@ -212,11 +212,6 @@ default-exclude = false
 default-exclude = false
 ```
 
-### `assignment`
-
-**This argument is deprecated. Use the rule-specific argument `[lint.assignment]`
-instead (see below).**
-
 ### `fixable`
 
 This determines which rule violations will be fixed if `--fix` is passed.
@@ -293,7 +288,7 @@ fix-roxygen = false
 ### `assignment`
 
 This takes a single value (`"<-"` or `"="`) indicating the preferred assignment
-operator in the files to check. If `assignment = "<-"` and if the `"assignment"`
+operator in the files to check. If `operator = "<-"` and if the `"assignment"`
 rule is enabled, then any use of the `"="` operator to assign values will be
 reported, and vice-versa.
 
@@ -361,8 +356,9 @@ namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
 `rlang::list2()`.
 
 Default: `skipped-functions = ["alist", "expect_error", "expect_warning", "expect_message",
-"expect_silent", "expect_defunct", "expect_deprecated",
-"expect_snapshot", "quote", "suppressMessages", "suppressWarnings"]`
+"expect_silent", "expect_defunct", "expect_deprecated", "expect_snapshot",
+"expect_no_condition", "expect_no_warning", "expect_no_error", "expect_no_message",
+"quote", "suppressMessages", "suppressWarnings", "try"]`
 (`expect_`functions come from the `testthat` package, except `expect_defunct` and
 `expect_deprecated` which come from the `lifecycle` package)
 
@@ -505,4 +501,32 @@ skipped-functions = ["^cs_", "^pl_", "my\\.function"]
 # Set a custom threshold above which diagnostics for this rule aren't reported
 # (this is basically equivalent to never hiding unused functions).
 threshold-ignore = 10000
+```
+
+### `unused_object`
+
+Use `skipped-functions` to fully replace the default list of calls whose
+directly-assigned arguments are allowed to be unused. Use
+`extend-skipped-functions` to add to the default list. Specifying both is an
+error.
+
+Function names in `skipped-functions` or `extend-skipped-functions` also match
+namespaced calls, e.g. `skipped-functions = ["expect_error"]` will allow
+`expect_error()` and `testthat::expect_error()`.
+
+Only the direct argument position counts: an assignment nested in a block or in
+a function defined inside the call is an ordinary local and is still reported.
+
+Default: `skipped-functions = ["expect_error", "expect_warning",
+"expect_message", "expect_silent", "expect_defunct", "expect_deprecated",
+"expect_snapshot", "expect_no_condition", "expect_no_warning",
+"expect_no_error", "expect_no_message"]`
+
+```toml
+[lint]
+...
+
+[lint.unused_object]
+# Also allow an unused assignment passed straight to `my_expect()`.
+extend-skipped-functions = ["my_expect"]
 ```

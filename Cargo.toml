@@ -36,9 +36,8 @@ etcetera = "0.11.0"
 jarl-core = { path = "crates/jarl-core" }
 jarl-lsp = { path = "crates/jarl-lsp" }
 jarl-semantic = { path = "crates/jarl-semantic" }
-path-absolutize = "3.1.1"
 rayon = "1.12.0"
-regex = { version = "1.11.1", default-features = false, features = ["std"] }
+regex = { version = "1.13.1", default-features = false, features = ["std"] }
 rustc-hash = "2.1.1"
 schemars = "1.1.0"
 serde = { version = "1.0.215", features = ["derive"] }
@@ -52,12 +51,19 @@ tracing = "0.1.41"
 [profile.release]
 lto = true
 
-# The profile that 'dist' will build with
+# The profile that 'dist' will build with. Tuned for binary size.
 [profile.dist]
+inherits = "release"
+lto = true
+codegen-units = 1
+opt-level = "s"
+strip = "symbols"
+
+[profile.benchmark]
 inherits = "release"
 lto = "thin"
 
-# Faster build, used by CI checks that compare output but not performance 
+# Faster build, used by CI checks that compare output but not performance
 # (e.g. ecosystem checks).
 [profile.ci]
 inherits = "release"

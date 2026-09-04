@@ -44,7 +44,7 @@ docs <- lapply(seq_along(rules), \(x) {
   }
 
   start <- grep("## What it does", content, fixed = TRUE)
-  end <- grep("^(impl Violation for|fn |pub fn)", content) - 1
+  end <- grep("^(impl Violation for|fn |pub fn|// )", content) - 1
   end <- end[end > start]
   end <- end[1] # could be several "pub fn"
 
@@ -85,7 +85,7 @@ quarto_yml$website$sidebar[[1]]$contents <- list(
   "rules.qmd",
   list(section = "List of rules", contents = paste0("rules/", doc_names, ".md"))
 )
-quarto_yml$filters <- list("newpagelink.lua")
+quarto_yml$filters <- list("linkify-github-refs.lua", "newpagelink.lua")
 write_yaml(
   quarto_yml,
   "docs/_quarto.yml",

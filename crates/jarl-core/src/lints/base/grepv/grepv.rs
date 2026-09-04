@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{Formals, drop_arg, get_arg, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -46,8 +47,8 @@ pub struct Grepv;
 ///
 /// See `?grepv`
 impl Violation for Grepv {
-    fn name(&self) -> String {
-        "grepv".to_string()
+    fn rule(&self) -> Rule {
+        Rule::Grepv
     }
     fn body(&self) -> String {
         "`grep(..., value = TRUE)` can be simplified.".to_string()
@@ -83,12 +84,11 @@ pub fn grepv(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     let diagnostic = Diagnostic::new(
         Grepv,
         range,
-        Fix {
-            content: format!("grepv({inner_content})"),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("grepv({inner_content})"),
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

@@ -58,6 +58,13 @@ mod tests {
             "dplyr_filter_out",
             None,
         );
+        // don't match identifiers on substring
+        // https://github.com/etiennebacher/jarl/pull/681
+        expect_no_lint(
+            "x |> dplyr::filter(x2 > 0 | is.na(x))",
+            "dplyr_filter_out",
+            None,
+        );
         // Tidy eval splice in condition
         expect_no_lint(
             "x |> dplyr::filter(!!!args | is.na(a))",

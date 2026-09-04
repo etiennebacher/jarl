@@ -83,6 +83,10 @@ pub struct Checker {
     // consumer. Fresh (empty) when the on-disk contents may drift from the
     // run's caches (fix mode, LSP buffers).
     pub source_index_cache: jarl_semantic::SourceIndexCache,
+    // Ranges of the file that are parsed but never evaluated, so use-def
+    // rules must not read a definition or a use out of them. Only Rmd/Qmd
+    // documents have any: the chunks marked `eval = FALSE`.
+    pub unevaluated_ranges: Vec<biome_rowan::TextRange>,
 }
 
 impl Checker {
@@ -102,6 +106,7 @@ impl Checker {
             namespace_exports: HashSet::new(),
             file_path: std::path::PathBuf::new(),
             source_index_cache: jarl_semantic::SourceIndexCache::new(),
+            unevaluated_ranges: Vec::new(),
         }
     }
 

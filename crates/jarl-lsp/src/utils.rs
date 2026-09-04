@@ -3,108 +3,16 @@
 use std::path::Path;
 
 use air_workspace::resolve::PathResolver;
-use jarl_core::discovery::DEFAULT_EXCLUDE_PATTERNS;
+use jarl_core::discovery::{
+    DEFAULT_EXCLUDE_PATTERNS, exclude_matcher, excluded_with_parents, include_matcher,
+};
 use jarl_core::settings::Settings;
-
-/// Check if a path string matches an exclusion pattern
-///
-/// Patterns can be:
-/// - Directory patterns ending with `/` (e.g., "renv/")
-/// - Exact filename matches (e.g., "cpp11.R")
-/// - Glob patterns with `*` wildcards (e.g., "import-standalone-*.R")
-pub fn matches_pattern(path: &str, pattern: &str) -> bool {
-    // Normalize path separators to forward slashes for consistent matching
-    let normalized_path = path.replace('\\', "/");
-
-    if pattern.ends_with('/') {
-        // Directory pattern - check if path contains this directory
-        let dir_pattern = pattern.trim_end_matches('/');
-
-        // Match if the directory appears as a path component
-        // e.g., "renv/" should match "path/to/renv/file.R" but not "path/to/myrenv/file.R"
-        for component in normalized_path.split('/') {
-            if component == dir_pattern {
-                return true;
-            }
-        }
-        false
-    } else if pattern.contains('*') {
-        // Glob pattern - use simple glob matching
-        let filename = normalized_path
-            .split('/')
-            .next_back()
-            .unwrap_or(&normalized_path);
-
-        // Split pattern by '*' to get literal parts
-        let parts: Vec<&str> = pattern.split('*').collect();
-
-        if parts.is_empty() {
-            return false;
-        }
-
-        // Check if filename starts with first part
-        if !filename.starts_with(parts[0]) {
-            return false;
-        }
-
-        // Check if filename ends with last part (if there's more than one part)
-        if parts.len() > 1 {
-            let last = parts[parts.len() - 1];
-            if !filename.ends_with(last) {
-                return false;
-            }
-        }
-
-        // For patterns with multiple wildcards, check that all parts appear in order
-        let mut pos = 0;
-        for (i, part) in parts.iter().enumerate() {
-            if i == 0 {
-                pos = part.len();
-                continue;
-            }
-
-            if let Some(found) = filename[pos..].find(part) {
-                pos += found + part.len();
-            } else {
-                return false;
-            }
-        }
-
-        true
-    } else {
-        // Exact filename match - check if the filename component matches
-        normalized_path
-            .split('/')
-            .next_back()
-            .map(|filename| filename == pattern)
-            .unwrap_or(false)
-    }
-}
-
-/// Check if a file should be excluded based on patterns
-///
-/// Returns `true` if the file path matches any of the provided exclusion patterns.
-pub fn should_exclude_file(file_path: &Path, patterns: &[&str]) -> bool {
-    let path_str = file_path.to_string_lossy();
-
-    for pattern in patterns {
-        if matches_pattern(&path_str, pattern) {
-            tracing::debug!(
-                "File {:?} matches exclusion pattern '{}'",
-                file_path,
-                pattern
-            );
-            return true;
-        }
-    }
-
-    false
-}
 
 /// Check if a file should be excluded based on settings from jarl.toml
 ///
-/// This function checks both the `default-exclude` option (which is `true` by default)
-/// and any custom `exclude` patterns specified in the jarl.toml configuration.
+/// Honours the `exclude`, `default-exclude` and `include` options. The matching
+/// itself is delegated to `jarl_core::discovery` so that the LSP and
+/// `jarl check` exclude exactly the same files.
 ///
 /// # Arguments
 /// * `file_path` - The path to the file to check
@@ -116,46 +24,51 @@ pub fn should_exclude_file_based_on_settings(
     file_path: &Path,
     resolver: &PathResolver<Settings>,
 ) -> bool {
-    // Get the first settings item (the one applicable to this file)
-    let Some(settings_item) = resolver.items().first() else {
+    // Exclude patterns are anchored at the directory of the config they come
+    // from, so the nearest config wins. `resolve()` misses the user-level config
+    // directory, which is never an ancestor of the file, hence the fallback.
+    let Some(settings_item) = resolver
+        .resolve(file_path)
+        .or_else(|| resolver.items().first())
+    else {
         // No settings found, don't exclude
         return false;
     };
 
-    let settings = settings_item.value();
+    excluded_by_settings(file_path, settings_item.value(), settings_item.path())
+}
 
-    // Check if default_exclude is enabled (true by default)
-    let use_default_exclude = settings.linter.default_exclude.unwrap_or(true);
+/// Whether `path` is filtered out by the `exclude`, `default-exclude` and
+/// `include` patterns of `settings`, whose configuration directory is `root`.
+///
+/// The matchers come from `jarl_core::discovery`, which is what makes the LSP
+/// and `jarl check` exclude the same files: one set of glob semantics, provided
+/// by the `ignore` crate.
+fn excluded_by_settings(path: &Path, settings: &Settings, root: &Path) -> bool {
+    let relative = path.strip_prefix(root).unwrap_or(path);
 
-    let mut patterns = Vec::new();
-
-    if use_default_exclude {
-        patterns.extend_from_slice(DEFAULT_EXCLUDE_PATTERNS);
+    let mut exclude: Vec<&str> = Vec::new();
+    if let Some(patterns) = &settings.linter.exclude {
+        exclude.extend(patterns.iter().map(String::as_str));
     }
-
-    // Add custom exclude patterns from jarl.toml
-    if let Some(exclude_patterns) = &settings.linter.exclude {
-        for pattern in exclude_patterns {
-            patterns.push(pattern.as_str());
-        }
+    if settings.linter.default_exclude.unwrap_or(true) {
+        exclude.extend_from_slice(DEFAULT_EXCLUDE_PATTERNS);
     }
-
-    // Check if the file matches any exclusion pattern
-    if !patterns.is_empty() && should_exclude_file(file_path, &patterns) {
+    if let Some(overrides) = exclude_matcher(root, &exclude)
+        && excluded_with_parents(&overrides, relative)
+    {
         return true;
     }
 
-    // Check include patterns: if set and the file doesn't match any, exclude it.
-    if let Some(include_patterns) = &settings.linter.include
-        && !include_patterns.is_empty()
+    // If `include` is set, only files matching at least one pattern are linted.
+    if let Some(patterns) = &settings.linter.include
+        && let Some(overrides) = include_matcher(root, patterns)
+        && !matches!(
+            overrides.matched(relative, false),
+            ignore::Match::Whitelist(_)
+        )
     {
-        let path_str = file_path.to_string_lossy();
-        let is_included = include_patterns
-            .iter()
-            .any(|p| matches_pattern(&path_str, p));
-        if !is_included {
-            return true;
-        }
+        return true;
     }
 
     false
@@ -164,200 +77,147 @@ pub fn should_exclude_file_based_on_settings(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
     use std::path::PathBuf;
 
-    #[test]
-    fn test_directory_pattern_basic() {
-        assert!(matches_pattern("project/renv/activate.R", "renv/"));
-        assert!(matches_pattern("renv/library/package.R", "renv/"));
-        assert!(matches_pattern("path/to/renv/file.R", "renv/"));
+    use jarl_core::discovery::discover_r_file_paths;
+    use jarl_core::settings::LinterSettings;
+
+    /// R files laid out in the temporary project used by the tests below.
+    const FILES: &[&str] = &[
+        "file.R",
+        "R/b.R",
+        "R/generated/a.R",
+        "R/generated/deep/c.R",
+        "folder/d.R",
+        "folder/sub/e.R",
+        "renv/activate.R",
+        "src/cpp11.R",
+        "R/import-standalone-purrr.R",
+    ];
+
+    fn project() -> tempfile::TempDir {
+        let dir = tempfile::tempdir().unwrap();
+        for file in FILES {
+            let path = dir.path().join(file);
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            fs::write(&path, "x <- 1\n").unwrap();
+        }
+        dir
+    }
+
+    fn resolver_for(root: &Path, settings: Settings) -> PathResolver<Settings> {
+        let mut resolver = PathResolver::new(Settings::default());
+        resolver.add(root, settings);
+        resolver
+    }
+
+    fn settings_with(exclude: Option<Vec<&str>>, include: Option<Vec<&str>>) -> Settings {
+        Settings {
+            linter: LinterSettings {
+                exclude: exclude.map(|p| p.iter().map(|s| s.to_string()).collect()),
+                include: include.map(|p| p.iter().map(|s| s.to_string()).collect()),
+                ..Default::default()
+            },
+        }
+    }
+
+    /// The set of files `jarl check <root>` would lint.
+    fn discovered(root: &Path, resolver: &PathResolver<Settings>) -> Vec<PathBuf> {
+        discover_r_file_paths(&[root], &[], resolver, true, false)
+            .into_iter()
+            .filter_map(Result::ok)
+            .collect()
+    }
+
+    /// The LSP and the CLI must exclude exactly the same files: both go through
+    /// `jarl_core::discovery`, so a divergence here means one of the two grew a
+    /// second implementation again.
+    fn assert_lsp_agrees_with_cli(exclude: Option<Vec<&str>>, include: Option<Vec<&str>>) {
+        let dir = project();
+        let root = air_fs::normalize_path(dir.path());
+        let resolver = resolver_for(&root, settings_with(exclude.clone(), include.clone()));
+        let linted = discovered(&root, &resolver);
+
+        for file in FILES {
+            let path = air_fs::normalize_path(root.join(file));
+            let cli_excludes = !linted.contains(&path);
+            let lsp_excludes = should_exclude_file_based_on_settings(&path, &resolver);
+            assert_eq!(
+                lsp_excludes, cli_excludes,
+                "disagreement on {file} (exclude = {exclude:?}, include = {include:?})"
+            );
+        }
     }
 
     #[test]
-    fn test_directory_pattern_no_substring_match() {
-        // Should not match directory name as substring
-        assert!(!matches_pattern("project/myrenv/file.R", "renv/"));
-        assert!(!matches_pattern("project/renvfoo/file.R", "renv/"));
-        assert!(!matches_pattern("project/foorenv/file.R", "renv/"));
+    fn agrees_on_default_excludes() {
+        assert_lsp_agrees_with_cli(None, None);
     }
 
     #[test]
-    fn test_directory_pattern_git() {
-        assert!(matches_pattern("project/.git/config", ".git/"));
-        assert!(matches_pattern(".git/HEAD", ".git/"));
-        assert!(matches_pattern("path/to/.git/objects/file", ".git/"));
+    fn agrees_on_recursive_glob() {
+        assert_lsp_agrees_with_cli(Some(vec!["R/generated/**/*.R"]), None);
     }
 
     #[test]
-    fn test_exact_filename_match() {
-        assert!(matches_pattern("project/src/cpp11.R", "cpp11.R"));
-        assert!(matches_pattern("RcppExports.R", "RcppExports.R"));
-        assert!(matches_pattern(
-            "path/to/extendr-wrappers.R",
-            "extendr-wrappers.R"
+    fn agrees_on_anchored_pattern() {
+        assert_lsp_agrees_with_cli(Some(vec!["/file.R"]), None);
+    }
+
+    #[test]
+    fn agrees_on_single_level_glob() {
+        assert_lsp_agrees_with_cli(Some(vec!["folder/*.R"]), None);
+    }
+
+    #[test]
+    fn agrees_on_directory_pattern() {
+        assert_lsp_agrees_with_cli(Some(vec!["folder/"]), None);
+    }
+
+    #[test]
+    fn agrees_on_negation() {
+        assert_lsp_agrees_with_cli(Some(vec!["R/**", "!R/b.R"]), None);
+    }
+
+    #[test]
+    fn agrees_on_include_patterns() {
+        assert_lsp_agrees_with_cli(None, Some(vec!["R/**/*.R"]));
+    }
+
+    #[test]
+    fn agrees_on_include_and_exclude() {
+        assert_lsp_agrees_with_cli(Some(vec!["R/generated/**"]), Some(vec!["R/**/*.R"]));
+    }
+
+    #[test]
+    fn recursive_glob_is_excluded() {
+        // The regression this test exists for: the LSP used to glob the
+        // basename only, so `R/generated/**/*.R` never matched anything.
+        let dir = project();
+        let root = air_fs::normalize_path(dir.path());
+        let resolver = resolver_for(&root, settings_with(Some(vec!["R/generated/**/*.R"]), None));
+
+        assert!(should_exclude_file_based_on_settings(
+            &root.join("R/generated/a.R"),
+            &resolver
         ));
-    }
-
-    #[test]
-    fn test_exact_filename_no_substring_match() {
-        // Should not match as substring
-        assert!(!matches_pattern("my-cpp11.R", "cpp11.R"));
-        assert!(!matches_pattern("cpp11-extra.R", "cpp11.R"));
-        assert!(!matches_pattern("path/to/mycpp11.R", "cpp11.R"));
-    }
-
-    #[test]
-    fn test_glob_pattern_basic() {
-        assert!(matches_pattern(
-            "project/import-standalone-purrr.R",
-            "import-standalone-*.R"
+        assert!(should_exclude_file_based_on_settings(
+            &root.join("R/generated/deep/c.R"),
+            &resolver
         ));
-        assert!(matches_pattern(
-            "import-standalone-test.R",
-            "import-standalone-*.R"
-        ));
-        assert!(matches_pattern(
-            "R/import-standalone-types.R",
-            "import-standalone-*.R"
-        ));
-    }
-
-    #[test]
-    fn test_glob_pattern_no_match() {
-        // Should not match without the prefix
-        assert!(!matches_pattern(
-            "standalone-test.R",
-            "import-standalone-*.R"
-        ));
-
-        // Should not match with wrong extension
-        assert!(!matches_pattern(
-            "import-standalone-test.py",
-            "import-standalone-*.R"
-        ));
-
-        // Should not match without the correct start
-        assert!(!matches_pattern(
-            "test-import-standalone.R",
-            "import-standalone-*.R"
-        ));
-    }
-
-    #[test]
-    fn test_glob_pattern_empty_wildcard() {
-        // Wildcard can match empty string
-        assert!(matches_pattern(
-            "import-standalone-.R",
-            "import-standalone-*.R"
-        ));
-    }
-
-    #[test]
-    fn test_glob_pattern_multiple_wildcards() {
-        assert!(matches_pattern("test-foo-bar.R", "test-*-*.R"));
-        assert!(matches_pattern("test-a-b.R", "test-*-*.R"));
-        assert!(!matches_pattern("test-foo.R", "test-*-*.R"));
-    }
-
-    #[test]
-    fn test_windows_paths() {
-        assert!(matches_pattern("project\\renv\\activate.R", "renv/"));
-        assert!(matches_pattern("project\\src\\cpp11.R", "cpp11.R"));
-        assert!(matches_pattern(
-            "project\\import-standalone-test.R",
-            "import-standalone-*.R"
-        ));
-    }
-
-    #[test]
-    fn test_mixed_separators() {
-        assert!(matches_pattern("project/renv\\activate.R", "renv/"));
-        assert!(matches_pattern("project\\path/to\\cpp11.R", "cpp11.R"));
-    }
-
-    #[test]
-    fn test_should_exclude_file_single_pattern() {
-        let path = PathBuf::from("project/renv/activate.R");
-        assert!(should_exclude_file(&path, &["renv/"]));
-
-        let path = PathBuf::from("project/src/main.R");
-        assert!(!should_exclude_file(&path, &["renv/"]));
-    }
-
-    #[test]
-    fn test_should_exclude_file_multiple_patterns() {
-        let patterns = &["renv/", "cpp11.R", "import-standalone-*.R"];
-
-        assert!(should_exclude_file(
-            &PathBuf::from("renv/activate.R"),
-            patterns
-        ));
-        assert!(should_exclude_file(&PathBuf::from("src/cpp11.R"), patterns));
-        assert!(should_exclude_file(
-            &PathBuf::from("import-standalone-test.R"),
-            patterns
-        ));
-        assert!(!should_exclude_file(
-            &PathBuf::from("src/my_file.R"),
-            patterns
+        assert!(!should_exclude_file_based_on_settings(
+            &root.join("R/b.R"),
+            &resolver
         ));
     }
 
     #[test]
-    fn test_should_exclude_file_empty_patterns() {
-        let path = PathBuf::from("project/renv/activate.R");
-        assert!(!should_exclude_file(&path, &[]));
-    }
-
-    #[test]
-    fn test_revdep_directory() {
-        assert!(matches_pattern("project/revdep/check.R", "revdep/"));
-        assert!(matches_pattern("revdep/README.md", "revdep/"));
-        assert!(!matches_pattern("project/myrevdep/file.R", "revdep/"));
-    }
-
-    #[test]
-    fn test_default_exclude_patterns() {
-        use jarl_core::discovery::DEFAULT_EXCLUDE_PATTERNS;
-
-        // Test all default exclusion patterns
-        assert!(should_exclude_file(
-            &PathBuf::from("project/.git/config"),
-            DEFAULT_EXCLUDE_PATTERNS
-        ));
-        assert!(should_exclude_file(
-            &PathBuf::from("renv/activate.R"),
-            DEFAULT_EXCLUDE_PATTERNS
-        ));
-        assert!(should_exclude_file(
-            &PathBuf::from("revdep/check.R"),
-            DEFAULT_EXCLUDE_PATTERNS
-        ));
-        assert!(should_exclude_file(
-            &PathBuf::from("src/cpp11.R"),
-            DEFAULT_EXCLUDE_PATTERNS
-        ));
-        assert!(should_exclude_file(
-            &PathBuf::from("R/RcppExports.R"),
-            DEFAULT_EXCLUDE_PATTERNS
-        ));
-        assert!(should_exclude_file(
-            &PathBuf::from("R/extendr-wrappers.R"),
-            DEFAULT_EXCLUDE_PATTERNS
-        ));
-        assert!(should_exclude_file(
-            &PathBuf::from("R/import-standalone-purrr.R"),
-            DEFAULT_EXCLUDE_PATTERNS
-        ));
-
-        // Should not exclude normal files
-        assert!(!should_exclude_file(
-            &PathBuf::from("R/utils.R"),
-            DEFAULT_EXCLUDE_PATTERNS
-        ));
-        assert!(!should_exclude_file(
-            &PathBuf::from("src/main.R"),
-            DEFAULT_EXCLUDE_PATTERNS
+    fn no_settings_excludes_nothing() {
+        let resolver = PathResolver::new(Settings::default());
+        assert!(!should_exclude_file_based_on_settings(
+            &PathBuf::from("/project/renv/activate.R"),
+            &resolver
         ));
     }
 }

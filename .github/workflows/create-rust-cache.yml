@@ -46,4 +46,4 @@ jobs:
       - name: Build jarl binary
         run: |
           cargo build --profile ci --package jarl
-          cargo build --profile dist --package jarl
+          cargo build --profile benchmark --package jarl

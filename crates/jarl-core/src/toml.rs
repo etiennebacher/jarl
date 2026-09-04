@@ -14,8 +14,7 @@ use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 
-use crate::config::{get_invalid_rules, replace_group_rules, unknown_rules_error};
-use crate::lints::base::assignment::options::AssignmentConfig;
+use crate::config::resolve_rule_names;
 use crate::lints::base::assignment::options::AssignmentOptions;
 use crate::lints::base::duplicated_arguments::options::DuplicatedArgumentsOptions;
 use crate::lints::base::if_not_else::options::IfNotElseOptions;
@@ -28,9 +27,9 @@ use crate::lints::base::true_false_symbol::options::TrueFalseSymbolOptions;
 use crate::lints::base::undesirable_function::options::UndesirableFunctionOptions;
 use crate::lints::base::unreachable_code::options::UnreachableCodeOptions;
 use crate::lints::base::unused_function::options::UnusedFunctionOptions;
+use crate::lints::base::unused_object::options::UnusedObjectOptions;
 use crate::per_file_ignores::PerFileIgnores;
-use crate::rule_options::{ResolvedRuleOptions, RuleOptions};
-use crate::rule_set::Rule;
+use crate::rule_options::ResolvedRuleOptions;
 use crate::settings::LinterSettings;
 use crate::settings::Settings;
 
@@ -38,6 +37,7 @@ use crate::settings::Settings;
 pub enum ParseTomlError {
     Read(PathBuf, io::Error),
     Deserialize(PathBuf, toml::de::Error),
+    Invalid(PathBuf, String),
 }
 
 impl std::error::Error for ParseTomlError {}
@@ -53,13 +53,71 @@ impl Display for ParseTomlError {
             Self::Deserialize(path, err) => {
                 write!(f, "Failed to parse {path}:\n{err}", path = path.display())
             }
+            Self::Invalid(path, err) => {
+                write!(
+                    f,
+                    "Invalid configuration in {path}:\n{err}",
+                    path = path.display()
+                )
+            }
         }
     }
 }
 
 pub fn parse_jarl_toml(path: &Path) -> Result<TomlOptions, ParseTomlError> {
-    let toml = fs::read_to_string(path).unwrap();
+    let toml =
+        fs::read_to_string(path).map_err(|err| ParseTomlError::Read(path.to_path_buf(), err))?;
+
+    // Rule options are sub-tables (`[lint.assignment]`), so a `[lint]` key set
+    // to anything else can only be an unknown option. Catch those before
+    // deserializing, otherwise a known rule name (`assignment = "<-"`) reports
+    // a type mismatch instead of the "Unknown field" message every other
+    // unknown option gets. A malformed file is left to the deserializer, which
+    // reports the syntax error with its position.
+    if let Ok(table) = toml.parse::<toml::Table>()
+        && let Some(field) = unknown_lint_field(&table)
+    {
+        return Err(ParseTomlError::Invalid(
+            path.to_path_buf(),
+            unknown_lint_field_message(field),
+        ));
+    }
+
     toml::from_str(&toml).map_err(|err| ParseTomlError::Deserialize(path.to_path_buf(), err))
+}
+
+/// The primary `[lint]` options, i.e. everything but the per-rule sub-tables.
+const LINT_OPTIONS: &[&str] = &[
+    "select",
+    "extend-select",
+    "ignore",
+    "fixable",
+    "unfixable",
+    "exclude",
+    "default-exclude",
+    "include",
+    "per-file-ignores",
+    "check-roxygen",
+    "fix-roxygen",
+];
+
+/// Find a `[lint]` key that holds a non-table value but isn't a primary option.
+fn unknown_lint_field(table: &toml::Table) -> Option<&str> {
+    let lint = table.get("lint")?.as_table()?;
+    lint.iter().find_map(|(key, value)| {
+        (!value.is_table() && !LINT_OPTIONS.contains(&key.as_str())).then_some(key.as_str())
+    })
+}
+
+fn unknown_lint_field_message(field: &str) -> String {
+    format!(
+        "Unknown field `{field}` in `[lint]`. Expected one of: {options}.",
+        options = LINT_OPTIONS
+            .iter()
+            .map(|option| format!("`{option}`"))
+            .collect::<Vec<_>>()
+            .join(", ")
+    )
 }
 
 #[derive(Clone, Debug, Default, serde::Deserialize)]
@@ -246,11 +304,11 @@ pub struct LinterTomlOptions {
     ///
     /// Defaults to `false`.
     pub fix_roxygen: Option<bool>,
-    /// # Assignment operator to use
+    /// # Options for the `assignment` rule
     ///
-    /// Accepts either the legacy form `assignment = "<-"` (deprecated) or the
-    /// new table form `[lint.assignment]` with an `operator` field.
-    pub assignment: Option<AssignmentConfig>,
+    /// Use `operator` to specify which assignment operator to enforce.
+    /// Valid values are `"<-"` (the default) and `"="`.
+    pub assignment: Option<AssignmentOptions>,
 
     /// # Options for the `duplicated_arguments` rule
     ///
@@ -346,6 +404,15 @@ pub struct LinterTomlOptions {
     #[serde(rename = "unused_function")]
     pub unused_function: Option<UnusedFunctionOptions>,
 
+    /// # Options for the `unused_object` rule
+    ///
+    /// Use `skipped-functions` to fully replace the default list of calls whose
+    /// directly-assigned arguments are allowed to be unused. Use
+    /// `extend-skipped-functions` to add to the default list.
+    /// Specifying both is an error.
+    #[serde(rename = "unused_object")]
+    pub unused_object: Option<UnusedObjectOptions>,
+
     /// Catch any unknown fields so we can produce a clean error message that
     /// only lists the primary `[lint]` options (not every rule sub-table).
     #[serde(flatten)]
@@ -388,26 +455,12 @@ impl TomlOptions {
         // Reject unknown fields in `[lint]` with a clean error message that
         // only lists the primary options (not every rule sub-table name).
         if let Some(field) = linter.unknown_fields.keys().next() {
-            return Err(anyhow::anyhow!(
-                "Unknown field `{field}` in `[lint]`. Expected one of: \
-                 `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, \
-                 `exclude`, `default-exclude`, `include`, `per-file-ignores`, \
-                 `check-roxygen`, `fix-roxygen`."
-            ));
+            return Err(anyhow::anyhow!(unknown_lint_field_message(field)));
         }
 
         let per_file_ignores = resolve_per_file_ignores(linter.per_file_ignores.as_ref(), root)?;
 
-        // Resolve the assignment config: extract the AssignmentOptions and
-        // track whether the deprecated top-level string form was used.
-        let (assignment_options, deprecated_assignment_syntax) = match &linter.assignment {
-            Some(AssignmentConfig::Legacy(value)) => (
-                Some(AssignmentOptions { operator: Some(value.clone()) }),
-                true,
-            ),
-            Some(AssignmentConfig::Options(opts)) => (Some(opts.clone()), false),
-            None => (None, false),
-        };
+        let rule_options = ResolvedRuleOptions::resolve(&linter)?;
 
         let linter = LinterSettings {
             select: linter.select,
@@ -420,21 +473,7 @@ impl TomlOptions {
             fix_roxygen: linter.fix_roxygen,
             fixable: linter.fixable,
             unfixable: linter.unfixable,
-            deprecated_assignment_syntax,
-            rule_options: ResolvedRuleOptions::resolve(&RuleOptions {
-                assignment: assignment_options.as_ref(),
-                duplicated_arguments: linter.duplicated_arguments.as_ref(),
-                if_not_else: linter.if_not_else.as_ref(),
-                implicit_assignment: linter.implicit_assignment.as_ref(),
-                missing_argument: linter.missing_argument.as_ref(),
-                nested_pipe: linter.nested_pipe.as_ref(),
-                pipe_consistency: linter.pipe_consistency.as_ref(),
-                quotes: linter.quotes.as_ref(),
-                true_false_symbol: linter.true_false_symbol.as_ref(),
-                undesirable_function: linter.undesirable_function.as_ref(),
-                unreachable_code: linter.unreachable_code.as_ref(),
-                unused_function: linter.unused_function.as_ref(),
-            })?,
+            rule_options,
             per_file_ignores,
         };
 
@@ -453,26 +492,13 @@ fn resolve_per_file_ignores(
         return Ok(PerFileIgnores::default());
     };
 
-    let all_rules = Rule::all();
     let mut entries = Vec::with_capacity(per_file_ignores.len());
 
     for (pattern, rule_names) in per_file_ignores {
-        let passed_by_user = rule_names.iter().map(|s| s.as_str()).collect();
-        let expanded_rules = replace_group_rules(&passed_by_user, all_rules);
-        if let Some(invalid) = get_invalid_rules(all_rules, &expanded_rules) {
-            return Err(unknown_rules_error(
-                format!(
-                    "Unknown rules in `per-file-ignores` for pattern '{}': {}",
-                    pattern,
-                    invalid.names.join(", ")
-                ),
-                invalid.help,
-            ));
-        }
-        let rules: Vec<Rule> = expanded_rules
-            .iter()
-            .filter_map(|name| Rule::from_name(name))
-            .collect();
+        let rules = resolve_rule_names(
+            rule_names.iter().map(String::as_str),
+            &format!("`per-file-ignores` for pattern '{pattern}'"),
+        )?;
         entries.push((pattern.clone(), rules));
     }
 

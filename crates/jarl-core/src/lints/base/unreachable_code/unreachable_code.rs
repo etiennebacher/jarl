@@ -3,6 +3,7 @@ use crate::diagnostic::*;
 use air_r_syntax::*;
 
 use super::cfg::{UnreachableReason, build_cfg, build_cfg_top_level, find_unreachable_code};
+use crate::rule_set::Rule;
 
 /// Version added: 0.4.0
 ///
@@ -60,7 +61,7 @@ pub fn unreachable_code(
     for unreachable_info in find_unreachable_code(&cfg) {
         let diagnostic = Diagnostic::new(
             ViolationData::new(
-                "unreachable_code".to_string(),
+                Rule::UnreachableCode,
                 unreachable_info.reason.message().to_string(),
                 None,
             ),
@@ -101,7 +102,7 @@ pub fn unreachable_code_top_level(
 
         let diagnostic = Diagnostic::new(
             ViolationData::new(
-                "unreachable_code".to_string(),
+                Rule::UnreachableCode,
                 unreachable_info.reason.message().to_string(),
                 None,
             ),

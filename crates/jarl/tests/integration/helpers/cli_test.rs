@@ -35,6 +35,22 @@ impl CliTest {
         Ok(case)
     }
 
+    /// Like [`CliTest::with_files`], but also writes a `DESCRIPTION` at the root
+    /// so that the temp dir is recognized as an R package.
+    pub fn package_with_files<'a>(
+        files: impl IntoIterator<Item = (&'a str, &'a str)>,
+    ) -> anyhow::Result<Self> {
+        let case = Self::new()?;
+        case.write_file(
+            "DESCRIPTION",
+            "Package: testpkg\nTitle: Test\nVersion: 0.0.1\n",
+        )?;
+        for (path, content) in files {
+            case.write_file(path, content)?;
+        }
+        Ok(case)
+    }
+
     pub fn write_file(&self, path: impl AsRef<Path>, content: &str) -> anyhow::Result<()> {
         let path = self.project_dir.join(path);
 

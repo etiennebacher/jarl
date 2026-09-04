@@ -2839,3 +2839,53 @@ include = ["foo.R"]
 
     Ok(())
 }
+
+/// An unreadable `jarl.toml` (e.g. because of permission error) must
+/// produce an error, not a panic.
+#[test]
+#[cfg(unix)]
+fn test_unreadable_toml() -> anyhow::Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let case = CliTest::with_files([
+        ("test.R", "any(is.na(x))"),
+        (
+            "jarl.toml",
+            r#"
+[lint]
+select = ["any_is_na"]
+"#,
+        ),
+    ])?;
+
+    let toml = case.root().join("jarl.toml");
+    std::fs::set_permissions(&toml, std::fs::Permissions::from_mode(0o000))?;
+
+    // Root bypasses the permission bits, so there is nothing to test there.
+    if std::fs::read_to_string(&toml).is_ok() {
+        return Ok(());
+    }
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to read [TEMP_DIR]/jarl.toml:
+    Permission denied (os error 13)
+    "
+    );
+
+    Ok(())
+}

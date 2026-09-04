@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{
     Formals, get_arg, get_arg_by_position, get_function_name, get_function_namespace_prefix,
     node_contains_comments,
@@ -132,21 +133,20 @@ fn check_expect_class_comparison(
 
     Ok(Some(Diagnostic::new(
         ViolationData::new(
-            "expect_s3_class".to_string(),
+            Rule::TestthatExpectS3Class,
             format!("`{linted_text}` may fail if `{object_text}` gets more classes in the future."),
             Some(format!("Use `{replacement}` instead.")),
         ),
         range,
         if can_fix {
-            Fix {
-                content: format!(
+            Fix::new(
+                range,
+                format!(
                     "{}expect_s3_class({}, {})",
                     namespace_prefix, object_text, class_text
                 ),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            }
+                node_contains_comments(ast.syntax()),
+            )
         } else {
             Fix::empty()
         },
@@ -187,18 +187,17 @@ fn check_expect_true_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 
     Ok(Some(Diagnostic::new(
         ViolationData::new(
-            "expect_s3_class".to_string(),
+            Rule::TestthatExpectS3Class,
             format!("`{replacement}` is better than `{linted_text}`."),
             Some(format!("Use `{replacement}` instead.")),
         ),
         range,
         if can_fix {
-            Fix {
-                content: format!("{namespace_prefix}{replacement}"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            }
+            Fix::new(
+                range,
+                format!("{namespace_prefix}{replacement}"),
+                node_contains_comments(ast.syntax()),
+            )
         } else {
             Fix::empty()
         },

@@ -1,4 +1,7 @@
-use air_r_syntax::RSyntaxNode;
+use std::collections::HashSet;
+
+use air_r_syntax::{RArgument, RCall, RSyntaxNode};
+use biome_rowan::AstNode;
 use oak_semantic::semantic_index::{Definition, DefinitionKind, ScopeId, SemanticIndex};
 
 use jarl_semantic::{
@@ -8,6 +11,8 @@ use jarl_semantic::{
 
 use crate::checker::Checker;
 use crate::diagnostic::{Diagnostic, Fix, ViolationData};
+use crate::rule_set::Rule;
+use crate::utils::get_function_name;
 
 /// Version added: 0.6.0
 ///
@@ -19,6 +24,118 @@ use crate::diagnostic::{Diagnostic, Fix, ViolationData};
 ///
 /// Unused assignments are usually a sign of dead code or a bug. Removing them
 /// reduces noise.
+///
+/// ## Features
+///
+/// Apart from the standard usage of objects in R (e.g. `x <- 1; print(x)`),
+/// this rule handles the following cases:
+///
+/// - String interpolation in the `glue`, `cli`, and `stringr` packages, e.g.
+///   in this case `x` is not reported as unused:
+///
+///   ```r
+///   x <- 1
+///   glue::glue("{print(x)}")
+///   ```
+///
+///   Custom functions or functions from other packages providing string
+///   interpolation are not supported.
+///
+/// - The `%<>%` operator from `magrittr` is supported.
+///
+/// - Explicit cross-file analysis: calls to `source()` or `targets::tar_source()`
+///   are detected, e.g. this doesn't report `x` as unused:
+///
+///     - `foo.R`:
+///       ```r
+///       x <- 1
+///       source("bar.R")
+///       ```
+///
+///     - `bar.R`:
+///       ```r
+///       print(x)
+///       ```
+///
+///   Similarly, the definition could be made in the sourced file (`bar.R`) and
+///   the use could be made in the other file (`foo.R`).
+///
+/// - Implicit cross-file analysis. All files in an `R` folder (whether this
+///   corresponds to an R package or to another project type) are collated and
+///   share the same namespace, meaning that an object defined in `R/a.R` could
+///   seamlessly be detected as used in `R/b.R`.
+///
+/// - Some functions that can call other quoted functions (e.g. `do.call()`) are
+///   supported.
+///
+/// - Assignments passed directly to a `testthat` expectation that runs its
+///   argument for the condition it signals (`expect_error()`,
+///   `expect_warning()`, `expect_message()`, `expect_silent()`,
+///   `expect_defunct()`, `expect_deprecated()`, `expect_snapshot()`,
+///   `expect_no_condition()`, `expect_no_warning()`, `expect_no_error()`,
+///   `expect_no_message()`) are not reported:
+///
+///   ```r
+///   expect_error(x <- foo)
+///   ```
+///
+/// You can provide a list of functions whose arguments can be assignments that
+/// shouldn't be reported in `jarl.toml`.
+///
+/// ## Limitations
+///
+/// Some cases are deliberately left aside or might be tackled in the future:
+///
+/// - Some functions such as `get()` or `mget()` are not handled.
+///
+/// - Quoted code that is evaluated later may lead to false positives, e.g. this
+///   would wrongly report `x` as unused:
+///
+///   ```r
+///   x <- 1
+///   e <- quote(x + 1)
+///   eval(e)
+///   ```
+///
+/// - `source()` and alike only accept literal paths, not R objects, e.g. this
+///   isn't handled by Jarl:
+///
+///   ```r
+///   for (i in my_paths) source(i)
+///   ```
+///
+/// ## In R Markdown and Quarto files
+///
+/// Jarl bundles all chunks together before running the analysis, meaning that
+/// `unused_object` would properly detect whether an object created in a chunk
+/// is used in another.
+///
+/// There are two other cases to handle:
+///
+/// - objects that are present in a chunk with `eval = FALSE` or `#| eval: false`
+///   are not marked as "used". For instance, in the following example, the
+///   object `x` would be reported as unused:
+///
+///   ````markdown
+///   ```{{r}}
+///   x <- 1
+///   ```
+///
+///   ```{{r eval = FALSE}}
+///   print(x)
+///   ```
+///   ````
+///
+///   Note that if the option value is only available at runtime (e.g.
+///   `eval = my_r_object`) then Jarl assumes that the chunk is evaluated.
+///
+/// - inline R code is taken into account, `` `r x` `` in the text would keep
+///   `x` from being reported as unused.
+///
+/// ## In roxygen examples
+///
+/// R code in `@examples` and `@examplesIf` sections is checked too, in files
+/// under `R/` in a package. This can be turned off with `check-roxygen`.
 ///
 /// ## Examples
 ///
@@ -42,14 +159,16 @@ pub fn unused_object(
         semantic,
         &checker.source_index_cache,
         &checker.loaded_packages,
+        &checker.unevaluated_ranges,
     );
     let exports = &checker.namespace_exports;
+    let skipped = &checker.rule_options.unused_object.skipped_functions;
 
     let mut diagnostics = Vec::new();
     let top_level = ScopeId::from(0);
     for scope_id in info.scope_ids() {
         for (def_id, def) in semantic.definitions(scope_id).iter() {
-            if !should_lint_definition(&info, def) {
+            if !should_lint_definition(&info, def, skipped) {
                 continue;
             }
             if info.is_definition_used(scope_id, def_id) {
@@ -75,7 +194,11 @@ pub fn unused_object(
     Ok(())
 }
 
-fn should_lint_definition(info: &SemanticInfo<'_>, def: &Definition) -> bool {
+fn should_lint_definition(
+    info: &SemanticInfo<'_>,
+    def: &Definition,
+    skipped: &HashSet<String>,
+) -> bool {
     match def.kind() {
         DefinitionKind::Parameter(_)
         | DefinitionKind::ForVariable(_)
@@ -90,6 +213,11 @@ fn should_lint_definition(info: &SemanticInfo<'_>, def: &Definition) -> bool {
             // `x[1] <-`, `x$a <-`): the LHS construct reads `x` so the
             // surrounding binding is still considered used.
             if assignment_lhs_is_complex(&bin) {
+                return false;
+            }
+            // `expect_error(x <- f())`: the binding exists so the expectation
+            // has something to evaluate, so never using it is the point.
+            if is_skipped_call_argument(bin.syntax(), skipped) {
                 return false;
             }
         }
@@ -112,7 +240,30 @@ fn should_lint_definition(info: &SemanticInfo<'_>, def: &Definition) -> bool {
         return false;
     }
 
+    // An assignment in `within(data, { … })` mutates the environment the call
+    // returns, so the binding is the result rather than a dead store.
+    if info.is_in_returned_env(def.range()) {
+        return false;
+    }
+
     true
+}
+
+/// Whether `node` is passed directly as an argument to one of `skipped`.
+/// Deliberately only the immediate argument position: an assignment nested in a
+/// block or in a function defined inside the call is an ordinary local and
+/// stays lintable.
+fn is_skipped_call_argument(node: &RSyntaxNode, skipped: &HashSet<String>) -> bool {
+    let Some(argument) = node.parent().and_then(RArgument::cast) else {
+        return false;
+    };
+    let Some(call) = argument.syntax().ancestors().find_map(RCall::cast) else {
+        return false;
+    };
+    let Ok(function) = call.function() else {
+        return false;
+    };
+    skipped.contains(&get_function_name(function))
 }
 
 fn is_exported(
@@ -159,7 +310,7 @@ fn make_diagnostic(
     let range = lhs_range_for_definition(def, root).unwrap_or_else(|| def.range());
     Diagnostic::new(
         ViolationData::new(
-            "unused_object".to_string(),
+            Rule::UnusedObject,
             format!("Object `{name}` is defined but never used."),
             None,
         ),

@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{
     Formals, get_arg, get_function_name, get_function_namespace_prefix, node_contains_comments,
 };
@@ -95,20 +96,19 @@ fn check_expect_equal_typeof(
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "expect_type".to_string(),
+            Rule::TestthatExpectType,
             format!("`{}(typeof(x), t)` can be hard to read.", function_name),
             Some("Use `expect_type(x, t)` instead.".to_string()),
         ),
         range,
-        Fix {
-            content: format!(
+        Fix::new(
+            range,
+            format!(
                 "{}expect_type({}, {})",
                 namespace_prefix, inner_text, type_text
             ),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))
@@ -161,20 +161,19 @@ fn check_expect_true_is_type(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "expect_type".to_string(),
+            Rule::TestthatExpectType,
             "`expect_true(is.<t>(x))` can be hard to read.".to_string(),
             Some("Use `expect_type(x, t)` instead.".to_string()),
         ),
         range,
-        Fix {
-            content: format!(
+        Fix::new(
+            range,
+            format!(
                 "{}expect_type({}, {})",
                 namespace_prefix, inner_text, type_str
             ),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

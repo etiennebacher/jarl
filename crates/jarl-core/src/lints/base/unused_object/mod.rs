@@ -1,11 +1,29 @@
+pub(crate) mod options;
 pub(crate) mod unused_object;
 #[cfg(test)]
 mod tests {
+    use crate::lints::base::unused_object::options::ResolvedUnusedObjectOptions;
+    use crate::lints::base::unused_object::options::UnusedObjectOptions;
+    use crate::rule_options::ResolvedRuleOptions;
+    use crate::settings::{LinterSettings, Settings};
     use crate::utils_test::*;
     use insta::assert_snapshot;
 
     fn snapshot_lint(code: &str) -> String {
         format_diagnostics(code, "unused_object", None)
+    }
+
+    /// Build a `Settings` with custom `UnusedObjectOptions`.
+    fn settings_with_options(options: UnusedObjectOptions) -> Settings {
+        Settings {
+            linter: LinterSettings {
+                rule_options: ResolvedRuleOptions {
+                    unused_object: ResolvedUnusedObjectOptions::resolve(Some(&options)).unwrap(),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+        }
     }
 
     /// Renders the `unused_object` diagnostics produced by linting `main_path`
@@ -46,7 +64,7 @@ mod tests {
             let rendered = render_diagnostic(
                 main,
                 "<test>",
-                &diagnostic.message.name,
+                diagnostic.message.rule.name(),
                 diagnostic,
                 &renderer,
             );
@@ -110,7 +128,7 @@ mod tests {
 
     #[test]
     fn test_lint_chained_non_function_assignment() {
-        assert_snapshot!(snapshot_lint("x <- y <- 1"), @r"
+        assert_snapshot!(snapshot_lint("x <- y <- 1"), @"
         warning: unused_object
          --> <test>:1:6
           |
@@ -431,7 +449,7 @@ f()",
     fn test_lint_simple_unused() {
         assert_snapshot!(
             snapshot_lint("x <- 1\nprint(y)"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -459,7 +477,7 @@ f()",
     fn test_lint_unused_after_reassignment() {
         assert_snapshot!(
             snapshot_lint("x <- 1\nx <- 2\nprint(x)"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -475,7 +493,7 @@ f()",
     fn test_lint_multiple_unused() {
         assert_snapshot!(
             snapshot_lint("x <- 1\ny <- 2"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -497,7 +515,7 @@ f()",
     fn test_lint_unused_right_assignment() {
         assert_snapshot!(
             snapshot_lint("1 -> x"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:6
           |
@@ -513,7 +531,7 @@ f()",
     fn test_lint_unused_equals_assignment() {
         assert_snapshot!(
             snapshot_lint("x = 1"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -529,7 +547,7 @@ f()",
     fn test_lint_only_one_of_two_used() {
         assert_snapshot!(
             snapshot_lint("x <- 1\ny <- 2\nprint(x)"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:2:1
           |
@@ -545,7 +563,7 @@ f()",
     fn test_lint_unused_in_function_body() {
         assert_snapshot!(
             snapshot_lint("f <- function() {\n  x <- 1\n  y <- 2\n  y\n}"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:2:3
           |
@@ -561,7 +579,7 @@ f()",
     fn test_lint_unused_with_used_neighbor() {
         assert_snapshot!(
             snapshot_lint("a <- 1\nb <- 2\nc <- a + b\nd <- 99"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:3:1
           |
@@ -583,7 +601,7 @@ f()",
     fn test_lint_nse_read_does_not_count() {
         assert_snapshot!(
             snapshot_lint("x <- 1\nquote(x)"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -600,7 +618,7 @@ f()",
         // `bquote(x)` quotes `x`, so its value is unused -> report.
         assert_snapshot!(
             snapshot_lint("x <- 1\nbquote(x)"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -616,7 +634,7 @@ f()",
         // `x <- 1` is still dead and reported.
         assert_snapshot!(
             snapshot_lint("x <- 1\nx <- 2\nbquote(.(x))"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -885,7 +903,7 @@ while (cond) {
             snapshot_lint(
                 "library(glue)\nx <- 0\nfor (i in 1:3) {\n  glue(\"{x}\")\n  y <- i\n}\n"
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:5:3
           |
@@ -987,7 +1005,7 @@ for (i in 1:2) {
                 "y <- 1\nsource(\"helper.R\")\n",
                 &[("helper.R", "print(1)")],
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -1005,7 +1023,7 @@ for (i in 1:2) {
         // to the regular unused-object check.
         assert_snapshot!(
             snapshot_lint_with_sourced_files("x <- 1\nsource(\"missing.R\")\n", &[]),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -1077,6 +1095,61 @@ for (i in 1:2) {
     }
 
     #[test]
+    fn test_no_lint_assignment_in_within() {
+        // `within()` returns the environment it evaluated the block in, so
+        // every binding the block creates comes back as a column of the result.
+        expect_no_lint(
+            "
+dat <- data.frame(x = 1)
+within(dat, {
+  x <- x + 1
+  y <- 2
+})
+",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_assignment_in_namespaced_within() {
+        expect_no_lint(
+            "
+dat <- data.frame(x = 1)
+base::within(dat, expr = { y <- 2 })
+",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_unused_object_in_function_defined_inside_within() {
+        // A function defined in the block has its own frame, so its locals are
+        // ordinary temporaries.
+        assert_snapshot!(
+            snapshot_lint("
+dat <- data.frame(x = 1)
+within(dat, {
+  y <- (function() {
+    tmp <- 1
+    2
+  })()
+})
+"),
+            @"
+        warning: unused_object
+         --> <test>:5:5
+          |
+        5 |     tmp <- 1
+          |     --- Object `tmp` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
     fn test_nse_assignment_does_not_shadow_real_definition() {
         // The quoted `x <- 2` must not kill the real `x <- 1`; `print(x)`
         // reads the live binding (which is still `1`).
@@ -1104,7 +1177,7 @@ for (i in 1:2) {
         // Only the nearest real definition is credited; `x <- 1` stays dead.
         assert_snapshot!(
             snapshot_lint("x <- 1\nx <- 2\nexpression(x <- 3)\nprint(x)"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -1122,7 +1195,7 @@ for (i in 1:2) {
         // mention doesn't keep the binding alive.
         assert_snapshot!(
             snapshot_lint("x <- 1\nmethods::Quote(x)"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -1151,7 +1224,7 @@ for (i in 1:2) {
         // captures its argument rather than reading it.
         assert_snapshot!(
             snapshot_lint("x <- 1\nmethods::`Quote`(x)"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -1609,7 +1682,7 @@ cols <- 'a'
 dt[, ..cols]
 "
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:2:1
           |
@@ -1632,7 +1705,7 @@ x <- 1
 glue(\"value is {x}\")
 "
             ),
-            @r#"
+            @"
         warning: unused_object
          --> <test>:2:1
           |
@@ -1640,7 +1713,7 @@ glue(\"value is {x}\")
           | - Object `x` is defined but never used.
           |
         Found 1 error.
-        "#
+        "
         );
     }
 
@@ -1655,7 +1728,7 @@ x <- 1
 cli_abort(\"{.field {x}}\")
 "
             ),
-            @r#"
+            @"
         warning: unused_object
          --> <test>:2:1
           |
@@ -1663,7 +1736,7 @@ cli_abort(\"{.field {x}}\")
           | - Object `x` is defined but never used.
           |
         Found 1 error.
-        "#
+        "
         );
     }
 
@@ -1847,7 +1920,7 @@ f({
   x <- 2
 })
 print(x)"
-        ), @r"
+        ), @"
         warning: unused_object
          --> <test>:3:3
           |
@@ -1879,7 +1952,7 @@ print(x)"
         // local of an unrelated function.
         assert_snapshot!(
             snapshot_lint("f <- function() {\n  helper <- 1\n  2\n}\ndo.call(\"helper\", list())"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:2:3
           |
@@ -1906,7 +1979,7 @@ data.table::setDT(dt)
 dt[, ..cols]
 "
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:3:3
           |
@@ -1933,7 +2006,7 @@ ifelse(is.null(foo), x <- 1, x <- 2)
 print(x)
 "
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:3:3
           |
@@ -1955,7 +2028,7 @@ print(x)
                 "f <- function() {\n  w <- 1\n  2\n}\nsource(\"helper.R\")\n",
                 &[("helper.R", "print(w + 1)")],
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:2:3
           |
@@ -2109,7 +2182,7 @@ while (cond) {
                 "source <- function(x) invisible(x)\nw <- 1\nsource(\"helper.R\")\n",
                 &[("helper.R", "print(w + 1)")],
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:2:1
           |
@@ -2129,7 +2202,7 @@ while (cond) {
                 "x <- 1\nsource(\"sub/../main.R\")\n",
                 &[("sub/other.R", "print(1)")]
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -2150,7 +2223,7 @@ while (cond) {
                 "w <- 1\nsource(\"helper.R\", local = new.env())\n",
                 &[("helper.R", "print(w + 1)")],
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -2207,7 +2280,7 @@ while (cond) {
                 "x <- 1\nsource(\"helper.R\")\n",
                 &[("helper.R", "df$x\n")],
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -2228,7 +2301,7 @@ while (cond) {
                 "x <- 1\nsource(\"helper.R\")\n",
                 &[("helper.R", "x <- 2\nprint(x)\n")],
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -2261,6 +2334,142 @@ while (cond) {
                 &[("helper.R", "if (interactive()) x <- 2\nprint(x)\n")],
             ),
             @"All checks passed!"
+        );
+    }
+
+    #[test]
+    fn test_no_lint_assignment_in_condition_expectation() {
+        // The assignment is what the expectation runs, so never reading the
+        // binding is the point of the test.
+        expect_no_lint(
+            "
+  expect_error(x <- stop(\"boom\"))
+",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_assignment_in_namespaced_condition_expectation() {
+        expect_no_lint(
+            "
+testthat::expect_no_error(x <- 1)
+",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_no_lint_assignment_in_named_condition_expectation_argument() {
+        expect_no_lint(
+            "
+expect_error(object = x <- foo, regexp = \"boom\")
+",
+            "unused_object",
+            None,
+        );
+    }
+
+    #[test]
+    fn test_lint_assignment_nested_in_condition_expectation() {
+        // Only the direct argument position is exempt: a block or a function
+        // defined inside the expectation holds ordinary locals.
+        assert_snapshot!(
+            snapshot_lint(
+                "
+expect_snapshot({
+  x <- 1
+  f()
+})
+expect_error(f <- function() y <- 1)
+"
+            ),
+            @"
+        warning: unused_object
+         --> <test>:3:3
+          |
+        3 |   x <- 1
+          |   - Object `x` is defined but never used.
+          |
+        warning: unused_object
+         --> <test>:6:30
+          |
+        6 | expect_error(f <- function() y <- 1)
+          |                              - Object `y` is defined but never used.
+          |
+        Found 2 errors.
+        "
+        );
+    }
+
+    #[test]
+    fn test_lint_assignment_in_non_listed_expectation() {
+        // `expect_equal()` compares a value, so its argument is an ordinary
+        // expression and the binding is a dead store.
+        assert_snapshot!(
+            snapshot_lint(
+                "
+expect_equal(x <- 1, 1)
+"
+            ),
+            @"
+        warning: unused_object
+         --> <test>:2:14
+          |
+        2 | expect_equal(x <- 1, 1)
+          |              - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_skipped_functions_replaces_defaults() {
+        // `skipped-functions` is a full replacement: `my_expect()` is allowed
+        // and the built-in `expect_error()` no longer is.
+        let options = UnusedObjectOptions {
+            skipped_functions: Some(vec!["my_expect".to_string()]),
+            extend_skipped_functions: None,
+        };
+        expect_no_lint_with_settings(
+            "my_expect(x <- 1)",
+            "unused_object",
+            None,
+            settings_with_options(options.clone()),
+        );
+        assert_snapshot!(
+            format_diagnostics_with_settings(
+                "expect_error(x <- 1)",
+                "unused_object",
+                None,
+                Some(settings_with_options(options)),
+            ),
+            @"
+        warning: unused_object
+         --> <test>:1:14
+          |
+        1 | expect_error(x <- 1)
+          |              - Object `x` is defined but never used.
+          |
+        Found 1 error.
+        "
+        );
+    }
+
+    #[test]
+    fn test_extend_skipped_functions_keeps_defaults() {
+        let options = UnusedObjectOptions {
+            skipped_functions: None,
+            extend_skipped_functions: Some(vec!["my_expect".to_string()]),
+        };
+        expect_no_lint_with_settings(
+            "my_expect(x <- 1)\nexpect_error(y <- 1)",
+            "unused_object",
+            None,
+            settings_with_options(options),
         );
     }
 }
