@@ -62,8 +62,9 @@ pub struct Checker {
     pub suppression: SuppressionManager,
     // Per-rule options resolved from configuration (Arc to avoid expensive clones)
     pub rule_options: Arc<ResolvedRuleOptions>,
-    // Packages loaded via `library()` in this file (or from DESCRIPTION
-    // Depends/Imports when inside an R package), in load order.
+    // Packages attached to the file's search path, in load order: what
+    // `library()` attaches in the file itself, plus DESCRIPTION `Depends` and
+    // NAMESPACE `import()` when inside an R package.
     pub loaded_packages: Vec<String>,
     // Shared package cache for looking up installed package metadata.
     pub package_cache: Option<Arc<PackageCache>>,
@@ -122,6 +123,24 @@ impl Checker {
         self.rule_set.contains(&rule)
     }
 
+    /// Every package the file's code can name, whether or not it is attached:
+    /// the search path plus the packages a NAMESPACE `importFrom()` binds into
+    /// the package namespace.
+    ///
+    /// Attachment is what decides which package a bare call belongs to, so
+    /// call-resolution rules go through [`Self::resolve_package`] instead. This
+    /// wider view is for idioms that only need the package to be *reachable* —
+    /// `glue("{x}")` interpolates whenever `glue` resolves, however it got there.
+    pub fn packages_in_reach(&self) -> Vec<String> {
+        let mut packages = self.loaded_packages.clone();
+        for package in self.import_from.values() {
+            if !packages.contains(package) {
+                packages.push(package.clone());
+            }
+        }
+        packages
+    }
+
     /// Resolve which package a bare function name comes from.
     ///
     /// Resolution order:
@@ -151,6 +170,16 @@ impl Checker {
             1 => PackageOrigin::Resolved(candidates.into_iter().next().unwrap()),
             _ => PackageOrigin::Ambiguous(candidates),
         }
+    }
+
+    /// Whether `pkg` is attached in this file, and so whether a bare call to
+    /// one of its functions could really be that function.
+    ///
+    /// Unlike [`Self::resolve_package`] this needs no `PackageCache`, hence no
+    /// `Rscript` call: it only asks what the search path contains, not what
+    /// each package exports.
+    pub fn package_available(&self, pkg: &str) -> bool {
+        self.loaded_packages.iter().any(|p| p == pkg)
     }
 
     /// Look up the installed version of a package.
