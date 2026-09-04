@@ -11,7 +11,7 @@
 
 * New rules:
 
-  * `deparse1` (#TODO, @maelle)
+  * `deparse1` (#694, @maelle)
 
 ### Changes
 
