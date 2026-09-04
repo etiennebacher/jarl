@@ -7,6 +7,12 @@
 * The `jarl.toml` argument `assignment` (deprecated since 0.5.0) is removed. Use
   the rule-specific option `[lint.assignment]` instead (#663).
 
+### New and improved rules
+
+* New rules:
+
+  * `deparse1` (#694, @maelle)
+
 ### Changes
 
 * `expect_length` no longer reports cases where `length()` is in the `expected`

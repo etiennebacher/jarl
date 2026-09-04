@@ -8,6 +8,7 @@ pub(crate) mod coalesce;
 pub(crate) mod comparison_negation;
 pub(crate) mod condition_call;
 pub(crate) mod condition_message;
+pub(crate) mod deparse1;
 pub(crate) mod download_file;
 pub(crate) mod duplicated_arguments;
 pub(crate) mod duplicated_function_definition;

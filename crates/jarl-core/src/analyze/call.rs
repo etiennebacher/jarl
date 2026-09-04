@@ -10,6 +10,7 @@ use crate::lints::base::browser::browser::browser;
 use crate::lints::base::class_equals::class_equals::class_identical;
 use crate::lints::base::condition_call::condition_call::condition_call;
 use crate::lints::base::condition_message::condition_message::condition_message;
+use crate::lints::base::deparse1::deparse1::deparse1;
 use crate::lints::base::download_file::download_file::download_file;
 use crate::lints::base::duplicated_arguments::duplicated_arguments::duplicated_arguments;
 use crate::lints::base::fixed_regex::fixed_regex::fixed_regex;
@@ -78,6 +79,9 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled(Rule::ConditionMessage) {
         checker.report_diagnostic(condition_message(r_expr, fn_name)?);
+    }
+    if checker.is_rule_enabled(Rule::Deparse1) {
+        checker.report_diagnostic(deparse1(r_expr, fn_name)?);
     }
     if checker.is_rule_enabled(Rule::DownloadFile) {
         checker.report_diagnostic(download_file(r_expr, fn_name)?);
