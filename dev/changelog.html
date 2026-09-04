@@ -442,28 +442,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="breaking-changes" class="level3">
 <h3 class="anchored" data-anchor-id="breaking-changes">Breaking changes</h3>
 <ul>
-<li>The <code>jarl.toml</code> argument <code>assignment</code> (deprecated since 0.5.0) is removed. Use the rule-specific option <code>[lint.assignment]</code> instead (#663).</li>
+<li>The <code>jarl.toml</code> argument <code>assignment</code> (deprecated since 0.5.0) is removed. Use the rule-specific option <code>[lint.assignment]</code> instead (<a href="https://github.com/etiennebacher/jarl/issues/663" target="_blank">#663</a>).</li>
 </ul>
 </section>
 <section id="changes" class="level3">
 <h3 class="anchored" data-anchor-id="changes">Changes</h3>
 <ul>
-<li><p><code>expect_length</code> no longer reports cases where <code>length()</code> is in the <code>expected</code> argument, e.g.&nbsp;<code>expect_equal(nrow(x), length(y))</code> (#684).</p></li>
-<li><p>The LSP now also publishes diagnostics when opening a file (#685).</p></li>
+<li><p><code>expect_length</code> no longer reports cases where <code>length()</code> is in the <code>expected</code> argument, e.g.&nbsp;<code>expect_equal(nrow(x), length(y))</code> (<a href="https://github.com/etiennebacher/jarl/issues/684" target="_blank">#684</a>).</p></li>
+<li><p>The LSP now also publishes diagnostics when opening a file (<a href="https://github.com/etiennebacher/jarl/issues/685" target="_blank">#685</a>).</p></li>
 </ul>
 </section>
 <section id="bug-fixes" class="level3">
 <h3 class="anchored" data-anchor-id="bug-fixes">Bug fixes</h3>
 <ul>
-<li><p>Prevent the <code>sample_int</code> rule from panicking on calls with missing arguments (#687, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
-<li><p>Prevent the <code>outer_negation</code> rule from rewriting unary <code>+</code> and <code>-</code> expressions as logical negations (#688, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
-<li><p>Prevent fixes for <code>any_is_na</code>, <code>any_duplicated</code>, and <code>condition_message</code> from dropping extra unnamed arguments (#677, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
-<li><p>Ensure that <code>--fix</code> works with multi-byte characters (#672, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
-<li><p>The <code>lengths</code> rule no longer crashes on calls where <code>X</code> is missing from the syntax tree, e.g.&nbsp;<code>sapply(FUN = length)</code> or <code>x |&gt; sapply(FUN = length)</code>. The autofix now also produces <code>lengths(x)</code> instead of the invalid <code>lengths(X = x)</code> when <code>X</code> is passed by name (#671, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
-<li><p>Fix language server suppression quickfix positions for non-ASCII text (#676, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
-<li><p>Avoid invalid <code>literal_coercion</code> fixes for strings containing quotes (#678, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
-<li><p>The <code>pipe_consistency</code> rule no longer emits invalid fixes when converting <code>magrittr</code> pipes with a non-call RHS, such as <code>x %&gt;% sum</code> (#683, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
-<li><p>Prevent incorrect <code>dplyr_filter_out</code> fixes caused by matching <code>is.na()</code> guard arguments as substrings of other identifiers (#681, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
+<li><p>Prevent the <code>sample_int</code> rule from panicking on calls with missing arguments (<a href="https://github.com/etiennebacher/jarl/issues/687" target="_blank">#687</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
+<li><p>Prevent the <code>outer_negation</code> rule from rewriting unary <code>+</code> and <code>-</code> expressions as logical negations (<a href="https://github.com/etiennebacher/jarl/issues/688" target="_blank">#688</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
+<li><p>Prevent fixes for <code>any_is_na</code>, <code>any_duplicated</code>, and <code>condition_message</code> from dropping extra unnamed arguments (<a href="https://github.com/etiennebacher/jarl/issues/677" target="_blank">#677</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
+<li><p>Ensure that <code>--fix</code> works with multi-byte characters (<a href="https://github.com/etiennebacher/jarl/issues/672" target="_blank">#672</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
+<li><p>The <code>lengths</code> rule no longer crashes on calls where <code>X</code> is missing from the syntax tree, e.g.&nbsp;<code>sapply(FUN = length)</code> or <code>x |&gt; sapply(FUN = length)</code>. The autofix now also produces <code>lengths(x)</code> instead of the invalid <code>lengths(X = x)</code> when <code>X</code> is passed by name (<a href="https://github.com/etiennebacher/jarl/issues/671" target="_blank">#671</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
+<li><p>Fix language server suppression quickfix positions for non-ASCII text (<a href="https://github.com/etiennebacher/jarl/issues/676" target="_blank">#676</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
+<li><p>Avoid invalid <code>literal_coercion</code> fixes for strings containing quotes (<a href="https://github.com/etiennebacher/jarl/issues/678" target="_blank">#678</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
+<li><p>The <code>pipe_consistency</code> rule no longer emits invalid fixes when converting <code>magrittr</code> pipes with a non-call RHS, such as <code>x %&gt;% sum</code> (<a href="https://github.com/etiennebacher/jarl/issues/683" target="_blank">#683</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
+<li><p>Prevent incorrect <code>dplyr_filter_out</code> fixes caused by matching <code>is.na()</code> guard arguments as substrings of other identifiers (<a href="https://github.com/etiennebacher/jarl/issues/681" target="_blank">#681</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
 </ul>
 </section>
 </section>
@@ -485,7 +485,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="breaking-changes-1" class="level3">
 <h3 class="anchored" data-anchor-id="breaking-changes-1">Breaking changes</h3>
 <ul>
-<li>The JSON output produced with <code>--output-format json</code> has changed. In <code>fix</code>, the fields <code>start</code> and <code>end</code> are replaced by a field <code>range</code> that contains the two values (#650).</li>
+<li>The JSON output produced with <code>--output-format json</code> has changed. In <code>fix</code>, the fields <code>start</code> and <code>end</code> are replaced by a field <code>range</code> that contains the two values (<a href="https://github.com/etiennebacher/jarl/issues/650" target="_blank">#650</a>).</li>
 </ul>
 </section>
 <section id="new-and-improved-rules" class="level3">
@@ -493,53 +493,53 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ul>
 <li><p>New rules:</p>
 <ul>
-<li><code>condition_call</code> (#503)</li>
-<li><code>condition_message</code> (#545)</li>
-<li><code>empty_file</code> (#477, <span class="citation" data-cites="JosephBARBIERDARNAL">@JosephBARBIERDARNAL</span>)</li>
-<li><code>expect_s4_class</code> (#553, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
-<li><code>glue</code> (#484, <span class="citation" data-cites="novica">@novica</span>)</li>
-<li><code>if_not_else</code> (#551)</li>
-<li><code>literal_coercion</code> (#504)</li>
-<li><code>missing_argument</code> (#506)</li>
-<li><code>nested_pipe</code> (#516)</li>
-<li><code>notin</code> (#459, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
-<li><code>pipe_consistency</code> (#482)</li>
-<li><code>pipe_return</code> (#502)</li>
-<li><code>rep_times_ignored</code> (#556, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
-<li><code>stopifnot_all</code> (#547, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
-<li><code>strings_as_factors</code> (#546, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
-<li><code>unnecessary_parentheses</code> (#510, <span class="citation" data-cites="JosephBARBIERDARNAL">@JosephBARBIERDARNAL</span>)</li>
-<li><code>unused_object</code> (#589)</li>
+<li><code>condition_call</code> (<a href="https://github.com/etiennebacher/jarl/issues/503" target="_blank">#503</a>)</li>
+<li><code>condition_message</code> (<a href="https://github.com/etiennebacher/jarl/issues/545" target="_blank">#545</a>)</li>
+<li><code>empty_file</code> (<a href="https://github.com/etiennebacher/jarl/issues/477" target="_blank">#477</a>, <span class="citation" data-cites="JosephBARBIERDARNAL"><a href="https://github.com/JosephBARBIERDARNAL" target="_blank">@JosephBARBIERDARNAL</a></span>)</li>
+<li><code>expect_s4_class</code> (<a href="https://github.com/etiennebacher/jarl/issues/553" target="_blank">#553</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>)</li>
+<li><code>glue</code> (<a href="https://github.com/etiennebacher/jarl/issues/484" target="_blank">#484</a>, <span class="citation" data-cites="novica"><a href="https://github.com/novica" target="_blank">@novica</a></span>)</li>
+<li><code>if_not_else</code> (<a href="https://github.com/etiennebacher/jarl/issues/551" target="_blank">#551</a>)</li>
+<li><code>literal_coercion</code> (<a href="https://github.com/etiennebacher/jarl/issues/504" target="_blank">#504</a>)</li>
+<li><code>missing_argument</code> (<a href="https://github.com/etiennebacher/jarl/issues/506" target="_blank">#506</a>)</li>
+<li><code>nested_pipe</code> (<a href="https://github.com/etiennebacher/jarl/issues/516" target="_blank">#516</a>)</li>
+<li><code>notin</code> (<a href="https://github.com/etiennebacher/jarl/issues/459" target="_blank">#459</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>)</li>
+<li><code>pipe_consistency</code> (<a href="https://github.com/etiennebacher/jarl/issues/482" target="_blank">#482</a>)</li>
+<li><code>pipe_return</code> (<a href="https://github.com/etiennebacher/jarl/issues/502" target="_blank">#502</a>)</li>
+<li><code>rep_times_ignored</code> (<a href="https://github.com/etiennebacher/jarl/issues/556" target="_blank">#556</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>)</li>
+<li><code>stopifnot_all</code> (<a href="https://github.com/etiennebacher/jarl/issues/547" target="_blank">#547</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>)</li>
+<li><code>strings_as_factors</code> (<a href="https://github.com/etiennebacher/jarl/issues/546" target="_blank">#546</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>)</li>
+<li><code>unnecessary_parentheses</code> (<a href="https://github.com/etiennebacher/jarl/issues/510" target="_blank">#510</a>, <span class="citation" data-cites="JosephBARBIERDARNAL"><a href="https://github.com/JosephBARBIERDARNAL" target="_blank">@JosephBARBIERDARNAL</a></span>)</li>
+<li><code>unused_object</code> (<a href="https://github.com/etiennebacher/jarl/issues/589" target="_blank">#589</a>)</li>
 </ul></li>
 <li><p>Improved rules:</p>
 <ul>
-<li><code>any_is_na</code> now also reports <code>NA %notin% x</code> cases (#470, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
-<li><code>equals_na</code> now also reports <code>x %notin% NA</code> cases (#469, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>)</li>
-<li><code>expect_s3_class</code> now also reports <code>expect_true(is.&lt;class&gt;(x))</code>, <code>expect_true(inherits(x, class))</code>, and dynamic class expressions. Dynamic class expressions are reported without an automatic fix (#555, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</li>
-<li>Four more functions skipped by default from <code>implicit_assignment</code>: <code>expect_silent()</code> (from <code>testthat</code>), <code>expect_defunct()</code> and <code>expect_deprecated()</code> (from <code>lifecycle</code>), and <code>try()</code> (#543, <span class="citation" data-cites="maelle">@maelle</span>, #654).</li>
-<li><code>outdated_suppression</code> now has a safe fix that removes the unused suppression comment (or comments if <code># jarl-ignore-start</code> and <code># jarl-ignore-end</code> are used) (#638).</li>
-<li><code>which_grepl</code> now supports named <code>which(x = ...)</code> arguments and native pipe chains such as <code>x |&gt; grepl(pattern = ...) |&gt; which()</code>. Calls with additional <code>which()</code> arguments are reported without an automatic fix (#560, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</li>
+<li><code>any_is_na</code> now also reports <code>NA %notin% x</code> cases (<a href="https://github.com/etiennebacher/jarl/issues/470" target="_blank">#470</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>)</li>
+<li><code>equals_na</code> now also reports <code>x %notin% NA</code> cases (<a href="https://github.com/etiennebacher/jarl/issues/469" target="_blank">#469</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>)</li>
+<li><code>expect_s3_class</code> now also reports <code>expect_true(is.&lt;class&gt;(x))</code>, <code>expect_true(inherits(x, class))</code>, and dynamic class expressions. Dynamic class expressions are reported without an automatic fix (<a href="https://github.com/etiennebacher/jarl/issues/555" target="_blank">#555</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</li>
+<li>Four more functions skipped by default from <code>implicit_assignment</code>: <code>expect_silent()</code> (from <code>testthat</code>), <code>expect_defunct()</code> and <code>expect_deprecated()</code> (from <code>lifecycle</code>), and <code>try()</code> (<a href="https://github.com/etiennebacher/jarl/issues/543" target="_blank">#543</a>, <span class="citation" data-cites="maelle"><a href="https://github.com/maelle" target="_blank">@maelle</a></span>, <a href="https://github.com/etiennebacher/jarl/issues/654" target="_blank">#654</a>).</li>
+<li><code>outdated_suppression</code> now has a safe fix that removes the unused suppression comment (or comments if <code># jarl-ignore-start</code> and <code># jarl-ignore-end</code> are used) (<a href="https://github.com/etiennebacher/jarl/issues/638" target="_blank">#638</a>).</li>
+<li><code>which_grepl</code> now supports named <code>which(x = ...)</code> arguments and native pipe chains such as <code>x |&gt; grepl(pattern = ...) |&gt; which()</code>. Calls with additional <code>which()</code> arguments are reported without an automatic fix (<a href="https://github.com/etiennebacher/jarl/issues/560" target="_blank">#560</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</li>
 </ul></li>
 </ul>
 </section>
 <section id="cli-improvements" class="level3">
 <h3 class="anchored" data-anchor-id="cli-improvements">CLI improvements</h3>
 <ul>
-<li><p>The CLI now gives suggestions when some rule names don’t exist (#501).</p></li>
-<li><p>New CLI argument <code>--exclude</code> to exclude files or directories from the checks, mirroring the <code>exclude</code> argument in <code>jarl.toml</code> (#520).</p></li>
-<li><p>Passing <code>--statistics</code> in the CLI now indicates which violations have an automatic unsafe fix (#554).</p></li>
-<li><p>Jarl now reports rule violations in files that contain syntax errors and provides clearer messages for syntax errors (#538, #569).</p></li>
-<li><p>New <code>--output-format sarif</code> to export to <a href="https://sarifweb.azurewebsites.net/" target="_blank">SARIF</a> (#508, <span class="citation" data-cites="dieghernan">@dieghernan</span>).</p></li>
-<li><p>Clearer output for <code>jarl check --help</code> (#521).</p></li>
-<li><p>New command <code>jarl rule &lt;rule_name&gt;</code> to print a rule’s documentation in the terminal, for example <code>jarl rule any_is_na</code> (#566).</p></li>
-<li><p>Jarl now provides shell completions for <code>bash</code>, <code>zsh</code>, <code>fish</code>, <code>powershell</code>, and <code>elvish</code>. See <a href="./howto/shell-completions.html" target="_blank">Shell completions</a> for more information (#567).</p></li>
+<li><p>The CLI now gives suggestions when some rule names don’t exist (<a href="https://github.com/etiennebacher/jarl/issues/501" target="_blank">#501</a>).</p></li>
+<li><p>New CLI argument <code>--exclude</code> to exclude files or directories from the checks, mirroring the <code>exclude</code> argument in <code>jarl.toml</code> (<a href="https://github.com/etiennebacher/jarl/issues/520" target="_blank">#520</a>).</p></li>
+<li><p>Passing <code>--statistics</code> in the CLI now indicates which violations have an automatic unsafe fix (<a href="https://github.com/etiennebacher/jarl/issues/554" target="_blank">#554</a>).</p></li>
+<li><p>Jarl now reports rule violations in files that contain syntax errors and provides clearer messages for syntax errors (<a href="https://github.com/etiennebacher/jarl/issues/538" target="_blank">#538</a>, <a href="https://github.com/etiennebacher/jarl/issues/569" target="_blank">#569</a>).</p></li>
+<li><p>New <code>--output-format sarif</code> to export to <a href="https://sarifweb.azurewebsites.net/" target="_blank">SARIF</a> (<a href="https://github.com/etiennebacher/jarl/issues/508" target="_blank">#508</a>, <span class="citation" data-cites="dieghernan"><a href="https://github.com/dieghernan" target="_blank">@dieghernan</a></span>).</p></li>
+<li><p>Clearer output for <code>jarl check --help</code> (<a href="https://github.com/etiennebacher/jarl/issues/521" target="_blank">#521</a>).</p></li>
+<li><p>New command <code>jarl rule &lt;rule_name&gt;</code> to print a rule’s documentation in the terminal, for example <code>jarl rule any_is_na</code> (<a href="https://github.com/etiennebacher/jarl/issues/566" target="_blank">#566</a>).</p></li>
+<li><p>Jarl now provides shell completions for <code>bash</code>, <code>zsh</code>, <code>fish</code>, <code>powershell</code>, and <code>elvish</code>. See <a href="./howto/shell-completions.html" target="_blank">Shell completions</a> for more information (<a href="https://github.com/etiennebacher/jarl/issues/567" target="_blank">#567</a>).</p></li>
 </ul>
 </section>
 <section id="toml-improvements" class="level3">
 <h3 class="anchored" data-anchor-id="toml-improvements">TOML improvements</h3>
 <ul>
-<li><p>New argument <code>[lint.per-file-ignores]</code> in <code>jarl.toml</code> to deactivate rules on specific files (#500).</p></li>
-<li><p>New argument <code>skipped-functions</code> for the <code>true_false_symbol</code> rule in <code>jarl.toml</code> to list functions whose arguments are allowed to contain the <code>T</code> and <code>F</code> symbols (#542).</p></li>
+<li><p>New argument <code>[lint.per-file-ignores]</code> in <code>jarl.toml</code> to deactivate rules on specific files (<a href="https://github.com/etiennebacher/jarl/issues/500" target="_blank">#500</a>).</p></li>
+<li><p>New argument <code>skipped-functions</code> for the <code>true_false_symbol</code> rule in <code>jarl.toml</code> to list functions whose arguments are allowed to contain the <code>T</code> and <code>F</code> symbols (<a href="https://github.com/etiennebacher/jarl/issues/542" target="_blank">#542</a>).</p></li>
 </ul>
 </section>
 <section id="other-improvements" class="level3">
@@ -547,34 +547,34 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ul>
 <li><p>Several new ways to install Jarl:</p>
 <ul>
-<li>it is available on PyPI under the name <code>jarl-linter</code>, enabling its installation via <code>uv</code>, <code>pipx</code>, and other tools (#466).</li>
-<li>it is available on <code>conda-forge</code>, enabling its installation via <code>mise</code> and <code>pixi</code> (<span class="citation" data-cites="salim-b">@salim-b</span>).</li>
+<li>it is available on PyPI under the name <code>jarl-linter</code>, enabling its installation via <code>uv</code>, <code>pipx</code>, and other tools (<a href="https://github.com/etiennebacher/jarl/issues/466" target="_blank">#466</a>).</li>
+<li>it is available on <code>conda-forge</code>, enabling its installation via <code>mise</code> and <code>pixi</code> (<span class="citation" data-cites="salim-b"><a href="https://github.com/salim-b" target="_blank">@salim-b</a></span>).</li>
 <li>it is available on Homebrew, enabling its installation via <code>brew</code>.</li>
 </ul></li>
-<li><p>Fixed outdated paths in the contributing guide (#658, <span class="citation" data-cites="christopherkenny">@christopherkenny</span>).</p></li>
+<li><p>Fixed outdated paths in the contributing guide (<a href="https://github.com/etiennebacher/jarl/issues/658" target="_blank">#658</a>, <span class="citation" data-cites="christopherkenny"><a href="https://github.com/christopherkenny" target="_blank">@christopherkenny</a></span>).</p></li>
 </ul>
 </section>
 <section id="bug-fixes-1" class="level3">
 <h3 class="anchored" data-anchor-id="bug-fixes-1">Bug fixes</h3>
 <ul>
-<li><p><code>--statistics</code> now reports syntax errors and returns a non-zero status when parsing fails (#577, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
-<li><p><code>--fix-only</code> now implies <code>--fix</code> and no longer applies unsafe fixes by default (#579, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
-<li><p>Jarl now checks rule violations inside expressions on the left-hand side of <code>[</code>, <code>[[</code>, <code>$</code>, and <code>@</code> (#581, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
-<li><p><code>true_false_symbol</code> no longer reports <code>T</code> and <code>F</code> when they are used as objects in subset expressions, such as <code>T[1:2]</code> (#582, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
-<li><p><code>implicit_assignment</code> no longer flags chained assignments like <code>if (TRUE) a &lt;- b &lt;- 1</code>, aligning with <code>lintr</code> behavior (#480, <span class="citation" data-cites="atsyplenkov">@atsyplenkov</span>).</p></li>
-<li><p>Automatic fixes now skip rewrites when comments are inside the rewritten expression, while still allowing leading and trailing comments (#461, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
-<li><p>Suppression comments in <code>@examples</code> and <code>@examplesIf</code> now work correctly (#443).</p></li>
-<li><p>Fix alignment of diagnostic in console when source uses tabs (#445, #559).</p></li>
-<li><p>Files that have “Generated by” in their first comment are ignored by Jarl (#486).</p></li>
-<li><p>Fixed <code>unreachable_code</code> that was not running on braced expressions (#512).</p></li>
-<li><p>Fixed false positives in <code>assignment</code> rule. Jarl could recommend replacing <code>&lt;-</code> by <code>=</code> in places where this would change the meaning of the code (#515).</p></li>
-<li><p><code>implicit_assignment</code> now includes <code>alist()</code>, <code>expect_no_condition()</code>, <code>expect_no_warning()</code>, <code>expect_no_error()</code>, <code>expect_no_message()</code>, and <code>expect_no_match()</code> in the list of functions skipped by default (#527, #639).</p></li>
-<li><p>Jarl no longer fails to parse <code>...()</code> (#584, <span class="citation" data-cites="Yousa-Mirage">@Yousa-Mirage</span>).</p></li>
-<li><p><code>redundant_equals</code> now skips cases that use <code>rlang</code>’s <code>!!</code> and <code>!!!</code> operators (#625).</p></li>
-<li><p>The fix for <code>comparison_negation</code> is now considered “unsafe” because it can produce different output depending on operator precedence around the comparison (#632).</p></li>
-<li><p>Fix the detection of <code>Depends: R (&gt;= x.y.z)</code> in some cases (#641).</p></li>
-<li><p>Replace panic by a proper error if <code>jarl.toml</code> is unreadable, for instance because of a permission error (#645).</p></li>
-<li><p>Ensure the LSP has the same file selections and exclusions capabilities as the CLI (#647).</p></li>
+<li><p><code>--statistics</code> now reports syntax errors and returns a non-zero status when parsing fails (<a href="https://github.com/etiennebacher/jarl/issues/577" target="_blank">#577</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
+<li><p><code>--fix-only</code> now implies <code>--fix</code> and no longer applies unsafe fixes by default (<a href="https://github.com/etiennebacher/jarl/issues/579" target="_blank">#579</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
+<li><p>Jarl now checks rule violations inside expressions on the left-hand side of <code>[</code>, <code>[[</code>, <code>$</code>, and <code>@</code> (<a href="https://github.com/etiennebacher/jarl/issues/581" target="_blank">#581</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
+<li><p><code>true_false_symbol</code> no longer reports <code>T</code> and <code>F</code> when they are used as objects in subset expressions, such as <code>T[1:2]</code> (<a href="https://github.com/etiennebacher/jarl/issues/582" target="_blank">#582</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
+<li><p><code>implicit_assignment</code> no longer flags chained assignments like <code>if (TRUE) a &lt;- b &lt;- 1</code>, aligning with <code>lintr</code> behavior (<a href="https://github.com/etiennebacher/jarl/issues/480" target="_blank">#480</a>, <span class="citation" data-cites="atsyplenkov"><a href="https://github.com/atsyplenkov" target="_blank">@atsyplenkov</a></span>).</p></li>
+<li><p>Automatic fixes now skip rewrites when comments are inside the rewritten expression, while still allowing leading and trailing comments (<a href="https://github.com/etiennebacher/jarl/issues/461" target="_blank">#461</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
+<li><p>Suppression comments in <code>@examples</code> and <code>@examplesIf</code> now work correctly (<a href="https://github.com/etiennebacher/jarl/issues/443" target="_blank">#443</a>).</p></li>
+<li><p>Fix alignment of diagnostic in console when source uses tabs (<a href="https://github.com/etiennebacher/jarl/issues/445" target="_blank">#445</a>, <a href="https://github.com/etiennebacher/jarl/issues/559" target="_blank">#559</a>).</p></li>
+<li><p>Files that have “Generated by” in their first comment are ignored by Jarl (<a href="https://github.com/etiennebacher/jarl/issues/486" target="_blank">#486</a>).</p></li>
+<li><p>Fixed <code>unreachable_code</code> that was not running on braced expressions (<a href="https://github.com/etiennebacher/jarl/issues/512" target="_blank">#512</a>).</p></li>
+<li><p>Fixed false positives in <code>assignment</code> rule. Jarl could recommend replacing <code>&lt;-</code> by <code>=</code> in places where this would change the meaning of the code (<a href="https://github.com/etiennebacher/jarl/issues/515" target="_blank">#515</a>).</p></li>
+<li><p><code>implicit_assignment</code> now includes <code>alist()</code>, <code>expect_no_condition()</code>, <code>expect_no_warning()</code>, <code>expect_no_error()</code>, <code>expect_no_message()</code>, and <code>expect_no_match()</code> in the list of functions skipped by default (<a href="https://github.com/etiennebacher/jarl/issues/527" target="_blank">#527</a>, <a href="https://github.com/etiennebacher/jarl/issues/639" target="_blank">#639</a>).</p></li>
+<li><p>Jarl no longer fails to parse <code>...()</code> (<a href="https://github.com/etiennebacher/jarl/issues/584" target="_blank">#584</a>, <span class="citation" data-cites="Yousa-Mirage"><a href="https://github.com/Yousa-Mirage" target="_blank">@Yousa-Mirage</a></span>).</p></li>
+<li><p><code>redundant_equals</code> now skips cases that use <code>rlang</code>’s <code>!!</code> and <code>!!!</code> operators (<a href="https://github.com/etiennebacher/jarl/issues/625" target="_blank">#625</a>).</p></li>
+<li><p>The fix for <code>comparison_negation</code> is now considered “unsafe” because it can produce different output depending on operator precedence around the comparison (<a href="https://github.com/etiennebacher/jarl/issues/632" target="_blank">#632</a>).</p></li>
+<li><p>Fix the detection of <code>Depends: R (&gt;= x.y.z)</code> in some cases (<a href="https://github.com/etiennebacher/jarl/issues/641" target="_blank">#641</a>).</p></li>
+<li><p>Replace panic by a proper error if <code>jarl.toml</code> is unreadable, for instance because of a permission error (<a href="https://github.com/etiennebacher/jarl/issues/645" target="_blank">#645</a>).</p></li>
+<li><p>Ensure the LSP has the same file selections and exclusions capabilities as the CLI (<a href="https://github.com/etiennebacher/jarl/issues/647" target="_blank">#647</a>).</p></li>
 </ul>
 </section>
 </section>
@@ -599,8 +599,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p>The command-line argument <code>--assignment</code> and the <code>jarl.toml</code> argument <code>assignment</code> are both deprecated. Instead, you should use the following code in <code>jarl.toml</code>:</p>
 <pre><code>[lint.assignment]
 operator = "&lt;-" # or "="</code></pre>
-<p>More info on these rule-specific options in <code>jarl.toml</code> in the “Features” section below (#334).</p></li>
-<li><p>The rule <code>"browser"</code> is deprecated. Calls to <code>browser()</code> are now detected with the rule <code>"undesirable_function"</code> (#336).</p></li>
+<p>More info on these rule-specific options in <code>jarl.toml</code> in the “Features” section below (<a href="https://github.com/etiennebacher/jarl/issues/334" target="_blank">#334</a>).</p></li>
+<li><p>The rule <code>"browser"</code> is deprecated. Calls to <code>browser()</code> are now detected with the rule <code>"undesirable_function"</code> (<a href="https://github.com/etiennebacher/jarl/issues/336" target="_blank">#336</a>).</p></li>
 </ul>
 </section>
 <section id="features" class="level3">
@@ -614,45 +614,45 @@ operator = "&lt;-" # or "="</code></pre>
 # and `list()` where multiple arguments have the same name.
 [lint.duplicated_arguments]
 extend-skipped-functions = ["my_function", "list"]</code></pre>
-<p>These options are listed in the <a href="https://jarl.etiennebacher.com/reference/config-file" target="_blank">Configuration page</a> (#333).</p></li>
+<p>These options are listed in the <a href="https://jarl.etiennebacher.com/reference/config-file" target="_blank">Configuration page</a> (<a href="https://github.com/etiennebacher/jarl/issues/333" target="_blank">#333</a>).</p></li>
 <li><p>Jarl now also analyzes piped functions, e.g.&nbsp;the following code is reported by the <code>any_is_na</code> rule:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">is.na</span>(x) <span class="sc">|&gt;</span> <span class="fu">any</span>()</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>x <span class="sc">|&gt;</span> <span class="fu">is.na</span>() <span class="sc">|&gt;</span> <span class="fu">any</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>(#338).</p></li>
+<p>(<a href="https://github.com/etiennebacher/jarl/issues/338" target="_blank">#338</a>).</p></li>
 <li><p>Jarl now checks R code in more places:</p>
 <ul>
-<li>chunks in Quarto and R Markdown documents. More information in the <a href="https://jarl.etiennebacher.com/howto/rmarkdown-quarto" target="_blank">“R Markdown and Quarto”</a> section (#50).</li>
-<li><code>@examples</code> and <code>@examplesIf</code> sections in <code>roxygen2</code> comments (#385).</li>
+<li>chunks in Quarto and R Markdown documents. More information in the <a href="https://jarl.etiennebacher.com/howto/rmarkdown-quarto" target="_blank">“R Markdown and Quarto”</a> section (<a href="https://github.com/etiennebacher/jarl/issues/50" target="_blank">#50</a>).</li>
+<li><code>@examples</code> and <code>@examplesIf</code> sections in <code>roxygen2</code> comments (<a href="https://github.com/etiennebacher/jarl/issues/385" target="_blank">#385</a>).</li>
 </ul></li>
-<li><p>Added support for multiple <code>jarl.toml</code>, i.e.&nbsp;each file now uses the nearest <code>jarl.toml</code>. For example, Jarl can check a folder where several subfolders have their own <code>jarl.toml</code> (before, this would error). (#353)</p></li>
-<li><p>New option <code>include</code> in <code>jarl.toml</code>, to complement <code>exclude</code> (#349).</p></li>
+<li><p>Added support for multiple <code>jarl.toml</code>, i.e.&nbsp;each file now uses the nearest <code>jarl.toml</code>. For example, Jarl can check a folder where several subfolders have their own <code>jarl.toml</code> (before, this would error). (<a href="https://github.com/etiennebacher/jarl/issues/353" target="_blank">#353</a>)</p></li>
+<li><p>New option <code>include</code> in <code>jarl.toml</code>, to complement <code>exclude</code> (<a href="https://github.com/etiennebacher/jarl/issues/349" target="_blank">#349</a>).</p></li>
 <li><p>New rules:</p>
 <ul>
-<li><code>dplyr_filter_out</code> (#393)</li>
-<li><code>dplyr_group_by_ungroup</code> (#395)</li>
-<li><code>duplicated_function_definition</code> (#358)</li>
-<li><code>expect_match</code> (#364, <span class="citation" data-cites="bjyberg">@bjyberg</span>)</li>
-<li><code>expect_no_match</code> (#368, <span class="citation" data-cites="bjyberg">@bjyberg</span>)</li>
-<li><code>invalid_chunk_suppression</code> (#350)</li>
-<li><code>nzchar</code> (#406, <span class="citation" data-cites="maelle">@maelle</span>)</li>
-<li><code>quotes</code> (#381, <span class="citation" data-cites="bjyberg">@bjyberg</span>)</li>
-<li><code>undesirable_function</code> (replaces <code>browser</code>) (#336)</li>
-<li><code>unused_function</code> (#362)</li>
+<li><code>dplyr_filter_out</code> (<a href="https://github.com/etiennebacher/jarl/issues/393" target="_blank">#393</a>)</li>
+<li><code>dplyr_group_by_ungroup</code> (<a href="https://github.com/etiennebacher/jarl/issues/395" target="_blank">#395</a>)</li>
+<li><code>duplicated_function_definition</code> (<a href="https://github.com/etiennebacher/jarl/issues/358" target="_blank">#358</a>)</li>
+<li><code>expect_match</code> (<a href="https://github.com/etiennebacher/jarl/issues/364" target="_blank">#364</a>, <span class="citation" data-cites="bjyberg"><a href="https://github.com/bjyberg" target="_blank">@bjyberg</a></span>)</li>
+<li><code>expect_no_match</code> (<a href="https://github.com/etiennebacher/jarl/issues/368" target="_blank">#368</a>, <span class="citation" data-cites="bjyberg"><a href="https://github.com/bjyberg" target="_blank">@bjyberg</a></span>)</li>
+<li><code>invalid_chunk_suppression</code> (<a href="https://github.com/etiennebacher/jarl/issues/350" target="_blank">#350</a>)</li>
+<li><code>nzchar</code> (<a href="https://github.com/etiennebacher/jarl/issues/406" target="_blank">#406</a>, <span class="citation" data-cites="maelle"><a href="https://github.com/maelle" target="_blank">@maelle</a></span>)</li>
+<li><code>quotes</code> (<a href="https://github.com/etiennebacher/jarl/issues/381" target="_blank">#381</a>, <span class="citation" data-cites="bjyberg"><a href="https://github.com/bjyberg" target="_blank">@bjyberg</a></span>)</li>
+<li><code>undesirable_function</code> (replaces <code>browser</code>) (<a href="https://github.com/etiennebacher/jarl/issues/336" target="_blank">#336</a>)</li>
+<li><code>unused_function</code> (<a href="https://github.com/etiennebacher/jarl/issues/362" target="_blank">#362</a>)</li>
 </ul></li>
-<li><p>The output in terminal with output format <code>full</code> or <code>concise</code> is now organized in multiple sections (summary, warnings, notes) (#366).</p></li>
-<li><p>Hovering a diagnostic now shows the rule name (#377).</p></li>
-<li><p>Jarl can be used with <code>pre-commit</code> and <code>prek</code>, see <a href="https://jarl.etiennebacher.com/howto/precommit" target="_blank">Pre-commit tools</a> (#379).</p></li>
-<li><p>The CLI now errors early when some incompatible arguments are used (#437).</p></li>
+<li><p>The output in terminal with output format <code>full</code> or <code>concise</code> is now organized in multiple sections (summary, warnings, notes) (<a href="https://github.com/etiennebacher/jarl/issues/366" target="_blank">#366</a>).</p></li>
+<li><p>Hovering a diagnostic now shows the rule name (<a href="https://github.com/etiennebacher/jarl/issues/377" target="_blank">#377</a>).</p></li>
+<li><p>Jarl can be used with <code>pre-commit</code> and <code>prek</code>, see <a href="https://jarl.etiennebacher.com/howto/precommit" target="_blank">Pre-commit tools</a> (<a href="https://github.com/etiennebacher/jarl/issues/379" target="_blank">#379</a>).</p></li>
+<li><p>The CLI now errors early when some incompatible arguments are used (<a href="https://github.com/etiennebacher/jarl/issues/437" target="_blank">#437</a>).</p></li>
 </ul>
 </section>
 <section id="bug-fixes-2" class="level3">
 <h3 class="anchored" data-anchor-id="bug-fixes-2">Bug fixes</h3>
 <ul>
-<li><p><code>fixed_regex</code> could loop infinitely trying to add <code>fixed = TRUE</code>. This is fixed (#388).</p></li>
-<li><p>Some fixes to ensure that automatic fixes don’t introduce new violations or new parsing errors (#389).</p></li>
-<li><p>Suppression comments now work better when inserted in piped chains (#397).</p></li>
-<li><p>Fix a wrong parsing error when using <code>next()</code> or <code>break()</code> (#417).</p></li>
+<li><p><code>fixed_regex</code> could loop infinitely trying to add <code>fixed = TRUE</code>. This is fixed (<a href="https://github.com/etiennebacher/jarl/issues/388" target="_blank">#388</a>).</p></li>
+<li><p>Some fixes to ensure that automatic fixes don’t introduce new violations or new parsing errors (<a href="https://github.com/etiennebacher/jarl/issues/389" target="_blank">#389</a>).</p></li>
+<li><p>Suppression comments now work better when inserted in piped chains (<a href="https://github.com/etiennebacher/jarl/issues/397" target="_blank">#397</a>).</p></li>
+<li><p>Fix a wrong parsing error when using <code>next()</code> or <code>break()</code> (<a href="https://github.com/etiennebacher/jarl/issues/417" target="_blank">#417</a>).</p></li>
 </ul>
 </section>
 </section>
@@ -674,36 +674,36 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <section id="breaking-changes-2" class="level3">
 <h3 class="anchored" data-anchor-id="breaking-changes-2">Breaking changes</h3>
 <ul>
-<li><p>The support for comments to hide violations (aka <em>suppression comments</em>, aka <code># nolint</code> comments in <code>lintr</code>) has been entirely reworked (#218). It is no longer compatible with <code>lintr</code>’s comments. Instead, Jarl now uses <code># jarl-ignore</code> comments and follows different rules regarding the syntax and location of those comments. Detailed documentation is available in the section <a href="https://jarl.etiennebacher.com/howto/suppression-comments" target="_blank">“Suppression comments”</a> on the website. As part of this rewrite, the following rules have been added:</p>
+<li><p>The support for comments to hide violations (aka <em>suppression comments</em>, aka <code># nolint</code> comments in <code>lintr</code>) has been entirely reworked (<a href="https://github.com/etiennebacher/jarl/issues/218" target="_blank">#218</a>). It is no longer compatible with <code>lintr</code>’s comments. Instead, Jarl now uses <code># jarl-ignore</code> comments and follows different rules regarding the syntax and location of those comments. Detailed documentation is available in the section <a href="https://jarl.etiennebacher.com/howto/suppression-comments" target="_blank">“Suppression comments”</a> on the website. As part of this rewrite, the following rules have been added:</p>
 <ul>
-<li><code>blanket_suppression</code> (#243)</li>
-<li><code>misnamed_suppression</code> (#309)</li>
-<li><code>misplaced_file_suppression</code> (#305)</li>
-<li><code>misplaced_suppression</code> (#307)</li>
-<li><code>unexplained_suppression</code> (#304)</li>
-<li><code>unmatched_range_suppression</code> (#312)</li>
-<li><code>unused_suppression</code> (#310)</li>
+<li><code>blanket_suppression</code> (<a href="https://github.com/etiennebacher/jarl/issues/243" target="_blank">#243</a>)</li>
+<li><code>misnamed_suppression</code> (<a href="https://github.com/etiennebacher/jarl/issues/309" target="_blank">#309</a>)</li>
+<li><code>misplaced_file_suppression</code> (<a href="https://github.com/etiennebacher/jarl/issues/305" target="_blank">#305</a>)</li>
+<li><code>misplaced_suppression</code> (<a href="https://github.com/etiennebacher/jarl/issues/307" target="_blank">#307</a>)</li>
+<li><code>unexplained_suppression</code> (<a href="https://github.com/etiennebacher/jarl/issues/304" target="_blank">#304</a>)</li>
+<li><code>unmatched_range_suppression</code> (<a href="https://github.com/etiennebacher/jarl/issues/312" target="_blank">#312</a>)</li>
+<li><code>unused_suppression</code> (<a href="https://github.com/etiennebacher/jarl/issues/310" target="_blank">#310</a>)</li>
 </ul></li>
 </ul>
 </section>
 <section id="features-1" class="level3">
 <h3 class="anchored" data-anchor-id="features-1">Features</h3>
 <ul>
-<li><p>New CLI argument <code>--statistics</code> to show the number of violations per rule instead of the details of each violation. Jarl prints a hint to use this argument when more than 15 violations are reported (only when <code>--output-format</code> is <code>concise</code> or <code>full</code>). This value can be configured with the environment variable <code>JARL_N_VIOLATIONS_HINT_STAT</code>. (#250, #266)</p></li>
-<li><p>Jarl now looks in parent folders for <code>jarl.toml</code>. It searches until the user config folder is reached (the location of this folder depends on the OS: <code>~/.config</code> on Unix and <code>~/AppData/Roaming</code> on Windows). Jarl uses the first <code>jarl.toml</code> that is found. This is useful to store settings that should be common to all projects (e.g.&nbsp;<code>assignment = "&lt;-"</code>) without creating a <code>jarl.toml</code>, which is a common situation for standalone R scripts. (#253)</p></li>
+<li><p>New CLI argument <code>--statistics</code> to show the number of violations per rule instead of the details of each violation. Jarl prints a hint to use this argument when more than 15 violations are reported (only when <code>--output-format</code> is <code>concise</code> or <code>full</code>). This value can be configured with the environment variable <code>JARL_N_VIOLATIONS_HINT_STAT</code>. (<a href="https://github.com/etiennebacher/jarl/issues/250" target="_blank">#250</a>, <a href="https://github.com/etiennebacher/jarl/issues/266" target="_blank">#266</a>)</p></li>
+<li><p>Jarl now looks in parent folders for <code>jarl.toml</code>. It searches until the user config folder is reached (the location of this folder depends on the OS: <code>~/.config</code> on Unix and <code>~/AppData/Roaming</code> on Windows). Jarl uses the first <code>jarl.toml</code> that is found. This is useful to store settings that should be common to all projects (e.g.&nbsp;<code>assignment = "&lt;-"</code>) without creating a <code>jarl.toml</code>, which is a common situation for standalone R scripts. (<a href="https://github.com/etiennebacher/jarl/issues/253" target="_blank">#253</a>)</p></li>
 <li><p>New rules:</p>
 <ul>
-<li><code>equals_nan</code> (#284)</li>
-<li><code>equals_null</code> (#283)</li>
-<li><code>for_loop_dup_index</code> (#327)</li>
-<li><code>if_always_true</code> (#311, <span class="citation" data-cites="bjyberg">@bjyberg</span>)</li>
-<li><code>internal_function</code> (#291)</li>
-<li><code>redundant_ifelse</code> (#260)</li>
-<li><code>unnecessary_nesting</code> (#268)</li>
-<li><code>unreachable_code</code> (#261)</li>
+<li><code>equals_nan</code> (<a href="https://github.com/etiennebacher/jarl/issues/284" target="_blank">#284</a>)</li>
+<li><code>equals_null</code> (<a href="https://github.com/etiennebacher/jarl/issues/283" target="_blank">#283</a>)</li>
+<li><code>for_loop_dup_index</code> (<a href="https://github.com/etiennebacher/jarl/issues/327" target="_blank">#327</a>)</li>
+<li><code>if_always_true</code> (<a href="https://github.com/etiennebacher/jarl/issues/311" target="_blank">#311</a>, <span class="citation" data-cites="bjyberg"><a href="https://github.com/bjyberg" target="_blank">@bjyberg</a></span>)</li>
+<li><code>internal_function</code> (<a href="https://github.com/etiennebacher/jarl/issues/291" target="_blank">#291</a>)</li>
+<li><code>redundant_ifelse</code> (<a href="https://github.com/etiennebacher/jarl/issues/260" target="_blank">#260</a>)</li>
+<li><code>unnecessary_nesting</code> (<a href="https://github.com/etiennebacher/jarl/issues/268" target="_blank">#268</a>)</li>
+<li><code>unreachable_code</code> (<a href="https://github.com/etiennebacher/jarl/issues/261" target="_blank">#261</a>)</li>
 </ul></li>
-<li><p>When the output format is <code>full</code> or <code>concise</code>, rule names now have a hyperlink leading to the website documentation (#278).</p></li>
-<li><p><code>any_is_na</code> now reports <code>NA %in% x</code> (#286).</p></li>
+<li><p>When the output format is <code>full</code> or <code>concise</code>, rule names now have a hyperlink leading to the website documentation (<a href="https://github.com/etiennebacher/jarl/issues/278" target="_blank">#278</a>).</p></li>
+<li><p><code>any_is_na</code> now reports <code>NA %in% x</code> (<a href="https://github.com/etiennebacher/jarl/issues/286" target="_blank">#286</a>).</p></li>
 </ul>
 </section>
 <section id="other-changes" class="level3">
@@ -711,30 +711,30 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <ul>
 <li><p>The following rules are now disabled by default. They still exist and the user can choose to use them, but they were deemed too noisy for limited benefit to be enabled by default:</p>
 <ul>
-<li><code>assignment</code> (#258)</li>
-<li><code>fixed_regex</code> (#279)</li>
-<li><code>sample_int</code> (#262)</li>
+<li><code>assignment</code> (<a href="https://github.com/etiennebacher/jarl/issues/258" target="_blank">#258</a>)</li>
+<li><code>fixed_regex</code> (<a href="https://github.com/etiennebacher/jarl/issues/279" target="_blank">#279</a>)</li>
+<li><code>sample_int</code> (<a href="https://github.com/etiennebacher/jarl/issues/262" target="_blank">#262</a>)</li>
 </ul></li>
-<li><p><code>equals_na</code> now reports <code>x %in% NA</code> cases, as documented (#285).</p></li>
-<li><p>There are now binaries available for <code>linux-musl</code> (<code>x64</code> and <code>arm64</code>) (#287).</p></li>
+<li><p><code>equals_na</code> now reports <code>x %in% NA</code> cases, as documented (<a href="https://github.com/etiennebacher/jarl/issues/285" target="_blank">#285</a>).</p></li>
+<li><p>There are now binaries available for <code>linux-musl</code> (<code>x64</code> and <code>arm64</code>) (<a href="https://github.com/etiennebacher/jarl/issues/287" target="_blank">#287</a>).</p></li>
 </ul>
 </section>
 <section id="bug-fixes-3" class="level3">
 <h3 class="anchored" data-anchor-id="bug-fixes-3">Bug fixes</h3>
 <ul>
-<li><p>When <code>output-format</code> is <code>json</code> or <code>github</code>, additional information displayed in the terminal (e.g.&nbsp;timing) isn’t included anymore to avoid parsing errors (#254).</p></li>
-<li><p>Fixed a bug in the number of “fixable diagnostics” reported when the arg <code>fixable</code> is present in <code>jarl.toml</code> but <code>--fix</code> is not passed (#255).</p></li>
-<li><p><code>fixed_regex</code> is now correctly classified as “Performance” instead of “Readability” rule internally (#279).</p></li>
-<li><p>Default values of function parameters are now analyzed too (#282).</p></li>
+<li><p>When <code>output-format</code> is <code>json</code> or <code>github</code>, additional information displayed in the terminal (e.g.&nbsp;timing) isn’t included anymore to avoid parsing errors (<a href="https://github.com/etiennebacher/jarl/issues/254" target="_blank">#254</a>).</p></li>
+<li><p>Fixed a bug in the number of “fixable diagnostics” reported when the arg <code>fixable</code> is present in <code>jarl.toml</code> but <code>--fix</code> is not passed (<a href="https://github.com/etiennebacher/jarl/issues/255" target="_blank">#255</a>).</p></li>
+<li><p><code>fixed_regex</code> is now correctly classified as “Performance” instead of “Readability” rule internally (<a href="https://github.com/etiennebacher/jarl/issues/279" target="_blank">#279</a>).</p></li>
+<li><p>Default values of function parameters are now analyzed too (<a href="https://github.com/etiennebacher/jarl/issues/282" target="_blank">#282</a>).</p></li>
 <li><p><code>duplicated_arguments</code> doesn’t report anymore cases where argument names <code>"</code> and <code>'</code> were conflated, e.g.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="cf">switch</span>(x, <span class="st">`</span><span class="at">"</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"double"</span>, <span class="st">`</span><span class="at">'</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"single"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>(#288).</p></li>
+<p>(<a href="https://github.com/etiennebacher/jarl/issues/288" target="_blank">#288</a>).</p></li>
 </ul>
 </section>
 <section id="documentation" class="level3">
 <h3 class="anchored" data-anchor-id="documentation">Documentation</h3>
 <ul>
-<li>New section in the <code>Integrations</code> page to show how to use Jarl in various CI/CD platforms (#289, <span class="citation" data-cites="philipp-baumann">@philipp-baumann</span>).</li>
+<li>New section in the <code>Integrations</code> page to show how to use Jarl in various CI/CD platforms (<a href="https://github.com/etiennebacher/jarl/issues/289" target="_blank">#289</a>, <span class="citation" data-cites="philipp-baumann"><a href="https://github.com/philipp-baumann" target="_blank">@philipp-baumann</a></span>).</li>
 </ul>
 </section>
 </section>
@@ -757,23 +757,23 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <h3 class="anchored" data-anchor-id="breaking-changes-3">Breaking changes</h3>
 <ul>
 <li><p>Jarl now excludes by default file paths matching the following patterns: <code>.git/</code>, <code>renv/</code>, <code>revdep/</code>, <code>cpp11.R</code>, <code>RcppExports.R</code>, <code>extendr-wrappers.R</code>, and <code>import-standalone-*.R</code>.</p>
-<p>A new CLI argument <code>--no-default-exclude</code> can be used to check those files as well. This argument overrides the <code>default-exclude = true</code> option when set in <code>jarl.toml</code> (#178, <span class="citation" data-cites="novica">@novica</span>).</p></li>
+<p>A new CLI argument <code>--no-default-exclude</code> can be used to check those files as well. This argument overrides the <code>default-exclude = true</code> option when set in <code>jarl.toml</code> (<a href="https://github.com/etiennebacher/jarl/issues/178" target="_blank">#178</a>, <span class="citation" data-cites="novica"><a href="https://github.com/novica" target="_blank">@novica</a></span>).</p></li>
 </ul>
 </section>
 <section id="features-2" class="level3">
 <h3 class="anchored" data-anchor-id="features-2">Features</h3>
 <ul>
-<li><code>--output-format json</code> now contains two fields <code>diagnostics</code> and <code>errors</code> (#219).</li>
-<li>Better support for namespaced function calls, both when reporting violations and when fixing them (#221).</li>
-<li>The <code>class_equals</code> rule now also reports cases like <code>identical(class(x), "foo")</code> and <code>identical("foo", class(x))</code> (#234).</li>
+<li><code>--output-format json</code> now contains two fields <code>diagnostics</code> and <code>errors</code> (<a href="https://github.com/etiennebacher/jarl/issues/219" target="_blank">#219</a>).</li>
+<li>Better support for namespaced function calls, both when reporting violations and when fixing them (<a href="https://github.com/etiennebacher/jarl/issues/221" target="_blank">#221</a>).</li>
+<li>The <code>class_equals</code> rule now also reports cases like <code>identical(class(x), "foo")</code> and <code>identical("foo", class(x))</code> (<a href="https://github.com/etiennebacher/jarl/issues/234" target="_blank">#234</a>).</li>
 <li>New rules:
 <ul>
-<li><code>expect_s3_class</code> (#235)</li>
-<li><code>expect_type</code> (#226)</li>
-<li><code>fixed_regex</code> (#227)</li>
-<li><code>sprintf</code> (#224)</li>
-<li><code>string_boundary</code> (#225)</li>
-<li><code>vector_logic</code> (#238)</li>
+<li><code>expect_s3_class</code> (<a href="https://github.com/etiennebacher/jarl/issues/235" target="_blank">#235</a>)</li>
+<li><code>expect_type</code> (<a href="https://github.com/etiennebacher/jarl/issues/226" target="_blank">#226</a>)</li>
+<li><code>fixed_regex</code> (<a href="https://github.com/etiennebacher/jarl/issues/227" target="_blank">#227</a>)</li>
+<li><code>sprintf</code> (<a href="https://github.com/etiennebacher/jarl/issues/224" target="_blank">#224</a>)</li>
+<li><code>string_boundary</code> (<a href="https://github.com/etiennebacher/jarl/issues/225" target="_blank">#225</a>)</li>
+<li><code>vector_logic</code> (<a href="https://github.com/etiennebacher/jarl/issues/238" target="_blank">#238</a>)</li>
 </ul></li>
 </ul>
 </section>
@@ -785,13 +785,13 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># nolint</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(x))</span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>does not report a violation anymore (#229).</p></li>
+<p>does not report a violation anymore (<a href="https://github.com/etiennebacher/jarl/issues/229" target="_blank">#229</a>).</p></li>
 </ul>
 </section>
 <section id="other-changes-1" class="level3">
 <h3 class="anchored" data-anchor-id="other-changes-1">Other changes</h3>
 <ul>
-<li><code>expect_named</code> no longer reports cases like <code>expect_equal(x, names(y))</code> because rewriting those as <code>expect_named(y, x)</code> would potentially change the intent of the test and the way it is read (#220).</li>
+<li><code>expect_named</code> no longer reports cases like <code>expect_equal(x, names(y))</code> because rewriting those as <code>expect_named(y, x)</code> would potentially change the intent of the test and the way it is read (<a href="https://github.com/etiennebacher/jarl/issues/220" target="_blank">#220</a>).</li>
 </ul>
 </section>
 </section>
@@ -813,7 +813,7 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <section id="other" class="level3">
 <h3 class="anchored" data-anchor-id="other">Other</h3>
 <ul>
-<li>Important performance improvement when using <code>--fix</code>, in particular in projects with many R files (#217).</li>
+<li>Important performance improvement when using <code>--fix</code>, in particular in projects with many R files (<a href="https://github.com/etiennebacher/jarl/issues/217" target="_blank">#217</a>).</li>
 </ul>
 </section>
 </section>
@@ -835,7 +835,7 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <section id="breaking-changes-4" class="level3">
 <h3 class="anchored" data-anchor-id="breaking-changes-4">Breaking changes</h3>
 <ul>
-<li>For consistency between CLI arguments and <code>jarl.toml</code> arguments, the following CLI arguments are renamed (#199):
+<li>For consistency between CLI arguments and <code>jarl.toml</code> arguments, the following CLI arguments are renamed (<a href="https://github.com/etiennebacher/jarl/issues/199" target="_blank">#199</a>):
 <ul>
 <li><code>--select-rules</code> becomes <code>--select</code></li>
 <li><code>--ignore-rules</code> becomes <code>--ignore</code></li>
@@ -846,29 +846,29 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <section id="features-3" class="level3">
 <h3 class="anchored" data-anchor-id="features-3">Features</h3>
 <ul>
-<li>New argument <code>extend-select</code> in <code>jarl.toml</code> and <code>--extend-select</code> in the CLI to select additional rules on top of the existing selection. This can be useful to select opt-in rules in addition to the default set of rules (#193).</li>
-<li>Added support for <code>seq</code> and <code>seq2</code> rules (#187).</li>
+<li>New argument <code>extend-select</code> in <code>jarl.toml</code> and <code>--extend-select</code> in the CLI to select additional rules on top of the existing selection. This can be useful to select opt-in rules in addition to the default set of rules (<a href="https://github.com/etiennebacher/jarl/issues/193" target="_blank">#193</a>).</li>
+<li>Added support for <code>seq</code> and <code>seq2</code> rules (<a href="https://github.com/etiennebacher/jarl/issues/187" target="_blank">#187</a>).</li>
 <li>Added support for several rules related to <code>testthat</code>. Those rules are disabled by default and can be enabled by combining <code>select</code> or <code>extend-select</code> with the rule name or the <code>TESTTHAT</code> group rule name. Those rules are:
 <ul>
-<li><code>expect_length</code> (#211)</li>
-<li><code>expect_named</code> (#212)</li>
-<li><code>expect_not</code> (#204)</li>
-<li><code>expect_null</code> (#202)</li>
-<li><code>expect_true_false</code> (#191)</li>
+<li><code>expect_length</code> (<a href="https://github.com/etiennebacher/jarl/issues/211" target="_blank">#211</a>)</li>
+<li><code>expect_named</code> (<a href="https://github.com/etiennebacher/jarl/issues/212" target="_blank">#212</a>)</li>
+<li><code>expect_not</code> (<a href="https://github.com/etiennebacher/jarl/issues/204" target="_blank">#204</a>)</li>
+<li><code>expect_null</code> (<a href="https://github.com/etiennebacher/jarl/issues/202" target="_blank">#202</a>)</li>
+<li><code>expect_true_false</code> (<a href="https://github.com/etiennebacher/jarl/issues/191" target="_blank">#191</a>)</li>
 </ul></li>
 </ul>
 </section>
 <section id="fixes-1" class="level3">
 <h3 class="anchored" data-anchor-id="fixes-1">Fixes</h3>
 <ul>
-<li><code>implicit_assignment</code> no longer reports cases inside <code>quote()</code> (#209).</li>
+<li><code>implicit_assignment</code> no longer reports cases inside <code>quote()</code> (<a href="https://github.com/etiennebacher/jarl/issues/209" target="_blank">#209</a>).</li>
 </ul>
 </section>
 <section id="documentation-1" class="level3">
 <h3 class="anchored" data-anchor-id="documentation-1">Documentation</h3>
 <ul>
-<li>Added section on Neovim to the <a href="https://jarl.etiennebacher.com/howto/editors" target="_blank">Editors</a> page (#188, <span class="citation" data-cites="bjyberg">@bjyberg</span>).</li>
-<li>Added page “Tutorial: add a new rule” (#183).</li>
+<li>Added section on Neovim to the <a href="https://jarl.etiennebacher.com/howto/editors" target="_blank">Editors</a> page (<a href="https://github.com/etiennebacher/jarl/issues/188" target="_blank">#188</a>, <span class="citation" data-cites="bjyberg"><a href="https://github.com/bjyberg" target="_blank">@bjyberg</a></span>).</li>
+<li>Added page “Tutorial: add a new rule” (<a href="https://github.com/etiennebacher/jarl/issues/183" target="_blank">#183</a>).</li>
 </ul>
 </section>
 </section>
@@ -890,15 +890,15 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <section id="features-4" class="level3">
 <h3 class="anchored" data-anchor-id="features-4">Features</h3>
 <ul>
-<li>Added support for <code>list2df</code> rule (#179).</li>
-<li>Added support for <code>browser</code> rule (#185, <span class="citation" data-cites="jonocarroll">@jonocarroll</span>).</li>
-<li>Added support for <code>system_file</code> rule (#186).</li>
+<li>Added support for <code>list2df</code> rule (<a href="https://github.com/etiennebacher/jarl/issues/179" target="_blank">#179</a>).</li>
+<li>Added support for <code>browser</code> rule (<a href="https://github.com/etiennebacher/jarl/issues/185" target="_blank">#185</a>, <span class="citation" data-cites="jonocarroll"><a href="https://github.com/jonocarroll" target="_blank">@jonocarroll</a></span>).</li>
+<li>Added support for <code>system_file</code> rule (<a href="https://github.com/etiennebacher/jarl/issues/186" target="_blank">#186</a>).</li>
 </ul>
 </section>
 <section id="fixes-2" class="level3">
 <h3 class="anchored" data-anchor-id="fixes-2">Fixes</h3>
 <ul>
-<li>(Hopefully) Fixed wrong printing of ANSI characters in multiple terminals on Windows (#179, thanks <span class="citation" data-cites="novica">@novica</span> for the report).</li>
+<li>(Hopefully) Fixed wrong printing of ANSI characters in multiple terminals on Windows (<a href="https://github.com/etiennebacher/jarl/issues/179" target="_blank">#179</a>, thanks <span class="citation" data-cites="novica"><a href="https://github.com/novica" target="_blank">@novica</a></span> for the report).</li>
 </ul>
 </section>
 <section id="documentation-2" class="level3">
@@ -927,8 +927,8 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <section id="fixes-3" class="level3">
 <h3 class="anchored" data-anchor-id="fixes-3">Fixes</h3>
 <ul>
-<li>Fix discovery of <code>jarl.toml</code> by the Jarl extension (#175, thanks <span class="citation" data-cites="DavisVaughan">@DavisVaughan</span> for the report).</li>
-<li>Rule <code>duplicated_argument</code> no longer reports <code>cli_</code> functions where multiple arguments have the same name (#176, thanks <span class="citation" data-cites="DavisVaughan">@DavisVaughan</span> for the report).</li>
+<li>Fix discovery of <code>jarl.toml</code> by the Jarl extension (<a href="https://github.com/etiennebacher/jarl/issues/175" target="_blank">#175</a>, thanks <span class="citation" data-cites="DavisVaughan"><a href="https://github.com/DavisVaughan" target="_blank">@DavisVaughan</a></span> for the report).</li>
+<li>Rule <code>duplicated_argument</code> no longer reports <code>cli_</code> functions where multiple arguments have the same name (<a href="https://github.com/etiennebacher/jarl/issues/176" target="_blank">#176</a>, thanks <span class="citation" data-cites="DavisVaughan"><a href="https://github.com/DavisVaughan" target="_blank">@DavisVaughan</a></span> for the report).</li>
 </ul>
 </section>
 <section id="documentation-3" class="level3">
