@@ -8,7 +8,7 @@ fn test_output_default() -> anyhow::Result<()> {
     ])?;
 
     insta::assert_snapshot!(
-        &mut casepi --session 01a06d8d-0c58-77ca-bdc1-5f71aa297cf3
+        &mut case
             .command()
             .arg("check")
             .arg(".")
