@@ -258,6 +258,18 @@
             }
           ]
         },
+        "object_name": {
+          "title": "Options for the `object_name` rule",
+          "description": "Use `styles` to select built-in naming styles, `regexes` to add named\nregular expressions, and `special-names` / `extend-special-names` to\nconfigure names that are exempt from style checks.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ObjectNameOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "per-file-ignores": {
           "title": "Per-file rule ignores",
           "description": "A mapping of glob patterns to lists of rules that should be ignored in\nthe files matching each pattern. Patterns are gitignore-style and\nresolved relative to the directory containing `jarl.toml` (the same\nformat used by `include` and `exclude`). Rule names and rule groups\n(e.g. `PERF`) are both accepted.\n\nA pattern can be negated with a leading `!`, in which case its rules are\nignored in every file that does *not* match the pattern. When several\npatterns match a file, the rules from all of them are ignored.\n\nFor example:\n\n```toml\n[lint.per-file-ignores]\n\"foo.R\" = [\"true_false_symbol\"]\n# ignore everywhere but in the R folder\n\"!R/**.R\" = [\"any_is_na\"]\n```",
@@ -419,6 +431,49 @@
           }
         },
         "skipped-functions": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ObjectNameOptions": {
+      "description": "TOML options for `[lint.object_name]`.\n\n`styles` selects the built-in naming styles. `regexes` adds named regular\nexpressions that can be used alongside the selected styles. `special-names`\nreplaces the built-in names that are exempt from style checks, while\n`extend-special-names` adds to them.",
+      "type": "object",
+      "properties": {
+        "extend-special-names": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "regexes": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "special-names": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "styles": {
           "type": [
             "array",
             "null"

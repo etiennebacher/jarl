@@ -399,6 +399,42 @@ Default: `skipped-functions = [
 skipped-functions = ["my_function"]
 ```
 
+### `object_name`
+
+This rule checks the names of variables and arguments used in assignments
+and function definitions.
+For `$` and `@` assignments, it checks only the base object name.
+The rule is disabled by default.
+
+The default styles are `snake_case` and `symbols`.
+Available built-in styles are `CamelCase`, `camelCase`, `snake_case`,
+`SNAKE_CASE`, `dotted.case`, `lowercase`, `UPPERCASE`, and `symbols`.
+Any combination of default styles can be included.
+
+The special names `.onLoad`, `.onAttach`, `.onUnload`, `.onDetach`, `.Last.lib`,
+`.First`, and `.Last` are exempt from style checks by default. Use
+`extend-special-names` to add names to this set, or `special-names` to replace
+it entirely. Do not specify both options.
+
+```toml
+[lint]
+...
+
+[lint.object_name]
+styles = ["snake_case", "symbols"]
+extend-special-names = ["my_special_hook"]
+```
+
+Additional acceptable names can be added via `regexes` when `styles` is set:
+
+```toml
+[lint.object_name.regexes]
+prefixed = "^x_[a-z]+$"
+```
+
+If `styles` is omitted while `regexes` is supplied, the regular expressions are
+used to define the accepted styles.
+
 ### `pipe_consistency`
 
 This takes a single value (`"|>"` or `"%>%"`) indicating the preferred

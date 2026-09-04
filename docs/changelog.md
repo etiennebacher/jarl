@@ -69,6 +69,7 @@
   * `missing_argument` (#506)
   * `nested_pipe` (#516)
   * `notin` (#459, @Yousa-Mirage)
+  * `object_name` (#8)
   * `pipe_consistency` (#482)
   * `pipe_return` (#502)
   * `rep_times_ignored` (#556, @Yousa-Mirage)
