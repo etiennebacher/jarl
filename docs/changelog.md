@@ -74,6 +74,7 @@
   * `rep_times_ignored` (#556, @Yousa-Mirage)
   * `stopifnot_all` (#547, @Yousa-Mirage)
   * `strings_as_factors` (#546, @Yousa-Mirage)
+  * `undesirable_operator`
   * `unnecessary_parentheses` (#510, @JosephBARBIERDARNAL)
   * `unused_object` (#589)
 

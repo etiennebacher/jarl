@@ -651,6 +651,13 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    UndesirableOperator => {
+        name: "undesirable_operator",
+        categories: [Corr],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
     UnnecessaryNesting => {
         name: "unnecessary_nesting",
         categories: [Read],
