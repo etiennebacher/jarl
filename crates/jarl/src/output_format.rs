@@ -297,9 +297,10 @@ impl Emitter for GithubEmitter {
         &self,
         writer: &mut W,
         diagnostics: &[&Diagnostic],
-        _errors: &[(String, anyhow::Error)],
+        errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
+        emit_errors_concise(errors);
         for diagnostic in diagnostics {
             let (row, col) = match diagnostic.location {
                 Some(loc) => (loc.row(), loc.column() + 1), // Convert to 1-based for display
@@ -506,9 +507,10 @@ impl Emitter for SarifEmitter {
         &self,
         writer: &mut W,
         diagnostics: &[&Diagnostic],
-        _errors: &[(String, anyhow::Error)],
+        errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
+        emit_errors_concise(errors);
 
         // Cache each file's contents so ranges can be converted to line/column
         // regions without re-reading the source.

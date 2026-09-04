@@ -16,6 +16,9 @@
 
 ### Bug fixes
 
+* The `github` and `sarif` output formats now report parsing errors to stderr
+  instead of silently dropping them (#695, @Yousa-Mirage).
+
 * Prevent the `sample_int` rule from panicking on calls with missing arguments
   (#687, @Yousa-Mirage).
 
