@@ -408,7 +408,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>This page will explain how to implement a new rule in Jarl. It is recommended to read the <a href="./contributing.html" target="_blank">General information page</a> first to install the required tools. Jarl is written in Rust, but this page will <em>not</em> explain how to set up or use Rust, this is an entirely different topic. To get started with Rust, check out the <a href="https://doc.rust-lang.org/stable/book/" target="_blank">Rust book</a>.</p>
+<p>This page will explain how to implement a new rule in Jarl.</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This page is usually up-to-date with the latest changes in Jarl’s internals, but you should ensure that you are reading the “dev” version: <a href="https://jarl.etiennebacher.com/dev/contributing-rule-example" target="_blank">jarl.etiennebacher.com/dev/contributing-rule-example</a></p>
+<p>If you see outdated content, please <a href="https://github.com/etiennebacher/jarl/issues" target="_blank">open an issue</a>.</p>
+</div>
+</div>
+<p>It is recommended to read the <a href="./contributing.html" target="_blank">General information page</a> first to install the required tools. Jarl is written in Rust, but this page will <em>not</em> explain how to set up or use Rust, this is an entirely different topic. To get started with Rust, check out the <a href="https://doc.rust-lang.org/stable/book/" target="_blank">Rust book</a>.</p>
 <section id="getting-ready" class="level2">
 <h2 class="anchored" data-anchor-id="getting-ready">Getting ready</h2>
 <section id="find-the-rule" class="level3">
@@ -550,7 +565,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>finally, we define the function where we parse the AST.</li>
 </ul>
 <div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
@@ -559,7 +574,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div id="callout-3" class="callout-3-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>If you explore other rules implementation, you might notice that the <code>impl Violation</code> block is sometimes missing. This is because in some cases, the message and/or the suggestion depend on the AST itself. For example, for the <code>assignment</code> rule, the message will recommend the use of <code>&lt;-</code> or <code>=</code> depending on the user settings.</p>
 <p>In this scenario, the rule, body, and suggestion are defined at the very end, when we build the <code>Diagnostic</code>.</p>
@@ -636,7 +651,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="dt">skipped-functions</span> <span class="op">=</span> <span class="op">[</span><span class="st">"list"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Not all rules need TOML options.</p>
 <div class="callout callout-style-default callout-note callout-titled" title="Click to see how to add TOML options for a rule">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
@@ -645,7 +660,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>Adding options for a rule takes three steps. The example below uses the rule <code>duplicated_arguments</code> since <code>list2df</code> doesn’t have TOML options.</p>
 <ol type="1">

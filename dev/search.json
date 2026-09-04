@@ -2271,7 +2271,7 @@
     "href": "contributing-rule-example.html",
     "title": "Adding a new rule to Jarl",
     "section": "",
-    "text": "This page will explain how to implement a new rule in Jarl. It is recommended to read the General information page first to install the required tools. Jarl is written in Rust, but this page will not explain how to set up or use Rust, this is an entirely different topic. To get started with Rust, check out the Rust book."
+    "text": "This page will explain how to implement a new rule in Jarl.\nIt is recommended to read the General information page first to install the required tools. Jarl is written in Rust, but this page will not explain how to set up or use Rust, this is an entirely different topic. To get started with Rust, check out the Rust book."
   },
   {
     "objectID": "contributing-rule-example.html#getting-ready",
