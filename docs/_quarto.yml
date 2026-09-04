@@ -87,6 +87,7 @@ website:
       - rules/any_duplicated.md
       - rules/any_is_na.md
       - rules/assignment.md
+      - rules/assignment_on_if_no_else.md
       - rules/blanket_suppression.md
       - rules/browser.md
       - rules/class_equals.md
