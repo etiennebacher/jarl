@@ -789,16 +789,16 @@ mod tests {
          --> [PKG]/R/unused_1.R:1:1
           |
         1 | unused_fn_1 <- function() 1
-          | ----------- `unused_fn_1` is defined but never called in this package.
+          | ----------- `unused_fn_1` is defined but is never called in this package nor is it exported in NAMESPACE.
           |
-          = help: Defined at [PKG]/R/unused_1.R:1:1 but never called
+          = help: Defined at [PKG]/R/unused_1.R:1:1.
         warning: unused_function
          --> [PKG]/R/unused_2.R:1:1
           |
         1 | unused_fn_2 <- function() 2
-          | ----------- `unused_fn_2` is defined but never called in this package.
+          | ----------- `unused_fn_2` is defined but is never called in this package nor is it exported in NAMESPACE.
           |
-          = help: Defined at [PKG]/R/unused_2.R:1:1 but never called
+          = help: Defined at [PKG]/R/unused_2.R:1:1.
         Found 2 errors.
         "
         );

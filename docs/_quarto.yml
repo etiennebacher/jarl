@@ -2,7 +2,6 @@ project:
   type: website
   pre-render: copy_readme.R
 filters:
-- linkify-github-refs.lua
 - newpagelink.lua
 format:
   html:

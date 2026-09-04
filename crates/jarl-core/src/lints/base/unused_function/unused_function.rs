@@ -24,6 +24,9 @@ use crate::package::{FileScope, SharedFileData};
 /// refactoring. Removing it keeps the codebase easier to understand and
 /// maintain.
 ///
+/// While exported functions may not be called by other functions, they must be
+/// declared in the package's NAMESPACE file before they are visible to users.
+///
 /// ## Limitations
 ///
 /// There are many ways to call a function in R code (e.g. `foo()`,
@@ -57,6 +60,7 @@ use crate::package::{FileScope, SharedFileData};
 /// # `check_length()` isn't exported but and isn't used anywhere, so it is
 /// # reported.
 /// ```
+///
 // ## Implementation
 //
 // Operates on the already-scanned `SharedFileData` of a package rather than
@@ -197,7 +201,7 @@ pub(crate) fn compute_unused_from_shared(
 
                 if occurrences <= definitions && !extra_symbol_set.contains(name.as_str()) {
                     let help = format!(
-                        "Defined at {path}:{line}:{col} but never called",
+                        "Defined at {path}:{line}:{col}.",
                         path = file.rel_path.display()
                     );
                     unused.push((name.clone(), *range, help));

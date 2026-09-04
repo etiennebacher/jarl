@@ -19,6 +19,9 @@ An internal function that is never called is likely dead code left over from
 refactoring. Removing it keeps the codebase easier to understand and
 maintain.
 
+While exported functions may not be called by other functions, they must be
+declared in the package's NAMESPACE file before they are visible to users.
+
 ## Limitations
 
 There are many ways to call a function in R code (e.g. `foo()`,
@@ -52,3 +55,4 @@ check_length <- function(x, y) {
 # `check_length()` isn't exported but and isn't used anywhere, so it is
 # reported.
 ```
+
