@@ -1,0 +1,39 @@
+---
+source: crates/jarl-core/src/lints/base/deparse1/mod.rs
+assertion_line: 115
+expression: "get_fixed_text(vec![\"paste(deparse(x), collapse = ' ')\",\n\"paste(deparse(substitute(x)), collapse = ' ')\",\n\"paste(deparse(x, width.cutoff = 500L), collapse = ' ')\",\n\"paste(collapse = ' ', deparse(x))\",\n\"base::paste(base::deparse(x), collapse = ' ')\",], \"deparse1\", Some(\"4.1.0\"))"
+---
+OLD:
+====
+paste(deparse(x), collapse = ' ')
+NEW:
+====
+deparse1(x)
+
+OLD:
+====
+paste(deparse(substitute(x)), collapse = ' ')
+NEW:
+====
+deparse1(substitute(x))
+
+OLD:
+====
+paste(deparse(x, width.cutoff = 500L), collapse = ' ')
+NEW:
+====
+deparse1(x, width.cutoff = 500L)
+
+OLD:
+====
+paste(collapse = ' ', deparse(x))
+NEW:
+====
+deparse1(x)
+
+OLD:
+====
+base::paste(base::deparse(x), collapse = ' ')
+NEW:
+====
+deparse1(x)
