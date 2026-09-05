@@ -38,6 +38,9 @@
 * Avoid invalid `literal_coercion` fixes for strings containing quotes
   (#678, @Yousa-Mirage).
 
+* The `expect_type` rule no longer lints `expect_true(is.null(x))`, which was
+  already reported by the `expect_null` rule (#680, @Yousa-Mirage).
+
 * The `pipe_consistency` rule no longer emits invalid fixes when converting
   `magrittr` pipes with a non-call RHS, such as `x %>% sum` (#683, @Yousa-Mirage).
 
