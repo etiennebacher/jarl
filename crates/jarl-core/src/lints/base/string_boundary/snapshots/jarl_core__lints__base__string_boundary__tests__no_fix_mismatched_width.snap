@@ -1,0 +1,59 @@
+---
+source: crates/jarl-core/src/lints/base/string_boundary/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"substr(x, 1, 2) == 'a'\",\n\"substr(x, 1, 1) != 'ab'\", \"substring(x, nchar(x) - 1, nchar(x)) == 'b'\",\n\"substr(x, nchar(x), nchar(x)) == 'ab'\", \"substr(x, 1, end) == 'ab'\",\n\"substring(x, start, nchar(x)) == 'ab'\",\n\"substr(x, stop = 1, start = 2) == 'ab'\", r#\"substr(x, 1, 6) == \"\\u4f60\"\"#,],\n\"string_boundary\")"
+---
+OLD:
+====
+substr(x, 1, 2) == 'a'
+NEW:
+====
+substr(x, 1, 2) == 'a'
+
+OLD:
+====
+substr(x, 1, 1) != 'ab'
+NEW:
+====
+substr(x, 1, 1) != 'ab'
+
+OLD:
+====
+substring(x, nchar(x) - 1, nchar(x)) == 'b'
+NEW:
+====
+substring(x, nchar(x) - 1, nchar(x)) == 'b'
+
+OLD:
+====
+substr(x, nchar(x), nchar(x)) == 'ab'
+NEW:
+====
+substr(x, nchar(x), nchar(x)) == 'ab'
+
+OLD:
+====
+substr(x, 1, end) == 'ab'
+NEW:
+====
+substr(x, 1, end) == 'ab'
+
+OLD:
+====
+substring(x, start, nchar(x)) == 'ab'
+NEW:
+====
+substring(x, start, nchar(x)) == 'ab'
+
+OLD:
+====
+substr(x, stop = 1, start = 2) == 'ab'
+NEW:
+====
+substr(x, stop = 1, start = 2) == 'ab'
+
+OLD:
+====
+substr(x, 1, 6) == "\u4f60"
+NEW:
+====
+substr(x, 1, 6) == "\u4f60"

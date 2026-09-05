@@ -16,6 +16,11 @@
 
 ### Bug fixes
 
+* The `string_boundary` rule now requires substring boundaries to match the
+  compared string's character length and handles reordered named arguments.
+  Its fixes are now unsafe because they can change attributes, input coercion,
+  or the number of times an expression is evaluated (@Yousa-Mirage).
+
 * Prevent the `sample_int` rule from panicking on calls with missing arguments
   (#687, @Yousa-Mirage).
 
