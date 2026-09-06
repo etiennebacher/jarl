@@ -1,11 +1,22 @@
 use air_r_syntax::{
-    AnyRExpression, RBinaryExpressionFields, RForStatementFields, RIfStatementFields,
-    RWhileStatementFields,
+    AnyRExpression, AnyRSelector, AnyRValue, RBinaryExpressionFields, RForStatementFields,
+    RIfStatementFields, RWhileStatementFields,
 };
-use biome_rowan::AstNode;
 
 use crate::analyze;
 use crate::checker::Checker;
+
+/// Convert a selector to the equivalent expression.
+///
+/// This allows better code coverage than `if let Some(...) = AnyRExpression::cast(...)`
+fn selector_to_expression(selector: AnyRSelector) -> AnyRExpression {
+    match selector {
+        AnyRSelector::RDotDotI(x) => AnyRExpression::RDotDotI(x),
+        AnyRSelector::RDots(x) => AnyRExpression::RDots(x),
+        AnyRSelector::RIdentifier(x) => AnyRExpression::RIdentifier(x),
+        AnyRSelector::RStringValue(x) => AnyRExpression::AnyRValue(AnyRValue::RStringValue(x)),
+    }
+}
 
 /// Dispatch an expression to its appropriate set of rules and recurse into children.
 ///
@@ -52,9 +63,7 @@ pub(crate) fn check_expression(
         }
         AnyRExpression::RExtractExpression(children) => {
             check_expression(&children.left()?, checker)?;
-            if let Some(right) = AnyRExpression::cast(children.right()?.into_syntax()) {
-                check_expression(&right, checker)?;
-            }
+            check_expression(&selector_to_expression(children.right()?), checker)?;
         }
         AnyRExpression::RForStatement(children) => {
             analyze::for_loop::for_loop(children, checker)?;
@@ -94,12 +103,8 @@ pub(crate) fn check_expression(
         }
         AnyRExpression::RNamespaceExpression(children) => {
             analyze::namespace_expression::namespace_expression(children, checker)?;
-            if let Some(left) = AnyRExpression::cast(children.left()?.into_syntax()) {
-                check_expression(&left, checker)?;
-            }
-            if let Some(right) = AnyRExpression::cast(children.right()?.into_syntax()) {
-                check_expression(&right, checker)?;
-            }
+            check_expression(&selector_to_expression(children.left()?), checker)?;
+            check_expression(&selector_to_expression(children.right()?), checker)?;
         }
         AnyRExpression::RParenthesizedExpression(children) => {
             analyze::parenthesized_expression::parenthesized_expression(children, checker)?;
