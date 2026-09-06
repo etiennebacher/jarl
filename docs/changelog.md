@@ -16,6 +16,12 @@
 
 ### Bug fixes
 
+* Jarl now properly checks the components of selector, extraction, and namespace
+  AST nodes (`[[`, `@`, `$`, `::`, `:::`) (#697, @Yousa-Mirage).
+
+* The `github` and `sarif` output formats now report parsing errors to stderr
+  instead of silently dropping them (#695, @Yousa-Mirage).
+
 * Prevent the `sample_int` rule from panicking on calls with missing arguments
   (#687, @Yousa-Mirage).
 
