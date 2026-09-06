@@ -16,8 +16,8 @@
 
 ### Bug fixes
 
-* The `quotes` rule now checks strings used as extract and call selectors
-  (#697, @Yousa-Mirage).
+* Jarl now properly checks the components of selector, extraction, and namespace
+  AST nodes (`[[`, `@`, `$`, `::`, `:::`) (#697, @Yousa-Mirage).
 
 * Prevent the `sample_int` rule from panicking on calls with missing arguments
   (#687, @Yousa-Mirage).
