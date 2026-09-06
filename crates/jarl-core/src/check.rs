@@ -551,8 +551,7 @@ fn script_packages(semantic: &oak_semantic::semantic_index::SemanticIndex) -> Ve
 fn in_testthat_dir(file: &Path) -> bool {
     let mut dir = file.parent();
     while let Some(current) = dir {
-        if current.file_name().is_some_and(|n| n == "tests")
-            && current.join("testthat.R").is_file()
+        if current.file_name().is_some_and(|n| n == "tests") && current.join("testthat.R").is_file()
         {
             return true;
         }
