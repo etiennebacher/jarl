@@ -545,18 +545,20 @@ fn script_packages(semantic: &oak_semantic::semantic_index::SemanticIndex) -> Ve
     packages
 }
 
-/// True when `file` sits directly in a `tests/testthat/` directory, the layout
-/// testthat sources and runs files from. This is what separates a test file
-/// from an ordinary package script under e.g. `tests/` or `inst/`.
+/// True when `file` sits under a `tests/` directory holding a `testthat.R`
+/// runner. That runner is what calls `test_check()`, so its presence is what
+/// makes the files below it run with the package loaded and testthat attached.
 fn in_testthat_dir(file: &Path) -> bool {
-    let Some(parent) = file.parent() else {
-        return false;
-    };
-    parent.file_name().is_some_and(|n| n == "testthat")
-        && parent
-            .parent()
-            .and_then(|p| p.file_name())
-            .is_some_and(|n| n == "tests")
+    let mut dir = file.parent();
+    while let Some(current) = dir {
+        if current.file_name().is_some_and(|n| n == "tests")
+            && current.join("testthat.R").is_file()
+        {
+            return true;
+        }
+        dir = current.parent();
+    }
+    false
 }
 
 /// Collect the packages a file attaches with `library()`/`require()`, in load
@@ -883,19 +885,27 @@ mod tests {
     #[test]
     fn test_in_testthat_dir() {
         use super::in_testthat_dir;
-        use std::path::Path;
 
-        assert!(in_testthat_dir(Path::new("pkg/tests/testthat/test-x.R")));
-        assert!(in_testthat_dir(Path::new("/abs/tests/testthat/helper.R")));
-        // A nested directory below `tests/testthat/` is not sourced by
-        // testthat, so it doesn't get the implicit attach.
-        assert!(!in_testthat_dir(Path::new(
-            "pkg/tests/testthat/sub/test-x.R"
-        )));
-        // `testthat/` has to sit under `tests/`.
-        assert!(!in_testthat_dir(Path::new("pkg/inst/testthat/test-x.R")));
-        assert!(!in_testthat_dir(Path::new("pkg/tests/test-x.R")));
-        assert!(!in_testthat_dir(Path::new("pkg/R/x.R")));
+        let dir = tempfile::tempdir().expect("tempdir");
+        let root = dir.path();
+        for sub in ["tests/testthat/sub", "tests-no-runner/testthat", "R"] {
+            std::fs::create_dir_all(root.join(sub)).expect("create dir");
+        }
+        std::fs::write(root.join("tests/testthat.R"), "test_check(\"fixture\")\n")
+            .expect("write runner");
+
+        assert!(in_testthat_dir(&root.join("tests/testthat/test-x.R")));
+        assert!(in_testthat_dir(&root.join("tests/testthat/helper.R")));
+        // Anything under the runner's `tests/` directory counts, however deep.
+        assert!(in_testthat_dir(&root.join("tests/testthat/sub/test-x.R")));
+        assert!(in_testthat_dir(&root.join("tests/test-x.R")));
+
+        // Without a `tests/testthat.R` runner, a `testthat/` directory means
+        // nothing.
+        assert!(!in_testthat_dir(
+            &root.join("tests-no-runner/testthat/test-x.R")
+        ));
+        assert!(!in_testthat_dir(&root.join("R/x.R")));
     }
 
     /// Lints one file of a fixture package written to a tempdir, with a fake
@@ -1067,6 +1077,7 @@ mod tests {
         let packages = loaded_packages_for(
             &[
                 ("DESCRIPTION", "Package: fixture\nVersion: 1.0.0\n"),
+                ("tests/testthat.R", "test_check(\"fixture\")\n"),
                 ("tests/testthat/test-x.R", "expect_equal(1, 1)\n"),
             ],
             "tests/testthat/test-x.R",

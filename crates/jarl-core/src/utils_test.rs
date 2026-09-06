@@ -41,13 +41,17 @@ macro_rules! declare_ns {
 
 /// Write `text` to a fixture file and return it with the directory holding it.
 ///
-/// The fixture lives in a `tests/testthat/` directory: that is how a file
-/// reaches testthat (`in_testthat_dir()`), and the testthat rules only fire
-/// when testthat is attached. No other rule looks at the directory.
+/// The fixture lives in a `tests/testthat/` directory next to a
+/// `tests/testthat.R` runner: that is how a file reaches testthat
+/// (`in_testthat_dir()`), and the testthat rules only fire when testthat is
+/// attached. No other rule looks at the directory.
 fn write_fixture(text: &str) -> (TempDir, PathBuf) {
     let temp_dir = Builder::new().prefix("test-jarl").tempdir().unwrap();
-    let dir = temp_dir.path().join("tests").join("testthat");
+    let tests_dir = temp_dir.path().join("tests");
+    let dir = tests_dir.join("testthat");
     fs::create_dir_all(&dir).expect("Failed to create fixture directory");
+    fs::write(tests_dir.join("testthat.R"), "test_check(\"fixture\")\n")
+        .expect("Failed to write testthat runner");
     let file = dir.join("test-jarl.R");
     fs::write(&file, text).expect("Failed to write initial content");
     (temp_dir, file)
