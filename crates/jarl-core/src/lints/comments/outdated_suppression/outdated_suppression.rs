@@ -72,8 +72,5 @@ fn create_fix(suppression: &UnusedSuppression, source: &str) -> Fix {
 
 /// Delete the whole line containing `offset`, line break included.
 fn delete_line(source: &str, offset: usize) -> Edit {
-    Edit::deletion_with_offsets(
-        line_start(source, offset),
-        next_line_start(source, offset),
-    )
+    Edit::deletion_with_offsets(line_start(source, offset), next_line_start(source, offset))
 }

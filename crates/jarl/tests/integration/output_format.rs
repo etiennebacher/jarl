@@ -170,10 +170,14 @@ fn test_output_json() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyNA(x)",
-            "range": [
-              0,
-              13
+            "edits": [
+              {
+                "range": [
+                  0,
+                  13
+                ],
+                "content": "anyNA(x)"
+              }
             ],
             "to_skip": false
           }
@@ -194,10 +198,14 @@ fn test_output_json() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyDuplicated(x) > 0",
-            "range": [
-              0,
-              18
+            "edits": [
+              {
+                "range": [
+                  0,
+                  18
+                ],
+                "content": "anyDuplicated(x) > 0"
+              }
             ],
             "to_skip": false
           }
@@ -243,10 +251,14 @@ fn test_output_json() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyNA(x)",
-            "range": [
-              0,
-              13
+            "edits": [
+              {
+                "range": [
+                  0,
+                  13
+                ],
+                "content": "anyNA(x)"
+              }
             ],
             "to_skip": false
           }
@@ -267,10 +279,14 @@ fn test_output_json() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyDuplicated(x) > 0",
-            "range": [
-              0,
-              18
+            "edits": [
+              {
+                "range": [
+                  0,
+                  18
+                ],
+                "content": "anyDuplicated(x) > 0"
+              }
             ],
             "to_skip": false
           }
@@ -629,10 +645,14 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyNA(x)",
-            "range": [
-              0,
-              13
+            "edits": [
+              {
+                "range": [
+                  0,
+                  13
+                ],
+                "content": "anyNA(x)"
+              }
             ],
             "to_skip": false
           }

@@ -7,6 +7,14 @@
 * The `jarl.toml` argument `assignment` (deprecated since 0.5.0) is removed. Use
   the rule-specific option `[lint.assignment]` instead (#663).
 
+* A fix can now edit several places of a file at once, so in the `json` output
+  format the `fix` object holds a list of edits instead of a single
+  `content`/`range` pair:
+
+  ```json
+  "fix": { "edits": [ { "range": [0, 13], "content": "anyNA(x)" } ], "to_skip": false }
+  ```
+
 ### Changes
 
 * `expect_length` no longer reports cases where `length()` is in the `expected`
