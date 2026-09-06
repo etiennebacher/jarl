@@ -103,37 +103,42 @@ mod tests {
     fn test_quotes_in_extract_and_call_function() {
         assert_snapshot!(
             snapshot_lint(
-                "df$'col'\ndf@'slot'\npkg::'fn'()\n('fn')()\n(function() 'body')()"
+                "
+df$'col'
+df@'slot'
+pkg::'fn'()
+('fn')()
+(function() 'body')()"
             ),
             @"
         warning: quotes
-         --> <test>:1:4
+         --> <test>:2:4
           |
-        1 | df$'col'
+        2 | df$'col'
           |    ----- Prefer double quotes for string delimiters.
           |
         warning: quotes
-         --> <test>:2:4
+         --> <test>:3:4
           |
-        2 | df@'slot'
+        3 | df@'slot'
           |    ------ Prefer double quotes for string delimiters.
           |
         warning: quotes
-         --> <test>:3:6
+         --> <test>:4:6
           |
-        3 | pkg::'fn'()
+        4 | pkg::'fn'()
           |      ---- Prefer double quotes for string delimiters.
           |
         warning: quotes
-         --> <test>:4:2
+         --> <test>:5:2
           |
-        4 | ('fn')()
+        5 | ('fn')()
           |  ---- Prefer double quotes for string delimiters.
           |
         warning: quotes
-         --> <test>:5:13
+         --> <test>:6:13
           |
-        5 | (function() 'body')()
+        6 | (function() 'body')()
           |             ------ Prefer double quotes for string delimiters.
           |
         Found 5 errors.
