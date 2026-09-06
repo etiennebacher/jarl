@@ -182,6 +182,18 @@ impl Checker {
         self.loaded_packages.iter().any(|p| p == pkg)
     }
 
+    /// Whether `pkg` is reachable from this file at all: attached, or bound
+    /// into the package namespace by a NAMESPACE `importFrom()`.
+    ///
+    /// This is the cheap gate for a whole family of package rules — none of
+    /// them can match in a file that can't name the package — and unlike
+    /// [`Self::packages_in_reach`] it answers without allocating. A `pkg::`
+    /// prefix reaches the package on its own, so a caller holding one needs
+    /// no file-wide reach at all.
+    pub fn package_in_reach(&self, pkg: &str) -> bool {
+        self.package_available(pkg) || self.import_from.values().any(|p| p == pkg)
+    }
+
     /// Look up the installed version of a package.
     pub fn package_version(&self, pkg_name: &str) -> Option<(u32, u32, u32)> {
         self.package_cache

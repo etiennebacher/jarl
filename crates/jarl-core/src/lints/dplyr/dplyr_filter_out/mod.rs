@@ -32,6 +32,11 @@ mod tests {
         );
         // Non-dplyr namespace
         expect_no_lint("x |> stats::filter(!cond)", "dplyr_filter_out", None);
+        expect_no_lint(
+            "library(dplyr)\nx |> stats::filter(!cond)",
+            "dplyr_filter_out",
+            None,
+        );
         // Named argument with negation (not a filtering condition)
         expect_no_lint(
             "x |> dplyr::filter(a > 1, .preserve = !TRUE)",
