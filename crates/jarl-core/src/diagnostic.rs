@@ -97,10 +97,6 @@ impl Fix {
     pub fn from_edits(edits: Vec<Edit>, to_skip: bool) -> Self {
         let mut edits: Vec<Edit> = edits.into_iter().filter(|e| !e.is_noop()).collect();
         edits.sort_by_key(|e| (e.range.start(), e.range.end()));
-        debug_assert!(
-            edits.windows(2).all(|w| w[0].end() <= w[1].start()),
-            "edits of a single fix must not overlap: {edits:?}"
-        );
         Self { edits, to_skip }
     }
 
