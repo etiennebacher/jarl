@@ -90,7 +90,7 @@ Here's a basic idea of the workflow to add a new rule:
 1. document the rule
 1. final polishing
 
-From now on, all file paths refer to the subfolder `crates/jarl-core`.
+From now on, all file paths refer to the subfolder `crates/jarl-core/src`.
 
 ::: {.callout-note}
 ## Trying your new rule locally
@@ -352,7 +352,7 @@ Not all rules need TOML options.
 
 Adding options for a rule takes three steps. The example below uses the rule `duplicated_arguments` since `list2df` doesn't have TOML options.
 
-1. Create `src/lints/<group>/<rule_name>/options.rs` and declare `pub(crate) mod options;` in the rule's `mod.rs`. This file contains two types: the TOML options (deserialized as-is from `[lint.<rule_name>]`) and the resolved options (what the rule reads while linting). The resolved type must expose `resolve()`, which takes the TOML options and fills in the defaults:
+1. Create `lints/<group>/<rule_name>/options.rs` and declare `pub(crate) mod options;` in the rule's `mod.rs`. This file contains two types: the TOML options (deserialized as-is from `[lint.<rule_name>]`) and the resolved options (what the rule reads while linting). The resolved type must expose `resolve()`, which takes the TOML options and fills in the defaults:
 
     ```rust
     /// Default functions that are allowed to have duplicated arguments.
@@ -378,9 +378,9 @@ Adding options for a rule takes three steps. The example below uses the rule `du
     }
     ```
 
-    If the option is a list of functions that can be either replaced or extended by the user (the `<field>` / `extend-<field>` pattern), use the helper `resolve_with_extend()` from `src/rule_options.rs` instead of writing that logic again.
+    If the option is a list of functions that can be either replaced or extended by the user (the `<field>` / `extend-<field>` pattern), use the helper `resolve_with_extend()` from `rule_options.rs` instead of writing that logic again.
 
-1. Add the TOML field to `LinterTomlOptions` in `src/toml.rs`. The field must be named after the rule, and its documentation ends up in `artifacts/jarl.schema.json`, which editors use to describe the option:
+1. Add the TOML field to `LinterTomlOptions` in `toml.rs`. The field must be named after the rule, and its documentation ends up in `artifacts/jarl.schema.json`, which editors use to describe the option:
 
     ```rust
     /// # Options for the `duplicated_arguments` rule
@@ -393,7 +393,7 @@ Adding options for a rule takes three steps. The example below uses the rule `du
     pub duplicated_arguments: Option<DuplicatedArgumentsOptions>,
     ```
 
-1. Add one line to `declare_rule_options!` in `src/rule_options.rs`, naming the rule's folder and its resolved type:
+1. Add one line to `declare_rule_options!` in `rule_options.rs`, naming the rule's folder and its resolved type:
 
     ```rust
     declare_rule_options! {
@@ -545,9 +545,7 @@ The rule is implemented, all tests pass, perfect!
 We now need to document this change:
 
 * update `docs/changelog.md`
-* add or update the rule page in `docs/rules/<rule_name>.md`
-
-If you have installed `just` as [recommended](contributing.md#tools), you can now run `just document` to update the website.
+* run `just document` to add or update the rule page in `docs/rules/<rule_name>.md` (you need to have `just` installed as [explained in the general guide](contributing.md#tools))
 
 Finally, run `just lint` to ensure that `clippy` (the Rust linter) doesn't report any issue and that the code is properly formatted.
 You can also run `just lint-fix` to apply `clippy`'s automatic fixes if there are any.
