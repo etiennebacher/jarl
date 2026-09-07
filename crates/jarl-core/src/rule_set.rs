@@ -320,7 +320,7 @@ declare_rules! {
         categories: [Perf, Read],
         default: Enabled,
         fix: Unsafe,
-        min_r_version: Some((4, 1, 0)),
+        min_r_version: Some((4, 0, 0)),
     },
     DownloadFile => {
         name: "download_file",

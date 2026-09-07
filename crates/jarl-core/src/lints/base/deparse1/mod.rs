@@ -6,34 +6,34 @@ mod tests {
     use insta::assert_snapshot;
 
     fn snapshot_lint(code: &str) -> String {
-        format_diagnostics(code, "deparse1", Some("4.1.0"))
+        format_diagnostics(code, "deparse1", Some("4.0.0"))
     }
 
     #[test]
     fn test_no_lint_deparse1() {
-        expect_no_lint("deparse1(x)", "deparse1", Some("4.1.0"));
-        expect_no_lint("deparse(x)", "deparse1", Some("4.1.0"));
+        expect_no_lint("deparse1(x)", "deparse1", Some("4.0.0"));
+        expect_no_lint("deparse(x)", "deparse1", Some("4.0.0"));
         // no collapse=
-        expect_no_lint("paste(deparse(x))", "deparse1", Some("4.1.0"));
+        expect_no_lint("paste(deparse(x))", "deparse1", Some("4.0.0"));
         // multiple positional args to paste
         expect_no_lint(
             "paste('Error: ', deparse(x), collapse = ' ')",
             "deparse1",
-            Some("4.1.0"),
+            Some("4.0.0"),
         );
         // 'deparse' as a symbol, not a call
-        expect_no_lint("paste(deparse, collapse = ' ')", "deparse1", Some("4.1.0"));
+        expect_no_lint("paste(deparse, collapse = ' ')", "deparse1", Some("4.0.0"));
         // deparse() supplies the separator, i.e. it is not the collapsed vector
         expect_no_lint(
             "paste(x, collapse = deparse(sep))",
             "deparse1",
-            Some("4.1.0"),
+            Some("4.0.0"),
         );
         // collapse = NULL does not collapse, so it keeps deparse()'s multi-element output
         expect_no_lint(
             "paste(deparse(x), collapse = NULL)",
             "deparse1",
-            Some("4.1.0"),
+            Some("4.0.0"),
         );
     }
 
@@ -114,7 +114,7 @@ mod tests {
 
         assert_snapshot!(
             "fix_output",
-            get_fixed_text(
+            get_unsafe_fixed_text_with_settings(
                 vec![
                     "paste(deparse(x), collapse = ' ')",
                     "paste(deparse(substitute(x)), collapse = ' ')",
@@ -123,7 +123,8 @@ mod tests {
                     "base::paste(base::deparse(x), collapse = ' ')",
                 ],
                 "deparse1",
-                Some("4.1.0")
+                Some("4.0.0"),
+                None
             )
         );
     }
