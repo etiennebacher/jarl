@@ -8,8 +8,8 @@
   the rule-specific option `[lint.assignment]` instead (#663).
 
 * A fix can now edit several places of a file at once, so in the `json` output
-  format the `fix` object holds a list of edits instead of a single
-  `content`/`range` pair:
+  format the `fix` object contains a list of edits instead of a single
+  `content`/`range` pair (#700):
 
   ```json
   "fix": { "edits": [ { "range": [0, 13], "content": "anyNA(x)" } ], "to_skip": false }
