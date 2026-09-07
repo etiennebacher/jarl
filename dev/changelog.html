@@ -442,7 +442,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="breaking-changes" class="level3">
 <h3 class="anchored" data-anchor-id="breaking-changes">Breaking changes</h3>
 <ul>
-<li>The <code>jarl.toml</code> argument <code>assignment</code> (deprecated since 0.5.0) is removed. Use the rule-specific option <code>[lint.assignment]</code> instead (<a href="https://github.com/etiennebacher/jarl/issues/663" target="_blank">#663</a>).</li>
+<li><p>The <code>jarl.toml</code> argument <code>assignment</code> (deprecated since 0.5.0) is removed. Use the rule-specific option <code>[lint.assignment]</code> instead (<a href="https://github.com/etiennebacher/jarl/issues/663" target="_blank">#663</a>).</p></li>
+<li><p>A fix can now edit several places of a file at once, so in the <code>json</code> output format the <code>fix</code> object contains a list of edits instead of a single <code>content</code>/<code>range</code> pair (<a href="https://github.com/etiennebacher/jarl/issues/700" target="_blank">#700</a>):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="st">"fix"</span><span class="er">:</span> <span class="fu">{</span> <span class="dt">"edits"</span><span class="fu">:</span> <span class="ot">[</span> <span class="fu">{</span> <span class="dt">"range"</span><span class="fu">:</span> <span class="ot">[</span><span class="dv">0</span><span class="ot">,</span> <span class="dv">13</span><span class="ot">]</span><span class="fu">,</span> <span class="dt">"content"</span><span class="fu">:</span> <span class="st">"anyNA(x)"</span> <span class="fu">}</span> <span class="ot">]</span><span class="fu">,</span> <span class="dt">"to_skip"</span><span class="fu">:</span> <span class="kw">false</span> <span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
 </ul>
 </section>
 <section id="changes" class="level3">
@@ -618,9 +620,9 @@ operator = "&lt;-" # or "="</code></pre>
 extend-skipped-functions = ["my_function", "list"]</code></pre>
 <p>These options are listed in the <a href="https://jarl.etiennebacher.com/reference/config-file" target="_blank">Configuration page</a> (<a href="https://github.com/etiennebacher/jarl/issues/333" target="_blank">#333</a>).</p></li>
 <li><p>Jarl now also analyzes piped functions, e.g.&nbsp;the following code is reported by the <code>any_is_na</code> rule:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">is.na</span>(x) <span class="sc">|&gt;</span> <span class="fu">any</span>()</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>x <span class="sc">|&gt;</span> <span class="fu">is.na</span>() <span class="sc">|&gt;</span> <span class="fu">any</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">is.na</span>(x) <span class="sc">|&gt;</span> <span class="fu">any</span>()</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>x <span class="sc">|&gt;</span> <span class="fu">is.na</span>() <span class="sc">|&gt;</span> <span class="fu">any</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>(<a href="https://github.com/etiennebacher/jarl/issues/338" target="_blank">#338</a>).</p></li>
 <li><p>Jarl now checks R code in more places:</p>
 <ul>
@@ -729,7 +731,7 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <li><p><code>fixed_regex</code> is now correctly classified as “Performance” instead of “Readability” rule internally (<a href="https://github.com/etiennebacher/jarl/issues/279" target="_blank">#279</a>).</p></li>
 <li><p>Default values of function parameters are now analyzed too (<a href="https://github.com/etiennebacher/jarl/issues/282" target="_blank">#282</a>).</p></li>
 <li><p><code>duplicated_arguments</code> doesn’t report anymore cases where argument names <code>"</code> and <code>'</code> were conflated, e.g.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="cf">switch</span>(x, <span class="st">`</span><span class="at">"</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"double"</span>, <span class="st">`</span><span class="at">'</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"single"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="cf">switch</span>(x, <span class="st">`</span><span class="at">"</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"double"</span>, <span class="st">`</span><span class="at">'</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"single"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>(<a href="https://github.com/etiennebacher/jarl/issues/288" target="_blank">#288</a>).</p></li>
 </ul>
 </section>
@@ -783,10 +785,10 @@ extend-skipped-functions = ["my_function", "list"]</code></pre>
 <h3 class="anchored" data-anchor-id="fixes">Fixes</h3>
 <ul>
 <li><p><code># nolint</code> comments are now properly applied to nodes that are function arguments, e.g.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">foo</span>(</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># nolint</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(x))</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">foo</span>(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># nolint</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">any</span>(<span class="fu">is.na</span>(x))</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>does not report a violation anymore (<a href="https://github.com/etiennebacher/jarl/issues/229" target="_blank">#229</a>).</p></li>
 </ul>
 </section>
