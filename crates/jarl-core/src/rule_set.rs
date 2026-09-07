@@ -319,7 +319,7 @@ declare_rules! {
         name: "deparse1",
         categories: [Perf, Read],
         default: Enabled,
-        fix: Safe,
+        fix: Unsafe,
         min_r_version: Some((4, 1, 0)),
     },
     DownloadFile => {
