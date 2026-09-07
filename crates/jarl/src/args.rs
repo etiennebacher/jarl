@@ -150,6 +150,15 @@ pub struct CheckCommand {
     #[arg(
         long,
         default_value = "false",
+        conflicts_with = "statistics",
+        conflicts_with = "add_jarl_ignore",
+        help_heading = "Fix options",
+        help = "Preview each fix and choose whether to apply it. Implies `--fix`."
+    )]
+    pub interactive: bool,
+    #[arg(
+        long,
+        default_value = "false",
         help_heading = "Fix options",
         help = "Apply fixes even if the Git branch is not clean, meaning that there are uncommitted files."
     )]

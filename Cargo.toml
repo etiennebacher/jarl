@@ -30,6 +30,7 @@ biome_rowan = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8
 clap = { version = "4.6.0", features = ["derive"] }
 clap_complete = { version = "4.5.66", features = ["unstable-dynamic"] }
 colored = "3.1.1"
+console = "0.16.4"
 ignore = "0.4.23"
 insta = { version = "1.47.2", features = ["yaml", "filters"] }
 etcetera = "0.11.0"

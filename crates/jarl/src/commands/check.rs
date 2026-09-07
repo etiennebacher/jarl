@@ -25,13 +25,32 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use crate::args::CheckCommand;
-use crate::output_format::{self, GithubEmitter, print_notes, print_summary, print_warnings};
+use crate::interactive::TerminalPrompt;
+use crate::output_format::{
+    self, GithubEmitter, print_notes, print_section_header, print_summary, print_warnings,
+};
 use crate::statistics::print_statistics;
 use crate::status::ExitStatus;
 
 use output_format::{
     ConciseEmitter, Emitter, FullEmitter, JsonEmitter, OutputFormat, SarifEmitter,
 };
+
+/// Formats meant for a person to read, as opposed to a machine to parse.
+fn is_human_format(format: OutputFormat) -> bool {
+    matches!(format, OutputFormat::Full | OutputFormat::Concise)
+}
+
+/// Lint one group of files, asking about each fix when `--interactive` is on.
+fn run_check(
+    config: jarl_core::config::Config,
+    prompter: Option<&mut TerminalPrompt>,
+) -> Vec<(String, Result<Vec<Diagnostic>, anyhow::Error>)> {
+    match prompter {
+        Some(prompt) => jarl_core::check::check_interactive(config, prompt),
+        None => jarl_core::check::check(config),
+    }
+}
 
 pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     let start = if args.with_timing {
@@ -43,6 +62,17 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
     // Fail fast on invalid `--exclude` glob patterns instead of silently
     // ignoring them during discovery.
     validate_exclude_patterns(&args.exclude)?;
+
+    // Clap conflicts can't cover this one: it depends on the value of
+    // `--output-format`, not on the flag being present.
+    if args.interactive && !is_human_format(args.output_format) {
+        return Err(anyhow::anyhow!(
+            "`--interactive` needs a human-readable output format, but `--output-format {}` was given.",
+            format!("{:?}", args.output_format).to_lowercase()
+        ));
+    }
+
+    let mut prompter = args.interactive.then(TerminalPrompt::default);
 
     let mut resolver = PathResolver::new(Settings::default());
 
@@ -96,7 +126,10 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
 
     let check_config = ArgsConfig {
         files: args.files.iter().map(|s| s.into()).collect(),
-        fix: args.fix,
+        // `--interactive` is a way of applying fixes, so it enables fix mode
+        // the same way `--fix-only` does. Which entry point actually runs is
+        // decided by `run_check`.
+        fix: args.fix || args.interactive,
         unsafe_fixes: args.unsafe_fixes,
         fix_only: args.fix_only,
         select: args.select.clone(),
@@ -133,7 +166,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         let config = build_config(&check_config, settings, group_paths.clone())?;
 
         if !config.rules_to_apply.has_package_specific_rules() {
-            file_results.extend(jarl_core::check::check(config));
+            file_results.extend(run_check(config, prompter.as_mut()));
             continue;
         }
 
@@ -171,7 +204,7 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
             config.rules_to_apply = config
                 .rules_to_apply
                 .filter(|r| !r.categories().iter().any(|c| c.is_package_specific()));
-            file_results.extend(jarl_core::check::check(config));
+            file_results.extend(run_check(config, prompter.as_mut()));
             continue;
         }
 
@@ -194,8 +227,14 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
                 .clone();
 
             config.package_cache = cache;
-            file_results.extend(jarl_core::check::check(config));
+            file_results.extend(run_check(config, prompter.as_mut()));
         }
+    }
+
+    // Every fix has been answered for, so wipe the last preview: the report
+    // below should not follow a fix the user already decided on.
+    if let Some(prompt) = &mut prompter {
+        prompt.clear_preview()?;
     }
 
     let mut all_errors = Vec::new();
@@ -273,12 +312,19 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
 
     // For human-readable formats, print sections (summary, warnings, notes).
     // Skip for JSON/GitHub to avoid corrupting structured output.
-    let is_human_format = matches!(
-        args.output_format,
-        OutputFormat::Full | OutputFormat::Concise
-    );
+    if let Some(prompt) = &prompter {
+        println!();
+        print_section_header("Interactive fixes");
+        println!(
+            "Applied {} fix(es), skipped {}.",
+            prompt.applied, prompt.skipped
+        );
+        if prompt.suppressed > 0 {
+            println!("Added {} suppression comment(s).", prompt.suppressed);
+        }
+    }
 
-    if is_human_format {
+    if is_human_format(args.output_format) {
         // ── Summary ──
         print_summary(&all_diagnostics_flat, !all_errors.is_empty());
 

@@ -2,6 +2,13 @@
 
 ## Development version
 
+### CLI improvements
+
+* New argument `--interactive`, which (when paired with `--fix`) shows each
+  automatic fix as a diff (with the surrounding lines for context) and asks
+  whether to apply the fix or ignore the violation before moving on to the next
+  one.
+
 ### Breaking changes
 
 * The `jarl.toml` argument `assignment` (deprecated since 0.5.0) is removed. Use

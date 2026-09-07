@@ -4,6 +4,7 @@ use crate::status::ExitStatus;
 
 pub mod args;
 pub mod commands;
+pub mod interactive;
 pub mod logging;
 pub mod output_format;
 pub mod statistics;
