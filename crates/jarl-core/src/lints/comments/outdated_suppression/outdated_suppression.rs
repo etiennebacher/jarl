@@ -1,7 +1,6 @@
 use crate::diagnostic::*;
 use crate::rule_set::Rule;
 use crate::suppression::UnusedSuppression;
-use crate::utils::{line_start, next_line_start};
 
 /// Version added: 0.4.0
 ///
@@ -60,17 +59,12 @@ fn create_diagnostic(suppression: &UnusedSuppression, source: &str) -> Diagnosti
 /// is one deletion per comment; the code they wrap is untouched.
 fn create_fix(suppression: &UnusedSuppression, source: &str) -> Fix {
     let comment = suppression.comment_range;
-    let mut edits = vec![delete_line(source, comment.start().into())];
+    let mut edits = vec![Edit::delete_line(source, comment.start().into())];
 
     // For a region, the closing comment sits on its own line further down.
     if let Some(region) = suppression.region_range {
-        edits.push(delete_line(source, region.end().into()));
+        edits.push(Edit::delete_line(source, region.end().into()));
     }
 
     Fix::from_edits(edits, false)
-}
-
-/// Delete the whole line containing `offset`, line break included.
-fn delete_line(source: &str, offset: usize) -> Edit {
-    Edit::deletion_with_offsets(line_start(source, offset), next_line_start(source, offset))
 }

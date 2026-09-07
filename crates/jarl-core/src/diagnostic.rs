@@ -6,6 +6,7 @@ use std::path::PathBuf;
 
 use crate::location::Location;
 use crate::rule_set::{FixStatus, Rule};
+use crate::utils::{line_start, next_line_start};
 
 /// A single contiguous replacement: the source covered by `range` becomes
 /// `content`.
@@ -37,6 +38,11 @@ impl Edit {
             TextSize::from(start as u32),
             TextSize::from(end as u32),
         ))
+    }
+
+    /// Remove the whole line containing `offset`, line break included.
+    pub fn delete_line(source: &str, offset: usize) -> Self {
+        Self::deletion_with_offsets(line_start(source, offset), next_line_start(source, offset))
     }
 
     /// Insert `content` at `at`, leaving the surrounding source untouched.
