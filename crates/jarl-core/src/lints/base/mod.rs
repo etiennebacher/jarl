@@ -29,6 +29,7 @@ pub(crate) mod is_numeric;
 pub(crate) mod length_levels;
 pub(crate) mod length_test;
 pub(crate) mod lengths;
+pub(crate) mod library_call;
 pub(crate) mod list2df;
 pub(crate) mod literal_coercion;
 pub(crate) mod matrix_apply;
