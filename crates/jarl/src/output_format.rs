@@ -69,6 +69,8 @@ pub fn print_summary(diagnostics: &[&Diagnostic], has_errors: bool) {
             println!("{label} available with the `--fix --unsafe-fixes` option.");
         }
 
+        print_roxygen_fix_note(diagnostics);
+
         let n_violations = std::env::var("JARL_N_VIOLATIONS_HINT_STAT")
             .ok()
             .and_then(|value| value.parse::<i32>().ok())
@@ -81,6 +83,17 @@ pub fn print_summary(diagnostics: &[&Diagnostic], has_errors: bool) {
     } else if !has_errors {
         print_section_header("Summary");
         println!("All checks passed!");
+    }
+}
+
+/// Tells the user that fixes were dropped because their violations sit in
+/// roxygen `@examples` sections, which is otherwise invisible: the rule is
+/// documented as fixable but reported here without a fix.
+pub fn print_roxygen_fix_note(diagnostics: &[&Diagnostic]) {
+    if diagnostics.iter().any(|d| d.fix_disabled_in_roxygen) {
+        println!(
+            "\nSome fixes are disabled because the violations are in `@examples` sections.\nSet `fix-roxygen = true` in `jarl.toml` to apply them."
+        );
     }
 }
 

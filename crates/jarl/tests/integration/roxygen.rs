@@ -41,6 +41,9 @@ foo <- function(x) x
     ── Summary ──────────────────────────────────────
     Found 1 error.
 
+    Some fixes are disabled because the violations are in `@examples` sections.
+    Set `fix-roxygen = true` in `jarl.toml` to apply them.
+
     ----- stderr -----
     "
     );
@@ -83,6 +86,9 @@ foo <- function(x) x
 
     ── Summary ──────────────────────────────────────
     Found 1 error.
+
+    Some fixes are disabled because the violations are in `@examples` sections.
+    Set `fix-roxygen = true` in `jarl.toml` to apply them.
 
     ----- stderr -----
     "
@@ -220,6 +226,9 @@ bar <- function(y) y
     ── Summary ──────────────────────────────────────
     Found 2 errors.
 
+    Some fixes are disabled because the violations are in `@examples` sections.
+    Set `fix-roxygen = true` in `jarl.toml` to apply them.
+
     ----- stderr -----
     "
     );
@@ -356,6 +365,9 @@ foo <- function(x) x
     ── Summary ──────────────────────────────────────
     Found 1 error.
 
+    Some fixes are disabled because the violations are in `@examples` sections.
+    Set `fix-roxygen = true` in `jarl.toml` to apply them.
+
     ----- stderr -----
     "
     );
@@ -401,6 +413,9 @@ foo <- function(x) x
 
     ── Summary ──────────────────────────────────────
     Found 1 error.
+
+    Some fixes are disabled because the violations are in `@examples` sections.
+    Set `fix-roxygen = true` in `jarl.toml` to apply them.
 
     ----- stderr -----
     "
@@ -457,6 +472,9 @@ foo <- function(x) x
     ── Summary ──────────────────────────────────────
     Found 2 errors.
 
+    Some fixes are disabled because the violations are in `@examples` sections.
+    Set `fix-roxygen = true` in `jarl.toml` to apply them.
+
     ----- stderr -----
     "
     );
@@ -510,6 +528,9 @@ f <- function() 1
 
     ── Summary ──────────────────────────────────────
     Found 1 error.
+
+    Some fixes are disabled because the violations are in `@examples` sections.
+    Set `fix-roxygen = true` in `jarl.toml` to apply them.
 
     ----- stderr -----
     "
@@ -664,6 +685,9 @@ foo <- function(x) x
     ── Summary ──────────────────────────────────────
     Found 1 error.
 
+    Some fixes are disabled because the violations are in `@examples` sections.
+    Set `fix-roxygen = true` in `jarl.toml` to apply them.
+
     ----- stderr -----
     "
     );
@@ -762,6 +786,9 @@ foo <- function(x) x
     ── Summary ──────────────────────────────────────
     Found 2 errors.
     1 fixable with the `--fix` option.
+
+    Some fixes are disabled because the violations are in `@examples` sections.
+    Set `fix-roxygen = true` in `jarl.toml` to apply them.
 
     ----- stderr -----
     "
