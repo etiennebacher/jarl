@@ -147,7 +147,12 @@ pub(crate) fn check_document(
         checker.report_diagnostic(empty_file(&expressions, syntax));
     }
 
-    if checker.is_rule_enabled(Rule::LibraryCall) {
+    // In an Rmd/Qmd document, a `library()` call belongs to the chunk that
+    // needs it: chunks are meant to be readable (and often run) one at a time,
+    // so grouping every attach in the first chunk is not the convention.
+    if checker.is_rule_enabled(Rule::LibraryCall)
+        && !crate::fs::has_rmd_extension(&checker.file_path)
+    {
         for diagnostic in library_call(&expressions, contents) {
             checker.report_diagnostic(Some(diagnostic));
         }

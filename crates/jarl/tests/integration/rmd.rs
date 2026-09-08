@@ -1735,3 +1735,45 @@ plot(1)
 
     Ok(())
 }
+
+/// `library_call` doesn't apply to documents: each chunk attaches what it
+/// needs, so scattered `library()` calls are not reported.
+#[test]
+fn test_rmd_library_call_is_skipped() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r}
+library(dplyr)
+x <- 1
+```
+
+```{r}
+library(purrr)
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("library_call")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}

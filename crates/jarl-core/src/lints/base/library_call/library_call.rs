@@ -26,6 +26,9 @@ struct LibraryStatement {
 /// Only `library()` is considered: `require()` returns a value that is
 /// routinely used for its result, so it is out of scope for this rule.
 ///
+/// This rule is skipped in R Markdown and Quarto documents, where it is often
+/// more acceptable to have `library()` calls in various chunks.
+///
 /// ## Why is this bad?
 ///
 /// Scripts where `library()` calls are scattered between the code are hard to
