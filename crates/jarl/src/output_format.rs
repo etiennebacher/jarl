@@ -69,8 +69,6 @@ pub fn print_summary(diagnostics: &[&Diagnostic], has_errors: bool) {
             println!("{label} available with the `--fix --unsafe-fixes` option.");
         }
 
-        print_roxygen_fix_note(diagnostics);
-
         let n_violations = std::env::var("JARL_N_VIOLATIONS_HINT_STAT")
             .ok()
             .and_then(|value| value.parse::<i32>().ok())
@@ -87,8 +85,9 @@ pub fn print_summary(diagnostics: &[&Diagnostic], has_errors: bool) {
 }
 
 /// Tells the user that fixes were dropped because their violations sit in
-/// roxygen `@examples` sections, which is otherwise invisible: the rule is
-/// documented as fixable but reported here without a fix.
+/// roxygen `@examples` sections. Only worth saying when the user expected a
+/// fix to happen: a rule that is documented as fixable is reported here
+/// without a fix, and nothing else explains why.
 pub fn print_roxygen_fix_note(diagnostics: &[&Diagnostic]) {
     if diagnostics.iter().any(|d| d.fix_disabled_in_roxygen) {
         println!(
