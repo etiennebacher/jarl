@@ -920,8 +920,8 @@ f1 <- function() NULL
 }
 
 /// String interpolation counts as a read, which requires the documented file's
-/// package context to reach the roxygen analysis: `glue` from DESCRIPTION for
-/// the first block, `library(glue)` in the example itself for the second.
+/// package context to reach the roxygen analysis: the NAMESPACE `importFrom()`
+/// for the first block, `library(glue)` in the example itself for the second.
 #[test]
 fn test_roxygen_examples_interpolation_is_a_read() -> anyhow::Result<()> {
     let case = CliTest::with_files([
@@ -929,6 +929,7 @@ fn test_roxygen_examples_interpolation_is_a_read() -> anyhow::Result<()> {
             "DESCRIPTION",
             "Package: testpkg\nTitle: Test\nVersion: 0.0.1\nImports: glue\n",
         ),
+        ("NAMESPACE", "importFrom(glue,glue)\n"),
         (
             "R/test.R",
             "\

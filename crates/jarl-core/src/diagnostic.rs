@@ -6,13 +6,73 @@ use std::path::PathBuf;
 
 use crate::location::Location;
 use crate::rule_set::{FixStatus, Rule};
+use crate::utils::{line_start, next_line_start};
+
+/// A single contiguous replacement: the source covered by `range` becomes
+/// `content`.
+///
+/// An empty `range` is an insertion at that offset, and an empty `content` is a
+/// deletion.
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+pub struct Edit {
+    // Portion of the source replaced by `content`.
+    pub range: TextRange,
+    pub content: String,
+}
+
+impl Edit {
+    /// Replace the source covered by `range` with `content`.
+    pub fn replacement(range: TextRange, content: String) -> Self {
+        Self { range, content }
+    }
+
+    /// Remove the source covered by `range`.
+    pub fn deletion(range: TextRange) -> Self {
+        Self { range, content: String::new() }
+    }
+
+    /// Same as [`Edit::deletion`] for callers that compute byte offsets outside
+    /// of the syntax tree (e.g. from the raw source).
+    pub fn deletion_with_offsets(start: usize, end: usize) -> Self {
+        Self::deletion(TextRange::new(
+            TextSize::from(start as u32),
+            TextSize::from(end as u32),
+        ))
+    }
+
+    /// Remove the whole line containing `offset`, line break included.
+    pub fn delete_line(source: &str, offset: usize) -> Self {
+        Self::deletion_with_offsets(line_start(source, offset), next_line_start(source, offset))
+    }
+
+    /// Insert `content` at `at`, leaving the surrounding source untouched.
+    pub fn insertion(at: TextSize, content: String) -> Self {
+        Self { range: TextRange::new(at, at), content }
+    }
+
+    pub fn start(&self) -> usize {
+        self.range.start().into()
+    }
+
+    pub fn end(&self) -> usize {
+        self.range.end().into()
+    }
+
+    /// An edit that replaces nothing with nothing leaves the source unchanged.
+    fn is_noop(&self) -> bool {
+        self.range.is_empty() && self.content.is_empty()
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 // The fix to apply to the violation.
 pub struct Fix {
-    pub content: String,
-    // Portion of the source replaced by `content`.
-    pub range: TextRange,
+    /// Edits applied together, all-or-nothing, sorted by start offset.
+    ///
+    /// Most fixes hold a single edit, but a repair that touches disjoint spots
+    /// (removing both comments of a `jarl-ignore-start`/`jarl-ignore-end` pair,
+    /// say) holds one edit per spot.
+    pub edits: Vec<Edit>,
     // TODO: This is used only to not add a Fix when the node contains a comment
     // because I don't know how to handle them for now, #95.
     pub to_skip: bool,
@@ -21,10 +81,10 @@ pub struct Fix {
 impl Fix {
     /// Replace the source covered by `range` with `content`.
     pub fn new(range: TextRange, content: String, to_skip: bool) -> Self {
-        Self { content, range, to_skip }
+        Self::from_edits(vec![Edit::replacement(range, content)], to_skip)
     }
 
-    /// Same as [`Fix::replace`] for callers that compute byte offsets outside
+    /// Same as [`Fix::new`] for callers that compute byte offsets outside
     /// of the syntax tree (e.g. from the raw source).
     pub fn new_with_offsets(start: usize, end: usize, content: String, to_skip: bool) -> Self {
         Self::new(
@@ -34,20 +94,30 @@ impl Fix {
         )
     }
 
+    /// Build a fix out of several edits applied together.
+    ///
+    /// Edits that change nothing are dropped, and the rest are sorted by start
+    /// offset. Edits of a single fix must not overlap each other: they describe
+    /// one repair, so an overlap is a bug in the rule rather than something to
+    /// resolve at apply time.
+    pub fn from_edits(edits: Vec<Edit>, to_skip: bool) -> Self {
+        let mut edits: Vec<Edit> = edits.into_iter().filter(|e| !e.is_noop()).collect();
+        edits.sort_by_key(|e| (e.range.start(), e.range.end()));
+        Self { edits, to_skip }
+    }
+
     pub fn empty() -> Self {
-        Self {
-            content: "".to_string(),
-            range: TextRange::default(),
-            to_skip: true,
-        }
+        Self { edits: Vec::new(), to_skip: true }
     }
 
+    /// Start of the first edit, or `0` when the fix changes nothing.
     pub fn start(&self) -> usize {
-        self.range.start().into()
+        self.edits.first().map_or(0, Edit::start)
     }
 
+    /// End of the last edit, or `0` when the fix changes nothing.
     pub fn end(&self) -> usize {
-        self.range.end().into()
+        self.edits.last().map_or(0, Edit::end)
     }
 }
 

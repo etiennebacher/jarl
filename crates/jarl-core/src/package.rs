@@ -244,12 +244,14 @@ pub fn summarize_package_info(
         let mut namespace_content = None;
         let mut minimum_r_version = None;
 
+        // Only `Depends`. Those packages are attached to the search path when
+        // the package is attached, so bare names from them really do resolve.
+        // `Imports` does not attach anything: code in `R/` reaches an imported
+        // package only through `::` or a NAMESPACE `import()`/`importFrom()`
+        // directive, both of which are picked up below.
         let desc_path = root.join("DESCRIPTION");
         if let Ok(desc) = std::fs::read_to_string(&desc_path) {
-            packages.extend(Description::get_package_deps(
-                &desc,
-                &["Depends", "Imports"],
-            ));
+            packages.extend(Description::get_package_deps(&desc, &["Depends"]));
             // Same string, so the version costs no extra read or walk.
             minimum_r_version = Description::get_depend_r_version(&desc)
                 .ok()
