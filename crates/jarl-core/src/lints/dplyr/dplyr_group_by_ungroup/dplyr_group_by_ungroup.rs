@@ -1,6 +1,7 @@
 use crate::check::Checker;
 use crate::checker::PackageOrigin;
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_function_name, get_function_namespace_prefix, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, TextRange};
@@ -73,16 +74,15 @@ fn by_arg_name(verb: &str) -> &'static str {
 /// See the `.by` argument in `?dplyr::summarize`.
 pub fn dplyr_group_by_ungroup(
     ast: &RCall,
+    fn_name: &str,
+    ns_prefix: Option<&str>,
     checker: &Checker,
 ) -> anyhow::Result<Option<Diagnostic>> {
-    let fn_name = get_function_name(ast.function()?);
-    let fn_ns = get_function_namespace_prefix(ast.function()?);
-
     // Only trigger on `ungroup()` or `dplyr::ungroup()`
     if fn_name != "ungroup" {
         return Ok(None);
     }
-    if let Some(ref ns) = fn_ns
+    if let Some(ns) = ns_prefix
         && ns != "dplyr::"
     {
         return Ok(None);
@@ -91,7 +91,7 @@ pub fn dplyr_group_by_ungroup(
     // Without an explicit namespace, use the package cache to resolve
     // the package, falling back to requiring a pipe (which makes it
     // unlikely to be `stats::filter()`).
-    if fn_ns.is_none() {
+    if ns_prefix.is_none() {
         match checker.resolve_package("ungroup") {
             PackageOrigin::Resolved(ref pkg) if pkg == "dplyr" => {}
             PackageOrigin::Resolved(_) | PackageOrigin::Ambiguous(_) | PackageOrigin::Unknown => {
@@ -222,16 +222,15 @@ pub fn dplyr_group_by_ungroup(
             Some(pos) => format!("{}, {by_arg} = {grouping_args})", &verb_text[..pos]),
             None => return Ok(None),
         };
-        Fix {
-            content: fix_content,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(pipe_expr.syntax()),
-        }
+        Fix::new(
+            range,
+            fix_content,
+            node_contains_comments(pipe_expr.syntax()),
+        )
     };
 
     Ok(Some(Diagnostic::new(
-        ViolationData::new("dplyr_group_by_ungroup".to_string(), body, Some(suggestion)),
+        ViolationData::new(Rule::DplyrGroupByUngroup, body, Some(suggestion)),
         range,
         fix,
     )))

@@ -12,6 +12,8 @@ Suppression comments that are no longer needed can be confusing and may
 indicate that the underlying code has changed but the comment was not
 updated. They also add noise to the codebase.
 
+This rule has a safe automatic fix that removes the outdated comment.
+
 ## Example
 
 ```r

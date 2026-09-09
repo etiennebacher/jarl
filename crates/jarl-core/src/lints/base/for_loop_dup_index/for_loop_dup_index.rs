@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -36,8 +37,8 @@ pub struct ForLoopDupIndex;
 /// }
 /// ```
 impl Violation for ForLoopDupIndex {
-    fn name(&self) -> String {
-        "for_loop_dup_index".to_string()
+    fn rule(&self) -> Rule {
+        Rule::ForLoopDupIndex
     }
     fn body(&self) -> String {
         "This index variable is already used in a parent `for` loop.".to_string()

@@ -1,7 +1,7 @@
 [package]
 name = "jarl-core"
 description = "Core linting functionality for jarl R linter"
-version = "0.6.0-alpha.4"
+version = "0.6.0"
 authors.workspace = true
 edition.workspace = true
 license-file.workspace = true
@@ -22,6 +22,19 @@ air_workspace.workspace = true
 air_fs.workspace = true
 biome_rowan.workspace = true
 biome_formatter.workspace = true
+biome_diagnostics.workspace = true
+
+# Semantic analysis (per-file scopes, definitions, uses, use-def map)
+aether_path.workspace = true
+oak_core.workspace = true
+oak_db.workspace = true
+oak_package_metadata.workspace = true
+oak_scan.workspace = true
+oak_semantic.workspace = true
+url.workspace = true
+
+# Per-file semantic info (used by semantic-aware lints)
+jarl-semantic.workspace = true
 
 # Serialization and data structures
 serde.workspace = true
@@ -32,7 +45,6 @@ strsim.workspace = true
 # Error handling and utilities
 anyhow.workspace = true
 tracing.workspace = true
-path-absolutize.workspace = true
 ignore.workspace = true
 etcetera.workspace = true
 
@@ -43,14 +55,14 @@ rayon.workspace = true
 regex.workspace = true
 
 schemars = { workspace = true, optional = true }
-annotate-snippets = "0.11"
+annotate-snippets = "0.12"
 
 [dev-dependencies]
 insta.workspace = true
 tempfile.workspace = true
 
 [lints.clippy]
-module-inception = "allow"
+module_inception = "allow"
 
 [features]
 schemars = ["dep:schemars"]

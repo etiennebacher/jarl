@@ -1,10 +1,16 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{
-    get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
-    node_contains_comments,
+    Formals, get_arg, get_function_name, get_function_namespace_prefix, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::AstNode;
+
+/// Omits `tolerance`, `info`, `label` and `expected.label`, which follow `...`.
+/// Shared with `expect_identical()`, whose first two formals are the same.
+const FORMALS_EXPECT_EQUAL: Formals = &["object", "expected"];
+const FORMALS_EXPECT_TRUE: Formals = &["object", "info", "label"];
+const FORMALS_IS_NULL: Formals = &["x"];
 
 /// Version added: 0.2.0
 ///
@@ -36,17 +42,14 @@ use biome_rowan::AstNode;
 /// expect_null(x)
 /// expect_null(foo(x))
 /// ```
-pub fn expect_null(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let function_name = get_function_name(function);
-
+pub fn expect_null(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Case 1: expect_equal(x, NULL) or expect_identical(x, NULL)
-    if function_name == "expect_equal" || function_name == "expect_identical" {
-        return check_expect_equal_null(ast, &function_name);
+    if fn_name == "expect_equal" || fn_name == "expect_identical" {
+        return check_expect_equal_null(ast, fn_name);
     }
 
     // Case 2: expect_true(is.null(x))
-    if function_name == "expect_true" {
+    if fn_name == "expect_true" {
         return check_expect_true_is_null(ast);
     }
 
@@ -54,10 +57,8 @@ pub fn expect_null(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 }
 
 fn check_expect_equal_null(ast: &RCall, function_name: &str) -> anyhow::Result<Option<Diagnostic>> {
-    let args = ast.arguments()?.items();
-
-    let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
-    let expected = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "expected", 2));
+    let object = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_EQUAL, "object"));
+    let expected = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_EQUAL, "expected"));
 
     let object_value = unwrap_or_return_none!(object.value());
     let expected_value = unwrap_or_return_none!(expected.value());
@@ -80,7 +81,7 @@ fn check_expect_equal_null(ast: &RCall, function_name: &str) -> anyhow::Result<O
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "expect_null".to_string(),
+            Rule::TestthatExpectNull,
             format!(
                 "`{}(x, NULL)` is not as clear as `expect_null(x)`.",
                 function_name
@@ -88,21 +89,18 @@ fn check_expect_equal_null(ast: &RCall, function_name: &str) -> anyhow::Result<O
             Some("Use `expect_null(x)` instead.".to_string()),
         ),
         range,
-        Fix {
-            content: format!("{}expect_null({})", namespace_prefix, other_arg_text),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("{}expect_null({})", namespace_prefix, other_arg_text),
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))
 }
 
 fn check_expect_true_is_null(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let args = ast.arguments()?.items();
-
-    let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
+    let object = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_TRUE, "object"));
     let object_value = unwrap_or_return_none!(object.value());
 
     // Check if it's a call to `is.null()`
@@ -114,8 +112,7 @@ fn check_expect_true_is_null(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> 
     }
 
     // Get the argument to `is.null()`
-    let inner_args = call.arguments()?.items();
-    let inner_arg = unwrap_or_return_none!(get_arg_by_name_then_position(&inner_args, "x", 1));
+    let inner_arg = unwrap_or_return_none!(get_arg(call, FORMALS_IS_NULL, "x"));
     let inner_value = unwrap_or_return_none!(inner_arg.value());
     let inner_text = inner_value.to_trimmed_text();
 
@@ -126,17 +123,16 @@ fn check_expect_true_is_null(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "expect_null".to_string(),
+            Rule::TestthatExpectNull,
             "`expect_true(is.null(x))` is not as clear as `expect_null(x)`.".to_string(),
             Some("Use `expect_null(x)` instead.".to_string()),
         ),
         range,
-        Fix {
-            content: format!("{}expect_null({})", namespace_prefix, inner_text),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("{}expect_null({})", namespace_prefix, inner_text),
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

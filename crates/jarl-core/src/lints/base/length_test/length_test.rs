@@ -1,5 +1,6 @@
 use crate::diagnostic::*;
-use crate::utils::{get_function_name, node_contains_comments};
+use crate::rule_set::Rule;
+use crate::utils::node_contains_comments;
 use air_r_syntax::RSyntaxKind::*;
 use air_r_syntax::*;
 use anyhow::Context;
@@ -32,25 +33,20 @@ pub struct LengthTest;
 /// length(x) == 1
 /// ```
 impl Violation for LengthTest {
-    fn name(&self) -> String {
-        "length_test".to_string()
+    fn rule(&self) -> Rule {
+        Rule::LengthTest
     }
     fn body(&self) -> String {
         "Checking the length of a logical vector is likely a mistake".to_string()
     }
 }
 
-pub fn length_test(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let RCallFields { function, arguments } = ast.as_fields();
-
-    let function = function?;
-    let outer_fn_name = get_function_name(function);
-
-    if outer_fn_name != "length" {
+pub fn length_test(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
+    if fn_name != "length" {
         return Ok(None);
     }
 
-    let arguments = arguments?.items();
+    let arguments = ast.arguments()?.items();
     let mut arg_is_binary_expr = false;
     let mut operator_text: String = "".to_string();
     let mut lhs: String = "".to_string();
@@ -88,12 +84,11 @@ pub fn length_test(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         let diagnostic = Diagnostic::new(
             LengthTest,
             range,
-            Fix {
-                content: format!("length({lhs}) {operator_text} {rhs}"),
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                format!("length({lhs}) {operator_text} {rhs}"),
+                node_contains_comments(ast.syntax()),
+            ),
         );
         return Ok(Some(diagnostic));
     }

@@ -5,9 +5,9 @@ use crate::settings::Settings;
 use crate::{config::ArgsConfig, discovery::discover_settings};
 use air_workspace::resolve::PathResolver;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tempfile::Builder;
+use tempfile::{Builder, TempDir};
 
 /// Declare a fake package namespace for use in tests.
 ///
@@ -39,6 +39,24 @@ macro_rules! declare_ns {
     };
 }
 
+/// Write `text` to a fixture file and return it with the directory holding it.
+///
+/// The fixture lives in a `tests/testthat/` directory next to a
+/// `tests/testthat.R` runner: that is how a file reaches testthat
+/// (`in_testthat_dir()`), and the testthat rules only fire when testthat is
+/// attached. No other rule looks at the directory.
+fn write_fixture(text: &str) -> (TempDir, PathBuf) {
+    let temp_dir = Builder::new().prefix("test-jarl").tempdir().unwrap();
+    let tests_dir = temp_dir.path().join("tests");
+    let dir = tests_dir.join("testthat");
+    fs::create_dir_all(&dir).expect("Failed to create fixture directory");
+    fs::write(tests_dir.join("testthat.R"), "test_check(\"fixture\")\n")
+        .expect("Failed to write testthat runner");
+    let file = dir.join("test-jarl.R");
+    fs::write(&file, text).expect("Failed to write initial content");
+    (temp_dir, file)
+}
+
 /// Set up the resolver, optionally with custom settings.
 fn setup_resolver(file_path: &Path, settings: Option<Settings>) -> PathResolver<Settings> {
     let mut resolver = PathResolver::new(Settings::default());
@@ -66,16 +84,10 @@ fn run_check(
     settings: Option<Settings>,
     cache: Option<&Arc<PackageCache>>,
 ) -> Vec<Diagnostic> {
-    let temp_file = Builder::new()
-        .prefix("test-jarl")
-        .suffix(".R")
-        .tempfile()
-        .unwrap();
-
-    fs::write(&temp_file, text).expect("Failed to write initial content");
+    let (_temp_dir, temp_file) = write_fixture(text);
 
     let check_config = ArgsConfig {
-        files: vec![temp_file.path().to_path_buf()],
+        files: vec![temp_file.clone()],
         fix: false,
         unsafe_fixes: false,
         fix_only: false,
@@ -88,15 +100,12 @@ fn run_check(
         assignment: None,
     };
 
-    let resolver = setup_resolver(temp_file.path(), settings);
+    let resolver = setup_resolver(&temp_file, settings);
     let toml_settings = resolver.items().first().map(|item| item.value());
 
-    let mut config = crate::config::build_config(
-        &check_config,
-        toml_settings,
-        vec![temp_file.path().to_path_buf()],
-    )
-    .expect("Failed to build config");
+    let mut config =
+        crate::config::build_config(&check_config, toml_settings, vec![temp_file.clone()])
+            .expect("Failed to build config");
 
     if let Some(c) = cache {
         config.package_cache = Some(c.clone());
@@ -122,16 +131,10 @@ fn apply_fixes(
     settings: Option<Settings>,
     cache: Option<&Arc<PackageCache>>,
 ) -> String {
-    let temp_file = Builder::new()
-        .prefix("test-jarl")
-        .suffix(".R")
-        .tempfile()
-        .unwrap();
-
-    fs::write(&temp_file, text).expect("Failed to write initial content");
+    let (_temp_dir, temp_file) = write_fixture(text);
 
     let check_config = ArgsConfig {
-        files: vec![temp_file.path().to_path_buf()],
+        files: vec![temp_file.clone()],
         fix: true,
         unsafe_fixes,
         fix_only: false,
@@ -144,15 +147,12 @@ fn apply_fixes(
         assignment: None,
     };
 
-    let resolver = setup_resolver(temp_file.path(), settings);
+    let resolver = setup_resolver(&temp_file, settings);
     let toml_settings = resolver.items().first().map(|item| item.value());
 
-    let mut config = crate::config::build_config(
-        &check_config,
-        toml_settings,
-        vec![temp_file.path().to_path_buf()],
-    )
-    .expect("Failed to build config");
+    let mut config =
+        crate::config::build_config(&check_config, toml_settings, vec![temp_file.clone()])
+            .expect("Failed to build config");
 
     if let Some(c) = cache {
         config.package_cache = Some(c.clone());
@@ -353,7 +353,7 @@ fn render_diagnostics(
         let rendered = render_diagnostic(
             text,
             "<test>",
-            &diagnostic.message.name,
+            diagnostic.message.rule.name(),
             diagnostic,
             &renderer,
         );

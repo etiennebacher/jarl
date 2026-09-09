@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use air_r_syntax::*;
 use biome_rowan::{AstNode, Text};
 
@@ -33,8 +34,8 @@ pub struct ForLoopIndex;
 /// }
 /// ```
 impl Violation for ForLoopIndex {
-    fn name(&self) -> String {
-        "for_loop_index".to_string()
+    fn rule(&self) -> Rule {
+        Rule::ForLoopIndex
     }
     fn body(&self) -> String {
         "Don't re-use any sequence symbols as the index symbol in a for loop.".to_string()

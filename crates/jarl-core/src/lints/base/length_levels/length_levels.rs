@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_nested_functions_content, node_contains_comments};
 use air_r_syntax::*;
 pub struct LengthLevels;
@@ -29,8 +30,8 @@ pub struct LengthLevels;
 /// nlevels(x)
 /// ```
 impl Violation for LengthLevels {
-    fn name(&self) -> String {
-        "length_levels".to_string()
+    fn rule(&self) -> Rule {
+        Rule::LengthLevels
     }
     fn body(&self) -> String {
         "`length(levels(...))` is less readable than `nlevels(...)`.".to_string()
@@ -40,19 +41,19 @@ impl Violation for LengthLevels {
     }
 }
 
-pub fn length_levels(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let (inner_content, outer_syntax) =
-        unwrap_or_return_none!(get_nested_functions_content(ast, "length", "levels")?);
+pub fn length_levels(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
+    let (inner_content, outer_syntax) = unwrap_or_return_none!(get_nested_functions_content(
+        ast, fn_name, "length", "levels"
+    )?);
 
     let range = outer_syntax.text_trimmed_range();
     Ok(Some(Diagnostic::new(
         LengthLevels,
         range,
-        Fix {
-            content: format!("nlevels({inner_content})"),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(&outer_syntax),
-        },
+        Fix::new(
+            range,
+            format!("nlevels({inner_content})"),
+            node_contains_comments(&outer_syntax),
+        ),
     )))
 }

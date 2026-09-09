@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use crate::checker::Checker;
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_arg_by_position, get_function_name};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -60,7 +61,7 @@ pub fn if_not_else(ast: &RIfStatement, checker: &Checker) -> anyhow::Result<Opti
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "if_not_else".to_string(),
+            Rule::IfNotElse,
             "Negating the condition like `if (!A) y else x` can be hard to read.".to_string(),
             Some("Remove the negation and swap branches, such as `if (A) x else y`.".to_string()),
         ),
@@ -72,9 +73,12 @@ pub fn if_not_else(ast: &RIfStatement, checker: &Checker) -> anyhow::Result<Opti
 }
 
 /// Handle the `ifelse()`/`fifelse()`/`if_else()` variants of the same pattern.
-pub fn if_not_else_call(ast: &RCall, checker: &Checker) -> anyhow::Result<Option<Diagnostic>> {
-    let function_name = get_function_name(ast.function()?);
-    if !matches!(function_name.as_str(), "ifelse" | "fifelse" | "if_else") {
+pub fn if_not_else_call(
+    ast: &RCall,
+    fn_name: &str,
+    checker: &Checker,
+) -> anyhow::Result<Option<Diagnostic>> {
+    if !matches!(fn_name, "ifelse" | "fifelse" | "if_else") {
         return Ok(None);
     }
 
@@ -94,10 +98,10 @@ pub fn if_not_else_call(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "if_not_else".to_string(),
-            format!("Negating the condition like `{function_name}(!A, y, x)` can be hard to read."),
+            Rule::IfNotElse,
+            format!("Negating the condition like `{fn_name}(!A, y, x)` can be hard to read."),
             Some(format!(
-                "Remove the negation and swap branches, such as `{function_name}(A, x, y)`."
+                "Remove the negation and swap branches, such as `{fn_name}(A, x, y)`."
             )),
         ),
         range,

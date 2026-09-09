@@ -170,9 +170,15 @@ fn test_output_json() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyNA(x)",
-            "start": 0,
-            "end": 13,
+            "edits": [
+              {
+                "range": [
+                  0,
+                  13
+                ],
+                "content": "anyNA(x)"
+              }
+            ],
             "to_skip": false
           }
         },
@@ -192,9 +198,15 @@ fn test_output_json() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyDuplicated(x) > 0",
-            "start": 0,
-            "end": 18,
+            "edits": [
+              {
+                "range": [
+                  0,
+                  18
+                ],
+                "content": "anyDuplicated(x) > 0"
+              }
+            ],
             "to_skip": false
           }
         }
@@ -239,9 +251,15 @@ fn test_output_json() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyNA(x)",
-            "start": 0,
-            "end": 13,
+            "edits": [
+              {
+                "range": [
+                  0,
+                  13
+                ],
+                "content": "anyNA(x)"
+              }
+            ],
             "to_skip": false
           }
         },
@@ -261,9 +279,15 @@ fn test_output_json() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyDuplicated(x) > 0",
-            "start": 0,
-            "end": 18,
+            "edits": [
+              {
+                "range": [
+                  0,
+                  18
+                ],
+                "content": "anyDuplicated(x) > 0"
+              }
+            ],
             "to_skip": false
           }
         }
@@ -555,7 +579,12 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
     1 fixable with the `--fix` option.
 
     ----- stderr -----
-    Error: Failed to parse test2.R due to syntax errors.
+    error: expected `)` but instead the file ends
+     --> test2.R:1:5
+      |
+    1 | any(
+      |     ^
+      |
     "
     );
 
@@ -580,7 +609,7 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
     1 fixable with the `--fix` option.
 
     ----- stderr -----
-    Error: Failed to parse test2.R due to syntax errors.
+    Error: test2.R:1:5 expected `)` but instead the file ends
     "
     );
 
@@ -616,9 +645,15 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
             "column": 0
           },
           "fix": {
-            "content": "anyNA(x)",
-            "start": 0,
-            "end": 13,
+            "edits": [
+              {
+                "range": [
+                  0,
+                  13
+                ],
+                "content": "anyNA(x)"
+              }
+            ],
             "to_skip": false
           }
         }
@@ -651,7 +686,24 @@ fn test_with_parsing_error() -> anyhow::Result<()> {
     ::warning title=Jarl (any_is_na),file=test.R,line=1,col=1::test.R:1:1 [any_is_na] `any(is.na(...))` is inefficient. Use `anyNA(...)` instead.
 
     ----- stderr -----
+    Error: test2.R:1:5 expected `)` but instead the file ends
     "
+    );
+
+    let sarif = case
+        .command()
+        .arg("check")
+        .arg(".")
+        .arg("--output-format")
+        .arg("sarif")
+        .run()
+        .normalize_os_executable_name();
+
+    assert_eq!(sarif.status.code(), Some(255));
+    assert!(
+        sarif
+            .stderr
+            .contains("Error: test2.R:1:5 expected `)` but instead the file ends")
     );
 
     Ok(())

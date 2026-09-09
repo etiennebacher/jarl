@@ -106,7 +106,7 @@ mod tests {
 
         assert_snapshot!(
             "fix_output",
-            get_fixed_text(
+            get_unsafe_fixed_text(
                 vec![
                     "!(x >= y)",
                     "!(x > y)",
@@ -118,8 +118,7 @@ mod tests {
                     "!(foo(x + 1) != foo(bar(if (x == 1) 2 else 3)))",
                     "if (TRUE && !(bar > foo)) 1"
                 ],
-                "comparison_negation",
-                None
+                "comparison_negation"
             )
         );
     }
@@ -171,14 +170,13 @@ mod tests {
         // Should detect lint but skip fix when comments are present to avoid destroying them
         assert_snapshot!(
             "no_fix_with_comments",
-            get_fixed_text(
+            get_unsafe_fixed_text(
                 vec![
                     "# leading comment\n!(x >= y)",
                     "!(x \n # hello there \n >= y)",
                     "!(x >= y) # trailing comment",
                 ],
-                "comparison_negation",
-                None
+                "comparison_negation"
             )
         );
     }

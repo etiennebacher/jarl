@@ -241,12 +241,17 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         .collect();
 
     all_diagnostics_flat.sort();
+    let mut stdout = std::io::stdout();
 
     if args.statistics {
-        return print_statistics(&all_diagnostics_flat, parent_config_path);
-    }
+        // Statistics must still report parse errors and preserve a failing exit status.
+        let has_errors = !all_errors.is_empty();
+        if has_errors {
+            FullEmitter.emit(&mut stdout, &[], &all_errors)?;
+        }
 
-    let mut stdout = std::io::stdout();
+        return print_statistics(&all_diagnostics_flat, has_errors, parent_config_path);
+    }
 
     match args.output_format {
         OutputFormat::Concise => {
@@ -277,6 +282,12 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
         // ── Summary ──
         print_summary(&all_diagnostics_flat, !all_errors.is_empty());
 
+        // Only when the user asked for fixes: otherwise nothing in the output
+        // claims these violations were fixable in the first place.
+        if args.fix || args.fix_only {
+            output_format::print_roxygen_fix_note(&all_diagnostics_flat);
+        }
+
         // ── Warnings ──
         let mut warnings: Vec<String> = Vec::new();
 
@@ -295,16 +306,6 @@ pub fn check(args: CheckCommand) -> Result<ExitStatus> {
                  - or explicitly include 'unused_function' in the set of rules.",
                 unused_fn_count
             ));
-        }
-
-        for item in resolver.items() {
-            if item.value().linter.deprecated_assignment_syntax {
-                warnings.push(
-                    "Argument `assignment` in `[lint]` is deprecated. \
-                     Use `[lint.assignment]` with `operator` instead."
-                        .to_string(),
-                );
-            }
         }
 
         // Deprecation warnings for explicitly-used deprecated rules.
@@ -421,7 +422,7 @@ fn add_jarl_ignore_comments(
         for diagnostic in &diagnostics {
             let start: usize = diagnostic.range.start().into();
             let end: usize = diagnostic.range.end().into();
-            let rule_name = &diagnostic.message.name;
+            let rule_name = diagnostic.message.rule.name();
 
             let edit = if is_rmd {
                 create_suppression_edit_in_rmd(&content, start, end, rule_name, reason)
@@ -434,7 +435,7 @@ fn add_jarl_ignore_comments(
                     edit.insert_point.offset,
                     edit.insert_point.indent,
                     edit.insert_point.needs_leading_newline,
-                    rule_name.clone(),
+                    rule_name.to_string(),
                 ));
             }
         }
@@ -565,13 +566,13 @@ fn hide_unused_function_if_needed(
     let unused_fn_count = all_diagnostics
         .iter()
         .flat_map(|(_path, diagnostics)| diagnostics.iter())
-        .filter(|d| d.message.name == "unused_function")
+        .filter(|d| d.message.rule == Rule::UnusedFunction)
         .count();
 
     let hidden = !explicitly_selected && unused_fn_count > threshold_ignore;
     if hidden {
         for (_path, diagnostics) in all_diagnostics.iter_mut() {
-            diagnostics.retain(|d| d.message.name != "unused_function");
+            diagnostics.retain(|d| d.message.rule != Rule::UnusedFunction);
         }
         all_diagnostics.retain(|(_path, diagnostics)| !diagnostics.is_empty());
     }

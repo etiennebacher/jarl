@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -30,8 +31,8 @@ pub struct EmptyAssignment;
 /// b <- NULL
 /// ```
 impl Violation for EmptyAssignment {
-    fn name(&self) -> String {
-        "empty_assignment".to_string()
+    fn rule(&self) -> Rule {
+        Rule::EmptyAssignment
     }
     fn body(&self) -> String {
         "Assign NULL explicitly or, whenever possible, allocate the empty object with the right type and size.".to_string()

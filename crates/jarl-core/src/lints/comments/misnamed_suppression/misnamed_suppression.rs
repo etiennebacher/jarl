@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use biome_rowan::TextRange;
 
 /// Version added: 0.4.0
@@ -36,7 +37,7 @@ pub fn misnamed_suppression(ranges: &[TextRange]) -> Vec<Diagnostic> {
 fn create_diagnostic(range: TextRange) -> Diagnostic {
     Diagnostic::new(
         ViolationData::new(
-            "misnamed_suppression".to_string(),
+            Rule::MisnamedSuppression,
             "This comment isn't used by Jarl because it contains an unrecognized rule name."
                 .to_string(),
             Some("Check the rule name for typos.".to_string()),

@@ -62,8 +62,9 @@ pub struct Checker {
     pub suppression: SuppressionManager,
     // Per-rule options resolved from configuration (Arc to avoid expensive clones)
     pub rule_options: Arc<ResolvedRuleOptions>,
-    // Packages loaded via `library()` in this file (or from DESCRIPTION
-    // Depends/Imports when inside an R package), in load order.
+    // Packages attached to the file's search path, in load order: what
+    // `library()` attaches in the file itself, plus DESCRIPTION `Depends` and
+    // NAMESPACE `import()` when inside an R package.
     pub loaded_packages: Vec<String>,
     // Shared package cache for looking up installed package metadata.
     pub package_cache: Option<Arc<PackageCache>>,
@@ -74,6 +75,19 @@ pub struct Checker {
     // `S3method()`, etc.).  Used to suppress false positives in rules
     // like `unused_object` — exported names are "used" by definition.
     pub namespace_exports: HashSet<String>,
+    // Path of the file being checked. Used by rules that need to resolve
+    // paths relative to the current file (e.g. `unused_object` resolving
+    // `source("...")` arguments).
+    pub file_path: std::path::PathBuf,
+    // Run-wide memo of `source()` target indices, so a helper sourced by
+    // many files is parsed and indexed once per run rather than once per
+    // consumer. Fresh (empty) when the on-disk contents may drift from the
+    // run's caches (fix mode, LSP buffers).
+    pub source_index_cache: jarl_semantic::SourceIndexCache,
+    // Ranges of the file that are parsed but never evaluated, so use-def
+    // rules must not read a definition or a use out of them. Only Rmd/Qmd
+    // documents have any: the chunks marked `eval = FALSE`.
+    pub unevaluated_ranges: Vec<biome_rowan::TextRange>,
 }
 
 impl Checker {
@@ -91,6 +105,9 @@ impl Checker {
             package_cache: None,
             import_from: HashMap::new(),
             namespace_exports: HashSet::new(),
+            file_path: std::path::PathBuf::new(),
+            source_index_cache: jarl_semantic::SourceIndexCache::new(),
+            unevaluated_ranges: Vec::new(),
         }
     }
 
@@ -104,6 +121,24 @@ impl Checker {
 
     pub(crate) fn is_rule_enabled(&mut self, rule: Rule) -> bool {
         self.rule_set.contains(&rule)
+    }
+
+    /// Every package the file's code can name, whether or not it is attached:
+    /// the search path plus the packages a NAMESPACE `importFrom()` binds into
+    /// the package namespace.
+    ///
+    /// Attachment is what decides which package a bare call belongs to, so
+    /// call-resolution rules go through [`Self::resolve_package`] instead. This
+    /// wider view is for idioms that only need the package to be *reachable* —
+    /// `glue("{x}")` interpolates whenever `glue` resolves, however it got there.
+    pub fn packages_in_reach(&self) -> Vec<String> {
+        let mut packages = self.loaded_packages.clone();
+        for package in self.import_from.values() {
+            if !packages.contains(package) {
+                packages.push(package.clone());
+            }
+        }
+        packages
     }
 
     /// Resolve which package a bare function name comes from.
@@ -135,6 +170,28 @@ impl Checker {
             1 => PackageOrigin::Resolved(candidates.into_iter().next().unwrap()),
             _ => PackageOrigin::Ambiguous(candidates),
         }
+    }
+
+    /// Whether `pkg` is attached in this file, and so whether a bare call to
+    /// one of its functions could really be that function.
+    ///
+    /// Unlike [`Self::resolve_package`] this needs no `PackageCache`, hence no
+    /// `Rscript` call: it only asks what the search path contains, not what
+    /// each package exports.
+    pub fn package_available(&self, pkg: &str) -> bool {
+        self.loaded_packages.iter().any(|p| p == pkg)
+    }
+
+    /// Whether `pkg` is reachable from this file at all: attached, or bound
+    /// into the package namespace by a NAMESPACE `importFrom()`.
+    ///
+    /// This is the cheap gate for a whole family of package rules — none of
+    /// them can match in a file that can't name the package — and unlike
+    /// [`Self::packages_in_reach`] it answers without allocating. A `pkg::`
+    /// prefix reaches the package on its own, so a caller holding one needs
+    /// no file-wide reach at all.
+    pub fn package_in_reach(&self, pkg: &str) -> bool {
+        self.package_available(pkg) || self.import_from.values().any(|p| p == pkg)
     }
 
     /// Look up the installed version of a package.

@@ -1,9 +1,19 @@
 use crate::diagnostic::*;
-use crate::utils::{
-    drop_arg_by_name_or_position, get_function_name, is_argument_present, node_contains_comments,
-};
+use crate::rule_set::Rule;
+use crate::utils::{Formals, drop_arg, get_arg, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
+
+const FORMALS_GREP: Formals = &[
+    "pattern",
+    "x",
+    "ignore.case",
+    "perl",
+    "value",
+    "fixed",
+    "useBytes",
+    "invert",
+];
 pub struct Grepv;
 
 /// Version added: 0.0.16
@@ -37,8 +47,8 @@ pub struct Grepv;
 ///
 /// See `?grepv`
 impl Violation for Grepv {
-    fn name(&self) -> String {
-        "grepv".to_string()
+    fn rule(&self) -> Rule {
+        Rule::Grepv
     }
     fn body(&self) -> String {
         "`grep(..., value = TRUE)` can be simplified.".to_string()
@@ -48,25 +58,18 @@ impl Violation for Grepv {
     }
 }
 
-pub fn grepv(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let RCallFields { function, arguments } = ast.as_fields();
-
-    let function = function?;
-    let fn_name = get_function_name(function);
-
+pub fn grepv(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "grep" {
         return Ok(None);
     }
 
-    let items = arguments?.items();
-
-    let arg_value_is_present = is_argument_present(&items, "value", 5);
+    let arg_value_is_present = get_arg(ast, FORMALS_GREP, "value").is_some();
 
     if !arg_value_is_present {
         return Ok(None);
     }
 
-    let other_args = drop_arg_by_name_or_position(&items, "value", 5);
+    let other_args = drop_arg(ast, FORMALS_GREP, "value");
 
     let inner_content = match other_args {
         Some(x) => x
@@ -81,12 +84,11 @@ pub fn grepv(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let diagnostic = Diagnostic::new(
         Grepv,
         range,
-        Fix {
-            content: format!("grepv({inner_content})"),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("grepv({inner_content})"),
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

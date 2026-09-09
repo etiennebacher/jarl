@@ -1,6 +1,6 @@
 use crate::check::Checker;
 use crate::diagnostic::*;
-use crate::utils::get_function_name;
+use crate::rule_set::Rule;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 use biome_rowan::AstSeparatedList;
@@ -45,14 +45,16 @@ use biome_rowan::AstSeparatedList;
 /// mean(x)
 /// ```
 /// (or add additional arguments).
-pub fn missing_argument(ast: &RCall, checker: &Checker) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let function_name = get_function_name(function);
+pub fn missing_argument(
+    ast: &RCall,
+    fn_name: &str,
+    checker: &Checker,
+) -> anyhow::Result<Option<Diagnostic>> {
     if checker
         .rule_options
         .missing_argument
         .skipped_functions
-        .contains(&function_name)
+        .contains(fn_name)
     {
         return Ok(None);
     }
@@ -83,7 +85,7 @@ pub fn missing_argument(ast: &RCall, checker: &Checker) -> anyhow::Result<Option
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "missing_argument".to_string(),
+            Rule::MissingArgument,
             msg.to_string(),
             Some("Consider removing or filling them.".to_string()),
         ),

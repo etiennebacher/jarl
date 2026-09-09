@@ -49,10 +49,10 @@ for (i in seq_along(repo_names)) {
   category <- repo_categories[i]
 
   message("Processing results of ", repos)
-  main_results_json <- jsonlite::read_json(paste0(
+  base_results_json <- jsonlite::read_json(paste0(
     "results/",
     gsub("/", "_", repos),
-    "_main.json"
+    "_base.json"
   ))[["diagnostics"]]
   pr_results_json <- jsonlite::read_json(paste0(
     "results/",
@@ -60,7 +60,7 @@ for (i in seq_along(repo_names)) {
     "_pr.json"
   ))[["diagnostics"]]
 
-  main_results <- lapply(main_results_json, \(x) {
+  base_results <- lapply(base_results_json, \(x) {
     data.table(
       name = x$message$name,
       body = x$message$body,
@@ -82,8 +82,8 @@ for (i in seq_along(repo_names)) {
   }) |>
     rbindlist()
 
-  if (identical(dim(main_results), c(0L, 0L))) {
-    main_results <- data.table(
+  if (identical(dim(base_results), c(0L, 0L))) {
+    base_results <- data.table(
       name = character(0),
       body = character(0),
       filename = character(0),
@@ -102,8 +102,8 @@ for (i in seq_along(repo_names)) {
     )
   }
 
-  new_lints <- pr_results[!main_results, on = .(name, filename, row, column)]
-  deleted_lints <- main_results[
+  new_lints <- pr_results[!base_results, on = .(name, filename, row, column)]
+  deleted_lints <- base_results[
     !pr_results,
     on = .(name, filename, row, column)
   ]
@@ -138,81 +138,76 @@ for (i in seq_along(repo_names)) {
 
   msg_new_violations <- if (nrow(new_lints) > 0) {
     new_lints <- head(new_lints, 50)
-    paste(
-      c(
-        "<br>\nNew violations (first 50):<pre>",
-        paste0(
-          "<a href=\"https://github.com/",
-          repos,
-          "/tree/",
-          repos_sha,
-          "/",
-          new_lints$filename,
-          "#L",
-          new_lints$row,
-          "\">",
-          new_lints$filename,
-          "[",
-          new_lints$row,
-          ":",
-          new_lints$column,
-          "]",
-          "</a>: ",
-          new_lints$name,
-          " -- ",
-          new_lints$body,
-          collapse = "\n"
-        )
+    paste0(
+      "<br>\nNew violations (first 50):<pre>",
+      paste0(
+        "<a href=\"https://github.com/",
+        repos,
+        "/tree/",
+        repos_sha,
+        "/",
+        new_lints$filename,
+        "#L",
+        new_lints$row,
+        "\">",
+        new_lints$filename,
+        "[",
+        new_lints$row,
+        ":",
+        new_lints$column,
+        "]",
+        "</a>: ",
+        new_lints$name,
+        " -- ",
+        new_lints$body,
+        collapse = "\n"
       ),
-      collapse = ""
+      "</pre>"
     )
   } else {
     ""
   }
   msg_old_violations <- if (nrow(deleted_lints) > 0) {
     deleted_lints <- head(deleted_lints, 50)
-    paste(
-      c(
-        "<br>\nViolations removed (first 50):<pre>",
-        paste0(
-          "<a href=\"https://github.com/",
-          repos,
-          "/tree/",
-          repos_sha,
-          "/",
-          deleted_lints$filename,
-          "#L",
-          deleted_lints$row,
-          "\">",
-          deleted_lints$filename,
-          "[",
-          deleted_lints$row,
-          ":",
-          deleted_lints$column,
-          "]",
-          "</a>: ",
-          deleted_lints$name,
-          " -- ",
-          deleted_lints$body,
-          collapse = "\n"
-        )
+    paste0(
+      "<br>\nViolations removed (first 50):<pre>",
+      paste0(
+        "<a href=\"https://github.com/",
+        repos,
+        "/tree/",
+        repos_sha,
+        "/",
+        deleted_lints$filename,
+        "#L",
+        deleted_lints$row,
+        "\">",
+        deleted_lints$filename,
+        "[",
+        deleted_lints$row,
+        ":",
+        deleted_lints$column,
+        "]",
+        "</a>: ",
+        deleted_lints$name,
+        " -- ",
+        deleted_lints$body,
+        collapse = "\n"
       ),
-      collapse = ""
+      "</pre>"
     )
   } else {
     ""
   }
 
-  msg_bottom <- "</pre></details>\n\n"
+  msg_bottom <- "</details>\n\n"
 
   body <- c(
     body,
-    paste(
+    paste0(
       msg_header,
       msg_new_violations,
       msg_old_violations,
-      msg_bottom,
-      collapse = ""
+      msg_bottom
     )
   )
 }

@@ -3,7 +3,7 @@
 //! This module handles document lifecycle, content tracking, and position encoding.
 
 use anyhow::{Result, anyhow};
-use lsp_types::{Position, Range, TextDocumentContentChangeEvent, Url};
+use gen_lsp_types::{Position, PositionEncodingKind, Range, TextDocumentContentChangeEvent, Uri};
 use std::path::PathBuf;
 
 /// Position encoding supported by the LSP server
@@ -18,28 +18,27 @@ pub enum PositionEncoding {
     UTF32,
 }
 
-impl From<PositionEncoding> for lsp_types::PositionEncodingKind {
+impl From<PositionEncoding> for PositionEncodingKind {
     fn from(encoding: PositionEncoding) -> Self {
         match encoding {
-            PositionEncoding::UTF8 => lsp_types::PositionEncodingKind::UTF8,
-            PositionEncoding::UTF16 => lsp_types::PositionEncodingKind::UTF16,
-            PositionEncoding::UTF32 => lsp_types::PositionEncodingKind::UTF32,
+            PositionEncoding::UTF8 => PositionEncodingKind::UTF8,
+            PositionEncoding::UTF16 => PositionEncodingKind::UTF16,
+            PositionEncoding::UTF32 => PositionEncodingKind::UTF32,
         }
     }
 }
 
-impl TryFrom<&lsp_types::PositionEncodingKind> for PositionEncoding {
+impl TryFrom<&PositionEncodingKind> for PositionEncoding {
     type Error = anyhow::Error;
 
-    fn try_from(kind: &lsp_types::PositionEncodingKind) -> Result<Self> {
-        if kind == &lsp_types::PositionEncodingKind::UTF8 {
-            Ok(PositionEncoding::UTF8)
-        } else if kind == &lsp_types::PositionEncodingKind::UTF16 {
-            Ok(PositionEncoding::UTF16)
-        } else if kind == &lsp_types::PositionEncodingKind::UTF32 {
-            Ok(PositionEncoding::UTF32)
-        } else {
-            Err(anyhow!("Unsupported position encoding: {:?}", kind))
+    fn try_from(kind: &PositionEncodingKind) -> Result<Self> {
+        match kind {
+            PositionEncodingKind::UTF8 => Ok(PositionEncoding::UTF8),
+            PositionEncodingKind::UTF16 => Ok(PositionEncoding::UTF16),
+            PositionEncodingKind::UTF32 => Ok(PositionEncoding::UTF32),
+            PositionEncodingKind::Custom(_) => {
+                Err(anyhow!("Unsupported position encoding: {:?}", kind))
+            }
         }
     }
 }
@@ -48,19 +47,19 @@ impl TryFrom<&lsp_types::PositionEncodingKind> for PositionEncoding {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DocumentKey {
     /// The URI of the document
-    uri: Url,
+    uri: Uri,
 }
 
 impl DocumentKey {
-    pub fn new(uri: Url) -> Self {
+    pub fn new(uri: Uri) -> Self {
         Self { uri }
     }
 
-    pub fn uri(&self) -> &Url {
+    pub fn uri(&self) -> &Uri {
         &self.uri
     }
 
-    pub fn into_url(self) -> Url {
+    pub fn into_uri(self) -> Uri {
         self.uri
     }
 
@@ -70,8 +69,8 @@ impl DocumentKey {
     }
 }
 
-impl From<Url> for DocumentKey {
-    fn from(uri: Url) -> Self {
+impl From<Uri> for DocumentKey {
+    fn from(uri: Uri) -> Self {
         Self::new(uri)
     }
 }
@@ -136,14 +135,15 @@ impl TextDocument {
         // Convert positions to offsets first, then sort by offset in reverse order
         let mut changes_with_offsets = Vec::new();
         for change in changes {
-            let range = change.range.ok_or_else(|| {
-                anyhow!(
+            let TextDocumentContentChangeEvent::TextDocumentContentChangePartial(change) = change
+            else {
+                return Err(anyhow!(
                     "Full document replacement not supported - only incremental changes allowed"
-                )
-            })?;
+                ));
+            };
 
-            let start_offset = self.position_to_offset(range.start, encoding)?;
-            let end_offset = self.position_to_offset(range.end, encoding)?;
+            let start_offset = self.position_to_offset(change.range.start, encoding)?;
+            let end_offset = self.position_to_offset(change.range.end, encoding)?;
             changes_with_offsets.push((start_offset, end_offset, change));
         }
 
@@ -334,7 +334,32 @@ impl TextDocument {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lsp_types::Position;
+    use gen_lsp_types::{
+        Position, TextDocumentContentChangePartial, TextDocumentContentChangeWholeDocument,
+    };
+
+    #[test]
+    fn test_position_encoding_kind_round_trip() {
+        for encoding in [
+            PositionEncoding::UTF8,
+            PositionEncoding::UTF16,
+            PositionEncoding::UTF32,
+        ] {
+            let kind = PositionEncodingKind::from(encoding);
+            assert_eq!(PositionEncoding::try_from(&kind).unwrap(), encoding);
+        }
+
+        assert_eq!(
+            serde_json::to_value(PositionEncodingKind::from(PositionEncoding::UTF8)).unwrap(),
+            "utf-8"
+        );
+    }
+
+    #[test]
+    fn test_unsupported_position_encoding_is_rejected() {
+        let kind = PositionEncodingKind::new("utf-7");
+        assert!(PositionEncoding::try_from(&kind).is_err());
+    }
 
     #[test]
     fn test_document_creation() {
@@ -408,14 +433,67 @@ mod tests {
     }
 
     #[test]
+    fn test_apply_changes_from_did_change_payload() {
+        // The change event is an untagged enum, so a real `textDocument/didChange`
+        // payload has to land on the partial variant.
+        let changes: Vec<TextDocumentContentChangeEvent> = serde_json::from_str(
+            r#"[{
+                "range": {
+                    "start": { "line": 0, "character": 0 },
+                    "end": { "line": 0, "character": 5 }
+                },
+                "text": "hi"
+            }]"#,
+        )
+        .unwrap();
+
+        assert!(matches!(
+            changes[0],
+            TextDocumentContentChangeEvent::TextDocumentContentChangePartial(_)
+        ));
+
+        let mut doc = TextDocument::new("hello world".to_string(), 1);
+        doc.apply_changes(changes, 2, PositionEncoding::UTF8)
+            .unwrap();
+        assert_eq!(doc.content(), "hi world");
+    }
+
+    #[test]
+    fn test_apply_changes_rejects_whole_document_replacement() {
+        let mut doc = TextDocument::new("hello world".to_string(), 1);
+
+        let changes = vec![
+            TextDocumentContentChangeEvent::TextDocumentContentChangeWholeDocument(
+                TextDocumentContentChangeWholeDocument { text: "replaced".to_string() },
+            ),
+        ];
+
+        let error = doc
+            .apply_changes(changes, 2, PositionEncoding::UTF8)
+            .unwrap_err();
+
+        assert!(
+            error.to_string().contains("Full document replacement"),
+            "unexpected error: {error}"
+        );
+        assert_eq!(doc.content(), "hello world");
+        assert_eq!(doc.version(), 1);
+    }
+
+    #[test]
     fn test_apply_incremental_change() {
         let mut doc = TextDocument::new("hello world".to_string(), 1);
 
-        let changes = vec![TextDocumentContentChangeEvent {
-            range: Some(Range::new(Position::new(0, 0), Position::new(0, 5))),
-            range_length: Some(5),
-            text: "hi".to_string(),
-        }];
+        #[allow(deprecated)]
+        let changes = vec![
+            TextDocumentContentChangeEvent::TextDocumentContentChangePartial(
+                TextDocumentContentChangePartial {
+                    range: Range::new(Position::new(0, 0), Position::new(0, 5)),
+                    range_length: Some(5),
+                    text: "hi".to_string(),
+                },
+            ),
+        ];
 
         doc.apply_changes(changes, 2, PositionEncoding::UTF8)
             .unwrap();

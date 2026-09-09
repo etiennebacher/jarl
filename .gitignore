@@ -19,3 +19,7 @@ test_jarl*
 mutants*
 test\.R
 testpkg
+
+# Agents file
+AGENTS.md
+CLAUDE.md

@@ -1,17 +1,19 @@
-use crate::error::ParseError;
+use crate::error::{ParseError, SyntaxError};
+use crate::location::Location;
 use crate::package::{
-    FilePackageInfo, FileScope, PackageAnalysis, PackageContext, make_package_analysis,
-    summarize_package_info,
+    FilePackageInfo, FileScope, PackageAnalysis, PackageContext, PackageFileAnalysis,
+    make_package_analysis, summarize_package_info,
 };
 use crate::roxygen::{extract_roxygen_examples, remap_roxygen_fix, remap_roxygen_range};
 use crate::suppression::SuppressionManager;
 use crate::vcs::check_version_control;
 use air_fs::relativize_path;
 use air_r_parser::RParserOptions;
-use air_r_syntax::{RExpressionList, RSyntaxNode};
+use air_r_syntax::RSyntaxNode;
 use anyhow::{Context, Result};
+use biome_rowan::{AstNode, AstNodeList, TextRange, TextSize};
 use rayon::prelude::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
@@ -88,17 +90,50 @@ pub fn check_path(
 }
 
 /// Filter `config.rules_to_apply` down to the rules that apply to `path` after
-/// accounting for `[lint.per-file-ignores]`.
-fn effective_rules_for_file(config: &Config, path: &Path) -> RuleSet {
-    if config.per_file_ignores.is_empty() {
-        return config.rules_to_apply.clone();
+/// accounting for `[lint.per-file-ignores]` and the R version `path` can count
+/// on.
+///
+/// `minimum_r_version` is resolved per file because there might several packages
+/// to analyse, each with different `Depends: R`.
+fn effective_rules_for_file(
+    config: &Config,
+    path: &Path,
+    minimum_r_version: Option<(u32, u32, u32)>,
+) -> RuleSet {
+    let rules = if config.per_file_ignores.is_empty() {
+        config.rules_to_apply.clone()
+    } else {
+        let ignored = config.per_file_ignores.ignored_rules(path);
+        config
+            .rules_to_apply
+            .iter()
+            .filter(|rule| !ignored.contains(rule))
+            .collect()
+    };
+
+    crate::config::filter_rules_by_version(&rules, minimum_r_version)
+}
+
+/// The R version `file` can count on: the `--min-r-version` override when the
+/// user passed one, otherwise the `Depends: R` floor of the package `file`
+/// belongs to, otherwise nothing.
+fn file_minimum_r_version(
+    file: &Path,
+    config: &Config,
+    pkg_contexts: &HashMap<PathBuf, PackageContext>,
+    file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
+) -> Option<(u32, u32, u32)> {
+    if config.minimum_r_version.is_some() {
+        return config.minimum_r_version;
     }
-    let ignored = config.per_file_ignores.ignored_rules(path);
-    config
-        .rules_to_apply
-        .iter()
-        .filter(|rule| !ignored.contains(rule))
-        .collect()
+    // A file inside a package is bounded by its DESCRIPTION whether or not it
+    // is a loadable source: a script in `data-raw/` still runs under the R
+    // version the package declares.
+    let package_root = match file_pkg_info.get(file)? {
+        FilePackageInfo::InPackage { package_root, .. } => package_root,
+        FilePackageInfo::Script { package_root } => package_root.as_ref()?,
+    };
+    pkg_contexts.get(package_root)?.minimum_r_version
 }
 
 pub fn lint_only(
@@ -126,6 +161,8 @@ pub fn lint_only(
         &pkg,
         &pkg_contexts,
         &file_pkg_info,
+        // lint-only: on-disk contents match the cached index, so reuse it.
+        true,
     )
     .with_context(|| format!("Failed to get checks for file: {path}"))?;
 
@@ -164,6 +201,10 @@ pub fn lint_fix(
             &pkg,
             &pkg_contexts,
             &file_pkg_info,
+            // Fix mode rewrites the file between iterations, so the on-disk
+            // contents (and the index the pre-pass cached from them) drift from
+            // the in-memory `contents`; rebuild the index rather than reuse it.
+            false,
         )
         .with_context(|| format!("Failed to get checks for file: {path}",))?;
 
@@ -200,9 +241,17 @@ pub fn get_checks(
     pkg: &PackageAnalysis,
     pkg_contexts: &HashMap<PathBuf, PackageContext>,
     file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
+    use_cached_index: bool,
 ) -> Result<Vec<Diagnostic>> {
     if crate::fs::has_rmd_extension(file) {
-        return get_checks_rmd(contents, file, config);
+        // Same cache validity rule as the per-file indices below: shareable
+        // while the run's caches match the disk, fresh when they may drift.
+        let source_cache = if use_cached_index {
+            pkg.source_index_cache.clone()
+        } else {
+            jarl_semantic::SourceIndexCache::new()
+        };
+        return get_checks_rmd(contents, file, config, source_cache);
     }
 
     let parser_options = RParserOptions::default();
@@ -219,28 +268,65 @@ pub fn get_checks(
 
     let suppression = SuppressionManager::from_node(syntax, contents);
 
+    let minimum_r_version = file_minimum_r_version(file, config, pkg_contexts, file_pkg_info);
+
     let mut checker = Checker::new(suppression, config.rule_options.clone());
-    // Drop any rules ignored for this file via `[lint.per-file-ignores]`.
-    checker.rule_set = effective_rules_for_file(config, file);
-    checker.minimum_r_version = config.minimum_r_version;
+    // Drop any rules ignored for this file via `[lint.per-file-ignores]`, plus
+    // any the file's own package can't guarantee the R version for.
+    checker.rule_set = effective_rules_for_file(config, file, minimum_r_version);
+    checker.minimum_r_version = minimum_r_version;
+
+    // Build the semantic index for use-def-based rules. `source("path")`
+    // calls inject `DefinitionKind::Import` entries via JarlImportsResolver;
+    // the complementary "names read by sourced files" path is still handled
+    // inside `SemanticInfo`.
+    //
+    // When `unused_object` runs, the cross-file pre-pass already built this
+    // file's index (with the same resolver) and stored it in `pkg.file_indices`;
+    // reuse it rather than rebuilding. The pre-pass reads from disk, so the
+    // cache is only valid in lint-only mode — fix mode rewrites the file
+    // between passes, so it always rebuilds from the in-memory contents.
+    //
+    // Building (when not cached) happens here, in the parallel per-file pass,
+    // rather than via the shared `AnalysisDb`: oak's salsa database is `Send`
+    // but not `Sync`, so it can't be borrowed across rayon worker threads.
+    // The source-target memo follows the same validity rule as the per-file
+    // index cache: sharable while the run's caches match the disk, fresh when
+    // they may drift (fix mode, LSP buffers).
+    if use_cached_index {
+        checker.source_index_cache = pkg.source_index_cache.clone();
+    }
+    let owned_semantic;
+    let semantic: &oak_semantic::semantic_index::SemanticIndex = match use_cached_index
+        .then(|| pkg.file_indices.get(file))
+        .flatten()
+    {
+        Some(cached) => cached,
+        None => {
+            owned_semantic = oak_semantic::build_index(
+                &parsed.tree(),
+                jarl_semantic::JarlImportsResolver::with_cache(
+                    file,
+                    checker.source_index_cache.clone(),
+                ),
+            );
+            &owned_semantic
+        }
+    };
+    checker.file_path = file.to_path_buf();
 
     // Wire up package context for package-specific rules.
     get_package_info(
         &mut checker,
         file,
-        expressions,
+        semantic,
         config,
         pkg_contexts,
         file_pkg_info,
     );
 
     // Look up per-file data from PackageAnalysis
-    let duplicate_assignments = pkg
-        .duplicate_assignments
-        .get(file)
-        .cloned()
-        .unwrap_or_default();
-    let unused_functions = pkg.unused_functions.get(file).cloned().unwrap_or_default();
+    let package_file = PackageFileAnalysis::for_file(pkg, file);
 
     // We run checks at expression-level. This gathers all violations, no matter
     // whether they are suppressed or not. They are filtered out in the next
@@ -261,7 +347,13 @@ pub fn get_checks(
             Some(FilePackageInfo::InPackage { scope: FileScope::R, .. })
         )
     {
-        let roxygen_diagnostics = get_checks_roxygen(syntax, file, config, contents)?;
+        let context = RoxygenContext {
+            loaded_packages: &checker.loaded_packages,
+            import_from: &checker.import_from,
+            source_cache: &checker.source_index_cache,
+        };
+        let roxygen_diagnostics =
+            get_checks_roxygen(syntax, file, config, contents, context, minimum_r_version)?;
         checker.diagnostics.extend(roxygen_diagnostics);
     }
 
@@ -273,9 +365,10 @@ pub fn get_checks(
     check_document(
         expressions,
         syntax,
+        contents,
         &mut checker,
-        &duplicate_assignments,
-        &unused_functions,
+        &package_file,
+        Some(semantic),
     )?;
 
     // Some rules have a fix available in their implementation but do not have
@@ -284,38 +377,27 @@ pub fn get_checks(
     // When we get all the diagnostics with check_expression() above, we don't
     // pay attention to whether the user wants to fix them or not. Adding this
     // step here is a way to filter those fixes out before calling apply_fixes().
-    let rules_without_fix = checker
-        .rule_set
-        .iter()
-        .filter(|x| x.has_no_fix())
-        .map(|x| x.name().to_string())
-        .collect::<Vec<String>>();
-
     let diagnostics: Vec<Diagnostic> = checker
         .diagnostics
         .into_iter()
         .map(|mut x| {
             x.filename = file.to_path_buf();
-            // Check if fix should be skipped based on fixable/unfixable settings
-            if rules_without_fix.contains(&x.message.name) {
-                x.fix = Fix::empty();
-            }
-            // Also check against unfixable set from config
-            if config.unfixable.contains(&x.message.name) {
-                x.fix = Fix::empty();
-            }
-            // If fixable is specified, only allow those rules to have fixes
-            if let Some(ref fixable_set) = config.fixable
-                && !fixable_set.contains(&x.message.name)
+            let rule = x.message.rule;
+            // The rule has no fix at all, the user excluded it via
+            // `unfixable` / `fixable`, the node carries a comment, or the file
+            // didn't parse cleanly: in all of those the fix must not apply.
+            //
+            // TODO: the `to_skip` term should be removed once comments in nodes
+            // are better handled, #95.
+            if rule.has_no_fix()
+                || config.unfixable.contains(&rule)
+                || config
+                    .fixable
+                    .as_ref()
+                    .is_some_and(|set| !set.contains(&rule))
+                || x.fix.to_skip
+                || has_parse_errors
             {
-                x.fix = Fix::empty();
-            }
-            // TODO: this should be removed once comments in nodes are better
-            // handled, #95
-            if x.fix.to_skip {
-                x.fix = Fix::empty();
-            }
-            if has_parse_errors {
                 x.fix = Fix::empty();
             }
             x
@@ -326,42 +408,182 @@ pub fn get_checks(
     let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
 
     if has_parse_errors {
-        return Err(ParseError { filename: file.to_path_buf(), diagnostics }.into());
+        let syntax_errors = collect_syntax_errors(&parsed, contents);
+        return Err(ParseError {
+            filename: file.to_path_buf(),
+            diagnostics,
+            syntax_errors,
+        }
+        .into());
     }
 
     Ok(diagnostics)
 }
 
+/// Convert the parser's diagnostics (message + span) into the `SyntaxError`s
+/// carried by [`ParseError`], resolving each span to a (row, column) location.
+///
+/// Locations are computed against `contents` (not the parsed tree) because
+/// `find_new_lines` reads the serialized tree, which can be truncated once the
+/// parser has recovered from an error, throwing later offsets off.
+fn collect_syntax_errors(parsed: &air_r_parser::Parse, contents: &str) -> Vec<SyntaxError> {
+    // `Diagnostic::location` (the trait method) is the only public accessor for
+    // a `ParseDiagnostic`'s span.
+    use biome_diagnostics::Diagnostic as _;
+
+    let loc_new_lines = crate::utils::find_new_lines_from_content(contents);
+
+    parsed
+        .diagnostics()
+        .iter()
+        .map(|diagnostic| {
+            // The span is optional on `ParseDiagnostic`, but every diagnostic
+            // the R parser builds is given a range, so this only ever falls
+            // back if that changes upstream.
+            let range = diagnostic.location().span.map_or_else(
+                || end_of_content(contents),
+                |range| normalize_eof_range(contents, range),
+            );
+            let start: usize = range.start().into();
+            let (row, col) = find_row_col(start, &loc_new_lines);
+            SyntaxError {
+                message: diagnostic.message.to_string(),
+                range,
+                location: Location::new(row, col),
+            }
+        })
+        .collect()
+}
+
+/// Move an end-of-file error span back to the end of the last line with
+/// content.
+///
+/// Parser errors at EOF are zero-width spans sitting past the final newline, on
+/// an empty line. annotate-snippets renders those as an empty snippet, and the
+/// end of the last real line is the more useful place to point at anyway.
+fn normalize_eof_range(contents: &str, range: TextRange) -> TextRange {
+    if range.is_empty() && usize::from(range.start()) == contents.len() {
+        return end_of_content(contents);
+    }
+    range
+}
+
+/// The empty range at the end of the last line with content.
+fn end_of_content(contents: &str) -> TextRange {
+    let trimmed = contents.trim_end_matches(['\n', '\r']).len();
+    let pos = TextSize::from(trimmed as u32);
+    TextRange::new(pos, pos)
+}
+
 /// Populate package context on the checker from pre-computed data.
 ///
-/// For files inside an R package, copies the pre-computed `PackageContext`
-/// fields. For scripts, scans for `library()`/`require()` calls.
+/// Assembles the file's search path in load order, so that a later attach
+/// masks an earlier one exactly as it does in R. Sources, in order: the
+/// packages R attaches at startup, the package's own `Depends` and NAMESPACE
+/// imports, whatever the file's test runner attaches, and finally the file's
+/// own `library()`/`require()` calls.
+///
+/// `pkg::` accesses stay out of this list: `::` reaches a package without
+/// attaching it, so a `dplyr::` call elsewhere in the file must not make a
+/// bare `filter()` resolve to dplyr. The `::`-inclusive view belongs to
+/// `SemanticInfo`, which derives it for idiom detection.
 fn get_package_info(
     checker: &mut Checker,
     file: &Path,
-    expressions: &RExpressionList,
+    semantic: &oak_semantic::semantic_index::SemanticIndex,
     config: &Config,
     pkg_contexts: &HashMap<PathBuf, PackageContext>,
     file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
 ) {
-    match file_pkg_info.get(file) {
+    let mut packages: Vec<String> = match file_pkg_info.get(file) {
         Some(FilePackageInfo::InPackage { package_root, .. }) => {
-            if let Some(ctx) = pkg_contexts.get(package_root) {
-                checker.loaded_packages = ctx.loaded_packages.clone();
-                checker.import_from = ctx.import_from.clone();
-                checker.namespace_exports = ctx.namespace_exports.clone();
+            match pkg_contexts.get(package_root) {
+                Some(ctx) => {
+                    checker.import_from = ctx.import_from.clone();
+                    checker.namespace_exports = ctx.namespace_exports.clone();
+                    // Already seeded with `DEFAULT_PACKAGES`.
+                    ctx.loaded_packages.clone()
+                }
+                None => default_packages(),
             }
         }
-        _ => {
-            let mut packages: Vec<String> = crate::checker::DEFAULT_PACKAGES
-                .iter()
-                .map(|s| s.to_string())
-                .collect();
-            packages.extend(crate::library_calls::extract_library_calls(expressions));
-            checker.loaded_packages = packages;
+        _ => default_packages(),
+    };
+
+    // testthat runs `tests/testthat/` files with the package loaded and
+    // testthat attached, so nothing in those files ever names it. Same rule
+    // oak applies in `oak_db/src/load_context/contrib/testthat.rs`.
+    if in_testthat_dir(file) {
+        packages.push("testthat".to_string());
+    }
+
+    // A file's own attaches come last: they happen while the file runs, so
+    // they mask everything the environment set up before it. This applies to
+    // package files too, not just scripts — `library(dplyr)` at the top of a
+    // test file is a real attach.
+    packages.extend(top_level_attached_packages(semantic));
+
+    let mut seen = HashSet::new();
+    packages.retain(|pkg| seen.insert(pkg.clone()));
+
+    checker.loaded_packages = packages;
+    checker.package_cache = config.package_cache.clone();
+}
+
+fn default_packages() -> Vec<String> {
+    crate::checker::DEFAULT_PACKAGES
+        .iter()
+        .map(|s| s.to_string())
+        .collect()
+}
+
+/// The packages a file outside an R package can reach: the always-available
+/// defaults plus whatever it attaches itself.
+fn script_packages(semantic: &oak_semantic::semantic_index::SemanticIndex) -> Vec<String> {
+    let mut packages = default_packages();
+    packages.extend(top_level_attached_packages(semantic));
+    packages
+}
+
+/// True when `file` sits under a `tests/` directory holding a `testthat.R`
+/// runner. That runner is what calls `test_check()`, so its presence is what
+/// makes the files below it run with the package loaded and testthat attached.
+fn in_testthat_dir(file: &Path) -> bool {
+    let mut dir = file.parent();
+    while let Some(current) = dir {
+        if current.file_name().is_some_and(|n| n == "tests") && current.join("testthat.R").is_file()
+        {
+            return true;
+        }
+        dir = current.parent();
+    }
+    false
+}
+
+/// Collect the packages a file attaches with `library()`/`require()`, in load
+/// order, deduplicated. Oak counts a call only when it runs as the file loads,
+/// so calls inside a function body are excluded (their attachment isn't
+/// statically guaranteed) while calls inside a top-level `if`/loop are kept (R
+/// runs top-level code sequentially, so the attach is visible to later code if
+/// the branch runs).
+fn top_level_attached_packages(
+    semantic: &oak_semantic::semantic_index::SemanticIndex,
+) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for package in semantic.attached_packages() {
+        if !out.iter().any(|p| p == package) {
+            out.push(package.to_string());
         }
     }
-    checker.package_cache = config.package_cache.clone();
+    out
+}
+
+/// What an `@examples` section inherits from the file it documents: the
+/// packages its code can reach, and the `source()` index cache to reuse.
+struct RoxygenContext<'a> {
+    loaded_packages: &'a [String],
+    import_from: &'a HashMap<String, String>,
+    source_cache: &'a jarl_semantic::SourceIndexCache,
 }
 
 /// Lint R code inside roxygen `@examples` and `@examplesIf` sections.
@@ -370,11 +592,17 @@ fn get_package_info(
 /// Diagnostic byte ranges are remapped to point to the correct position in the
 /// original file. Autofixes are disabled because the `#'` prefix makes
 /// position-based edits unsafe.
+///
+/// `context` carries over the documented file's package context, which the
+/// use-def analysis needs: the packages an example can reach decide whether a
+/// bare `glue("{x}")` counts as reading `x`.
 fn get_checks_roxygen(
     syntax: &RSyntaxNode,
     file: &Path,
     config: &Config,
     contents: &str,
+    context: RoxygenContext<'_>,
+    minimum_r_version: Option<(u32, u32, u32)>,
 ) -> Result<Vec<Diagnostic>> {
     let chunks = extract_roxygen_examples(syntax, contents);
     let mut all_diagnostics: Vec<Diagnostic> = Vec::new();
@@ -391,11 +619,45 @@ fn get_checks_roxygen(
         let suppression = SuppressionManager::from_node(&syntax, &chunk.code);
         let has_suppressions = suppression.has_any_suppressions;
         let mut checker = Checker::new(suppression, config.rule_options.clone());
-        checker.rule_set = effective_rules_for_file(config, file);
-        checker.minimum_r_version = config.minimum_r_version;
+        checker.rule_set = effective_rules_for_file(config, file, minimum_r_version);
+        checker.minimum_r_version = minimum_r_version;
+        checker.file_path = file.to_path_buf();
+        checker.source_index_cache = context.source_cache.clone();
+        checker.import_from = context.import_from.clone();
 
         for expr in expressions {
             check_expression(&expr, &mut checker)?;
+        }
+
+        // Objects created by an example live in the throwaway environment that
+        // `example()` runs it in, so each section is its own universe: nothing
+        // it binds can be exported or read by another file, which is why
+        // `namespace_exports` and `cross_file_used` stay empty here.
+        //
+        // Run before `check_document` so that suppression filtering there
+        // covers these diagnostics too.
+        if checker.is_rule_enabled(crate::rule_set::Rule::UnusedObject) {
+            let semantic = oak_semantic::build_index(
+                &parsed.tree(),
+                jarl_semantic::JarlImportsResolver::with_cache(
+                    file,
+                    checker.source_index_cache.clone(),
+                ),
+            );
+            // What the example inherits from the package, plus whatever it
+            // attaches itself (`library(glue)` on the first line is common).
+            checker.loaded_packages = context.loaded_packages.to_vec();
+            checker
+                .loaded_packages
+                .extend(top_level_attached_packages(&semantic));
+
+            let owned: Vec<RSyntaxNode> = expressions.iter().map(|e| e.syntax().clone()).collect();
+            crate::lints::base::unused_object::unused_object::unused_object(
+                &owned,
+                &semantic,
+                &std::collections::HashSet::new(),
+                &mut checker,
+            )?;
         }
 
         // Only run document-level checks if the examples code has inline
@@ -403,7 +665,14 @@ fn get_checks_roxygen(
         // otherwise unnecessary here (no package-level analysis, no
         // suppression-related diagnostics to report).
         if has_suppressions {
-            check_document(expressions, &syntax, &mut checker, &[], &[])?;
+            check_document(
+                expressions,
+                &syntax,
+                &chunk.code,
+                &mut checker,
+                &PackageFileAnalysis::default(),
+                None,
+            )?;
         }
 
         for mut d in checker.diagnostics {
@@ -411,6 +680,7 @@ fn get_checks_roxygen(
             if config.fix_roxygen {
                 d.fix = remap_roxygen_fix(&d.fix, chunk, contents);
             } else {
+                d.fix_disabled_in_roxygen = d.has_safe_fix() || d.has_unsafe_fix();
                 d.fix = Fix::empty();
             }
             d.filename = file.to_path_buf();
@@ -421,6 +691,77 @@ fn get_checks_roxygen(
     Ok(all_diagnostics)
 }
 
+/// Names read by R code that belongs to the document but isn't in the virtual
+/// source, and so is invisible to the use-def analysis:
+///
+/// - inline spans in the prose (`` `r mean(x)` ``), which aren't linted but do
+///   run when the document is rendered;
+/// - chunks dropped because they don't parse, which have nothing to analyze
+///   but still run — unless they wouldn't have run anyway (`eval = FALSE`),
+///   in which case they are left out here too;
+/// - chunk options (`{r, fig.cap = my_caption}`, `#| eval: !expr run_it`),
+///   which knitr evaluates for *every* chunk, including one whose own code
+///   never runs.
+///
+/// An object named in any of them is used. Erring towards collecting too many
+/// names is deliberate: a name harvested here can only silence a diagnostic,
+/// whereas a read missed here invents one.
+fn reads_outside_chunk_code(
+    contents: &str,
+    chunks: &[crate::rmd::RCodeChunk],
+    skipped: &[usize],
+) -> std::collections::HashSet<String> {
+    let mut names: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+    let inline = crate::rmd::extract_inline_r_code(contents, chunks);
+    let dropped = skipped
+        .iter()
+        .map(|i| &chunks[*i])
+        .filter(|chunk| chunk.evaluated)
+        .map(|chunk| chunk.code.as_str());
+    for code in inline.into_iter().chain(dropped) {
+        names.extend(all_symbols(code));
+    }
+
+    for chunk in chunks {
+        for snippet in crate::rmd::chunk_option_code(chunk) {
+            names.extend(read_symbols(&snippet));
+        }
+    }
+
+    names
+}
+
+/// Every identifier-shaped word in `code`, whatever it stands for.
+/// [`scan_symbols`] over-collects by design; see there.
+fn all_symbols(code: &str) -> impl Iterator<Item = String> {
+    scan_symbols(code).into_keys()
+}
+
+/// The names `code` *reads*, leaving out the names of named arguments — for
+/// chunk options, the difference between the object `fig.cap = my_caption`
+/// reads and the option it sets. Falls back to [`all_symbols`] when the
+/// snippet doesn't parse, since then the two can't be told apart and missing a
+/// read is the more damaging error.
+fn read_symbols(code: &str) -> Vec<String> {
+    let parsed = air_r_parser::parse(code, RParserOptions::default());
+    if parsed.has_error() {
+        return all_symbols(code).collect();
+    }
+
+    parsed
+        .syntax()
+        .descendants()
+        .filter(|node| node.kind() == air_r_syntax::RSyntaxKind::R_IDENTIFIER)
+        .filter(|node| {
+            node.parent().is_none_or(|parent| {
+                parent.kind() != air_r_syntax::RSyntaxKind::R_ARGUMENT_NAME_CLAUSE
+            })
+        })
+        .map(|node| node.text_trimmed().to_string())
+        .collect()
+}
+
 /// Lint an Rmd/Qmd file by concatenating R code chunks into a virtual R
 /// string and running the normal linting pipeline on it.
 ///
@@ -428,11 +769,30 @@ fn get_checks_roxygen(
 /// - No autofix (Quarto code annotations make position-based edits unsafe)
 /// - `#| jarl-ignore-chunk:` YAML blocks are translated to `# jarl-ignore-start`
 ///   / `# jarl-ignore-end` pairs before linting
-/// - Chunks with parse errors are silently dropped
+/// - Chunks with parse errors are dropped, without a diagnostic of their own
 /// - Diagnostic ranges are remapped from virtual-string offsets to original file offsets
-fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Diagnostic>> {
+///
+/// Knitr evaluates every chunk of a document in one R session, in document
+/// order, which is exactly what the concatenation models — so use-def rules
+/// like `unused_object` see an object assigned in one chunk and read in a
+/// later one as used. The two ways a document departs from that model are
+/// handled explicitly: code that runs but isn't in the virtual source
+/// contributes reads (see [`reads_outside_chunk_code`]), and code that is in the
+/// virtual source but doesn't run (`eval = FALSE` chunks) contributes
+/// neither reads nor definitions.
+fn get_checks_rmd(
+    contents: &str,
+    file: &Path,
+    config: &Config,
+    source_cache: jarl_semantic::SourceIndexCache,
+) -> Result<Vec<Diagnostic>> {
     let chunks = crate::rmd::extract_r_chunks(contents);
-    let (virtual_source, offset_map) = crate::rmd::build_virtual_r_source(&chunks);
+    let crate::rmd::VirtualSource {
+        source: virtual_source,
+        offset_map,
+        skipped,
+        unevaluated,
+    } = crate::rmd::build_virtual_r_source(&chunks);
 
     if virtual_source.trim().is_empty() {
         return Ok(Vec::new());
@@ -444,8 +804,26 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     let syntax = parsed.syntax();
     let suppression = SuppressionManager::from_node(&syntax, &virtual_source);
     let mut checker = Checker::new(suppression, config.rule_options.clone());
-    checker.rule_set = effective_rules_for_file(config, file);
+    // An Rmd/Qmd document is never package code, so the only floor that can
+    // apply is the `--min-r-version` override.
+    checker.rule_set = effective_rules_for_file(config, file, config.minimum_r_version);
     checker.minimum_r_version = config.minimum_r_version;
+    checker.file_path = file.to_path_buf();
+    checker.source_index_cache = source_cache.clone();
+    // A chunk marked `eval = FALSE` is still linted, but it never runs, so it
+    // defines nothing and reads nothing.
+    checker.unevaluated_ranges = unevaluated;
+
+    // The document's own path anchors `source()` resolution, so a chunk
+    // sourcing a helper next to the document resolves it there.
+    let semantic = oak_semantic::build_index(
+        &parsed.tree(),
+        jarl_semantic::JarlImportsResolver::with_cache(file, source_cache),
+    );
+    // A document is never package code, so it reaches the same packages a
+    // script does: the defaults plus what its chunks attach.
+    checker.loaded_packages = script_packages(&semantic);
+    checker.package_cache = config.package_cache.clone();
 
     let expressions = &parsed.tree().expressions();
     for expr in expressions {
@@ -453,8 +831,21 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     }
     // check_document runs suppression filtering internally, so
     // checker.diagnostics is the post-suppression list after this call.
-    // Rmd chunks don't participate in package-level analysis, so pass empty slices.
-    check_document(expressions, &syntax, &mut checker, &[], &[])?;
+    // Rmd chunks don't participate in package-level analysis; the one
+    // package-level input that does apply is the set of names read outside the
+    // chunks, which keeps objects the prose uses from looking unused.
+    let package_file = PackageFileAnalysis {
+        cross_file_used: reads_outside_chunk_code(contents, &chunks, &skipped),
+        ..PackageFileAnalysis::default()
+    };
+    check_document(
+        expressions,
+        &syntax,
+        &virtual_source,
+        &mut checker,
+        &package_file,
+        Some(&semantic),
+    )?;
 
     // Remap ranges from virtual-string offsets to original Rmd file offsets.
     let diagnostics: Vec<Diagnostic> = checker
@@ -472,7 +863,15 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
     let diagnostics = compute_lints_location(diagnostics, &loc_new_lines);
 
     if has_parse_errors {
-        return Err(ParseError { filename: file.to_path_buf(), diagnostics }.into());
+        // Rmd parse errors are reported against the combined virtual source;
+        // mapping arbitrary error spans back to the original file is unreliable,
+        // so we report only the generic summary here (no per-error snippets).
+        return Err(ParseError {
+            filename: file.to_path_buf(),
+            diagnostics,
+            syntax_errors: Vec::new(),
+        }
+        .into());
     }
 
     Ok(diagnostics)
@@ -482,6 +881,246 @@ fn get_checks_rmd(contents: &str, file: &Path, config: &Config) -> Result<Vec<Di
 mod tests {
     use crate::utils_test::*;
     use insta::assert_snapshot;
+
+    #[test]
+    fn test_in_testthat_dir() {
+        use super::in_testthat_dir;
+
+        let dir = tempfile::tempdir().expect("tempdir");
+        let root = dir.path();
+        for sub in ["tests/testthat/sub", "tests-no-runner/testthat", "R"] {
+            std::fs::create_dir_all(root.join(sub)).expect("create dir");
+        }
+        std::fs::write(root.join("tests/testthat.R"), "test_check(\"fixture\")\n")
+            .expect("write runner");
+
+        assert!(in_testthat_dir(&root.join("tests/testthat/test-x.R")));
+        assert!(in_testthat_dir(&root.join("tests/testthat/helper.R")));
+        // Anything under the runner's `tests/` directory counts, however deep.
+        assert!(in_testthat_dir(&root.join("tests/testthat/sub/test-x.R")));
+        assert!(in_testthat_dir(&root.join("tests/test-x.R")));
+
+        // Without a `tests/testthat.R` runner, a `testthat/` directory means
+        // nothing.
+        assert!(!in_testthat_dir(
+            &root.join("tests-no-runner/testthat/test-x.R")
+        ));
+        assert!(!in_testthat_dir(&root.join("R/x.R")));
+    }
+
+    /// Lints one file of a fixture package written to a tempdir, with a fake
+    /// package cache standing in for an R installation. Returns the rendered
+    /// diagnostics.
+    fn lint_in_package(files: &[(&str, &str)], target: &str, rule: &str) -> String {
+        use crate::check::check;
+        use crate::config::ArgsConfig;
+        use crate::package_cache::PackageCache;
+        use std::sync::Arc;
+
+        let dir = tempfile::tempdir().expect("create tempdir");
+        for (name, content) in files {
+            let path = dir.path().join(name);
+            std::fs::create_dir_all(path.parent().unwrap()).expect("create dir");
+            std::fs::write(path, content).expect("write file");
+        }
+        let target_path = dir.path().join(target);
+
+        let args = ArgsConfig {
+            files: vec![target_path.clone()],
+            fix: false,
+            unsafe_fixes: false,
+            fix_only: false,
+            select: rule.to_string(),
+            extend_select: String::new(),
+            ignore: String::new(),
+            min_r_version: None,
+            allow_dirty: false,
+            allow_no_vcs: true,
+            assignment: None,
+        };
+        let mut config = crate::config::build_config(&args, None, vec![target_path.clone()])
+            .expect("build config");
+        config.package_cache = Some(Arc::new(PackageCache::from_exports(&[
+            ("stats", &["filter"]),
+            ("dplyr", &["filter"]),
+        ])));
+
+        let diagnostics: Vec<_> = check(config)
+            .into_iter()
+            .find_map(|(_, result)| result.ok())
+            .unwrap_or_default();
+
+        if diagnostics.is_empty() {
+            return "All checks passed!".to_string();
+        }
+        diagnostics
+            .iter()
+            .map(|d| d.message.rule.name().to_string())
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    const DESC_IMPORTS_DPLYR: &str = "Package: fixture\nVersion: 1.0.0\nImports: dplyr\n";
+    const COMPLEX_FILTER: &str = "x |> filter(a > 1 | is.na(a))\n";
+
+    #[test]
+    fn test_description_imports_does_not_attach() {
+        // `Imports: dplyr` alone doesn't put dplyr on the search path, so a
+        // bare `filter()` in `R/` is `stats::filter()` and must not lint.
+        assert_snapshot!(
+            lint_in_package(
+                &[
+                    ("DESCRIPTION", DESC_IMPORTS_DPLYR),
+                    ("R/x.R", COMPLEX_FILTER),
+                ],
+                "R/x.R",
+                "dplyr_filter_out",
+            ),
+            @"All checks passed!"
+        );
+    }
+
+    #[test]
+    fn test_namespace_import_from_attaches() {
+        // `importFrom(dplyr, filter)` is what actually binds `filter` in the
+        // package namespace, so now the bare call does resolve to dplyr.
+        assert_snapshot!(
+            lint_in_package(
+                &[
+                    ("DESCRIPTION", DESC_IMPORTS_DPLYR),
+                    ("NAMESPACE", "importFrom(dplyr, filter)\n"),
+                    ("R/x.R", COMPLEX_FILTER),
+                ],
+                "R/x.R",
+                "dplyr_filter_out",
+            ),
+            @"dplyr_filter_out"
+        );
+    }
+
+    #[test]
+    fn test_in_package_file_own_library_call_attaches() {
+        // A package file's own `library()` is a real attach and used to be
+        // dropped entirely for in-package files.
+        assert_snapshot!(
+            lint_in_package(
+                &[
+                    ("DESCRIPTION", "Package: fixture\nVersion: 1.0.0\n"),
+                    (
+                        "tests/testthat/test-x.R",
+                        "library(dplyr)\nx |> filter(a > 1 | is.na(a))\n"
+                    ),
+                ],
+                "tests/testthat/test-x.R",
+                "dplyr_filter_out",
+            ),
+            @"dplyr_filter_out"
+        );
+    }
+
+    /// Runs the real package-context assembly over a fixture package and
+    /// returns the resulting search path, in load order.
+    fn loaded_packages_for(files: &[(&str, &str)], target: &str) -> Vec<String> {
+        use crate::config::ArgsConfig;
+        use crate::package::summarize_package_info;
+
+        let dir = tempfile::tempdir().expect("create tempdir");
+        for (name, content) in files {
+            let path = dir.path().join(name);
+            std::fs::create_dir_all(path.parent().unwrap()).expect("create dir");
+            std::fs::write(path, content).expect("write file");
+        }
+        let target_path = dir.path().join(target);
+        let contents = std::fs::read_to_string(&target_path).expect("read target");
+
+        let parsed = air_r_parser::parse(&contents, air_r_parser::RParserOptions::default());
+        let index = oak_semantic::build_index(
+            &parsed.tree(),
+            jarl_semantic::JarlImportsResolver::new(&target_path),
+        );
+        let suppression =
+            crate::suppression::SuppressionManager::from_node(&parsed.syntax(), &contents);
+
+        let args = ArgsConfig {
+            files: vec![target_path.clone()],
+            fix: false,
+            unsafe_fixes: false,
+            fix_only: false,
+            select: "ALL".to_string(),
+            extend_select: String::new(),
+            ignore: String::new(),
+            min_r_version: None,
+            allow_dirty: false,
+            allow_no_vcs: true,
+            assignment: None,
+        };
+        let config = crate::config::build_config(&args, None, vec![target_path.clone()])
+            .expect("build config");
+        let mut checker = crate::checker::Checker::new(suppression, config.rule_options.clone());
+
+        let (pkg_contexts, file_pkg_info) =
+            summarize_package_info(std::slice::from_ref(&target_path));
+        super::get_package_info(
+            &mut checker,
+            &target_path,
+            &index,
+            &config,
+            &pkg_contexts,
+            &file_pkg_info,
+        );
+        checker.loaded_packages
+    }
+
+    #[test]
+    fn test_testthat_attached_in_testthat_dir() {
+        // The runner attaches testthat, so a test file never names it.
+        let packages = loaded_packages_for(
+            &[
+                ("DESCRIPTION", "Package: fixture\nVersion: 1.0.0\n"),
+                ("tests/testthat.R", "test_check(\"fixture\")\n"),
+                ("tests/testthat/test-x.R", "expect_equal(1, 1)\n"),
+            ],
+            "tests/testthat/test-x.R",
+        );
+        assert!(packages.contains(&"testthat".to_string()), "{packages:?}");
+
+        // An ordinary package file gets no such attach.
+        let packages = loaded_packages_for(
+            &[
+                ("DESCRIPTION", "Package: fixture\nVersion: 1.0.0\n"),
+                ("R/x.R", "f <- function() 1\n"),
+            ],
+            "R/x.R",
+        );
+        assert!(!packages.contains(&"testthat".to_string()), "{packages:?}");
+    }
+
+    #[test]
+    fn test_loaded_packages_order_and_dedup() {
+        let packages = loaded_packages_for(
+            &[
+                (
+                    "DESCRIPTION",
+                    "Package: fixture\nVersion: 1.0.0\nDepends: MASS\nImports: tibble\n",
+                ),
+                ("R/x.R", "library(dplyr)\nlibrary(MASS)\n"),
+            ],
+            "R/x.R",
+        );
+
+        // `Depends` attaches, `Imports` does not.
+        assert!(packages.contains(&"MASS".to_string()), "{packages:?}");
+        assert!(!packages.contains(&"tibble".to_string()), "{packages:?}");
+        // The file's own attach is picked up.
+        assert!(packages.contains(&"dplyr".to_string()), "{packages:?}");
+        // Attached twice, listed once.
+        assert_eq!(packages.iter().filter(|p| *p == "MASS").count(), 1);
+        // Startup packages come first, so a later attach masks them.
+        assert!(
+            packages.iter().position(|p| p == "base") < packages.iter().position(|p| p == "dplyr"),
+            "{packages:?}"
+        );
+    }
 
     #[test]
     fn test_fix_does_not_introduce_new_lints() {

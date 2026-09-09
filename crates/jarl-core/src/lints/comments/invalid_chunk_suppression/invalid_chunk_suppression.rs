@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use biome_rowan::TextRange;
 
 /// Version added: 0.5.0
@@ -49,7 +50,7 @@ pub fn invalid_chunk_suppression(ranges: &[TextRange]) -> Vec<Diagnostic> {
 fn create_diagnostic(range: TextRange) -> Diagnostic {
     Diagnostic::new(
         ViolationData::new(
-            "invalid_chunk_suppression".to_string(),
+            Rule::InvalidChunkSuppression,
             "This `jarl-ignore-chunk` comment is wrongly formatted.".to_string(),
             Some(
                 "Use the YAML array form instead:\n\

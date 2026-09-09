@@ -1,28 +1,37 @@
 use colored::Colorize;
 use jarl_core::diagnostic::Diagnostic;
+use jarl_core::rule_set::Rule;
 use std::{collections::HashMap, path::PathBuf};
 
 use crate::status::ExitStatus;
 
 pub fn print_statistics(
     diagnostics: &[&Diagnostic],
+    has_errors: bool,
     parent_config_path: Option<PathBuf>,
 ) -> anyhow::Result<ExitStatus> {
+    // Parse errors are not rule diagnostics, but they still make the check fail.
     if diagnostics.is_empty() {
+        if has_errors {
+            return Ok(ExitStatus::Error);
+        }
+
         println!("All checks passed!");
         return Ok(ExitStatus::Success);
     }
 
-    // Hashmap with rule name as key, and (number of occurrences, has_fix) as
+    // Hashmap with rule name as key, and (number of occurrences, has_fix, has_unsafe_fix) as
     // value.
-    let mut hm: HashMap<&String, (usize, bool)> = HashMap::new();
+    let mut hm: HashMap<Rule, (usize, bool, bool)> = HashMap::new();
 
     for diagnostic in diagnostics {
-        let rule_name = &diagnostic.message.name;
-        let entry = hm.entry(rule_name).or_default();
+        let entry = hm.entry(diagnostic.message.rule).or_default();
         entry.0 += 1;
         if diagnostic.has_safe_fix() {
             entry.1 = true;
+        }
+        if diagnostic.has_unsafe_fix() {
+            entry.2 = true;
         }
     }
 
@@ -31,21 +40,33 @@ pub fn print_statistics(
     sorted.reverse();
 
     for (key, value) in sorted {
-        let star = if value.1 { "*" } else { " " };
+        let star = if value.1 {
+            "*"
+        } else if value.2 {
+            "^"
+        } else {
+            " "
+        };
         println!(
             "{:>5} [{}] {}",
             value.0.to_string().bold(),
             star,
-            key.bold().red()
+            key.name().bold().red()
         );
     }
 
-    println!("\nRules with `[*]` have an automatic fix.");
+    println!("\nRules with `[*]` have an automatic safe fix.");
+    println!("Rules with `[^]` have an automatic unsafe fix.");
+    crate::output_format::print_roxygen_fix_note(diagnostics);
 
     // Inform the user if the config file used comes from a parent directory.
     if let Some(config_path) = parent_config_path {
         println!("\nUsed '{}'", config_path.display());
     }
 
-    Ok(ExitStatus::Failure)
+    if has_errors {
+        Ok(ExitStatus::Error)
+    } else {
+        Ok(ExitStatus::Failure)
+    }
 }

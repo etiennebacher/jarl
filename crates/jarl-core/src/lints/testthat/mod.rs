@@ -5,5 +5,6 @@ pub(crate) mod expect_no_match;
 pub(crate) mod expect_not;
 pub(crate) mod expect_null;
 pub(crate) mod expect_s3_class;
+pub(crate) mod expect_s4_class;
 pub(crate) mod expect_true_false;
 pub(crate) mod expect_type;

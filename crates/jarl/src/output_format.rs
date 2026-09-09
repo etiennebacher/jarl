@@ -84,6 +84,18 @@ pub fn print_summary(diagnostics: &[&Diagnostic], has_errors: bool) {
     }
 }
 
+/// Tells the user that fixes were dropped because their violations sit in
+/// roxygen `@examples` sections. Only worth saying when the user expected a
+/// fix to happen: a rule that is documented as fixable is reported here
+/// without a fix, and nothing else explains why.
+pub fn print_roxygen_fix_note(diagnostics: &[&Diagnostic]) {
+    if diagnostics.iter().any(|d| d.fix_disabled_in_roxygen) {
+        println!(
+            "\nSome fixes are disabled because the violations are in `@examples` sections.\nSet `fix-roxygen = true` in `jarl.toml` to apply them."
+        );
+    }
+}
+
 /// Prints warnings under a `── Warnings ──` section header.
 pub fn print_warnings(warnings: &[String]) {
     if warnings.is_empty() {
@@ -147,6 +159,60 @@ pub trait Emitter {
     ) -> anyhow::Result<()>;
 }
 
+/// Print parse errors to stderr in the concise style: one `Error:` line per
+/// syntax error, located as `file:row:col`. Falls back to the generic summary
+/// line for errors the parser attached no structured information to (e.g. Rmd).
+fn emit_errors_concise(errors: &[(String, anyhow::Error)]) {
+    for (path, err) in errors {
+        match err.downcast_ref::<jarl_core::error::ParseError>() {
+            Some(parse_error) if !parse_error.syntax_errors.is_empty() => {
+                for syntax_error in &parse_error.syntax_errors {
+                    // Column is 0-based internally; display it 1-based.
+                    eprintln!(
+                        "{}: {}:{}:{} {}",
+                        "Error".red().bold(),
+                        path,
+                        syntax_error.location.row(),
+                        syntax_error.location.column() + 1,
+                        syntax_error.message
+                    );
+                }
+            }
+            _ => eprintln!("{}: {}", "Error".red().bold(), err),
+        }
+    }
+}
+
+/// Print parse errors to stderr in the full style: each syntax error rendered as
+/// an annotated source snippet (message + underlined range), reusing the same
+/// renderer as lint diagnostics. Falls back to the generic summary line when the
+/// parser attached no structured information or the source can't be read.
+fn emit_errors_full(errors: &[(String, anyhow::Error)], renderer: &Renderer) {
+    for (path, err) in errors {
+        match err.downcast_ref::<jarl_core::error::ParseError>() {
+            Some(parse_error) if !parse_error.syntax_errors.is_empty() => {
+                match fs::read_to_string(&parse_error.filename) {
+                    Ok(source) => {
+                        for syntax_error in &parse_error.syntax_errors {
+                            let rendered = jarl_core::diagnostic::render_syntax_error(
+                                &source,
+                                path,
+                                syntax_error,
+                                renderer,
+                            );
+                            eprintln!("{rendered}");
+                        }
+                    }
+                    // Without the source we can't build a snippet; keep the
+                    // generic line rather than dropping the error.
+                    Err(_) => eprintln!("{}: {}", "Error".red().bold(), err),
+                }
+            }
+            _ => eprintln!("{}: {}", "Error".red().bold(), err),
+        }
+    }
+}
+
 pub struct ConciseEmitter;
 
 impl Emitter for ConciseEmitter {
@@ -161,9 +227,7 @@ impl Emitter for ConciseEmitter {
         // First, print all parsing errors
         if !errors.is_empty() {
             writer.flush()?; // Flush before writing to stderr
-            for (_path, err) in errors {
-                eprintln!("{}: {}", "Error".red().bold(), err);
-            }
+            emit_errors_concise(errors);
         }
 
         // Cache relativized paths to avoid repeated filesystem operations
@@ -190,9 +254,9 @@ impl Emitter for ConciseEmitter {
             };
             let use_colors = std::env::var("NO_COLOR").is_err();
             let rule_name = if use_colors {
-                &make_hyperlink(&diagnostic.message.name)
+                &make_hyperlink(diagnostic.message.rule.name())
             } else {
-                &diagnostic.message.name
+                diagnostic.message.rule.name()
             };
             writeln!(
                 writer,
@@ -245,9 +309,10 @@ impl Emitter for GithubEmitter {
         &self,
         writer: &mut W,
         diagnostics: &[&Diagnostic],
-        _errors: &[(String, anyhow::Error)],
+        errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
+        emit_errors_concise(errors);
         for diagnostic in diagnostics {
             let (row, col) = match diagnostic.location {
                 Some(loc) => (loc.row(), loc.column() + 1), // Convert to 1-based for display
@@ -268,7 +333,7 @@ impl Emitter for GithubEmitter {
             write!(
                 writer,
                 "::warning title=Jarl ({}),file={file},line={row},col={col}::{file}:{row}:{col} ",
-                diagnostic.message.name,
+                diagnostic.message.rule,
                 file = diagnostic.filename.to_string_lossy()
             )?;
 
@@ -277,7 +342,7 @@ impl Emitter for GithubEmitter {
             } else {
                 diagnostic.message.body.clone()
             };
-            writeln!(writer, "[{}] {}", diagnostic.message.name, message)?;
+            writeln!(writer, "[{}] {}", diagnostic.message.rule, message)?;
         }
 
         writer.flush()?;
@@ -413,7 +478,7 @@ struct SarifFix {
 #[serde(rename_all = "camelCase")]
 struct SarifArtifactChange {
     artifact_location: SarifArtifactLocation,
-    replacements: [SarifReplacement; 1],
+    replacements: Vec<SarifReplacement>,
 }
 
 #[derive(Debug, Serialize)]
@@ -454,9 +519,10 @@ impl Emitter for SarifEmitter {
         &self,
         writer: &mut W,
         diagnostics: &[&Diagnostic],
-        _errors: &[(String, anyhow::Error)],
+        errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
+        emit_errors_concise(errors);
 
         // Cache each file's contents so ranges can be converted to line/column
         // regions without re-reading the source.
@@ -470,7 +536,7 @@ impl Emitter for SarifEmitter {
             std::collections::BTreeMap::new();
         for diagnostic in diagnostics {
             rule_bodies
-                .entry(&diagnostic.message.name)
+                .entry(diagnostic.message.rule.name())
                 .or_insert(&diagnostic.message.body);
         }
         let rules: Vec<SarifRule> = rule_bodies
@@ -518,13 +584,20 @@ impl Emitter for SarifEmitter {
             }
             .replace('\\', "/");
 
-            // A fix is only emitted when it edits the source (not skipped, and
-            // it either inserts content or deletes a non-empty range).
+            // A fix is only emitted when it edits the source: not skipped, and
+            // carrying at least one edit. Its edits become the replacements of
+            // a single artifact change, so they are applied together.
             let fix = &diagnostic.fix;
-            let fixes = if !fix.to_skip && (fix.start != fix.end || !fix.content.is_empty()) {
-                let deleted_region = range_to_region(content, fix.start, fix.end);
-                let inserted_content = (!fix.content.is_empty())
-                    .then(|| SarifMessage { text: Cow::Owned(fix.content.clone()) });
+            let fixes = if !fix.to_skip && !fix.edits.is_empty() {
+                let replacements = fix
+                    .edits
+                    .iter()
+                    .map(|edit| SarifReplacement {
+                        deleted_region: range_to_region(content, edit.start(), edit.end()),
+                        inserted_content: (!edit.content.is_empty())
+                            .then(|| SarifMessage { text: Cow::Owned(edit.content.clone()) }),
+                    })
+                    .collect();
                 vec![SarifFix {
                     description: SarifMessage { text: Cow::Owned(message.clone()) },
                     artifact_changes: [SarifArtifactChange {
@@ -532,7 +605,7 @@ impl Emitter for SarifEmitter {
                             uri: uri.clone(),
                             uri_base_id: "ROOTPATH",
                         },
-                        replacements: [SarifReplacement { deleted_region, inserted_content }],
+                        replacements,
                     }],
                 }]
             } else {
@@ -540,8 +613,8 @@ impl Emitter for SarifEmitter {
             };
 
             results.push(SarifResult {
-                rule_id: &diagnostic.message.name,
-                rule_index: rule_indices[diagnostic.message.name.as_str()],
+                rule_id: diagnostic.message.rule.name(),
+                rule_index: rule_indices[diagnostic.message.rule.name()],
                 level: "warning",
                 message: SarifMessage { text: Cow::Owned(message) },
                 locations: [SarifLocation {
@@ -607,9 +680,7 @@ impl Emitter for FullEmitter {
         // First, print all parsing errors
         if !errors.is_empty() {
             writer.flush()?; // Flush before writing to stderr
-            for (_path, err) in errors {
-                eprintln!("{}: {}", "Error".red().bold(), err);
-            }
+            emit_errors_full(errors, &renderer);
             if !diagnostics.is_empty() {
                 eprintln!(); // Add separator between errors and diagnostics
             }
@@ -669,11 +740,16 @@ impl Emitter for FullEmitter {
                 .entry(&diagnostic.filename)
                 .or_insert_with(|| relativize_path(diagnostic.filename.clone()));
 
-            // Create the main message with clickable rule name
+            // Create the main message with clickable rule name. The title is
+            // handed to the renderer as pre-styled text, so the bold has to be
+            // applied here.
             let title = if use_colors {
-                make_hyperlink(&diagnostic.message.name)
+                format!(
+                    "\x1b[1m{}\x1b[0m",
+                    make_hyperlink(diagnostic.message.rule.name())
+                )
             } else {
-                diagnostic.message.name.clone()
+                diagnostic.message.rule.name().to_string()
             };
 
             let rendered = render_diagnostic(source, file_path, &title, diagnostic, &renderer);

@@ -1,6 +1,6 @@
 ---
 source: crates/jarl-core/src/lints/testthat/expect_s3_class/mod.rs
-expression: "get_fixed_text(vec![\"# leading comment\\nexpect_equal(class(x), 'data.frame')\",\n\"expect_equal(class(x),\\n # a comment \\n'data.frame')\",\n\"expect_equal(class(x), 'data.frame') # trailing comment\",],\n\"expect_s3_class\", None)"
+expression: "get_fixed_text(vec![\"# leading comment\\nexpect_equal(class(x), 'data.frame')\",\n\"expect_equal(class(x),\\n # a comment \\n'data.frame')\",\n\"expect_equal(class(x), 'data.frame') # trailing comment\",\n\"expect_true(is.data.frame(\\n # a comment\\n x))\",\n\"expect_true(inherits(x,\\n # a comment\\n 'factor'))\",], \"expect_s3_class\",\nNone)"
 ---
 OLD:
 ====
@@ -28,3 +28,25 @@ expect_equal(class(x), 'data.frame') # trailing comment
 NEW:
 ====
 expect_s3_class(x, 'data.frame') # trailing comment
+
+OLD:
+====
+expect_true(is.data.frame(
+ # a comment
+ x))
+NEW:
+====
+expect_true(is.data.frame(
+ # a comment
+ x))
+
+OLD:
+====
+expect_true(inherits(x,
+ # a comment
+ 'factor'))
+NEW:
+====
+expect_true(inherits(x,
+ # a comment
+ 'factor'))

@@ -1,5 +1,6 @@
 use crate::diagnostic::*;
-use biome_rowan::TextRange;
+use crate::rule_set::Rule;
+use crate::suppression::UnusedSuppression;
 
 /// Version added: 0.4.0
 ///
@@ -12,6 +13,8 @@ use biome_rowan::TextRange;
 /// Suppression comments that are no longer needed can be confusing and may
 /// indicate that the underlying code has changed but the comment was not
 /// updated. They also add noise to the codebase.
+///
+/// This rule has a safe automatic fix that removes the outdated comment.
 ///
 /// ## Example
 ///
@@ -26,22 +29,42 @@ use biome_rowan::TextRange;
 /// # Remove the suppression comment since it's not needed.
 /// x <- 1
 /// ```
-pub fn outdated_suppression(ranges: &[TextRange]) -> Vec<Diagnostic> {
-    ranges
+pub fn outdated_suppression(unused: &[UnusedSuppression], source: &str) -> Vec<Diagnostic> {
+    unused
         .iter()
-        .map(|range| create_diagnostic(*range))
+        .map(|suppression| create_diagnostic(suppression, source))
         .collect()
 }
 
-fn create_diagnostic(range: TextRange) -> Diagnostic {
+fn create_diagnostic(suppression: &UnusedSuppression, source: &str) -> Diagnostic {
     Diagnostic::new(
         ViolationData::new(
-            "outdated_suppression".to_string(),
+            Rule::OutdatedSuppression,
             "This suppression comment is unused, no violation would be reported without it."
                 .to_string(),
             Some("Remove this suppression comment or verify that it's still needed.".to_string()),
         ),
-        range,
-        Fix::empty(),
+        suppression.comment_range,
+        create_fix(suppression, source),
     )
+}
+
+/// Remove the suppression comment, along with the line it sits on.
+///
+/// A suppression comment is always alone on its line (a trailing one is
+/// reported by `misplaced_suppression` instead and never suppresses anything),
+/// so the indentation and the line break go with it.
+///
+/// A `jarl-ignore-start`/`jarl-ignore-end` pair needs both comments gone, which
+/// is one deletion per comment; the code they wrap is untouched.
+fn create_fix(suppression: &UnusedSuppression, source: &str) -> Fix {
+    let comment = suppression.comment_range;
+    let mut edits = vec![Edit::delete_line(source, comment.start().into())];
+
+    // For a region, the closing comment sits on its own line further down.
+    if let Some(region) = suppression.region_range {
+        edits.push(Edit::delete_line(source, region.end().into()));
+    }
+
+    Fix::from_edits(edits, false)
 }

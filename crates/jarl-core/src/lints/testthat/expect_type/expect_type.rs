@@ -1,10 +1,16 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{
-    get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
-    node_contains_comments,
+    Formals, get_arg, get_function_name, get_function_namespace_prefix, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
+
+/// Omits `tolerance`, `info`, `label` and `expected.label`, which follow `...`.
+/// Shared with `expect_identical()`, whose first two formals are the same.
+const FORMALS_EXPECT_EQUAL: Formals = &["object", "expected"];
+const FORMALS_EXPECT_TRUE: Formals = &["object", "info", "label"];
+const FORMALS_TYPEOF: Formals = &["x"];
 
 /// Version added: 0.3.0
 ///
@@ -36,17 +42,14 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// expect_type(x, "integer")
 /// expect_type(x, "character")
 /// ```
-pub fn expect_type(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let function_name = get_function_name(function);
-
+pub fn expect_type(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Case 1: expect_equal(typeof(x), type) or expect_identical(typeof(x), type)
-    if function_name == "expect_equal" || function_name == "expect_identical" {
-        return check_expect_equal_typeof(ast, &function_name);
+    if fn_name == "expect_equal" || fn_name == "expect_identical" {
+        return check_expect_equal_typeof(ast, fn_name);
     }
 
     // Case 2: expect_true(is.<type>(x))
-    if function_name == "expect_true" {
+    if fn_name == "expect_true" {
         return check_expect_true_is_type(ast);
     }
 
@@ -65,8 +68,8 @@ fn check_expect_equal_typeof(
         return Ok(None);
     }
 
-    let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
-    let expected = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "expected", 2));
+    let object = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_EQUAL, "object"));
+    let expected = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_EQUAL, "expected"));
 
     let object_value = unwrap_or_return_none!(object.value());
     let expected_value = unwrap_or_return_none!(expected.value());
@@ -82,8 +85,7 @@ fn check_expect_equal_typeof(
 
     // Extract the argument to typeof()
     let call = unwrap_or_return_none!(typeof_call.as_r_call());
-    let inner_args = call.arguments()?.items();
-    let inner_arg = unwrap_or_return_none!(get_arg_by_name_then_position(&inner_args, "x", 1));
+    let inner_arg = unwrap_or_return_none!(get_arg(call, FORMALS_TYPEOF, "x"));
     let inner_value = unwrap_or_return_none!(inner_arg.value());
     let inner_text = inner_value.to_trimmed_text();
 
@@ -94,20 +96,19 @@ fn check_expect_equal_typeof(
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "expect_type".to_string(),
+            Rule::TestthatExpectType,
             format!("`{}(typeof(x), t)` can be hard to read.", function_name),
             Some("Use `expect_type(x, t)` instead.".to_string()),
         ),
         range,
-        Fix {
-            content: format!(
+        Fix::new(
+            range,
+            format!(
                 "{}expect_type({}, {})",
                 namespace_prefix, inner_text, type_text
             ),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))
@@ -122,7 +123,7 @@ fn check_expect_true_is_type(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> 
         return Ok(None);
     }
 
-    let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
+    let object = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_TRUE, "object"));
     let object_value = unwrap_or_return_none!(object.value());
 
     // Check if it's a call to an is.<type>() function
@@ -149,8 +150,7 @@ fn check_expect_true_is_type(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> 
     };
 
     // Get the argument to is.<type>()
-    let inner_args = call.arguments()?.items();
-    let inner_arg = unwrap_or_return_none!(get_arg_by_name_then_position(&inner_args, "x", 1));
+    let inner_arg = unwrap_or_return_none!(get_arg(call, FORMALS_TYPEOF, "x"));
     let inner_value = unwrap_or_return_none!(inner_arg.value());
     let inner_text = inner_value.to_trimmed_text();
 
@@ -161,20 +161,19 @@ fn check_expect_true_is_type(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> 
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "expect_type".to_string(),
+            Rule::TestthatExpectType,
             "`expect_true(is.<t>(x))` can be hard to read.".to_string(),
             Some("Use `expect_type(x, t)` instead.".to_string()),
         ),
         range,
-        Fix {
-            content: format!(
+        Fix::new(
+            range,
+            format!(
                 "{}expect_type({}, {})",
                 namespace_prefix, inner_text, type_str
             ),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

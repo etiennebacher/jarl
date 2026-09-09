@@ -14,11 +14,44 @@ use crate::directive::{
 /// Matches the opening fence of an executable R code chunk.
 ///
 /// Captures group 1: the backtick sequence (e.g. "```").
+/// Captures group 2: the chunk options, i.e. everything between `{r` and `}`.
 /// Accepts `{r}`, `{r label}`, `{r, options}`, etc.
 /// Leading spaces or tabs are allowed to support indented chunks (e.g. inside
 /// list items).
 static OPEN_FENCE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^[ \t]*(`{3,})\{[rR][^}]*\}").unwrap());
+    LazyLock::new(|| Regex::new(r"^[ \t]*(`{3,})\{[rR]([^}]*)\}").unwrap());
+
+/// Matches `eval = FALSE` among the options of a chunk header.
+///
+/// Case-sensitive on the value: `FALSE` and `F` are R's false literals, while
+/// `false` is an ordinary symbol. A value this doesn't match (`eval = run_it`,
+/// `eval = nrow(x) > 0`) is decided at render time, and treating those as
+/// evaluated is the conservative reading — see [`RCodeChunk::evaluated`].
+static HEADER_EVAL_FALSE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\beval\s*=\s*(FALSE|F)\b").unwrap());
+
+/// Matches Quarto's `#| eval: false` chunk option.
+///
+/// The value is a YAML boolean, so unlike the header form it is not
+/// case-sensitive. `#| eval: !expr <code>` is resolved at render time and
+/// deliberately doesn't match.
+static YAML_EVAL_FALSE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)^[ \t]*#\|[ \t]*eval[ \t]*:[ \t]*false[ \t]*$").unwrap());
+
+/// Matches a Quarto chunk option whose value is R code: `#| key: !expr code`.
+///
+/// Captures group 1: the R code after `!expr`.
+static YAML_EXPR_OPTION: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^[ \t]*#\|[^:]*:[ \t]*!expr[ \t]+(.+?)[ \t]*$").unwrap());
+
+/// Matches inline R code in prose: `` `r expr` ``.
+///
+/// Captures group 1: the R expression. The backtick-delimited span cannot
+/// itself contain a backtick, which also keeps the opening fence of a chunk
+/// (```` ```{r} ````) from matching — there the `r` is preceded by `{`, not by
+/// whitespace.
+static INLINE_CODE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"`[rR][ \t\r\n]([^`]*)`").unwrap());
 
 /// An R code chunk extracted from an Rmd/Qmd document.
 #[derive(Debug)]
@@ -28,6 +61,27 @@ pub struct RCodeChunk {
     /// Byte offset in the original file where the chunk code starts.
     /// This is the byte immediately after the opening fence line's newline.
     pub start_byte: usize,
+    /// The chunk options as written in the opening fence, i.e. everything
+    /// between `{r` and `}` (`" my-chunk, echo = FALSE"`).
+    pub options: String,
+    /// Whether the chunk runs when the document is rendered, i.e. whether it
+    /// is *not* marked `eval = FALSE` (header form) or `#| eval: false`
+    /// (Quarto form).
+    ///
+    /// Only literal false values count. An `eval` whose value is an expression
+    /// is unknowable here, and guessing "not evaluated" is the harmful
+    /// direction: it would drop the chunk's reads, which can turn an object
+    /// used only there into a false `unused_object` report. Guessing
+    /// "evaluated" can only leave a diagnostic unreported.
+    pub evaluated: bool,
+}
+
+/// A chunk being accumulated between its opening and closing fence.
+struct PendingChunk {
+    code: String,
+    start_byte: usize,
+    header_eval_false: bool,
+    options: String,
 }
 
 /// Extract all executable R code chunks from Rmd/Qmd content.
@@ -40,29 +94,40 @@ pub fn extract_r_chunks(content: &str) -> Vec<RCodeChunk> {
     let mut chunks = Vec::new();
     let mut byte_offset: usize = 0;
 
-    // State: None = outside a chunk, Some((fence, code, start_byte)) = inside.
-    let mut current: Option<(String, String, usize)> = None;
+    // State: None = outside a chunk, Some(chunk being accumulated) = inside.
+    let mut current: Option<(String, PendingChunk)> = None;
 
     for line in content.split_inclusive('\n') {
         let mut finished = false;
 
-        if let Some((fence, code, start_byte)) = current.as_mut() {
+        if let Some((fence, pending)) = current.as_mut() {
             if line.trim() == fence.as_str() {
                 // Closing fence found — emit the chunk.
+                let code = std::mem::take(&mut pending.code);
                 chunks.push(RCodeChunk {
-                    code: std::mem::take(code),
-                    start_byte: *start_byte,
+                    evaluated: !pending.header_eval_false && !yaml_says_eval_false(&code),
+                    code,
+                    start_byte: pending.start_byte,
+                    options: std::mem::take(&mut pending.options),
                 });
                 finished = true;
             } else {
-                code.push_str(line);
+                pending.code.push_str(line);
             }
         } else if let Some(caps) = OPEN_FENCE.captures(line) {
             // Opening fence found — start a new chunk.
             let fence = caps.get(1).unwrap().as_str().to_string();
-            // The chunk code starts immediately after this line.
-            let chunk_start_byte = byte_offset + line.len();
-            current = Some((fence, String::new(), chunk_start_byte));
+            let options = caps.get(2).unwrap().as_str().to_string();
+            current = Some((
+                fence,
+                PendingChunk {
+                    code: String::new(),
+                    // The chunk code starts immediately after this line.
+                    start_byte: byte_offset + line.len(),
+                    header_eval_false: HEADER_EVAL_FALSE.is_match(&options),
+                    options,
+                },
+            ));
         }
 
         if finished {
@@ -73,6 +138,92 @@ pub fn extract_r_chunks(content: &str) -> Vec<RCodeChunk> {
     }
 
     chunks
+}
+
+/// Whether the chunk's Quarto option block sets `eval: false`.
+///
+/// Quarto only reads `#|` options from the run of lines at the very top of the
+/// chunk, so the scan stops at the first line that isn't one. A `#| eval:
+/// false` further down is a plain comment.
+fn yaml_says_eval_false(code: &str) -> bool {
+    code.lines()
+        .take_while(|line| line.trim_start().starts_with("#|"))
+        .any(|line| YAML_EVAL_FALSE.is_match(line))
+}
+
+/// The R code found in a chunk's options, as snippets the caller can parse.
+///
+/// Both option forms can name an object: `{r, fig.cap = my_caption}` in the
+/// fence header, and `#| fig-cap: !expr my_caption` in Quarto's block. Knitr
+/// evaluates a chunk's options when it renders the chunk — that is how
+/// `eval = run_it` gets to decide anything — so this holds for every chunk,
+/// including one whose own code never runs.
+///
+/// The header snippet is wrapped as a call so that it parses as R, which lets
+/// the caller tell an option's *value* (`my_caption`, a read) from its *name*
+/// (`fig.cap`, not a read). Header options are R's named-argument syntax
+/// already, so the wrapping is all it takes. A leading chunk label is dropped:
+/// it is a bare word, often not even valid R (`{r my-chunk}`).
+pub fn chunk_option_code(chunk: &RCodeChunk) -> Vec<String> {
+    let mut snippets = Vec::new();
+
+    if let Some(options) = header_options_without_label(&chunk.options) {
+        snippets.push(format!("list({options})"));
+    }
+
+    snippets.extend(
+        chunk
+            .code
+            .lines()
+            .take_while(|line| line.trim_start().starts_with("#|"))
+            .filter_map(|line| YAML_EXPR_OPTION.captures(line))
+            .map(|caps| caps.get(1).unwrap().as_str().to_string()),
+    );
+
+    snippets
+}
+
+/// The chunk options with the leading label removed, or `None` when nothing
+/// but a label is left.
+fn header_options_without_label(options: &str) -> Option<&str> {
+    let rest = match options.split_once(',') {
+        // A first segment without `=` is the label, not an option.
+        Some((first, rest)) if !first.contains('=') => rest,
+        // A single segment without `=` is a label on its own.
+        None => return None,
+        _ => options,
+    };
+
+    let rest = rest.trim();
+    (!rest.is_empty()).then_some(rest)
+}
+
+/// Extract the R expressions of inline code spans (`` `r expr` ``) written in
+/// the document's prose.
+///
+/// Two kinds of match are left out:
+/// - spans inside a code chunk, where a backtick pair is part of an R string
+///   (`glue("`r x`")`) rather than something the document evaluates;
+/// - spans whose opening backtick is itself preceded by one, which is the
+///   fence of a display-only ` ```r ` block, not an inline span.
+///
+/// `chunks` must be the output of [`extract_r_chunks`] for the same content,
+/// whose spans are ordered and non-overlapping.
+pub fn extract_inline_r_code<'a>(content: &'a str, chunks: &[RCodeChunk]) -> Vec<&'a str> {
+    INLINE_CODE
+        .captures_iter(content)
+        .filter(|caps| {
+            let start = caps.get(0).unwrap().start();
+            !in_a_chunk(start, chunks) && !content[..start].ends_with('`')
+        })
+        .map(|caps| caps.get(1).unwrap().as_str())
+        .collect()
+}
+
+/// Whether `offset` falls within the code of one of `chunks`.
+fn in_a_chunk(offset: usize, chunks: &[RCodeChunk]) -> bool {
+    let idx = chunks.partition_point(|c| c.start_byte + c.code.len() <= offset);
+    chunks.get(idx).is_some_and(|c| offset >= c.start_byte)
 }
 
 /// A segment mapping virtual-string byte positions to original-file byte positions.
@@ -214,19 +365,36 @@ fn find_chunk_ignore_blocks(code: &str) -> Vec<ChunkIgnoreBlock> {
     blocks
 }
 
+/// The concatenated R code of a document, plus what it took to build it.
+pub struct VirtualSource {
+    /// The virtual R source: every valid chunk's code, in document order.
+    pub source: String,
+    /// Maps offsets in `source` back to the original Rmd/Qmd file.
+    pub offset_map: OffsetMap,
+    /// Indices into the input chunks of the chunks left out because they have
+    /// parse errors. Their code is absent from `source`, so anything they read
+    /// is invisible to the analysis unless the caller accounts for it.
+    pub skipped: Vec<usize>,
+    /// Spans in `source` covering the chunks that don't run when the document
+    /// is rendered (see [`RCodeChunk::evaluated`]). Their code is still linted
+    /// — it is code the author wrote and readers see — but it neither defines
+    /// nor reads anything, so use-def analysis has to leave it out.
+    pub unevaluated: Vec<TextRange>,
+}
+
 /// Build a virtual R source string by concatenating all valid R chunks,
 /// translating `#| jarl-ignore-chunk:` YAML blocks into
 /// `# jarl-ignore-start` / `# jarl-ignore-end` pairs.
 ///
-/// Chunks with parse errors are silently dropped.
-///
-/// Returns the virtual source and an `OffsetMap` for remapping diagnostic
-/// byte offsets back to the original Rmd file.
-pub fn build_virtual_r_source(chunks: &[RCodeChunk]) -> (String, OffsetMap) {
+/// Chunks with parse errors are dropped, and reported in
+/// [`VirtualSource::skipped`].
+pub fn build_virtual_r_source(chunks: &[RCodeChunk]) -> VirtualSource {
     let mut virtual_src = String::new();
     let mut segments: Vec<Segment> = Vec::new();
+    let mut skipped: Vec<usize> = Vec::new();
+    let mut unevaluated: Vec<TextRange> = Vec::new();
 
-    for chunk in chunks {
+    for (i, chunk) in chunks.iter().enumerate() {
         // Skip empty chunks.
         if chunk.code.trim().is_empty() {
             continue;
@@ -235,9 +403,11 @@ pub fn build_virtual_r_source(chunks: &[RCodeChunk]) -> (String, OffsetMap) {
         // Pre-validate: skip chunks with parse errors.
         let parsed = air_r_parser::parse(&chunk.code, RParserOptions::default());
         if parsed.has_error() {
+            skipped.push(i);
             continue;
         }
 
+        let chunk_start = virtual_src.len();
         let blocks = find_chunk_ignore_blocks(&chunk.code);
 
         if blocks.is_empty() {
@@ -265,9 +435,21 @@ pub fn build_virtual_r_source(chunks: &[RCodeChunk]) -> (String, OffsetMap) {
         if !virtual_src.ends_with('\n') {
             virtual_src.push('\n');
         }
+
+        if !chunk.evaluated {
+            unevaluated.push(TextRange::new(
+                TextSize::from(chunk_start as u32),
+                TextSize::from(virtual_src.len() as u32),
+            ));
+        }
     }
 
-    (virtual_src, OffsetMap { segments })
+    VirtualSource {
+        source: virtual_src,
+        offset_map: OffsetMap { segments },
+        skipped,
+        unevaluated,
+    }
 }
 
 /// Emit a single chunk with YAML ignore blocks translated to start/end comments.
@@ -521,6 +703,163 @@ mod tests {
         assert_eq!(chunks[0].code, "  any(is.na(1))\n");
     }
 
+    // --- Inline R code ---
+
+    /// Extract the inline spans of `content`, in document order.
+    fn inline(content: &str) -> Vec<&str> {
+        let chunks = extract_r_chunks(content);
+        extract_inline_r_code(content, &chunks)
+    }
+
+    #[test]
+    fn test_inline_code_in_prose() {
+        assert_eq!(inline("The mean is `r mean(x)`.\n"), vec!["mean(x)"]);
+    }
+
+    #[test]
+    fn test_several_inline_spans_on_one_line() {
+        assert_eq!(inline("`r a` and `r b`\n"), vec!["a", "b"]);
+    }
+
+    #[test]
+    fn test_inline_code_spanning_lines() {
+        assert_eq!(inline("Value: `r mean(\n  x\n)`\n"), vec!["mean(\n  x\n)"]);
+    }
+
+    #[test]
+    fn test_capital_r_inline_code() {
+        assert_eq!(inline("`R x`\n"), vec!["x"]);
+    }
+
+    #[test]
+    fn test_inline_code_inside_a_chunk_ignored() {
+        // A backtick pair in chunk code is an R string, not an inline span.
+        let content = "```{r}\nglue(\"`r x`\")\n```\n";
+        assert!(inline(content).is_empty());
+    }
+
+    #[test]
+    fn test_inline_code_around_a_chunk() {
+        // Spans before and after a chunk are kept; the fences themselves and
+        // the chunk body are not spans.
+        let content = "`r before`\n\n```{r}\ny <- 1\n```\n\n`r after`\n";
+        assert_eq!(inline(content), vec!["before", "after"]);
+    }
+
+    #[test]
+    fn test_chunk_fence_is_not_inline_code() {
+        assert!(inline("```{r}\nx <- 1\n```\n").is_empty());
+    }
+
+    #[test]
+    fn test_display_only_r_block_is_not_inline_code() {
+        // ```r opens a display block, so its fences are not an inline span.
+        assert!(inline("```r\nx\n```\n").is_empty());
+    }
+
+    // --- eval = FALSE ---
+
+    /// Whether the single chunk of `content` is marked as evaluated.
+    fn evaluated(content: &str) -> bool {
+        let chunks = extract_r_chunks(content);
+        assert_eq!(chunks.len(), 1, "expected exactly one chunk");
+        chunks[0].evaluated
+    }
+
+    #[test]
+    fn test_chunk_without_eval_option_is_evaluated() {
+        assert!(evaluated("```{r}\nx <- 1\n```\n"));
+        assert!(evaluated("```{r label, echo=FALSE}\nx <- 1\n```\n"));
+    }
+
+    #[test]
+    fn test_header_eval_false_is_not_evaluated() {
+        assert!(!evaluated("```{r, eval = FALSE}\nx <- 1\n```\n"));
+        assert!(!evaluated("```{r eval=FALSE}\nx <- 1\n```\n"));
+        assert!(!evaluated("```{r label, eval=F, echo=TRUE}\nx <- 1\n```\n"));
+    }
+
+    #[test]
+    fn test_header_eval_true_is_evaluated() {
+        assert!(evaluated("```{r, eval = TRUE}\nx <- 1\n```\n"));
+        assert!(evaluated("```{r, eval=T}\nx <- 1\n```\n"));
+    }
+
+    #[test]
+    fn test_header_eval_expression_is_evaluated() {
+        // Decided at render time. Assuming it runs can only cost a diagnostic;
+        // assuming it doesn't could invent one.
+        assert!(evaluated("```{r, eval = run_it}\nx <- 1\n```\n"));
+        assert!(evaluated("```{r, eval = nrow(d) > 0}\nx <- 1\n```\n"));
+    }
+
+    #[test]
+    fn test_eval_is_not_confused_with_another_option() {
+        // A different option whose name ends in `eval`, and a value that
+        // merely mentions FALSE.
+        assert!(evaluated("```{r, reeval = FALSE}\nx <- 1\n```\n"));
+        assert!(evaluated("```{r, echo = FALSE}\nx <- 1\n```\n"));
+    }
+
+    #[test]
+    fn test_quarto_eval_false_is_not_evaluated() {
+        assert!(!evaluated("```{r}\n#| eval: false\nx <- 1\n```\n"));
+        assert!(!evaluated(
+            "```{r}\n#| label: a\n#| eval: FALSE\nx <- 1\n```\n"
+        ));
+    }
+
+    #[test]
+    fn test_quarto_eval_true_is_evaluated() {
+        assert!(evaluated("```{r}\n#| eval: true\nx <- 1\n```\n"));
+    }
+
+    #[test]
+    fn test_quarto_eval_expression_is_evaluated() {
+        assert!(evaluated("```{r}\n#| eval: !expr run_it\nx <- 1\n```\n"));
+    }
+
+    #[test]
+    fn test_quarto_option_below_the_code_is_a_comment() {
+        // Quarto only reads the `#|` block at the top of the chunk.
+        assert!(evaluated("```{r}\nx <- 1\n#| eval: false\n```\n"));
+    }
+
+    #[test]
+    fn test_unevaluated_chunk_span_covers_its_code() {
+        let content = "```{r}\nkeep <- 1\n```\n\n```{r, eval = FALSE}\ndead <- 2\n```\n";
+        let chunks = extract_r_chunks(content);
+        let virtual_source = build_virtual_r_source(&chunks);
+
+        assert_eq!(virtual_source.source, "keep <- 1\ndead <- 2\n");
+        assert_eq!(virtual_source.unevaluated.len(), 1);
+        let range = virtual_source.unevaluated[0];
+        assert_eq!(&virtual_source.source[range], "dead <- 2\n");
+    }
+
+    #[test]
+    fn test_evaluated_chunks_have_no_unevaluated_span() {
+        let chunks = extract_r_chunks("```{r}\nx <- 1\n```\n");
+        assert!(build_virtual_r_source(&chunks).unevaluated.is_empty());
+    }
+
+    // --- Skipped chunks ---
+
+    #[test]
+    fn test_chunk_with_parse_error_is_reported_as_skipped() {
+        let content = "```{r}\nx <- 1\n```\n\n```{r}\nif (y\n```\n";
+        let chunks = extract_r_chunks(content);
+        let virtual_source = build_virtual_r_source(&chunks);
+        assert_eq!(virtual_source.skipped, vec![1]);
+        assert_eq!(virtual_source.source, "x <- 1\n");
+    }
+
+    #[test]
+    fn test_valid_chunks_are_not_reported_as_skipped() {
+        let chunks = extract_r_chunks("```{r}\nx <- 1\n```\n\n```{r}\n```\n");
+        assert!(build_virtual_r_source(&chunks).skipped.is_empty());
+    }
+
     #[test]
     fn test_start_byte_second_chunk() {
         // Verify that start_byte for the second chunk accounts for everything before it.
@@ -536,6 +875,73 @@ mod tests {
         assert_eq!(
             &content[chunks[1].start_byte..chunks[1].start_byte + 6],
             "b <- 2"
+        );
+    }
+
+    // --- Chunk options ---
+
+    /// The option snippets of the single chunk in `content`.
+    fn option_code(content: &str) -> Vec<String> {
+        let chunks = extract_r_chunks(content);
+        assert_eq!(chunks.len(), 1, "expected exactly one chunk");
+        chunk_option_code(&chunks[0])
+    }
+
+    #[test]
+    fn test_header_options_are_wrapped_as_a_call() {
+        assert_eq!(
+            option_code("```{r, fig.cap = my_caption}\nx <- 1\n```\n"),
+            vec!["list(fig.cap = my_caption)"]
+        );
+    }
+
+    #[test]
+    fn test_header_label_is_dropped() {
+        // A label is a bare word, and `my-chunk` isn't even valid R.
+        assert_eq!(
+            option_code("```{r my-chunk, eval = run_it}\nx <- 1\n```\n"),
+            vec!["list(eval = run_it)"]
+        );
+    }
+
+    #[test]
+    fn test_header_with_only_a_label_has_no_option_code() {
+        assert!(option_code("```{r my-chunk}\nx <- 1\n```\n").is_empty());
+        assert!(option_code("```{r}\nx <- 1\n```\n").is_empty());
+    }
+
+    #[test]
+    fn test_header_option_value_may_contain_a_comma() {
+        assert_eq!(
+            option_code("```{r, fig.cap = paste(a, b)}\nx <- 1\n```\n"),
+            vec!["list(fig.cap = paste(a, b))"]
+        );
+    }
+
+    #[test]
+    fn test_quarto_expr_option_is_r_code() {
+        assert_eq!(
+            option_code("```{r}\n#| eval: !expr run_it\nx <- 1\n```\n"),
+            vec!["run_it"]
+        );
+    }
+
+    #[test]
+    fn test_quarto_plain_option_is_not_r_code() {
+        // Without `!expr` the value is data, not code.
+        assert!(option_code("```{r}\n#| fig-cap: my_caption\nx <- 1\n```\n").is_empty());
+    }
+
+    #[test]
+    fn test_quarto_expr_option_below_the_code_is_ignored() {
+        assert!(option_code("```{r}\nx <- 1\n#| eval: !expr run_it\n```\n").is_empty());
+    }
+
+    #[test]
+    fn test_both_option_forms_are_collected() {
+        assert_eq!(
+            option_code("```{r, fig.cap = cap}\n#| eval: !expr run_it\nx <- 1\n```\n"),
+            vec!["list(fig.cap = cap)", "run_it"]
         );
     }
 }

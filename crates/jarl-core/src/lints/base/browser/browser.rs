@@ -1,5 +1,5 @@
 use crate::diagnostic::*;
-use crate::utils::get_function_name;
+use crate::rule_set::Rule;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -38,18 +38,15 @@ pub struct Browser;
 ///
 /// See `?browser`
 impl Violation for Browser {
-    fn name(&self) -> String {
-        "browser".to_string()
+    fn rule(&self) -> Rule {
+        Rule::Browser
     }
     fn body(&self) -> String {
         "Calls to `browser()` should be removed.".to_string()
     }
 }
 
-pub fn browser(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let fn_name = get_function_name(function);
-
+pub fn browser(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "browser" {
         return Ok(None);
     }

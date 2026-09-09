@@ -1,0 +1,101 @@
+---
+source: crates/jarl-core/src/lints/base/rep_times_ignored/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"rep(1:10, 10:1, length.out = 50)\",\n\"rep(1:10, times = 10:1, length.out = 50)\", \"rep(1:10, 10:1, 50)\",\n\"rep(x = 1:2, 2, 50)\", \"rep(1:2, times = 2, 50)\",\n\"base::rep(length.out = 50, times = 2, x = 1:2)\",\n\"rep(x, times = 2, length.out = 5, each = 3)\", \"rep(x, 2, 5, 3)\",\n\"rep(each = 3, x, length.out = 5, times = 2)\",\n\"rep(x, times = 2, length.out = 5, each =)\",\n\"rep(x, times = 2, length.out = NA)\", \"rep(x, times = 2, length.out = NULL)\",\n\"rep(x, times = 2, length.out = Inf)\", \"rep(x, times = 2, length.out = -1)\",],\n\"rep_times_ignored\",)"
+---
+OLD:
+====
+rep(1:10, 10:1, length.out = 50)
+NEW:
+====
+rep(1:10, length.out = 50)
+
+OLD:
+====
+rep(1:10, times = 10:1, length.out = 50)
+NEW:
+====
+rep(1:10, length.out = 50)
+
+OLD:
+====
+rep(1:10, 10:1, 50)
+NEW:
+====
+rep(1:10, length.out = 50)
+
+OLD:
+====
+rep(x = 1:2, 2, 50)
+NEW:
+====
+rep(1:2, length.out = 50)
+
+OLD:
+====
+rep(1:2, times = 2, 50)
+NEW:
+====
+rep(1:2, length.out = 50)
+
+OLD:
+====
+base::rep(length.out = 50, times = 2, x = 1:2)
+NEW:
+====
+base::rep(1:2, length.out = 50)
+
+OLD:
+====
+rep(x, times = 2, length.out = 5, each = 3)
+NEW:
+====
+rep(x, length.out = 5, each = 3)
+
+OLD:
+====
+rep(x, 2, 5, 3)
+NEW:
+====
+rep(x, length.out = 5, each = 3)
+
+OLD:
+====
+rep(each = 3, x, length.out = 5, times = 2)
+NEW:
+====
+rep(x, length.out = 5, each = 3)
+
+OLD:
+====
+rep(x, times = 2, length.out = 5, each =)
+NEW:
+====
+rep(x, length.out = 5)
+
+OLD:
+====
+rep(x, times = 2, length.out = NA)
+NEW:
+====
+rep(x, length.out = NA)
+
+OLD:
+====
+rep(x, times = 2, length.out = NULL)
+NEW:
+====
+rep(x, length.out = NULL)
+
+OLD:
+====
+rep(x, times = 2, length.out = Inf)
+NEW:
+====
+rep(x, length.out = Inf)
+
+OLD:
+====
+rep(x, times = 2, length.out = -1)
+NEW:
+====
+rep(x, length.out = -1)

@@ -15,19 +15,29 @@ air_fs = { package = "fs", git = "https://github.com/etiennebacher/air_pratt" }
 air_r_parser = { git = "https://github.com/etiennebacher/air_pratt" }
 air_r_syntax = { git = "https://github.com/etiennebacher/air_pratt" }
 air_workspace = { package = "workspace", git = "https://github.com/etiennebacher/air_pratt" }
+aether_path = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_core = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_db = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_index_vec = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_package_metadata = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_scan = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+oak_semantic = { git = "https://github.com/etiennebacher/ark", branch = "bump-air-commit" }
+url = "2.5"
 anyhow = "1.0.94"
+biome_diagnostics = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
 biome_formatter = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
 biome_rowan = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
 clap = { version = "4.6.0", features = ["derive"] }
+clap_complete = { version = "4.5.66", features = ["unstable-dynamic"] }
 colored = "3.1.1"
 ignore = "0.4.23"
 insta = { version = "1.47.2", features = ["yaml", "filters"] }
 etcetera = "0.11.0"
 jarl-core = { path = "crates/jarl-core" }
 jarl-lsp = { path = "crates/jarl-lsp" }
-path-absolutize = "3.1.1"
+jarl-semantic = { path = "crates/jarl-semantic" }
 rayon = "1.12.0"
-regex = { version = "1.11.1", default-features = false, features = ["std"] }
+regex = { version = "1.13.1", default-features = false, features = ["std"] }
 rustc-hash = "2.1.1"
 schemars = "1.1.0"
 serde = { version = "1.0.215", features = ["derive"] }
@@ -41,8 +51,21 @@ tracing = "0.1.41"
 [profile.release]
 lto = true
 
-# The profile that 'dist' will build with
+# The profile that 'dist' will build with. Tuned for binary size.
 [profile.dist]
 inherits = "release"
+lto = true
+codegen-units = 1
+opt-level = "s"
+strip = "symbols"
+
+[profile.benchmark]
+inherits = "release"
 lto = "thin"
+
+# Faster build, used by CI checks that compare output but not performance
+# (e.g. ecosystem checks).
+[profile.ci]
+inherits = "release"
+lto = false
 

@@ -1,9 +1,10 @@
 use crate::diagnostic::*;
-use crate::utils::{
-    get_arg_by_name_then_position, get_arg_by_position, get_function_name, node_contains_comments,
-};
+use crate::rule_set::Rule;
+use crate::utils::{Formals, get_arg, get_arg_by_position, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
+
+const FORMALS_DO_CALL: Formals = &["what", "args", "quote", "envir"];
 
 pub struct List2Df;
 
@@ -41,8 +42,8 @@ pub struct List2Df;
 ///
 /// See `?list2DF`
 impl Violation for List2Df {
-    fn name(&self) -> String {
-        "list2df".to_string()
+    fn rule(&self) -> Rule {
+        Rule::List2df
     }
     fn body(&self) -> String {
         "`do.call(cbind.data.frame, x)` is inefficient and can be hard to read.".to_string()
@@ -52,19 +53,15 @@ impl Violation for List2Df {
     }
 }
 
-pub fn list2df(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let RCallFields { function, arguments } = ast.as_fields();
-
-    let function = function?;
-    let fn_name = get_function_name(function);
-    let arguments = arguments?.items();
-
+pub fn list2df(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "do.call" {
         return Ok(None);
     }
 
-    let what = unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "what", 1));
-    let args = unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "args", 2));
+    let arguments = ast.arguments()?.items();
+
+    let what = unwrap_or_return_none!(get_arg(ast, FORMALS_DO_CALL, "what"));
+    let args = unwrap_or_return_none!(get_arg(ast, FORMALS_DO_CALL, "args"));
 
     // Ensure there's not more than two arguments, don't know how to handle
     // `quote` and `envir` in `do.call()`.
@@ -86,12 +83,11 @@ pub fn list2df(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let diagnostic = Diagnostic::new(
         List2Df,
         range,
-        Fix {
-            content: format!("list2DF({})", fix_content.to_trimmed_text()),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("list2DF({})", fix_content.to_trimmed_text()),
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

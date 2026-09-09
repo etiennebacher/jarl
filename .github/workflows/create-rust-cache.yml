@@ -1,0 +1,49 @@
+# Create a Rust cache read by the ecosystem check, benchmark, and fix check
+# workflows. This workflow only caches the deps, the other workflows would
+# still need to recompile the jarl binary.
+
+name: Create Rust cache
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/create-rust-cache.yml
+      - Cargo.toml
+      - Cargo.lock
+      - crates/**
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  create-cache:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1.17.0
+        with:
+          cache: false
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: jarl-release
+
+      - name: Build jarl binary
+        run: |
+          cargo build --profile ci --package jarl
+          cargo build --profile benchmark --package jarl

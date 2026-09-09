@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use biome_rowan::TextRange;
 
 /// Version added: 0.4.0
@@ -39,7 +40,7 @@ pub fn unexplained_suppression(ranges: &[TextRange]) -> Vec<Diagnostic> {
 fn create_diagnostic(range: TextRange) -> Diagnostic {
     Diagnostic::new(
         ViolationData::new(
-            "unexplained_suppression".to_string(),
+            Rule::UnexplainedSuppression,
             "This comment isn't used by Jarl because it is missing an explanation.".to_string(),
             Some(
                 "Add an explanation after the colon, e.g., `# jarl-ignore rule: <reason>`."

@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use biome_rowan::TextRange;
 
 /// Version added: 0.4.0
@@ -37,7 +38,7 @@ pub fn blanket_suppression(ranges: &[TextRange]) -> Vec<Diagnostic> {
 fn create_diagnostic(range: TextRange) -> Diagnostic {
     Diagnostic::new(
         ViolationData::new(
-            "blanket_suppression".to_string(),
+            Rule::BlanketSuppression,
             "This comment isn't used by Jarl because it is missing a rule to ignore.".to_string(),
             Some(
                 "Use targeted comments instead, e.g., `# jarl-ignore any_is_na: <reason>`."

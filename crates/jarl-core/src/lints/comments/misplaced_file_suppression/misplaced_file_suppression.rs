@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use biome_rowan::TextRange;
 
 /// Version added: 0.4.0
@@ -40,7 +41,7 @@ pub fn misplaced_file_suppression(ranges: &[TextRange]) -> Vec<Diagnostic> {
 fn create_diagnostic(range: TextRange) -> Diagnostic {
     Diagnostic::new(
         ViolationData::new(
-            "misplaced_file_suppression".to_string(),
+            Rule::MisplacedFileSuppression,
             "This comment isn't used by Jarl because `# jarl-ignore-file` must be at the top of the file.".to_string(),
             Some("Move this comment to the beginning of the file, before any code.".to_string()),
         ),

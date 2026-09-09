@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_nested_functions_content, node_contains_comments};
 use air_r_syntax::*;
 
@@ -38,8 +39,8 @@ pub struct AnyDuplicated;
 ///
 /// See `?anyDuplicated`
 impl Violation for AnyDuplicated {
-    fn name(&self) -> String {
-        "any_duplicated".to_string()
+    fn rule(&self) -> Rule {
+        Rule::AnyDuplicated
     }
     fn body(&self) -> String {
         "`any(duplicated(...))` is inefficient.".to_string()
@@ -49,19 +50,22 @@ impl Violation for AnyDuplicated {
     }
 }
 
-pub fn any_duplicated(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let (inner_content, outer_syntax) =
-        unwrap_or_return_none!(get_nested_functions_content(ast, "any", "duplicated")?);
+pub fn any_duplicated(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
+    let (inner_content, outer_syntax) = unwrap_or_return_none!(get_nested_functions_content(
+        ast,
+        fn_name,
+        "any",
+        "duplicated"
+    )?);
 
     let range = outer_syntax.text_trimmed_range();
     Ok(Some(Diagnostic::new(
         AnyDuplicated,
         range,
-        Fix {
-            content: format!("anyDuplicated({inner_content}) > 0"),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(&outer_syntax),
-        },
+        Fix::new(
+            range,
+            format!("anyDuplicated({inner_content}) > 0"),
+            node_contains_comments(&outer_syntax),
+        ),
     )))
 }

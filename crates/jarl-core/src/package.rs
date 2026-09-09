@@ -1,7 +1,9 @@
 use biome_rowan::TextRange;
+use oak_semantic::semantic_index::SemanticIndex;
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use crate::checker::DEFAULT_PACKAGES;
 use crate::config::Config;
@@ -12,10 +14,11 @@ use crate::lints::base::duplicated_function_definition::duplicated_function_defi
     compute_duplicates_from_shared, scan_top_level_assignments,
 };
 use crate::lints::base::unused_function::unused_function::{
-    collect_files, compute_unused_from_shared, has_cpp_extension, scan_symbols,
+    collect_files, compute_unused_from_shared, has_cpp_extension,
 };
 use crate::namespace::{parse_namespace_exports, parse_namespace_imports};
 use crate::rule_set::Rule;
+use crate::utils::scan_symbols;
 
 /// Scope of a file within an R package, determining how its definitions
 /// are checked for unused functions.
@@ -41,6 +44,11 @@ pub struct PackageContext {
     /// Raw NAMESPACE content, retained so `compute_unused_from_shared()` can
     /// call `parse_namespace_exports()` with the full `all_names` list.
     pub namespace_content: Option<String>,
+    /// The R version this package guarantees, from `Depends: R (>= x.y.z)`.
+    /// Resolved per package rather than per run: a tree can hold several
+    /// packages with different floors, and each one's files must be checked
+    /// against its own. `None` when DESCRIPTION states no usable version.
+    pub minimum_r_version: Option<(u32, u32, u32)>,
 }
 
 /// Per-file package classification, computed upfront by
@@ -51,7 +59,11 @@ pub enum FilePackageInfo {
         package_root: PathBuf,
         scope: FileScope,
     },
-    Script,
+    /// A file that isn't part of a package's loadable sources, so its
+    /// `library()` calls are scanned from the file itself rather than taken
+    /// from DESCRIPTION. It may still exist inside a package (e.g. data-raw) so
+    /// we still need to check the R version.
+    Script { package_root: Option<PathBuf> },
 }
 
 /// Shared per-file data collected during the single parallel scan.
@@ -80,6 +92,52 @@ pub struct PackageAnalysis {
     /// help)` triples for functions that are defined but never called and not
     /// exported.
     pub unused_functions: HashMap<PathBuf, Vec<(String, TextRange, String)>>,
+    /// Per-file set of top-level object names that are read from *another*
+    /// file. Keyed by relativized file path. All of a package's R files share
+    /// one namespace, so a top-level binding defined in one file and used in
+    /// another is not unused; the same holds for a binding in a script that
+    /// another file `source()`s and then reads. `unused_object` consults this
+    /// to avoid flagging such cross-file-used objects. Computed in
+    /// [`crate::db::AnalysisDb::cross_file_used_objects`].
+    pub cross_file_used: HashMap<PathBuf, HashSet<String>>,
+    /// Per-file semantic index built during the cross-file pass, keyed by
+    /// relativized path. The parallel lint pass reuses these instead of
+    /// rebuilding each file's index. Empty unless `unused_object` runs.
+    pub file_indices: HashMap<PathBuf, Arc<SemanticIndex>>,
+    /// Memo of `source()` target indices populated during the cross-file
+    /// pass and shared with the lint pass (lint-only mode; fix mode uses a
+    /// fresh cache since it rewrites files between iterations).
+    pub source_index_cache: jarl_semantic::SourceIndexCache,
+}
+
+/// The entries of [`PackageAnalysis`] for a single file. Bundled so the
+/// document-level checks take one argument instead of one per cross-file map.
+#[derive(Clone, Debug, Default)]
+pub struct PackageFileAnalysis {
+    pub duplicate_assignments: Vec<(String, TextRange, String)>,
+    pub unused_functions: Vec<(String, TextRange, String)>,
+    /// Top-level names read from outside the code being linted. For an R file
+    /// that is [`PackageAnalysis::cross_file_used`]; for an Rmd/Qmd document,
+    /// where only the R chunks are linted, it is instead the names read by the
+    /// rest of the document (see [`crate::check`]). Both are the same question
+    /// for `unused_object`: is this top-level binding read somewhere the file's
+    /// own analysis can't see?
+    pub cross_file_used: HashSet<String>,
+}
+
+impl PackageFileAnalysis {
+    /// Pull the entries for `file` out of the package-wide analysis.
+    pub fn for_file(pkg: &PackageAnalysis, file: &Path) -> Self {
+        Self {
+            duplicate_assignments: pkg
+                .duplicate_assignments
+                .get(file)
+                .cloned()
+                .unwrap_or_default(),
+            unused_functions: pkg.unused_functions.get(file).cloned().unwrap_or_default(),
+            cross_file_used: pkg.cross_file_used.get(file).cloned().unwrap_or_default(),
+        }
+    }
 }
 
 /// Classify every file and pre-compute per-package metadata in one pass.
@@ -119,7 +177,7 @@ pub fn summarize_package_info(
     // Insert file info under both the original path and its relativized form,
     // since downstream code may look up by either.
     let mut insert_info = |path: &PathBuf, info: FilePackageInfo| {
-        let rel = PathBuf::from(crate::fs::relativize_path(path));
+        let rel = PathBuf::from(air_fs::relativize_path(path));
         file_info.insert(path.clone(), info.clone());
         if rel != *path {
             file_info.insert(rel, info);
@@ -128,7 +186,9 @@ pub fn summarize_package_info(
 
     for path in paths {
         if !has_r_extension(path) {
-            insert_info(path, FilePackageInfo::Script);
+            // An Rmd/Qmd document is never package code (see `get_checks_rmd`),
+            // so no package root governs it.
+            insert_info(path, FilePackageInfo::Script { package_root: None });
             continue;
         }
 
@@ -162,10 +222,16 @@ pub fn summarize_package_info(
                     FilePackageInfo::InPackage { package_root: pkg_root, scope },
                 );
             } else {
-                insert_info(path, FilePackageInfo::Script);
+                // Not a loadable source, but still inside the package, so its
+                // DESCRIPTION is what bounds the R version it may use.
+                package_roots.insert(pkg_root.clone());
+                insert_info(
+                    path,
+                    FilePackageInfo::Script { package_root: Some(pkg_root) },
+                );
             }
         } else {
-            insert_info(path, FilePackageInfo::Script);
+            insert_info(path, FilePackageInfo::Script { package_root: None });
         }
     }
 
@@ -176,13 +242,21 @@ pub fn summarize_package_info(
         let mut import_from = HashMap::new();
         let mut namespace_exports = HashSet::new();
         let mut namespace_content = None;
+        let mut minimum_r_version = None;
 
+        // Only `Depends`. Those packages are attached to the search path when
+        // the package is attached, so bare names from them really do resolve.
+        // `Imports` does not attach anything: code in `R/` reaches an imported
+        // package only through `::` or a NAMESPACE `import()`/`importFrom()`
+        // directive, both of which are picked up below.
         let desc_path = root.join("DESCRIPTION");
         if let Ok(desc) = std::fs::read_to_string(&desc_path) {
-            packages.extend(Description::get_package_deps(
-                &desc,
-                &["Depends", "Imports"],
-            ));
+            packages.extend(Description::get_package_deps(&desc, &["Depends"]));
+            // Same string, so the version costs no extra read or walk.
+            minimum_r_version = Description::get_depend_r_version(&desc)
+                .ok()
+                .and_then(|versions| versions.first().cloned())
+                .and_then(|version| crate::config::parse_r_version(version).ok());
         }
 
         let ns_path = root.join("NAMESPACE");
@@ -205,6 +279,7 @@ pub fn summarize_package_info(
                 import_from,
                 loaded_packages: packages,
                 namespace_content,
+                minimum_r_version,
             },
         );
     }
@@ -226,101 +301,39 @@ pub fn make_package_analysis(
     let rules = &config.rules_to_apply;
     let check_duplicates = rules.contains(&Rule::DuplicatedFunctionDefinition);
     let check_unused = rules.contains(&Rule::UnusedFunction);
+    let check_unused_object = rules.contains(&Rule::UnusedObject);
 
-    if !check_duplicates && !check_unused {
+    if !check_duplicates && !check_unused && !check_unused_object {
         return PackageAnalysis::default();
     }
 
-    // Cache is_in_r_package per unique parent directory so we do at most K
-    // stat calls (typically 1) instead of N (one per file).
-    let r_dirs: HashSet<PathBuf> = paths
-        .iter()
-        .filter(|p| has_r_extension(p))
-        .filter_map(|p| p.parent().map(|d| d.to_path_buf()))
-        .collect();
-
-    let dir_is_package: HashMap<PathBuf, bool> = r_dirs
-        .into_iter()
-        .map(|dir| {
-            let in_pkg = dir
-                .file_name()
-                .and_then(|n| n.to_str())
-                .is_some_and(|n| n == "R")
-                && dir.parent().is_some_and(|p| p.join("DESCRIPTION").exists());
-            (dir, in_pkg)
-        })
-        .collect();
-
-    // Collect R/ files that belong to packages.
-    let r_dir_files: Vec<&PathBuf> = paths
-        .iter()
-        .filter(|p| has_r_extension(p))
-        .filter(|p| {
-            p.parent()
-                .and_then(|d| dir_is_package.get(d))
-                .copied()
-                .unwrap_or(false)
-        })
-        .collect();
-
-    // Discover package roots and collect excluded R/ files so they still
-    // contribute to cross-file analysis (both duplicate and unused checks).
-    // Also collect extra files (tests/, inst/tinytest/, inst/tests/, src/).
-    let mut extra_files: Vec<PathBuf> = Vec::new();
-    let mut excluded_r_files: Vec<PathBuf> = Vec::new();
-
-    let package_roots: HashSet<PathBuf> = r_dir_files
-        .iter()
-        .filter_map(|p| p.parent().and_then(|r| r.parent()).map(|r| r.to_path_buf()))
-        .collect();
-
-    // Collect the set of R/ files already in paths (canonicalized for comparison).
-    let r_dir_file_set: HashSet<PathBuf> = r_dir_files
-        .iter()
-        .filter_map(|p| std::fs::canonicalize(p).ok())
-        .collect();
-
-    for root in &package_roots {
-        // Discover ALL R/ files on disk, including excluded ones, so they
-        // contribute to the cross-file analysis. Diagnostics are only emitted
-        // for files in config.paths, so excluded files won't produce warnings.
-        let r_dir = root.join("R");
-        if r_dir.is_dir() {
-            for file in collect_files(&r_dir, has_r_extension) {
-                if let Ok(canon) = std::fs::canonicalize(&file)
-                    && !r_dir_file_set.contains(&canon)
-                {
-                    excluded_r_files.push(file);
-                }
-            }
+    // File discovery comes from oak's scan of each package root rather than a
+    // second filesystem walk here. The scan already enumerated every `R/` file
+    // (gitignore-aware, applying R's flat-`R/` load rule) and the package's
+    // other R sources. Diagnostics are only emitted for files in `config.paths`,
+    // so `R/` files outside the lint set still feed cross-file analysis without
+    // producing warnings. `src/` C/C++ files aren't R, so oak doesn't see them;
+    // we walk those directly for the unused-function check.
+    let db = crate::db::AnalysisDb::build(paths, &config.project_roots);
+    let mut all_files: Vec<(PathBuf, FileScope)> = Vec::new();
+    for package in db.packages() {
+        for r_file in package.r_files {
+            all_files.push((r_file, FileScope::R));
         }
-
         if check_unused {
-            // Collect test/tinytest R files
-            for dir_name in &["inst/tinytest", "inst/tests", "tests"] {
-                let dir = root.join(dir_name);
-                if dir.is_dir() {
-                    extra_files.extend(collect_files(&dir, has_r_extension));
+            for script in package.scripts {
+                if let Some(scope) = package_test_scope(&package.root, &script) {
+                    all_files.push((script, scope));
                 }
             }
-            // Collect C/C++ files in src/
-            let src_dir = root.join("src");
+            let src_dir = package.root.join("src");
             if src_dir.is_dir() {
-                extra_files.extend(collect_files(&src_dir, has_cpp_extension));
+                for file in collect_files(&src_dir, has_cpp_extension) {
+                    all_files.push((file, FileScope::Src));
+                }
             }
         }
     }
-
-    // Build the list of all files to scan in parallel, each tagged with its scope.
-    let all_files: Vec<(&Path, FileScope)> = r_dir_files
-        .iter()
-        .map(|p| (p.as_path(), FileScope::R))
-        .chain(excluded_r_files.iter().map(|p| (p.as_path(), FileScope::R)))
-        .chain(extra_files.iter().map(|p| {
-            let scope = file_scope_from_path(p);
-            (p.as_path(), scope)
-        }))
-        .collect();
 
     // Single parallel scan: read each file once. All R files get
     // scan_top_level_assignments; Src files only get scan_symbols.
@@ -342,8 +355,8 @@ pub fn make_package_analysis(
             if *scope == FileScope::R {
                 let r_dir = path.parent()?;
                 let package_root = r_dir.parent()?.to_path_buf();
-                let rel_path = PathBuf::from(crate::fs::relativize_path(path));
-                let root_key = crate::fs::relativize_path(r_dir);
+                let rel_path = PathBuf::from(air_fs::relativize_path(path));
+                let root_key = air_fs::relativize_path(r_dir);
                 Some(SharedFileData {
                     root_key,
                     rel_path,
@@ -357,8 +370,8 @@ pub fn make_package_analysis(
                 // somewhere under root/tests/, root/inst/, or root/src/.
                 let package_root = find_package_root(path)?;
                 let r_dir = package_root.join("R");
-                let rel_path = PathBuf::from(crate::fs::relativize_path(path));
-                let root_key = crate::fs::relativize_path(&r_dir);
+                let rel_path = PathBuf::from(air_fs::relativize_path(path));
+                let root_key = air_fs::relativize_path(&r_dir);
                 Some(SharedFileData {
                     root_key,
                     rel_path,
@@ -387,7 +400,44 @@ pub fn make_package_analysis(
         HashMap::new()
     };
 
-    PackageAnalysis { duplicate_assignments, unused_functions }
+    // Reuse the database scanned above: find top-level objects read from
+    // another file, and keep the per-file indices for the lint pass to reuse.
+    // Loose scripts have no package root for the db to scan, so the lint set
+    // itself is their file universe: hand them over directly and they resolve
+    // against each other through `source()` edges.
+    let cross_file = if check_unused_object {
+        db.cross_file_used_objects(&loose_script_paths(paths))
+    } else {
+        crate::db::CrossFileAnalysis::default()
+    };
+
+    PackageAnalysis {
+        duplicate_assignments,
+        unused_functions,
+        cross_file_used: cross_file.used,
+        file_indices: cross_file.indices,
+        source_index_cache: cross_file.source_index_cache,
+    }
+}
+
+/// The linted R files that live outside any R package (no `DESCRIPTION`
+/// ancestor). These are invisible to the oak scan — which is bounded by
+/// package roots — so the cross-file pass takes them straight from the lint
+/// set. Package membership is cached per parent directory: siblings share
+/// the walk up to the root.
+fn loose_script_paths(paths: &[PathBuf]) -> Vec<PathBuf> {
+    let mut in_package_by_dir: HashMap<PathBuf, bool> = HashMap::new();
+    paths
+        .iter()
+        .filter(|path| has_r_extension(path))
+        .filter(|path| {
+            let dir = path.parent().unwrap_or_else(|| Path::new("")).to_path_buf();
+            !*in_package_by_dir
+                .entry(dir)
+                .or_insert_with(|| find_package_root(path).is_some())
+        })
+        .cloned()
+        .collect()
 }
 
 /// Determine the `FileScope` for a non-R/ file based on its path.
@@ -414,6 +464,26 @@ pub(crate) fn file_scope_from_path(path: &Path) -> FileScope {
     FileScope::Tests
 }
 
+/// Classify an oak-discovered package script as a test-scope file, or `None`
+/// when it isn't one the unused-function check considers. Mirrors exactly the
+/// directories the previous filesystem walk collected — `tests/`,
+/// `inst/tinytest/`, `inst/tests/` — so `data-raw/`, `vignettes/`, and other
+/// `inst/` subdirectories are excluded rather than swept in.
+fn package_test_scope(root: &Path, path: &Path) -> Option<FileScope> {
+    let rel = path.strip_prefix(root).ok()?;
+    let mut components = rel
+        .components()
+        .map(|c| c.as_os_str().to_string_lossy().into_owned());
+    match components.next()?.as_str() {
+        "tests" => Some(FileScope::Tests),
+        "inst" => match components.next()?.as_str() {
+            "tinytest" | "tests" => Some(FileScope::Inst),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
 /// Check whether a file is under a recognized package subdirectory
 /// (tests/, inst/tinytest, inst/tests, src/) relative to the package root.
 fn is_known_package_scope(path: &Path, package_root: &Path) -> bool {
@@ -426,7 +496,17 @@ fn is_known_package_scope(path: &Path, package_root: &Path) -> bool {
 
 /// Walk up from a file path to find the package root (directory containing DESCRIPTION).
 pub(crate) fn find_package_root(path: &Path) -> Option<PathBuf> {
-    let mut dir = path.parent()?;
+    package_root_from_dir(path.parent()?)
+}
+
+/// Walk up from a directory, `dir` included, to the nearest ancestor holding a
+/// `DESCRIPTION`.
+///
+/// Separate from [`find_package_root`] because a directory the user named
+/// directly (`jarl check .` from a package root) may *be* the package root,
+/// while a file path's own directory never is.
+pub(crate) fn package_root_from_dir(dir: &Path) -> Option<PathBuf> {
+    let mut dir = dir;
     loop {
         if dir.join("DESCRIPTION").exists() {
             return Some(dir.to_path_buf());
@@ -447,8 +527,8 @@ pub(crate) fn scan_r_package_paths(paths: &[PathBuf], with_symbols: bool) -> Vec
         .filter_map(|path| {
             let r_dir = path.parent()?;
             let package_root = r_dir.parent()?.to_path_buf();
-            let rel_path = PathBuf::from(crate::fs::relativize_path(path));
-            let root_key = crate::fs::relativize_path(r_dir);
+            let rel_path = PathBuf::from(air_fs::relativize_path(path));
+            let root_key = air_fs::relativize_path(r_dir);
             let content = std::fs::read_to_string(path).ok()?;
             let assignments = scan_top_level_assignments(&content);
             let symbol_counts = if with_symbols {
@@ -478,13 +558,13 @@ pub(crate) fn scan_extra_package_paths(
     package_root: &Path,
 ) -> Vec<SharedFileData> {
     let r_dir = package_root.join("R");
-    let root_key = crate::fs::relativize_path(&r_dir);
+    let root_key = air_fs::relativize_path(&r_dir);
     paths
         .iter()
         .filter_map(|path| {
             let content = std::fs::read_to_string(path).ok()?;
             let symbol_counts = scan_symbols(&content);
-            let rel_path = PathBuf::from(crate::fs::relativize_path(path));
+            let rel_path = PathBuf::from(air_fs::relativize_path(path));
             let scope = file_scope_from_path(path);
             let assignments = match scope {
                 FileScope::Src => Vec::new(),

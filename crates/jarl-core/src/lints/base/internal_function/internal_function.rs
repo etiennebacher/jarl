@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -25,7 +26,7 @@ pub fn internal_function(ast: &RNamespaceExpression) -> anyhow::Result<Option<Di
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "internal_function".to_string(),
+            Rule::InternalFunction,
             "Accessing a package's internal function with `:::` is likely to break in the future."
                 .to_string(),
             Some("Use public functions via `::` instead.".to_string()),

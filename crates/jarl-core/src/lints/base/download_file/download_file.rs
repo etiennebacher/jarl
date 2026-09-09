@@ -1,7 +1,12 @@
 use crate::diagnostic::*;
-use crate::utils::{get_arg_by_name_then_position, get_function_name};
+use crate::rule_set::Rule;
+use crate::utils::{Formals, get_arg};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
+
+const FORMALS_DOWNLOAD_FILE: Formals = &[
+    "url", "destfile", "method", "quiet", "mode", "cacheOK", "extra", "headers",
+];
 
 /// Version added: 0.0.24
 ///
@@ -31,17 +36,13 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// See `?download.file`
-pub fn download_file(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let fn_name = get_function_name(function);
-
+pub fn download_file(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "download.file" {
         return Ok(None);
     }
 
-    let args = ast.arguments()?.items();
-    let method = get_arg_by_name_then_position(&args, "method", 3);
-    let mode_arg = get_arg_by_name_then_position(&args, "mode", 5);
+    let method = get_arg(ast, FORMALS_DOWNLOAD_FILE, "method");
+    let mode_arg = get_arg(ast, FORMALS_DOWNLOAD_FILE, "mode");
 
     // Check if method is wget or curl - if so, mode is ignored anyway
     if let Some(method) = method.and_then(|arg| arg.value())
@@ -95,7 +96,7 @@ pub fn download_file(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "download_file".to_string(),
+            Rule::DownloadFile,
             msg.to_string(),
             Some(suggestion.to_string()),
         ),

@@ -32,6 +32,11 @@ mod tests {
         );
         // Non-dplyr namespace
         expect_no_lint("x |> stats::filter(!cond)", "dplyr_filter_out", None);
+        expect_no_lint(
+            "library(dplyr)\nx |> stats::filter(!cond)",
+            "dplyr_filter_out",
+            None,
+        );
         // Named argument with negation (not a filtering condition)
         expect_no_lint(
             "x |> dplyr::filter(a > 1, .preserve = !TRUE)",
@@ -55,6 +60,13 @@ mod tests {
         // is.na() guard for a different variable
         expect_no_lint(
             "x |> dplyr::filter(a > 1 | is.na(b))",
+            "dplyr_filter_out",
+            None,
+        );
+        // don't match identifiers on substring
+        // https://github.com/etiennebacher/jarl/pull/681
+        expect_no_lint(
+            "x |> dplyr::filter(x2 > 0 | is.na(x))",
             "dplyr_filter_out",
             None,
         );
@@ -269,6 +281,16 @@ mod tests {
     fn test_lint_library_call_not_only_dplyr() {
         assert_snapshot!(
             snapshot_lint("library(tidytable); library(dplyr); x |> filter(a > 1 | is.na(a))"),
+            @"All checks passed!"
+        );
+    }
+
+    #[test]
+    fn test_no_lint_namespaced_call_does_not_attach() {
+        // `dplyr::select()` reaches dplyr without attaching it, so the bare
+        // `filter()` further down is still `stats::filter()`.
+        assert_snapshot!(
+            snapshot_lint("y <- dplyr::select(x, a); y |> filter(a > 1 | is.na(a))"),
             @"All checks passed!"
         );
     }

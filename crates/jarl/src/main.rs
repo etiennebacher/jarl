@@ -1,3 +1,4 @@
+use clap::CommandFactory;
 use clap::Parser;
 use jarl::args::Args;
 use jarl::logging;
@@ -9,6 +10,11 @@ use std::process::ExitCode;
 mod args;
 
 fn main() -> ExitCode {
+    // Emit shell completions and exit when the shell asks for them, i.e. when the
+    // `COMPLETE` environment variable is set. Must run before anything is written to
+    // stdout.
+    clap_complete::CompleteEnv::with_factory(Args::command).complete();
+
     // Enabled ANSI colors on Windows.
     #[cfg(windows)]
     assert!(colored::control::set_virtual_terminal(true).is_ok());

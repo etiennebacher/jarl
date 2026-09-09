@@ -1,5 +1,6 @@
 use crate::diagnostic::*;
-use crate::utils::{get_function_name, get_named_args, get_unnamed_args, node_contains_comments};
+use crate::rule_set::Rule;
+use crate::utils::{get_named_args, get_unnamed_args, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 pub struct SystemFile;
@@ -32,8 +33,8 @@ pub struct SystemFile;
 ///
 /// See `?system.file`
 impl Violation for SystemFile {
-    fn name(&self) -> String {
-        "system_file".to_string()
+    fn rule(&self) -> Rule {
+        Rule::SystemFile
     }
     fn body(&self) -> String {
         "`system.file(file.path(...))` is redundant.".to_string()
@@ -43,14 +44,12 @@ impl Violation for SystemFile {
     }
 }
 
-pub fn system_file(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let fn_name = get_function_name(function);
-    let arguments = ast.arguments()?;
-
+pub fn system_file(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "system.file" {
         return Ok(None);
     }
+
+    let arguments = ast.arguments()?;
 
     let args = arguments.items();
     let values = get_unnamed_args(&args);
@@ -106,12 +105,11 @@ pub fn system_file(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let diagnostic = Diagnostic::new(
         SystemFile,
         range,
-        Fix {
-            content: format!("system.file({}, {})", file_path_inner_content, other_args),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(
+            range,
+            format!("system.file({}, {})", file_path_inner_content, other_args),
+            node_contains_comments(ast.syntax()),
+        ),
     );
     Ok(Some(diagnostic))
 }

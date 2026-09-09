@@ -1,31 +1,6 @@
 use std::collections::HashSet;
 
-use crate::lints::base::assignment::options::AssignmentOptions;
-use crate::lints::base::assignment::options::ResolvedAssignmentOptions;
-use crate::lints::base::duplicated_arguments::options::DuplicatedArgumentsOptions;
-use crate::lints::base::duplicated_arguments::options::ResolvedDuplicatedArgumentsOptions;
-use crate::lints::base::if_not_else::options::IfNotElseOptions;
-use crate::lints::base::if_not_else::options::ResolvedIfNotElseOptions;
-use crate::lints::base::implicit_assignment::options::ImplicitAssignmentOptions;
-use crate::lints::base::implicit_assignment::options::ResolvedImplicitAssignmentOptions;
-use crate::lints::base::missing_argument::options::MissingArgumentOptions;
-use crate::lints::base::missing_argument::options::ResolvedMissingArgumentOptions;
-use crate::lints::base::nested_pipe::options::NestedPipeOptions;
-use crate::lints::base::nested_pipe::options::ResolvedNestedPipeOptions;
-use crate::lints::base::pipe_consistency::options::PipeConsistencyOptions;
-use crate::lints::base::pipe_consistency::options::ResolvedPipeConsistencyOptions;
-use crate::lints::base::positional_arguments::options::PositionalArgumentsOptions;
-use crate::lints::base::positional_arguments::options::ResolvedPositionalArgumentsOptions;
-use crate::lints::base::quotes::options::QuotesOptions;
-use crate::lints::base::quotes::options::ResolvedQuotesOptions;
-use crate::lints::base::true_false_symbol::options::ResolvedTrueFalseSymbolOptions;
-use crate::lints::base::true_false_symbol::options::TrueFalseSymbolOptions;
-use crate::lints::base::undesirable_function::options::ResolvedUndesirableFunctionOptions;
-use crate::lints::base::undesirable_function::options::UndesirableFunctionOptions;
-use crate::lints::base::unreachable_code::options::ResolvedUnreachableCodeOptions;
-use crate::lints::base::unreachable_code::options::UnreachableCodeOptions;
-use crate::lints::base::unused_function::options::ResolvedUnusedFunctionOptions;
-use crate::lints::base::unused_function::options::UnusedFunctionOptions;
+use crate::toml::LinterTomlOptions;
 
 /// Resolve a pair of `field` / `extend-field` options against a set of defaults.
 ///
@@ -63,77 +38,70 @@ pub fn resolve_with_extend(
     }
 }
 
-/// Resolved per-rule options, ready for use during linting.
+/// Declare the per-rule options that jarl resolves from `[lint.<rule>]`.
 ///
-/// To add options for a new rule:
-/// 1. Create `lints/<group>/<rule_name>/options.rs` with the TOML and resolved
-///    types, and declare `pub(crate) mod options;` in the rule's `mod.rs`.
-/// 2. Add a field to `ResolvedRuleOptions` and a resolve line in `resolve()`.
-/// 3. Add the TOML field to `LinterTomlOptions` in `toml.rs` and pass it to
-///    `resolve()` in `into_settings()`.
-#[derive(Clone, Debug)]
-pub struct ResolvedRuleOptions {
-    pub assignment: ResolvedAssignmentOptions,
-    pub duplicated_arguments: ResolvedDuplicatedArgumentsOptions,
-    pub if_not_else: ResolvedIfNotElseOptions,
-    pub implicit_assignment: ResolvedImplicitAssignmentOptions,
-    pub missing_argument: ResolvedMissingArgumentOptions,
-    pub nested_pipe: ResolvedNestedPipeOptions,
-    pub pipe_consistency: ResolvedPipeConsistencyOptions,
-    pub positional_arguments: ResolvedPositionalArgumentsOptions,
-    pub quotes: ResolvedQuotesOptions,
-    pub true_false_symbol: ResolvedTrueFalseSymbolOptions,
-    pub undesirable_function: ResolvedUndesirableFunctionOptions,
-    pub unreachable_code: ResolvedUnreachableCodeOptions,
-    pub unused_function: ResolvedUnusedFunctionOptions,
+/// Each entry names the rule's directory (`<group>::<rule>`) and its resolved
+/// options type, which must live in `lints/<group>/<rule>/options.rs` and
+/// expose `resolve(Option<&T>) -> anyhow::Result<Self>`, where `T` is the type
+/// of the matching `LinterTomlOptions` field.
+///
+/// From that single line the macro generates the [ResolvedRuleOptions] field,
+/// its resolution from the parsed TOML, and the [Default] impl.
+macro_rules! declare_rule_options {
+    ($($group:ident :: $rule:ident => $resolved:ident),* $(,)?) => {
+        /// Resolved per-rule options, ready for use during linting.
+        ///
+        /// To add options for a new rule:
+        /// 1. Create `lints/<group>/<rule_name>/options.rs` with the TOML and
+        ///    resolved types, and declare `pub(crate) mod options;` in the
+        ///    rule's `mod.rs`.
+        /// 2. Add the TOML field (named after the rule) to `LinterTomlOptions`
+        ///    in `toml.rs`.
+        /// 3. Add a line to the `declare_rule_options!` invocation in this
+        ///    file.
+        #[derive(Clone, Debug)]
+        pub struct ResolvedRuleOptions {
+            $(
+                pub $rule: crate::lints::$group::$rule::options::$resolved,
+            )*
+        }
+
+        impl ResolvedRuleOptions {
+            /// Resolve every `[lint.<rule>]` table, filling in defaults for the
+            /// ones the user didn't set.
+            pub fn resolve(options: &LinterTomlOptions) -> anyhow::Result<Self> {
+                Ok(Self {
+                    $(
+                        $rule: crate::lints::$group::$rule::options::$resolved::resolve(
+                            options.$rule.as_ref(),
+                        )?,
+                    )*
+                })
+            }
+        }
+
+        impl Default for ResolvedRuleOptions {
+            fn default() -> Self {
+                Self::resolve(&LinterTomlOptions::default())
+                    .expect("default rule options should always resolve")
+            }
+        }
+    };
 }
 
-impl ResolvedRuleOptions {
-    #[allow(clippy::too_many_arguments)]
-    pub fn resolve(
-        assignment: Option<&AssignmentOptions>,
-        duplicated_arguments: Option<&DuplicatedArgumentsOptions>,
-        if_not_else: Option<&IfNotElseOptions>,
-        implicit_assignment: Option<&ImplicitAssignmentOptions>,
-        missing_argument: Option<&MissingArgumentOptions>,
-        nested_pipe: Option<&NestedPipeOptions>,
-        pipe_consistency: Option<&PipeConsistencyOptions>,
-        positional_arguments: Option<&PositionalArgumentsOptions>,
-        quotes: Option<&QuotesOptions>,
-        true_false_symbol: Option<&TrueFalseSymbolOptions>,
-        undesirable_function: Option<&UndesirableFunctionOptions>,
-        unreachable_code: Option<&UnreachableCodeOptions>,
-        unused_function: Option<&UnusedFunctionOptions>,
-    ) -> anyhow::Result<Self> {
-        Ok(Self {
-            assignment: ResolvedAssignmentOptions::resolve(assignment)?,
-            duplicated_arguments: ResolvedDuplicatedArgumentsOptions::resolve(
-                duplicated_arguments,
-            )?,
-            if_not_else: ResolvedIfNotElseOptions::resolve(if_not_else)?,
-            implicit_assignment: ResolvedImplicitAssignmentOptions::resolve(implicit_assignment)?,
-            missing_argument: ResolvedMissingArgumentOptions::resolve(missing_argument)?,
-            nested_pipe: ResolvedNestedPipeOptions::resolve(nested_pipe)?,
-            pipe_consistency: ResolvedPipeConsistencyOptions::resolve(pipe_consistency)?,
-            positional_arguments: ResolvedPositionalArgumentsOptions::resolve(
-                positional_arguments,
-            )?,
-            quotes: ResolvedQuotesOptions::resolve(quotes)?,
-            true_false_symbol: ResolvedTrueFalseSymbolOptions::resolve(true_false_symbol)?,
-            undesirable_function: ResolvedUndesirableFunctionOptions::resolve(
-                undesirable_function,
-            )?,
-            unreachable_code: ResolvedUnreachableCodeOptions::resolve(unreachable_code)?,
-            unused_function: ResolvedUnusedFunctionOptions::resolve(unused_function)?,
-        })
-    }
-}
-
-impl Default for ResolvedRuleOptions {
-    fn default() -> Self {
-        Self::resolve(
-            None, None, None, None, None, None, None, None, None, None, None, None, None,
-        )
-        .expect("default rule options should always resolve")
-    }
+declare_rule_options! {
+    base::assignment => ResolvedAssignmentOptions,
+    base::duplicated_arguments => ResolvedDuplicatedArgumentsOptions,
+    base::if_not_else => ResolvedIfNotElseOptions,
+    base::implicit_assignment => ResolvedImplicitAssignmentOptions,
+    base::missing_argument => ResolvedMissingArgumentOptions,
+    base::nested_pipe => ResolvedNestedPipeOptions,
+    base::pipe_consistency => ResolvedPipeConsistencyOptions,
+    base::positional_arguments => ResolvedPositionalArgumentsOptions,
+    base::quotes => ResolvedQuotesOptions,
+    base::true_false_symbol => ResolvedTrueFalseSymbolOptions,
+    base::undesirable_function => ResolvedUndesirableFunctionOptions,
+    base::unreachable_code => ResolvedUnreachableCodeOptions,
+    base::unused_function => ResolvedUnusedFunctionOptions,
+    base::unused_object => ResolvedUnusedObjectOptions,
 }

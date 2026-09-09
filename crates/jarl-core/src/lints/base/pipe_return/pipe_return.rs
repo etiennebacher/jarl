@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::get_function_name;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -80,7 +81,7 @@ pub fn pipe_return(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>
     let range = right.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "pipe_return".to_string(),
+            Rule::PipeReturn,
             "Using `return()` after `%>%` doesn't actually return the output, which can create misleading results."
                 .to_string(),
             Some("Either wrap the pipe in `return()` instead, or store the output in an intermediate object and use `return()` on it, e.g. `out <- x %>% sum(); return(out)`.".to_string()),

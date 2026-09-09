@@ -4,11 +4,11 @@
 //! document management, client capabilities, and workspace configuration.
 
 use anyhow::{Result, anyhow};
-use lsp_types::{
-    ClientCapabilities, CodeActionKind, CodeActionOptions, CodeActionProviderCapability,
-    InitializeParams, InitializeResult, SaveOptions, ServerCapabilities, ServerInfo,
-    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Url,
-    WorkDoneProgressOptions,
+use gen_lsp_types::{
+    ClientCapabilities, CodeActionKind, CodeActionOptions, CodeActionProvider, InitializeParams,
+    InitializeResult, MessageType, Position, Range, RootPath, SaveOptions, ServerCapabilities,
+    ServerInfo, TextDocumentContentChangeEvent, TextDocumentSync, TextDocumentSyncKind,
+    TextDocumentSyncOptions, Uri, WorkDoneProgressOptions, WorkspaceFolders,
 };
 use rustc_hash::FxHashMap;
 use serde::Deserialize;
@@ -92,7 +92,9 @@ impl Session {
     #[allow(deprecated)]
     pub fn initialize(&mut self, params: InitializeParams) -> LspResult<InitializeResult> {
         // Update workspace roots if provided
-        if let Some(workspace_folders) = params.workspace_folders {
+        if let Some(WorkspaceFolders::WorkspaceFolderList(workspace_folders)) =
+            params.workspace_folders_initialize_params.workspace_folders
+        {
             self.workspace_roots.clear();
             for folder in workspace_folders {
                 if let Ok(path) = folder.uri.to_file_path() {
@@ -103,7 +105,7 @@ impl Session {
             if let Ok(path) = root_uri.to_file_path() {
                 self.workspace_roots = vec![path];
             }
-        } else if let Some(root_path) = params.root_path {
+        } else if let Some(RootPath::String(root_path)) = params.root_path {
             self.workspace_roots = vec![PathBuf::from(root_path)];
         }
 
@@ -125,21 +127,20 @@ impl Session {
     pub fn server_capabilities(&self) -> ServerCapabilities {
         ServerCapabilities {
             position_encoding: Some(self.position_encoding.into()),
-            text_document_sync: Some(TextDocumentSyncCapability::Options(
-                TextDocumentSyncOptions {
-                    open_close: Some(true),
-                    change: Some(TextDocumentSyncKind::INCREMENTAL),
-                    will_save: Some(false),
-                    will_save_wait_until: Some(false),
-                    save: Some(SaveOptions { include_text: Some(false) }.into()),
-                },
-            )),
+            text_document_sync: Some(TextDocumentSync::Options(TextDocumentSyncOptions {
+                open_close: Some(true),
+                change: Some(TextDocumentSyncKind::Incremental),
+                will_save: Some(false),
+                will_save_wait_until: Some(false),
+                save: Some(SaveOptions { include_text: Some(false) }.into()),
+            })),
             diagnostic_provider: None, // Use push diagnostics only
             // Add code action support for quick fixes
             hover_provider: None,
             completion_provider: None,
-            code_action_provider: Some(CodeActionProviderCapability::Options(CodeActionOptions {
-                code_action_kinds: Some(vec![CodeActionKind::QUICKFIX]),
+            code_action_provider: Some(CodeActionProvider::CodeActionOptions(CodeActionOptions {
+                code_action_kinds: Some(vec![CodeActionKind::QuickFix]),
+                documentation: None,
                 resolve_provider: Some(false),
                 work_done_progress_options: WorkDoneProgressOptions::default(),
             })),
@@ -149,7 +150,7 @@ impl Session {
     }
 
     /// Open a new text document
-    pub fn open_document(&mut self, uri: Url, document: TextDocument) {
+    pub fn open_document(&mut self, uri: Uri, document: TextDocument) {
         let key = DocumentKey::from(uri);
         tracing::debug!("Opening document: {}", key.uri());
         self.documents.insert(key, document);
@@ -158,8 +159,8 @@ impl Session {
     /// Update an existing document with changes
     pub fn update_document(
         &mut self,
-        uri: Url,
-        changes: Vec<lsp_types::TextDocumentContentChangeEvent>,
+        uri: Uri,
+        changes: Vec<TextDocumentContentChangeEvent>,
         version: DocumentVersion,
     ) -> LspResult<()> {
         let key = DocumentKey::from(uri);
@@ -183,7 +184,7 @@ impl Session {
     }
 
     /// Close a document
-    pub fn close_document(&mut self, uri: Url) -> LspResult<()> {
+    pub fn close_document(&mut self, uri: Uri) -> LspResult<()> {
         let key = DocumentKey::from(uri);
 
         if self.documents.remove(&key).is_some() {
@@ -195,13 +196,13 @@ impl Session {
     }
 
     /// Get a document by URI
-    pub fn get_document(&self, uri: &Url) -> Option<&TextDocument> {
+    pub fn get_document(&self, uri: &Uri) -> Option<&TextDocument> {
         let key = DocumentKey::from(uri.clone());
         self.documents.get(&key)
     }
 
     /// Take a snapshot of a document
-    pub fn take_snapshot(&self, uri: Url) -> Option<DocumentSnapshot> {
+    pub fn take_snapshot(&self, uri: Uri) -> Option<DocumentSnapshot> {
         let key = DocumentKey::from(uri);
         let document = self.documents.get(&key)?;
 
@@ -220,7 +221,7 @@ impl Session {
     }
 
     /// Get all open document URIs
-    pub fn open_documents(&self) -> impl Iterator<Item = &Url> {
+    pub fn open_documents(&self) -> impl Iterator<Item = &Uri> {
         self.documents.keys().map(|key| key.uri())
     }
 
@@ -316,7 +317,7 @@ impl Session {
                             "Jarl uses the configuration from '{}'",
                             config_path.display()
                         ),
-                        lsp_types::MessageType::INFO,
+                        MessageType::Info,
                     ) {
                         tracing::error!("Failed to show config notification: {}", e);
                     } else {
@@ -364,7 +365,7 @@ impl DocumentSnapshot {
     }
 
     /// Get the document URI
-    pub fn uri(&self) -> &Url {
+    pub fn uri(&self) -> &Uri {
         self.key.uri()
     }
 
@@ -404,19 +405,19 @@ impl DocumentSnapshot {
     }
 
     /// Convert a position to byte offset
-    pub fn position_to_offset(&self, position: lsp_types::Position) -> Result<usize> {
+    pub fn position_to_offset(&self, position: Position) -> Result<usize> {
         self.document
             .position_to_offset(position, self.position_encoding)
     }
 
     /// Convert a byte offset to position
-    pub fn offset_to_position(&self, offset: usize) -> Result<lsp_types::Position> {
+    pub fn offset_to_position(&self, offset: usize) -> Result<Position> {
         self.document
             .offset_to_position(offset, self.position_encoding)
     }
 
     /// Get a range as a Range
-    pub fn range_of_span(&self, start: usize, end: usize) -> Result<lsp_types::Range> {
+    pub fn range_of_span(&self, start: usize, end: usize) -> Result<Range> {
         self.document
             .range_of_text(start, end, self.position_encoding)
     }
@@ -459,7 +460,7 @@ pub fn negotiate_position_encoding(client_capabilities: &ClientCapabilities) -> 
 mod tests {
     use super::*;
 
-    use lsp_types::{ClientCapabilities, GeneralClientCapabilities, PositionEncodingKind};
+    use gen_lsp_types::{GeneralClientCapabilities, PositionEncodingKind};
 
     fn create_test_session() -> Session {
         let (sender, _receiver) = crossbeam::channel::unbounded();
@@ -472,6 +473,102 @@ mod tests {
         )
     }
 
+    /// Initialize a session from a raw `initialize` payload and return the
+    /// workspace roots it derived.
+    fn workspace_roots_from(params_json: serde_json::Value) -> Vec<PathBuf> {
+        let params: InitializeParams = serde_json::from_value(params_json).unwrap();
+        let mut session = create_test_session();
+        session.initialize(params).unwrap();
+        session.workspace_roots.clone()
+    }
+
+    /// The `file://` URI for an absolute path. Built from a real path rather
+    /// than hardcoded, because a URI like `file:///project/a` carries no drive
+    /// letter and `to_file_path` rejects it on Windows.
+    fn file_uri(path: &std::path::Path) -> String {
+        Uri::from_file_path(path).unwrap().to_string()
+    }
+
+    #[test]
+    fn test_initialize_reads_workspace_folders() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let first = temp_dir.path().join("a");
+        let second = temp_dir.path().join("b");
+
+        // `workspaceFolders` is flattened into a nested params struct, so it
+        // still has to be picked up from the top level of the payload.
+        let roots = workspace_roots_from(serde_json::json!({
+            "processId": null,
+            "rootUri": null,
+            "capabilities": {},
+            "workspaceFolders": [
+                { "uri": file_uri(&first), "name": "a" },
+                { "uri": file_uri(&second), "name": "b" }
+            ]
+        }));
+
+        assert_eq!(roots, vec![first, second]);
+    }
+
+    #[test]
+    fn test_initialize_falls_back_to_root_uri() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let root = temp_dir.path().join("c");
+
+        // A client that supports workspace folders but has none configured sends
+        // an explicit `null`, which is a distinct value from the absent field —
+        // both fall through to `rootUri`.
+        let with_explicit_null = workspace_roots_from(serde_json::json!({
+            "processId": null,
+            "rootUri": file_uri(&root),
+            "capabilities": {},
+            "workspaceFolders": null,
+        }));
+        assert_eq!(with_explicit_null, vec![root.clone()]);
+
+        let with_absent_field = workspace_roots_from(serde_json::json!({
+            "processId": null,
+            "rootUri": file_uri(&root),
+            "capabilities": {},
+        }));
+        assert_eq!(with_absent_field, vec![root]);
+    }
+
+    #[test]
+    fn test_initialize_falls_back_to_root_path() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let root = temp_dir.path().join("d");
+
+        // `rootPath` is a plain string, not a URI, so it is taken as-is.
+        let roots = workspace_roots_from(serde_json::json!({
+            "processId": null,
+            "rootUri": null,
+            "rootPath": root.to_str().unwrap(),
+            "capabilities": {},
+        }));
+
+        assert_eq!(roots, vec![root]);
+    }
+
+    #[test]
+    fn test_server_capabilities_wire_format() {
+        let session = create_test_session();
+        let capabilities = serde_json::to_value(session.server_capabilities()).unwrap();
+
+        assert_eq!(capabilities["positionEncoding"], "utf-16");
+        assert_eq!(capabilities["textDocumentSync"]["openClose"], true);
+        assert_eq!(capabilities["textDocumentSync"]["change"], 2);
+        assert_eq!(
+            capabilities["textDocumentSync"]["save"]["includeText"],
+            false
+        );
+        assert_eq!(
+            capabilities["codeActionProvider"]["codeActionKinds"][0],
+            "quickfix"
+        );
+        assert_eq!(capabilities["codeActionProvider"]["resolveProvider"], false);
+    }
+
     #[test]
     fn test_session_creation() {
         let session = create_test_session();
@@ -482,7 +579,7 @@ mod tests {
     #[test]
     fn test_document_lifecycle() {
         let mut session = create_test_session();
-        let uri = Url::parse("file:///test.py").unwrap();
+        let uri = Uri::parse("file:///test.py").unwrap();
         let document = TextDocument::new("hello world".to_string(), 1);
 
         // Open document
@@ -501,6 +598,126 @@ mod tests {
         session.close_document(uri.clone()).unwrap();
         assert_eq!(session.document_count(), 0);
         assert!(session.get_document(&uri).is_none());
+    }
+
+    /// The `contentChanges` array exactly as a client sends it.
+    fn content_changes(json: serde_json::Value) -> Vec<TextDocumentContentChangeEvent> {
+        serde_json::from_value(json).unwrap()
+    }
+
+    #[test]
+    fn test_update_document_applies_content_changes() {
+        let mut session = create_test_session();
+        let uri = Uri::parse("file:///test.R").unwrap();
+        session.open_document(uri.clone(), TextDocument::new("hello world".to_string(), 1));
+
+        session
+            .update_document(
+                uri.clone(),
+                content_changes(serde_json::json!([{
+                    "range": {
+                        "start": { "line": 0, "character": 0 },
+                        "end": { "line": 0, "character": 5 }
+                    },
+                    "text": "hi"
+                }])),
+                2,
+            )
+            .unwrap();
+
+        let document = session.get_document(&uri).unwrap();
+        assert_eq!(document.content(), "hi world");
+        assert_eq!(document.version(), 2);
+    }
+
+    #[test]
+    fn test_update_document_uses_session_position_encoding() {
+        // The session negotiated UTF-16, so the character offsets in the change
+        // are UTF-16 code units: the emoji is two of them but four bytes.
+        let mut session = create_test_session();
+        assert_eq!(session.position_encoding(), PositionEncoding::UTF16);
+
+        let uri = Uri::parse("file:///test.R").unwrap();
+        session.open_document(uri.clone(), TextDocument::new("🌍 world".to_string(), 1));
+
+        session
+            .update_document(
+                uri.clone(),
+                content_changes(serde_json::json!([{
+                    "range": {
+                        "start": { "line": 0, "character": 0 },
+                        "end": { "line": 0, "character": 2 }
+                    },
+                    "text": "hi"
+                }])),
+                2,
+            )
+            .unwrap();
+
+        assert_eq!(session.get_document(&uri).unwrap().content(), "hi world");
+    }
+
+    #[test]
+    fn test_update_document_rejects_whole_document_replacement() {
+        let mut session = create_test_session();
+        let uri = Uri::parse("file:///test.R").unwrap();
+        session.open_document(uri.clone(), TextDocument::new("hello world".to_string(), 1));
+
+        let error = session
+            .update_document(
+                uri.clone(),
+                content_changes(serde_json::json!([{ "text": "replaced" }])),
+                2,
+            )
+            .unwrap_err();
+
+        assert!(
+            error.to_string().contains("Full document replacement"),
+            "unexpected error: {error}"
+        );
+        let document = session.get_document(&uri).unwrap();
+        assert_eq!(document.content(), "hello world");
+        assert_eq!(document.version(), 1);
+    }
+
+    #[test]
+    fn test_update_and_close_unknown_document_fail() {
+        let mut session = create_test_session();
+        let uri = Uri::parse("file:///missing.R").unwrap();
+
+        let error = session.update_document(uri.clone(), vec![], 2).unwrap_err();
+        assert!(
+            error.to_string().contains("Document not found"),
+            "unexpected error: {error}"
+        );
+
+        let error = session.close_document(uri.clone()).unwrap_err();
+        assert!(
+            error.to_string().contains("Document not found"),
+            "unexpected error: {error}"
+        );
+
+        assert!(session.take_snapshot(uri).is_none());
+    }
+
+    #[test]
+    fn test_snapshot_position_conversions() {
+        let mut session = create_test_session();
+        let uri = Uri::parse("file:///test.R").unwrap();
+        session.open_document(
+            uri.clone(),
+            TextDocument::new("hello\nworld".to_string(), 1),
+        );
+
+        let snapshot = session.take_snapshot(uri.clone()).unwrap();
+        assert_eq!(snapshot.uri(), &uri);
+
+        assert_eq!(snapshot.position_to_offset(Position::new(1, 0)).unwrap(), 6);
+        assert_eq!(snapshot.offset_to_position(6).unwrap(), Position::new(1, 0));
+        assert_eq!(
+            snapshot.range_of_span(0, 5).unwrap(),
+            Range::new(Position::new(0, 0), Position::new(0, 5))
+        );
     }
 
     #[test]
@@ -543,9 +760,9 @@ mod tests {
         assert!(caps.text_document_sync.is_some());
         assert!(caps.diagnostic_provider.is_none());
 
-        if let Some(TextDocumentSyncCapability::Options(options)) = caps.text_document_sync {
+        if let Some(TextDocumentSync::Options(options)) = caps.text_document_sync {
             assert_eq!(options.open_close, Some(true));
-            assert_eq!(options.change, Some(TextDocumentSyncKind::INCREMENTAL));
+            assert_eq!(options.change, Some(TextDocumentSyncKind::Incremental));
         }
     }
 

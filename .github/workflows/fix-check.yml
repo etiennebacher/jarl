@@ -47,7 +47,7 @@ env:
 
 jobs:
   fix-check:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
@@ -56,11 +56,17 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Cache Rust
-        uses: Swatinem/rust-cache@v2
-
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1.17.0
+        with:
+          cache: false
+
+      # The cache is only written by "warm-cache.yml", which runs on main.
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: jarl-release
+          save-if: false
 
       - name: Set up R for package-specific rules and to process results
         uses: r-lib/actions/setup-r@v2.12.0
@@ -78,10 +84,10 @@ jobs:
           R -e "install.packages(c('jsonlite'))"
 
       - name: Build jarl binary from PR
-        run: cargo build --release --package jarl
+        run: cargo build --profile ci --package jarl
 
       - name: Save binary path
-        run: echo "JARL=$(pwd)/target/release/jarl" >> $GITHUB_ENV
+        run: echo "JARL=$(pwd)/target/ci/jarl" >> $GITHUB_ENV
 
       - name: Clone all test repos
         run: |
@@ -118,7 +124,7 @@ jobs:
             echo "  [$repo_name] Lint after fixes done."
 
             echo "  [$repo_name] SHA snapshot 1..."
-            find "$repo_dir" \( -name '*.R' -o -name '*.r' \) -print0 | sort -z | xargs -0 cat | shasum -a 256 | cut -d' ' -f1 > "../results/${repo_dir}_sha1.txt"
+            find "$repo_dir" \( -name '*.R' -o -name '*.r' \) -print0 | sort -z | xargs -0 cat | sha256sum | cut -d' ' -f1 > "../results/${repo_dir}_sha1.txt"
             echo "  [$repo_name] SHA snapshot 1 done."
 
             echo "  [$repo_name] Applying fixes (2nd pass)..."
@@ -126,7 +132,7 @@ jobs:
             echo "  [$repo_name] Applying fixes (2nd pass) done."
 
             echo "  [$repo_name] SHA snapshot 2..."
-            find "$repo_dir" \( -name '*.R' -o -name '*.r' \) -print0 | sort -z | xargs -0 cat | shasum -a 256 | cut -d' ' -f1 > "../results/${repo_dir}_sha2.txt"
+            find "$repo_dir" \( -name '*.R' -o -name '*.r' \) -print0 | sort -z | xargs -0 cat | sha256sum | cut -d' ' -f1 > "../results/${repo_dir}_sha2.txt"
             echo "  [$repo_name] SHA snapshot 2 done."
 
             echo "=== [$repo_name] Finished ==="

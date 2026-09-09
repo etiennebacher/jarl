@@ -9,10 +9,14 @@ This comes with a few limitations:
 * inline R code isn't analyzed, only code chunks;
 * features from the editor integration, such as highlighting diagnostics, are only available when the file is open in source mode, not in visual mode.
 
+## Suppression comments
+
 Suppression comments such as `# jarl-ignore` are supported in R code chunks.
 In Quarto and R Markdown files, you can also use the comment `#| jarl-ignore-chunk` to ignore specific rules on entire chunks.
 Moreover, the comment `# jarl-ignore-file` must be located in the first R code chunk, before any R code.
 See [Suppression comments](suppression-comments.md) for more details.
+
+## Keeping or ignoring R Markdown and Quarto files
 
 By default, Jarl checks R code chunks in R Markdown and Quarto documents.
 To select or ignore particular file extensions, you can use glob patterns in the command line or in `jarl.toml`:

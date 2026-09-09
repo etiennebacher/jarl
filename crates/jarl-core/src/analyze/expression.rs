@@ -1,10 +1,22 @@
 use air_r_syntax::{
-    AnyRExpression, RBinaryExpressionFields, RForStatementFields, RIfStatementFields,
-    RWhileStatementFields,
+    AnyRExpression, AnyRSelector, AnyRValue, RBinaryExpressionFields, RForStatementFields,
+    RIfStatementFields, RWhileStatementFields,
 };
 
 use crate::analyze;
 use crate::checker::Checker;
+
+/// Convert a selector to the equivalent expression.
+///
+/// This allows better code coverage than `if let Some(...) = AnyRExpression::cast(...)`
+fn selector_to_expression(selector: AnyRSelector) -> AnyRExpression {
+    match selector {
+        AnyRSelector::RDotDotI(x) => AnyRExpression::RDotDotI(x),
+        AnyRSelector::RDots(x) => AnyRExpression::RDots(x),
+        AnyRSelector::RIdentifier(x) => AnyRExpression::RIdentifier(x),
+        AnyRSelector::RStringValue(x) => AnyRExpression::AnyRValue(AnyRValue::RStringValue(x)),
+    }
+}
 
 /// Dispatch an expression to its appropriate set of rules and recurse into children.
 ///
@@ -41,15 +53,17 @@ pub(crate) fn check_expression(
         AnyRExpression::RCall(children) => {
             analyze::call::call(children, checker)?;
 
-            if let Some(ns_expr) = children.function()?.as_r_namespace_expression() {
-                analyze::namespace_expression::namespace_expression(ns_expr, checker)?;
-            }
+            check_expression(&children.function()?, checker)?;
 
             for arg in children.arguments()?.items() {
-                if let Some(expr) = arg.unwrap().as_fields().value {
+                if let Some(expr) = arg?.as_fields().value {
                     check_expression(&expr, checker)?;
                 }
             }
+        }
+        AnyRExpression::RExtractExpression(children) => {
+            check_expression(&children.left()?, checker)?;
+            check_expression(&selector_to_expression(children.right()?), checker)?;
         }
         AnyRExpression::RForStatement(children) => {
             analyze::for_loop::for_loop(children, checker)?;
@@ -89,6 +103,8 @@ pub(crate) fn check_expression(
         }
         AnyRExpression::RNamespaceExpression(children) => {
             analyze::namespace_expression::namespace_expression(children, checker)?;
+            check_expression(&selector_to_expression(children.left()?), checker)?;
+            check_expression(&selector_to_expression(children.right()?), checker)?;
         }
         AnyRExpression::RParenthesizedExpression(children) => {
             analyze::parenthesized_expression::parenthesized_expression(children, checker)?;
@@ -102,6 +118,7 @@ pub(crate) fn check_expression(
         AnyRExpression::RSubset(children) => {
             analyze::subset::subset(children, checker)?;
 
+            check_expression(&children.function()?, checker)?;
             for arg in children.arguments()?.items() {
                 if let Some(expr) = arg?.value() {
                     check_expression(&expr, checker)?;
@@ -109,6 +126,7 @@ pub(crate) fn check_expression(
             }
         }
         AnyRExpression::RSubset2(children) => {
+            check_expression(&children.function()?, checker)?;
             for arg in children.arguments()?.items() {
                 if let Some(expr) = arg?.value() {
                     check_expression(&expr, checker)?;

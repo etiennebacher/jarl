@@ -85,7 +85,196 @@ pub trait AstNodeExt: AstNode<Language = RLanguage> {
         }
         false
     }
+
+    /// Returns true if parent is `!!`
+    fn parent_is_bang_bang(&self) -> bool {
+        if let Some(parent) = self.syntax().parent()
+            && parent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
+            && let Some(prev) = self.syntax().prev_sibling_or_token()
+            && prev.kind() == RSyntaxKind::BANG
+        {
+            // Check if parent's parent is also a unary bang (double negation)
+            if let Some(grandparent) = parent.parent()
+                && grandparent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
+            {
+                return true;
+            }
+            return false;
+        }
+        false
+    }
+
+    /// Returns true if parent is `!!!`
+    fn parent_is_bang_bang_bang(&self) -> bool {
+        if let Some(parent) = self.syntax().parent()
+            && parent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
+            && let Some(prev) = self.syntax().prev_sibling_or_token()
+            && prev.kind() == RSyntaxKind::BANG
+        {
+            // Check if parent's parent is also a unary bang
+            if let Some(grandparent) = parent.parent()
+                && grandparent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
+            {
+                // Check if parent's grandparent is also a unary bang (triple negation)
+                if let Some(greatgrandparent) = grandparent.parent()
+                    && greatgrandparent.kind() == RSyntaxKind::R_UNARY_EXPRESSION
+                {
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+        false
+    }
 }
 
 // Blanket implementation for all R AST node types
 impl<T> AstNodeExt for T where T: AstNode<Language = RLanguage> {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use air_r_parser::RParserOptions;
+
+    /// Parses `source` and returns the first expression whose trimmed text is
+    /// exactly `text`.
+    ///
+    /// Traversal is preorder, so `find("!!x", "x")` returns the identifier and
+    /// `find("!!x", "!x")` returns the inner unary expression.
+    fn find(source: &str, text: &str) -> AnyRExpression {
+        let parsed = air_r_parser::parse(source, RParserOptions::default());
+        assert!(!parsed.has_error(), "`{source}` failed to parse");
+        parsed
+            .syntax()
+            .descendants()
+            .filter(|node| node.text_trimmed() == text)
+            .find_map(AnyRExpression::cast)
+            .unwrap_or_else(|| panic!("no expression with text `{text}` in `{source}`"))
+    }
+
+    #[test]
+    fn test_parent_is_if_condition() {
+        assert!(find("if (x > 1) y", "x > 1").parent_is_if_condition());
+        assert!(find("if (x > 1) y else z", "x > 1").parent_is_if_condition());
+
+        // The body and the else body are not the condition
+        assert!(!find("if (x > 1) y else z", "y").parent_is_if_condition());
+        assert!(!find("if (x > 1) y else z", "z").parent_is_if_condition());
+
+        // A `while` condition is not an `if` condition
+        assert!(!find("while (x > 1) y", "x > 1").parent_is_if_condition());
+
+        // Nested calls in the condition are not the condition themselves
+        assert!(!find("if (any(x)) y", "x").parent_is_if_condition());
+    }
+
+    #[test]
+    fn test_parent_is_if_body() {
+        assert!(find("if (x > 1) y", "y").parent_is_if_body());
+        assert!(find("if (x > 1) { y }", "{ y }").parent_is_if_body());
+
+        // The condition and the else body are not the body
+        assert!(!find("if (x > 1) y else z", "x > 1").parent_is_if_body());
+        assert!(!find("if (x > 1) y else z", "z").parent_is_if_body());
+
+        // A `while` body is not an `if` body
+        assert!(!find("while (x > 1) y", "y").parent_is_if_body());
+    }
+
+    #[test]
+    fn test_parent_is_while_condition() {
+        assert!(find("while (x > 1) y", "x > 1").parent_is_while_condition());
+
+        assert!(!find("while (x > 1) y", "y").parent_is_while_condition());
+        assert!(!find("if (x > 1) y", "x > 1").parent_is_while_condition());
+        assert!(!find("repeat y", "y").parent_is_while_condition());
+    }
+
+    #[test]
+    fn test_parent_is_while_body() {
+        assert!(find("while (x > 1) y", "y").parent_is_while_body());
+        assert!(find("while (x > 1) { y }", "{ y }").parent_is_while_body());
+
+        assert!(!find("while (x > 1) y", "x > 1").parent_is_while_body());
+        assert!(!find("if (x > 1) y", "y").parent_is_while_body());
+    }
+
+    #[test]
+    fn test_parent_is_else_body() {
+        assert!(find("if (x > 1) y else z", "z").parent_is_else_body());
+        assert!(find("if (x > 1) y else { z }", "{ z }").parent_is_else_body());
+
+        // `else if` chains: the nested `if` statement is the else body
+        assert!(find("if (x) y else if (z) w", "if (z) w").parent_is_else_body());
+        assert!(!find("if (x) y else if (z) w", "w").parent_is_else_body());
+
+        assert!(!find("if (x > 1) y else z", "y").parent_is_else_body());
+        assert!(!find("if (x > 1) y", "y").parent_is_else_body());
+    }
+
+    #[test]
+    fn test_parent_is_for_body() {
+        assert!(find("for (i in x) y", "y").parent_is_for_body());
+        assert!(find("for (i in x) { y }", "{ y }").parent_is_for_body());
+
+        // Neither the loop variable nor the sequence is the body
+        assert!(!find("for (i in x) y", "i").parent_is_for_body());
+        assert!(!find("for (i in x) y", "x").parent_is_for_body());
+
+        assert!(!find("while (x) y", "y").parent_is_for_body());
+    }
+
+    #[test]
+    fn test_has_previous_pipe() {
+        assert!(find("x |> f()", "f()").has_previous_pipe());
+        assert!(find("x |> f() |> g()", "g()").has_previous_pipe());
+
+        // The left-hand side of the pipe has nothing before it
+        assert!(!find("x |> f()", "x").has_previous_pipe());
+
+        // The magrittr pipe is a binary expression, not a `PIPE` token
+        assert!(!find("x %>% f()", "f()").has_previous_pipe());
+
+        assert!(!find("f()", "f()").has_previous_pipe());
+    }
+
+    #[test]
+    fn test_parent_is_bang_unary() {
+        assert!(find("!x", "x").parent_is_bang_unary());
+        assert!(find("!all(x == y)", "all(x == y)").parent_is_bang_unary());
+
+        // Only the direct operand of the `!` counts
+        assert!(!find("!all(x == y)", "x == y").parent_is_bang_unary());
+
+        // rlang's `!!` and `!!!` are excluded
+        assert!(!find("!!x", "x").parent_is_bang_unary());
+        assert!(!find("!!!x", "x").parent_is_bang_unary());
+
+        // Other unary operators
+        assert!(!find("-x", "x").parent_is_bang_unary());
+        assert!(!find("x", "x").parent_is_bang_unary());
+    }
+
+    #[test]
+    fn test_parent_is_bang_bang() {
+        assert!(find("!!x", "x").parent_is_bang_bang());
+        assert!(find("f(!!x)", "x").parent_is_bang_bang());
+
+        assert!(!find("!x", "x").parent_is_bang_bang());
+        assert!(!find("x", "x").parent_is_bang_bang());
+
+        // The intermediate `!x` node of `!!x` is not itself preceded by two `!`
+        assert!(!find("!!x", "!x").parent_is_bang_bang());
+    }
+
+    #[test]
+    fn test_parent_is_bang_bang_bang() {
+        assert!(find("!!!x", "x").parent_is_bang_bang_bang());
+        assert!(find("f(!!!x)", "x").parent_is_bang_bang_bang());
+
+        assert!(!find("!!x", "x").parent_is_bang_bang_bang());
+        assert!(!find("!x", "x").parent_is_bang_bang_bang());
+        assert!(!find("x", "x").parent_is_bang_bang_bang());
+    }
+}

@@ -110,6 +110,21 @@ powershell Set-ExecutionPolicy Bypass -Scope Process -Force; `
    iwr https://github.com/etiennebacher/jarl/releases/latest/download/jarl-installer.ps1 | iex
 ```
 
+#### Other
+
+<details>
+<summary>Using `brew`</summary>
+
+You can install the [`jarl` formula](https://formulae.brew.sh/formula/jarl) via [Homebrew](https://brew.sh/):
+
+```sh
+brew install jarl
+```
+</details>
+
+<details>
+<summary>Using `scoop`</summary>
+
 If you use Scoop, you can also install or update Jarl with [these commands](https://github.com/cderv/r-bucket#jarl):
 
 ```sh
@@ -121,8 +136,7 @@ scoop install jarl
 # update
 scoop update jarl
 ```
-
-#### Other
+</details>
 
 <details>
 <summary>Using `uv`</summary>

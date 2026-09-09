@@ -1,3 +1,4 @@
+use crate::rule_set::Rule;
 use crate::{
     diagnostic::*,
     utils::{get_function_name, node_contains_comments},
@@ -102,17 +103,12 @@ pub fn seq(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "seq".to_string(),
+            Rule::Seq,
             format!("`1:{right_fun_name}(...)` can be wrong if the RHS is 0.").to_string(),
             Some(format!("Use `{suggestion}` instead.").to_string()),
         ),
         range,
-        Fix {
-            content: replacement,
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+        Fix::new(range, replacement, node_contains_comments(ast.syntax())),
     );
 
     Ok(Some(diagnostic))

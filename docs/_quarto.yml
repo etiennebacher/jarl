@@ -2,13 +2,14 @@ project:
   type: website
   pre-render: copy_readme.R
 filters:
-- newpagelink.lua
+  - linkify-github-refs.lua
+  - newpagelink.lua
 format:
   html:
     theme: morph
     css:
-    - styles.css
-    - dark-mode.css
+      - styles.css
+      - dark-mode.css
     include-in-header:
       file: dark-mode-header.html
     toc: true
@@ -23,8 +24,8 @@ website:
   repo-url: https://github.com/etiennebacher/jarl
   repo-subdir: docs
   repo-actions:
-  - source
-  - issue
+    - source
+    - issue
   search:
     location: navbar
     type: textbox
@@ -55,6 +56,8 @@ website:
         href: howto/ci.md
       - text: Pre-commit tools
         href: howto/precommit.md
+      - text: Shell completions
+        href: howto/shell-completions.md
     - text: Reference
       menu:
       - text: Rules
@@ -108,6 +111,7 @@ website:
       - rules/expect_not.md
       - rules/expect_null.md
       - rules/expect_s3_class.md
+      - rules/expect_s4_class.md
       - rules/expect_true_false.md
       - rules/expect_type.md
       - rules/fixed_regex.md
@@ -143,6 +147,7 @@ website:
       - rules/quotes.md
       - rules/redundant_equals.md
       - rules/redundant_ifelse.md
+      - rules/rep_times_ignored.md
       - rules/repeat.md
       - rules/sample_int.md
       - rules/seq.md
@@ -161,5 +166,6 @@ website:
       - rules/unnecessary_parentheses.md
       - rules/unreachable_code.md
       - rules/unused_function.md
+      - rules/unused_object.md
       - rules/vector_logic.md
       - rules/which_grepl.md

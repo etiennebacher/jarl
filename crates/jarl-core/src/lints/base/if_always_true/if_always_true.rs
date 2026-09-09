@@ -1,4 +1,5 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
@@ -42,8 +43,8 @@ pub struct IfAlwaysTrue;
 /// print("always true")
 /// ```
 impl Violation for IfAlwaysTrue {
-    fn name(&self) -> String {
-        "if_always_true".to_string()
+    fn rule(&self) -> Rule {
+        Rule::IfAlwaysTrue
     }
     fn body(&self) -> String {
         "`if` condition always evaluates to `TRUE`.".to_string()

@@ -1,0 +1,31 @@
+---
+source: crates/jarl-core/src/lints/testthat/expect_s3_class/mod.rs
+expression: "get_fixed_text(vec![\"expect_equal(class(x), classes)\",\n\"expect_equal(classes, class(x))\", \"expect_true(inherits(x, classes))\",\n\"expect_true(inherits(x, c('foo', 'bar')))\",], \"expect_s3_class\", None,)"
+---
+OLD:
+====
+expect_equal(class(x), classes)
+NEW:
+====
+expect_equal(class(x), classes)
+
+OLD:
+====
+expect_equal(classes, class(x))
+NEW:
+====
+expect_equal(classes, class(x))
+
+OLD:
+====
+expect_true(inherits(x, classes))
+NEW:
+====
+expect_true(inherits(x, classes))
+
+OLD:
+====
+expect_true(inherits(x, c('foo', 'bar')))
+NEW:
+====
+expect_true(inherits(x, c('foo', 'bar')))

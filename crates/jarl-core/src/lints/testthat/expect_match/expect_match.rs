@@ -1,10 +1,14 @@
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{
-    get_arg_by_name_then_position, get_function_name, get_function_namespace_prefix,
+    Formals, get_arg, get_function_name, get_function_namespace_prefix,
     get_nested_functions_content, get_unnamed_args, node_contains_comments,
 };
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
+
+const FORMALS_EXPECT_TRUE: Formals = &["object", "info", "label"];
+const FORMALS_GREPL: Formals = &["pattern", "x", "ignore.case", "perl", "fixed", "useBytes"];
 
 pub struct ExpectMatch;
 
@@ -39,8 +43,8 @@ pub struct ExpectMatch;
 /// expect_match(x, "bar", perl = FALSE, fixed = FALSE)
 /// ```
 impl Violation for ExpectMatch {
-    fn name(&self) -> String {
-        "expect_match".to_string()
+    fn rule(&self) -> Rule {
+        Rule::TestthatExpectMatch
     }
 
     fn body(&self) -> String {
@@ -52,18 +56,16 @@ impl Violation for ExpectMatch {
     }
 }
 
-pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
+pub fn expect_match(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     let range = ast.syntax().text_trimmed_range();
-    let function = ast.function()?;
-    let function_name = get_function_name(function.clone());
-    if function_name != "expect_true" {
+    if fn_name != "expect_true" {
         return Ok(None);
     }
 
     // For pipe cases (`grepl(...) |> expect_true()`), lint but skip fix.
     // Fix seems reasonably complex as x & pattern position are swapped
     if let Some((_inner_content, outer_syntax)) =
-        get_nested_functions_content(ast, "expect_true", "grepl")?
+        get_nested_functions_content(ast, fn_name, "expect_true", "grepl")?
         && outer_syntax.kind() == RSyntaxKind::R_BINARY_EXPRESSION
     {
         // Ignore negated pipe (e.g. `!grepl(...) |> expect_true()`) false positive
@@ -83,7 +85,7 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let args = ast.arguments()?.items();
 
     // Get first argument
-    let object = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "object", 1));
+    let object = unwrap_or_return_none!(get_arg(ast, FORMALS_EXPECT_TRUE, "object"));
 
     let object_value = unwrap_or_return_none!(object.value());
 
@@ -96,9 +98,8 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 
     // All grepl args can be passed to expect_match, so keep them all for fix
     let grepl_args = grepl_call.arguments()?.items();
-    let pattern_arg =
-        unwrap_or_return_none!(get_arg_by_name_then_position(&grepl_args, "pattern", 1));
-    let x_arg = unwrap_or_return_none!(get_arg_by_name_then_position(&grepl_args, "x", 2));
+    let pattern_arg = unwrap_or_return_none!(get_arg(grepl_call, FORMALS_GREPL, "pattern"));
+    let x_arg = unwrap_or_return_none!(get_arg(grepl_call, FORMALS_GREPL, "x"));
 
     let x_text = unwrap_or_return_none!(x_arg.value())
         .to_trimmed_text()
@@ -143,21 +144,20 @@ pub fn expect_match(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         .collect::<Vec<_>>();
 
     // Preserve namespace prefix if present
-    let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();
+    let namespace_prefix = get_function_namespace_prefix(ast.function()?).unwrap_or_default();
 
     let diagnostic = Diagnostic::new(
         ExpectMatch,
         range,
-        Fix {
-            content: format!(
+        Fix::new(
+            range,
+            format!(
                 "{}expect_match({})",
                 namespace_prefix,
                 inner_content.join(", ")
             ),
-            start: range.start().into(),
-            end: range.end().into(),
-            to_skip: node_contains_comments(ast.syntax()),
-        },
+            node_contains_comments(ast.syntax()),
+        ),
     );
 
     Ok(Some(diagnostic))

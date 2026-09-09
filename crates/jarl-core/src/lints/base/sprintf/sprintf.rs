@@ -1,10 +1,12 @@
 use crate::diagnostic::*;
-use crate::utils::{
-    get_arg_by_name_then_position, get_function_name, get_unnamed_args, node_contains_comments,
-};
+use crate::utils::{Formals, get_arg, get_unnamed_args, node_contains_comments};
+
+use crate::rule_set::Rule;
 use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
+
+const FORMALS_SPRINTF: Formals = &["fmt"];
 
 /// Version added: 0.3.0
 ///
@@ -51,11 +53,8 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// See `?sprintf`
-pub fn sprintf(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
-    let function = ast.function()?;
-    let function_name = get_function_name(function);
-
-    if function_name != "sprintf" {
+pub fn sprintf(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
+    if fn_name != "sprintf" {
         return Ok(None);
     }
 
@@ -66,7 +65,7 @@ pub fn sprintf(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
 
     let args = ast.arguments()?.items();
 
-    let fmt = unwrap_or_return_none!(get_arg_by_name_then_position(&args, "fmt", 1));
+    let fmt = unwrap_or_return_none!(get_arg(ast, FORMALS_SPRINTF, "fmt"));
     let fmt_value = unwrap_or_return_none!(fmt.value());
     let fmt_text = if let Some(x) = fmt_value.as_any_r_value()
         && let Some(x) = x.as_r_string_value()
@@ -84,7 +83,7 @@ pub fn sprintf(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         let range = ast.syntax().text_trimmed_range();
         let diagnostic = Diagnostic::new(
             ViolationData::new(
-                "sprintf".to_string(),
+                Rule::Sprintf,
                 "`sprintf()` contains some invalid `%`.".to_string(),
                 None,
             ),
@@ -99,17 +98,16 @@ pub fn sprintf(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         let range = ast.syntax().text_trimmed_range();
         let diagnostic = Diagnostic::new(
             ViolationData::new(
-                "sprintf".to_string(),
+                Rule::Sprintf,
                 "`sprintf()` without special characters is useless.".to_string(),
                 Some("Use directly the input of `sprintf()` instead.".to_string()),
             ),
             range,
-            Fix {
-                content: parse_result.output_string,
-                start: range.start().into(),
-                end: range.end().into(),
-                to_skip: node_contains_comments(ast.syntax()),
-            },
+            Fix::new(
+                range,
+                parse_result.output_string,
+                node_contains_comments(ast.syntax()),
+            ),
         );
         return Ok(Some(diagnostic));
     }
@@ -133,7 +131,7 @@ pub fn sprintf(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         let range = ast.syntax().text_trimmed_range();
         let diagnostic = Diagnostic::new(
             ViolationData::new(
-                "sprintf".to_string(),
+                Rule::Sprintf,
                 "Mismatch between number of special characters and number of arguments."
                     .to_string(),
                 Some(format!(
