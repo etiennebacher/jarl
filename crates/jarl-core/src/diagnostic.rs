@@ -153,6 +153,11 @@ pub struct Diagnostic {
     pub location: Option<Location>,
     // Fix to apply if the user passed `--fix`.
     pub fix: Fix,
+    /// The rule had a fix but it was dropped because the violation is in a
+    /// roxygen `@examples` section and `fix-roxygen` is off. Only used to tell
+    /// the user why an otherwise fixable rule is reported as unfixable.
+    #[serde(skip)]
+    pub fix_disabled_in_roxygen: bool,
 }
 
 impl<T: Violation> From<T> for ViolationData {
@@ -179,6 +184,7 @@ impl Diagnostic {
             location: None,
             fix,
             filename: "".into(),
+            fix_disabled_in_roxygen: false,
         }
     }
 

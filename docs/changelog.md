@@ -22,6 +22,9 @@
 
 * The LSP now also publishes diagnostics when opening a file (#685).
 
+* The CLI now prints a message suggesting `fix-roxygen = true` when some fixes
+  cannot be applied because the violation is in part of `@examples` (#702).
+
 ### Bug fixes
 
 * Prevent the `nzchar` rule from treating quote characters as empty strings and

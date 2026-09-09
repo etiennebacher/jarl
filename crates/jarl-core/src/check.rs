@@ -680,6 +680,7 @@ fn get_checks_roxygen(
             if config.fix_roxygen {
                 d.fix = remap_roxygen_fix(&d.fix, chunk, contents);
             } else {
+                d.fix_disabled_in_roxygen = d.has_safe_fix() || d.has_unsafe_fix();
                 d.fix = Fix::empty();
             }
             d.filename = file.to_path_buf();

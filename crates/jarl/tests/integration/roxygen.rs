@@ -1150,3 +1150,100 @@ quux <- function() NULL
 
     Ok(())
 }
+
+// ---------------------------------------------------------------------------
+// Note about unfixable violations in examples
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_roxygen_fix_note_with_fix() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
+#' Title
+#' @examples
+#' any(is.na(x))
+foo <- function(x) x
+",
+    )])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .arg("--fix")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> R/test.R:3:4
+      |
+    3 | #' any(is.na(x))
+      |    ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    Some fixes are disabled because the violations are in `@examples` sections.
+    Set `fix-roxygen = true` in `jarl.toml` to apply them.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// Without `--fix`, nothing in the output claims the violation was fixable, so
+/// the note would be noise.
+#[test]
+fn test_roxygen_fix_note_absent_without_fix() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
+#' Title
+#' @examples
+#' any(is.na(x))
+foo <- function(x) x
+",
+    )])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> R/test.R:3:4
+      |
+    3 | #' any(is.na(x))
+      |    ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
