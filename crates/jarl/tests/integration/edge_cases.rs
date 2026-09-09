@@ -182,3 +182,43 @@ any(is.na("数据"))
 
     Ok(())
 }
+
+// `...` and `..i` are selector kinds of `$`, `@`, `::` and `:::` on which no
+// rule fires, so they must traverse silently. The identifier and string
+// selectors are covered by the `true_false_symbol` and `quotes` unit tests.
+#[test]
+fn test_jarl_supports_dots_selectors() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.R",
+        r#"
+f <- function(...) {
+    x$...
+    x$..1
+    x@...
+    x@..1
+    pkg::...
+}
+"#,
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}

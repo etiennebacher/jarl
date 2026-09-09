@@ -58,7 +58,7 @@ pub fn sample_int(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnosti
     // Is the `n` argument of the form `1:x`? If so, keep the `x` part so it
     // can be reused in the fix.
     let right_value = if let Some(n) = n {
-        let n_value = n.value().unwrap();
+        let n_value = unwrap_or_return_none!(n.value());
         if let Some(n_value) = n_value.as_r_binary_expression() {
             let RBinaryExpressionFields { left, operator, right } = n_value.as_fields();
             let left = left?;

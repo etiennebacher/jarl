@@ -2,13 +2,14 @@ project:
   type: website
   pre-render: copy_readme.R
 filters:
-- newpagelink.lua
+  - linkify-github-refs.lua
+  - newpagelink.lua
 format:
   html:
     theme: morph
     css:
-    - styles.css
-    - dark-mode.css
+      - styles.css
+      - dark-mode.css
     include-in-header:
       file: dark-mode-header.html
     toc: true
@@ -23,8 +24,8 @@ website:
   repo-url: https://github.com/etiennebacher/jarl
   repo-subdir: docs
   repo-actions:
-  - source
-  - issue
+    - source
+    - issue
   search:
     location: navbar
     type: textbox

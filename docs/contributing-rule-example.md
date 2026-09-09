@@ -3,6 +3,13 @@ title: Adding a new rule to Jarl
 ---
 
 This page will explain how to implement a new rule in Jarl.
+
+::: {.callout-important}
+This page is usually up-to-date with the latest changes in Jarl's internals, but you should ensure that you are reading the "dev" version: [jarl.etiennebacher.com/dev/contributing-rule-example](https://jarl.etiennebacher.com/dev/contributing-rule-example)
+
+If you see outdated content, please [open an issue](https://github.com/etiennebacher/jarl/issues).
+:::
+
 It is recommended to read the [General information page](contributing.md) first to install the required tools.
 Jarl is written in Rust, but this page will *not* explain how to set up or use Rust, this is an entirely different topic.
 To get started with Rust, check out the [Rust book](https://doc.rust-lang.org/stable/book/).
@@ -83,7 +90,7 @@ Here's a basic idea of the workflow to add a new rule:
 1. document the rule
 1. final polishing
 
-From now on, all file paths refer to the subfolder `crates/jarl-core`.
+From now on, all file paths refer to the subfolder `crates/jarl-core/src`.
 
 ::: {.callout-note}
 ## Trying your new rule locally
@@ -128,8 +135,7 @@ We also need to add the following line in `lints/base/mod.rs`:
 pub(crate) mod list2df;
 ```
 
-The file to modify in the `analyze` folder will depend on the rule: here, we look for calls to `do.call()`.
-The arguments passed to the function are irrelevant, what matters is that this is a call, so we will modify the file `analyze/call.rs`:
+The file to modify in the `analyze` folder will depend on the rule: here, we look for calls to `do.call()`, so we will modify the file `analyze/call.rs`:
 
 ```rust
 use crate::lints::list2df::list2df::list2df;
@@ -145,9 +151,18 @@ Note that `analyze/call.rs` computes the function name once per call and passes 
 
 ### Implement the rule
 
-This is the hard part of the process.
+Two files are needed:
+
+- there must be a file `lints/base/<rule_name>/mod.rs`, so in this example `lints/base/list2df/mod.rs`. This file will contain tests later on, but for now you can just include the following line:
+
+    ```rust
+    pub(crate) mod list2df;
+    ```
+
+- the rule definition must be located in `lints/base/<rule_name>/<rule_name>.rs`, so in this example in `lints/base/list2df/list2df.rs`.
+
+Writing this second file is the hard part of the process.
 It requires knowledge about the AST you want to parse and about the different functions available to us to navigate this AST.
-The rule definition must be located in `lints/base/<rule_name>/<rule_name>.rs`, so in this example in `lints/base/list2df/list2df.rs`.
 
 Let's start with a skeleton of this file:
 
@@ -314,7 +329,7 @@ do.call(
 )
 ```
 
-At this point, if you have an R file with a couple of examples that should be reported (e.g. `test.R`), you can use `cargo run --bin jarl -- check test.R` (the rule in this example is only valid for R >= 4.0.0, so we also need `--min-r-version 4.1` for instance).
+At this point, if you have an R file with a couple of examples that should be reported (e.g. `test.R`), you can use `cargo run --bin jarl -- check test.R` (the rule in this example is only valid for R >= 4.0.0, so we also need `--min-r-version 4.0` for instance).
 
 ### Add TOML options
 
@@ -337,7 +352,7 @@ Not all rules need TOML options.
 
 Adding options for a rule takes three steps. The example below uses the rule `duplicated_arguments` since `list2df` doesn't have TOML options.
 
-1. Create `src/lints/<group>/<rule_name>/options.rs` and declare `pub(crate) mod options;` in the rule's `mod.rs`. This file contains two types: the TOML options (deserialized as-is from `[lint.<rule_name>]`) and the resolved options (what the rule reads while linting). The resolved type must expose `resolve()`, which takes the TOML options and fills in the defaults:
+1. Create `lints/<group>/<rule_name>/options.rs` and declare `pub(crate) mod options;` in the rule's `mod.rs`. This file contains two types: the TOML options (deserialized as-is from `[lint.<rule_name>]`) and the resolved options (what the rule reads while linting). The resolved type must expose `resolve()`, which takes the TOML options and fills in the defaults:
 
     ```rust
     /// Default functions that are allowed to have duplicated arguments.
@@ -363,9 +378,9 @@ Adding options for a rule takes three steps. The example below uses the rule `du
     }
     ```
 
-    If the option is a list of functions that can be either replaced or extended by the user (the `<field>` / `extend-<field>` pattern), use the helper `resolve_with_extend()` from `src/rule_options.rs` instead of writing that logic again.
+    If the option is a list of functions that can be either replaced or extended by the user (the `<field>` / `extend-<field>` pattern), use the helper `resolve_with_extend()` from `rule_options.rs` instead of writing that logic again.
 
-1. Add the TOML field to `LinterTomlOptions` in `src/toml.rs`. The field must be named after the rule, and its documentation ends up in `artifacts/jarl.schema.json`, which editors use to describe the option:
+1. Add the TOML field to `LinterTomlOptions` in `toml.rs`. The field must be named after the rule, and its documentation ends up in `artifacts/jarl.schema.json`, which editors use to describe the option:
 
     ```rust
     /// # Options for the `duplicated_arguments` rule
@@ -378,7 +393,7 @@ Adding options for a rule takes three steps. The example below uses the rule `du
     pub duplicated_arguments: Option<DuplicatedArgumentsOptions>,
     ```
 
-1. Add one line to `declare_rule_options!` in `src/rule_options.rs`, naming the rule's folder and its resolved type:
+1. Add one line to `declare_rule_options!` in `rule_options.rs`, naming the rule's folder and its resolved type:
 
     ```rust
     declare_rule_options! {
@@ -530,9 +545,7 @@ The rule is implemented, all tests pass, perfect!
 We now need to document this change:
 
 * update `docs/changelog.md`
-* add or update the rule page in `docs/rules/<rule_name>.md`
-
-If you have installed `just` as [recommended](contributing.md#tools), you can now run `just document` to update the website.
+* run `just document` to add or update the rule page in `docs/rules/<rule_name>.md` (you need to have `just` installed as [explained in the general guide](contributing.md#tools))
 
 Finally, run `just lint` to ensure that `clippy` (the Rust linter) doesn't report any issue and that the code is properly formatted.
 You can also run `just lint-fix` to apply `clippy`'s automatic fixes if there are any.

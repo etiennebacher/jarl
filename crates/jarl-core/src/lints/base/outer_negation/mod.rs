@@ -23,6 +23,8 @@ mod tests {
         expect_no_lint("any(!a, b)", "outer_negation", None);
         expect_no_lint("any(!!a)", "outer_negation", None);
         expect_no_lint("any(!!!a)", "outer_negation", None);
+        expect_no_lint("any(-a)", "outer_negation", None);
+        expect_no_lint("any(+a)", "outer_negation", None);
         expect_no_lint("all(a, !b)", "outer_negation", None);
         expect_no_lint("any(a, !b, na.rm = TRUE)", "outer_negation", None);
         // ditto when na.rm is passed quoted

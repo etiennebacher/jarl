@@ -85,7 +85,7 @@ quarto_yml$website$sidebar[[1]]$contents <- list(
   "rules.qmd",
   list(section = "List of rules", contents = paste0("rules/", doc_names, ".md"))
 )
-quarto_yml$filters <- list("newpagelink.lua")
+quarto_yml$filters <- list("linkify-github-refs.lua", "newpagelink.lua")
 write_yaml(
   quarto_yml,
   "docs/_quarto.yml",

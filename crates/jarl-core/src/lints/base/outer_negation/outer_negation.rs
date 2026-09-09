@@ -57,8 +57,9 @@ pub fn outer_negation(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     }
 
     let arg_value = unwrap_or_return_none!(first_arg.value());
-    // Check if the argument is a unary expression (negation)
-    if arg_value.syntax().kind() != RSyntaxKind::R_UNARY_EXPRESSION {
+    let unary_expr = unwrap_or_return_none!(arg_value.as_r_unary_expression());
+    let operator = unwrap_or_return_none!(unary_expr.operator().ok());
+    if operator.kind() != RSyntaxKind::BANG {
         return Ok(None);
     }
 
