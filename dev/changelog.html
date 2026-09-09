@@ -452,6 +452,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ul>
 <li><p><code>expect_length</code> no longer reports cases where <code>length()</code> is in the <code>expected</code> argument, e.g.&nbsp;<code>expect_equal(nrow(x), length(y))</code> (<a href="https://github.com/etiennebacher/jarl/issues/684" target="_blank">#684</a>).</p></li>
 <li><p>The LSP now also publishes diagnostics when opening a file (<a href="https://github.com/etiennebacher/jarl/issues/685" target="_blank">#685</a>).</p></li>
+<li><p>The CLI now prints a message suggesting <code>fix-roxygen = true</code> when some fixes cannot be applied because the violation is in part of <code>@examples</code> (<a href="https://github.com/etiennebacher/jarl/issues/702" target="_blank">#702</a>).</p></li>
 </ul>
 </section>
 <section id="bug-fixes" class="level3">
