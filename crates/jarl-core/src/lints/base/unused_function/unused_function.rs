@@ -20,12 +20,10 @@ use crate::package::{FileScope, SharedFileData};
 ///
 /// ## Why is this bad?
 ///
-/// An internal function that is never called is likely dead code left over from
-/// refactoring. Removing it keeps the codebase easier to understand and
-/// maintain.
-///
-/// While exported functions may not be called by other functions, they must be
-/// declared in the package's NAMESPACE file before they are visible to users.
+/// Functions must be documented in NAMESPACE to be exported to end users. A
+/// unction that is never called nor exported is likely dead code left over
+/// from refactoring. Removing unused internal functions keeps the codebase
+/// easier to understand and maintain.
 ///
 /// ## Limitations
 ///
