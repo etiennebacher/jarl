@@ -1,5 +1,6 @@
 use crate::checker::Checker;
 use crate::diagnostic::*;
+use crate::rule_set::Rule;
 use crate::utils::{get_function_name, get_unnamed_args};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
@@ -65,7 +66,7 @@ pub fn positional_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Op
     let range = ast.syntax().text_trimmed_range();
     let diagnostic = Diagnostic::new(
         ViolationData::new(
-            "positional_arguments".to_string(),
+            Rule::PositionalArguments,
             format!(
                 "Calling a function with {n_positional} positional {plural} can be hard to read and is prone to mistakes."
             ),
