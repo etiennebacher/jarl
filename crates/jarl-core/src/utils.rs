@@ -447,6 +447,19 @@ pub fn scan_symbols(content: &str) -> HashMap<String, usize> {
         .collect()
 }
 
+/// Offset of the first character of the line containing `offset`.
+pub fn line_start(source: &str, offset: usize) -> usize {
+    source[..offset].rfind('\n').map_or(0, |i| i + 1)
+}
+
+/// Offset just past the line break ending the line that contains `offset`, or
+/// the end of the source if that line is the last one.
+pub fn next_line_start(source: &str, offset: usize) -> usize {
+    source[offset..]
+        .find('\n')
+        .map_or(source.len(), |i| offset + i + 1)
+}
+
 #[cfg(test)]
 mod tests {
     use super::scan_symbols;

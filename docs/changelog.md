@@ -13,6 +13,14 @@
 
   * `deparse1` (#694, @maelle)
 
+* A fix can now edit several places of a file at once, so in the `json` output
+  format the `fix` object contains a list of edits instead of a single
+  `content`/`range` pair (#700):
+
+  ```json
+  "fix": { "edits": [ { "range": [0, 13], "content": "anyNA(x)" } ], "to_skip": false }
+  ```
+
 ### Changes
 
 * `expect_length` no longer reports cases where `length()` is in the `expected`
@@ -20,7 +28,19 @@
 
 * The LSP now also publishes diagnostics when opening a file (#685).
 
+* The CLI now prints a message suggesting `fix-roxygen = true` when some fixes
+  cannot be applied because the violation is in part of `@examples` (#702).
+
 ### Bug fixes
+
+* Prevent the `nzchar` rule from treating quote characters as empty strings and
+  support empty raw string literals (#696, @Yousa-Mirage).
+
+* Jarl now properly checks the components of selector, extraction, and namespace
+  AST nodes (`[[`, `@`, `$`, `::`, `:::`) (#697, @Yousa-Mirage).
+
+* The `github` and `sarif` output formats now report parsing errors to stderr
+  instead of silently dropping them (#695, @Yousa-Mirage).
 
 * Prevent the `sample_int` rule from panicking on calls with missing arguments
   (#687, @Yousa-Mirage).

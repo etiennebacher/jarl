@@ -25,15 +25,23 @@ use jarl_core::package::{is_in_r_package, make_package_analysis, summarize_packa
 use jarl_core::rule_set::Rule;
 use jarl_core::settings::Settings;
 
+/// A single replacement making up a fix
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DiagnosticEdit {
+    /// The replacement content for the edit
+    pub content: String,
+    /// The start byte offset of the edit range
+    pub start: usize,
+    /// The end byte offset of the edit range
+    pub end: usize,
+}
+
 /// Fix information that can be attached to a diagnostic for code actions
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DiagnosticFix {
-    /// The replacement content for the fix
-    pub content: String,
-    /// The start byte offset of the fix range
-    pub start: usize,
-    /// The end byte offset of the fix range
-    pub end: usize,
+    /// The edits making up the fix, applied together. Empty when the
+    /// diagnostic has no fix.
+    pub edits: Vec<DiagnosticEdit>,
     /// Whether this fix is safe to apply automatically
     pub is_safe: bool,
     /// The name of the rule that produced this diagnostic
@@ -279,9 +287,16 @@ fn convert_to_lsp_diagnostic(
     // Extract fix information if available
     // Always include fix_data even if there's no actual fix, so we can access the rule_name
     let diagnostic_fix = DiagnosticFix {
-        content: jarl_diag.fix.content.clone(),
-        start: jarl_diag.fix.start(),
-        end: jarl_diag.fix.end(),
+        edits: jarl_diag
+            .fix
+            .edits
+            .iter()
+            .map(|edit| DiagnosticEdit {
+                content: edit.content.clone(),
+                start: edit.start(),
+                end: edit.end(),
+            })
+            .collect(),
         is_safe: jarl_diag.has_safe_fix(),
         rule_name: jarl_diag.message.rule.name().to_string(),
         diagnostic_start: start_offset,
