@@ -199,6 +199,37 @@ mise exec conda:jarl -- jarl check .
 ```
 </details>
 
+<details>
+<summary>Using `nix`</summary>
+
+You can use Jarl with [Nix](https://nixos.org) and [nixpkgs](https://search.nixos.org/packages?channel=unstable&query=jarl#show=jarl):
+
+```
+# Temporary shell
+nix-shell -p jarl
+jarl check .
+
+# Run one-off command (with flakes enabled)
+nix run nixpkgs#jarl -- check .
+
+# One-off command with comma (https://github.com/nix-community/comma)
+, jarl check .
+
+# Add to NixOS configuration (permanent install)
+environment.systemPackages = [
+  pkgs.jarl
+];
+
+# Add to home-manager
+home.packages = [
+  pkgs.jarl
+];
+```
+
+Modifying the user profile with `nix-env` or `nix profile add` is not recommended.
+
+</details>
+
 ### Development version
 
 Some pre-releases may be available from the [Releases page](https://github.com/etiennebacher/jarl/releases) (the version usually contains `alpha`, see the installation instructions there).
