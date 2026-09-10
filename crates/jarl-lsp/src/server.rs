@@ -1257,10 +1257,19 @@ select = ["ALL"]
         source_with_cursor: &str,
         encoding: PositionEncoding,
     ) -> Option<String> {
+        apply_jarl_ignore_at_cursor_with_encoding_and_extension(source_with_cursor, encoding, "R")
+    }
+
+    /// Apply a jarl-ignore action for a file with the given extension.
+    fn apply_jarl_ignore_at_cursor_with_encoding_and_extension(
+        source_with_cursor: &str,
+        encoding: PositionEncoding,
+        extension: &str,
+    ) -> Option<String> {
         let cursor_pos = source_with_cursor.find(CURSOR)?;
         let content = source_with_cursor.replace(CURSOR, "");
 
-        let env = TestEnv::new(&content);
+        let env = TestEnv::new_with_extension(&content, extension);
         let snapshot = env.create_snapshot_with_encoding(&content, encoding);
 
         // Run the linter to get real diagnostics
@@ -1471,6 +1480,47 @@ x <- foo(<CURS>any(is.na(x)))
         # jarl-ignore any_is_na: <reason>
         x <- foo(any(is.na(x)))
         ");
+    }
+
+    #[test]
+    fn test_suppression_insert_new_comment_in_rmd_and_qmd_chunk() {
+        let source = concat!(
+            "---\n",
+            "title: \"B-H7\"\n",
+            "output: html_document\n",
+            "---\n",
+            "\n",
+            "Introductory text.\n",
+            "\n",
+            "```{r}\n",
+            "x <- 1\n",
+            "<CURS>any(is.na(x))\n",
+            "```\n",
+        );
+        let expected = concat!(
+            "---\n",
+            "title: \"B-H7\"\n",
+            "output: html_document\n",
+            "---\n",
+            "\n",
+            "Introductory text.\n",
+            "\n",
+            "```{r}\n",
+            "x <- 1\n",
+            "# jarl-ignore any_is_na: <reason>\n",
+            "any(is.na(x))\n",
+            "```\n",
+        );
+
+        for extension in ["Rmd", "qmd"] {
+            let result = apply_jarl_ignore_at_cursor_with_encoding_and_extension(
+                source,
+                PositionEncoding::UTF8,
+                extension,
+            )
+            .unwrap();
+            assert_eq!(result, expected, "unexpected insertion for .{extension}");
+        }
     }
 
     #[test]

@@ -27,6 +27,8 @@
 
 ### Bug fixes
 
+* Fix LSP `jarl-ignore` quickfix insertion positions in Rmd and Qmd files.
+
 * Prevent the `nzchar` rule from treating quote characters as empty strings and
   support empty raw string literals (#696, @Yousa-Mirage).
 
