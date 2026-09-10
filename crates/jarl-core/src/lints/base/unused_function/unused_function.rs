@@ -21,7 +21,7 @@ use crate::package::{FileScope, SharedFileData};
 /// ## Why is this bad?
 ///
 /// Functions must be documented in NAMESPACE to be exported to end users. A
-/// unction that is never called nor exported is likely dead code left over
+/// function that is never called nor exported is likely dead code left over
 /// from refactoring. Removing unused internal functions keeps the codebase
 /// easier to understand and maintain.
 ///
@@ -58,7 +58,6 @@ use crate::package::{FileScope, SharedFileData};
 /// # `check_length()` isn't exported but and isn't used anywhere, so it is
 /// # reported.
 /// ```
-///
 // ## Implementation
 //
 // Operates on the already-scanned `SharedFileData` of a package rather than
