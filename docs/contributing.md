@@ -13,7 +13,7 @@ cargo install cargo-insta
 
 Jarl uses [just](https://github.com/casey/just) to quickly run several useful commands, such as `just document` or `just lint` (see the list of commands with `just -l`).
 
-For documentation, you will need to have [Quarto](https://quarto.org/) and the R packages `reactable` and `rmarkdown` installed.
+For documentation, you will need to have [Quarto](https://quarto.org/) and the R packages `reactable`, `rmarkdown` and `yaml12` installed.
 
 ## AI policy
 

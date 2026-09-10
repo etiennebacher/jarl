@@ -1,5 +1,4 @@
-library(yaml)
-
+### reset rules directory
 if (dir.exists("docs/rules")) {
   unlink("docs/rules", recursive = TRUE)
 }
@@ -11,15 +10,17 @@ rules <- list.files(
   recursive = TRUE,
   pattern = "\\.rs$"
 )
-rules <- rules[!grepl("mod.rs", rules)]
-rule_names <- gsub("\\.rs$", "", basename(rules))
+
+rules <- rules[!grepl("(mod|options).rs", rules)]
 
 ### Create individual qmd files for rules
 
-docs <- lapply(seq_along(rules), \(x) {
-  content <- readLines(rules[x])
+create_doc <- function(rule) {
+  content <- readLines(rule)
+  rule_name <- gsub("\\.rs$", "", basename(rule))
+
   if (!any(grepl("## What it does", content, fixed = TRUE))) {
-    return()
+    return(FALSE)
   }
 
   added_in_version <- grep("/// Version added:", content, value = TRUE)
@@ -31,15 +32,14 @@ docs <- lapply(seq_along(rules), \(x) {
 
   if (
     length(added_in_version) != 1 ||
-      !grepl("\\d+\\.\\d+\\.\\d+", added_in_version)
+      !grepl("^\\d+\\.\\d+\\.\\d+$", added_in_version)
   ) {
     stop(
       paste0(
         "Couldn't find the 'Version added' line for rule '",
-        rule_names[x],
+        rule,
         "'."
-      ),
-      call. = FALSE
+      )
     )
   }
 
@@ -52,6 +52,7 @@ docs <- lapply(seq_along(rules), \(x) {
   doc <- gsub("^///(| )", "", doc)
 
   doc <- c(
+    paste0("# ", rule_name),
     paste0(
       '::: {.callout-note title="Added in ',
       added_in_version,
@@ -61,35 +62,41 @@ docs <- lapply(seq_along(rules), \(x) {
     doc
   )
 
-  doc
-})
+  writeLines(doc, paste0("docs/rules/", rule_name, ".md"))
 
-empty_docs <- lengths(docs) == 0
-docs <- docs[!empty_docs]
-rule_names <- rule_names[!empty_docs]
-names(docs) <- rule_names
+  return(TRUE)
+}
 
-for (i in seq_along(docs)) {
-  to_write <- c(paste0("# ", rule_names[i]), docs[[i]])
-  writeLines(to_write, paste0("docs/rules/", rule_names[i], ".md"))
+docs <- logical(length(rules))
+
+for (i in seq_along(rules)) {
+  doc_out <- create_doc(rules[i])
+  docs[i] <- doc_out
 }
 
 ### Automatically add new rules in _quarto.yml
 
-# Not the same as `rule_names` since we discarded those that don't have any
-# docs yet
-doc_names <- sort(rule_names)
-
-quarto_yml <- read_yaml("docs/_quarto.yml")
-quarto_yml$website$sidebar[[1]]$contents <- list(
-  "rules.qmd",
-  list(section = "List of rules", contents = paste0("rules/", doc_names, ".md"))
+rule_docs <- list.files(
+  "docs/rules",
+  pattern = "\\.md$"
 )
-quarto_yml$filters <- list("linkify-github-refs.lua", "newpagelink.lua")
-write_yaml(
-  quarto_yml,
-  "docs/_quarto.yml",
-  handlers = list(
-    logical = verbatim_logical
+
+quarto_yml <- yaml12::read_yaml("docs/_quarto.yml")
+
+quarto_yml$website$sidebar <- list(list(
+  title = "Rules",
+  style = "floating",
+  contents = list(
+    "rules.qmd",
+    list(
+      section = "List of rules",
+      contents = paste0("rules/", sort(rule_docs))
+    )
   )
+))
+
+# use format_yaml until https://github.com/posit.dev/r-yaml12/issues#40 fixed
+writeLines(
+  yaml12::format_yaml(quarto_yml),
+  "docs/_quarto.yml"
 )
