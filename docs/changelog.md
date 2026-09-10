@@ -27,8 +27,8 @@
 
 ### Bug fixes
 
-* Treat uppercase `.RMD`/`.QMD` extensions (and any other letter-case variant)
-  files consistently.
+* Handle uppercase `.RMD`/`.QMD` extensions (and any other letter-case variant)
+  files consistently (#709, @Yousa-Mirage).
 
 * Prevent the `nzchar` rule from treating quote characters as empty strings and
   support empty raw string literals (#696, @Yousa-Mirage).
