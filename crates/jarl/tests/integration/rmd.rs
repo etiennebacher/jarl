@@ -1735,3 +1735,56 @@ plot(1)
 
     Ok(())
 }
+
+/// Rmd/Qmd files must be handled consistently regardless of extension casing.
+#[test]
+fn test_uppercase_rmd_qmd_no_autofix() -> anyhow::Result<()> {
+    let content = "```{r}
+any(is.na(x))
+```
+";
+    let case = CliTest::with_files([("report.RMD", content), ("notes.QMD", content)])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("report.RMD")
+            .arg("notes.QMD")
+            .arg("--fix")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> notes.QMD:2:1
+      |
+    2 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+    warning: any_is_na
+     --> report.RMD:2:1
+      |
+    2 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+
+    ----- stderr -----
+    "
+    );
+    assert_eq!(case.read_file("report.RMD")?, content);
+    assert_eq!(case.read_file("notes.QMD")?, content);
+
+    Ok(())
+}
