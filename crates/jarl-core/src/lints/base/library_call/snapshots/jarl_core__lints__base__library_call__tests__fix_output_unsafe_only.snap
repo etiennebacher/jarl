@@ -1,0 +1,15 @@
+---
+source: crates/jarl-core/src/lints/base/library_call/mod.rs
+expression: "get_fixed_text(vec![\"library(dplyr)\\nx <- 1\\nlibrary(purrr)\\n\"],\n\"library_call\", None,)"
+---
+OLD:
+====
+library(dplyr)
+x <- 1
+library(purrr)
+
+NEW:
+====
+library(dplyr)
+x <- 1
+library(purrr)

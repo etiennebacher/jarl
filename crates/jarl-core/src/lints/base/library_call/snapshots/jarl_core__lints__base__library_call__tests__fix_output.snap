@@ -1,0 +1,27 @@
+---
+source: crates/jarl-core/src/lints/base/library_call/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"options(stringsAsFactors = FALSE)\\nlibrary(dplyr)\\nif (interactive()) {\\n  library(rlang)\\n}\\nsuppressPackageStartupMessages(library(zoo))\\nx <- 1\\nlibrary(purrr)\\nlibrary(abc)\\n\",],\n\"library_call\",)"
+---
+OLD:
+====
+options(stringsAsFactors = FALSE)
+library(dplyr)
+if (interactive()) {
+  library(rlang)
+}
+suppressPackageStartupMessages(library(zoo))
+x <- 1
+library(purrr)
+library(abc)
+
+NEW:
+====
+options(stringsAsFactors = FALSE)
+library(dplyr)
+if (interactive()) {
+  library(rlang)
+}
+suppressPackageStartupMessages(library(zoo))
+library(purrr)
+library(abc)
+x <- 1

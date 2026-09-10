@@ -17,6 +17,9 @@
 
 ### Changes
 
+* New rule: `library_call` reports `library()` calls that are not grouped at
+  the top of the script. Disabled by default (#701).
+
 * `expect_length` no longer reports cases where `length()` is in the `expected`
   argument, e.g. `expect_equal(nrow(x), length(y))` (#684).
 

@@ -1,0 +1,49 @@
+---
+source: crates/jarl-core/src/lints/base/library_call/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"library(dplyr)\\nx <- 1\\nlibrary(\\n  # leading\\n  purrr\\n)\\n\",\n\"library(dplyr)\\nx <- 1\\nlibrary(purrr # inline\\n)\\n\",\n\"library(dplyr)\\nx <- 1\\nlibrary(purrr) # trailing\\n\",], \"library_call\",)"
+---
+OLD:
+====
+library(dplyr)
+x <- 1
+library(
+  # leading
+  purrr
+)
+
+NEW:
+====
+library(dplyr)
+x <- 1
+library(
+  # leading
+  purrr
+)
+
+
+OLD:
+====
+library(dplyr)
+x <- 1
+library(purrr # inline
+)
+
+NEW:
+====
+library(dplyr)
+x <- 1
+library(purrr # inline
+)
+
+
+OLD:
+====
+library(dplyr)
+x <- 1
+library(purrr) # trailing
+
+NEW:
+====
+library(dplyr)
+x <- 1
+library(purrr) # trailing

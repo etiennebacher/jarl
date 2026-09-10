@@ -5,6 +5,7 @@ use oak_semantic::semantic_index::SemanticIndex;
 use crate::checker::Checker;
 use crate::diagnostic::*;
 use crate::lints::base::empty_file::empty_file::empty_file;
+use crate::lints::base::library_call::library_call::library_call;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
 use crate::lints::base::unused_object::unused_object::unused_object;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
@@ -144,6 +145,17 @@ pub(crate) fn check_document(
 
     if checker.is_rule_enabled(Rule::EmptyFile) {
         checker.report_diagnostic(empty_file(&expressions, syntax));
+    }
+
+    // In an Rmd/Qmd document, a `library()` call belongs to the chunk that
+    // needs it: chunks are meant to be readable (and often run) one at a time,
+    // so grouping every attach in the first chunk is not the convention.
+    if checker.is_rule_enabled(Rule::LibraryCall)
+        && !crate::fs::has_rmd_extension(&checker.file_path)
+    {
+        for diagnostic in library_call(&expressions, contents) {
+            checker.report_diagnostic(Some(diagnostic));
+        }
     }
 
     // Filter diagnostics by suppressions. This removes suppressed violations

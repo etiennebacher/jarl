@@ -95,6 +95,7 @@ dat <- as.data.frame(
     c("length_levels", "readability", "✅", ""),
     c("length_test", "correctness", "✅", ""),
     c("lengths", "performance, readability", "✅", ""),
+    c("library_call", "readability", "❗", "Disabled by default"),
     c("list2df", "performance, readability", "✅", "R >= 4.0"),
     c("literal_coercion", "readability", "✅", ""),
     c("matrix_apply", "performance", "✅", ""),
