@@ -5,9 +5,9 @@
 //! those blocks, and extracts the subsequent R code lines with their `#' `
 //! prefix stripped.
 
-use crate::diagnostic::Fix;
+use crate::diagnostic::{Edit, Fix};
 use air_r_syntax::{RLanguage, RSyntaxNode};
-use biome_rowan::{SyntaxNode, TextSize};
+use biome_rowan::{SyntaxNode, TextRange, TextSize};
 
 /// An R code chunk extracted from a roxygen `@examples` or `@examplesIf` section.
 #[derive(Debug)]
@@ -250,15 +250,25 @@ pub fn remap_roxygen_range(
 
 /// Remap a fix from chunk-local byte offsets to original file positions.
 ///
-/// This remaps the fix range, and also inserts the roxygen comment
-/// prefix (e.g. `#' `) before each new line in the fix content so that the
+/// This remaps the range of every edit, and also inserts the roxygen comment
+/// prefix (e.g. `#' `) before each new line in the edit content so that the
 /// replacement text is valid roxygen when applied to the original file.
 pub fn remap_roxygen_fix(fix: &Fix, chunk: &RoxygenExamplesChunk, contents: &str) -> Fix {
-    let start = fix.start();
-    let new_start = remap_byte_offset(start, chunk);
-    let new_end = remap_byte_offset(fix.end(), chunk);
+    let edits = fix
+        .edits
+        .iter()
+        .map(|edit| remap_roxygen_edit(edit, chunk, contents))
+        .collect();
 
-    // Determine the roxygen prefix from the line where the fix starts.
+    Fix::from_edits(edits, fix.to_skip)
+}
+
+fn remap_roxygen_edit(edit: &Edit, chunk: &RoxygenExamplesChunk, contents: &str) -> Edit {
+    let start = edit.start();
+    let new_start = remap_byte_offset(start, chunk);
+    let new_end = remap_byte_offset(edit.end(), chunk);
+
+    // Determine the roxygen prefix from the line where the edit starts.
     let start_line_idx = match chunk.code_line_starts.binary_search(&start) {
         Ok(i) => i,
         Err(i) => i.saturating_sub(1),
@@ -267,10 +277,16 @@ pub fn remap_roxygen_fix(fix: &Fix, chunk: &RoxygenExamplesChunk, contents: &str
     let prefix_len = chunk.line_prefix_lengths[start_line_idx];
     let prefix = &contents[prefix_offset..prefix_offset + prefix_len];
 
-    // Insert the roxygen prefix before each new line in the fix content.
-    let content = fix.content.replace('\n', &format!("\n{prefix}"));
+    // Insert the roxygen prefix before each new line in the edit content.
+    let content = edit.content.replace('\n', &format!("\n{prefix}"));
 
-    Fix::new_with_offsets(new_start, new_end, content, fix.to_skip)
+    Edit::replacement(
+        TextRange::new(
+            TextSize::from(new_start as u32),
+            TextSize::from(new_end as u32),
+        ),
+        content,
+    )
 }
 
 /// Pre-compute the byte offset of each line within a `code` string (lines

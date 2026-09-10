@@ -476,7 +476,7 @@ impl Server {
         let fix_data = diagnostic.data.as_ref()?;
         let fix: crate::lint::DiagnosticFix = serde_json::from_value(fix_data.clone()).ok()?;
 
-        if fix.content.is_empty() && fix.start == fix.end {
+        if fix.edits.is_empty() {
             return None; // No fix available
         }
 
@@ -484,18 +484,24 @@ impl Server {
         let content = snapshot.content();
         let encoding = snapshot.position_encoding();
 
-        let start_pos =
-            crate::lint::byte_offset_to_lsp_position(fix.start, content, encoding).ok()?;
-        let end_pos = crate::lint::byte_offset_to_lsp_position(fix.end, content, encoding).ok()?;
+        // A fix is all-or-nothing, and a `WorkspaceEdit` holds several edits
+        // per file, so the whole fix lands as one undo step.
+        let mut text_edits = Vec::with_capacity(fix.edits.len());
+        for edit in &fix.edits {
+            let start_pos =
+                crate::lint::byte_offset_to_lsp_position(edit.start, content, encoding).ok()?;
+            let end_pos =
+                crate::lint::byte_offset_to_lsp_position(edit.end, content, encoding).ok()?;
 
-        let edit_range = types::Range::new(start_pos, end_pos);
-
-        // Create the text edit for this single file
-        let text_edit = types::TextEdit { range: edit_range, new_text: fix.content.clone() };
+            text_edits.push(types::TextEdit {
+                range: types::Range::new(start_pos, end_pos),
+                new_text: edit.content.clone(),
+            });
+        }
 
         // Create workspace edit with just this file's changes
         let mut changes = std::collections::HashMap::new();
-        changes.insert(snapshot.uri().clone(), vec![text_edit]);
+        changes.insert(snapshot.uri().clone(), text_edits);
 
         let workspace_edit = types::WorkspaceEdit { changes: Some(changes), ..Default::default() };
 
@@ -1393,9 +1399,11 @@ select = ["ALL"]
         let snapshot = create_test_snapshot("any(duplicated(x))\n");
 
         let fix = lint::DiagnosticFix {
-            content: "anyDuplicated(x) > 0".to_string(),
-            start: 0,
-            end: 18,
+            edits: vec![lint::DiagnosticEdit {
+                content: "anyDuplicated(x) > 0".to_string(),
+                start: 0,
+                end: 18,
+            }],
             is_safe: false,
             rule_name: "any_duplicated".to_string(),
             diagnostic_start: 0,

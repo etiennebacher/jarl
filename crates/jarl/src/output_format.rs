@@ -84,6 +84,18 @@ pub fn print_summary(diagnostics: &[&Diagnostic], has_errors: bool) {
     }
 }
 
+/// Tells the user that fixes were dropped because their violations sit in
+/// roxygen `@examples` sections. Only worth saying when the user expected a
+/// fix to happen: a rule that is documented as fixable is reported here
+/// without a fix, and nothing else explains why.
+pub fn print_roxygen_fix_note(diagnostics: &[&Diagnostic]) {
+    if diagnostics.iter().any(|d| d.fix_disabled_in_roxygen) {
+        println!(
+            "\nSome fixes are disabled because the violations are in `@examples` sections.\nSet `fix-roxygen = true` in `jarl.toml` to apply them."
+        );
+    }
+}
+
 /// Prints warnings under a `── Warnings ──` section header.
 pub fn print_warnings(warnings: &[String]) {
     if warnings.is_empty() {
@@ -297,9 +309,10 @@ impl Emitter for GithubEmitter {
         &self,
         writer: &mut W,
         diagnostics: &[&Diagnostic],
-        _errors: &[(String, anyhow::Error)],
+        errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
+        emit_errors_concise(errors);
         for diagnostic in diagnostics {
             let (row, col) = match diagnostic.location {
                 Some(loc) => (loc.row(), loc.column() + 1), // Convert to 1-based for display
@@ -465,7 +478,7 @@ struct SarifFix {
 #[serde(rename_all = "camelCase")]
 struct SarifArtifactChange {
     artifact_location: SarifArtifactLocation,
-    replacements: [SarifReplacement; 1],
+    replacements: Vec<SarifReplacement>,
 }
 
 #[derive(Debug, Serialize)]
@@ -506,9 +519,10 @@ impl Emitter for SarifEmitter {
         &self,
         writer: &mut W,
         diagnostics: &[&Diagnostic],
-        _errors: &[(String, anyhow::Error)],
+        errors: &[(String, anyhow::Error)],
     ) -> anyhow::Result<()> {
         let mut writer = BufWriter::new(writer);
+        emit_errors_concise(errors);
 
         // Cache each file's contents so ranges can be converted to line/column
         // regions without re-reading the source.
@@ -570,13 +584,20 @@ impl Emitter for SarifEmitter {
             }
             .replace('\\', "/");
 
-            // A fix is only emitted when it edits the source (not skipped, and
-            // it either inserts content or deletes a non-empty range).
+            // A fix is only emitted when it edits the source: not skipped, and
+            // carrying at least one edit. Its edits become the replacements of
+            // a single artifact change, so they are applied together.
             let fix = &diagnostic.fix;
-            let fixes = if !fix.to_skip && (fix.start() != fix.end() || !fix.content.is_empty()) {
-                let deleted_region = range_to_region(content, fix.start(), fix.end());
-                let inserted_content = (!fix.content.is_empty())
-                    .then(|| SarifMessage { text: Cow::Owned(fix.content.clone()) });
+            let fixes = if !fix.to_skip && !fix.edits.is_empty() {
+                let replacements = fix
+                    .edits
+                    .iter()
+                    .map(|edit| SarifReplacement {
+                        deleted_region: range_to_region(content, edit.start(), edit.end()),
+                        inserted_content: (!edit.content.is_empty())
+                            .then(|| SarifMessage { text: Cow::Owned(edit.content.clone()) }),
+                    })
+                    .collect();
                 vec![SarifFix {
                     description: SarifMessage { text: Cow::Owned(message.clone()) },
                     artifact_changes: [SarifArtifactChange {
@@ -584,7 +605,7 @@ impl Emitter for SarifEmitter {
                             uri: uri.clone(),
                             uri_base_id: "ROOTPATH",
                         },
-                        replacements: [SarifReplacement { deleted_region, inserted_content }],
+                        replacements,
                     }],
                 }]
             } else {
