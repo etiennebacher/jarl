@@ -950,7 +950,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="why-is-this-bad" class="level2">
 <h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
-<p>An internal function that is never called is likely dead code left over from refactoring. Removing it keeps the codebase easier to understand and maintain.</p>
+<p>Functions must be documented in NAMESPACE to be exported to end users. A function that is never called nor exported is likely dead code left over from refactoring. Removing unused internal functions keeps the codebase easier to understand and maintain.</p>
 </section>
 <section id="limitations" class="level2">
 <h2 class="anchored" data-anchor-id="limitations">Limitations</h2>
