@@ -4,8 +4,8 @@
 
 ## What it does
 
-Checks for usage of `x != ""` or `x == ""`
- instead of `nzchar(x)` or `!nzchar(x)`.
+Checks for usage of `x != ""` or `x == ""`, or comparisons of `nchar(x)`
+with zero, such as `nchar(x) == 0`, instead of `nzchar(x)` or `!nzchar(x)`.
 
 ## Why is this bad?
 `x == ""` is less efficient than `!nzchar(x)`

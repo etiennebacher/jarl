@@ -70,6 +70,50 @@ mod tests {
     }
 
     #[test]
+    fn test_lint_nchar_zero_comparisons() {
+        assert_snapshot!(
+            "nchar_zero_comparisons",
+            snapshot_lint(concat!(
+                "nchar(x) > 0\n",
+                "nchar(x) != 0L\n",
+                "nchar(x) <= 0.0\n",
+                "nchar(x) == 0\n",
+                "nchar(x) >= 0\n",
+                "nchar(x) < 0\n",
+                "0 < nchar(x)\n",
+                "0 != nchar(x)\n",
+                "0 >= nchar(x)\n",
+                "0 == nchar(x)\n",
+                "0 <= nchar(x)\n",
+                "0 > nchar(x)\n",
+                "nchar(x = x) > 0",
+            ),)
+        );
+
+        assert_snapshot!(
+            "nchar_zero_fix_output",
+            get_unsafe_fixed_text(
+                vec![
+                    "nchar(x) > 0",
+                    "nchar(x) != 0L",
+                    "nchar(x) <= 0.0",
+                    "nchar(x) == 0",
+                    "nchar(x) >= 0",
+                    "nchar(x) < 0",
+                    "0 < nchar(x)",
+                    "0 != nchar(x)",
+                    "0 >= nchar(x)",
+                    "0 <= nchar(x)",
+                    "0 == nchar(x)",
+                    "0 > nchar(x)",
+                    "nchar(x = x) > 0",
+                ],
+                "nzchar",
+            )
+        );
+    }
+
+    #[test]
     fn test_no_lint_nzchar() {
         // `x %in% NaN` returns missings, but `NaN %in% x` returns TRUE/FALSE.
         expect_no_lint("'' %in% x", "nzchar", None);
@@ -85,6 +129,16 @@ mod tests {
         expect_no_lint(r#"x == "''"#, "nzchar", None);
 
         expect_no_lint(r#"x != "''"#, "nzchar", None);
+
+        expect_no_lint("nchar(x) == 1", "nzchar", None);
+
+        expect_no_lint("nchar(x, type = 'width') == 0", "nzchar", None);
+
+        expect_no_lint("nchar(x, allowNA = TRUE) == 0", "nzchar", None);
+
+        expect_no_lint("nchar(type = 'chars') == 0", "nzchar", None);
+
+        expect_no_lint("nchar() == 0", "nzchar", None);
     }
 
     #[test]
@@ -98,6 +152,7 @@ mod tests {
                     "# leading comment\nx == ''",
                     "x # comment\n== ''",
                     "x == '' # trailing comment",
+                    "nchar(x) # comment\n> 0",
                 ],
                 "nzchar"
             )

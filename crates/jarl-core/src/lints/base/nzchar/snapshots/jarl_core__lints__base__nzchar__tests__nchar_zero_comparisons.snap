@@ -1,0 +1,96 @@
+---
+source: crates/jarl-core/src/lints/base/nzchar/mod.rs
+expression: "snapshot_lint(\"nchar(x) > 0\\nnchar(x) != 0L\\nnchar(x) <= 0.0\\nnchar(x) == 0\\nnchar(x) >= 0\\nnchar(x) < 0\\n0 < nchar(x)\\n0 != nchar(x)\\n0 >= nchar(x)\\n0 == nchar(x)\\n0 <= nchar(x)\\n0 > nchar(x)\\nnchar(x = x) > 0\",)"
+---
+warning: nzchar
+ --> <test>:1:1
+  |
+1 | nchar(x) > 0
+  | ------------ `nchar(x) > 0` is inefficient.
+  |
+  = help: Use `nzchar(x)` instead.
+warning: nzchar
+ --> <test>:2:1
+  |
+2 | nchar(x) != 0L
+  | -------------- `nchar(x) != 0` is inefficient.
+  |
+  = help: Use `nzchar(x)` instead.
+warning: nzchar
+ --> <test>:3:1
+  |
+3 | nchar(x) <= 0.0
+  | --------------- `nchar(x) <= 0` is inefficient.
+  |
+  = help: Use `!nzchar(x)` instead.
+warning: nzchar
+ --> <test>:4:1
+  |
+4 | nchar(x) == 0
+  | ------------- `nchar(x) == 0` is inefficient.
+  |
+  = help: Use `!nzchar(x)` instead.
+warning: nzchar
+ --> <test>:5:1
+  |
+5 | nchar(x) >= 0
+  | ------------- `nchar(x) >= 0` is always true.
+  |
+  = help: Maybe you want `nzchar(x)` instead.
+warning: nzchar
+ --> <test>:6:1
+  |
+6 | nchar(x) < 0
+  | ------------ `nchar(x) < 0` is always false.
+  |
+  = help: Maybe you want `!nzchar(x)` instead.
+warning: nzchar
+ --> <test>:7:1
+  |
+7 | 0 < nchar(x)
+  | ------------ `nchar(x) > 0` is inefficient.
+  |
+  = help: Use `nzchar(x)` instead.
+warning: nzchar
+ --> <test>:8:1
+  |
+8 | 0 != nchar(x)
+  | ------------- `nchar(x) != 0` is inefficient.
+  |
+  = help: Use `nzchar(x)` instead.
+warning: nzchar
+ --> <test>:9:1
+  |
+9 | 0 >= nchar(x)
+  | ------------- `nchar(x) <= 0` is inefficient.
+  |
+  = help: Use `!nzchar(x)` instead.
+warning: nzchar
+  --> <test>:10:1
+   |
+10 | 0 == nchar(x)
+   | ------------- `nchar(x) == 0` is inefficient.
+   |
+   = help: Use `!nzchar(x)` instead.
+warning: nzchar
+  --> <test>:11:1
+   |
+11 | 0 <= nchar(x)
+   | ------------- `nchar(x) >= 0` is always true.
+   |
+   = help: Maybe you want `nzchar(x)` instead.
+warning: nzchar
+  --> <test>:12:1
+   |
+12 | 0 > nchar(x)
+   | ------------ `nchar(x) < 0` is always false.
+   |
+   = help: Maybe you want `!nzchar(x)` instead.
+warning: nzchar
+  --> <test>:13:1
+   |
+13 | nchar(x = x) > 0
+   | ---------------- `nchar(x) > 0` is inefficient.
+   |
+   = help: Use `nzchar(x)` instead.
+Found 13 errors.

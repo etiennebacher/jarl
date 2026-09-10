@@ -1,0 +1,94 @@
+---
+source: crates/jarl-core/src/lints/base/nzchar/mod.rs
+expression: "get_unsafe_fixed_text(vec![\"nchar(x) > 0\", \"nchar(x) != 0L\",\n\"nchar(x) <= 0.0\", \"nchar(x) == 0\", \"nchar(x) >= 0\", \"nchar(x) < 0\",\n\"0 < nchar(x)\", \"0 != nchar(x)\", \"0 >= nchar(x)\", \"0 <= nchar(x)\",\n\"0 == nchar(x)\", \"0 > nchar(x)\", \"nchar(x = x) > 0\",], \"nzchar\",)"
+---
+OLD:
+====
+nchar(x) > 0
+NEW:
+====
+nzchar(x)
+
+OLD:
+====
+nchar(x) != 0L
+NEW:
+====
+nzchar(x)
+
+OLD:
+====
+nchar(x) <= 0.0
+NEW:
+====
+!nzchar(x)
+
+OLD:
+====
+nchar(x) == 0
+NEW:
+====
+!nzchar(x)
+
+OLD:
+====
+nchar(x) >= 0
+NEW:
+====
+nchar(x) >= 0
+
+OLD:
+====
+nchar(x) < 0
+NEW:
+====
+nchar(x) < 0
+
+OLD:
+====
+0 < nchar(x)
+NEW:
+====
+nzchar(x)
+
+OLD:
+====
+0 != nchar(x)
+NEW:
+====
+nzchar(x)
+
+OLD:
+====
+0 >= nchar(x)
+NEW:
+====
+!nzchar(x)
+
+OLD:
+====
+0 <= nchar(x)
+NEW:
+====
+0 <= nchar(x)
+
+OLD:
+====
+0 == nchar(x)
+NEW:
+====
+!nzchar(x)
+
+OLD:
+====
+0 > nchar(x)
+NEW:
+====
+0 > nchar(x)
+
+OLD:
+====
+nchar(x = x) > 0
+NEW:
+====
+nzchar(x)

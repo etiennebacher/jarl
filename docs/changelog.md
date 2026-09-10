@@ -20,6 +20,9 @@
 * `expect_length` no longer reports cases where `length()` is in the `expected`
   argument, e.g. `expect_equal(nrow(x), length(y))` (#684).
 
+* The `nzchar` rule now also reports comparisons of `nchar(x)` with zero, such
+  as `nchar(x) == 0` (#705, @Yousa-Mirage).
+
 * The LSP now also publishes diagnostics when opening a file (#685).
 
 * The CLI now prints a message suggesting `fix-roxygen = true` when some fixes
