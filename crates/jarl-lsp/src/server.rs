@@ -1486,7 +1486,7 @@ x <- foo(<CURS>any(is.na(x)))
     fn test_suppression_insert_new_comment_in_rmd_and_qmd_chunk() {
         let source = concat!(
             "---\n",
-            "title: \"B-H7\"\n",
+            "title: \"Demo\"\n",
             "output: html_document\n",
             "---\n",
             "\n",
@@ -1499,7 +1499,7 @@ x <- foo(<CURS>any(is.na(x)))
         );
         let expected = concat!(
             "---\n",
-            "title: \"B-H7\"\n",
+            "title: \"Demo\"\n",
             "output: html_document\n",
             "---\n",
             "\n",

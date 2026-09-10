@@ -543,7 +543,7 @@ mod tests {
     fn test_create_suppression_edit_in_rmd_remaps_line() {
         let source = concat!(
             "---\n",
-            "title: \"demo\"\n",
+            "title: \"Demo\"\n",
             "output: html_document\n",
             "---\n",
             "\n",
