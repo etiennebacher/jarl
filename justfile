@@ -3,6 +3,7 @@ _default:
 
 # Update the list of rules and the website
 document:
+  Rscript -e 'source("docs/check_pkgs.R")'
   Rscript -e 'source("docs/make_docs.R")'
   (cd docs && quarto render)
 
