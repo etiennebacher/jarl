@@ -178,6 +178,7 @@ const FORMALS_DO_CALL: Formals = &["what", "args", "quote", "envir"];
 
 pub struct List2Df;
 
+/// <!-- docs: start -->
 /// Version added: 0.1.2
 ///
 /// ## What it does
@@ -185,6 +186,7 @@ pub struct List2Df;
 /// Checks for usage of `do.call(cbind.data.frame, x)`.
 ///
 /// [...]
+/// <!-- docs: end -->
 impl Violation for List2Df {
     fn rule(&self) -> Rule {
         Rule::List2df
@@ -410,7 +412,7 @@ The rule can then read its options from the checker, e.g. `checker.rule_options.
 Finally:
 
 * run `just gen-schema` to update `artifacts/jarl.schema.json`;
-* document the option for users in `docs/reference/config-file.md` (this page is written by hand, it is not generated from the Rust code);
+* document the option for users (see the section below on adding documentation);
 * add integration tests in `crates/jarl/tests/integration/toml_rule_args.rs`, covering invalid values, unknown fields in the rule table, and the option actually changing what is reported.
 
 :::
@@ -538,6 +540,103 @@ Looking at tests for `list2df`, there are four blocks:
 Since we have snapshot tests, we first need to run `cargo insta test` to generate the snapshots and then `cargo insta review` to review and validate them.
 After that, run `cargo test` to ensure that all tests pass.
 
+### Add documentation
+
+The documentation used in `jarl rule <rulename>` and on the Jarl website is automatically generated from a documentation block in the `<rulename.rs>` file.
+
+The documentation block is positioned after any imports and declarations but before any of the code that operates the rule checks.
+The documentation block must be commented out using three slashes (`///`), it must start with the marker `<!-- docs: start -->` and end with the marker `<!-- docs: end -->`.
+Commented content outside of these markers will be ignored.
+The content of the documentation block uses standard markdown notation.
+Although the documentation website is built using Quarto do not include any executable code as the documentation is extracted into plain markdown files.
+
+```rust
+use crate::diagnostic::*;
+use crate::rule_set::Rule;
+use crate::utils::{Formals, get_arg, get_arg_by_position, node_contains_comments};
+use air_r_syntax::*;
+use biome_rowan::AstNode;
+
+const FORMALS_DO_CALL: Formals = &["what", "args", "quote", "envir"];
+
+pub struct List2Df;
+
+/// <!-- docs: start -->
+/// Version added: 0.1.2
+///
+/// ## What it does
+///
+/// Checks for usage of `do.call(cbind.data.frame, x)`.
+///
+/// ## Why is this bad?
+///
+/// The goal of `do.call(cbind.data.frame, x)` is to concatenate multiple lists
+/// elements of the same length into a `data.frame`. Since R 4.0.0, it is
+/// possible to do this with `list2DF(x)`, which is more efficient and easier
+/// to read than `do.call(cbind.data.frame, x)`.
+///
+/// This rule comes with a safe fix but is only enabled if the project
+/// explicitly uses R >= 4.0.0 (or if the argument `--min-r-version` is passed
+/// with a version >= 4.0.0).
+///
+/// ## Example
+///
+/// ```r
+/// x <- list(a = 1:10, b = 11:20)
+/// do.call(cbind.data.frame, x)
+/// ```
+///
+/// Use instead:
+/// ```r
+/// x <- list(a = 1:10, b = 11:20)
+/// list2DF(x)
+/// ```
+///
+/// ## References
+///
+/// See `?list2DF`
+/// <!-- docs: end -->
+impl Violation for List2Df {
+    ...
+}
+```
+
+A documentation block must declare the version added (in `MAJOR.MINOR.PATCH` format).
+It should also have a "What it does" section that describes what the rule does, most rules also have a "Why is this bad" section to explain the rationale for the rule.
+Be helpful to end user and include an "Example" that illustrates bad code that will be flagged by the rule and good code that will not be flagged by the rule.
+You may also wish to include references, for example to help commands within R or external websites. Section headers should use level 2 heading markers (`##`).
+
+::: {.callout-note title = "Click to see how to add documentation for TOML options" collapse = true}
+The documentation for any TOML options should be included in the `options.rs` file.
+Like the documentation for the rule itself, the documentation should be in a block that is commented out with three slashes (`///`) and uses the `<!-- docs: start -->` and `<!-- docs: end -->` markers.
+
+The options documentation should explain the option(s) that can be set in the configuration file and their possible values.
+It should note the effect(s) of choosing different options and declare any defaults or conflicts.
+The documentation should also include an example of how to set the preferred option in the `jarl.toml` configuration file.
+
+The options documentation will be included after the main documentation for the rule under a section called "Configuration options".
+
+See below the documentation from the `pipe_consistency` rule's options.
+
+```rust
+/// <!-- docs: start -->
+/// This takes a single value (`"|>"` or `"%>%"`) indicating the preferred
+/// pipe operator in the files to check. If `pipe = "|>"` and if the `"pipe_consistency"`
+/// rule is enabled, then any use of `%>%` will be reported, and vice-versa.
+/// 
+/// Default: `"|>"`
+/// 
+/// ```toml
+/// [lint]
+/// ...
+/// 
+/// [lint.pipe_consistency]
+/// pipe = "|>" # or "%>%"
+/// ```
+/// <!-- docs: end -->
+```
+
+:::
 
 ### All the rest
 
