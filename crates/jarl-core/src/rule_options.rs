@@ -97,6 +97,7 @@ declare_rule_options! {
     base::missing_argument => ResolvedMissingArgumentOptions,
     base::nested_pipe => ResolvedNestedPipeOptions,
     base::pipe_consistency => ResolvedPipeConsistencyOptions,
+    base::positional_arguments => ResolvedPositionalArgumentsOptions,
     base::quotes => ResolvedQuotesOptions,
     base::true_false_symbol => ResolvedTrueFalseSymbolOptions,
     base::undesirable_function => ResolvedUndesirableFunctionOptions,

@@ -17,6 +17,10 @@
 
 ### Changes
 
+* New rules:
+
+  * `positional_arguments` (#552)
+
 * `expect_length` no longer reports cases where `length()` is in the `expected`
   argument, e.g. `expect_equal(nrow(x), length(y))` (#684).
 
