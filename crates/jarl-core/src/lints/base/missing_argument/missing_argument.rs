@@ -20,16 +20,8 @@ use biome_rowan::AstSeparatedList;
 ///
 /// Several functions (e.g. `mutate()` in the `tidyverse` ecosystem) allow
 /// trailing commas. Those are ignored by default but you can also tweak this
-/// list of ignored functions in `jarl.toml`:
-///
-/// ```ignore
-/// ...
-/// [lint.missing_argument]
-/// extend-skipped-functions = ["my_function"]
-/// ```
-///
-/// See the [rule-specific arguments](https://jarl.etiennebacher.com/reference/config-file#rule-specific-arguments)
-/// for more information.
+/// list of ignored functions in `jarl.toml`, see configuration options (below)
+/// for details.
 ///
 /// This rule has no automatic fix.
 ///

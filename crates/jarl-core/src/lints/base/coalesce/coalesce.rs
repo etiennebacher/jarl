@@ -63,7 +63,7 @@ use biome_rowan::{AstNode, AstNodeList};
 /// x %||% y # (in both cases)
 /// ```
 ///
-/// ## Reference
+/// ## References
 ///
 /// See `?Control`
 /// <!-- docs: end -->

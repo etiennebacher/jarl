@@ -52,13 +52,9 @@ impl ParsedString<'_> {
 ///
 /// Base R documentation and the Tidyverse style guide recommend using double
 /// quotes for all strings, except for when the string already contains double
-/// quotes. Therefore, by default, this rule expects double quotes (`"`).
-///
-/// To prefer single quotes, set this in `jarl.toml`:
-/// ```toml
-/// [lint.quotes]
-/// quote = "single"
-/// ```
+/// quotes. Therefore, by default, this rule expects double quotes (`"`). See
+/// configuration options (below) for details about how to configure Jarl to
+/// prefer single quotes.
 ///
 /// For regular strings, this rule allows the opposite quote when needed to
 /// avoid escaping the preferred quote. For example,

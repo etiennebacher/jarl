@@ -59,6 +59,6 @@ y <- 2
 x %||% y # (in both cases)
 ```
 
-## Reference
+## References
 
 See `?Control`

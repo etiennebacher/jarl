@@ -21,20 +21,6 @@ pub struct UndesirableFunction {
 /// `browser()` is a debugging tool that interrupts execution, and should be
 /// removed before committing.
 ///
-/// ## Configuration
-///
-/// By default, only `browser` is flagged. You can customise the list in
-/// `jarl.toml`:
-///
-/// ```toml
-/// [lint.undesirable_function]
-/// # Replace the default list entirely:
-/// functions = ["browser", "debug"]
-///
-/// # Or add to the defaults:
-/// extend-functions = ["debug"]
-/// ```
-///
 /// ## Example
 ///
 /// ```r

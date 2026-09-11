@@ -1,21 +1,10 @@
 use air_r_syntax::RSyntaxKind;
 
-/// <!-- docs: start -->
-/// This takes a single value (`"<-"` or `"="`) indicating the preferred assignment
-/// operator in the files to check. If `operator = "<-"` and if the `"assignment"`
-/// rule is enabled, then any use of the `"="` operator to assign values will be
-/// reported, and vice-versa.
-/// 
-/// This option doesn't have a default value.
-/// 
-/// ```toml
-/// [lint]
-/// ...
-/// 
-/// [lint.assignment]
-/// operator = "<-" # or "="
-/// ```
-/// <!-- docs: end -->
+/// <!-- docs: ignore -->
+/// See assignment.rs for documentation of this option.
+/// The assignment rule requires that its configuration option, operator, is
+/// set in order for the rule to run.
+/// <!-- docs: ignore -->
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]

@@ -13,11 +13,20 @@ In most cases using `=` and `<-` is equivalent. Some very popular packages
 use `=` without problems. This rule only ensures the consistency of the
 assignment operator in a project.
 
-Set the following option in `jarl.toml` to use `=` as the preferred operator:
+The `lint.argument.operator` option in `jarl.toml` must be set for this
+rule to be checked. It takes a single value (`"<-"` or `"="`) indicating
+the preferred assignment operator in the files to check.
+If `operator = "<-"` and if the `"assignment"` rule is enabled, then any
+use of the `"="` operator to assign values will be reported, and vice-versa.
+
+This option doesn't have a default value.
 
 ```toml
+[lint]
+...
+
 [lint.assignment]
-operator = "=" # or "<-"
+operator = "<-" # or "="
 ```
 
 ## Example
@@ -48,24 +57,3 @@ f(x = 1)
 See:
 
 - [https://style.tidyverse.org/syntax.html#assignment-1](https://style.tidyverse.org/syntax.html#assignment-1)
-
----
-
-## Configuration options
-
-The operation of `assignment` can be customised in the [configuration file](../reference/config-file.md).
-
-This takes a single value (`"<-"` or `"="`) indicating the preferred assignment
-operator in the files to check. If `operator = "<-"` and if the `"assignment"`
-rule is enabled, then any use of the `"="` operator to assign values will be
-reported, and vice-versa.
-
-This option doesn't have a default value.
-
-```toml
-[lint]
-...
-
-[lint.assignment]
-operator = "<-" # or "="
-```

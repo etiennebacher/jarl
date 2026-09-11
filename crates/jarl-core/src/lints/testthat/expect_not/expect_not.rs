@@ -13,7 +13,7 @@ const FORMALS_EXPECT_TRUE: Formals = &["object", "info", "label"];
 ///
 /// Checks for usage of `expect_true(!x)` and `expect_false(!x)` in tests.
 ///
-/// ## Why is this bad
+/// ## Why is this bad?
 ///
 /// Using `expect_false(x)` is clearer and more direct than `expect_true(!x)`,
 /// and vice versa.

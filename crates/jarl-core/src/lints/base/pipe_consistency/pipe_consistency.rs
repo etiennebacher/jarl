@@ -12,7 +12,7 @@ use biome_rowan::{AstNode, Direction, TextRange};
 ///
 /// Reports cases where both pipes (`%>%` or `|>`) are used. By default, the
 /// base pipe `|>` is preferred but this can be changed in the configuration
-/// file.
+/// file, see details of the configuration options below.
 ///
 /// ## Why is this bad?
 ///
