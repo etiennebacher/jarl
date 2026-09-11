@@ -8,6 +8,7 @@ use biome_rowan::AstNode;
 
 pub struct LengthTest;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -32,6 +33,7 @@ pub struct LengthTest;
 /// x <- 1:3
 /// length(x) == 1
 /// ```
+/// <!-- docs: end -->
 impl Violation for LengthTest {
     fn rule(&self) -> Rule {
         Rule::LengthTest

@@ -5,6 +5,7 @@ use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::{AstNode, Direction, TextRange};
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -50,6 +51,7 @@ use biome_rowan::{AstNode, Direction, TextRange};
 /// ## References
 ///
 /// See `?pipeOp`
+/// <!-- docs: end -->
 pub fn pipe_consistency(
     ast: &RBinaryExpression,
     preferred: PreferredPipe,

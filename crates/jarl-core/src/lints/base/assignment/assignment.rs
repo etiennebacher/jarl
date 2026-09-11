@@ -3,6 +3,7 @@ use crate::rule_set::Rule;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -50,6 +51,7 @@ use biome_rowan::AstNode;
 /// See:
 ///
 /// - [https://style.tidyverse.org/syntax.html#assignment-1](https://style.tidyverse.org/syntax.html#assignment-1)
+/// <!-- docs: end -->
 pub fn assignment(
     ast: &RBinaryExpression,
     assignment: RSyntaxKind,

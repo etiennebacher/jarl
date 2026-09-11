@@ -7,6 +7,7 @@ use biome_rowan::AstNode;
 
 pub struct RedundantEquals;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -40,6 +41,7 @@ pub struct RedundantEquals;
 ///   print("hi")
 /// }
 /// ```
+/// <!-- docs: end -->
 impl Violation for RedundantEquals {
     fn rule(&self) -> Rule {
         Rule::RedundantEquals

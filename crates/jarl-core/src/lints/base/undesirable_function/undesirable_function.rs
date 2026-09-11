@@ -8,6 +8,7 @@ pub struct UndesirableFunction {
     pub fn_name: String,
 }
 
+/// <!-- docs: start -->
 /// Version added: 0.5.0
 ///
 /// ## What it does
@@ -43,6 +44,7 @@ pub struct UndesirableFunction {
 ///    xyz
 /// }
 /// ```
+/// <!-- docs: end -->
 impl Violation for UndesirableFunction {
     fn rule(&self) -> Rule {
         Rule::UndesirableFunction

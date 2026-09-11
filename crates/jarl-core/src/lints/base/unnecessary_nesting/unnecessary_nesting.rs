@@ -4,6 +4,7 @@ use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstNodeList};
 
+/// <!-- docs: start -->
 /// Version added: 0.4.0
 ///
 /// ## What it does
@@ -35,6 +36,7 @@ use biome_rowan::{AstNode, AstNodeList};
 ///   print("x and y are greather than 0")
 /// }
 /// ```
+/// <!-- docs: end -->
 pub fn unnecessary_nesting(ast: &RIfStatement) -> anyhow::Result<Option<Diagnostic>> {
     let body = ast.consequence()?;
     let has_else = ast.else_clause().is_some();

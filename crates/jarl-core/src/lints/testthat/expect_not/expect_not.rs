@@ -6,6 +6,7 @@ use biome_rowan::{AstNode, AstSeparatedList};
 
 const FORMALS_EXPECT_TRUE: Formals = &["object", "info", "label"];
 
+/// <!-- docs: start -->
 /// Version added: 0.2.0
 ///
 /// ## What it does
@@ -40,6 +41,7 @@ const FORMALS_EXPECT_TRUE: Formals = &["object", "info", "label"];
 /// # rlang "!!!" operator is left unmodified
 /// expect_true(!!!x)
 /// ```
+/// <!-- docs: end -->
 pub fn expect_not(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Only check expect_true and expect_false
     if fn_name != "expect_true" && fn_name != "expect_false" {

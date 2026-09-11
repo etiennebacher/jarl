@@ -4,6 +4,7 @@ use crate::utils::{get_function_name, get_function_namespace_prefix, node_contai
 use air_r_syntax::*;
 use biome_rowan::{AstNode, AstSeparatedList};
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -33,6 +34,7 @@ use biome_rowan::{AstNode, AstSeparatedList};
 /// ## References
 ///
 /// See `?rep`
+/// <!-- docs: end -->
 pub fn rep_times_ignored(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
     let function = function?;

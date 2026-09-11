@@ -1,4 +1,5 @@
 # pipe_consistency
+
 ::: {.callout-note title="Added in 0.6.0" .low-opacity}
 :::
 
@@ -45,3 +46,23 @@ data |>
 ## References
 
 See `?pipeOp`
+
+---
+
+## Configuration options
+
+The operation of `pipe_consistency` can be customised in the [configuration file](../reference/config-file.md).
+
+This takes a single value (`"|>"` or `"%>%"`) indicating the preferred
+pipe operator in the files to check. If `pipe = "|>"` and if the `"pipe_consistency"`
+rule is enabled, then any use of `%>%` will be reported, and vice-versa.
+
+Default: `"|>"`
+
+```toml
+[lint]
+...
+
+[lint.pipe_consistency]
+pipe = "|>" # or "%>%"
+```

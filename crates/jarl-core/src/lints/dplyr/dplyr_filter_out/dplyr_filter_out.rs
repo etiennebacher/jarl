@@ -5,6 +5,7 @@ use crate::utils::{get_function_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.5.0
 ///
 /// ## What it does
@@ -64,6 +65,7 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// - <https://dplyr.tidyverse.org/reference/filter.html>
+/// <!-- docs: end -->
 pub fn dplyr_filter_out(
     ast: &RCall,
     fn_name: &str,

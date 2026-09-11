@@ -5,6 +5,7 @@ use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.19
 ///
 /// ## What it does
@@ -53,6 +54,7 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// See `?all.equal`
+/// <!-- docs: end -->
 pub fn all_equal(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // 1) Check for isFALSE(all.equal(...))
     if let Some((inner_content, outer_syntax)) =

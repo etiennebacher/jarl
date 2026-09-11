@@ -1,4 +1,5 @@
 # comparison_negation
+
 ::: {.callout-note title="Added in 0.0.23" .low-opacity}
 :::
 

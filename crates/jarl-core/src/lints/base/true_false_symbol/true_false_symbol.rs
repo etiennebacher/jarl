@@ -7,6 +7,7 @@ use biome_rowan::AstNode;
 
 pub struct TrueFalseSymbol;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -37,6 +38,7 @@ pub struct TrueFalseSymbol;
 /// x <- TRUE
 /// y <- FALSE
 /// ```
+/// <!-- docs: end -->
 impl Violation for TrueFalseSymbol {
     fn rule(&self) -> Rule {
         Rule::TrueFalseSymbol

@@ -1,4 +1,5 @@
 # missing_argument
+
 ::: {.callout-note title="Added in 0.6.0" .low-opacity}
 :::
 
@@ -40,3 +41,35 @@ paste("a", "b")
 mean(x)
 ```
 (or add additional arguments).
+
+---
+
+## Configuration options
+
+The operation of `missing_argument` can be customised in the [configuration file](../reference/config-file.md).
+
+Use `skipped-functions` to fully replace the default list of functions that are
+allowed to contain missing arguments. Use `extend-skipped-functions` to add to
+the default list. Specifying both is an error.
+
+Function names in `skipped-functions` or `extend-skipped-functions` also match
+namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
+`rlang::list2()`.
+
+Default: `skipped-functions = [
+    "switch",
+    "tibble",
+    "list2",
+    "mutate",
+    "summarize",
+    "transmute",
+]`
+
+```toml
+[lint]
+...
+
+[lint.missing_argument]
+# Ignore missing arguments in `my_function()` only.
+skipped-functions = ["my_function"]
+```

@@ -5,6 +5,7 @@ use air_r_syntax::*;
 use biome_rowan::AstNode;
 use biome_rowan::AstSeparatedList;
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -45,6 +46,7 @@ use biome_rowan::AstSeparatedList;
 /// mean(x)
 /// ```
 /// (or add additional arguments).
+/// <!-- docs: end -->
 pub fn missing_argument(
     ast: &RCall,
     fn_name: &str,

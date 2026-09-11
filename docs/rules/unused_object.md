@@ -1,4 +1,5 @@
 # unused_object
+
 ::: {.callout-note title="Added in 0.6.0" .low-opacity}
 :::
 
@@ -128,4 +129,36 @@ under `R/` in a package. This can be turned off with `check-roxygen`.
 ```r
 x <- 1   # unused
 print(y)
+```
+
+---
+
+## Configuration options
+
+The operation of `unused_object` can be customised in the [configuration file](../reference/config-file.md).
+
+Use `skipped-functions` to fully replace the default list of calls whose
+directly-assigned arguments are allowed to be unused. Use
+`extend-skipped-functions` to add to the default list. Specifying both is an
+error.
+
+Function names in `skipped-functions` or `extend-skipped-functions` also match
+namespaced calls, e.g. `skipped-functions = ["expect_error"]` will allow
+`expect_error()` and `testthat::expect_error()`.
+
+Only the direct argument position counts: an assignment nested in a block or in
+a function defined inside the call is an ordinary local and is still reported.
+
+Default: `skipped-functions = ["expect_error", "expect_warning",
+"expect_message", "expect_silent", "expect_defunct", "expect_deprecated",
+"expect_snapshot", "expect_no_condition", "expect_no_warning",
+"expect_no_error", "expect_no_message"]`
+
+```toml
+[lint]
+...
+
+[lint.unused_object]
+# Also allow an unused assignment passed straight to `my_expect()`.
+extend-skipped-functions = ["my_expect"]
 ```

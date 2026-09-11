@@ -6,10 +6,21 @@ pub enum PreferredPipe {
     Magrittr,
 }
 
-/// TOML options for `[lint.pipe_consistency]`.
-///
-/// Use `pipe` to specify which pipe operator to enforce. Valid values
-/// are `"|>"` (the default) and `"%>%"`.
+/// <!-- docs: start -->
+/// This takes a single value (`"|>"` or `"%>%"`) indicating the preferred
+/// pipe operator in the files to check. If `pipe = "|>"` and if the `"pipe_consistency"`
+/// rule is enabled, then any use of `%>%` will be reported, and vice-versa.
+/// 
+/// Default: `"|>"`
+/// 
+/// ```toml
+/// [lint]
+/// ...
+/// 
+/// [lint.pipe_consistency]
+/// pipe = "|>" # or "%>%"
+/// ```
+/// <!-- docs: end -->
 #[derive(Clone, Debug, PartialEq, Eq, Default, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]

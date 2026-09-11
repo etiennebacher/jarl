@@ -4,6 +4,7 @@ use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -33,6 +34,7 @@ use biome_rowan::AstNode;
 /// x <- c(1, 2, 3, NA)
 /// is.na(x)
 /// ```
+/// <!-- docs: end -->
 pub fn equals_na(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 

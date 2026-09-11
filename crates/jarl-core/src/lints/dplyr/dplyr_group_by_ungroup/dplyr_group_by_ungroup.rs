@@ -32,6 +32,7 @@ fn by_arg_name(verb: &str) -> &'static str {
     }
 }
 
+/// <!-- docs: start -->
 /// Version added: 0.5.0
 ///
 /// ## What it does
@@ -72,6 +73,7 @@ fn by_arg_name(verb: &str) -> &'static str {
 /// ## References
 ///
 /// See the `.by` argument in `?dplyr::summarize`.
+/// <!-- docs: end -->
 pub fn dplyr_group_by_ungroup(
     ast: &RCall,
     fn_name: &str,

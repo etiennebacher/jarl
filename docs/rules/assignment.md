@@ -1,4 +1,5 @@
 # assignment
+
 ::: {.callout-note title="Added in 0.0.8" .low-opacity}
 :::
 
@@ -47,3 +48,24 @@ f(x = 1)
 See:
 
 - [https://style.tidyverse.org/syntax.html#assignment-1](https://style.tidyverse.org/syntax.html#assignment-1)
+
+---
+
+## Configuration options
+
+The operation of `assignment` can be customised in the [configuration file](../reference/config-file.md).
+
+This takes a single value (`"<-"` or `"="`) indicating the preferred assignment
+operator in the files to check. If `operator = "<-"` and if the `"assignment"`
+rule is enabled, then any use of the `"="` operator to assign values will be
+reported, and vice-versa.
+
+This option doesn't have a default value.
+
+```toml
+[lint]
+...
+
+[lint.assignment]
+operator = "<-" # or "="
+```

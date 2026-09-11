@@ -1,78 +1,29 @@
-### reset rules directory
+source("docs/make_docs_helpers.R")
+
+### reset docs/rules directory ----
 if (dir.exists("docs/rules")) {
   unlink("docs/rules", recursive = TRUE)
 }
 dir.create("docs/rules")
 
-rules <- list.files(
-  "crates/jarl-core/src/lints",
-  full.names = TRUE,
-  recursive = TRUE,
-  pattern = "\\.rs$"
-)
+### get list of lint rules ----
 
-rules <- rules[!grepl("(mod|options).rs", rules)]
+lints_dir <- "crates/jarl-core/src/lints" #
+lints <- list.dirs(lints_dir, full.names = FALSE)
 
-### Create individual qmd files for rules
+# rules are nested 2 levels deep within lints, ignore any subfolders
+rules <- lints[lengths(strsplit(lints, split = "/", fixed = TRUE)) == 2]
 
-create_doc <- function(rule) {
-  content <- readLines(rule)
-  rule_name <- gsub("\\.rs$", "", basename(rule))
-
-  if (!any(grepl("## What it does", content, fixed = TRUE))) {
-    return(FALSE)
-  }
-
-  added_in_version <- grep("/// Version added:", content, value = TRUE)
-  added_in_version <- gsub(
-    "/// Version added: (\\d\\.\\d\\.\\d)",
-    "\\1",
-    added_in_version
-  )
-
-  if (
-    length(added_in_version) != 1 ||
-      !grepl("^\\d+\\.\\d+\\.\\d+$", added_in_version)
-  ) {
-    stop(
-      paste0(
-        "Couldn't find the 'Version added' line for rule '",
-        rule,
-        "'."
-      )
-    )
-  }
-
-  start <- grep("## What it does", content, fixed = TRUE)
-  end <- grep("^(impl Violation for|fn |pub fn|// )", content) - 1
-  end <- end[end > start]
-  end <- end[1] # could be several "pub fn"
-
-  doc <- content[start:end]
-  doc <- gsub("^///(| )", "", doc)
-
-  doc <- c(
-    paste0("# ", rule_name),
-    paste0(
-      '::: {.callout-note title="Added in ',
-      added_in_version,
-      '" .low-opacity}\n',
-      ":::\n"
-    ),
-    doc
-  )
-
-  writeLines(doc, paste0("docs/rules/", rule_name, ".md"))
-
-  return(TRUE)
-}
+### Create individual qmd files for rules ---
 
 docs <- logical(length(rules))
 
 for (i in seq_along(rules)) {
-  doc_out <- create_doc(rules[i])
+  doc_out <- create_rule_md(rules[i], lints_dir)
   docs[i] <- doc_out
 }
+
+create_config_md(lints_dir)
 
 ### Automatically add new rules in _quarto.yml
 
