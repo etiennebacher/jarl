@@ -6,8 +6,6 @@ use crate::rule_options::resolve_with_extend;
 const DEFAULT_FUNCTIONS: &[&str] = &["browser"];
 
 /// <!-- docs: start -->
-/// ## Configuration
-///
 /// Use `functions` to fully replace the default list of undesirable functions.
 /// Use `extend-functions` to add to the default list.
 /// Specifying both is an error.

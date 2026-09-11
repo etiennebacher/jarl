@@ -29,8 +29,6 @@ do_something <- function(abc = 1) {
 
 The operation of `undesirable_function` can be customised in the [configuration file](../reference/config-file.md).
 
-## Configuration
-
 Use `functions` to fully replace the default list of undesirable functions.
 Use `extend-functions` to add to the default list.
 Specifying both is an error.
