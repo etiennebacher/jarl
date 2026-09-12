@@ -5,6 +5,7 @@ use oak_semantic::semantic_index::SemanticIndex;
 use crate::checker::Checker;
 use crate::diagnostic::*;
 use crate::lints::base::empty_file::empty_file::empty_file;
+use crate::lints::base::object_name::object_name::object_name;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
 use crate::lints::base::unused_object::unused_object::unused_object;
 use crate::lints::comments::blanket_suppression::blanket_suppression::blanket_suppression;
@@ -31,6 +32,12 @@ pub(crate) fn check_document(
     // --- Document-level analysis ---
 
     let expressions: Vec<RSyntaxNode> = expressions.iter().map(|e| e.syntax().clone()).collect();
+
+    if checker.is_rule_enabled(Rule::ObjectName) {
+        for diagnostic in object_name(syntax, &checker.rule_options.object_name) {
+            checker.report_diagnostic(Some(diagnostic));
+        }
+    }
 
     // Check for unreachable code at top level
     if checker.is_rule_enabled(Rule::UnreachableCode) {

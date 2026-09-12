@@ -106,6 +106,7 @@ dat <- as.data.frame(
     c("notin", "readability", "✅", "R >= 4.6"),
     c("numeric_leading_zero", "readability", "✅", ""),
     c("nzchar", "performance", "❗", "Disabled by default"),
+    c("object_name", "readability", "❌", "Disabled by default"),
     c("outdated_suppression", "comments", "✅", ""),
     c("outer_negation", "performance, readability", "✅", ""),
     c(

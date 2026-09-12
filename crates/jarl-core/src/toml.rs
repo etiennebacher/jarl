@@ -21,6 +21,7 @@ use crate::lints::base::if_not_else::options::IfNotElseOptions;
 use crate::lints::base::implicit_assignment::options::ImplicitAssignmentOptions;
 use crate::lints::base::missing_argument::options::MissingArgumentOptions;
 use crate::lints::base::nested_pipe::options::NestedPipeOptions;
+use crate::lints::base::object_name::options::ObjectNameOptions;
 use crate::lints::base::pipe_consistency::options::PipeConsistencyOptions;
 use crate::lints::base::quotes::options::QuotesOptions;
 use crate::lints::base::true_false_symbol::options::TrueFalseSymbolOptions;
@@ -354,6 +355,14 @@ pub struct LinterTomlOptions {
     /// Specifying both is an error.
     #[serde(rename = "nested_pipe")]
     pub nested_pipe: Option<NestedPipeOptions>,
+
+    /// # Options for the `object_name` rule
+    ///
+    /// Use `styles` to select built-in naming styles, `regexes` to add named
+    /// regular expressions, and `special-names` / `extend-special-names` to
+    /// configure names that are exempt from style checks.
+    #[serde(rename = "object_name")]
+    pub object_name: Option<ObjectNameOptions>,
 
     /// # Options for the `pipe_consistency` rule
     ///
