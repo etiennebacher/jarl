@@ -94,6 +94,7 @@ website:
       - rules/comparison_negation.md
       - rules/condition_call.md
       - rules/condition_message.md
+      - rules/deparse1.md
       - rules/download_file.md
       - rules/dplyr_filter_out.md
       - rules/dplyr_group_by_ungroup.md
