@@ -18,6 +18,7 @@ use crate::lints::base::pipe_return::pipe_return::pipe_return;
 use crate::lints::base::redundant_equals::redundant_equals::redundant_equals;
 use crate::lints::base::seq::seq::seq;
 use crate::lints::base::string_boundary::string_boundary::string_boundary;
+use crate::lints::base::undesirable_operator::undesirable_operator::undesirable_operator_binary;
 use crate::lints::base::vector_logic::vector_logic::vector_logic;
 
 pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> anyhow::Result<()> {
@@ -77,6 +78,12 @@ pub fn binary_expression(r_expr: &RBinaryExpression, checker: &mut Checker) -> a
     }
     if checker.is_rule_enabled(Rule::StringBoundary) {
         checker.report_diagnostic(string_boundary(r_expr)?);
+    }
+    if checker.is_rule_enabled(Rule::UndesirableOperator) {
+        checker.report_diagnostic(undesirable_operator_binary(
+            r_expr,
+            &checker.rule_options.undesirable_operator,
+        )?);
     }
     Ok(())
 }

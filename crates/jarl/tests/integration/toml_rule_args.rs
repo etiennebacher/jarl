@@ -598,6 +598,152 @@ pipe = "foo"
     Ok(())
 }
 
+// undesirable_operator ----------------------------------------
+
+#[test]
+fn test_undesirable_operator_options_are_applied() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+select = ["undesirable_operator"]
+
+[lint.undesirable_operator]
+operators = ["$", "%>%", "%notin%"]
+"#,
+        ),
+        ("test.R", "x$y\nx %>% f()\nx %notin% y\nx <<- 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: undesirable_operator
+     --> test.R:1:2
+      |
+    1 | x$y
+      |  - `$` is listed as an undesirable operator.
+      |
+
+    warning: undesirable_operator
+     --> test.R:2:3
+      |
+    2 | x %>% f()
+      |   --- `%>%` is listed as an undesirable operator.
+      |
+
+    warning: undesirable_operator
+     --> test.R:3:3
+      |
+    3 | x %notin% y
+      |   ------- `%notin%` is listed as an undesirable operator.
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 3 errors.
+
+    ----- stderr -----
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_operator_unknown_field_is_error() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+
+[lint.undesirable_operator]
+unknown-option = ["$"]
+"#,
+        ),
+        ("test.R", "x + 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
+    TOML parse error at line 5, column 1
+      |
+    5 | unknown-option = ["$"]
+      | ^^^^^^^^^^^^^^
+    unknown field `unknown-option`, expected `operators` or `extend-operators`
+    "#
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_undesirable_operator_cannot_replace_and_extend() -> anyhow::Result<()> {
+    let case = CliTest::with_files([
+        (
+            "jarl.toml",
+            r#"
+[lint]
+
+[lint.undesirable_operator]
+operators = ["$"]
+extend-operators = ["@"]
+"#,
+        ),
+        ("test.R", "x + 1"),
+    ])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name()
+            .normalize_temp_paths(),
+        @r#"
+
+    success: false
+    exit_code: 255
+    ----- stdout -----
+
+    ----- stderr -----
+    jarl failed
+      Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
+    Cannot specify both `operators` and `extend-operators` in `[lint.undesirable_operator]`.
+    "#
+    );
+
+    Ok(())
+}
+
 // quotes ----------------------------------------
 
 #[test]
