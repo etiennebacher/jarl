@@ -1,95 +1,53 @@
-library(yaml)
+source("docs/make_docs_helpers.R")
 
+### reset docs/rules directory ----
 if (dir.exists("docs/rules")) {
   unlink("docs/rules", recursive = TRUE)
 }
 dir.create("docs/rules")
 
-rules <- list.files(
-  "crates/jarl-core/src/lints",
-  full.names = TRUE,
-  recursive = TRUE,
-  pattern = "\\.rs$"
-)
-rules <- rules[!grepl("mod.rs", rules)]
-rule_names <- gsub("\\.rs$", "", basename(rules))
+### get list of lint rules ----
 
-### Create individual qmd files for rules
+lints_dir <- "crates/jarl-core/src/lints" #
+lints <- list.dirs(lints_dir, full.names = FALSE)
 
-docs <- lapply(seq_along(rules), \(x) {
-  content <- readLines(rules[x])
-  if (!any(grepl("## What it does", content, fixed = TRUE))) {
-    return()
-  }
+# rules are nested 2 levels deep within lints, ignore any subfolders
+rules <- lints[lengths(strsplit(lints, split = "/", fixed = TRUE)) == 2]
 
-  added_in_version <- grep("/// Version added:", content, value = TRUE)
-  added_in_version <- gsub(
-    "/// Version added: (\\d\\.\\d\\.\\d)",
-    "\\1",
-    added_in_version
-  )
+### Create individual qmd files for rules ---
 
-  if (
-    length(added_in_version) != 1 ||
-      !grepl("\\d+\\.\\d+\\.\\d+", added_in_version)
-  ) {
-    stop(
-      paste0(
-        "Couldn't find the 'Version added' line for rule '",
-        rule_names[x],
-        "'."
-      ),
-      call. = FALSE
-    )
-  }
+docs <- logical(length(rules))
 
-  start <- grep("## What it does", content, fixed = TRUE)
-  end <- grep("^(impl Violation for|fn |pub fn|// )", content) - 1
-  end <- end[end > start]
-  end <- end[1] # could be several "pub fn"
-
-  doc <- content[start:end]
-  doc <- gsub("^///(| )", "", doc)
-
-  doc <- c(
-    paste0(
-      '::: {.callout-note title="Added in ',
-      added_in_version,
-      '" .low-opacity}\n',
-      ":::\n"
-    ),
-    doc
-  )
-
-  doc
-})
-
-empty_docs <- lengths(docs) == 0
-docs <- docs[!empty_docs]
-rule_names <- rule_names[!empty_docs]
-names(docs) <- rule_names
-
-for (i in seq_along(docs)) {
-  to_write <- c(paste0("# ", rule_names[i]), docs[[i]])
-  writeLines(to_write, paste0("docs/rules/", rule_names[i], ".md"))
+for (i in seq_along(rules)) {
+  doc_out <- create_rule_md(rules[i], lints_dir)
+  docs[i] <- doc_out
 }
+
+create_config_md(lints_dir)
 
 ### Automatically add new rules in _quarto.yml
 
-# Not the same as `rule_names` since we discarded those that don't have any
-# docs yet
-doc_names <- sort(rule_names)
-
-quarto_yml <- read_yaml("docs/_quarto.yml")
-quarto_yml$website$sidebar[[1]]$contents <- list(
-  "rules.qmd",
-  list(section = "List of rules", contents = paste0("rules/", doc_names, ".md"))
+rule_docs <- list.files(
+  "docs/rules",
+  pattern = "\\.md$"
 )
-quarto_yml$filters <- list("linkify-github-refs.lua", "newpagelink.lua")
-write_yaml(
-  quarto_yml,
-  "docs/_quarto.yml",
-  handlers = list(
-    logical = verbatim_logical
+
+quarto_yml <- yaml12::read_yaml("docs/_quarto.yml")
+
+quarto_yml$website$sidebar <- list(list(
+  title = "Rules",
+  style = "floating",
+  contents = list(
+    "rules.qmd",
+    list(
+      section = "List of rules",
+      contents = paste0("rules/", sort(rule_docs))
+    )
   )
+))
+
+# use format_yaml until https://github.com/posit.dev/r-yaml12/issues#40 fixed
+writeLines(
+  yaml12::format_yaml(quarto_yml),
+  "docs/_quarto.yml"
 )

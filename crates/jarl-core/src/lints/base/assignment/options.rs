@@ -1,9 +1,10 @@
 use air_r_syntax::RSyntaxKind;
 
-/// TOML options for `[lint.assignment]`.
-///
-/// Use `operator` to specify which assignment operator to enforce.
-/// Valid values are `"<-"` (the default) and `"="`.
+/// <!-- docs: ignore -->
+/// See assignment.rs for documentation of this option.
+/// The assignment rule requires that its configuration option, operator, is
+/// set in order for the rule to run.
+/// <!-- docs: ignore -->
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]

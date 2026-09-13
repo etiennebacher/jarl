@@ -6,6 +6,7 @@ use crate::utils::{
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -28,6 +29,7 @@ use biome_rowan::AstNode;
 /// stop('hello ', 'there')
 /// warning('hello ', 'there')
 /// ```
+/// <!-- docs: end -->
 pub fn condition_message(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "stop" && fn_name != "warning" {
         return Ok(None);

@@ -4,6 +4,7 @@ use crate::utils::{get_arg_by_name, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::{AstNode, TextRange};
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -63,6 +64,7 @@ use biome_rowan::{AstNode, TextRange};
 /// ## References
 ///
 /// * https://design.tidyverse.org/err-call.html
+/// <!-- docs: end -->
 pub fn condition_call(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "stop" {
         return Ok(None);

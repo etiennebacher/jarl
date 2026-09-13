@@ -5,6 +5,7 @@ use air_r_syntax::*;
 
 pub struct AnyDuplicated;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -38,6 +39,7 @@ pub struct AnyDuplicated;
 /// ## References
 ///
 /// See `?anyDuplicated`
+/// <!-- docs: end -->
 impl Violation for AnyDuplicated {
     fn rule(&self) -> Rule {
         Rule::AnyDuplicated

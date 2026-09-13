@@ -16,6 +16,7 @@ const FORMALS_GREP: Formals = &[
 ];
 pub struct Grepv;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.16
 ///
 /// ## What it does
@@ -46,6 +47,7 @@ pub struct Grepv;
 /// ## References
 ///
 /// See `?grepv`
+/// <!-- docs: end -->
 impl Violation for Grepv {
     fn rule(&self) -> Rule {
         Rule::Grepv

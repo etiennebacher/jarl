@@ -6,6 +6,7 @@ use air_r_syntax::*;
 use biome_rowan::AstNode;
 use jarl_semantic::strings::get_string_literal_contents;
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -46,6 +47,7 @@ use jarl_semantic::strings::get_string_literal_contents;
 /// ## References
 ///
 /// See `?glue::glue`
+/// <!-- docs: end -->
 pub fn glue(
     ast: &RCall,
     fn_name: &str,

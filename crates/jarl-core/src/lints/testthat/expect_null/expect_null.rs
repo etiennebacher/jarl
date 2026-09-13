@@ -12,6 +12,7 @@ const FORMALS_EXPECT_EQUAL: Formals = &["object", "expected"];
 const FORMALS_EXPECT_TRUE: Formals = &["object", "info", "label"];
 const FORMALS_IS_NULL: Formals = &["x"];
 
+/// <!-- docs: start -->
 /// Version added: 0.2.0
 ///
 /// ## What it does
@@ -19,7 +20,7 @@ const FORMALS_IS_NULL: Formals = &["x"];
 /// Checks for usage of `expect_equal(x, NULL)`, `expect_identical(x, NULL)`,
 /// and `expect_true(is.null(x))`.
 ///
-/// ## Why is this bad
+/// ## Why is this bad?
 ///
 /// `expect_null()` is more explicit and clearer in intent than comparing with
 /// `expect_equal()`, `expect_identical()`, or wrapping `is.null()` in
@@ -42,6 +43,7 @@ const FORMALS_IS_NULL: Formals = &["x"];
 /// expect_null(x)
 /// expect_null(foo(x))
 /// ```
+/// <!-- docs: end -->
 pub fn expect_null(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Case 1: expect_equal(x, NULL) or expect_identical(x, NULL)
     if fn_name == "expect_equal" || fn_name == "expect_identical" {

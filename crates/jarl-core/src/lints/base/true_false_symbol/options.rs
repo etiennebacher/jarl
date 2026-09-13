@@ -1,9 +1,22 @@
 use std::collections::HashSet;
 
-/// TOML options for `[lint.true_false_symbol]`.
-///
-/// Use `skipped-functions` to list functions whose arguments are allowed to
-/// contain the `T` and `F` symbols. This list is empty by default.
+/// <!-- docs: start -->
+/// Use `skipped-functions` to list functions whose arguments are allowed to contain
+/// the `T` and `F` symbols.
+/// 
+/// Function names in `skipped-functions` also match namespaced calls, e.g.
+/// `skipped-functions = ["foo"]` will ignore `foo(T)` and `pkg::foo(T)`.
+/// 
+/// Default: `skipped-functions = []`
+/// 
+/// ```toml
+/// [lint]
+/// ...
+/// 
+/// [lint.true_false_symbol]
+/// skipped-functions = ["foo"]
+/// ```
+/// <!-- docs: end -->
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]

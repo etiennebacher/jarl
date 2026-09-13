@@ -1,4 +1,5 @@
 # expect_null
+
 ::: {.callout-note title="Added in 0.2.0" .low-opacity}
 :::
 
@@ -7,7 +8,7 @@
 Checks for usage of `expect_equal(x, NULL)`, `expect_identical(x, NULL)`,
 and `expect_true(is.null(x))`.
 
-## Why is this bad
+## Why is this bad?
 
 `expect_null()` is more explicit and clearer in intent than comparing with
 `expect_equal()`, `expect_identical()`, or wrapping `is.null()` in

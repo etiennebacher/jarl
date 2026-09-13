@@ -2,6 +2,7 @@ use crate::diagnostic::*;
 use crate::rule_set::Rule;
 use biome_rowan::TextRange;
 
+/// <!-- docs: start -->
 /// Version added: 0.5.0
 ///
 /// ## What it does
@@ -40,6 +41,7 @@ use biome_rowan::TextRange;
 /// #|   - any_is_na: <reason>
 /// any(is.na(x))
 /// ```
+/// <!-- docs: end -->
 pub fn invalid_chunk_suppression(ranges: &[TextRange]) -> Vec<Diagnostic> {
     ranges
         .iter()

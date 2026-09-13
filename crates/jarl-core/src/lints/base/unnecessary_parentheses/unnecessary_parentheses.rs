@@ -4,6 +4,7 @@ use crate::utils::node_contains_comments;
 use air_r_syntax::RParenthesizedExpression;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -26,6 +27,7 @@ use biome_rowan::AstNode;
 /// ```r
 /// (x + 1)
 /// ```
+/// <!-- docs: end -->
 pub fn unnecessary_parentheses(
     ast: &RParenthesizedExpression,
 ) -> anyhow::Result<Option<Diagnostic>> {

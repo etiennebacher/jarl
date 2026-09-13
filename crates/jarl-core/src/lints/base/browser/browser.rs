@@ -5,6 +5,7 @@ use biome_rowan::AstNode;
 
 pub struct Browser;
 
+/// <!-- docs: start -->
 /// Version added: 0.1.2
 ///
 /// ## What it does
@@ -37,6 +38,7 @@ pub struct Browser;
 /// ## References
 ///
 /// See `?browser`
+/// <!-- docs: end -->
 impl Violation for Browser {
     fn rule(&self) -> Rule {
         Rule::Browser

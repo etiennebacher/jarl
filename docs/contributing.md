@@ -13,7 +13,7 @@ cargo install cargo-insta
 
 Jarl uses [just](https://github.com/casey/just) to quickly run several useful commands, such as `just document` or `just lint` (see the list of commands with `just -l`).
 
-For documentation, you will need to have [Quarto](https://quarto.org/) and the R packages `reactable` and `rmarkdown` installed.
+For documentation, you will need to have [Quarto](https://quarto.org/) and the R packages `reactable`, `rmarkdown` and `yaml12` installed.
 
 ## AI policy
 
@@ -64,6 +64,36 @@ Adding a new rule requires four main steps:
 1. Add a subfolder with the rule name in `src/lints/<group>`. Add the documentation and the code for the rule.
 1. Add tests in `src/lints/<group>/<rulename>/mod.rs`
 1. Add the rule in the `src/analyze` folder. This depends on the initial node in the AST. For instance, for the rule `equals_na`, we check the presence of code such as `x == NA`. Since the top node for this expression is a `R_BINARY_EXPRESSION`, this rule is ran in `src/analyze/binary_expression.rs`.
+
+### Documenting a new rule
+
+The documentation for a rule is stored in the relevant `<rulename>.rs` file.
+
+Documentation is commented out using three slashes (`///`).
+Use the markers `<!-- docs: start -->` and `<!-- docs: end -->` to indicate the start and end of the documentation block.
+Documentation content should be written using standard markdown notation.
+
+```rust
+/// <!-- docs: start -->
+/// Version added: 0.1.2
+///
+/// ## What it does
+///
+/// Checks for usage of `do.call(cbind.data.frame, x)`.
+///
+/// [...]
+/// <!-- docs: end -->
+```
+
+A documentation block should start with a line indicating the version of Jarl that the rule was/will be added in.
+At a minimum the documentation should have a "What it does" section that describes the checks the rule carried out.
+In most cases the documentation should also include a "Why is this bad?" section to explain the rationale for the rule and an "Example" that illustrates bad code that will get flagged by Jarl and good code that will not get flagged.
+
+If the rule has configuration options, these should be documented in the rule's `options.rs` file.
+Options documentation should also be commented using three slashes and include start and end markers.
+The documentation will then be appended after the rule's main documentation under the section heading "Configuration options".
+
+Use `just document` to build the documentation.
 
 ### Useful commands
 

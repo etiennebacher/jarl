@@ -4,6 +4,7 @@ use crate::utils::{get_arg_by_position, get_unnamed_args, node_contains_comments
 use air_r_syntax::*;
 use biome_rowan::{AstNode, Direction};
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -39,6 +40,7 @@ use biome_rowan::{AstNode, Direction};
 /// TRUE
 /// 1L
 /// ```
+/// <!-- docs: end -->
 pub fn literal_coercion(
     ast: &RCall,
     fn_name: &str,

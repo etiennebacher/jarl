@@ -5,12 +5,27 @@ use crate::rule_options::resolve_with_extend;
 /// Functions whose negated calls are allowed by default, e.g. `!is.null(x)`.
 const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &["is.null", "is.na", "missing"];
 
-/// TOML options for `[lint.if_not_else]`.
-///
+/// <!-- docs: start -->
 /// Use `skipped-functions` to fully replace the default list of functions whose
-/// negated calls are allowed as an `if`/`ifelse()` condition. Use
-/// `extend-skipped-functions` to add to the default list. Specifying both is an
+/// negated calls are allowed as an `if`/`ifelse()` condition (e.g. `!is.null(x)`).
+/// Use `extend-skipped-functions` to add to the default list. Specifying both is an
 /// error.
+/// 
+/// Function names in `skipped-functions` or `extend-skipped-functions` also match
+/// namespaced calls, e.g. `skipped-functions = ["is.null"]` will allow `is.null()`
+/// and `base::is.null()`.
+/// 
+/// Default: `skipped-functions = ["is.null", "is.na", "missing"]`
+/// 
+/// ```toml
+/// [lint]
+/// ...
+/// 
+/// [lint.if_not_else]
+/// # Also allow a negated `is.data.frame()` call in the condition.
+/// extend-skipped-functions = ["is.data.frame"]
+/// ``` 
+/// <!-- docs: end -->
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]

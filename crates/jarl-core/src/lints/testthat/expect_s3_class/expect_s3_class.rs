@@ -14,6 +14,7 @@ const FORMALS_EXPECT_TRUE: Formals = &["object", "info", "label"];
 const FORMALS_CLASS: Formals = &["x"];
 const FORMALS_INHERITS: Formals = &["x", "what", "which"];
 
+/// <!-- docs: start -->
 /// Version added: 0.3.0
 ///
 /// ## What it does
@@ -71,6 +72,7 @@ const FORMALS_INHERITS: Formals = &["x", "what", "which"];
 /// expect_s3_class(x, "factor")
 /// expect_s3_class(x, "foo")
 /// ```
+/// <!-- docs: end -->
 pub fn expect_s3_class(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     match fn_name {
         "expect_equal" | "expect_identical" => check_expect_class_comparison(ast, fn_name),

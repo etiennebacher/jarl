@@ -6,6 +6,7 @@ use biome_rowan::AstNode;
 
 pub struct IsNumeric;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.16
 ///
 /// ## What it does
@@ -33,6 +34,7 @@ pub struct IsNumeric;
 /// ## References
 ///
 /// See `?is.numeric`
+/// <!-- docs: end -->
 impl Violation for IsNumeric {
     fn rule(&self) -> Rule {
         Rule::IsNumeric

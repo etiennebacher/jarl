@@ -1,4 +1,5 @@
 # undesirable_function
+
 ::: {.callout-note title="Added in 0.5.0" .low-opacity}
 :::
 
@@ -12,20 +13,6 @@ Some functions should not appear in production code. For example,
 `browser()` is a debugging tool that interrupts execution, and should be
 removed before committing.
 
-## Configuration
-
-By default, only `browser` is flagged. You can customise the list in
-`jarl.toml`:
-
-```toml
-[lint.undesirable_function]
-# Replace the default list entirely:
-functions = ["browser", "debug"]
-
-# Or add to the defaults:
-extend-functions = ["debug"]
-```
-
 ## Example
 
 ```r
@@ -34,4 +21,25 @@ do_something <- function(abc = 1) {
    browser()      # flagged by default
    xyz
 }
+```
+
+---
+
+## Configuration options
+
+The operation of `undesirable_function` can be customised in the [configuration file](../reference/config-file.md).
+
+Use `functions` to fully replace the default list of undesirable functions.
+Use `extend-functions` to add to the default list.
+Specifying both is an error.
+
+By default, only `browser` is flagged. 
+
+```toml
+[lint.undesirable_function]
+# Replace the default list entirely:
+functions = ["browser", "debug"]
+
+# Or add to the defaults:
+extend-functions = ["debug"]
 ```

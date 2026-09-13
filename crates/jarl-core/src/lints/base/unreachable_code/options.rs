@@ -6,12 +6,27 @@ use crate::rule_options::resolve_with_extend;
 const DEFAULT_STOPPING_FUNCTIONS: &[&str] =
     &["stop", ".Defunct", "abort", "cli_abort", "q", "quit"];
 
-/// TOML options for `[lint.unreachable_code]`.
-///
-/// Use `stopping-functions` to fully replace the default list of functions
-/// that are considered to stop execution (never return). Use
-/// `extend-stopping-functions` to add to the default list.
-/// Specifying both is an error.
+/// <!-- docs: start -->
+/// Use `stopping-functions` to fully replace the default list of functions that are
+/// considered to stop execution (never return). Use `extend-stopping-functions` to
+/// add to the default list. Specifying both is an error.
+/// 
+/// Function names in `stopping-functions` or `extend-stopping-functions` also match
+/// namespaced calls, e.g. `stopping-functions = ["abort"]` will consider `abort()`
+/// and `rlang::abort()` as stopping functions.
+/// 
+/// Default: `stopping-functions = ["stop", ".Defunct", "abort", "cli_abort",
+/// "q", "quit"]`.
+/// 
+/// ```toml
+/// [lint]
+/// ...
+/// 
+/// [lint.unreachable_code]
+/// # Add a custom function to the list of stopping functions
+/// extend-stopping-functions = ["my_custom_stop"]
+/// ```
+/// <!-- docs: end -->
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]

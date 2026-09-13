@@ -8,6 +8,7 @@ pub struct UndesirableFunction {
     pub fn_name: String,
 }
 
+/// <!-- docs: start -->
 /// Version added: 0.5.0
 ///
 /// ## What it does
@@ -20,20 +21,6 @@ pub struct UndesirableFunction {
 /// `browser()` is a debugging tool that interrupts execution, and should be
 /// removed before committing.
 ///
-/// ## Configuration
-///
-/// By default, only `browser` is flagged. You can customise the list in
-/// `jarl.toml`:
-///
-/// ```toml
-/// [lint.undesirable_function]
-/// # Replace the default list entirely:
-/// functions = ["browser", "debug"]
-///
-/// # Or add to the defaults:
-/// extend-functions = ["debug"]
-/// ```
-///
 /// ## Example
 ///
 /// ```r
@@ -43,6 +30,7 @@ pub struct UndesirableFunction {
 ///    xyz
 /// }
 /// ```
+/// <!-- docs: end -->
 impl Violation for UndesirableFunction {
     fn rule(&self) -> Rule {
         Rule::UndesirableFunction

@@ -5,6 +5,7 @@ use air_r_syntax::*;
 use super::cfg::{UnreachableReason, build_cfg, build_cfg_top_level, find_unreachable_code};
 use crate::rule_set::Rule;
 
+/// <!-- docs: start -->
 /// Version added: 0.4.0
 ///
 /// ## What it does
@@ -47,6 +48,7 @@ use crate::rule_set::Rule;
 ///   }
 /// }
 /// ```
+/// <!-- docs: end -->
 pub fn unreachable_code(
     ast: &RFunctionDefinition,
     checker: &Checker,

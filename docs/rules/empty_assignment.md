@@ -1,4 +1,5 @@
 # empty_assignment
+
 ::: {.callout-note title="Added in 0.0.8" .low-opacity}
 :::
 
