@@ -159,29 +159,142 @@ fn strip_roxygen_macros(
     line_start_offsets: &mut Vec<usize>,
     line_prefix_lengths: &mut Vec<usize>,
 ) {
+    let to_remove = roxygen_macro_lines_to_remove(code_lines);
+
     // Work backwards so that removing lines doesn't shift indices we haven't
-    // processed yet. Track macro nesting depth to match closing braces.
-    let mut to_remove: Vec<usize> = Vec::new();
-    let mut open_stack: Vec<usize> = Vec::new();
-
-    for (i, line) in code_lines.iter().enumerate() {
-        let trimmed = line.trim();
-        if is_roxygen_macro(trimmed) {
-            open_stack.push(i);
-        } else if trimmed == "}" && !open_stack.is_empty() {
-            to_remove.push(open_stack.pop().unwrap());
-            to_remove.push(i);
-        }
-    }
-
-    // Remove in reverse order to preserve indices
-    to_remove.sort_unstable();
-    to_remove.dedup();
+    // processed yet.
     for &idx in to_remove.iter().rev() {
         code_lines.remove(idx);
         line_start_offsets.remove(idx);
         line_prefix_lengths.remove(idx);
     }
+}
+
+/// Return the sorted, unique indices of roxygen wrapper lines and their
+/// matching closing lines. Strings, raw strings, and comments are skipped so
+/// braces inside them don't affect pairing.
+fn roxygen_macro_lines_to_remove<T: AsRef<str>>(code_lines: &[T]) -> Vec<usize> {
+    #[derive(Clone, Copy)]
+    enum StringMode {
+        Quoted(u8),
+        Raw { quote: u8, close: u8, dashes: usize },
+    }
+
+    enum Brace {
+        Macro(usize),
+        Code,
+    }
+
+    // Keep code and macro braces on the same stack so ordinary R braces cannot
+    // be mistaken for macro closing braces.
+    let mut to_remove: Vec<usize> = Vec::new();
+    let mut brace_stack: Vec<Brace> = Vec::new();
+    let mut string_mode = None;
+
+    for (i, line) in code_lines.iter().enumerate() {
+        let trimmed = line.as_ref().trim();
+        if string_mode.is_none() && is_roxygen_macro(trimmed) {
+            brace_stack.push(Brace::Macro(i));
+            continue;
+        }
+
+        let bytes = line.as_ref().as_bytes();
+        let mut pos = 0;
+        while pos < bytes.len() {
+            // Skip quoted strings and raw strings so their braces don't affect
+            // wrapper pairing.
+            if let Some(mode) = string_mode {
+                match mode {
+                    StringMode::Quoted(quote) => {
+                        if bytes[pos] == b'\\' {
+                            // A backslash escapes the next byte, including a
+                            // line-ending escape when it is the last byte.
+                            pos += 1;
+                            if pos < bytes.len() {
+                                pos += 1;
+                            }
+                        } else if bytes[pos] == quote {
+                            string_mode = None;
+                            pos += 1;
+                        } else {
+                            pos += 1;
+                        }
+                    }
+                    StringMode::Raw { quote, close, dashes } => {
+                        let closing_len = dashes + 2;
+                        let is_closed = bytes[pos] == close
+                            && pos + closing_len <= bytes.len()
+                            && bytes[pos + 1..pos + 1 + dashes]
+                                .iter()
+                                .all(|&byte| byte == b'-')
+                            && bytes[pos + 1 + dashes] == quote;
+                        if is_closed {
+                            string_mode = None;
+                            pos += closing_len;
+                        } else {
+                            pos += 1;
+                        }
+                    }
+                }
+                continue;
+            }
+
+            match bytes[pos] {
+                // R comments run to the end of the line.
+                b'#' => break,
+                b'\'' | b'"' | b'`' => {
+                    string_mode = Some(StringMode::Quoted(bytes[pos]));
+                    pos += 1;
+                }
+                b'r' | b'R' if matches!(bytes.get(pos + 1), Some(b'\'' | b'"')) => {
+                    let quote = bytes[pos + 1];
+                    let mut delimiter_pos = pos + 2;
+                    // R raw strings may use dashes to make the closing fence
+                    // unambiguous, for example `r"--[text]--"`.
+                    while bytes.get(delimiter_pos) == Some(&b'-') {
+                        delimiter_pos += 1;
+                    }
+
+                    let close = match bytes.get(delimiter_pos) {
+                        Some(b'(') => Some(b')'),
+                        Some(b'[') => Some(b']'),
+                        Some(b'{') => Some(b'}'),
+                        _ => None,
+                    };
+
+                    if let Some(close) = close {
+                        string_mode = Some(StringMode::Raw {
+                            quote,
+                            close,
+                            dashes: delimiter_pos - (pos + 2),
+                        });
+                        pos = delimiter_pos + 1;
+                    } else {
+                        // This is not a valid raw-string opener, so treat its
+                        // quote as the start of a regular string directly.
+                        string_mode = Some(StringMode::Quoted(quote));
+                        pos += 2;
+                    }
+                }
+                b'{' => {
+                    brace_stack.push(Brace::Code);
+                    pos += 1;
+                }
+                b'}' => {
+                    if let Some(Brace::Macro(open)) = brace_stack.pop() {
+                        to_remove.push(open);
+                        to_remove.push(i);
+                    }
+                    pos += 1;
+                }
+                _ => pos += 1,
+            }
+        }
+    }
+
+    to_remove.sort_unstable();
+    to_remove.dedup();
+    to_remove
 }
 
 /// Check if a trimmed line is a roxygen macro like `\dontrun{`, `\donttest{`,
@@ -462,6 +575,102 @@ foo <- function(x) x
         let chunks = parse_and_extract(source);
         assert_eq!(chunks.len(), 1);
         assert_eq!(chunks[0].code, "x <- 1\ny <- 2\nz <- 3");
+    }
+
+    #[test]
+    fn test_macro_line_matching_preserves_r_braces() {
+        for macro_name in [r"\dontrun{", r"\donttest{", r"\dontshow{"] {
+            assert_eq!(
+                roxygen_macro_lines_to_remove(&[
+                    macro_name,
+                    "identity({",
+                    "  any(is.na(x))",
+                    "}",
+                    ")",
+                    "}",
+                ]),
+                vec![0, 5],
+                "{macro_name}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_macro_line_matching_ignores_strings_and_comments() {
+        assert_eq!(
+            roxygen_macro_lines_to_remove(&[
+                r"\dontrun{",
+                r####"message("}")"####,
+                r##"message('{') # }"##,
+                "}",
+            ]),
+            vec![0, 3]
+        );
+    }
+
+    #[test]
+    fn test_macro_line_matching_ignores_escaped_string_content() {
+        assert_eq!(
+            roxygen_macro_lines_to_remove(&[r"\dontrun{", r#"message("\"}")"#, "}"]),
+            vec![0, 2]
+        );
+    }
+
+    #[test]
+    fn test_macro_line_matching_preserves_escaped_multiline_strings() {
+        assert_eq!(
+            roxygen_macro_lines_to_remove(&[r"\dontrun{", r#""continued\"#, r#"}bar""#, "}"]),
+            vec![0, 3]
+        );
+    }
+
+    #[test]
+    fn test_macro_line_matching_ignores_raw_strings() {
+        assert_eq!(
+            roxygen_macro_lines_to_remove(&[r"\dontrun{", r####"message(r"{foo}")"####, "}"]),
+            vec![0, 2]
+        );
+    }
+
+    #[test]
+    fn test_macro_line_matching_handles_raw_string_delimiters() {
+        for line in [r#"message(r"[foo]")"#, r#"message(r"--[foo]--")"#] {
+            assert_eq!(
+                roxygen_macro_lines_to_remove(&[r"\dontrun{", line, "}"]),
+                vec![0, 2],
+                "{line}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_macro_line_matching_falls_back_for_invalid_raw_strings() {
+        assert_eq!(
+            roxygen_macro_lines_to_remove(&[r"\dontrun{", r#"message(r"not } raw")"#, "}"]),
+            vec![0, 2]
+        );
+    }
+
+    #[test]
+    fn test_macro_line_matching_preserves_multiline_raw_strings() {
+        assert_eq!(
+            roxygen_macro_lines_to_remove(&[r"\dontrun{", r#"message(r"("#, "}", r#")")"#, "}",]),
+            vec![0, 4]
+        );
+    }
+
+    #[test]
+    fn test_macro_line_matching_ignores_macro_like_raw_string_content() {
+        assert_eq!(
+            roxygen_macro_lines_to_remove(&[
+                r"\dontrun{",
+                r#"s <- r"("#,
+                r"\donttest{",
+                r#"")""#,
+                "}",
+            ]),
+            vec![0, 4]
+        );
     }
 
     #[test]
