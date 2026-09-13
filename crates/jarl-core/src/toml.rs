@@ -22,6 +22,7 @@ use crate::lints::base::implicit_assignment::options::ImplicitAssignmentOptions;
 use crate::lints::base::missing_argument::options::MissingArgumentOptions;
 use crate::lints::base::nested_pipe::options::NestedPipeOptions;
 use crate::lints::base::pipe_consistency::options::PipeConsistencyOptions;
+use crate::lints::base::positional_arguments::options::PositionalArgumentsOptions;
 use crate::lints::base::quotes::options::QuotesOptions;
 use crate::lints::base::true_false_symbol::options::TrueFalseSymbolOptions;
 use crate::lints::base::undesirable_function::options::UndesirableFunctionOptions;
@@ -361,6 +362,13 @@ pub struct LinterTomlOptions {
     /// are `"|>"` (default) and `"%>%"`.
     #[serde(rename = "pipe_consistency")]
     pub pipe_consistency: Option<PipeConsistencyOptions>,
+
+    /// # Options for the `positional_arguments` rule
+    ///
+    /// Use `max-positional-args` to control how many positional (unnamed)
+    /// arguments a call may have before it is reported. Defaults to `3`.
+    #[serde(rename = "positional_arguments")]
+    pub positional_arguments: Option<PositionalArgumentsOptions>,
 
     /// # Options for the `quotes` rule
     ///
