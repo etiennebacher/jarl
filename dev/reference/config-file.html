@@ -422,7 +422,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="introduction" class="level2">
 <h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
-<p>To avoid typing options every time and to ensure all uses of Jarl in a project are consistent, it is possible to store options in <code>jarl.toml</code>.</p>
+<p>To avoid typing options every time and to ensure all uses of Jarl in a project are consistent, it is possible to store options in <code>jarl.toml</code> (or <code>.jarl.toml</code>).</p>
 <p>This file could look like this:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint]</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Only report violations about performance or correctness.</span></span>
@@ -452,9 +452,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Jarl follows a hierarchical strategy to detect the closest config file relative to the current working directory (inspired by <a href="https://docs.astral.sh/ruff/configuration/#config-file-discovery" target="_blank">Ruff</a> in Python).</p>
 <p>Jarl follows these steps:</p>
 <ol type="1">
-<li>look for <code>jarl.toml</code> in the current working directory;</li>
-<li>if not present, go to the parent folder until a <code>jarl.toml</code> is found;</li>
-<li>if none of the parent directories contain the config file, Jarl checks if one exists in the home config directory. For Unix users, it looks for <code>~/.config/jarl/jarl.toml</code>. For Windows users, it looks for <code>~/AppData/Roaming/jarl/jarl.toml</code>.</li>
+<li>look for <code>jarl.toml</code> or <code>.jarl.toml</code> in the current working directory;</li>
+<li>if not present, go to the parent folder until one of them is found;</li>
+<li>if none of the parent directories contain the config file, Jarl checks if one exists in the home config directory. For Unix users, it looks for <code>~/.config/jarl/jarl.toml</code> (or <code>~/.config/jarl/.jarl.toml</code>). For Windows users, it looks for <code>~/AppData/Roaming/jarl/jarl.toml</code>.</li>
 <li>if the config file is not present there, then it stops looking for one.</li>
 </ol>
 <p>Storing a default <code>jarl.toml</code> in the home config directory may be useful to apply some arguments by default on all R files.</p>

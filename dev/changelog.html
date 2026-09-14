@@ -450,6 +450,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="changes" class="level3">
 <h3 class="anchored" data-anchor-id="changes">Changes</h3>
 <ul>
+<li><p>The config file can be named <code>.jarl.toml</code> as well as <code>jarl.toml</code>. Both names are equivalent, and a directory containing both is now an error instead of silently using <code>jarl.toml</code> (<a href="https://github.com/etiennebacher/jarl/issues/717" target="_blank">#717</a>).</p></li>
 <li><p><code>expect_length</code> no longer reports cases where <code>length()</code> is in the <code>expected</code> argument, e.g.&nbsp;<code>expect_equal(nrow(x), length(y))</code> (<a href="https://github.com/etiennebacher/jarl/issues/684" target="_blank">#684</a>).</p></li>
 <li><p>The LSP now also publishes diagnostics when opening a file (<a href="https://github.com/etiennebacher/jarl/issues/685" target="_blank">#685</a>).</p></li>
 <li><p>The CLI now prints a message suggesting <code>fix-roxygen = true</code> when some fixes cannot be applied because the violation is in part of <code>@examples</code> (<a href="https://github.com/etiennebacher/jarl/issues/702" target="_blank">#702</a>).</p></li>
