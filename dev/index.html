@@ -553,13 +553,39 @@ Using <code>mise</code>
 <span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Run one-off command</span></span>
 <span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="ex">mise</span> exec conda:jarl <span class="at">--</span> jarl check .</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
+<details>
+<summary>
+Using <code>nix</code>
+</summary>
+<p>You can use Jarl with <a href="https://nixos.org" target="_blank">Nix</a> and <a href="https://search.nixos.org/packages?channel=unstable&amp;query=jarl#show=jarl" target="_blank">nixpkgs</a>:</p>
+<pre><code># Temporary shell
+nix-shell -p jarl
+jarl check .
+
+# Run one-off command (with flakes enabled)
+nix run nixpkgs#jarl -- check .
+
+# One-off command with comma (https://github.com/nix-community/comma)
+, jarl check .
+
+# Add to NixOS configuration (permanent install)
+environment.systemPackages = [
+  pkgs.jarl
+];
+
+# Add to home-manager
+home.packages = [
+  pkgs.jarl
+];</code></pre>
+<p>Modifying the user profile with <code>nix-env</code> or <code>nix profile add</code> is not recommended.</p>
+</details>
 </section>
 </section>
 <section id="development-version" class="level3">
 <h3 class="anchored" data-anchor-id="development-version">Development version</h3>
 <p>Some pre-releases may be available from the <a href="https://github.com/etiennebacher/jarl/releases" target="_blank">Releases page</a> (the version usually contains <code>alpha</code>, see the installation instructions there).</p>
 <p>Alternatively, if you have Rust installed, you should be able to get the development version with:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install <span class="at">--git</span> https://github.com/etiennebacher/jarl jarl <span class="at">--profile</span><span class="op">=</span>release</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install <span class="at">--git</span> https://github.com/etiennebacher/jarl jarl <span class="at">--profile</span><span class="op">=</span>release</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <details>
 <summary style="padding-bottom: 0.5rem;">
 Click if you installed the development version via <code>cargo</code>
