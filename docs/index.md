@@ -182,6 +182,20 @@ pixi exec jarl check .
 </details>
 
 <details>
+<summary>Using the Arch User Repository</summary>
+
+If you use Arch Linux, you can install Jarl from the [Arch User Repository](https://aur.archlinux.org/packages/jarl-bin) with [`yay`](https://github.com/Jguer/yay) or [`paru`](https://github.com/Morganamilo/paru):
+
+```sh
+# With yay
+yay -S jarl-bin
+
+# With paru
+paru -S jarl-bin
+```
+</details>
+
+<details>
 <summary>Using `mise`</summary>
 
 You can use [mise](https://mise.jdx.dev/) to install Jarl from [conda-forge](https://github.com/conda-forge/jarl-feedstock):
