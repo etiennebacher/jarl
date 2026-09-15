@@ -71,7 +71,7 @@ pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<Disc
                 break;
             }
 
-            if let Some(toml) = find_jarl_toml_in_directory(ancestor) {
+            if let Some(toml) = find_jarl_toml_in_directory(ancestor)? {
                 let settings = parse_settings(&toml, ancestor)?;
                 discovered_settings.push(DiscoveredSettings {
                     directory: ancestor.to_path_buf(),
@@ -94,7 +94,7 @@ pub fn discover_settings<P: AsRef<Path>>(paths: &[P]) -> anyhow::Result<Vec<Disc
         if !found_config
             && let Some(ref config_dir) = user_config_dir
             && seen.insert(config_dir.as_path())
-            && let Some(toml) = find_jarl_toml_in_directory(config_dir)
+            && let Some(toml) = find_jarl_toml_in_directory(config_dir)?
         {
             let settings = parse_settings(&toml, config_dir)?;
             discovered_settings.push(DiscoveredSettings {
@@ -160,7 +160,7 @@ fn discover_nested_settings(
             continue;
         }
 
-        if let Some(toml) = find_jarl_toml_in_directory(path) {
+        if let Some(toml) = find_jarl_toml_in_directory(path)? {
             already_found.insert(path.to_path_buf());
             let settings = parse_settings(&toml, path)?;
             discovered_settings.push(DiscoveredSettings {

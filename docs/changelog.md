@@ -17,6 +17,10 @@
 
 ### Changes
 
+* The config file can be named `.jarl.toml` as well as `jarl.toml`. Both names
+  are equivalent, and a directory containing both is now an error instead of
+  silently using `jarl.toml` (#717).
+
 * `expect_length` no longer reports cases where `length()` is in the `expected`
   argument, e.g. `expect_equal(nrow(x), length(y))` (#684).
 
