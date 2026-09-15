@@ -28,6 +28,32 @@ introduced in 4.2, even though `|>` itself was introduced in 4.1), and it
 has an unsafe fix due to some specificities of the native pipe (e.g. it
 doesn't work when `+()` is on the RHS).
 
+## Configuration options
+
+The operation of the `pipe_consistency` rule can be customised in the [configuration file](../reference/config-file.md).
+
+The `pipe` option takes a single value (`"|>"` or `"%>%"`) indicating the
+preferred pipe operator in the files to check. If `pipe = "|>"` and if the
+`"pipe_consistency"` rule is enabled, then any use of `%>%` will be
+reported, and vice-versa.
+
+### Default values
+
+```toml
+pipe = "|>"
+```
+
+### TOML settings
+
+```toml
+[lint]
+...
+
+[lint.pipe_consistency]
+# Use the {magrittr} pipe instead
+pipe = "%>%"
+```
+
 ## Example
 
 ```r
@@ -46,23 +72,3 @@ data |>
 ## References
 
 See `?pipeOp`
-
----
-
-## Configuration options
-
-The operation of `pipe_consistency` can be customised in the [configuration file](../reference/config-file.md).
-
-This takes a single value (`"|>"` or `"%>%"`) indicating the preferred
-pipe operator in the files to check. If `pipe = "|>"` and if the `"pipe_consistency"`
-rule is enabled, then any use of `%>%` will be reported, and vice-versa.
-
-Default: `"|>"`
-
-```toml
-[lint]
-...
-
-[lint.pipe_consistency]
-pipe = "|>" # or "%>%"
-```

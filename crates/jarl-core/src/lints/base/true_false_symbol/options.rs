@@ -1,13 +1,19 @@
 use std::collections::HashSet;
 
 /// <!-- docs: start -->
-/// Use `skipped-functions` to list functions whose arguments are allowed to contain
-/// the `T` and `F` symbols.
+/// Use `skipped-functions` to list functions whose arguments are allowed to
+/// contain the `T` and `F` symbols.
 /// 
 /// Function names in `skipped-functions` also match namespaced calls, e.g.
 /// `skipped-functions = ["foo"]` will ignore `foo(T)` and `pkg::foo(T)`.
 /// 
-/// Default: `skipped-functions = []`
+/// ### Default values
+/// 
+/// ```toml
+/// skipped-functions = []
+/// ```
+/// 
+/// ### TOML settings
 /// 
 /// ```toml
 /// [lint]

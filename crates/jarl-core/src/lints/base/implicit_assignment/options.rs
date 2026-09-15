@@ -32,12 +32,30 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
 /// namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
 /// `rlang::list2()`.
 /// 
-/// Default: `skipped-functions = ["alist", "expect_error", "expect_warning", "expect_message",
-/// "expect_silent", "expect_defunct", "expect_deprecated", "expect_snapshot",
-/// "expect_no_condition", "expect_no_warning", "expect_no_error", "expect_no_message",
-/// "quote", "suppressMessages", "suppressWarnings", "try"]`
-/// (`expect_`functions come from the `testthat` package, except `expect_defunct` and
-/// `expect_deprecated` which come from the `lifecycle` package)
+/// ### Default values
+/// 
+/// ```toml
+/// skipped-functions = [
+///     "alist", 
+///     "expect_error",         # from {testthat}
+///     "expect_warning",       # from {testthat}
+///     "expect_message",       # from {testthat}
+///     "expect_silent",        # from {testthat}
+///     "expect_defunct",       # from {lifecycle}
+///     "expect_deprecated",    # from {lifecycle}
+///     "expect_snapshot",      # from {testthat}
+///     "expect_no_condition",  # from {testthat}
+///     "expect_no_warning",    # from {testthat}
+///     "expect_no_error",      # from {testthat}
+///     "expect_no_message",    # from {testthat}
+///     "quote",
+///     "suppressMessages",
+///     "suppressWarnings",
+///     "try"
+/// ]
+/// ```
+/// 
+/// ### TOML settings
 /// 
 /// ```toml
 /// [lint]

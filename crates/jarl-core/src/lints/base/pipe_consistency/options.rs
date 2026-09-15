@@ -7,18 +7,26 @@ pub enum PreferredPipe {
 }
 
 /// <!-- docs: start -->
-/// This takes a single value (`"|>"` or `"%>%"`) indicating the preferred
-/// pipe operator in the files to check. If `pipe = "|>"` and if the `"pipe_consistency"`
-/// rule is enabled, then any use of `%>%` will be reported, and vice-versa.
+/// The `pipe` option takes a single value (`"|>"` or `"%>%"`) indicating the
+/// preferred pipe operator in the files to check. If `pipe = "|>"` and if the
+/// `"pipe_consistency"` rule is enabled, then any use of `%>%` will be
+/// reported, and vice-versa.
 /// 
-/// Default: `"|>"`
+/// ### Default values
+/// 
+/// ```toml
+/// pipe = "|>"
+/// ```
+/// 
+/// ### TOML settings
 /// 
 /// ```toml
 /// [lint]
 /// ...
 /// 
 /// [lint.pipe_consistency]
-/// pipe = "|>" # or "%>%"
+/// # Use the {magrittr} pipe instead
+/// pipe = "%>%"
 /// ```
 /// <!-- docs: end -->
 #[derive(Clone, Debug, PartialEq, Eq, Default, Deserialize)]

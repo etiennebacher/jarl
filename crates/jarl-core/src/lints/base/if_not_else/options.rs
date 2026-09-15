@@ -15,7 +15,17 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &["is.null", "is.na", "missing"];
 /// namespaced calls, e.g. `skipped-functions = ["is.null"]` will allow `is.null()`
 /// and `base::is.null()`.
 /// 
-/// Default: `skipped-functions = ["is.null", "is.na", "missing"]`
+/// ### Default values
+/// 
+/// ```toml
+/// skipped-functions = [
+///     "is.null", 
+///     "is.na", 
+///     "missing"
+/// ]
+/// ```
+/// 
+/// ### TOML settings
 /// 
 /// ```toml
 /// [lint]
@@ -24,7 +34,7 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &["is.null", "is.na", "missing"];
 /// [lint.if_not_else]
 /// # Also allow a negated `is.data.frame()` call in the condition.
 /// extend-skipped-functions = ["is.data.frame"]
-/// ``` 
+/// ```
 /// <!-- docs: end -->
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]

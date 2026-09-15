@@ -14,7 +14,18 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &["c", "mutate", "summarize", "transm
 /// namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
 /// `rlang::list2()`.
 /// 
-/// Default: `skipped-functions = ["c", "mutate", "summarize", "transmute"]`
+/// ### Default values
+/// 
+/// ```toml
+/// skipped-functions = [
+///     "c",
+///     "mutate",
+///     "summarize",
+///     "transmute"
+/// ]
+/// ```
+/// 
+/// ### TOML settings
 /// 
 /// ```toml
 /// [lint]

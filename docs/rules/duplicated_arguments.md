@@ -17,17 +17,9 @@ This linter is used to discourage explicitly providing duplicate names to
 objects. Duplicate-named objects are hard to work with programmatically and
 should typically be avoided.
 
-## Example
-
-```r
-list(x = 1, x = 2)
-```
-
----
-
 ## Configuration options
 
-The operation of `duplicated_arguments` can be customised in the [configuration file](../reference/config-file.md).
+The operation of the `duplicated_arguments` rule can be customised in the [configuration file](../reference/config-file.md).
 
 Use `skipped-functions` to fully replace the default list of functions that are
 allowed to have duplicated arguments. Use `extend-skipped-functions` to add to
@@ -37,7 +29,18 @@ Function names in `skipped-functions` or `extend-skipped-functions` also match
 namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
 `rlang::list2()`.
 
-Default: `skipped-functions = ["c", "mutate", "summarize", "transmute"]`
+### Default values
+
+```toml
+skipped-functions = [
+    "c",
+    "mutate",
+    "summarize",
+    "transmute"
+]
+```
+
+### TOML settings
 
 ```toml
 [lint]
@@ -46,4 +49,10 @@ Default: `skipped-functions = ["c", "mutate", "summarize", "transmute"]`
 [lint.duplicated_arguments]
 # Ignore duplicated arguments in `list()` only.
 skipped-functions = ["list"]
+```
+
+## Example
+
+```r
+list(x = 1, x = 2)
 ```

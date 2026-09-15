@@ -19,6 +19,32 @@ them by `TRUE` and `FALSE`.
 It is also recommended to rename objects or parameters named `F` and `T` to
 avoid confusion.
 
+## Configuration options
+
+The operation of the `true_false_symbol` rule can be customised in the [configuration file](../reference/config-file.md).
+
+Use `skipped-functions` to list functions whose arguments are allowed to
+contain the `T` and `F` symbols.
+
+Function names in `skipped-functions` also match namespaced calls, e.g.
+`skipped-functions = ["foo"]` will ignore `foo(T)` and `pkg::foo(T)`.
+
+### Default values
+
+```toml
+skipped-functions = []
+```
+
+### TOML settings
+
+```toml
+[lint]
+...
+
+[lint.true_false_symbol]
+skipped-functions = ["foo"]
+```
+
 ## Example
 
 ```r
@@ -30,26 +56,4 @@ Use instead:
 ```r
 x <- TRUE
 y <- FALSE
-```
-
----
-
-## Configuration options
-
-The operation of `true_false_symbol` can be customised in the [configuration file](../reference/config-file.md).
-
-Use `skipped-functions` to list functions whose arguments are allowed to contain
-the `T` and `F` symbols.
-
-Function names in `skipped-functions` also match namespaced calls, e.g.
-`skipped-functions = ["foo"]` will ignore `foo(T)` and `pkg::foo(T)`.
-
-Default: `skipped-functions = []`
-
-```toml
-[lint]
-...
-
-[lint.true_false_symbol]
-skipped-functions = ["foo"]
 ```

@@ -52,6 +52,12 @@ create_rule_md <- function(rule, lints_dir) {
     stop("No 'version added' meta in rule `", rule_name, "`.")
   } else if (length(version_loc) != 1) {
     stop("Multiple 'version added' meta in rule `", rule_name, "`.")
+  } else if (version_loc != 1) {
+    stop(
+      "The 'version added' meta in rule `",
+      rule_name,
+      "` is not the first line of the documentation."
+    )
   }
 
   version_added <- gsub(
@@ -64,6 +70,42 @@ create_rule_md <- function(rule, lints_dir) {
     stop("The 'version added' meta for rule `", rule_name, "` is malformed.")
   }
 
+  exref_loc <- grep("^## (Example|Reference)s?", doc_content)
+
+  if (length(exref_loc) == 0) {
+    main_content <- doc_content[2:length(doc_content)]
+    exref_content <- NULL
+  } else {
+    exref_loc <- min(exref_loc)
+    main_content <- doc_content[2:(exref_loc - 1)]
+    exref_content <- doc_content[exref_loc:length(doc_content)]
+  }
+
+  if (file.exists(options_rs)) {
+    options_content <- .extract_documentation(
+      options_rs,
+      file.path(rule_name, "options.rs")
+    )
+
+    options_content <- c(
+      "## Configuration options\n",
+      paste0(
+        "The operation of the `",
+        rule_name,
+        "` rule can be customised in the ",
+        "[configuration file](../reference/config-file.md).\n"
+      ),
+      options_content,
+      ""
+    )
+
+    if (main_content[length(main_content)] != "") {
+      options_content <- c("", options_content)
+    }
+  } else {
+    options_content <- NULL
+  }
+
   # make documentation output
   rule_doc <- list(
     title = paste0("# ", rule_name, "\n"),
@@ -72,28 +114,10 @@ create_rule_md <- function(rule, lints_dir) {
       version_added,
       "\" .low-opacity}\n:::"
     ),
-    main_content = doc_content[-version_loc]
+    main_content = main_content,
+    options_content = options_content,
+    exref_content = exref_content
   )
-
-  if (file.exists(options_rs)) {
-    options_content <- .extract_documentation(
-      options_rs,
-      file.path(rule_name, "options.rs")
-    )
-    if (!is.null(options_content)) {
-      rule_doc$options <- list(
-        sep = "\n---\n",
-        title = "## Configuration options\n",
-        generic_content = paste0(
-          "The operation of `",
-          rule_name,
-          "` can be customised in the ",
-          "[configuration file](../reference/config-file.md).\n"
-        ),
-        rule_options = options_content
-      )
-    }
-  }
 
   writeLines(unlist(rule_doc), paste0("docs/rules/", rule_name, ".md"))
 

@@ -13,13 +13,22 @@ In most cases using `=` and `<-` is equivalent. Some very popular packages
 use `=` without problems. This rule only ensures the consistency of the
 assignment operator in a project.
 
-The `lint.argument.operator` option in `jarl.toml` must be set for this
+## Configuration options
+
+The operation of the `assignment` rule can be customised in the [configuration file](../reference/config-file.md).
+
+The `lint.assignment.operator` option in `jarl.toml` must be set for this
 rule to be checked. It takes a single value (`"<-"` or `"="`) indicating
 the preferred assignment operator in the files to check.
-If `operator = "<-"` and if the `"assignment"` rule is enabled, then any
-use of the `"="` operator to assign values will be reported, and vice-versa.
+If `operator = "<-"` then any use of the `"="` operator to assign values
+will be reported, and vice-versa. To stop checking this rule remove this
+setting from the configuration file.
+
+### Default values
 
 This option doesn't have a default value.
+
+### TOML settings
 
 ```toml
 [lint]

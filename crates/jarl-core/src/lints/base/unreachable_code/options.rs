@@ -15,8 +15,20 @@ const DEFAULT_STOPPING_FUNCTIONS: &[&str] =
 /// namespaced calls, e.g. `stopping-functions = ["abort"]` will consider `abort()`
 /// and `rlang::abort()` as stopping functions.
 /// 
-/// Default: `stopping-functions = ["stop", ".Defunct", "abort", "cli_abort",
-/// "q", "quit"]`.
+/// ### Default values
+/// 
+/// ```toml
+/// stopping-functions = [
+///     "stop",
+///     ".Defunct",
+///     "abort",
+///     "cli_abort",
+///     "q",
+///     "quit"
+/// ]
+/// ```
+/// 
+/// ### TOML settings
 /// 
 /// ```toml
 /// [lint]

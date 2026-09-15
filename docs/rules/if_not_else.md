@@ -21,6 +21,40 @@ option to change this list.
 
 This rule does not have an automatic fix.
 
+## Configuration options
+
+The operation of the `if_not_else` rule can be customised in the [configuration file](../reference/config-file.md).
+
+Use `skipped-functions` to fully replace the default list of functions whose
+negated calls are allowed as an `if`/`ifelse()` condition (e.g. `!is.null(x)`).
+Use `extend-skipped-functions` to add to the default list. Specifying both is an
+error.
+
+Function names in `skipped-functions` or `extend-skipped-functions` also match
+namespaced calls, e.g. `skipped-functions = ["is.null"]` will allow `is.null()`
+and `base::is.null()`.
+
+### Default values
+
+```toml
+skipped-functions = [
+    "is.null", 
+    "is.na", 
+    "missing"
+]
+```
+
+### TOML settings
+
+```toml
+[lint]
+...
+
+[lint.if_not_else]
+# Also allow a negated `is.data.frame()` call in the condition.
+extend-skipped-functions = ["is.data.frame"]
+```
+
 ## Example
 
 ```r
@@ -36,29 +70,3 @@ if (cond) y else x
 
 ifelse(cond, y, x)
 ```
-
----
-
-## Configuration options
-
-The operation of `if_not_else` can be customised in the [configuration file](../reference/config-file.md).
-
-Use `skipped-functions` to fully replace the default list of functions whose
-negated calls are allowed as an `if`/`ifelse()` condition (e.g. `!is.null(x)`).
-Use `extend-skipped-functions` to add to the default list. Specifying both is an
-error.
-
-Function names in `skipped-functions` or `extend-skipped-functions` also match
-namespaced calls, e.g. `skipped-functions = ["is.null"]` will allow `is.null()`
-and `base::is.null()`.
-
-Default: `skipped-functions = ["is.null", "is.na", "missing"]`
-
-```toml
-[lint]
-...
-
-[lint.if_not_else]
-# Also allow a negated `is.data.frame()` call in the condition.
-extend-skipped-functions = ["is.data.frame"]
-``` 

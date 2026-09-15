@@ -21,14 +21,20 @@ const DEFAULT_SKIPPED_FUNCTIONS: &[&str] = &[
 /// namespaced calls, e.g. `skipped-functions = ["list2"]` will ignore `list2()` and
 /// `rlang::list2()`.
 /// 
-/// Default: `skipped-functions = [
+/// ### Default values
+/// 
+/// ```toml
+/// skipped-functions = [
 ///     "switch",
 ///     "tibble",
 ///     "list2",
 ///     "mutate",
 ///     "summarize",
 ///     "transmute",
-/// ]`
+/// ]
+/// ```
+/// 
+/// ### TOML settings
 /// 
 /// ```toml
 /// [lint]

@@ -14,10 +14,14 @@ const DEFAULT_THRESHOLD_IGNORE: usize = 50;
 /// has some internal mechanism to use those functions. This number can be changed
 /// with the `threshold-ignore` argument.
 /// 
-/// Defaults:
+/// ### Default values
 /// 
-/// - `skipped-functions = []`
-/// - `threshold-ignore = 50`
+/// ```toml
+/// skipped-functions = []
+/// threshold-ignore = 5
+/// ```
+/// 
+/// ### TOML settings
 /// 
 /// ```toml
 /// [lint]

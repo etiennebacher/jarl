@@ -52,6 +52,32 @@ r"(abc)"def)"
 ```
 results in early termination and a syntax error.
 
+## Configuration options
+
+The operation of the `quotes` rule can be customised in the [configuration file](../reference/config-file.md).
+
+The `quote`` option takes a single value (`"single"` or `"double"`)
+indicating the preferred quote style in the files to check. If
+`quote = "double"` and if the `"quotes"` rule is enabled, then any use of
+single quotes `'` will be reported, and vice-versa.
+
+### Default values
+
+```toml
+quote = "double"
+```
+
+### TOML settings
+
+```toml
+[lint]
+...
+
+[lint.quotes]
+# Prefer single quotes instead
+quote = "single"
+```
+
 ## Example
 
 ```r
@@ -71,24 +97,3 @@ See:
 
 - [Tidyverse style guide](https://style.tidyverse.org/syntax.html#character-vectors)
 - [R documentation](https://stat.ethz.ch/R-manual/R-patched/library/base/html/Quotes.html)
-
----
-
-## Configuration options
-
-The operation of `quotes` can be customised in the [configuration file](../reference/config-file.md).
-
-This takes a single value (`"single"` or `"double"`) indicating the preferred
-quote style in the files to check. If `quote = "double"` and if the `"quotes"`
-rule is enabled, then any use of single quotes `'` will be reported, and
-vice-versa.
-
-Default: `double`
-
-```toml
-[lint]
-...
-
-[lint.quotes]
-quote = "single" # or "double"
-```

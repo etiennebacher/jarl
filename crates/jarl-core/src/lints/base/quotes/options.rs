@@ -16,19 +16,26 @@ impl PreferredQuote {
 }
 
 /// <!-- docs: start -->
-/// This takes a single value (`"single"` or `"double"`) indicating the preferred
-/// quote style in the files to check. If `quote = "double"` and if the `"quotes"`
-/// rule is enabled, then any use of single quotes `'` will be reported, and
-/// vice-versa.
+/// The `quote`` option takes a single value (`"single"` or `"double"`)
+/// indicating the preferred quote style in the files to check. If
+/// `quote = "double"` and if the `"quotes"` rule is enabled, then any use of
+/// single quotes `'` will be reported, and vice-versa.
 /// 
-/// Default: `double`
+/// ### Default values
+/// 
+/// ```toml
+/// quote = "double"
+/// ```
+/// 
+/// ### TOML settings
 /// 
 /// ```toml
 /// [lint]
 /// ...
 /// 
 /// [lint.quotes]
-/// quote = "single" # or "double"
+/// # Prefer single quotes instead
+/// quote = "single"
 /// ```
 /// <!-- docs: end -->
 #[derive(Clone, Debug, PartialEq, Eq, Default, Deserialize)]
