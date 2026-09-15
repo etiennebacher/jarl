@@ -9,7 +9,7 @@ x == ''
 NEW:
 ====
 # leading comment
-!nzchar(x)
+!nzchar(x, keepNA = TRUE)
 
 OLD:
 ====
@@ -25,7 +25,7 @@ OLD:
 x == '' # trailing comment
 NEW:
 ====
-!nzchar(x) # trailing comment
+!nzchar(x, keepNA = TRUE) # trailing comment
 
 OLD:
 ====

@@ -20,7 +20,7 @@ mod tests {
         1 | x == ''
           | ------- `x == ""` is inefficient.
           |
-          = help: Use `!nzchar(x)` instead.
+          = help: Use `!nzchar(x, keepNA = TRUE)` instead.
         Found 1 error.
         "#
         );
@@ -34,7 +34,7 @@ mod tests {
         1 | x != ''
           | ------- `x != ""` is inefficient.
           |
-          = help: Use `nzchar(x)` instead.
+          = help: Use `nzchar(x, keepNA = TRUE)` instead.
         Found 1 error.
         "#
         );
@@ -48,7 +48,7 @@ mod tests {
         1 | x == r"()"
           | ---------- `x == ""` is inefficient.
           |
-          = help: Use `!nzchar(x)` instead.
+          = help: Use `!nzchar(x, keepNA = TRUE)` instead.
         Found 1 error.
         "#
         );

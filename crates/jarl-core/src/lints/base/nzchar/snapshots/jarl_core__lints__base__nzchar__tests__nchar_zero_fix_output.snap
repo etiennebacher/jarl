@@ -7,28 +7,28 @@ OLD:
 nchar(x) > 0
 NEW:
 ====
-nzchar(x)
+nzchar(x, keepNA = TRUE)
 
 OLD:
 ====
 nchar(x) != 0L
 NEW:
 ====
-nzchar(x)
+nzchar(x, keepNA = TRUE)
 
 OLD:
 ====
 nchar(x) <= 0.0
 NEW:
 ====
-!nzchar(x)
+!nzchar(x, keepNA = TRUE)
 
 OLD:
 ====
 nchar(x) == 0
 NEW:
 ====
-!nzchar(x)
+!nzchar(x, keepNA = TRUE)
 
 OLD:
 ====
@@ -49,21 +49,21 @@ OLD:
 0 < nchar(x)
 NEW:
 ====
-nzchar(x)
+nzchar(x, keepNA = TRUE)
 
 OLD:
 ====
 0 != nchar(x)
 NEW:
 ====
-nzchar(x)
+nzchar(x, keepNA = TRUE)
 
 OLD:
 ====
 0 >= nchar(x)
 NEW:
 ====
-!nzchar(x)
+!nzchar(x, keepNA = TRUE)
 
 OLD:
 ====
@@ -77,7 +77,7 @@ OLD:
 0 == nchar(x)
 NEW:
 ====
-!nzchar(x)
+!nzchar(x, keepNA = TRUE)
 
 OLD:
 ====
@@ -91,4 +91,4 @@ OLD:
 nchar(x = x) > 0
 NEW:
 ====
-nzchar(x)
+nzchar(x, keepNA = TRUE)

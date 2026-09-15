@@ -15,17 +15,18 @@ const FORMALS_NCHAR: Formals = &["x"];
 /// with zero, such as `nchar(x) == 0`, instead of `nzchar(x)` or `!nzchar(x)`.
 ///
 /// ## Why is this bad?
+///
 /// `x == ""` is less efficient than `!nzchar(x)`
 /// when x is a large vector of long strings.
 ///
 /// One crucial difference is in the default handling of `NA_character_`,
 /// i.e., missing strings. `nzchar(NA_character_)` is TRUE,
 /// while `NA_character_ == ""` is NA.
-/// Therefore, for strict compatibility, use `nzchar(x, keepNA = TRUE)`.
-/// If the input is known to be complete (no missing entries),
-/// this argument can be dropped for conciseness.
+/// Generated fixes use `nzchar(x, keepNA = TRUE)` to preserve missing values.
 ///
-/// This rule comes with a unsafe fix.
+/// This rule comes with an unsafe fix because `nzchar()` can still differ for
+/// factors or classed objects and does not preserve attributes such as names
+/// and dimensions.
 ///
 /// ## Example
 ///
@@ -37,7 +38,7 @@ const FORMALS_NCHAR: Formals = &["x"];
 /// Use instead:
 /// ```r
 /// x <- sample(c("abcdefghijklmn", "", "opqrstuvwyz"), 1e7, TRUE)
-/// x[!nzchar(x)]
+/// x[!nzchar(x, keepNA = TRUE)]
 /// ```
 ///
 /// ## References
@@ -88,12 +89,12 @@ pub fn nzchar(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
             ViolationData::new(
                 Rule::NzChar,
                 "`x == \"\"` is inefficient.".to_string(),
-                Some("Use `!nzchar(x)` instead.".to_string()),
+                Some("Use `!nzchar(x, keepNA = TRUE)` instead.".to_string()),
             ),
             range,
             Fix::new(
                 range,
-                format!("!nzchar({replacement})"),
+                format!("!nzchar({replacement}, keepNA = TRUE)"),
                 node_contains_comments(ast.syntax()),
             ),
         ),
@@ -101,12 +102,12 @@ pub fn nzchar(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
             ViolationData::new(
                 Rule::NzChar,
                 "`x != \"\"` is inefficient.".to_string(),
-                Some("Use `nzchar(x)` instead.".to_string()),
+                Some("Use `nzchar(x, keepNA = TRUE)` instead.".to_string()),
             ),
             range,
             Fix::new(
                 range,
-                format!("nzchar({replacement})"),
+                format!("nzchar({replacement}, keepNA = TRUE)"),
                 node_contains_comments(ast.syntax()),
             ),
         ),
@@ -168,32 +169,32 @@ fn nchar_zero_comparison(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagn
             let (body, suggestion, replacement) = match operator {
                 RSyntaxKind::GREATER_THAN => (
                     "`nchar(x) > 0` is inefficient.",
-                    "Use `nzchar(x)` instead.",
-                    Some(format!("nzchar({argument})")),
+                    "Use `nzchar(x, keepNA = TRUE)` instead.",
+                    Some(format!("nzchar({argument}, keepNA = TRUE)")),
                 ),
                 RSyntaxKind::NOT_EQUAL => (
                     "`nchar(x) != 0` is inefficient.",
-                    "Use `nzchar(x)` instead.",
-                    Some(format!("nzchar({argument})")),
+                    "Use `nzchar(x, keepNA = TRUE)` instead.",
+                    Some(format!("nzchar({argument}, keepNA = TRUE)")),
                 ),
                 RSyntaxKind::LESS_THAN_OR_EQUAL_TO => (
                     "`nchar(x) <= 0` is inefficient.",
-                    "Use `!nzchar(x)` instead.",
-                    Some(format!("!nzchar({argument})")),
+                    "Use `!nzchar(x, keepNA = TRUE)` instead.",
+                    Some(format!("!nzchar({argument}, keepNA = TRUE)")),
                 ),
                 RSyntaxKind::EQUAL2 => (
                     "`nchar(x) == 0` is inefficient.",
-                    "Use `!nzchar(x)` instead.",
-                    Some(format!("!nzchar({argument})")),
+                    "Use `!nzchar(x, keepNA = TRUE)` instead.",
+                    Some(format!("!nzchar({argument}, keepNA = TRUE)")),
                 ),
                 RSyntaxKind::GREATER_THAN_OR_EQUAL_TO => (
                     "`nchar(x) >= 0` is always true.",
-                    "Maybe you want `nzchar(x)` instead.",
+                    "Maybe you want `nzchar(x, keepNA = TRUE)` instead.",
                     None,
                 ),
                 RSyntaxKind::LESS_THAN => (
                     "`nchar(x) < 0` is always false.",
-                    "Maybe you want `!nzchar(x)` instead.",
+                    "Maybe you want `!nzchar(x, keepNA = TRUE)` instead.",
                     None,
                 ),
                 _ => unreachable!("Only comparison operators are normalized above"),
