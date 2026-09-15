@@ -67,11 +67,13 @@ Adding a new rule requires four main steps:
 
 ### Documenting a new rule
 
-The documentation for a rule is stored in the relevant `<rulename>.rs` file.
+The documentation used in `jarl rule <rulename>` and on the Jarl website is generated from the documentation block in the `<rulename.rs>` file.
 
-Documentation is commented out using three slashes (`///`).
-Use the markers `<!-- docs: start -->` and `<!-- docs: end -->` to indicate the start and end of the documentation block.
-Documentation content should be written using standard markdown notation.
+The documentation block is positioned after any imports and declarations but before any of the code that operates the rule checks.
+The documentation block must be commented out using three slashes (`///`), it must start with the marker `<!-- docs: start -->` and end with the marker `<!-- docs: end -->`.
+Commented content outside of these markers will be ignored.
+The content of the documentation block uses standard markdown notation.
+Although the documentation website is built using Quarto do not include any executable code as the documentation is extracted into plain markdown files.
 
 ```rust
 /// <!-- docs: start -->
@@ -85,13 +87,20 @@ Documentation content should be written using standard markdown notation.
 /// <!-- docs: end -->
 ```
 
-A documentation block should start with a line indicating the version of Jarl that the rule was/will be added in.
-At a minimum the documentation should have a "What it does" section that describes the checks the rule carried out.
-In most cases the documentation should also include a "Why is this bad?" section to explain the rationale for the rule and an "Example" that illustrates bad code that will get flagged by Jarl and good code that will not get flagged.
+The first line of a documentation block must declare the version added (in `MAJOR.MINOR.PATCH` format).
+The documentation block should have the following subsections (each using a level 2 (`##`) markdown header):
 
-If the rule has configuration options, these should be documented in the rule's `options.rs` file.
-Options documentation should also be commented using three slashes and include start and end markers.
-The documentation will then be appended after the rule's main documentation under the section heading "Configuration options".
+* "What is does" to explain what the rule does
+* "Why is this bad?" to explain the rational for the rule and potential caveats
+* "Example" to illustrate code that will be flagged by the rule and code that will not be flagged by the rule
+* Potentially a "References" section, such as `?<function>` if more details about the `<function>` the rule relates to can be found in R help, and/or links to external websites.
+
+If the rule has configuration options, these should be documented in the rule's `options.rs` file and will be included in the rule's documentation page under the subsection heading "Configuration options".
+Options documentation should also be commented out using three slashes and include `<!-- docs: start -->` and `<!-- docs: end -->` markers.
+The options documentation should explain the purpose of any option(s), their possible values and their effect(s), it should also have the following level 3 (`###`) subsections:
+
+* "Default values" to specify the default settings (if any) used by Jarl when checking the rule, for example any functions that the rule check skips.
+* "TOML settings" to show how to set the rule's configuration options in the `jarl.toml` file.
 
 Use `just document` to build the documentation.
 
