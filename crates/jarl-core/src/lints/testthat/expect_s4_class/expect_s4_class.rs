@@ -77,8 +77,8 @@ pub fn expect_s4_class(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diag
     Ok(Some(Diagnostic::new(
         ViolationData::new(
             Rule::TestthatExpectS4Class,
-            format!("`expect_s4_class(x, y)` is better than `expect_true(is(x, y))`."),
-            Some(format!("Use `expect_s4_class(x, y)` instead.")),
+            "`expect_s4_class(x, y)` is better than `expect_true(is(x, y))`.".to_string(),
+            Some("Use `expect_s4_class(x, y)` instead.".to_string()),
         ),
         range,
         Fix::new(
