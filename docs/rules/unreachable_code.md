@@ -42,3 +42,18 @@ foo <- function(x) {
   }
 }
 ```
+
+## R Markdown and Quarto
+
+The chunks of an `.Rmd`/`.qmd` document run one after another in a single R
+session, so a `stop()` in one chunk does make the code in the chunks after
+it unreachable. Two chunk options break that chain, and nothing after a
+chunk carrying one is reported:
+
+- `eval = FALSE` (or `#| eval: false`), because the chunk never runs at all;
+- `error = TRUE` (or `#| error: true`), because knitr prints the condition
+  and carries on rendering — through the rest of that chunk as well as the
+  rest of the document.
+
+An option whose value is decided at render time (`eval = run_it`) is read as
+the ordinary case, so the document keeps stopping.

@@ -1788,3 +1788,230 @@ any(is.na(x))
 
     Ok(())
 }
+
+/// A chunk marked `eval = FALSE` never runs, so a `stop()` in it cannot make a
+/// later chunk unreachable.
+#[test]
+fn test_rmd_unevaluated_chunk_does_not_stop_later_chunks() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.qmd",
+        "
+```{r}
+#| eval: false
+stop('hi')
+```
+
+```{r}
+1 + 1
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.qmd")
+            .arg("--select")
+            .arg("unreachable_code")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// A chunk marked `error = TRUE` runs, but knitr prints the condition and
+/// carries on, so a `stop()` in it ends neither that chunk nor the document.
+#[test]
+fn test_rmd_error_tolerant_chunk_does_not_stop_anything() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.qmd",
+        "
+```{r}
+#| eval: true
+#| error: true
+stop('hi')
+2 + 2
+```
+
+```{r}
+1 + 1
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.qmd")
+            .arg("--select")
+            .arg("unreachable_code")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// The header form of the option is read the same way.
+#[test]
+fn test_rmd_header_error_true_does_not_stop_later_chunks() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r, error = TRUE}
+stop('hi')
+```
+
+```{r}
+1 + 1
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unreachable_code")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// A chunk that neither of those options excuses still stops the document, and
+/// an unevaluated chunk sitting in between doesn't hide that.
+#[test]
+fn test_rmd_stopping_chunk_still_reaches_past_an_unevaluated_one() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.qmd",
+        "
+```{r}
+stop('hi')
+```
+
+```{r}
+#| eval: false
+2 + 2
+```
+
+```{r}
+1 + 1
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.qmd")
+            .arg("--select")
+            .arg("unreachable_code")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unreachable_code
+      --> test.qmd:12:1
+       |
+    12 | 1 + 1
+       | ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
+       |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// An unevaluated chunk is still code the author wrote, so unreachability
+/// within it is still reported.
+#[test]
+fn test_rmd_unevaluated_chunk_reports_its_own_unreachable_code() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.qmd",
+        "
+```{r}
+#| eval: false
+stop('hi')
+2 + 2
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.qmd")
+            .arg("--select")
+            .arg("unreachable_code")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unreachable_code
+     --> test.qmd:5:1
+      |
+    5 | 2 + 2
+      | ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
+      |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
