@@ -120,8 +120,6 @@ fn check_expect_class_comparison(
     let object_text = class_object.to_trimmed_text();
     let class_text = class_expression.to_trimmed_text();
 
-    // The message uses placeholders rather than the linted code, which can span
-    // several lines.
     let linted_text = if class_is_first {
         format!("{function_name}(class(x), y)")
     } else {
@@ -183,9 +181,6 @@ fn check_expect_true_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     let ClassCheck { object_text, class_text, can_fix } = class_check;
     let fix_text = format!("expect_s3_class({object_text}, {class_text})");
 
-    // The message uses placeholders rather than the linted code, which can span
-    // several lines. The predicate name and the class it implies are both static,
-    // so they can be kept as-is.
     let (linted_text, replacement) = if predicate_name == "inherits" {
         (
             "expect_true(inherits(x, y))".to_string(),
