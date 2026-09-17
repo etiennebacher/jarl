@@ -70,8 +70,6 @@ pub fn expect_s4_class(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diag
 
     let object_text = object_value.to_trimmed_text();
     let class_text = class_value.to_trimmed_text();
-    let replacement = "expect_s4_class(x, y)";
-    let linted_text = "expect_true(is(x, y))";
 
     let namespace_prefix = get_function_namespace_prefix(ast.function()?).unwrap_or_default();
     let range = ast.syntax().text_trimmed_range();
@@ -79,8 +77,8 @@ pub fn expect_s4_class(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diag
     Ok(Some(Diagnostic::new(
         ViolationData::new(
             Rule::TestthatExpectS4Class,
-            format!("`{replacement}` is better than `{linted_text}`."),
-            Some(format!("Use `{replacement}` instead.")),
+            format!("`expect_s4_class(x, y)` is better than `expect_true(is(x, y))`."),
+            Some(format!("Use `expect_s4_class(x, y)` instead.")),
         ),
         range,
         Fix::new(
