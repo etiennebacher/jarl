@@ -70,8 +70,8 @@ pub fn expect_s4_class(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diag
 
     let object_text = object_value.to_trimmed_text();
     let class_text = class_value.to_trimmed_text();
-    let replacement = format!("expect_s4_class({object_text}, {class_text})");
-    let linted_text = format!("expect_true({})", is_call.to_trimmed_text());
+    let replacement = "expect_s4_class(x, y)";
+    let linted_text = "expect_true(is(x, y))";
 
     let namespace_prefix = get_function_namespace_prefix(ast.function()?).unwrap_or_default();
     let range = ast.syntax().text_trimmed_range();

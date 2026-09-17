@@ -24,6 +24,10 @@
 * `expect_length` no longer reports cases where `length()` is in the `expected`
   argument, e.g. `expect_equal(nrow(x), length(y))` (#684).
 
+* The messages and suggestions of `expect_s3_class`, `expect_s4_class` and
+  `rep_times_ignored` use placeholders such as `x` and `y` instead of the linted
+  code, which could span several lines.
+
 * The LSP now also publishes diagnostics when opening a file (#685).
 
 * The CLI now prints a message suggesting `fix-roxygen = true` when some fixes

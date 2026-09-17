@@ -110,12 +110,15 @@ pub fn rep_times_ignored(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         object.to_trimmed_text(),
         length.to_trimmed_text()
     );
+    let each_placeholder = if each.is_empty() { "" } else { ", each = m" };
 
     Ok(Some(Diagnostic::new(
         ViolationData::new(
             Rule::RepTimesIgnored,
             "`times` is ignored when `length.out` is supplied.".to_string(),
-            Some(format!("Use `{replacement}` instead.")),
+            Some(format!(
+                "Use `rep(x, length.out = n{each_placeholder})` instead."
+            )),
         ),
         range,
         Fix::new(range, replacement, node_contains_comments(ast.syntax())),
