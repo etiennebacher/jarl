@@ -32,7 +32,7 @@ use crate::rule_set::Rule;
 /// Such a chunk is left out of the analysis entirely, so the following also
 /// wouldn't be reported:
 ///
-/// ````
+/// ````markdown
 /// ```
 /// #| eval: false
 /// stop("a")
@@ -43,7 +43,7 @@ use crate::rule_set::Rule;
 /// Note that unreachable code *not at the top-level* would still be reported,
 /// e.g.:
 ///
-/// ````
+/// ````markdown
 /// ```
 /// #| eval: false
 /// f <- function() {
