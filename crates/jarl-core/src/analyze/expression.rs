@@ -62,6 +62,7 @@ pub(crate) fn check_expression(
             }
         }
         AnyRExpression::RExtractExpression(children) => {
+            analyze::extract_expression::extract_expression(children, checker)?;
             check_expression(&children.left()?, checker)?;
             check_expression(&selector_to_expression(children.right()?), checker)?;
         }
