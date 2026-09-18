@@ -321,6 +321,7 @@ pub fn get_checks(
         file,
         semantic,
         config,
+        pkg,
         pkg_contexts,
         file_pkg_info,
     );
@@ -492,6 +493,7 @@ fn get_package_info(
     file: &Path,
     semantic: &oak_semantic::semantic_index::SemanticIndex,
     config: &Config,
+    pkg: &PackageAnalysis,
     pkg_contexts: &HashMap<PathBuf, PackageContext>,
     file_pkg_info: &HashMap<PathBuf, FilePackageInfo>,
 ) {
@@ -500,7 +502,11 @@ fn get_package_info(
             match pkg_contexts.get(package_root) {
                 Some(ctx) => {
                     checker.import_from = ctx.import_from.clone();
-                    checker.namespace_exports = ctx.namespace_exports.clone();
+                    checker.namespace_exports = pkg
+                        .namespace_exports
+                        .get(package_root)
+                        .cloned()
+                        .unwrap_or_else(|| ctx.namespace_exports.clone());
                     // Already seeded with `DEFAULT_PACKAGES`.
                     ctx.loaded_packages.clone()
                 }
@@ -1065,6 +1071,7 @@ mod tests {
             &target_path,
             &index,
             &config,
+            &crate::package::PackageAnalysis::default(),
             &pkg_contexts,
             &file_pkg_info,
         );
