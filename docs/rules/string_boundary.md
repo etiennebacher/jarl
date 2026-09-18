@@ -6,13 +6,17 @@
 
 Checks for `substr()` and `substring()` calls that can be replaced with
 `startsWith()` or `endsWith()`.
+Only comparisons to non-empty string literals with matching substring
+boundaries are reported. Ordinary strings containing escapes are skipped.
 
 ## Why is this bad?
 
 Using `startsWith()` and `endsWith()` is both more readable and more efficient
 than extracting substrings and comparing them.
 
-This rule has a safe fix.
+This rule has an unsafe fix because the replacement can drop names and other
+attributes, no longer coerces non-character inputs, and may evaluate repeated
+expressions fewer times.
 
 ## Example
 

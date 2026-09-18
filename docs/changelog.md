@@ -33,6 +33,11 @@
 
 ### Bug fixes
 
+* The `string_boundary` rule now requires substring boundaries to match the
+  compared string's character length and handles reordered named arguments.
+  Its fixes are now unsafe because they can change attributes, input coercion,
+  or the number of times an expression is evaluated (@Yousa-Mirage).
+
 * Handle uppercase `.RMD`/`.QMD` extensions (and any other letter-case variant)
   files consistently (#709, @Yousa-Mirage).
 
