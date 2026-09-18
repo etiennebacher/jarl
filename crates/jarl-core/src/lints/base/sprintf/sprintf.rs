@@ -8,6 +8,7 @@ use biome_rowan::AstNode;
 
 const FORMALS_SPRINTF: Formals = &["fmt"];
 
+/// <!-- docs: start -->
 /// Version added: 0.3.0
 ///
 /// ## What it does
@@ -53,6 +54,7 @@ const FORMALS_SPRINTF: Formals = &["fmt"];
 /// ## References
 ///
 /// See `?sprintf`
+/// <!-- docs: end -->
 pub fn sprintf(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     if fn_name != "sprintf" {
         return Ok(None);

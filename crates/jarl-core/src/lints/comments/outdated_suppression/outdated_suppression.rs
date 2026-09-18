@@ -2,6 +2,7 @@ use crate::diagnostic::*;
 use crate::rule_set::Rule;
 use crate::suppression::UnusedSuppression;
 
+/// <!-- docs: start -->
 /// Version added: 0.4.0
 ///
 /// ## What it does
@@ -29,6 +30,7 @@ use crate::suppression::UnusedSuppression;
 /// # Remove the suppression comment since it's not needed.
 /// x <- 1
 /// ```
+/// <!-- docs: end -->
 pub fn outdated_suppression(unused: &[UnusedSuppression], source: &str) -> Vec<Diagnostic> {
     unused
         .iter()

@@ -6,6 +6,7 @@ use crate::utils_ast::AstNodeExt;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.17
 ///
 /// ## What it does
@@ -45,6 +46,7 @@ use biome_rowan::AstNode;
 /// See:
 ///
 /// - [https://style.tidyverse.org/syntax.html#assignment](https://style.tidyverse.org/syntax.html#assignment)
+/// <!-- docs: end -->
 pub fn implicit_assignment(
     ast: &RBinaryExpression,
     checker: &Checker,

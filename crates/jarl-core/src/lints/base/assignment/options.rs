@@ -1,9 +1,27 @@
 use air_r_syntax::RSyntaxKind;
 
-/// TOML options for `[lint.assignment]`.
-///
-/// Use `operator` to specify which assignment operator to enforce.
-/// Valid values are `"<-"` (the default) and `"="`.
+/// <!-- docs: start -->
+/// The `lint.assignment.operator` option in `jarl.toml` must be set for this
+/// rule to be checked. It takes a single value (`"<-"` or `"="`) indicating
+/// the preferred assignment operator in the files to check.
+/// If `operator = "<-"` then any use of the `"="` operator to assign values
+/// will be reported, and vice-versa. To stop checking this rule remove this
+/// setting from the configuration file.
+/// 
+/// ### Default values
+/// 
+/// This option doesn't have a default value.
+/// 
+/// ### TOML settings
+/// 
+/// ```toml
+/// [lint]
+/// ...
+/// 
+/// [lint.assignment]
+/// operator = "<-" # or "="
+/// ```
+/// <!-- docs: end -->
 #[derive(Clone, Debug, PartialEq, Eq, Default, serde::Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]

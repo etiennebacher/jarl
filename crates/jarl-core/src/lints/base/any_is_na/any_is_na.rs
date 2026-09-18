@@ -4,6 +4,7 @@ use crate::utils::{get_nested_functions_content, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -34,6 +35,7 @@ use biome_rowan::AstNode;
 /// ## References
 ///
 /// See `?anyNA`
+/// <!-- docs: end -->
 pub fn any_is_na(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     let (inner_content, outer_syntax) =
         unwrap_or_return_none!(get_nested_functions_content(ast, fn_name, "any", "is.na")?);

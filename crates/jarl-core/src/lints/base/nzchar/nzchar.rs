@@ -5,6 +5,7 @@ use air_r_syntax::*;
 use biome_rowan::AstNode;
 use jarl_semantic::strings::get_string_literal_contents;
 
+/// <!-- docs: start -->
 /// Version added: 0.5.0
 ///
 /// ## What it does
@@ -41,6 +42,7 @@ use jarl_semantic::strings::get_string_literal_contents;
 /// ## References
 ///
 /// See `?nzchar`
+/// <!-- docs: end -->
 pub fn nzchar(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let RBinaryExpressionFields { left, operator, right } = ast.as_fields();
 

@@ -7,6 +7,7 @@ use air_r_syntax::*;
 use anyhow::anyhow;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -28,6 +29,7 @@ use biome_rowan::AstNode;
 /// ```r
 /// list(x = 1, x = 2)
 /// ```
+/// <!-- docs: end -->
 pub fn duplicated_arguments(ast: &RCall, checker: &Checker) -> anyhow::Result<Option<Diagnostic>> {
     let RCallFields { function, arguments } = ast.as_fields();
 

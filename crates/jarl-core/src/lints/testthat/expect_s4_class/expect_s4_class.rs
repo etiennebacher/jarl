@@ -9,6 +9,7 @@ use biome_rowan::{AstNode, AstSeparatedList};
 const FORMALS_EXPECT_TRUE: Formals = &["object", "info", "label"];
 const FORMALS_IS: Formals = &["object", "class2"];
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -37,6 +38,7 @@ const FORMALS_IS: Formals = &["object", "class2"];
 /// ```r
 /// expect_s4_class(x, "Matrix")
 /// ```
+/// <!-- docs: end -->
 pub fn expect_s4_class(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Only check expect_true
     if fn_name != "expect_true" {

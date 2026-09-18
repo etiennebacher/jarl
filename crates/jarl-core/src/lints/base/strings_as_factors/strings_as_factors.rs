@@ -7,6 +7,7 @@ use biome_rowan::{AstNode, AstSeparatedList};
 
 pub struct StringsAsFactors;
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
@@ -42,6 +43,7 @@ pub struct StringsAsFactors;
 ///
 /// See `?data.frame`
 /// and the [R Core discussion](https://developer.r-project.org/Blog/public/2020/02/16/stringsasfactors/).
+/// <!-- docs: end -->
 impl Violation for StringsAsFactors {
     fn rule(&self) -> Rule {
         Rule::StringsAsFactors

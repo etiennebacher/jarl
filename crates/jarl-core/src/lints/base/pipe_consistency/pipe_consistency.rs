@@ -5,13 +5,14 @@ use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::{AstNode, Direction, TextRange};
 
+/// <!-- docs: start -->
 /// Version added: 0.6.0
 ///
 /// ## What it does
 ///
 /// Reports cases where both pipes (`%>%` or `|>`) are used. By default, the
 /// base pipe `|>` is preferred but this can be changed in the configuration
-/// file.
+/// file, see details of the configuration options below.
 ///
 /// ## Why is this bad?
 ///
@@ -50,6 +51,7 @@ use biome_rowan::{AstNode, Direction, TextRange};
 /// ## References
 ///
 /// See `?pipeOp`
+/// <!-- docs: end -->
 pub fn pipe_consistency(
     ast: &RBinaryExpression,
     preferred: PreferredPipe,

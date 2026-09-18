@@ -6,6 +6,7 @@ use crate::{
 use air_r_syntax::*;
 use biome_rowan::AstNode;
 
+/// <!-- docs: start -->
 /// Version added: 0.2.0
 ///
 /// ## What it does
@@ -43,6 +44,7 @@ use biome_rowan::AstNode;
 ///   print("hi")
 /// }
 /// ```
+/// <!-- docs: end -->
 pub fn seq(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     let operator = ast.operator()?;
 

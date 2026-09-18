@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use crate::namespace::parse_namespace_exports;
 use crate::package::{FileScope, SharedFileData};
 
+/// <!-- docs: start -->
 /// Version added: 0.5.0
 ///
 /// ## What it does
@@ -58,6 +59,7 @@ use crate::package::{FileScope, SharedFileData};
 /// # `check_length()` isn't exported but and isn't used anywhere, so it is
 /// # reported.
 /// ```
+/// <!-- docs: end -->
 // ## Implementation
 //
 // Operates on the already-scanned `SharedFileData` of a package rather than

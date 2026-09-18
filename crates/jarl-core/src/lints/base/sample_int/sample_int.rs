@@ -8,6 +8,7 @@ const FORMALS_SAMPLE: Formals = &["x", "size", "replace", "prob"];
 
 pub struct SampleInt;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.16
 ///
 /// ## What it does
@@ -36,6 +37,7 @@ pub struct SampleInt;
 /// ## References
 ///
 /// See `?sample`
+/// <!-- docs: end -->
 impl Violation for SampleInt {
     fn rule(&self) -> Rule {
         Rule::SampleInt

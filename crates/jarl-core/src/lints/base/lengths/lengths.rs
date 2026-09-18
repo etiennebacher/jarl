@@ -14,6 +14,7 @@ const FORMALS_MAP_DBL: Formals = &[".x", ".f"];
 
 pub struct Lengths;
 
+/// <!-- docs: start -->
 /// Version added: 0.0.8
 ///
 /// ## What it does
@@ -43,6 +44,7 @@ pub struct Lengths;
 /// ## References
 ///
 /// See `?lengths`
+/// <!-- docs: end -->
 impl Violation for Lengths {
     fn rule(&self) -> Rule {
         Rule::Lengths

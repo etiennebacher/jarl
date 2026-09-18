@@ -1,4 +1,5 @@
 # undesirable_function
+
 ::: {.callout-note title="Added in 0.5.0" .low-opacity}
 :::
 
@@ -12,10 +13,21 @@ Some functions should not appear in production code. For example,
 `browser()` is a debugging tool that interrupts execution, and should be
 removed before committing.
 
-## Configuration
+## Configuration options
 
-By default, only `browser` is flagged. You can customise the list in
-`jarl.toml`:
+The operation of the `undesirable_function` rule can be customised in the [configuration file](../reference/config-file.md).
+
+Use `functions` to fully replace the default list of undesirable functions.
+Use `extend-functions` to add to the default list.
+Specifying both is an error.
+
+### Default values
+
+```toml
+functions = ["browser"]
+```
+
+### TOML settings
 
 ```toml
 [lint.undesirable_function]
