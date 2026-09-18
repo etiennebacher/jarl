@@ -7,6 +7,12 @@
 * The `jarl.toml` argument `assignment` (deprecated since 0.5.0) is removed. Use
   the rule-specific option `[lint.assignment]` instead (#663).
 
+### New and improved rules
+
+* New rules:
+
+  * `deparse1` (#694, @maelle)
+
 * A fix can now edit several places of a file at once, so in the `json` output
   format the `fix` object contains a list of edits instead of a single
   `content`/`range` pair (#700):
