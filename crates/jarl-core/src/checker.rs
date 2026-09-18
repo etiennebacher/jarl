@@ -123,7 +123,8 @@ impl Checker {
     ///
     /// The chunks are ordered and don't overlap, so this is a binary search.
     /// An R script has none, and neither does a range that falls between two
-    /// chunks of a document.
+    /// chunks of a document — code outside a chunk runs on the ordinary terms
+    /// [`crate::rmd::ChunkOptions::default`] describes.
     pub(crate) fn chunk_index_at(&self, range: biome_rowan::TextRange) -> Option<usize> {
         let index = self
             .chunks
@@ -132,14 +133,6 @@ impl Checker {
             .get(index)
             .is_some_and(|chunk| chunk.range.contains_range(range))
             .then_some(index)
-    }
-
-    /// The knitr options governing `range`. Code that isn't in a chunk — all
-    /// of an R script, the gaps between a document's chunks — reads as an
-    /// ordinary chunk that runs and whose errors stop the render.
-    pub(crate) fn chunk_options_at(&self, range: biome_rowan::TextRange) -> crate::rmd::ChunkOptions {
-        self.chunk_index_at(range)
-            .map_or_else(Default::default, |index| self.chunks[index].options)
     }
 
     /// The spans of the file that are parsed but never evaluated, so use-def

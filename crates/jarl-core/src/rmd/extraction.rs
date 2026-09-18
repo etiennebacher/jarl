@@ -98,10 +98,7 @@ pub struct ChunkOptions {
 
 impl Default for ChunkOptions {
     fn default() -> Self {
-        Self {
-            eval: true,
-            error: false,
-        }
+        Self { eval: true, error: false }
     }
 }
 
@@ -837,7 +834,7 @@ mod tests {
     fn evaluated(content: &str) -> bool {
         let chunks = extract_r_chunks(content);
         assert_eq!(chunks.len(), 1, "expected exactly one chunk");
-        chunks[0].evaluated
+        chunks[0].options.eval
     }
 
     #[test]
@@ -907,15 +904,11 @@ mod tests {
         let virtual_source = build_virtual_r_source(&chunks);
 
         assert_eq!(virtual_source.source, "keep <- 1\ndead <- 2\n");
-        assert_eq!(virtual_source.unevaluated.len(), 1);
-        let range = virtual_source.unevaluated[0];
+        assert_eq!(virtual_source.chunks.len(), 2);
+        assert!(virtual_source.chunks[0].options.eval);
+        assert!(!virtual_source.chunks[1].options.eval);
+        let range = virtual_source.chunks[1].range;
         assert_eq!(&virtual_source.source[range], "dead <- 2\n");
-    }
-
-    #[test]
-    fn test_evaluated_chunks_have_no_unevaluated_span() {
-        let chunks = extract_r_chunks("```{r}\nx <- 1\n```\n");
-        assert!(build_virtual_r_source(&chunks).unevaluated.is_empty());
     }
 
     // --- error = TRUE ---
@@ -924,7 +917,7 @@ mod tests {
     fn stops_on_error(content: &str) -> bool {
         let chunks = extract_r_chunks(content);
         assert_eq!(chunks.len(), 1, "expected exactly one chunk");
-        chunks[0].stops_on_error
+        !chunks[0].options.error
     }
 
     #[test]
@@ -973,16 +966,28 @@ mod tests {
         let virtual_source = build_virtual_r_source(&chunks);
 
         assert_eq!(virtual_source.source, "keep <- 1\nboom <- 2\n");
-        assert!(virtual_source.unevaluated.is_empty());
-        assert_eq!(virtual_source.error_tolerant.len(), 1);
-        let range = virtual_source.error_tolerant[0];
+        assert_eq!(virtual_source.chunks.len(), 2);
+        assert!(!virtual_source.chunks[0].options.error);
+        assert!(virtual_source.chunks[1].options.error);
+        let range = virtual_source.chunks[1].range;
         assert_eq!(&virtual_source.source[range], "boom <- 2\n");
     }
 
     #[test]
-    fn test_ordinary_chunks_have_no_error_tolerant_span() {
+    fn test_ordinary_chunk_carries_the_default_options() {
         let chunks = extract_r_chunks("```{r}\nx <- 1\n```\n");
-        assert!(build_virtual_r_source(&chunks).error_tolerant.is_empty());
+        let virtual_source = build_virtual_r_source(&chunks);
+        assert_eq!(virtual_source.chunks.len(), 1);
+        assert_eq!(virtual_source.chunks[0].options, ChunkOptions::default());
+    }
+
+    #[test]
+    fn test_skipped_chunk_has_no_span() {
+        // A chunk left out of the virtual source has no code there to govern.
+        let content = "```{r}\nx <- 1\n```\n\n```{r}\nif (y\n```\n";
+        let virtual_source = build_virtual_r_source(&extract_r_chunks(content));
+        assert_eq!(virtual_source.skipped, vec![1]);
+        assert_eq!(virtual_source.chunks.len(), 1);
     }
 
     // --- Skipped chunks ---
