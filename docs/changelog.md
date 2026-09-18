@@ -76,6 +76,10 @@
 * Prevent incorrect `dplyr_filter_out` fixes caused by matching `is.na()` guard
   arguments as substrings of other identifiers (#681, @Yousa-Mirage).
 
+* In R Markdown and Quarto documents, `unreachable_code` no longer reports code
+  in chunks following a chunk that would stop evaluation but is either unevaluated or
+  has `error: true` (#724).
+
 ## 0.6.0
 
 ::: {.callout-note icon=false title="Released on 2026-08-24" .low-opacity}
