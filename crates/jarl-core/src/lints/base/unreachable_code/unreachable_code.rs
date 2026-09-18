@@ -60,8 +60,10 @@ use crate::rule_set::Rule;
 ///   and carries on rendering — through the rest of that chunk as well as the
 ///   rest of the document.
 ///
-/// An option whose value is decided at render time (`eval = run_it`) is read as
-/// the ordinary case, so the document keeps stopping.
+/// Such a chunk is left out of the analysis entirely, so nothing inside it is
+/// reported either. An option whose value is decided at render time
+/// (`eval = run_it`) is read as the ordinary case, so the document keeps
+/// stopping.
 pub fn unreachable_code(
     ast: &RFunctionDefinition,
     checker: &Checker,
@@ -100,81 +102,74 @@ pub fn unreachable_code_top_level(
     checker: &Checker,
 ) -> anyhow::Result<Vec<Diagnostic>> {
     let mut diagnostics = Vec::new();
+
+    // Build the control flow graph for top-level code
     let stopping = &checker.rule_options.unreachable_code.stopping_functions;
+    let cfg = build_cfg_top_level(&running_expressions(expressions, checker), stopping);
 
-    for run in flow_runs(expressions, checker) {
-        // Build the control flow graph for top-level code
-        let cfg = build_cfg_top_level(&run, stopping);
-
-        // Find all unreachable code
-        for unreachable_info in find_unreachable_code(&cfg) {
-            // Filter out reasons that don't make sense at top level
-            if matches!(
-                unreachable_info.reason,
-                UnreachableReason::AfterReturn | UnreachableReason::NoPathFromEntry
-            ) {
-                continue;
-            }
-
-            let diagnostic = Diagnostic::new(
-                ViolationData::new(
-                    Rule::UnreachableCode,
-                    unreachable_info.reason.message().to_string(),
-                    None,
-                ),
-                unreachable_info.range,
-                Fix::empty(),
-            );
-            diagnostics.push(diagnostic);
+    // Find all unreachable code
+    for unreachable_info in find_unreachable_code(&cfg) {
+        // Filter out reasons that don't make sense at top level
+        if matches!(
+            unreachable_info.reason,
+            UnreachableReason::AfterReturn | UnreachableReason::NoPathFromEntry
+        ) {
+            continue;
         }
+
+        let diagnostic = Diagnostic::new(
+            ViolationData::new(
+                Rule::UnreachableCode,
+                unreachable_info.reason.message().to_string(),
+                None,
+            ),
+            unreachable_info.range,
+            Fix::empty(),
+        );
+        diagnostics.push(diagnostic);
     }
 
     Ok(diagnostics)
 }
 
-/// Split the top-level expressions into the runs that share a control flow.
+/// The top-level expressions that take part in the file's control flow.
 ///
-/// An R script is a single run: every expression can stop the ones after it.
-/// An Rmd/Qmd document is not, because two chunk options break the chain:
+/// Every expression of an R script does. An Rmd/Qmd document is different,
+/// because two chunk options take a chunk out of the flow:
 ///
-/// - `eval = FALSE` — the chunk never runs, so a `stop()` in it ends nothing
-///   in the document. Its statements still follow one another as written, so
-///   the chunk becomes a run of its own and is analyzed on its own terms.
+/// - `eval = FALSE` — the chunk never runs, so nothing in it can be reached
+///   and nothing in it can stop a later chunk. Nothing to say about it either
+///   way: reporting one line of a chunk that doesn't run, because a line above
+///   it wouldn't have returned, singles out an arbitrary line.
 /// - `error = TRUE` — the chunk runs, but knitr prints the condition and keeps
-///   going, through the rest of the chunk as well as the rest of the document.
-///   Nothing there can end control flow anywhere, so the chunk is left out of
-///   every run.
+///   going, through the rest of the chunk as well as the rest of the document,
+///   so nothing in it ends control flow anywhere.
+///
+/// Leaving a chunk out is not the same as cutting the document in two: a
+/// `stop()` before one still makes the code after it unreachable.
 ///
 /// Code inside a function definition is unaffected either way: a `return()`
 /// still ends the function it is written in, and `unreachable_code` analyzes
 /// that body separately.
-fn flow_runs(expressions: &[RSyntaxNode], checker: &Checker) -> Vec<Vec<RSyntaxNode>> {
+fn running_expressions(expressions: &[RSyntaxNode], checker: &Checker) -> Vec<RSyntaxNode> {
     if checker.chunks.is_empty() {
-        return vec![expressions.to_vec()];
+        return expressions.to_vec();
     }
 
-    let mut document: Vec<RSyntaxNode> = Vec::new();
-    let mut unevaluated: Vec<Vec<RSyntaxNode>> = vec![Vec::new(); checker.chunks.len()];
-
-    for expression in expressions {
-        let range = expression.text_trimmed_range();
-        let Some(index) = checker.chunk_index_at(range) else {
-            document.push(expression.clone());
-            continue;
-        };
-        let options = checker.chunks[index].options;
-        if options.error {
-            continue;
-        }
-        if options.eval {
-            document.push(expression.clone());
-        } else {
-            unevaluated[index].push(expression.clone());
-        }
-    }
-
-    std::iter::once(document)
-        .chain(unevaluated)
-        .filter(|run| !run.is_empty())
+    expressions
+        .iter()
+        .filter(|expression| {
+            match checker.chunk_index_at(expression.text_trimmed_range()) {
+                Some(index) => {
+                    let options = checker.chunks[index].options;
+                    options.eval && !options.error
+                }
+                // Code outside a chunk is the virtual source's own scaffolding
+                // (translated suppression comments), which runs with the chunk
+                // it came from.
+                None => true,
+            }
+        })
+        .cloned()
         .collect()
 }

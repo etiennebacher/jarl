@@ -55,5 +55,7 @@ chunk carrying one is reported:
   and carries on rendering — through the rest of that chunk as well as the
   rest of the document.
 
-An option whose value is decided at render time (`eval = run_it`) is read as
-the ordinary case, so the document keeps stopping.
+Such a chunk is left out of the analysis entirely, so nothing inside it is
+reported either. An option whose value is decided at render time
+(`eval = run_it`) is read as the ordinary case, so the document keeps
+stopping.

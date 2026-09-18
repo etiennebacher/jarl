@@ -1969,10 +1969,10 @@ stop('hi')
     Ok(())
 }
 
-/// An unevaluated chunk is still code the author wrote, so unreachability
-/// within it is still reported.
+/// A chunk that never runs has no reachable code to speak of, so nothing in it
+/// is reported — not even the line after a `stop()` it would never reach.
 #[test]
-fn test_rmd_unevaluated_chunk_reports_its_own_unreachable_code() -> anyhow::Result<()> {
+fn test_rmd_unevaluated_chunk_reports_no_unreachable_code() -> anyhow::Result<()> {
     let case = CliTest::with_file(
         "test.qmd",
         "
@@ -1995,19 +1995,11 @@ stop('hi')
             .normalize_os_executable_name(),
         @"
 
-    success: false
-    exit_code: 1
+    success: true
+    exit_code: 0
     ----- stdout -----
-    warning: unreachable_code
-     --> test.qmd:5:1
-      |
-    5 | 2 + 2
-      | ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
-      |
-
-
     ── Summary ──────────────────────────────────────
-    Found 1 error.
+    All checks passed!
 
     ----- stderr -----
     "
