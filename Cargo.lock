@@ -20,7 +20,7 @@ checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
 [[package]]
 name = "aether_path"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#34c9a73b9d2c5b97f258f75a29c05291bb2f6b19"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#e99240a3fdbaf6bc97e4847190add9c81a024446"
 dependencies = [
  "anyhow",
  "camino",
@@ -1223,7 +1223,7 @@ dependencies = [
 [[package]]
 name = "oak_core"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#34c9a73b9d2c5b97f258f75a29c05291bb2f6b19"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#e99240a3fdbaf6bc97e4847190add9c81a024446"
 dependencies = [
  "air_r_syntax",
  "anyhow",
@@ -1233,7 +1233,7 @@ dependencies = [
 [[package]]
 name = "oak_db"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#34c9a73b9d2c5b97f258f75a29c05291bb2f6b19"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#e99240a3fdbaf6bc97e4847190add9c81a024446"
 dependencies = [
  "aether_path",
  "air_r_parser",
@@ -1258,7 +1258,7 @@ dependencies = [
 [[package]]
 name = "oak_index_vec"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#34c9a73b9d2c5b97f258f75a29c05291bb2f6b19"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#e99240a3fdbaf6bc97e4847190add9c81a024446"
 dependencies = [
  "biome_text_size",
  "oak_core",
@@ -1267,7 +1267,7 @@ dependencies = [
 [[package]]
 name = "oak_package_metadata"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#34c9a73b9d2c5b97f258f75a29c05291bb2f6b19"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#e99240a3fdbaf6bc97e4847190add9c81a024446"
 dependencies = [
  "air_r_parser",
  "air_r_syntax",
@@ -1281,7 +1281,7 @@ dependencies = [
 [[package]]
 name = "oak_scan"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#34c9a73b9d2c5b97f258f75a29c05291bb2f6b19"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#e99240a3fdbaf6bc97e4847190add9c81a024446"
 dependencies = [
  "aether_path",
  "camino",
@@ -1301,7 +1301,7 @@ dependencies = [
 [[package]]
 name = "oak_semantic"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#34c9a73b9d2c5b97f258f75a29c05291bb2f6b19"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#e99240a3fdbaf6bc97e4847190add9c81a024446"
 dependencies = [
  "air_r_parser",
  "air_r_syntax",
@@ -1812,7 +1812,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 [[package]]
 name = "stdext"
 version = "0.1.0"
-source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#34c9a73b9d2c5b97f258f75a29c05291bb2f6b19"
+source = "git+https://github.com/etiennebacher/ark?branch=bump-air-commit#e99240a3fdbaf6bc97e4847190add9c81a024446"
 dependencies = [
  "anyhow",
  "log",
