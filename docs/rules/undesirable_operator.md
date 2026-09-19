@@ -23,14 +23,14 @@ To replace the default list entirely:
 
 ```toml
 [lint.undesirable_operator]
-operators = ["$", "@"]
+operators = ["%notin%", "&&"]
 ```
 
 To add to the defaults:
 
 ```toml
 [lint.undesirable_operator]
-extend-operators = ["$", "%in%"]
+extend-operators = ["&&", "%in%"]
 ```
 
 Specifying both `operators` and `extend-operators` is an error.
