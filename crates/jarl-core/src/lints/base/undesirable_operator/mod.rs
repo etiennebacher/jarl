@@ -99,20 +99,20 @@ mod tests {
     #[test]
     fn test_custom_operators_replace_defaults() {
         let settings = settings_with_options(UndesirableOperatorOptions {
-            operators: Some(vec!["$".to_string()]),
+            operators: Some(vec!["%notin%".to_string()]),
             extend_operators: None,
         });
 
         expect_no_lint_with_settings("x <<- 1", "undesirable_operator", None, settings.clone());
 
         assert_snapshot!(
-            snapshot_lint_with_settings("x$y", settings),
+            snapshot_lint_with_settings("x %notin% y", settings),
             @"
         warning: undesirable_operator
-         --> <test>:1:2
+         --> <test>:1:3
           |
-        1 | x$y
-          |  - `$` is listed as an undesirable operator.
+        1 | x %notin% y
+          |   ------- `%notin%` is listed as an undesirable operator.
           |
         Found 1 error.
         "
@@ -123,7 +123,7 @@ mod tests {
     fn test_extend_operators() {
         let settings = settings_with_options(UndesirableOperatorOptions {
             operators: None,
-            extend_operators: Some(vec!["$".to_string()]),
+            extend_operators: Some(vec!["%notin%".to_string()]),
         });
 
         assert_snapshot!(
@@ -139,13 +139,13 @@ mod tests {
         "
         );
         assert_snapshot!(
-            snapshot_lint_with_settings("x$y", settings),
+            snapshot_lint_with_settings("x %notin% y", settings),
             @"
         warning: undesirable_operator
-         --> <test>:1:2
+         --> <test>:1:3
           |
-        1 | x$y
-          |  - `$` is listed as an undesirable operator.
+        1 | x %notin% y
+          |   ------- `%notin%` is listed as an undesirable operator.
           |
         Found 1 error.
         "

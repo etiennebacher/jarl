@@ -427,6 +427,7 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    #[deprecated(version = "0.7.0", replacement = "undesirable_operator")]
     InternalFunction => {
         name: "internal_function",
         categories: [Susp],

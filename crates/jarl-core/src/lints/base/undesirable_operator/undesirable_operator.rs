@@ -8,7 +8,7 @@ pub struct UndesirableOperator {
     pub operator: String,
 }
 
-/// Version added: 0.6.0
+/// Version added: 0.7.0
 ///
 /// ## What it does
 ///
@@ -16,9 +16,11 @@ pub struct UndesirableOperator {
 ///
 /// ## Why is this bad?
 ///
-/// Some operators should not appear in production code. For example, `:::`
-/// accesses a package's internal functions, and `<<-` and `->>` assign outside
-/// the current environment.
+/// Some operators may be undesirable because they make the code less robust,
+/// more complex, or more prone to footguns. For example, `:::` accesses a package's
+/// internal functions, meaning that they may disappear or behave differently without
+/// notice if the package changes. `<<-` and `->>` assign outside the current environment
+/// and may lead to code that is harder to predict.
 ///
 /// ## Configuration
 ///
@@ -86,13 +88,6 @@ pub fn undesirable_operator_binary(
 
 pub fn undesirable_operator_namespace(
     ast: &RNamespaceExpression,
-    options: &ResolvedUndesirableOperatorOptions,
-) -> anyhow::Result<Option<Diagnostic>> {
-    Ok(check_operator(&ast.operator()?, options))
-}
-
-pub fn undesirable_operator_extract(
-    ast: &RExtractExpression,
     options: &ResolvedUndesirableOperatorOptions,
 ) -> anyhow::Result<Option<Diagnostic>> {
     Ok(check_operator(&ast.operator()?, options))

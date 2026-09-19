@@ -1,5 +1,5 @@
 # undesirable_operator
-::: {.callout-note title="Added in 0.6.0" .low-opacity}
+::: {.callout-note title="Added in 0.7.0" .low-opacity}
 :::
 
 ## What it does
@@ -8,9 +8,11 @@ Checks for use of banned operators.
 
 ## Why is this bad?
 
-Some operators should not appear in production code. For example, `:::`
-accesses a package's internal functions, and `<<-` and `->>` assign outside
-the current environment.
+Some operators may be undesirable because they make the code less robust,
+more complex, or more prone to footguns. For example, `:::` accesses a package's
+internal functions, meaning that they may disappear or behave differently without
+notice if the package changes. `<<-` and `->>` assign outside the current environment
+and may lead to code that is harder to predict.
 
 ## Configuration
 

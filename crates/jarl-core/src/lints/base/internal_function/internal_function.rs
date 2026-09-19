@@ -9,6 +9,10 @@ use biome_rowan::AstNode;
 ///
 /// Checks for usage of `:::`.
 ///
+/// **This rule is deprecated and will be removed in a future version. Use the
+/// rule [`undesirable_operator`](https://jarl.etiennebacher.com/rules/undesirable_operator)
+/// instead.**
+///
 /// ## Why is this bad?
 ///
 /// Using `:::` to access a package's internal functions is unsafe. Those
