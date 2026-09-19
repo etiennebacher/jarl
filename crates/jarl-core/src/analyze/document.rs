@@ -1,9 +1,10 @@
-use air_r_syntax::{RExpressionList, RSyntaxNode};
-use biome_rowan::{AstNode, AstNodeList};
+use air_r_syntax::{RBinaryExpression, RExpressionList, RSyntaxNode};
+use biome_rowan::{AstNode, AstNodeList, SyntaxNodeCast};
 use oak_semantic::semantic_index::SemanticIndex;
 
 use crate::checker::Checker;
 use crate::diagnostic::*;
+use crate::lints::base::assignment_on_if_no_else::assignment_on_if_no_else::assignment_on_if_no_else;
 use crate::lints::base::empty_file::empty_file::empty_file;
 use crate::lints::base::unreachable_code::unreachable_code::unreachable_code_top_level;
 use crate::lints::base::unused_object::unused_object::unused_object;
@@ -19,6 +20,7 @@ use crate::lints::comments::unmatched_range_suppression::unmatched_range_suppres
 };
 use crate::package::PackageFileAnalysis;
 use crate::rule_set::Rule;
+use jarl_semantic::SemanticInfo;
 
 pub(crate) fn check_document(
     expressions: &RExpressionList,
@@ -32,6 +34,21 @@ pub(crate) fn check_document(
 
     let expressions: Vec<RSyntaxNode> = expressions.iter().map(|e| e.syntax().clone()).collect();
 
+    let semantic_info = semantic
+        .filter(|_| checker.is_rule_enabled(Rule::AssignmentOnIfNoElse))
+        .and_then(|semantic| {
+            let first = expressions.first()?;
+            let root = first.ancestors().last().unwrap_or_else(|| first.clone());
+            Some(SemanticInfo::build(
+                &root,
+                &expressions,
+                semantic,
+                &checker.source_index_cache,
+                &checker.loaded_packages,
+                &checker.unevaluated_ranges,
+            ))
+        });
+
     // Check for unreachable code at top level
     if checker.is_rule_enabled(Rule::UnreachableCode) {
         for diagnostic in unreachable_code_top_level(&expressions, checker)? {
@@ -44,6 +61,18 @@ pub(crate) fn check_document(
         && let Some(semantic) = semantic
     {
         unused_object(&expressions, semantic, &package.cross_file_used, checker)?;
+    }
+
+    if checker.is_rule_enabled(Rule::AssignmentOnIfNoElse)
+        && let Some(info) = semantic_info.as_ref()
+    {
+        for expression in &expressions {
+            for node in expression.descendants() {
+                if let Some(binary) = node.cast::<RBinaryExpression>() {
+                    checker.report_diagnostic(assignment_on_if_no_else(&binary, info)?);
+                }
+            }
+        }
     }
 
     // --- Comment/suppression checks ---

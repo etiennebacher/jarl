@@ -15,7 +15,7 @@ use std::collections::HashSet;
 use air_r_parser::RParserOptions;
 use air_r_syntax::{
     AnyRArgumentName, AnyRExpression, RArgument, RBinaryExpression, RCall, RForStatement,
-    RStringValue, RSyntaxKind, RSyntaxNode,
+    RIfStatement, RStringValue, RSyntaxKind, RSyntaxNode,
 };
 use biome_rowan::{AstNode, AstSeparatedList, SyntaxNodeCast, TextRange, TextSize};
 use oak_core::syntax_ext::{AnyRSelectorExt, RIdentifierExt, RStringValueExt};
@@ -275,6 +275,77 @@ impl<'a> SemanticInfo<'a> {
         self.reaching_used.contains(&(scope_id, def_id))
     }
 
+    /// True when an assignment before `range` defines `name`, is reachable at
+    /// `range`, and is never used. This is useful for rules that diagnose a
+    /// later assignment which silently overwrites a value the author may have
+    /// expected to keep using.
+    pub fn has_unused_assignment_before(&self, name: &str, range: TextRange) -> bool {
+        let Some((scope, current_id, current)) = self.index.scope_ids().find_map(|scope| {
+            self.index
+                .definitions(scope)
+                .iter()
+                .find(|(_, def)| {
+                    self.definition_syntax_range(def) == Some(range)
+                        && self.index.symbols(scope).symbol(def.symbol()).name() == name
+                })
+                .map(|(id, def)| (scope, id, def))
+        }) else {
+            return false;
+        };
+
+        self.index.definitions(scope).iter().any(|(def_id, def)| {
+            def_id != current_id
+                && def.symbol() == current.symbol()
+                && def.range().start() < range.start()
+                && matches!(
+                    def.kind(),
+                    DefinitionKind::Assignment(_)
+                        | DefinitionKind::SuperAssignment(_)
+                        | DefinitionKind::Assign { .. }
+                )
+                && !self.is_in_nse(def.range())
+                && !self.is_definition_used(scope, def_id)
+                && self.assignment_reaches(range, def.range())
+        })
+    }
+
+    /// Assignments in different arms of the same `if` cannot reach one
+    /// another. Other control-flow cases remain conservative: a definition in
+    /// a branch can reach code after the branch, where it may have run.
+    fn assignment_reaches(&self, current: TextRange, previous: TextRange) -> bool {
+        self.root
+            .descendants()
+            .filter_map(RIfStatement::cast)
+            .all(|if_statement| {
+                let consequence = if_statement
+                    .consequence()
+                    .ok()
+                    .map(|expression| expression.syntax().text_trimmed_range());
+                let alternative = if_statement
+                    .else_clause()
+                    .and_then(|clause| clause.alternative().ok())
+                    .map(|expression| expression.syntax().text_trimmed_range());
+
+                let current_branch = Self::branch_for_range(current, consequence, alternative);
+                let previous_branch = Self::branch_for_range(previous, consequence, alternative);
+                current_branch.is_none()
+                    || previous_branch.is_none()
+                    || current_branch == previous_branch
+            })
+    }
+
+    fn definition_syntax_range(&self, def: &Definition) -> Option<TextRange> {
+        match def.kind() {
+            DefinitionKind::Assignment(pointer) | DefinitionKind::SuperAssignment(pointer) => {
+                Some(pointer.to_node(&self.root).syntax().text_trimmed_range())
+            }
+            DefinitionKind::Assign { node, .. } => {
+                Some(node.to_node(&self.root).syntax().text_trimmed_range())
+            }
+            _ => None,
+        }
+    }
+
     // ── Low-level predicates (compose for new rules) ──────────────────
 
     pub fn is_in_formula(&self, range: TextRange) -> bool {
@@ -307,6 +378,20 @@ impl<'a> SemanticInfo<'a> {
     pub fn is_in_returned_env(&self, range: TextRange) -> bool {
         in_any_range(range, &self.returned_env_ranges)
             && !in_any_range(range, &self.returned_env_functions)
+    }
+
+    fn branch_for_range(
+        range: TextRange,
+        consequence: Option<TextRange>,
+        alternative: Option<TextRange>,
+    ) -> Option<bool> {
+        if consequence.is_some_and(|branch| branch.contains_range(range)) {
+            Some(true)
+        } else if alternative.is_some_and(|branch| branch.contains_range(range)) {
+            Some(false)
+        } else {
+            None
+        }
     }
 
     // ── Internal: AST pass ────────────────────────────────────────────
