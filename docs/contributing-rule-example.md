@@ -3,6 +3,13 @@ title: Adding a new rule to Jarl
 ---
 
 This page will explain how to implement a new rule in Jarl.
+
+::: {.callout-important}
+This page is usually up-to-date with the latest changes in Jarl's internals, but you should ensure that you are reading the "dev" version: [jarl.etiennebacher.com/dev/contributing-rule-example](https://jarl.etiennebacher.com/dev/contributing-rule-example)
+
+If you see outdated content, please [open an issue](https://github.com/etiennebacher/jarl/issues).
+:::
+
 It is recommended to read the [General information page](contributing.md) first to install the required tools.
 Jarl is written in Rust, but this page will *not* explain how to set up or use Rust, this is an entirely different topic.
 To get started with Rust, check out the [Rust book](https://doc.rust-lang.org/stable/book/).
@@ -83,7 +90,7 @@ Here's a basic idea of the workflow to add a new rule:
 1. document the rule
 1. final polishing
 
-From now on, all file paths refer to the subfolder `crates/jarl-core`.
+From now on, all file paths refer to the subfolder `crates/jarl-core/src`.
 
 ::: {.callout-note}
 ## Trying your new rule locally
@@ -128,33 +135,46 @@ We also need to add the following line in `lints/base/mod.rs`:
 pub(crate) mod list2df;
 ```
 
-The file to modify in the `analyze` folder will depend on the rule: here, we look for calls to `do.call()`.
-The arguments passed to the function are irrelevant, what matters is that this is a call, so we will modify the file `analyze/call.rs`:
+The file to modify in the `analyze` folder will depend on the rule: here, we look for calls to `do.call()`, so we will modify the file `analyze/call.rs`:
 
 ```rust
 use crate::lints::list2df::list2df::list2df;
 
 ...
 if checker.is_rule_enabled(Rule::List2df) {
-    checker.report_diagnostic(list2df(r_expr)?);
+    checker.report_diagnostic(list2df(r_expr, fn_name)?);
 }
 ...
 ```
 
+Note that `analyze/call.rs` computes the function name once per call and passes it to every rule as `fn_name`, so rules dispatched from there don't have to extract it themselves.
+
 ### Implement the rule
 
-This is the hard part of the process.
+Two files are needed:
+
+- there must be a file `lints/base/<rule_name>/mod.rs`, so in this example `lints/base/list2df/mod.rs`. This file will contain tests later on, but for now you can just include the following line:
+
+    ```rust
+    pub(crate) mod list2df;
+    ```
+
+- the rule definition must be located in `lints/base/<rule_name>/<rule_name>.rs`, so in this example in `lints/base/list2df/list2df.rs`.
+
+Writing this second file is the hard part of the process.
 It requires knowledge about the AST you want to parse and about the different functions available to us to navigate this AST.
-The rule definition must be located in `lints/base/<rule_name>/<rule_name>.rs`, so in this example in `lints/base/list2df/list2df.rs`.
 
 Let's start with a skeleton of this file:
 
 ```rust
 use crate::diagnostic::*;
 use crate::rule_set::Rule;
-use crate::utils::{get_arg_by_name_then_position, get_arg_by_position, node_contains_comments};
+use crate::utils::{Formals, get_arg, get_arg_by_position, node_contains_comments};
 use air_r_syntax::*;
 use biome_rowan::AstNode;
+
+/// Signature of the function the rule targets, used to match its arguments.
+const FORMALS_DO_CALL: Formals = &["what", "args", "quote", "envir"];
 
 pub struct List2Df;
 
@@ -177,14 +197,14 @@ impl Violation for List2Df {
     }
 }
 
-pub fn list2df(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
+pub fn list2df(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
 
 }
 ```
 
 Let's analyze this by blocks:
 
-* the first lines import required crates and functions, and define a struct using the rule name (in TitleCase);
+* the first lines import required crates and functions, declare the signature of the function we target (more on this below), and define a struct using the rule name (in TitleCase);
 * then there is some documentation (truncated here for conciseness). The version number corresponds to the next version, not the current one.
 * the `impl` block is where we link the violation to its `Rule` variant (the one declared in `rule_set.rs`) and define the main message (`body`) that will be used in the output of Jarl. Note that there is also a `suggestion()` function which is not always necessary.
 * finally, we define the function where we parse the AST.
@@ -201,62 +221,52 @@ In this scenario, the rule, body, and suggestion are defined at the very end, wh
 
 
 Writing this function is the hard part, so let's focus on this.
-We start by extracting the important information from the `RCall` object.
-In this example, we need both the function name and the arguments:
-
-```rust
-let function = ast.function()?;
-let arguments = ast.arguments()?;
-```
-
-Note that it is sometimes shorter to use the destructuring syntax, as follows:
-
-```rust
-let RCallFields { function, arguments } = ast.as_fields();
-let function = function?;
-let arguments = arguments?.items();
-```
-
 Usually, a rule implementation contains a lot of early returns, such as "if the function name is not 'xyz' then stop here".
 In this example, we want to focus on calls to `do.call()`, so we can stop early if this is not the function name:
 
 ```rust
-let fn_name = get_function_name(function);
-
 if fn_name != "do.call" {
     return Ok(None);
 }
 ```
 
-`get_function_name()` is a helper function to extract the function name of `AnyRExpression`.
-Indeed, `function` could be `foo()`, but it could also be `bar::foo()`, or `bar$foo()` if we were working with `R6` for instance.
+The name comes from the caller here, but it is computed by the helper `get_function_name()`, which extracts the function name of an `AnyRExpression`.
+Indeed, the called function could be `foo()`, but it could also be `bar::foo()`, or `bar$foo()` if we were working with `R6` for instance.
 `get_function_name()` helps us by returning `"foo"` in all those cases.
+Rules that are not dispatched from `analyze/call.rs` can call it directly on `ast.function()?`.
 
-::: {.callout-note collapse="true"}
-## About helper functions
-
-We used `get_function_name()` above, but there exist other helper functions located in `utils.rs`.
-Below, we use `get_arg_by_name_then_position()` for instance.
-:::
-
-Past that point, the next step is to check that the arguments correspond to what we want to analyze.
-`do.call` has four arguments: `what`, `args`, `quote`, and `envir`.
-We are looking for patterns such as `do.call(cbind.data.frame, x)` so we want information on the first two arguments.
-We can use another helper function called `get_arg_by_name_then_position()`, combined with the macro `unwrap_or_return_none!`:
+We then extract the arguments from the `RCall` object:
 
 ```rust
-// Note that the arguments position is 1-indexed and not 0-indexed as is usually
-// the case in Rust.
-let what = unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "what", 1));
-let args = unwrap_or_return_none!(get_arg_by_name_then_position(&arguments, "args", 2));
+let arguments = ast.arguments()?.items();
 ```
 
-`get_arg_by_name_then_position()` returns an `Option` since the arguments we want to extract maybe do not exist in the code we parsed.
+Past that point, the next step is to check that the arguments correspond to what we want to analyze.
+`do.call()` has four arguments: `what`, `args`, `quote`, and `envir`, and we are looking for patterns such as `do.call(cbind.data.frame, x)`, so we want information on the first two.
+
+Reading them by position alone would be wrong, since R lets the user write `do.call(args = x, cbind.data.frame)`.
+This is why we hardcoded the signature of `do.call()` as a `Formals` constant at the top of the file:
+
+```rust
+const FORMALS_DO_CALL: Formals = &["what", "args", "quote", "envir"];
+```
+
+The helper `get_arg()` uses it to apply R's own matching rules: we look for named arguments first, and then use the unnamed ones to fill whatever slots are left.
+Combined with the macro `unwrap_or_return_none!`, this gives:
+
+```rust
+let what = unwrap_or_return_none!(get_arg(ast, FORMALS_DO_CALL, "what"));
+let args = unwrap_or_return_none!(get_arg(ast, FORMALS_DO_CALL, "args"));
+```
+
+`do.call(cbind.data.frame, x)`, `do.call(what = cbind.data.frame, args = x)` and `do.call(args = x, cbind.data.frame)` are all matched identically.
+
+`get_arg()` returns an `Option` since the arguments we want to extract maybe do not exist in the code we parsed.
 The macro `unwrap_or_return_none!()` makes the code slightly more readable.
 It replaces the more verbose `let-some` pattern:
 
 ```rust
-let Some(what) = get_arg_by_name_then_position(&arguments, "what", 1) else {
+let Some(what) = get_arg(ast, FORMALS_DO_CALL, "what") else {
     return Ok(None);
 };
 ```
@@ -319,7 +329,7 @@ do.call(
 )
 ```
 
-At this point, if you have an R file with a couple of examples that should be reported (e.g. `test.R`), you can use `cargo run --bin jarl -- check test.R` (the rule in this example is only valid for R >= 4.0.0, so we also need `--min-r-version 4.1` for instance).
+At this point, if you have an R file with a couple of examples that should be reported (e.g. `test.R`), you can use `cargo run --bin jarl -- check test.R` (the rule in this example is only valid for R >= 4.0.0, so we also need `--min-r-version 4.0` for instance).
 
 ### Add TOML options
 
@@ -342,7 +352,7 @@ Not all rules need TOML options.
 
 Adding options for a rule takes three steps. The example below uses the rule `duplicated_arguments` since `list2df` doesn't have TOML options.
 
-1. Create `src/lints/<group>/<rule_name>/options.rs` and declare `pub(crate) mod options;` in the rule's `mod.rs`. This file contains two types: the TOML options (deserialized as-is from `[lint.<rule_name>]`) and the resolved options (what the rule reads while linting). The resolved type must expose `resolve()`, which takes the TOML options and fills in the defaults:
+1. Create `lints/<group>/<rule_name>/options.rs` and declare `pub(crate) mod options;` in the rule's `mod.rs`. This file contains two types: the TOML options (deserialized as-is from `[lint.<rule_name>]`) and the resolved options (what the rule reads while linting). The resolved type must expose `resolve()`, which takes the TOML options and fills in the defaults:
 
     ```rust
     /// Default functions that are allowed to have duplicated arguments.
@@ -368,9 +378,9 @@ Adding options for a rule takes three steps. The example below uses the rule `du
     }
     ```
 
-    If the option is a list of functions that can be either replaced or extended by the user (the `<field>` / `extend-<field>` pattern), use the helper `resolve_with_extend()` from `src/rule_options.rs` instead of writing that logic again.
+    If the option is a list of functions that can be either replaced or extended by the user (the `<field>` / `extend-<field>` pattern), use the helper `resolve_with_extend()` from `rule_options.rs` instead of writing that logic again.
 
-1. Add the TOML field to `LinterTomlOptions` in `src/toml.rs`. The field must be named after the rule, and its documentation ends up in `artifacts/jarl.schema.json`, which editors use to describe the option:
+1. Add the TOML field to `LinterTomlOptions` in `toml.rs`. The field must be named after the rule, and its documentation ends up in `artifacts/jarl.schema.json`, which editors use to describe the option:
 
     ```rust
     /// # Options for the `duplicated_arguments` rule
@@ -383,7 +393,7 @@ Adding options for a rule takes three steps. The example below uses the rule `du
     pub duplicated_arguments: Option<DuplicatedArgumentsOptions>,
     ```
 
-1. Add one line to `declare_rule_options!` in `src/rule_options.rs`, naming the rule's folder and its resolved type:
+1. Add one line to `declare_rule_options!` in `rule_options.rs`, naming the rule's folder and its resolved type:
 
     ```rust
     declare_rule_options! {
@@ -535,9 +545,7 @@ The rule is implemented, all tests pass, perfect!
 We now need to document this change:
 
 * update `docs/changelog.md`
-* update `docs/rules.md`
-
-If you have installed `just` as [recommended](contributing.md#tools), you can now run `just document` to update the website.
+* run `just document` to add or update the rule page in `docs/rules/<rule_name>.md` (you need to have `just` installed as [explained in the general guide](contributing.md#tools))
 
 Finally, run `just lint` to ensure that `clippy` (the Rust linter) doesn't report any issue and that the code is properly formatted.
 You can also run `just lint-fix` to apply `clippy`'s automatic fixes if there are any.

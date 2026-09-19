@@ -55,38 +55,16 @@ fn create_diagnostic(suppression: &UnusedSuppression, source: &str) -> Diagnosti
 /// reported by `misplaced_suppression` instead and never suppresses anything),
 /// so the indentation and the line break go with it.
 ///
-/// A `jarl-ignore-start`/`jarl-ignore-end` pair needs both comments gone, but a
-/// fix is a single contiguous replacement: the edit therefore spans the whole
-/// region and puts back the code it wraps.
+/// A `jarl-ignore-start`/`jarl-ignore-end` pair needs both comments gone, which
+/// is one deletion per comment; the code they wrap is untouched.
 fn create_fix(suppression: &UnusedSuppression, source: &str) -> Fix {
     let comment = suppression.comment_range;
-    let last_comment_end = suppression.region_range.unwrap_or(comment).end().into();
+    let mut edits = vec![Edit::delete_line(source, comment.start().into())];
 
-    // For a region, the code between the two comments is put back untouched.
-    let content = match suppression.region_range {
-        Some(_) => source
-            [next_line_start(source, comment.end().into())..line_start(source, last_comment_end)]
-            .to_string(),
-        None => String::new(),
-    };
+    // For a region, the closing comment sits on its own line further down.
+    if let Some(region) = suppression.region_range {
+        edits.push(Edit::delete_line(source, region.end().into()));
+    }
 
-    Fix::new_with_offsets(
-        line_start(source, comment.start().into()),
-        next_line_start(source, last_comment_end),
-        content,
-        false,
-    )
-}
-
-/// Offset of the first character of the line containing `offset`.
-fn line_start(source: &str, offset: usize) -> usize {
-    source[..offset].rfind('\n').map_or(0, |i| i + 1)
-}
-
-/// Offset just past the line break ending the line that contains `offset`, or
-/// the end of the source if that line is the last one.
-fn next_line_start(source: &str, offset: usize) -> usize {
-    source[offset..]
-        .find('\n')
-        .map_or(source.len(), |i| offset + i + 1)
+    Fix::from_edits(edits, false)
 }

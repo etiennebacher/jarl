@@ -133,7 +133,7 @@ pub(crate) fn check_document(
             checker.report_diagnostic(Some(Diagnostic::new(
                 ViolationData::new(
                     Rule::UnusedFunction,
-                    format!("`{name}` is defined but never called in this package."),
+                    format!("`{name}` is defined but is never called in this package nor is it exported in NAMESPACE."),
                     Some(help.clone()),
                 ),
                 *range,

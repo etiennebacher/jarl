@@ -1,4 +1,4 @@
-use annotate_snippets::{Level, Renderer, Snippet};
+use annotate_snippets::{AnnotationKind, Level, Padding, Renderer, Snippet};
 use biome_rowan::{TextRange, TextSize};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -6,13 +6,73 @@ use std::path::PathBuf;
 
 use crate::location::Location;
 use crate::rule_set::{FixStatus, Rule};
+use crate::utils::{line_start, next_line_start};
+
+/// A single contiguous replacement: the source covered by `range` becomes
+/// `content`.
+///
+/// An empty `range` is an insertion at that offset, and an empty `content` is a
+/// deletion.
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+pub struct Edit {
+    // Portion of the source replaced by `content`.
+    pub range: TextRange,
+    pub content: String,
+}
+
+impl Edit {
+    /// Replace the source covered by `range` with `content`.
+    pub fn replacement(range: TextRange, content: String) -> Self {
+        Self { range, content }
+    }
+
+    /// Remove the source covered by `range`.
+    pub fn deletion(range: TextRange) -> Self {
+        Self { range, content: String::new() }
+    }
+
+    /// Same as [`Edit::deletion`] for callers that compute byte offsets outside
+    /// of the syntax tree (e.g. from the raw source).
+    pub fn deletion_with_offsets(start: usize, end: usize) -> Self {
+        Self::deletion(TextRange::new(
+            TextSize::from(start as u32),
+            TextSize::from(end as u32),
+        ))
+    }
+
+    /// Remove the whole line containing `offset`, line break included.
+    pub fn delete_line(source: &str, offset: usize) -> Self {
+        Self::deletion_with_offsets(line_start(source, offset), next_line_start(source, offset))
+    }
+
+    /// Insert `content` at `at`, leaving the surrounding source untouched.
+    pub fn insertion(at: TextSize, content: String) -> Self {
+        Self { range: TextRange::new(at, at), content }
+    }
+
+    pub fn start(&self) -> usize {
+        self.range.start().into()
+    }
+
+    pub fn end(&self) -> usize {
+        self.range.end().into()
+    }
+
+    /// An edit that replaces nothing with nothing leaves the source unchanged.
+    fn is_noop(&self) -> bool {
+        self.range.is_empty() && self.content.is_empty()
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 // The fix to apply to the violation.
 pub struct Fix {
-    pub content: String,
-    // Portion of the source replaced by `content`.
-    pub range: TextRange,
+    /// Edits applied together, all-or-nothing, sorted by start offset.
+    ///
+    /// Most fixes hold a single edit, but a repair that touches disjoint spots
+    /// (removing both comments of a `jarl-ignore-start`/`jarl-ignore-end` pair,
+    /// say) holds one edit per spot.
+    pub edits: Vec<Edit>,
     // TODO: This is used only to not add a Fix when the node contains a comment
     // because I don't know how to handle them for now, #95.
     pub to_skip: bool,
@@ -21,10 +81,10 @@ pub struct Fix {
 impl Fix {
     /// Replace the source covered by `range` with `content`.
     pub fn new(range: TextRange, content: String, to_skip: bool) -> Self {
-        Self { content, range, to_skip }
+        Self::from_edits(vec![Edit::replacement(range, content)], to_skip)
     }
 
-    /// Same as [`Fix::replace`] for callers that compute byte offsets outside
+    /// Same as [`Fix::new`] for callers that compute byte offsets outside
     /// of the syntax tree (e.g. from the raw source).
     pub fn new_with_offsets(start: usize, end: usize, content: String, to_skip: bool) -> Self {
         Self::new(
@@ -34,20 +94,30 @@ impl Fix {
         )
     }
 
+    /// Build a fix out of several edits applied together.
+    ///
+    /// Edits that change nothing are dropped, and the rest are sorted by start
+    /// offset. Edits of a single fix must not overlap each other: they describe
+    /// one repair, so an overlap is a bug in the rule rather than something to
+    /// resolve at apply time.
+    pub fn from_edits(edits: Vec<Edit>, to_skip: bool) -> Self {
+        let mut edits: Vec<Edit> = edits.into_iter().filter(|e| !e.is_noop()).collect();
+        edits.sort_by_key(|e| (e.range.start(), e.range.end()));
+        Self { edits, to_skip }
+    }
+
     pub fn empty() -> Self {
-        Self {
-            content: "".to_string(),
-            range: TextRange::default(),
-            to_skip: true,
-        }
+        Self { edits: Vec::new(), to_skip: true }
     }
 
+    /// Start of the first edit, or `0` when the fix changes nothing.
     pub fn start(&self) -> usize {
-        self.range.start().into()
+        self.edits.first().map_or(0, Edit::start)
     }
 
+    /// End of the last edit, or `0` when the fix changes nothing.
     pub fn end(&self) -> usize {
-        self.range.end().into()
+        self.edits.last().map_or(0, Edit::end)
     }
 }
 
@@ -83,6 +153,11 @@ pub struct Diagnostic {
     pub location: Option<Location>,
     // Fix to apply if the user passed `--fix`.
     pub fix: Fix,
+    /// The rule had a fix but it was dropped because the violation is in a
+    /// roxygen `@examples` section and `fix-roxygen` is off. Only used to tell
+    /// the user why an otherwise fixable rule is reported as unfixable.
+    #[serde(skip)]
+    pub fix_disabled_in_roxygen: bool,
 }
 
 impl<T: Violation> From<T> for ViolationData {
@@ -109,6 +184,7 @@ impl Diagnostic {
             location: None,
             fix,
             filename: "".into(),
+            fix_disabled_in_roxygen: false,
         }
     }
 
@@ -148,6 +224,9 @@ impl PartialOrd for Diagnostic {
 ///
 /// The `title` parameter allows callers to customize the message title
 /// (e.g. the CLI uses a hyperlinked rule name, while tests use the plain name).
+/// It is passed as a `secondary_title` because that is the only title
+/// constructor that leaves the text untouched: `primary_title` normalizes
+/// control characters, which would mangle the OSC 8 escapes of the hyperlink.
 pub fn render_diagnostic(
     source: &str,
     origin: &str,
@@ -158,28 +237,29 @@ pub fn render_diagnostic(
     let start_offset: usize = diagnostic.range.start().into();
     let end_offset: usize = diagnostic.range.end().into();
 
-    // annotate-snippets replaces each tab with 4 spaces for display but
-    // validates span bounds against the original source length, so we must
-    // expand tabs in the source we pass. We only expand tabs on the lines
-    // that contain the annotation span to avoid scanning the entire file.
-    let (expanded, adj_start, adj_end) = expand_span_line_tabs(source, start_offset, end_offset);
+    let (window, adj_start, adj_end, first_line) = snippet_window(source, start_offset, end_offset);
 
-    let snippet = Snippet::source(&expanded)
-        .origin(origin)
+    let snippet = Snippet::source(window)
+        .path(origin)
+        .line_start(first_line)
         .fold(true)
         .annotation(
-            Level::Warning
+            AnnotationKind::Context
                 .span(adj_start..adj_end)
                 .label(&diagnostic.message.body),
         );
 
-    let mut message = Level::Warning.title(title).snippet(snippet);
+    let mut group = Level::WARNING.secondary_title(title).element(snippet);
 
+    // Close the snippet with a blank gutter line. When a suggestion follows,
+    // the renderer already separates it from the snippet.
     if let Some(suggestion_text) = &diagnostic.message.suggestion {
-        message = message.footer(Level::Help.title(suggestion_text));
+        group = group.element(Level::HELP.message(suggestion_text.as_str()));
+    } else {
+        group = group.element(Padding);
     }
 
-    format!("{}", renderer.render(message))
+    renderer.render(&[group]).to_string()
 }
 
 /// Render a single syntax error as an annotated code snippet.
@@ -195,64 +275,50 @@ pub fn render_syntax_error(
     let start_offset: usize = error.range.start().into();
     let end_offset: usize = error.range.end().into();
 
-    // See `render_diagnostic`: annotate-snippets expands tabs for display but
-    // validates spans against the original length, so expand the span's lines.
-    let (expanded, adj_start, adj_end) = expand_span_line_tabs(source, start_offset, end_offset);
+    let (window, adj_start, adj_end, first_line) = snippet_window(source, start_offset, end_offset);
 
-    let snippet = Snippet::source(&expanded)
-        .origin(origin)
+    let snippet = Snippet::source(window)
+        .path(origin)
+        .line_start(first_line)
         .fold(true)
-        .annotation(Level::Error.span(adj_start..adj_end));
+        .annotation(AnnotationKind::Primary.span(adj_start..adj_end));
 
-    let message = Level::Error.title(&error.message).snippet(snippet);
+    let group = Level::ERROR
+        .primary_title(error.message.as_str())
+        .element(snippet)
+        .element(Padding);
 
-    format!("{}", renderer.render(message))
+    renderer.render(&[group]).to_string()
 }
 
-/// Expand tabs only on the lines that overlap with `start..end` and adjust
-/// offsets accordingly. Returns the modified source and adjusted span bounds.
-fn expand_span_line_tabs(source: &str, start: usize, end: usize) -> (String, usize, usize) {
-    const TAB: u8 = b'\t';
-    const EXTRA_PER_TAB: usize = 3; // 4 spaces - 1 byte
-
+/// Narrow `source` down to the lines the annotation actually covers.
+///
+/// `annotate_snippets` indexes every line of the source it is handed, once per
+/// rendered diagnostic, so passing whole files makes rendering cost scale with
+/// file size times diagnostic count. Folding hides the surrounding lines but
+/// does not skip that indexing, so the trimming has to happen here.
+///
+/// The line number is counted from `source` rather than taken from the
+/// diagnostic's `location`, so the gutter always agrees with the lines actually
+/// shown.
+///
+/// Returns the window, the span rebased into it, and the 1-based number of the
+/// window's first line.
+fn snippet_window(source: &str, start: usize, end: usize) -> (&str, usize, usize, usize) {
     // Find the line range covering the span: from the newline before `start`
     // to the newline after `end`.
     let line_start = source[..start].rfind('\n').map_or(0, |p| p + 1);
     let line_end = source[end..].find('\n').map_or(source.len(), |p| end + p);
 
-    // If no tabs on the span lines, return the source as-is.
-    if !source[line_start..line_end].contains('\t') {
-        return (source.to_string(), start, end);
-    }
-
-    // Count tabs on the span lines: before the span start, within the span,
-    // and after it. Lines before the span lines are copied unexpanded, so
-    // their tabs must not shift the adjusted offsets.
-    let source_bytes = source.as_bytes();
-    let tabs_line_to_start = source_bytes[line_start..start]
+    let first_line = 1 + source.as_bytes()[..line_start]
         .iter()
-        .filter(|&&b| b == TAB)
-        .count();
-    let tabs_in_span = source_bytes[start..end]
-        .iter()
-        .filter(|&&b| b == TAB)
-        .count();
-    let tabs_after_span = source_bytes[end..line_end]
-        .iter()
-        .filter(|&&b| b == TAB)
+        .filter(|&&b| b == b'\n')
         .count();
 
-    let extra_on_lines = (tabs_line_to_start + tabs_in_span + tabs_after_span) * EXTRA_PER_TAB;
-
-    // Build the result: copy before + expanded span lines + copy after.
-    let expanded_lines = source[line_start..line_end].replace('\t', "    ");
-    let mut result = String::with_capacity(source.len() + extra_on_lines);
-    result.push_str(&source[..line_start]);
-    result.push_str(&expanded_lines);
-    result.push_str(&source[line_end..]);
-
-    let adj_start = start + tabs_line_to_start * EXTRA_PER_TAB;
-    let adj_end = end + (tabs_line_to_start + tabs_in_span) * EXTRA_PER_TAB;
-
-    (result, adj_start, adj_end)
+    (
+        &source[line_start..line_end],
+        start - line_start,
+        end - line_start,
+        first_line,
+    )
 }

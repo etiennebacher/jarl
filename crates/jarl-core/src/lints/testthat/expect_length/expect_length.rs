@@ -31,14 +31,12 @@ const FORMALS_LENGTH: Formals = &["x"];
 /// ```r
 /// expect_equal(length(x), 2)
 /// expect_identical(length(x), n)
-/// expect_equal(2L, length(x))
 /// ```
 ///
 /// Use instead:
 /// ```r
 /// expect_length(x, 2)
 /// expect_length(x, n)
-/// expect_length(x, 2L)
 /// ```
 pub fn expect_length(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagnostic>> {
     // Only check expect_equal and expect_identical
@@ -84,17 +82,6 @@ pub fn expect_length(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Diagno
             } else {
                 return Ok(None);
             }
-        } else {
-            return Ok(None);
-        }
-    } else if let Some(expected_call) = expected_value.as_r_call() {
-
-        // If we're here, it means that the `object` isn't `length(...)`, so if
-        // `expected` also isn't `length(...)` we stop.
-        let exp_fn = expected_call.function()?;
-        let exp_fn_name = get_function_name(exp_fn);
-        if exp_fn_name == "length" {
-            (expected_call, object_value)
         } else {
             return Ok(None);
         }

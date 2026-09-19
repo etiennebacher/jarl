@@ -192,6 +192,12 @@ y <- 2",
 # jarl-ignore-start any_is_na: <reason>
 # jarl-ignore-end any_is_na
 x <- 1",
+                    // The region fix only removes the two comments, so a fix
+                    // for the code they wrap is applied too.
+                    "
+# jarl-ignore-start quotes: <reason>
+z <- any(is.na(x))
+# jarl-ignore-end quotes",
                 ],
                 "outdated_suppression,any_is_na",
                 None

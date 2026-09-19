@@ -4,6 +4,89 @@
 
 ### Breaking changes
 
+* The `jarl.toml` argument `assignment` (deprecated since 0.5.0) is removed. Use
+  the rule-specific option `[lint.assignment]` instead (#663).
+
+* A fix can now edit several places of a file at once, so in the `json` output
+  format the `fix` object contains a list of edits instead of a single
+  `content`/`range` pair (#700):
+
+  ```json
+  "fix": { "edits": [ { "range": [0, 13], "content": "anyNA(x)" } ], "to_skip": false }
+  ```
+
+### Changes
+
+* The config file can be named `.jarl.toml` as well as `jarl.toml`. Both names
+  are equivalent, and a directory containing both is now an error instead of
+  silently using `jarl.toml` (#717).
+
+* `expect_length` no longer reports cases where `length()` is in the `expected`
+  argument, e.g. `expect_equal(nrow(x), length(y))` (#684).
+
+* Only use placeholder text in messages and suggestions (#722).
+
+* The LSP now also publishes diagnostics when opening a file (#685).
+
+* The CLI now prints a message suggesting `fix-roxygen = true` when some fixes
+  cannot be applied because the violation is in part of `@examples` (#702).
+
+### Bug fixes
+
+* Handle uppercase `.RMD`/`.QMD` extensions (and any other letter-case variant)
+  files consistently (#709, @Yousa-Mirage).
+
+* Prevent the `nzchar` rule from treating quote characters as empty strings and
+  support empty raw string literals (#696, @Yousa-Mirage).
+
+* Jarl now properly checks the components of selector, extraction, and namespace
+  AST nodes (`[[`, `@`, `$`, `::`, `:::`) (#697, @Yousa-Mirage).
+
+* The `github` and `sarif` output formats now report parsing errors to stderr
+  instead of silently dropping them (#695, @Yousa-Mirage).
+
+* Prevent the `sample_int` rule from panicking on calls with missing arguments
+  (#687, @Yousa-Mirage).
+
+* Prevent the `outer_negation` rule from rewriting unary `+` and `-` expressions
+  as logical negations (#688, @Yousa-Mirage).
+
+* Prevent fixes for `any_is_na`, `any_duplicated`, and `condition_message`
+  from dropping extra unnamed arguments (#677, @Yousa-Mirage).
+
+* Ensure that `--fix` works with multi-byte characters (#672, @Yousa-Mirage).
+
+* The `lengths` rule no longer crashes on calls where `X` is missing from the
+  syntax tree, e.g. `sapply(FUN = length)` or `x |> sapply(FUN = length)`. The
+  autofix now also produces `lengths(x)` instead of the invalid
+  `lengths(X = x)` when `X` is passed by name (#671, @Yousa-Mirage).
+
+* Fix language server suppression quickfix positions for non-ASCII text and
+  Rmd/Qmd chunk insertion positions (#676, #708, @Yousa-Mirage).
+
+* Avoid invalid `literal_coercion` fixes for strings containing quotes
+  (#678, @Yousa-Mirage).
+
+* The `expect_type` rule no longer lints `expect_true(is.null(x))`, which was
+  already reported by the `expect_null` rule (#680, @Yousa-Mirage).
+
+* The `pipe_consistency` rule no longer emits invalid fixes when converting
+  `magrittr` pipes with a non-call RHS, such as `x %>% sum` (#683, @Yousa-Mirage).
+
+* Prevent incorrect `dplyr_filter_out` fixes caused by matching `is.na()` guard
+  arguments as substrings of other identifiers (#681, @Yousa-Mirage).
+
+* In R Markdown and Quarto documents, `unreachable_code` no longer reports code
+  in chunks following a chunk that would stop evaluation but is either unevaluated or
+  has `error: true` (#724).
+
+## 0.6.0
+
+::: {.callout-note icon=false title="Released on 2026-08-24" .low-opacity}
+:::
+
+### Breaking changes
+
 * The JSON output produced with `--output-format json` has changed. In `fix`, the
   fields `start` and `end` are replaced by a field `range` that contains the
   two values (#650).
@@ -94,6 +177,8 @@
   - it is available on `conda-forge`, enabling its installation via `mise` and
     `pixi` (@salim-b).
   - it is available on Homebrew, enabling its installation via `brew`.
+
+* Fixed outdated paths in the contributing guide (#658, @christopherkenny).
 
 
 ### Bug fixes

@@ -129,8 +129,8 @@ enum Literal {
     Double(f64),
     /// An integer literal (e.g. `1L`), with its parsed value.
     Integer(i64),
-    /// A string literal, with its (unquoted) content.
-    String(String),
+    /// A standard string literal, with its source content and delimiter.
+    String { content: String, quote: char },
     /// A logical literal (`TRUE`/`FALSE`).
     Logical(bool),
     /// `NA`.
@@ -158,7 +158,8 @@ fn parse_literal(expr: &AnyRExpression) -> Option<Literal> {
         }
         if let Some(string) = value.as_r_string_value() {
             let text = string.to_trimmed_string();
-            return strip_string_quotes(&text).map(Literal::String);
+            return strip_string_quotes(&text)
+                .map(|(quote, content)| Literal::String { content, quote });
         }
         // Complex and other values are not coerced.
         return None;
@@ -185,7 +186,7 @@ fn coerce(target: TargetType, literal: &Literal) -> Option<String> {
             Literal::Double(v) => bool_literal(*v != 0.0),
             Literal::Integer(v) => bool_literal(*v != 0),
             Literal::Logical(b) => bool_literal(*b),
-            Literal::String(s) => match s.as_str() {
+            Literal::String { content, .. } => match content.as_str() {
                 "T" | "TRUE" | "true" | "True" => "TRUE".to_string(),
                 "F" | "FALSE" | "false" | "False" => "FALSE".to_string(),
                 _ => "NA".to_string(),
@@ -196,7 +197,7 @@ fn coerce(target: TargetType, literal: &Literal) -> Option<String> {
             Literal::Double(v) => integer_literal(*v),
             Literal::Integer(v) => format!("{v}L"),
             Literal::Logical(b) => bool_as_int_literal(*b),
-            Literal::String(s) => match s.parse::<f64>() {
+            Literal::String { content, .. } => match content.parse::<f64>() {
                 Ok(v) => integer_literal(v),
                 Err(_) => "NA_integer_".to_string(),
             },
@@ -206,7 +207,7 @@ fn coerce(target: TargetType, literal: &Literal) -> Option<String> {
             Literal::Double(v) => format!("{v}"),
             Literal::Integer(v) => format!("{v}"),
             Literal::Logical(b) => if *b { "1" } else { "0" }.to_string(),
-            Literal::String(s) => match s.parse::<f64>() {
+            Literal::String { content, .. } => match content.parse::<f64>() {
                 Ok(v) => format!("{v}"),
                 Err(_) => "NA_real_".to_string(),
             },
@@ -216,7 +217,7 @@ fn coerce(target: TargetType, literal: &Literal) -> Option<String> {
             Literal::Double(v) => format!("\"{v}\""),
             Literal::Integer(v) => format!("\"{v}\""),
             Literal::Logical(b) => if *b { "\"TRUE\"" } else { "\"FALSE\"" }.to_string(),
-            Literal::String(s) => format!("\"{s}\""),
+            Literal::String { content, quote } => format!("{quote}{content}{quote}"),
             Literal::Na => "NA_character_".to_string(),
         },
     };
@@ -242,16 +243,17 @@ fn integer_literal(v: f64) -> String {
     }
 }
 
-/// Remove the surrounding quotes from a standard string literal. Returns `None`
-/// for raw strings or anything that doesn't look like a quoted literal.
-fn strip_string_quotes(text: &str) -> Option<String> {
+/// Remove the surrounding quotes from a standard string literal while retaining
+/// the delimiter. Returns `None` for raw strings or anything that doesn't look
+/// like a quoted literal.
+fn strip_string_quotes(text: &str) -> Option<(char, String)> {
     let mut chars = text.chars();
     let quote = chars.next()?;
     if quote != '"' && quote != '\'' {
         return None;
     }
     let rest = text.strip_prefix(quote)?;
-    rest.strip_suffix(quote).map(|s| s.to_string())
+    rest.strip_suffix(quote).map(|s| (quote, s.to_string()))
 }
 
 /// Rebuild the call text from its tokens, dropping whitespace and comments so

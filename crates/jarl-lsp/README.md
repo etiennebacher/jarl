@@ -306,7 +306,7 @@ The server automatically detects which mode to use based on client capabilities.
 ## Dependencies
 
 Minimal and focused:
-- `lsp-server` & `lsp-types`: LSP protocol implementation
+- `lsp-server` & `gen-lsp-types`: LSP protocol implementation
 - `crossbeam`: Multi-threading for background linting
 - `anyhow`: Error handling
 - `tracing`: Logging

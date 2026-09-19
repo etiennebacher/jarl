@@ -3,6 +3,7 @@ use crate::rule_set::Rule;
 use crate::utils::node_contains_comments;
 use air_r_syntax::*;
 use biome_rowan::AstNode;
+use jarl_semantic::strings::get_string_literal_contents;
 
 /// Version added: 0.5.0
 ///
@@ -52,15 +53,13 @@ pub fn nzchar(ast: &RBinaryExpression) -> anyhow::Result<Option<Diagnostic>> {
     };
 
     let left_is_empty_string = left
-        .to_trimmed_string()
-        .trim_matches('"')
-        .trim_matches('\'')
-        .is_empty();
+        .as_any_r_value()
+        .and_then(|value| get_string_literal_contents(&value.to_trimmed_string()))
+        .is_some_and(|content| content.is_empty());
     let right_is_empty_string = right
-        .to_trimmed_string()
-        .trim_matches('"')
-        .trim_matches('\'')
-        .is_empty();
+        .as_any_r_value()
+        .and_then(|value| get_string_literal_contents(&value.to_trimmed_string()))
+        .is_some_and(|content| content.is_empty());
 
     if (left_is_empty_string && right_is_empty_string)
         || (!left_is_empty_string && !right_is_empty_string)

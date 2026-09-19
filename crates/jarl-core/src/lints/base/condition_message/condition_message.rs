@@ -33,37 +33,31 @@ pub fn condition_message(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Di
         return Ok(None);
     }
 
-    let (inner_content, outer_syntax) = unwrap_or_return_none!(get_nested_functions_content(
-        ast, fn_name, fn_name, "paste0"
-    )?);
+    // When `paste0()` is a direct argument of the call, the other arguments must
+    // be kept in the fix, so remember which argument holds it.
+    let (inner_content, outer_syntax, paste_arg_index) =
+        if let Some((inner_content, index)) = get_direct_nested_paste0_content(ast)? {
+            (inner_content, ast.syntax().clone(), Some(index))
+        } else {
+            let (inner_content, outer_syntax) = unwrap_or_return_none!(
+                get_nested_functions_content(ast, fn_name, fn_name, "paste0")?
+            );
+            (inner_content, outer_syntax, None)
+        };
 
     // `stop()` doesn't have equivalents for recycle0 or collapse args, so bail
     // early
-    if let Some(paste_call) = outer_syntax
-        .descendants()
-        .filter_map(RCall::cast)
-        .find(|call| call.function().ok().map(get_function_name).as_deref() == Some("paste0"))
-    {
-        let paste_args = paste_call.arguments()?.items();
-        if get_arg_by_name(&paste_args, "collapse").is_some()
-            || get_arg_by_name(&paste_args, "recycle0").is_some()
-        {
-            return Ok(None);
-        }
+    if paste0_has_unsupported_args(&outer_syntax)? {
+        return Ok(None);
     }
 
-    let args = ast.arguments()?.items();
-    let call_arg = get_arg_by_name(&args, "call.");
-    let domain_arg = get_arg_by_name(&args, "domain");
-
-    // In warning() only
-    let immediate_arg = get_arg_by_name(&args, "immediate.");
-    let nobreaks_arg = get_arg_by_name(&args, "noBreaks.");
-
-    let extra_args = [call_arg, domain_arg, immediate_arg, nobreaks_arg]
+    let extra_args = ast
+        .arguments()?
+        .items()
         .into_iter()
-        .flatten()
-        .map(|arg| arg.to_trimmed_string());
+        .enumerate()
+        .filter(|(index, _)| Some(*index) != paste_arg_index)
+        .filter_map(|(_, arg)| Some(arg.ok()?.to_trimmed_string()));
     let new_content = std::iter::once(inner_content)
         .chain(extra_args)
         .collect::<Vec<_>>()
@@ -83,4 +77,40 @@ pub fn condition_message(ast: &RCall, fn_name: &str) -> anyhow::Result<Option<Di
             node_contains_comments(&outer_syntax),
         ),
     )))
+}
+
+/// Returns the content of a `paste0()` call used as a direct argument, along
+/// with the index of the argument holding it.
+fn get_direct_nested_paste0_content(call: &RCall) -> anyhow::Result<Option<(String, usize)>> {
+    let argument = call
+        .arguments()?
+        .items()
+        .into_iter()
+        .enumerate()
+        .find(|(_, arg)| arg.as_ref().is_ok_and(|arg| arg.name_clause().is_none()));
+    let (index, argument) = unwrap_or_return_none!(argument);
+    let inner = unwrap_or_return_none!(argument?.value());
+    let inner_call = unwrap_or_return_none!(inner.as_r_call());
+
+    if get_function_name(inner_call.function()?) != "paste0" {
+        return Ok(None);
+    }
+
+    let inner_content = inner_call.arguments()?.items().into_syntax().to_string();
+    Ok(Some((inner_content, index)))
+}
+
+/// Whether the `paste0()` call in `node` uses arguments that `stop()` and
+/// `warning()` have no equivalent for.
+fn paste0_has_unsupported_args(node: &RSyntaxNode) -> anyhow::Result<bool> {
+    let paste_call = node
+        .descendants()
+        .filter_map(RCall::cast)
+        .find(|call| call.function().ok().map(get_function_name).as_deref() == Some("paste0"));
+    let Some(paste_call) = paste_call else {
+        return Ok(false);
+    };
+    let paste_args = paste_call.arguments()?.items();
+    Ok(get_arg_by_name(&paste_args, "collapse").is_some()
+        || get_arg_by_name(&paste_args, "recycle0").is_some())
 }

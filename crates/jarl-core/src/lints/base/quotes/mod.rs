@@ -100,6 +100,53 @@ mod tests {
     }
 
     #[test]
+    fn test_quotes_in_extract_and_call_function() {
+        assert_snapshot!(
+            snapshot_lint(
+                "
+df$'col'
+df@'slot'
+pkg::'fn'()
+('fn')()
+(function() 'body')()"
+            ),
+            @"
+        warning: quotes
+         --> <test>:2:4
+          |
+        2 | df$'col'
+          |    ----- Prefer double quotes for string delimiters.
+          |
+        warning: quotes
+         --> <test>:3:4
+          |
+        3 | df@'slot'
+          |    ------ Prefer double quotes for string delimiters.
+          |
+        warning: quotes
+         --> <test>:4:6
+          |
+        4 | pkg::'fn'()
+          |      ---- Prefer double quotes for string delimiters.
+          |
+        warning: quotes
+         --> <test>:5:2
+          |
+        5 | ('fn')()
+          |  ---- Prefer double quotes for string delimiters.
+          |
+        warning: quotes
+         --> <test>:6:13
+          |
+        6 | (function() 'body')()
+          |             ------ Prefer double quotes for string delimiters.
+          |
+        Found 5 errors.
+        "
+        );
+    }
+
+    #[test]
     fn test_quotes_single_quote_allows_needed_and_preferred_forms() {
         let settings = settings_with_options(QuotesOptions { quote: Some("single".to_string()) });
 

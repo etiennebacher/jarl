@@ -38,5 +38,5 @@ pub fn has_rmd_extension(path: &Path) -> bool {
 }
 
 pub fn is_rmd_extension(ext: &str) -> bool {
-    matches!(ext, "rmd" | "Rmd" | "qmd" | "Qmd")
+    ext.eq_ignore_ascii_case("rmd") || ext.eq_ignore_ascii_case("qmd")
 }

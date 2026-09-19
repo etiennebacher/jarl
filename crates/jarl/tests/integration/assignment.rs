@@ -413,17 +413,14 @@ operator = "<-"
 }
 
 // ---------------------------------------------------------------------------
-// Deprecated TOML syntax: assignment = "..." (top-level string)
+// Removed `assignment = "<-"` string form
 // ---------------------------------------------------------------------------
 
 #[test]
-fn test_assignment_from_toml_deprecated() -> anyhow::Result<()> {
+fn test_assignment_removed_string_form_from_toml() -> anyhow::Result<()> {
     let case = CliTest::with_file(
-        "test.R",
-        "
+        "test.R", "
 x = 1
-y <- 2
-3 -> z
 ",
     )?;
 
@@ -442,117 +439,9 @@ assignment = "<-"
             .arg("--select")
             .arg("assignment")
             .run()
-            .normalize_os_executable_name(),
-        @"
-
-    success: false
-    exit_code: 1
-    ----- stdout -----
-    warning: assignment
-     --> test.R:2:1
-      |
-    2 | x = 1
-      | --- Use `<-` for assignment.
-      |
-
-    warning: assignment
-     --> test.R:4:3
-      |
-    4 | 3 -> z
-      |   ---- Use `<-` for assignment.
-      |
-
-
-    ── Summary ──────────────────────────────────────
-    Found 2 errors.
-    2 fixable with the `--fix` option.
-
-    ── Warnings ─────────────────────────────────────
-    Argument `assignment` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator` instead.
-
-    ----- stderr -----
-    "
-    );
-
-    case.write_file(
-        "jarl.toml",
-        r#"
-[lint]
-assignment = "="
-"#,
-    )?;
-    insta::assert_snapshot!(
-        &mut case
-            .command()
-            .arg("check")
-            .arg(".")
-            .arg("--select")
-            .arg("assignment")
-            .run()
-            .normalize_os_executable_name(),
-        @"
-
-    success: false
-    exit_code: 1
-    ----- stdout -----
-    warning: assignment
-     --> test.R:3:1
-      |
-    3 | y <- 2
-      | ---- Use `=` for assignment.
-      |
-
-    warning: assignment
-     --> test.R:4:3
-      |
-    4 | 3 -> z
-      |   ---- Use `=` for assignment.
-      |
-
-
-    ── Summary ──────────────────────────────────────
-    Found 2 errors.
-    2 fixable with the `--fix` option.
-
-    ── Warnings ─────────────────────────────────────
-    Argument `assignment` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator` instead.
-
-    ----- stderr -----
-    "
-    );
-
-    Ok(())
-}
-
-#[test]
-fn test_assignment_wrong_value_from_toml_deprecated() -> anyhow::Result<()> {
-    let case = CliTest::with_file(
-        "test.R",
-        "
-x = 1
-y <- 2
-3 -> z
-",
-    )?;
-
-    case.write_file(
-        "jarl.toml",
-        r#"
-[lint]
-assignment = "foo"
-"#,
-    )?;
-    insta::assert_snapshot!(
-        &mut case
-            .command()
-            .arg("check")
-            .arg(".")
-            .arg("--select")
-            .arg("assignment")
-            .run()
             .normalize_os_executable_name()
             .normalize_temp_paths(),
-        @r#"
+        @"
 
     success: false
     exit_code: 255
@@ -561,106 +450,9 @@ assignment = "foo"
     ----- stderr -----
     jarl failed
       Cause: Invalid configuration in [TEMP_DIR]/jarl.toml:
-    Invalid value for `operator` in `[lint.assignment]`: "foo". Expected "<-" or "=".
-    "#
-    );
-
-    case.write_file(
-        "jarl.toml",
-        r#"
-[lint]
-assignment = 1
-"#,
-    )?;
-    insta::assert_snapshot!(
-        &mut case
-            .command()
-            .arg("check")
-            .arg(".")
-            .arg("--select")
-            .arg("assignment")
-            .run()
-            .normalize_os_executable_name()
-            .normalize_temp_paths(),
-        @r#"
-
-    success: false
-    exit_code: 255
-    ----- stdout -----
-
-    ----- stderr -----
-    jarl failed
-      Cause: Failed to parse [TEMP_DIR]/jarl.toml:
-    TOML parse error at line 3, column 14
-      |
-    3 | assignment = 1
-      |              ^
-    invalid type: integer `1`, expected a string (e.g. `assignment = "<-"`) or a table (e.g. `[lint.assignment]`)
-    "#
-    );
-
-    Ok(())
-}
-
-#[test]
-fn test_assignment_cli_overrides_toml_deprecated() -> anyhow::Result<()> {
-    let case = CliTest::with_file(
-        "test.R",
-        "
-x = 1
-y <- 2
-3 -> z
-",
-    )?;
-
-    case.write_file(
-        "jarl.toml",
-        r#"
-[lint]
-assignment = "<-"
-"#,
-    )?;
-    insta::assert_snapshot!(
-        &mut case
-            .command()
-            .arg("check")
-            .arg(".")
-            .arg("--select")
-            .arg("assignment")
-            .arg("--assignment")
-            .arg("=")
-            .run()
-            .normalize_os_executable_name(),
-        @"
-
-    success: false
-    exit_code: 1
-    ----- stdout -----
-    warning: assignment
-     --> test.R:3:1
-      |
-    3 | y <- 2
-      | ---- Use `=` for assignment.
-      |
-
-    warning: assignment
-     --> test.R:4:3
-      |
-    4 | 3 -> z
-      |   ---- Use `=` for assignment.
-      |
-
-
-    ── Summary ──────────────────────────────────────
-    Found 2 errors.
-    2 fixable with the `--fix` option.
-
-    ── Warnings ─────────────────────────────────────
-    `--assignment` is deprecated. Use `[lint.assignment]` in jarl.toml instead.
-    Argument `assignment` in `[lint]` is deprecated. Use `[lint.assignment]` with `operator` instead.
-
-    ----- stderr -----
+    Unknown field `assignment` in `[lint]`. Expected one of: `select`, `extend-select`, `ignore`, `fixable`, `unfixable`, `exclude`, `default-exclude`, `include`, `per-file-ignores`, `check-roxygen`, `fix-roxygen`.
     "
     );
+
     Ok(())
 }

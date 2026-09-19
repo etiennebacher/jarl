@@ -453,7 +453,7 @@ fn test_cli_exclude_glob_patterns() -> anyhow::Result<()> {
             .arg("--exclude=R/*.R")
             .run()
             .normalize_os_executable_name(),
-        @r"
+        @"
 
     success: false
     exit_code: 1

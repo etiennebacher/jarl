@@ -1735,3 +1735,275 @@ plot(1)
 
     Ok(())
 }
+
+/// Rmd/Qmd files must be handled consistently regardless of extension casing.
+#[test]
+fn test_uppercase_rmd_qmd_no_autofix() -> anyhow::Result<()> {
+    let content = "```{r}
+any(is.na(x))
+```
+";
+    let case = CliTest::with_files([("report.RMD", content), ("notes.QMD", content)])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("report.RMD")
+            .arg("notes.QMD")
+            .arg("--fix")
+            .arg("--allow-no-vcs")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> notes.QMD:2:1
+      |
+    2 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+    warning: any_is_na
+     --> report.RMD:2:1
+      |
+    2 | any(is.na(x))
+      | ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 2 errors.
+
+    ----- stderr -----
+    "
+    );
+    assert_eq!(case.read_file("report.RMD")?, content);
+    assert_eq!(case.read_file("notes.QMD")?, content);
+
+    Ok(())
+}
+
+/// A chunk marked `eval = FALSE` never runs, so a `stop()` in it cannot make a
+/// later chunk unreachable.
+#[test]
+fn test_rmd_unevaluated_chunk_does_not_stop_later_chunks() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.qmd",
+        "
+```{r}
+#| eval: false
+stop('hi')
+```
+
+```{r}
+1 + 1
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.qmd")
+            .arg("--select")
+            .arg("unreachable_code")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// A chunk marked `error = TRUE` runs, but knitr prints the condition and
+/// carries on, so a `stop()` in it ends neither that chunk nor the document.
+#[test]
+fn test_rmd_error_tolerant_chunk_does_not_stop_anything() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.qmd",
+        "
+```{r}
+#| eval: true
+#| error: true
+stop('hi')
+2 + 2
+```
+
+```{r}
+1 + 1
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.qmd")
+            .arg("--select")
+            .arg("unreachable_code")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// The header form of the option is read the same way.
+#[test]
+fn test_rmd_header_error_true_does_not_stop_later_chunks() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.Rmd",
+        "
+```{r, error = TRUE}
+stop('hi')
+```
+
+```{r}
+1 + 1
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.Rmd")
+            .arg("--select")
+            .arg("unreachable_code")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// A chunk that neither of those options excuses still stops the document, and
+/// an unevaluated chunk sitting in between doesn't hide that.
+#[test]
+fn test_rmd_stopping_chunk_still_reaches_past_an_unevaluated_one() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.qmd",
+        "
+```{r}
+stop('hi')
+```
+
+```{r}
+#| eval: false
+2 + 2
+```
+
+```{r}
+1 + 1
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.qmd")
+            .arg("--select")
+            .arg("unreachable_code")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: unreachable_code
+      --> test.qmd:12:1
+       |
+    12 | 1 + 1
+       | ----- This code is unreachable because it appears after a `stop()` statement (or equivalent).
+       |
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
+/// A chunk that never runs has no reachable code to speak of, so nothing in it
+/// is reported — not even the line after a `stop()` it would never reach.
+#[test]
+fn test_rmd_unevaluated_chunk_reports_no_unreachable_code() -> anyhow::Result<()> {
+    let case = CliTest::with_file(
+        "test.qmd",
+        "
+```{r}
+#| eval: false
+stop('hi')
+2 + 2
+```
+",
+    )?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg("test.qmd")
+            .arg("--select")
+            .arg("unreachable_code")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: true
+    exit_code: 0
+    ----- stdout -----
+    ── Summary ──────────────────────────────────────
+    All checks passed!
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}

@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     fn test_lint_chained_non_function_assignment() {
-        assert_snapshot!(snapshot_lint("x <- y <- 1"), @r"
+        assert_snapshot!(snapshot_lint("x <- y <- 1"), @"
         warning: unused_object
          --> <test>:1:6
           |
@@ -449,7 +449,7 @@ f()",
     fn test_lint_simple_unused() {
         assert_snapshot!(
             snapshot_lint("x <- 1\nprint(y)"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -477,7 +477,7 @@ f()",
     fn test_lint_unused_after_reassignment() {
         assert_snapshot!(
             snapshot_lint("x <- 1\nx <- 2\nprint(x)"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -493,7 +493,7 @@ f()",
     fn test_lint_multiple_unused() {
         assert_snapshot!(
             snapshot_lint("x <- 1\ny <- 2"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -515,7 +515,7 @@ f()",
     fn test_lint_unused_right_assignment() {
         assert_snapshot!(
             snapshot_lint("1 -> x"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:6
           |
@@ -531,7 +531,7 @@ f()",
     fn test_lint_unused_equals_assignment() {
         assert_snapshot!(
             snapshot_lint("x = 1"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -547,7 +547,7 @@ f()",
     fn test_lint_only_one_of_two_used() {
         assert_snapshot!(
             snapshot_lint("x <- 1\ny <- 2\nprint(x)"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:2:1
           |
@@ -563,7 +563,7 @@ f()",
     fn test_lint_unused_in_function_body() {
         assert_snapshot!(
             snapshot_lint("f <- function() {\n  x <- 1\n  y <- 2\n  y\n}"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:2:3
           |
@@ -579,7 +579,7 @@ f()",
     fn test_lint_unused_with_used_neighbor() {
         assert_snapshot!(
             snapshot_lint("a <- 1\nb <- 2\nc <- a + b\nd <- 99"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:3:1
           |
@@ -601,7 +601,7 @@ f()",
     fn test_lint_nse_read_does_not_count() {
         assert_snapshot!(
             snapshot_lint("x <- 1\nquote(x)"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -618,7 +618,7 @@ f()",
         // `bquote(x)` quotes `x`, so its value is unused -> report.
         assert_snapshot!(
             snapshot_lint("x <- 1\nbquote(x)"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -634,7 +634,7 @@ f()",
         // `x <- 1` is still dead and reported.
         assert_snapshot!(
             snapshot_lint("x <- 1\nx <- 2\nbquote(.(x))"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -903,7 +903,7 @@ while (cond) {
             snapshot_lint(
                 "library(glue)\nx <- 0\nfor (i in 1:3) {\n  glue(\"{x}\")\n  y <- i\n}\n"
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:5:3
           |
@@ -1005,7 +1005,7 @@ for (i in 1:2) {
                 "y <- 1\nsource(\"helper.R\")\n",
                 &[("helper.R", "print(1)")],
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -1023,7 +1023,7 @@ for (i in 1:2) {
         // to the regular unused-object check.
         assert_snapshot!(
             snapshot_lint_with_sourced_files("x <- 1\nsource(\"missing.R\")\n", &[]),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -1177,7 +1177,7 @@ within(dat, {
         // Only the nearest real definition is credited; `x <- 1` stays dead.
         assert_snapshot!(
             snapshot_lint("x <- 1\nx <- 2\nexpression(x <- 3)\nprint(x)"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -1195,7 +1195,7 @@ within(dat, {
         // mention doesn't keep the binding alive.
         assert_snapshot!(
             snapshot_lint("x <- 1\nmethods::Quote(x)"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -1224,7 +1224,7 @@ within(dat, {
         // captures its argument rather than reading it.
         assert_snapshot!(
             snapshot_lint("x <- 1\nmethods::`Quote`(x)"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -1682,7 +1682,7 @@ cols <- 'a'
 dt[, ..cols]
 "
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:2:1
           |
@@ -1705,7 +1705,7 @@ x <- 1
 glue(\"value is {x}\")
 "
             ),
-            @r#"
+            @"
         warning: unused_object
          --> <test>:2:1
           |
@@ -1713,7 +1713,7 @@ glue(\"value is {x}\")
           | - Object `x` is defined but never used.
           |
         Found 1 error.
-        "#
+        "
         );
     }
 
@@ -1728,7 +1728,7 @@ x <- 1
 cli_abort(\"{.field {x}}\")
 "
             ),
-            @r#"
+            @"
         warning: unused_object
          --> <test>:2:1
           |
@@ -1736,7 +1736,7 @@ cli_abort(\"{.field {x}}\")
           | - Object `x` is defined but never used.
           |
         Found 1 error.
-        "#
+        "
         );
     }
 
@@ -1920,7 +1920,7 @@ f({
   x <- 2
 })
 print(x)"
-        ), @r"
+        ), @"
         warning: unused_object
          --> <test>:3:3
           |
@@ -1952,7 +1952,7 @@ print(x)"
         // local of an unrelated function.
         assert_snapshot!(
             snapshot_lint("f <- function() {\n  helper <- 1\n  2\n}\ndo.call(\"helper\", list())"),
-            @r"
+            @"
         warning: unused_object
          --> <test>:2:3
           |
@@ -1979,7 +1979,7 @@ data.table::setDT(dt)
 dt[, ..cols]
 "
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:3:3
           |
@@ -2006,7 +2006,7 @@ ifelse(is.null(foo), x <- 1, x <- 2)
 print(x)
 "
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:3:3
           |
@@ -2028,7 +2028,7 @@ print(x)
                 "f <- function() {\n  w <- 1\n  2\n}\nsource(\"helper.R\")\n",
                 &[("helper.R", "print(w + 1)")],
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:2:3
           |
@@ -2182,7 +2182,7 @@ while (cond) {
                 "source <- function(x) invisible(x)\nw <- 1\nsource(\"helper.R\")\n",
                 &[("helper.R", "print(w + 1)")],
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:2:1
           |
@@ -2202,7 +2202,7 @@ while (cond) {
                 "x <- 1\nsource(\"sub/../main.R\")\n",
                 &[("sub/other.R", "print(1)")]
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -2223,7 +2223,7 @@ while (cond) {
                 "w <- 1\nsource(\"helper.R\", local = new.env())\n",
                 &[("helper.R", "print(w + 1)")],
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -2280,7 +2280,7 @@ while (cond) {
                 "x <- 1\nsource(\"helper.R\")\n",
                 &[("helper.R", "df$x\n")],
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
@@ -2301,7 +2301,7 @@ while (cond) {
                 "x <- 1\nsource(\"helper.R\")\n",
                 &[("helper.R", "x <- 2\nprint(x)\n")],
             ),
-            @r"
+            @"
         warning: unused_object
          --> <test>:1:1
           |
