@@ -421,31 +421,25 @@ pub struct LinterTomlOptions {
 }
 
 /// Return the path to the `jarl.toml` or `.jarl.toml` file in a given directory.
-pub fn find_jarl_toml_in_directory<P: AsRef<Path>>(path: P) -> Option<PathBuf> {
-    // Check for `jarl.toml` first, as we prioritize the "visible" one.
-    let toml = path.as_ref().join("jarl.toml");
-    if toml.is_file() {
-        return Some(toml);
-    }
+///
+/// The two names are interchangeable, so a directory holding both is ambiguous
+/// and is reported as an error rather than silently resolved: picking one would
+/// leave the user editing a file that has no effect.
+pub fn find_jarl_toml_in_directory<P: AsRef<Path>>(path: P) -> anyhow::Result<Option<PathBuf>> {
+    let directory = path.as_ref();
+    let visible = directory.join("jarl.toml");
+    let hidden = directory.join(".jarl.toml");
 
-    // Now check for `.jarl.toml` as well
-    let toml = path.as_ref().join(".jarl.toml");
-    if toml.is_file() {
-        return Some(toml);
+    match (visible.is_file(), hidden.is_file()) {
+        (true, true) => Err(anyhow::anyhow!(
+            "Found two configuration files: '{}' and '{}'. Use only one of them.",
+            visible.display(),
+            hidden.display()
+        )),
+        (true, false) => Ok(Some(visible)),
+        (false, true) => Ok(Some(hidden)),
+        (false, false) => Ok(None),
     }
-
-    // Didn't find a configuration file
-    None
-}
-
-/// Find the path to the closest `jarl.toml` or `.jarl.toml` if one exists, walking up the filesystem
-pub fn find_jarl_toml<P: AsRef<Path>>(path: P) -> Option<PathBuf> {
-    for directory in path.as_ref().ancestors() {
-        if let Some(toml) = find_jarl_toml_in_directory(directory) {
-            return Some(toml);
-        }
-    }
-    None
 }
 
 impl TomlOptions {

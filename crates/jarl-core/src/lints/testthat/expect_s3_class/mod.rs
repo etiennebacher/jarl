@@ -78,9 +78,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_equal(class(x), 'data.frame')
-          | ------------------------------------ `expect_equal(class(x), 'data.frame')` may fail if `x` gets more classes in the future.
+          | ------------------------------------ `expect_equal(class(x), y)` may fail if `x` gets more classes in the future.
           |
-          = help: Use `expect_s3_class(x, 'data.frame')` instead.
+          = help: Use `expect_s3_class(x, y)` instead.
         Found 1 error.
         "
         );
@@ -91,9 +91,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_equal(class(x), "data.frame")
-          | ------------------------------------ `expect_equal(class(x), "data.frame")` may fail if `x` gets more classes in the future.
+          | ------------------------------------ `expect_equal(class(x), y)` may fail if `x` gets more classes in the future.
           |
-          = help: Use `expect_s3_class(x, "data.frame")` instead.
+          = help: Use `expect_s3_class(x, y)` instead.
         Found 1 error.
         "#
         );
@@ -104,9 +104,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | testthat::expect_equal(class(x), 'data.frame')
-          | ---------------------------------------------- `expect_equal(class(x), 'data.frame')` may fail if `x` gets more classes in the future.
+          | ---------------------------------------------- `expect_equal(class(x), y)` may fail if `x` gets more classes in the future.
           |
-          = help: Use `expect_s3_class(x, 'data.frame')` instead.
+          = help: Use `expect_s3_class(x, y)` instead.
         Found 1 error.
         "
         );
@@ -117,9 +117,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_equal('data.frame', class(x))
-          | ------------------------------------ `expect_equal('data.frame', class(x))` may fail if `x` gets more classes in the future.
+          | ------------------------------------ `expect_equal(y, class(x))` may fail if `x` gets more classes in the future.
           |
-          = help: Use `expect_s3_class(x, 'data.frame')` instead.
+          = help: Use `expect_s3_class(x, y)` instead.
         Found 1 error.
         "
         );
@@ -130,9 +130,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_identical(class(foo$bar), "Date")
-          | ---------------------------------------- `expect_identical(class(foo$bar), "Date")` may fail if `foo$bar` gets more classes in the future.
+          | ---------------------------------------- `expect_identical(class(x), y)` may fail if `x` gets more classes in the future.
           |
-          = help: Use `expect_s3_class(foo$bar, "Date")` instead.
+          = help: Use `expect_s3_class(x, y)` instead.
         Found 1 error.
         "#
         );
@@ -161,9 +161,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_equal(class(x), classes)
-          | ------------------------------- `expect_equal(class(x), classes)` may fail if `x` gets more classes in the future.
+          | ------------------------------- `expect_equal(class(x), y)` may fail if `x` gets more classes in the future.
           |
-          = help: Use `expect_s3_class(x, classes)` instead.
+          = help: Use `expect_s3_class(x, y)` instead.
         Found 1 error.
         "
         );
@@ -174,9 +174,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_true(inherits(x, classes))
-          | --------------------------------- `expect_s3_class(x, classes)` is better than `expect_true(inherits(x, classes))`.
+          | --------------------------------- `expect_s3_class(x, y)` is better than `expect_true(inherits(x, y))`.
           |
-          = help: Use `expect_s3_class(x, classes)` instead.
+          = help: Use `expect_s3_class(x, y)` instead.
         Found 1 error.
         "
         );
@@ -217,9 +217,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | testthat::expect_true(utils::is.relistable(foo(x)))
-          | --------------------------------------------------- `expect_s3_class(foo(x), "relistable")` is better than `expect_true(utils::is.relistable(foo(x)))`.
+          | --------------------------------------------------- `expect_s3_class(x, "relistable")` is better than `expect_true(is.relistable(x))`.
           |
-          = help: Use `expect_s3_class(foo(x), "relistable")` instead.
+          = help: Use `expect_s3_class(x, "relistable")` instead.
         Found 1 error.
         "#
         );
@@ -230,7 +230,7 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_true(is.tskernel(k = x))
-          | ------------------------------- `expect_s3_class(x, "tskernel")` is better than `expect_true(is.tskernel(k = x))`.
+          | ------------------------------- `expect_s3_class(x, "tskernel")` is better than `expect_true(is.tskernel(x))`.
           |
           = help: Use `expect_s3_class(x, "tskernel")` instead.
         Found 1 error.
@@ -261,9 +261,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | expect_true(inherits(foo$bar, "Date"))
-          | -------------------------------------- `expect_s3_class(foo$bar, "Date")` is better than `expect_true(inherits(foo$bar, "Date"))`.
+          | -------------------------------------- `expect_s3_class(x, y)` is better than `expect_true(inherits(x, y))`.
           |
-          = help: Use `expect_s3_class(foo$bar, "Date")` instead.
+          = help: Use `expect_s3_class(x, y)` instead.
         Found 1 error.
         "#
         );
@@ -274,9 +274,9 @@ mod tests {
          --> <test>:1:1
           |
         1 | testthat::expect_true(base::inherits(what = 'factor', x = foo(x)))
-          | ------------------------------------------------------------------ `expect_s3_class(foo(x), 'factor')` is better than `expect_true(base::inherits(what = 'factor', x = foo(x)))`.
+          | ------------------------------------------------------------------ `expect_s3_class(x, y)` is better than `expect_true(inherits(x, y))`.
           |
-          = help: Use `expect_s3_class(foo(x), 'factor')` instead.
+          = help: Use `expect_s3_class(x, y)` instead.
         Found 1 error.
         "
         );
@@ -307,9 +307,9 @@ mod tests {
         1 | / expect_equal(class(x),
         2 | |  # a comment 
         3 | | 'data.frame')
-          | |_____________- `expect_equal(class(x), 'data.frame')` may fail if `x` gets more classes in the future.
+          | |_____________- `expect_equal(class(x), y)` may fail if `x` gets more classes in the future.
           |
-          = help: Use `expect_s3_class(x, 'data.frame')` instead.
+          = help: Use `expect_s3_class(x, y)` instead.
         Found 1 error.
         "
         );

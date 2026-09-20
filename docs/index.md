@@ -182,6 +182,20 @@ pixi exec jarl check .
 </details>
 
 <details>
+<summary>Using the Arch User Repository</summary>
+
+If you use Arch Linux, you can install Jarl from the [Arch User Repository](https://aur.archlinux.org/packages/jarl-bin) with [`yay`](https://github.com/Jguer/yay) or [`paru`](https://github.com/Morganamilo/paru):
+
+```sh
+# With yay
+yay -S jarl-bin
+
+# With paru
+paru -S jarl-bin
+```
+</details>
+
+<details>
 <summary>Using `mise`</summary>
 
 You can use [mise](https://mise.jdx.dev/) to install Jarl from [conda-forge](https://github.com/conda-forge/jarl-feedstock):
@@ -197,6 +211,37 @@ mise use --global conda:jarl
 # Run one-off command
 mise exec conda:jarl -- jarl check .
 ```
+</details>
+
+<details>
+<summary>Using `nix`</summary>
+
+You can use Jarl with [Nix](https://nixos.org) and [nixpkgs](https://search.nixos.org/packages?channel=unstable&query=jarl#show=jarl):
+
+```
+# Temporary shell
+nix-shell -p jarl
+jarl check .
+
+# Run one-off command (with flakes enabled)
+nix run nixpkgs#jarl -- check .
+
+# One-off command with comma (https://github.com/nix-community/comma)
+, jarl check .
+
+# Add to NixOS configuration (permanent install)
+environment.systemPackages = [
+  pkgs.jarl
+];
+
+# Add to home-manager
+home.packages = [
+  pkgs.jarl
+];
+```
+
+Modifying the user profile with `nix-env` or `nix profile add` is not recommended.
+
 </details>
 
 ### Development version
