@@ -1,5 +1,5 @@
 use biome_rowan::TextRange;
-use oak_semantic::semantic_index::SemanticIndex;
+use oak_semantic::semantic_index::{ScopeId, SemanticIndex};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -92,6 +92,9 @@ pub struct PackageAnalysis {
     /// help)` triples for functions that are defined but never called and not
     /// exported.
     pub unused_functions: HashMap<PathBuf, Vec<(String, TextRange, String)>>,
+    /// Names exported by each package's NAMESPACE, with `exportPattern()`
+    /// expanded against all top-level definitions in that package.
+    pub namespace_exports: HashMap<PathBuf, HashSet<String>>,
     /// Per-file set of top-level object names that are read from *another*
     /// file. Keyed by relativized file path. All of a package's R files share
     /// one namespace, so a top-level binding defined in one file and used in
@@ -411,9 +414,47 @@ pub fn make_package_analysis(
         crate::db::CrossFileAnalysis::default()
     };
 
+    // `scan_top_level_assignments` only collects functions; use the semantic
+    // indices here so `exportPattern()` also covers ordinary objects.
+    let namespace_exports = if check_unused_object {
+        let mut all_defined_names: HashMap<PathBuf, Vec<String>> = HashMap::new();
+        let top_level = ScopeId::from(0);
+        for file in shared_data.iter().filter(|file| file.scope == FileScope::R) {
+            let Some(index) = cross_file.indices.get(&file.rel_path) else {
+                continue;
+            };
+            let symbols = index.symbols(top_level);
+            all_defined_names
+                .entry(file.package_root.clone())
+                .or_default()
+                .extend(
+                    index
+                        .definitions(top_level)
+                        .iter()
+                        .map(|(_, def)| symbols.symbol(def.symbol()).name().to_string()),
+                );
+        }
+
+        namespace_contents
+            .iter()
+            .map(|(root, content)| {
+                let names: Vec<&str> = all_defined_names
+                    .get(root)
+                    .into_iter()
+                    .flatten()
+                    .map(String::as_str)
+                    .collect();
+                (root.clone(), parse_namespace_exports(content, &names))
+            })
+            .collect()
+    } else {
+        HashMap::new()
+    };
+
     PackageAnalysis {
         duplicate_assignments,
         unused_functions,
+        namespace_exports,
         cross_file_used: cross_file.used,
         file_indices: cross_file.indices,
         source_index_cache: cross_file.source_index_cache,
