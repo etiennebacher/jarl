@@ -363,6 +363,55 @@ foo <- function(x) x
     Ok(())
 }
 
+/// Ordinary R braces inside a `\dontrun{}` wrapper do not hide diagnostics.
+#[test]
+fn test_roxygen_dontrun_with_r_braces_linted() -> anyhow::Result<()> {
+    let case = CliTest::package_with_files([(
+        "R/test.R",
+        "\
+#' Title
+#' @examples
+#' \\dontrun{
+#' identity({
+#'   any(is.na(x))
+#' }
+#' )
+#' }
+foo <- function(x) x
+",
+    )])?;
+
+    insta::assert_snapshot!(
+        &mut case
+            .command()
+            .arg("check")
+            .arg(".")
+            .run()
+            .normalize_os_executable_name(),
+        @"
+
+    success: false
+    exit_code: 1
+    ----- stdout -----
+    warning: any_is_na
+     --> R/test.R:5:6
+      |
+    5 | #'   any(is.na(x))
+      |      ------------- `any(is.na(...))` is inefficient.
+      |
+      = help: Use `anyNA(...)` instead.
+
+
+    ── Summary ──────────────────────────────────────
+    Found 1 error.
+
+    ----- stderr -----
+    "
+    );
+
+    Ok(())
+}
+
 /// Code inside `\donttest{}` is linted — the wrapper is stripped.
 #[test]
 fn test_roxygen_donttest_linted() -> anyhow::Result<()> {
