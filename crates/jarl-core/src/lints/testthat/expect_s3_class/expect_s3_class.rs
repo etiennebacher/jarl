@@ -96,20 +96,16 @@ fn check_expect_class_comparison(
 
     let object_value = unwrap_or_return_none!(object_argument.value());
     let expected_value = unwrap_or_return_none!(expected_argument.value());
-    let linted_text = format!(
-        "{function_name}({}, {})",
-        object_value.to_trimmed_text(),
-        expected_value.to_trimmed_text()
-    );
 
     // Find patterns like `expect_equal(class(x), 'y')` and `expect_equal('y', class(x))`.
-    let (class_call, class_expression) = if let Some(call) = as_class_call(&object_value)? {
-        (call, expected_value)
-    } else if let Some(call) = as_class_call(&expected_value)? {
-        (call, object_value)
-    } else {
-        return Ok(None);
-    };
+    let (class_call, class_expression, class_is_first) =
+        if let Some(call) = as_class_call(&object_value)? {
+            (call, expected_value, true)
+        } else if let Some(call) = as_class_call(&expected_value)? {
+            (call, object_value, false)
+        } else {
+            return Ok(None);
+        };
 
     let can_fix = match classify_class_expression(&class_expression) {
         ClassExpressionKind::SupportedLiteral => true,
@@ -123,7 +119,12 @@ fn check_expect_class_comparison(
 
     let object_text = class_object.to_trimmed_text();
     let class_text = class_expression.to_trimmed_text();
-    let replacement = format!("expect_s3_class({object_text}, {class_text})");
+
+    let linted_text = if class_is_first {
+        format!("{function_name}(class(x), y)")
+    } else {
+        format!("{function_name}(y, class(x))")
+    };
 
     // Preserve namespace prefix if present
     let function = ast.function()?;
@@ -134,8 +135,8 @@ fn check_expect_class_comparison(
     Ok(Some(Diagnostic::new(
         ViolationData::new(
             Rule::TestthatExpectS3Class,
-            format!("`{linted_text}` may fail if `{object_text}` gets more classes in the future."),
-            Some(format!("Use `{replacement}` instead.")),
+            format!("`{linted_text}` may fail if `x` gets more classes in the future."),
+            Some("Use `expect_s3_class(x, y)` instead.".to_string()),
         ),
         range,
         if can_fix {
@@ -178,8 +179,19 @@ fn check_expect_true_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
     };
 
     let ClassCheck { object_text, class_text, can_fix } = class_check;
-    let replacement = format!("expect_s3_class({object_text}, {class_text})");
-    let linted_text = format!("expect_true({})", predicate_call.to_trimmed_text());
+    let fix_text = format!("expect_s3_class({object_text}, {class_text})");
+
+    let (linted_text, replacement) = if predicate_name == "inherits" {
+        (
+            "expect_true(inherits(x, y))".to_string(),
+            "expect_s3_class(x, y)".to_string(),
+        )
+    } else {
+        (
+            format!("expect_true({predicate_name}(x))"),
+            format!("expect_s3_class(x, {class_text})"),
+        )
+    };
 
     let function = ast.function()?;
     let namespace_prefix = get_function_namespace_prefix(function).unwrap_or_default();
@@ -195,7 +207,7 @@ fn check_expect_true_class(ast: &RCall) -> anyhow::Result<Option<Diagnostic>> {
         if can_fix {
             Fix::new(
                 range,
-                format!("{namespace_prefix}{replacement}"),
+                format!("{namespace_prefix}{fix_text}"),
                 node_contains_comments(ast.syntax()),
             )
         } else {

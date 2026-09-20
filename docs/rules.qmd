@@ -32,7 +32,9 @@ The column "Has fix" can take the following values:
 
 -   ❌ No fix
 
-```{css, eval=TRUE, echo=FALSE}
+```{css}
+/*| eval: true*/
+/*| echo: false*/
 .Reactable {
 	background-color: transparent !important;
 }
@@ -46,7 +48,10 @@ The column "Has fix" can take the following values:
 }
 ```
 
-```{r, eval=TRUE, echo=FALSE, warning=FALSE}
+```{r}
+#| eval: true
+#| echo: false
+#| warning: false
 library(reactable)
 dat <- as.data.frame(
   rbind(
