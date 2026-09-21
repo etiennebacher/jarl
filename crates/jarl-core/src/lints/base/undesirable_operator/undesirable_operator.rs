@@ -93,6 +93,13 @@ pub fn undesirable_operator_namespace(
     Ok(check_operator(&ast.operator()?, options))
 }
 
+pub fn undesirable_operator_extract(
+    ast: &RExtractExpression,
+    options: &ResolvedUndesirableOperatorOptions,
+) -> anyhow::Result<Option<Diagnostic>> {
+    Ok(check_operator(&ast.operator()?, options))
+}
+
 pub fn undesirable_operator_call(
     ast: &RCall,
     options: &ResolvedUndesirableOperatorOptions,
