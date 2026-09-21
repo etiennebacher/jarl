@@ -123,7 +123,7 @@ mod tests {
     fn test_extend_operators() {
         let settings = settings_with_options(UndesirableOperatorOptions {
             operators: None,
-            extend_operators: Some(vec!["%notin%".to_string()]),
+            extend_operators: Some(vec!["%notin%".to_string(), "$".to_string()]),
         });
 
         assert_snapshot!(
@@ -139,13 +139,25 @@ mod tests {
         "
         );
         assert_snapshot!(
-            snapshot_lint_with_settings("x %notin% y", settings),
+            snapshot_lint_with_settings("x %notin% y", settings.clone()),
             @"
         warning: undesirable_operator
          --> <test>:1:3
           |
         1 | x %notin% y
           |   ------- `%notin%` is listed as an undesirable operator.
+          |
+        Found 1 error.
+        "
+        );
+        assert_snapshot!(
+            snapshot_lint_with_settings("x$y", settings.clone()),
+            @"
+        warning: undesirable_operator
+         --> <test>:1:2
+          |
+        1 | x$y
+          |  - `$` is listed as an undesirable operator.
           |
         Found 1 error.
         "
