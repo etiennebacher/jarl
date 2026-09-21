@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>if_not_else – Jarl</title>
+<title>undesirable_operator – Jarl</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -356,7 +356,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../rules/all_equal.html">List of rules</a></li><li class="breadcrumb-item"><a href="../rules/if_not_else.html">if_not_else</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../rules/all_equal.html">List of rules</a></li><li class="breadcrumb-item"><a href="../rules/undesirable_operator.html">undesirable_operator</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -610,7 +610,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../rules/if_not_else.html" class="sidebar-item-text sidebar-link active">
+  <a href="../rules/if_not_else.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">if_not_else</span></a>
   </div>
 </li>
@@ -844,7 +844,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../rules/undesirable_operator.html" class="sidebar-item-text sidebar-link">
+  <a href="../rules/undesirable_operator.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">undesirable_operator</span></a>
   </div>
 </li>
@@ -914,30 +914,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#if_not_else" id="toc-if_not_else" class="nav-link active" data-scroll-target="#if_not_else">if_not_else</a>
+  <li><a href="#undesirable_operator" id="toc-undesirable_operator" class="nav-link active" data-scroll-target="#undesirable_operator">undesirable_operator</a>
   <ul>
   <li><a href="#what-it-does" id="toc-what-it-does" class="nav-link" data-scroll-target="#what-it-does">What it does</a></li>
   <li><a href="#why-is-this-bad" id="toc-why-is-this-bad" class="nav-link" data-scroll-target="#why-is-this-bad">Why is this bad?</a></li>
+  <li><a href="#configuration" id="toc-configuration" class="nav-link" data-scroll-target="#configuration">Configuration</a></li>
   <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
   </ul></li>
   </ul>
-<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/if_not_else.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+<div class="toc-actions"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/undesirable_operator.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../rules/all_equal.html">List of rules</a></li><li class="breadcrumb-item"><a href="../rules/if_not_else.html">if_not_else</a></li></ol></nav></header>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../rules/all_equal.html">List of rules</a></li><li class="breadcrumb-item"><a href="../rules/undesirable_operator.html">undesirable_operator</a></li></ol></nav></header>
 
 
 
 
-<section id="if_not_else" class="level1">
-<h1>if_not_else</h1>
-<div class="low-opacity callout callout-style-default callout-note callout-empty-content callout-titled" title="Added in 0.6.0">
+<section id="undesirable_operator" class="level1">
+<h1>undesirable_operator</h1>
+<div class="low-opacity callout callout-style-default callout-note callout-empty-content callout-titled" title="Added in 0.7.0">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Added in 0.6.0
+<span class="screen-reader-only">Note</span>Added in 0.7.0
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -946,23 +947,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="what-it-does" class="level2">
 <h2 class="anchored" data-anchor-id="what-it-does">What it does</h2>
-<p>Checks for <code>if</code> - <code>else</code> statements and <code>ifelse()</code> / <code>dplyr::if_else()</code> / <code>data.table::fifelse()</code> calls whose condition is a simple negation, e.g. <code>if (!cond) x else y</code> or <code>ifelse(!cond, x, y)</code>.</p>
+<p>Checks for use of banned operators.</p>
 </section>
 <section id="why-is-this-bad" class="level2">
 <h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
-<p>Negating the condition forces the reader to mentally flip the branches. It is usually clearer to write the condition positively and swap the branches: <code>if (A) y else x</code> instead of <code>if (!A) x else y</code>.</p>
-<p>Negated calls such as <code>is.null()</code>, <code>is.na()</code> and <code>missing()</code> are common and read naturally, so they are allowed by default. Use the <code>skipped-functions</code> option to change this list.</p>
-<p>This rule does not have an automatic fix.</p>
+<p>Some operators may be undesirable because they make the code less robust, more complex, or more prone to footguns. For example, <code>:::</code> accesses a package’s internal functions, meaning that they may disappear or behave differently without notice if the package changes. <code>&lt;&lt;-</code> and <code>-&gt;&gt;</code> assign outside the current environment and may lead to code that is harder to predict.</p>
+</section>
+<section id="configuration" class="level2">
+<h2 class="anchored" data-anchor-id="configuration">Configuration</h2>
+<p>By default, only <code>-&gt;&gt;</code>, <code>:::</code>, and <code>&lt;&lt;-</code> are flagged. You can customize the list in <code>jarl.toml</code>:</p>
+<p>To replace the default list entirely:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.undesirable_operator]</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="dt">operators</span> <span class="op">=</span> <span class="op">[</span><span class="st">"%notin%"</span><span class="op">,</span> <span class="st">"&amp;&amp;"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>To add to the defaults:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode toml code-with-copy"><code class="sourceCode toml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[lint.undesirable_operator]</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="dt">extend-operators</span> <span class="op">=</span> <span class="op">[</span><span class="st">"&amp;&amp;"</span><span class="op">,</span> <span class="st">"%in%"</span><span class="op">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Specifying both <code>operators</code> and <code>extend-operators</code> is an error.</p>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span>cond) x <span class="cf">else</span> y</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ifelse</span>(<span class="sc">!</span>cond, x, y)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Use instead:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (cond) y <span class="cf">else</span> x</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ifelse</span>(cond, y, x)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>package<span class="sc">:::</span><span class="fu">internal_function</span>()  <span class="co"># flagged by default</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>value <span class="ot">&lt;&lt;-</span> <span class="dv">1</span>                    <span class="co"># flagged by default</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>
@@ -1374,4 +1379,4 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/if_not_else.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/etiennebacher/jarl/blob/main/docs/rules/undesirable_operator.md" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/etiennebacher/jarl/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

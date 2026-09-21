@@ -369,6 +369,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#development-version" id="toc-development-version" class="nav-link" data-scroll-target="#development-version">Development version</a>
   <ul class="collapse">
   <li><a href="#breaking-changes" id="toc-breaking-changes" class="nav-link" data-scroll-target="#breaking-changes">Breaking changes</a></li>
+  <li><a href="#deprecations" id="toc-deprecations" class="nav-link" data-scroll-target="#deprecations">Deprecations</a></li>
   <li><a href="#changes" id="toc-changes" class="nav-link" data-scroll-target="#changes">Changes</a></li>
   <li><a href="#bug-fixes" id="toc-bug-fixes" class="nav-link" data-scroll-target="#bug-fixes">Bug fixes</a></li>
   </ul></li>
@@ -383,7 +384,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#section-1" id="toc-section-1" class="nav-link" data-scroll-target="#section-1">0.5.0</a>
   <ul class="collapse">
-  <li><a href="#deprecations" id="toc-deprecations" class="nav-link" data-scroll-target="#deprecations">Deprecations</a></li>
+  <li><a href="#deprecations-1" id="toc-deprecations-1" class="nav-link" data-scroll-target="#deprecations-1">Deprecations</a></li>
   <li><a href="#features" id="toc-features" class="nav-link" data-scroll-target="#features">Features</a></li>
   <li><a href="#bug-fixes-2" id="toc-bug-fixes-2" class="nav-link" data-scroll-target="#bug-fixes-2">Bug fixes</a></li>
   </ul></li>
@@ -447,6 +448,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="st">"fix"</span><span class="er">:</span> <span class="fu">{</span> <span class="dt">"edits"</span><span class="fu">:</span> <span class="ot">[</span> <span class="fu">{</span> <span class="dt">"range"</span><span class="fu">:</span> <span class="ot">[</span><span class="dv">0</span><span class="ot">,</span> <span class="dv">13</span><span class="ot">]</span><span class="fu">,</span> <span class="dt">"content"</span><span class="fu">:</span> <span class="st">"anyNA(x)"</span> <span class="fu">}</span> <span class="ot">]</span><span class="fu">,</span> <span class="dt">"to_skip"</span><span class="fu">:</span> <span class="kw">false</span> <span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
 </ul>
 </section>
+<section id="deprecations" class="level3">
+<h3 class="anchored" data-anchor-id="deprecations">Deprecations</h3>
+<ul>
+<li>The <code>internal_function</code> rule is deprecated. Use <code>undesirable_operator</code> instead.</li>
+</ul>
+</section>
 <section id="changes" class="level3">
 <h3 class="anchored" data-anchor-id="changes">Changes</h3>
 <ul>
@@ -455,6 +462,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p>Only use placeholder text in messages and suggestions (<a href="https://github.com/etiennebacher/jarl/issues/722" target="_blank">#722</a>).</p></li>
 <li><p>The LSP now also publishes diagnostics when opening a file (<a href="https://github.com/etiennebacher/jarl/issues/685" target="_blank">#685</a>).</p></li>
 <li><p>The CLI now prints a message suggesting <code>fix-roxygen = true</code> when some fixes cannot be applied because the violation is in part of <code>@examples</code> (<a href="https://github.com/etiennebacher/jarl/issues/702" target="_blank">#702</a>).</p></li>
+<li><p>Added the <code>undesirable_operator</code> rule (<a href="https://github.com/etiennebacher/jarl/issues/657" target="_blank">#657</a>).</p></li>
 </ul>
 </section>
 <section id="bug-fixes" class="level3">
@@ -605,8 +613,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </div>
 </div>
-<section id="deprecations" class="level3">
-<h3 class="anchored" data-anchor-id="deprecations">Deprecations</h3>
+<section id="deprecations-1" class="level3">
+<h3 class="anchored" data-anchor-id="deprecations-1">Deprecations</h3>
 <ul>
 <li><p>The command-line argument <code>--assignment</code> and the <code>jarl.toml</code> argument <code>assignment</code> are both deprecated. Instead, you should use the following code in <code>jarl.toml</code>:</p>
 <pre><code>[lint.assignment]
