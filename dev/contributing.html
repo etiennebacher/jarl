@@ -419,11 +419,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="basic-structure-of-the-repository" class="level2">
 <h2 class="anchored" data-anchor-id="basic-structure-of-the-repository">Basic structure of the repository</h2>
-<p>The folder <code>crates</code> contains several sub-crates. At the time of writing (October 2025), there are three:</p>
+<p>The folder <code>crates</code> contains several sub-crates. At the time of writing (September 2026), there are four:</p>
 <ul>
 <li><code>jarl</code> contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.</li>
 <li><code>jarl-core</code> contains the “meat” of the linter. It is where the R code is parsed and checked, and where the rules are defined. <strong>This is probably the crate you will have to modify.</strong></li>
 <li><code>jarl-lsp</code> contains the code to integrate the linter with the Language Server Protocol, which allows editors such as VS Code or Positron to highlight diagnostics and provide “Quick Fix” buttons for example.</li>
+<li><code>jarl-semantic</code> contains the code to build the semantic index used in some rules (e.g.&nbsp;<code>unused_object</code>). It is unlikely you need to edit this crate.</li>
 </ul>
 </section>
 <section id="adding-or-modifying-a-rule" class="level2">

@@ -2250,7 +2250,7 @@
     "href": "contributing.html#basic-structure-of-the-repository",
     "title": "Contributing to Jarl",
     "section": "Basic structure of the repository",
-    "text": "Basic structure of the repository\nThe folder crates contains several sub-crates. At the time of writing (October 2025), there are three:\n\njarl contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.\njarl-core contains the “meat” of the linter. It is where the R code is parsed and checked, and where the rules are defined. This is probably the crate you will have to modify.\njarl-lsp contains the code to integrate the linter with the Language Server Protocol, which allows editors such as VS Code or Positron to highlight diagnostics and provide “Quick Fix” buttons for example."
+    "text": "Basic structure of the repository\nThe folder crates contains several sub-crates. At the time of writing (September 2026), there are four:\n\njarl contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.\njarl-core contains the “meat” of the linter. It is where the R code is parsed and checked, and where the rules are defined. This is probably the crate you will have to modify.\njarl-lsp contains the code to integrate the linter with the Language Server Protocol, which allows editors such as VS Code or Positron to highlight diagnostics and provide “Quick Fix” buttons for example.\njarl-semantic contains the code to build the semantic index used in some rules (e.g. unused_object). It is unlikely you need to edit this crate."
   },
   {
     "objectID": "contributing.html#adding-or-modifying-a-rule",
