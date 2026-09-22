@@ -947,13 +947,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="what-it-does" class="level2">
 <h2 class="anchored" data-anchor-id="what-it-does">What it does</h2>
-<p>Checks for usage of <code>x != ""</code> or <code>x == ""</code> instead of <code>nzchar(x)</code> or <code>!nzchar(x)</code>.</p>
+<p>Checks for usage of <code>x != ""</code> or <code>x == ""</code>, or comparisons of <code>nchar(x)</code> with zero, such as <code>nchar(x) == 0</code>, instead of <code>nzchar(x)</code> or <code>!nzchar(x)</code>.</p>
 </section>
 <section id="why-is-this-bad" class="level2">
 <h2 class="anchored" data-anchor-id="why-is-this-bad">Why is this bad?</h2>
 <p><code>x == ""</code> is less efficient than <code>!nzchar(x)</code> when x is a large vector of long strings.</p>
-<p>One crucial difference is in the default handling of <code>NA_character_</code>, i.e., missing strings. <code>nzchar(NA_character_)</code> is TRUE, while <code>NA_character_ == ""</code> is NA. Therefore, for strict compatibility, use <code>nzchar(x, keepNA = TRUE)</code>. If the input is known to be complete (no missing entries), this argument can be dropped for conciseness.</p>
-<p>This rule comes with a unsafe fix.</p>
+<p>One crucial difference is in the default handling of <code>NA_character_</code>, i.e., missing strings. <code>nzchar(NA_character_)</code> is TRUE, while <code>NA_character_ == ""</code> is NA. Generated fixes use <code>nzchar(x, keepNA = TRUE)</code> to preserve missing values.</p>
+<p>This rule comes with an unsafe fix because <code>nzchar()</code> can still differ for factors or classed objects and does not preserve attributes such as names and dimensions.</p>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
@@ -961,7 +961,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>x[x <span class="sc">==</span> <span class="st">""</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Use instead:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="st">"abcdefghijklmn"</span>, <span class="st">""</span>, <span class="st">"opqrstuvwyz"</span>), <span class="fl">1e7</span>, <span class="cn">TRUE</span>)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>x[<span class="sc">!</span><span class="fu">nzchar</span>(x)]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>x[<span class="sc">!</span><span class="fu">nzchar</span>(x, <span class="at">keepNA =</span> <span class="cn">TRUE</span>)]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="references" class="level2">
 <h2 class="anchored" data-anchor-id="references">References</h2>
