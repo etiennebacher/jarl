@@ -427,6 +427,7 @@ declare_rules! {
         fix: None,
         min_r_version: None,
     },
+    #[deprecated(version = "0.7.0", replacement = "undesirable_operator")]
     InternalFunction => {
         name: "internal_function",
         categories: [Susp],
@@ -646,6 +647,13 @@ declare_rules! {
     },
     UndesirableFunction => {
         name: "undesirable_function",
+        categories: [Corr],
+        default: Enabled,
+        fix: None,
+        min_r_version: None,
+    },
+    UndesirableOperator => {
+        name: "undesirable_operator",
         categories: [Corr],
         default: Enabled,
         fix: None,

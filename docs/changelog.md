@@ -15,7 +15,15 @@
   "fix": { "edits": [ { "range": [0, 13], "content": "anyNA(x)" } ], "to_skip": false }
   ```
 
+### Deprecations
+
+* The `internal_function` rule is deprecated. Use `undesirable_operator` instead.
+
 ### Changes
+
+* New rules:
+
+  * `undesirable_operator` (#657, @christopherkenny)
 
 * The config file can be named `.jarl.toml` as well as `jarl.toml`. Both names
   are equivalent, and a directory containing both is now an error instead of
@@ -36,6 +44,9 @@
   cannot be applied because the violation is in part of `@examples` (#702).
 
 ### Bug fixes
+
+* Prevent `unused_function` and `unused_object` from falsely reporting non-ASCII
+  names (#706, @Yousa-Mirage).
 
 * Handle uppercase `.RMD`/`.QMD` extensions (and any other letter-case variant)
   files consistently (#709, @Yousa-Mirage).

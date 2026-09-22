@@ -26,11 +26,12 @@ Contributors are allowed to use AI tools, with some conditions.
 ## Basic structure of the repository
 
 The folder `crates` contains several sub-crates.
-At the time of writing (October 2025), there are three:
+At the time of writing (September 2026), there are four:
 
 * `jarl` contains the structure of the command-line tool with which users interact. This is where we can add or modify arguments to be passed to the CLI.
 * `jarl-core` contains the "meat" of the linter. It is where the R code is parsed and checked, and where the rules are defined. **This is probably the crate you will have to modify.**
 * `jarl-lsp` contains the code to integrate the linter with the Language Server Protocol, which allows editors such as VS Code or Positron to highlight diagnostics and provide "Quick Fix" buttons for example.
+* `jarl-semantic` contains the code to build the semantic index used in some rules (e.g. `unused_object`). It is unlikely you need to edit this crate. 
 
 ## Adding or modifying a rule
 

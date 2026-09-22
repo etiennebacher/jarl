@@ -33,6 +33,7 @@ use crate::lints::base::stopifnot_all::stopifnot_all::stopifnot_all;
 use crate::lints::base::strings_as_factors::strings_as_factors::strings_as_factors;
 use crate::lints::base::system_file::system_file::system_file;
 use crate::lints::base::undesirable_function::undesirable_function::undesirable_function;
+use crate::lints::base::undesirable_operator::undesirable_operator::undesirable_operator_call;
 use crate::lints::base::which_grepl::which_grepl::which_grepl;
 
 use crate::lints::dplyr::dplyr_filter_out::dplyr_filter_out::dplyr_filter_out;
@@ -147,6 +148,12 @@ pub fn call(r_expr: &RCall, checker: &mut Checker) -> anyhow::Result<()> {
     }
     if checker.is_rule_enabled(Rule::UndesirableFunction) {
         checker.report_diagnostic(undesirable_function(r_expr, fn_name, checker)?);
+    }
+    if checker.is_rule_enabled(Rule::UndesirableOperator) {
+        checker.report_diagnostic(undesirable_operator_call(
+            r_expr,
+            &checker.rule_options.undesirable_operator,
+        )?);
     }
     if checker.is_rule_enabled(Rule::WhichGrepl) {
         checker.report_diagnostic(which_grepl(r_expr, fn_name)?);
