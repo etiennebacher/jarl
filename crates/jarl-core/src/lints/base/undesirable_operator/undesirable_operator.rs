@@ -8,6 +8,7 @@ pub struct UndesirableOperator {
     pub operator: String,
 }
 
+/// <!-- docs: start -->
 /// Version added: 0.7.0
 ///
 /// ## What it does
@@ -49,6 +50,7 @@ pub struct UndesirableOperator {
 /// package:::internal_function()  # flagged by default
 /// value <<- 1                    # flagged by default
 /// ```
+/// <!-- docs: end -->
 impl Violation for UndesirableOperator {
     fn rule(&self) -> Rule {
         Rule::UndesirableOperator
