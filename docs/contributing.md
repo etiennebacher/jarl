@@ -13,7 +13,7 @@ cargo install cargo-insta
 
 Jarl uses [just](https://github.com/casey/just) to quickly run several useful commands, such as `just document` or `just lint` (see the list of commands with `just -l`). When updating a rule, use `just document --no-quarto` to regenerate its Markdown page without rendering the full website. Run `just document` when you also need to render the website.
 
-For full website rendering, you will need [Quarto](https://quarto.org/). The documentation scripts require the R packages `reactable`, `rmarkdown`, and `yaml`.
+For full website rendering, you will need [Quarto](https://quarto.org/) and the R packages `reactable`, `rmarkdown`, and `yaml` installed.
 
 ## AI policy
 
